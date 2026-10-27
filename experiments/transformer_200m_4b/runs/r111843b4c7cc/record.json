@@ -1,26 +1,98 @@
 {
   "acceptance": {
-    "allocation_seconds": 86400,
-    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.07 hours",
-    "failed_utc": "2026-10-27T06:10:16.464169+00:00",
-    "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1/failure.json",
-      "sha256": "983655045e9148fe997118377027845ac3aa385d13df955408058c359f3dad0a"
-    },
-    "identity": "797af090c3b47091a87d5f88f0cf031b82bd69866565671bab5e9f8f14bcf503",
-    "pilot_metadata": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1/pilot/metadata.json",
-      "sha256": "e1866f246dbcf1ff3bf873bfa4de14871daeff8b1de98cf1464130cd71c81a81"
-    },
-    "slurm_job_id": "227582",
-    "stage": "pilot",
-    "status": "failed"
+    "sha256": "8e50a08eb749ac32429e531c86c60b071ff82b7a6574488413621217d4de940b",
+    "summary": {
+      "allocation_seconds": 172800,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-10-27T06:20:07.219085+00:00",
+      "hardware": {
+        "attention_backend": "blocked",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "c0103753422511b1cd1902c402182a98b2893e053d765840c0cb615265a6d2f1",
+      "reused_tests": {
+        "cpu-distributed-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-10-27T06:01:38.786769+00:00",
+          "junit_sha256": "1e1290512b8cfc3803e02a84c312aed28941ae23d512b31139f956f538353955",
+          "slurm_job_id": "227582",
+          "test_identity": "2e73f786ebf5a81ecdd20ac7e3157d75d4457002dc36c26348e204a3874a3a5f"
+        },
+        "cpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-10-27T06:01:16.265978+00:00",
+          "junit_sha256": "32c6e64ebc0979b43a93ca19fb572c2fccf76c8b3cb901983811d175ddfd47b2",
+          "slurm_job_id": "227582",
+          "test_identity": "bfa1e47e3c3963a38fb565aedbf394bd5855951aed7161ce89b198d40c8cba1c"
+        },
+        "gpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-10-27T06:03:27.844731+00:00",
+          "junit_sha256": "675440447441601cd777e1967a41b09837fd4af64d8dc0d2ad5b6da913d74ab4",
+          "slurm_job_id": "227582",
+          "test_identity": "a02f1aa4b0614aa503bba9fd4f3fe625acba2be86dcc959025e0e38d85098b64"
+        }
+      },
+      "slurm_job_id": "227593",
+      "slurm_restart_count": "0",
+      "source_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "status": "passed"
+    }
   },
   "artifacts": [
     {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/best_validation.json",
+      "sha256": "223ec7fc7c8012f9b4ac98f5151a74ffae624d6e808ba39ecad7cd64c4c4086e",
+      "size_bytes": 183
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.json",
+      "sha256": "d55be3596a4cd6738bf7fc880f7af87eb5e6f5c8e939075896476924cbe9ad43",
+      "size_bytes": 4233
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/metadata.json",
+      "sha256": "746c00db5f2b02e9c957be6cc13bf7a39da215ff232b9ce668fa4c4eeec5ce0d",
+      "size_bytes": 637453
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/metrics.jsonl",
+      "sha256": "623f910cbfe7ad830947be2f3bcfb883aa4a3ff4fc075f065d2be265269c2cc2",
+      "size_bytes": 6451809
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/wandb_run.json",
+      "sha256": "e6827cd419a98ea6b1471c4f05034b70d05fcf190fb461e79c19032d0a76c9cf",
+      "size_bytes": 182
+    },
+    {
       "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
-      "sha256": "d5063067c0d2bce2f034a9c21d19d3a99e196f15e43116d5628588642d5ac527",
-      "size_bytes": 4625
+      "sha256": "3061bf76313d7985e6030b37397df3ee54e12128ab2ab27806053a1d5388e730",
+      "size_bytes": 373533
     }
   ],
   "attempts": [
@@ -41,37 +113,328 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-10-27T05:48:56.845391+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=227593 JobName=r111843b4c7cc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T02:11:14 EligibleTime=2026-10-27T02:11:14 AccrueTime=2026-10-27T02:11:14 StartTime=2026-10-27T02:11:42 EndTime=2026-10-29T02:11:42 Deadline=N/A PreemptEligibleTime=2026-10-27T02:11:42 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T02:11:42 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:228866 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 172800,
+      "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "slurm_job_id": "227593",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-27T06:11:48.930029+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=227593 JobName=r111843b4c7cc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:03:11 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T14:35:13 EligibleTime=2026-10-27T14:37:14 AccrueTime=2026-10-27T14:37:14 StartTime=2026-10-27T14:37:41 EndTime=2026-10-29T14:37:41 Deadline=N/A PreemptEligibleTime=2026-10-27T14:37:41 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T14:37:41 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:228866 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 172800,
+      "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "exit_code": 0,
+      "finished_utc": "2026-10-27T18:47:40.725151+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "slurm_job_id": "227593",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-10-27T18:40:52.338756+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=227593 JobName=r111843b4c7cc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=2 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T14:47:42 EligibleTime=2026-10-27T14:49:43 AccrueTime=2026-10-27T14:49:43 StartTime=2026-10-27T14:50:11 EndTime=2026-10-29T14:50:11 Deadline=N/A PreemptEligibleTime=2026-10-27T14:50:11 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T14:50:11 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:228866 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 172800,
+      "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "exit_code": 0,
+      "finished_utc": "2026-10-27T19:47:10.641900+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "slurm_job_id": "227593",
+      "slurm_partition": "long",
+      "slurm_restart_count": "2",
+      "started_utc": "2026-10-27T18:50:15.290569+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/B300-1",
+      "allocation": "JobId=227593 JobName=r111843b4c7cc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=3 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:18 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T15:47:12 EligibleTime=2026-10-27T15:49:13 AccrueTime=2026-10-27T15:49:13 StartTime=2026-10-27T15:49:42 EndTime=2026-10-29T15:49:42 Deadline=N/A PreemptEligibleTime=2026-10-27T15:49:42 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T15:49:42 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:228866 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 172800,
+      "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "exit_code": 0,
+      "finished_utc": "2026-10-27T19:59:00.044272+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "slurm_job_id": "227593",
+      "slurm_partition": "long",
+      "slurm_restart_count": "3",
+      "started_utc": "2026-10-27T19:50:00.442137+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/.runtime/acceptance/B300-1",
+      "allocation": "JobId=227898 JobName=r111843b4c7cc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T15:59:15 EligibleTime=2026-10-27T15:59:15 AccrueTime=2026-10-27T15:59:15 StartTime=2026-10-27T15:59:16 EndTime=2026-10-28T15:59:16 Deadline=N/A PreemptEligibleTime=2026-10-27T17:59:16 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T15:59:16 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3016384 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+      "config_sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+      "slurm_job_id": "227898",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-27T19:59:20.538441+00:00",
+      "stop_after_step": null
     }
   ],
+  "best_validation": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/best_validation.json",
+    "sha256": "223ec7fc7c8012f9b4ac98f5151a74ffae624d6e808ba39ecad7cd64c4c4086e",
+    "size_bytes": 183
+  },
   "condition": "query_forget_gate",
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
     "sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5"
   },
-  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.07 hours",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "blocked",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "d55be3596a4cd6738bf7fc880f7af87eb5e6f5c8e939075896476924cbe9ad43"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "746c00db5f2b02e9c957be6cc13bf7a39da215ff232b9ce668fa4c4eeec5ce0d"
+    },
+    "resolved_config": {
+      "continuation": {
+        "parent_checkpoint": "",
+        "parent_checkpoint_sha256": "",
+        "parent_config": "",
+        "parent_config_sha256": "",
+        "parent_data_identity_sha256": "",
+        "parent_step": 0
+      },
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_coefficient_activation": "tanh",
+        "attention_coefficient_amplitude_initial": 0.0,
+        "attention_coefficient_amplitude_scale": "factorial",
+        "attention_coefficient_conditioning": "query",
+        "attention_coefficient_feature_count": null,
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_kernel_weight_decay": false,
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.03340765523905305,
+        "attention_coefficient_readout": "diagonal",
+        "attention_coefficient_readout_scale": 1.0,
+        "attention_coefficient_scale": "factorial",
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficient_tanh_bias": false,
+        "attention_coefficients": "learned",
+        "attention_degree": 4,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_forget_gate": true,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 896,
+        "initialization": "transformer_truncated_reference",
+        "intermediate_size": 2304,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 14,
+        "num_kv_heads": 14,
+        "num_layers": 15,
+        "path_conv_size": 3,
+        "path_w_rank": 32,
+        "positional_encoding": "rope",
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_head_scale": true,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_layer",
+        "qk_norm_type": "rms_norm",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rms_norm_fp32": true,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.001,
+        "min_learning_rate": 0.0001,
+        "total_steps": 7570,
+        "warmup_steps": 455,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 19,
+        "eval_early_every": 100,
+        "eval_early_until": 1500,
+        "eval_every": 500,
+        "log_every": 10,
+        "micro_batch_size": 16,
+        "seed": 42,
+        "source_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "transformer_200m_4b",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "query-m4-forget-gate",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc"
+      }
+    },
+    "resolved_config_sha256": "717d2ed40e07e967fb796877333416bc45f889df59f983b87d27b62f0776d05e",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "227593",
+        "timestamp_utc": "2026-10-27T06:20:40.680194+00:00"
+      }
+    ]
+  },
   "frozen_execution_sha256": "fa62201d9ddaf39ba95b123499113d4fef1e22dfa508634382ae2d7a3d76c997",
   "home_cluster": "kennel",
   "label": "query-m4-forget-gate",
   "log": {
     "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
-    "sha256": "d5063067c0d2bce2f034a9c21d19d3a99e196f15e43116d5628588642d5ac527",
-    "size_bytes": 4625
+    "sha256": "3061bf76313d7985e6030b37397df3ee54e12128ab2ab27806053a1d5388e730",
+    "size_bytes": 373533
   },
   "log_path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
+  "metadata": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/metadata.json",
+    "sha256": "746c00db5f2b02e9c957be6cc13bf7a39da215ff232b9ce668fa4c4eeec5ce0d",
+    "size_bytes": 637453
+  },
+  "metrics": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/metrics.jsonl",
+    "sha256": "623f910cbfe7ad830947be2f3bcfb883aa4a3ff4fc075f065d2be265269c2cc2",
+    "size_bytes": 6451809
+  },
   "name": "query-m4-forget-gate",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "r111843b4c7cc",
+  "seed": 42,
   "source_commit": "efa12f10b9ddcb095400dec7f6e118f311e4110e",
-  "status": "pending",
+  "status": "acceptance",
+  "step": 4000,
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
+      "--partition=standard",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--time=2-00:00:00",
+      "--time=24:00:00",
       "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
       "--job-name=r111843b4c7cc",
       "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/forget-gate-4b/experiments/transformer_200m_4b/runs/r111843b4c7cc/training.log",
@@ -83,8 +446,15 @@
       "1",
       "B300,H100"
     ],
-    "partition": "long",
-    "slurm_job_id": "227593",
-    "submitted_utc": "2026-10-27T06:11:14.113627+00:00"
+    "partition": "standard",
+    "slurm_job_id": "227898",
+    "submitted_utc": "2026-10-27T19:59:15.318536+00:00"
+  },
+  "training_tokens": 2097152000,
+  "updated_utc": "2026-10-27T18:50:44.690551+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/wandb_run.json",
+    "sha256": "e6827cd419a98ea6b1471c4f05034b70d05fcf190fb461e79c19032d0a76c9cf",
+    "size_bytes": 182
   }
 }
