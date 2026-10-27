@@ -102,7 +102,7 @@ The table and `distillation_summary.csv` regenerate from the explicitly selected
 run's pinned measurements:
 
 ```bash
-scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/summarize_distillation.py --print-markdown
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.summarize_distillation --print-markdown
 ```
 
 Raw factorial-coordinate MSE fell from **0.549740 to 0.495616** (9.85%), while
@@ -123,7 +123,7 @@ Its compact [measurement](../../../runs/rec777591a61b/distillation_reference.jso
 regenerates on the teacher's home cluster with:
 
 ```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/measure_distillation_reference.py \
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.results.exploratory.coefficient_oracle.measure_distillation_reference \
   --run experiments/transformer_200m_4b/runs/rec777591a61b
 ```
 
