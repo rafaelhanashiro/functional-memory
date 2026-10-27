@@ -15,6 +15,7 @@ from pathlib import Path
 import shutil
 import signal
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 
@@ -230,9 +231,20 @@ def main(argv=None):
     microbatch = settings["lm_microbatch_size"]
     cache = run / ".runtime"
     cache.mkdir(exist_ok=True)
-    x_path, y_path = cache / "teacher_inputs.npy", cache / "teacher_factorial_coefficients.npy"
+    # These reproducible arrays are disposable allocation-local data. Persistent
+    # checkpoints and finalization markers remain under the run directory.
+    data_cache = Path(tempfile.gettempdir()) / f"{run.name}-teacher"
+    data_cache.mkdir(exist_ok=True)
+    dimensions = recipe["model"]
+    needed = (len(batches["fit"]) * (config.data.sequence_length - 1) * dimensions["num_layers"]
+              * (dimensions["hidden_size"] + dimensions["num_heads"] * (dimensions["attention_degree"] + 1)) * 4)
+    if shutil.disk_usage(data_cache).free < needed * 1.1:
+        raise RuntimeError("Insufficient allocation-local temporary space for teacher activations")
+    runtime["temporary_teacher_cache"] = str(data_cache)
+    update_record(run, {"runtime": runtime})
+    x_path, y_path = data_cache / "teacher_inputs.npy", data_cache / "teacher_factorial_coefficients.npy"
     acceptance_path = run / "distillation_acceptance.json"
-    if not (cache / "capture_complete.json").exists():
+    if not (data_cache / "capture_complete.json").exists():
         dimensions = recipe["model"]
         count, length = len(batches["fit"]), config.data.sequence_length - 1
         x = np.lib.format.open_memmap(x_path, mode="w+", dtype=np.float32,
@@ -271,11 +283,11 @@ def main(argv=None):
             raise RuntimeError("Teacher capture changed its forward beyond the established bound")
         if abs(np.mean(native_nll) - settings["teacher"]["best_nll"]) > .002:
             raise RuntimeError("Teacher replay does not reproduce the selected checkpoint")
-        write_json(cache / "capture_complete.json", {
+        write_json(data_cache / "capture_complete.json", {
             "teacher_checkpoint_sha256": settings["teacher"]["checkpoint_sha256"],
             "config_sha256": sha256(run / "config.yaml"),
             "inputs_sha256": sha256(x_path), "targets_sha256": sha256(y_path)})
-    capture_identity = json.loads((cache / "capture_complete.json").read_text())
+    capture_identity = json.loads((data_cache / "capture_complete.json").read_text())
     if (capture_identity["config_sha256"] != sha256(run / "config.yaml")
             or capture_identity["teacher_checkpoint_sha256"] != settings["teacher"]["checkpoint_sha256"]
             or capture_identity["inputs_sha256"] != sha256(x_path)

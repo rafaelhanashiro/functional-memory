@@ -77,8 +77,8 @@ preservation, Taylor initialization, native coefficient-projection parity, finit
 feature updates after zero mixing moves, and exact optimizer resume. Numerical
 discrepancies retain the established bounds and abort qualification. The run's
 `distillation_acceptance.json`, `metrics.jsonl`, and final `completion.json` are
-the compact evidence. Teacher activation caches are temporary and regenerated
-from the pinned source checkpoint.
+the compact evidence. Teacher activation caches use allocation-local temporary
+storage and are regenerated from the pinned source checkpoint on a new allocation.
 
 Run preparation and launch commands are in the [study README](../../../README.md).
 
