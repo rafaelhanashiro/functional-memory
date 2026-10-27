@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r8ccda981be2b/config.yaml",
+    "sha256": "eba534358270e445c188732b9b7627b532cd4c0bb1912737e29cd52f6eb34562"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-2.5x",
+  "name": "softmax-2.5x",
+  "record_schema_version": 1,
+  "run_id": "r8ccda981be2b",
+  "status": "planned"
+}

@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/reb9b5be4ff1b/config.yaml",
+    "sha256": "a82940bbc6cb6315b9e1b584aac5f9f7c18cc22f6a4cbfabd0b08c7b028b16a9"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-2.5x",
+  "name": "query-m4-2.5x",
+  "record_schema_version": 1,
+  "run_id": "reb9b5be4ff1b",
+  "status": "planned"
+}

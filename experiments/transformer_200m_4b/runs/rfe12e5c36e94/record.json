@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rfe12e5c36e94/config.yaml",
+    "sha256": "f7edc57695ab4c65788a4be6e120a735fe25b827aeb1677068f853c5aa5a2117"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-2.5x",
+  "name": "exp-2.5x",
+  "record_schema_version": 1,
+  "run_id": "rfe12e5c36e94",
+  "status": "planned"
+}

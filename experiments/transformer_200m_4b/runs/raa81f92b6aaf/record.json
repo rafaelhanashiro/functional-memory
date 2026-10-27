@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/raa81f92b6aaf/config.yaml",
+    "sha256": "c8d4c3fc8147a2d2abb5641a5ef3c467fcd4ba8cc7c48a36a0eb523fc69c02d5"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m4-2.5x",
+  "name": "static-m4-2.5x",
+  "record_schema_version": 1,
+  "run_id": "raa81f92b6aaf",
+  "status": "planned"
+}
