@@ -95,7 +95,7 @@ def render(recipe: Path, output: Path) -> None:
 
     ax.add_patch(FancyBboxPatch((.035, .917), .93, .06, boxstyle="round,pad=0.006,rounding_size=0.008",
                                facecolor="#183b59", linewidth=0, transform=ax.transAxes))
-    text(.5, .954, "200M Transformer / 4B-token recipe", fontsize=26, weight="bold", ha="center", color="white")
+    text(.5, .954, "200M Transformer recipe", fontsize=26, weight="bold", ha="center", color="white")
     text(.5, .930, "Canonical reference • QK RMSNorm with learned per-head score scaling",
          fontsize=13.2, ha="center", color="white")
 
@@ -143,8 +143,8 @@ def render(recipe: Path, output: Path) -> None:
     ], color="#a591c7", fill="#f2edf9")
 
     table(.515, .475, .45, .224, "Training budget and execution", [
-        ("Prediction tokens", f"{total_tokens:,} (approximately 4B)"),
-        ("Optimizer updates", f"{optim['total_steps']:,}"),
+        ("Reference token budget", f"{total_tokens:,} (1× Chinchilla); other budgets per run"),
+        ("Reference updates", f"{optim['total_steps']:,}; runs change only this for another budget"),
         ("Prediction context", f"{length:,} tokens"),
         ("Packed record length", f"{packed['sequence_length']:,} tokens → {length:,} predictions"),
         ("Global batch", f"{global_batch} sequences"),

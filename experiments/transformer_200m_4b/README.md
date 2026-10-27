@@ -1,14 +1,17 @@
-# 200M Transformer / 4B-token setup
+# 200M Transformer setup
 
-How do attention variants perform under the 200M-parameter, approximately 4B-token
-recipe? This self-contained study owns its [recipe](recipe.yaml), [run index](runs.csv),
+How do attention variants perform under the 200M-parameter recipe, and how do their
+comparisons change with the training-token budget? The budget is a per-run setting:
+the reference is 1× Chinchilla (about 4B tokens), and runs at other budgets change only
+`optim.total_steps`. The folder keeps its original `transformer_200m_4b` name.
+This self-contained study owns its [recipe](recipe.yaml), [run index](runs.csv),
 [membership](sweep.yaml), and [results](results/README.md), including exploratory
 diagnostics. Reusable model, attention, data, optimizer, and runtime code live in
 the [Transformer scaffold](../../scaffolds/transformer/README.md).
 
 ## Reference recipe
 
-![200M / 4B reference recipe with learned per-head QK score scaling](recipe.png)
+![200M reference recipe with learned per-head QK score scaling](recipe.png)
 
 The pretraining reference has 15 layers, width 896, 14 query/KV heads of width 64,
 SwiGLU width 2304, context 2048, vocabulary 32,000, untied embeddings, and RoPE
@@ -27,7 +30,7 @@ computation uses BF16.
 New pretraining runs use this setup. Historical run configurations and checkpoint
 resumptions retain their recorded normalization; changing the canonical recipe
 does not change those experiments. The architecture and optimizer below otherwise
-retain the established 4B recipe, including its previously selected learning rate.
+retain the established recipe, including its previously selected learning rate.
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
@@ -37,11 +40,26 @@ excluding embeddings, normalization gains, biases, and attention coefficients.
 The untied output head decays.
 
 The reference uses shuffled, EOS-packed FineWeb-Edu data tokenized with the
-Llama-2 tokenizer, seed 42, global batch 256, and 7,570 updates
-(3,968,860,160 prediction tokens). Peak LR is 0.001, with 455 warmup updates and
-cosine decay to 0.0001. Validation uses 9,961,472 tokens every 100 updates through
+Llama-2 tokenizer, seed 42, and global batch 256. Its token budget is 1× Chinchilla:
+7,570 updates (3,968,860,160 prediction tokens). Peak LR is 0.001, with 455 warmup
+updates and cosine decay to 0.0001 over the run. Validation uses 9,961,472 tokens every 100 updates through
 1,500, then every 500 and at the final update. Individual diagnostic recipes
 specify their own fitting objective, trainable parameters, and stopping rule.
+
+### Token budgets
+
+A run at another budget copies its reference recipe and changes only
+`optim.total_steps` (and so the cosine horizon); warmup (455 updates), peak and
+floor learning rate, data order, seed, and validation cadence stay the same.
+With the same shuffle seed, a longer run first sees exactly the tokens of a
+shorter one. The 12.0B-token training set covers up to about 22,900 updates
+without repeating data. `runs.csv` records each run's `training_steps`; compare
+runs at the same budget, or the same variant across budgets.
+
+| Budget | Updates | Prediction tokens |
+| --- | ---: | ---: |
+| 1× Chinchilla (reference) | 7,570 | 3,968,860,160 |
+| 2.5× Chinchilla | 18,925 | 9,922,150,400 |
 
 Regenerate the reference image from the current recipe with:
 

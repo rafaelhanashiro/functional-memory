@@ -43,8 +43,9 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
 - The established 10B-token shared-Transformer attention experiments belong to
-  `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
-  in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
+  `experiments/attention_scaling/`. The user-requested 200M setup is isolated in
+  `experiments/transformer_200m_4b/` (the folder keeps its original name; the token budget
+  is a per-run setting with 1× Chinchilla as the reference), including its `recipe.yaml`, run membership,
   `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
   diagnostics belong under `experiments/transformer_200m_4b/results/exploratory/<topic>/`,
   with their runs in the same study. Add runs deliberately; do not reproduce the old
