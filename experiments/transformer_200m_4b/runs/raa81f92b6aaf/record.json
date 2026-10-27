@@ -1,12 +1,57 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/raa81f92b6aaf/.runtime/acceptance/H100-1",
+      "allocation": "JobId=227663 JobName=raa81f92b6aaf UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-27T10:21:45 EligibleTime=2026-10-27T10:21:46 AccrueTime=2026-10-27T10:21:46 StartTime=2026-10-27T10:21:46 EndTime=2026-10-28T10:21:46 Deadline=N/A PreemptEligibleTime=2026-10-27T12:21:46 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-27T10:21:46 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2386128 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/raa81f92b6aaf/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/raa81f92b6aaf/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/raa81f92b6aaf/config.yaml",
+      "config_sha256": "c8d4c3fc8147a2d2abb5641a5ef3c467fcd4ba8cc7c48a36a0eb523fc69c02d5",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "db6ea76f95298f8e4378078f9995bdabe89aba7d",
+      "slurm_job_id": "227663",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-27T14:21:51.062429+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/raa81f92b6aaf/config.yaml",
     "sha256": "c8d4c3fc8147a2d2abb5641a5ef3c467fcd4ba8cc7c48a36a0eb523fc69c02d5"
   },
+  "frozen_execution_sha256": "e1730b2f5fbddd2eb68d5ec4f87b6ed3d6d657c5f3bd02a2dcf0a0892c8cad04",
   "home_cluster": "kennel",
   "label": "static-m4-2.5x",
+  "log_path": "experiments/transformer_200m_4b/runs/raa81f92b6aaf/training.log",
   "name": "static-m4-2.5x",
   "record_schema_version": 1,
   "run_id": "raa81f92b6aaf",
-  "status": "planned"
+  "source_commit": "db6ea76f95298f8e4378078f9995bdabe89aba7d",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=raa81f92b6aaf",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/raa81f92b6aaf/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/raa81f92b6aaf/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/raa81f92b6aaf/config.yaml",
+      "db6ea76f95298f8e4378078f9995bdabe89aba7d",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "227663",
+    "submitted_utc": "2026-10-27T14:21:46.002949+00:00"
+  }
 }

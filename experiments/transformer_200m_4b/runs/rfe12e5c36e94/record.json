@@ -8,5 +8,29 @@
   "name": "exp-2.5x",
   "record_schema_version": 1,
   "run_id": "rfe12e5c36e94",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=2-00:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=rfe12e5c36e94",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/rfe12e5c36e94/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/200m-chinchilla-2p5x/experiments/transformer_200m_4b/runs/rfe12e5c36e94/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/rfe12e5c36e94/config.yaml",
+      "db6ea76f95298f8e4378078f9995bdabe89aba7d",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "long",
+    "slurm_job_id": "227661",
+    "submitted_utc": "2026-10-27T14:21:45.974962+00:00"
+  }
 }
