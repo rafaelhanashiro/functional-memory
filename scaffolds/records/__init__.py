@@ -463,6 +463,10 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     sharing = _first(record.get("coefficient_sharing"), metadata.get("attention_coefficient_sharing"), model.get("attention_coefficient_sharing"), model.get("quadratic_sharing"))
     budget = (optim.get("total_steps"), data.get("batch_size"), data.get("sequence_length"))
     prediction_tokens = budget[0] * budget[1] * (budget[2] - 1) if all(type(value) is int for value in budget) else None
+    if config.get("experiment_kind") == "teacher_activation_coefficient_distillation":
+        # Updates fit coefficient targets on repeated teacher activations; they
+        # are not additional language-model pretraining tokens.
+        prediction_tokens = None
     fit = config.get("fit", {}) if config.get("experiment_kind") == "frozen_pretrained_head_distillation" else {}
     oracle = config.get("oracle", {})
     shared_batch_coefficients = (isinstance(oracle, dict)

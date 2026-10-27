@@ -20,7 +20,7 @@ backbone frozen. They live in the
 | `rc95f2055e96d` | Original degree-four query generator on 256 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rda6029c3286f` | Free degree-four coefficients per sequence and query on 256 sequences, with per-head QK scaling | Fixed Taylor `r816ab0fbe119`, step 7,500 | Complete |
 | `rceea84f19f6b` | Static degree-four coefficients on 256 sequences, with per-head QK scaling | Static `r4339a245820e`, step 7,500 | Complete |
-| `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Running |
+| `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. The original
@@ -81,6 +81,61 @@ the compact evidence. Teacher activation caches use allocation-local temporary
 storage and are regenerated from the pinned source checkpoint on a new allocation.
 
 Run preparation and launch commands are in the [study README](../../../README.md).
+
+### Distillation outcome
+
+The full 20,000-update budget completed on one B300. Actual fitting took about
+two minutes after preparation; the successful allocation lasted 10 minutes 58
+seconds. Teacher capture reproduced native logits and per-sequence losses exactly
+on this allocation, with aggregate teacher PPL **1.002978**. Native coefficient
+projection parity and optimizer checkpoint resume were exact; the backbone hash
+remained unchanged. No logged regression update clipped its gradients.
+
+| Model / selected snapshot | Fitting PPL | Fresh validation PPL | Untouched test PPL |
+| --- | ---: | ---: | ---: |
+| Frozen Taylor | 15.599915 | 15.071810 | 14.921153 |
+| Fitted free teacher | 1.002978 | Not applicable | Not applicable |
+| Dense, best coefficient MSE (update 20,000) | 15.624968 | 15.220033 | Not evaluated |
+| Validation-selected dense (initialization, update 0) | 15.599915 | 15.071810 | 14.921153 |
+
+The table and `distillation_summary.csv` regenerate from the explicitly selected
+run's pinned measurements:
+
+```bash
+scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/summarize_distillation.py --print-markdown
+```
+
+Raw factorial-coordinate MSE fell from **0.549740 to 0.495616** (9.85%), while
+mean angular error fell from **35.78 to 34.41 degrees**. The best coefficient fit
+was the terminal snapshot; it did not reproduce the teacher's language-model
+behavior. Every evaluated trained snapshot had worse fresh validation NLL than
+initialization. Consequently, validation selected the Taylor-equivalent initial
+generator, and the final test evaluated that fallback. Its identical test PPL
+must not be presented as successful generalization by a trained dense generator.
+
+The optimal constant predictor for this coefficient objective has MSE **0.520781**.
+Moving the mean away from Taylor explains **53.5%** of the dense fit's total MSE
+improvement. Input dependence removes another **4.83%** of the remaining teacher
+coefficient variance. Thus the generator learns some input-dependent signal on
+teacher activations, but does not closely imitate the free table. This constant
+reference is a coefficient-MSE baseline, not another trained language model.
+Its compact [measurement](../../../runs/rec777591a61b/distillation_reference.json)
+regenerates on the teacher's home cluster with:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/results/exploratory/coefficient_oracle/measure_distillation_reference.py \
+  --run experiments/transformer_200m_4b/runs/rec777591a61b
+```
+
+This experiment did not establish the proposed premise that dense can represent
+the fitted free solution but language-model training cannot reach it. It also
+does not prove that the dense family lacks useful solutions: the finite regression
+optimization, nonunique free coefficients, raw-MSE objective, and conflicting
+first-layer targets limit that inference. The open question is how much useful
+coefficient variation is predictable by a shared causal generator and which
+training objective can discover it. Exact measurements and per-layer/head errors
+are in the run's [completion](../../../runs/rec777591a61b/completion.json) and
+[learning curves](../../../runs/rec777591a61b/metrics.jsonl).
 
 ## Degree-four batch fits with per-head QK scaling
 

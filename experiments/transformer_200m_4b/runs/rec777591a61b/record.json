@@ -1,10 +1,64 @@
 {
-  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b",
+  "acceptance": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/distillation_acceptance.json",
+    "status": "passed"
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b",
   "artifacts": [
     {
-      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
-      "sha256": "93cbcc3d010f0a56b2b837e548bb5f9bf3d7d84d821c3d018ce79a3bf3a123c1",
-      "size_bytes": 679
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/best_validation.json",
+      "sha256": "583410a5d48811ae4a5454f041f4f3113f541fc8be7b91d3689f19cfc72c94f3",
+      "size_bytes": 81
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/completion.json",
+      "sha256": "1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461",
+      "size_bytes": 81848
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/data_identity.json",
+      "sha256": "a3e132db0168901401af4b0fdc4a10abf882c6907f2b27c79239d729795ffc5d",
+      "size_bytes": 1133
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/distillation_acceptance.json",
+      "sha256": "18498346219649d467c319b3930f1760b5fb241fb07db1ccd08fb113d22dec8a",
+      "size_bytes": 30501
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/distillation_reference.json",
+      "sha256": "9afd6f999c3c40f3fe3ed136146cb960c3e27a5fbc9cc7b51857d6c5cf1ba2a6",
+      "size_bytes": 1667
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/initial_metrics.json",
+      "sha256": "0916d91b726c7da193a9f0ad40d42c2794f7a22e00345aefba45cf62fe137cf8",
+      "size_bytes": 27066
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/metadata.json",
+      "sha256": "1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461",
+      "size_bytes": 81848
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/metrics.jsonl",
+      "sha256": "922f941b858a1147994679dc4ab3a289180c87dab83c5ca2c75b6abcb1f0c28f",
+      "size_bytes": 726217
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/retention.json",
+      "sha256": "b091f1e614853fcfaa23cb5ec0da6ffc704b3c6d9bbf6a628b16f043bd87e346",
+      "size_bytes": 238
+    },
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/wandb_run.json",
+      "sha256": "1eeabc9074ba632e5b740332e196ff8856c8e7324d4a6da7476db440a3ddd5c3",
+      "size_bytes": 138
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+      "sha256": "37caafb315e0ac8eaf61e95b7a62e139bd2ac7b0807a109146c135dad6ef69a3",
+      "size_bytes": 70266
     }
   ],
   "attempts": [
@@ -28,21 +82,73 @@
         "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
         "XLA_FLAGS": null
       },
+      "exit_code": 143,
       "gpu_count": 1,
       "gpu_type": "NVIDIA H100 PCIe",
       "node": "mastiff.csail.mit.edu",
       "partition": "standard",
+      "phase": "teacher_capture",
       "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/bin/python",
       "resolved_attention_backend": "mosaic",
       "slurm_job_id": "227083",
       "slurm_restart_count": 0,
       "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
-      "started_utc": "2026-10-27T01:08:29.673235+00:00"
+      "started_utc": "2026-10-27T01:08:29.673235+00:00",
+      "status": "cancelled"
+    },
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "device_count": 1,
+      "device_kind": "NVIDIA B300 SXM6 AC",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-10-27T01:34:20.254310+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "node": "akita.csail.mit.edu",
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv-cuda13/bin/python",
+      "resolved_attention_backend": "mosaic",
+      "slurm_job_id": "227092",
+      "slurm_restart_count": 0,
+      "source_commit": "ea7a167c86eee9be030006a88e2cff7dd7a105e5",
+      "started_utc": "2026-10-27T01:25:20.430483+00:00"
     }
   ],
+  "backbone": {
+    "backbone_parameters_sha256": "f0fc14ad24da577d797af99d34857b98e44b3bfe0beb6cc19f89ee2e1d580f28",
+    "feature_count": 9,
+    "generator_parameter_count": 1703940,
+    "initialization": "Taylor bias in factorial coordinates; zero mixing; reference random features",
+    "parent_parameters_sha256": "f0fc14ad24da577d797af99d34857b98e44b3bfe0beb6cc19f89ee2e1d580f28",
+    "projection_initial_std": 0.03340765523905305,
+    "readout_scale": 0.3333333333333333,
+    "tanh_bias": false
+  },
+  "best_validation": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/best_validation.json",
+    "sha256": "583410a5d48811ae4a5454f041f4f3113f541fc8be7b91d3689f19cfc72c94f3",
+    "size_bytes": 81
+  },
+  "best_validation_nll": 2.7128261057659984,
+  "completion": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/completion.json",
+    "sha256": "1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461",
+    "size_bytes": 81848
+  },
   "config": {
     "path": "experiments/transformer_200m_4b/runs/rec777591a61b/config.yaml",
     "sha256": "8c545715f7249de22ede4f09b8578042313f1fe96933c1216cdca32e30c00208"
+  },
+  "data_identity": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/data_identity.json",
+    "sha256": "a3e132db0168901401af4b0fdc4a10abf882c6907f2b27c79239d729795ffc5d",
+    "size_bytes": 1133
   },
   "dataset_identity": {
     "fit": {
@@ -70,40 +176,132 @@
       "start_sequence": 5000000
     }
   },
+  "distillation_outcome": {
+    "best_validation_nll": 2.7128261057659984,
+    "capacity_fit_nll": 2.7488701408728957,
+    "test_nll": 2.7027798877097666
+  },
   "error": null,
-  "frozen_execution_sha256": "a6b00440fb6a7b8330ee1d2f2bff716f92cb002fdc07e8f338b7102ca944bb14",
+  "frozen_execution_sha256": "a8ad4e57efa6a195cbb7a72f1b2ad2b4bdaeb74f68fbbf560d5a3a314a8d8cd8",
   "home_cluster": "kennel",
   "label": "dense-teacher-distillation-m4-b256-head-scale",
   "log": {
-    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
-    "sha256": "93cbcc3d010f0a56b2b837e548bb5f9bf3d7d84d821c3d018ce79a3bf3a123c1",
-    "size_bytes": 679
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+    "sha256": "37caafb315e0ac8eaf61e95b7a62e139bd2ac7b0807a109146c135dad6ef69a3",
+    "size_bytes": 70266
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+  "metadata": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/metadata.json",
+    "sha256": "1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461",
+    "size_bytes": 81848
+  },
+  "metrics": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/metrics.jsonl",
+    "sha256": "922f941b858a1147994679dc4ab3a289180c87dab83c5ca2c75b6abcb1f0c28f",
+    "size_bytes": 726217
+  },
   "name": "dense-teacher-distillation-m4-b256-head-scale",
   "parent_run_id": "r816ab0fbe119",
   "record_schema_version": 1,
+  "retention": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/retention.json",
+    "sha256": "b091f1e614853fcfaa23cb5ec0da6ffc704b3c6d9bbf6a628b16f043bd87e346",
+    "size_bytes": 238
+  },
   "run_id": "rec777591a61b",
   "runtime": {
     "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
     "device_count": 1,
-    "device_kind": "NVIDIA H100 PCIe",
+    "device_kind": "NVIDIA B300 SXM6 AC",
     "environment": {
-      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
       "CUDA_VISIBLE_DEVICES": "0",
-      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
-      "XLA_FLAGS": null
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
     },
-    "node": "mastiff.csail.mit.edu",
+    "node": "akita.csail.mit.edu",
     "partition": "standard",
-    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/bin/python",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv-cuda13/bin/python",
     "resolved_attention_backend": "mosaic",
-    "slurm_job_id": "227083",
-    "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd"
+    "slurm_job_id": "227092",
+    "source_commit": "ea7a167c86eee9be030006a88e2cff7dd7a105e5",
+    "temporary_teacher_cache": "/tmp/coefficient-distill-227092.EfuE3N/rec777591a61b-teacher"
   },
   "seed": 42,
-  "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
-  "status": "running",
+  "selected_checkpoint": {
+    "file_count": 12,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "ce5466d200c2aaf1caba154837c9acc065c83b2d141158370dbad0aa49dea0cf",
+        "size_bytes": 258
+      },
+      {
+        "path": "_METADATA",
+        "sha256": "f62dfbf7f16632b70a643a2a647160977ec595dc357d8227198eadfc691853b0",
+        "size_bytes": 793
+      },
+      {
+        "path": "_sharding",
+        "sha256": "2890ec4366c1dc4d0ff222beb92e063ad75ddeadd2447f84897aff24ba8068e5",
+        "size_bytes": 306
+      },
+      {
+        "path": "array_metadatas/process_0",
+        "sha256": "814034acd9e9221bd27cee09bb446bfbf39ed4a272e2167c6819507b809f1a26",
+        "size_bytes": 437
+      },
+      {
+        "path": "d/8639c685602909799836c629ffd522c9",
+        "sha256": "6bfe67f42a4cb4a75360fb73e07b8139a52165a056f2e668c45ea288a18ea780",
+        "size_bytes": 364
+      },
+      {
+        "path": "identity.json",
+        "sha256": "d4be2cca1e729b617b71fcdaed68dd82992fb50254f505f34a5735ff69d5eee6",
+        "size_bytes": 634
+      },
+      {
+        "path": "manifest.ocdbt",
+        "sha256": "7da31a2920eab166429615a3168542b82e32161cd7ed08fd8f89f7a2f589f8da",
+        "size_bytes": 116
+      },
+      {
+        "path": "ocdbt.process_0/d/1afc4be2dc2b8936d665e586294ba18c",
+        "sha256": "d2493d70c9e4f9a4530912e5bc558978606e71c32dec5e834fc3f7dd08a98139",
+        "size_bytes": 240
+      },
+      {
+        "path": "ocdbt.process_0/d/23585aa0aa4618491b772597e97100a1",
+        "sha256": "5c6e5bd74af178dbf0f6df360363d19e697e6cd32af1a2f2f5815b7a3e92d06b",
+        "size_bytes": 280
+      },
+      {
+        "path": "ocdbt.process_0/d/5a4cd251397821d7cce26cc1e8cf6edb",
+        "sha256": "925b91bb6f0fc3a3c73b31d01fa0a78b8fbf3b6d0b4baedbb3e98726f3389bee",
+        "size_bytes": 6283264
+      },
+      {
+        "path": "ocdbt.process_0/d/c78d31b52bafb5dd4c22ab70703b20cc",
+        "sha256": "a6a4e5a6827b61b7510924aef32cc5c6579e0c187930daa4a1d41ab7e569ace5",
+        "size_bytes": 218
+      },
+      {
+        "path": "ocdbt.process_0/manifest.ocdbt",
+        "sha256": "87008c2e8d441d31a9239d2dfd9eb8c715de968bf7c1def088efb9d115b76086",
+        "size_bytes": 244
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/checkpoints/0",
+    "sha256": "78e7dba17e385a96e816aef99456ecc1c34d0e9396bba3cc1f99287b30e3d3be",
+    "size_bytes": 6287154
+  },
+  "source_commit": "ea7a167c86eee9be030006a88e2cff7dd7a105e5",
+  "status": "complete",
+  "step": 20000,
   "submission": {
     "command": [
       "sbatch",
@@ -119,12 +317,28 @@
       "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
       "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/coefficient_distillation.sbatch",
       "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation",
-      "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
+      "ea7a167c86eee9be030006a88e2cff7dd7a105e5",
       "rec777591a61b"
     ],
     "partition": "standard",
-    "slurm_job_id": "227083",
-    "submitted_utc": "2026-10-27T01:08:05.948768+00:00"
+    "slurm_job_id": "227092",
+    "submitted_utc": "2026-10-27T01:23:25.937342+00:00"
   },
-  "teacher_run_id": "rda6029c3286f"
+  "teacher_run_id": "rda6029c3286f",
+  "terminal": {
+    "fit_nll": 2.7488701408728957,
+    "fit_perplexity": 15.624967894570961,
+    "step": 20000,
+    "validation_nll": 2.722612507175654,
+    "validation_perplexity": 15.220032795210313
+  },
+  "wandb": {
+    "id": "rec777591a61b",
+    "url": "https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/rec777591a61b"
+  },
+  "wandb_run": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/wandb_run.json",
+    "sha256": "1eeabc9074ba632e5b740332e196ff8856c8e7324d4a6da7476db440a3ddd5c3",
+    "size_bytes": 138
+  }
 }

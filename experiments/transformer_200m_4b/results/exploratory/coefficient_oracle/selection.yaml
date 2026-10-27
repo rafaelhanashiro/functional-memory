@@ -7,6 +7,10 @@ settings:
   generalization_claim: false
   comparison: Different source backbones; compare fitting capacity, not a matched-backbone
     parameterization ablation
+  distillation_reference:
+    run_id: rec777591a61b
+    artifact: distillation_reference.json
+    sha256: 9afd6f999c3c40f3fe3ed136146cb960c3e27a5fbc9cc7b51857d6c5cf1ba2a6
 runs:
 - study: transformer_200m_4b
   run_id: r3c0f21ab7dce
@@ -264,3 +268,15 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/rec777591a61b/config.yaml
       sha256: 8c545715f7249de22ede4f09b8578042313f1fe96933c1216cdca32e30c00208
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rec777591a61b/metrics.jsonl
+      sha256: 922f941b858a1147994679dc4ab3a289180c87dab83c5ca2c75b6abcb1f0c28f
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rec777591a61b/completion.json
+      sha256: 1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rec777591a61b/metadata.json
+      sha256: 1758cb0b50a351808c74836017aab6c83023ac0ae4304a20633fbfa9af8fa461
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/rec777591a61b/best_validation.json
+      sha256: 583410a5d48811ae4a5454f041f4f3113f541fc8be7b91d3689f19cfc72c94f3
