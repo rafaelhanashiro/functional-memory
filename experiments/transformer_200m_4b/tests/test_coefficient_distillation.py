@@ -116,7 +116,7 @@ def test_chunked_regression_metrics_equal_pooled_metrics_with_uneven_energy():
         assert actual[key] == pytest.approx(expected[key], rel=3e-6, abs=3e-7), key
 
 
-def test_checkpoint_restores_controller_candidates_and_exact_next_update(tmp_path):
+def test_checkpoint_restores_controller_candidate_and_exact_next_update(tmp_path):
     rng = np.random.default_rng(7)
     generator = {
         "kernel": jnp.asarray(rng.normal(size=(1, 2, 3, 4)) * .2, jnp.float32),
@@ -127,13 +127,11 @@ def test_checkpoint_restores_controller_candidates_and_exact_next_update(tmp_pat
     targets = predict_factorial(generator, inputs, 1 / 3) + jnp.asarray([.2, -.1, .3])
     init, step, _ = make_regression_functions(readout_scale=1 / 3)
     fitted, optimizer, _ = step(generator, init(generator), inputs, targets, .01)
-    controller = {"step": 1, "best_fit_step": 1, "best_validation_step": 0,
-                  "best_fit_mse": .04, "best_validation_nll": 2.7}
+    controller = {"step": 1, "best_fit_step": 1, "best_fit_mse": .04}
     checkpoints = tmp_path / "checkpoints"
     checkpoints.mkdir()
-    saved = distillation.save_checkpoint(checkpoints, 1, fitted, optimizer, fitted, generator, controller)
-    template = {"generator": fitted, "optimizer": optimizer,
-                "fit_best": fitted, "validation_best": generator}
+    saved = distillation.save_checkpoint(checkpoints, 1, fitted, optimizer, generator, controller)
+    template = {"generator": fitted, "optimizer": optimizer, "fit_best": generator}
     with ocp.PyTreeCheckpointer() as checkpointer:
         restored = checkpointer.restore(saved, item=template)
     assert json.loads((saved / "controller.json").read_text()) == controller
@@ -143,9 +141,9 @@ def test_checkpoint_restores_controller_candidates_and_exact_next_update(tmp_pat
     resumed = step(restored["generator"], restored["optimizer"], inputs, targets, .001)
     for expected, actual in zip(jax.tree.leaves(direct), jax.tree.leaves(resumed)):
         np.testing.assert_array_equal(expected, actual)
-    # Saving another resumable checkpoint must keep both selection candidates
+    # Saving another resumable checkpoint keeps the selection candidate
     # while retaining only the latest optimizer state.
     controller = {**controller, "step": 2}
-    next_path = distillation.save_checkpoint(checkpoints, 2, direct[0], direct[1], fitted, generator, controller)
+    next_path = distillation.save_checkpoint(checkpoints, 2, direct[0], direct[1], fitted, controller)
     assert next_path.is_dir() and not saved.exists()
     assert [path.name for path in checkpoints.iterdir()] == ["2"]

@@ -200,8 +200,8 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
-documents the scientific protocol, fitting metrics, and independent validation/test
-selection. `rec777591a61b` distills the degree-four B256 free teacher into the
+documents the scientific protocol and its two batches: the fitting batch, and one
+fresh batch that scores the selected generator once. `rec777591a61b` distills the degree-four B256 free teacher into the
 existing dense generator with a frozen Taylor backbone. Home cluster: **Kennel**.
 Its source checkpoints remain in the primary checkout; all new outputs belong
 to the run in its isolated worktree until completion.
@@ -219,8 +219,8 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
 The launcher uses one available H100 or B300 on `standard`, with no scheduling
 dependency, and runs full-size qualification before fitting. `--gpu-type h100`
 or `--gpu-type b300` pins a GPU type if required. Requeues restore the latest
-generator, Adam state, fixed data identities, and validation/capacity candidates.
-Completed runs retain the validation-best generator and refer to the unchanged
+generator, Adam state, fixed data identities, and the lowest-regression-error
+candidate. Completed runs retain that selected generator and refer to the unchanged
 parent checkpoint for their frozen backbone.
 
 ## Query–key polynomial pretraining

@@ -1,5 +1,4 @@
-model,step,fit_ppl,validation_ppl,test_ppl
-Frozen Taylor,7500,15.599915,15.071810,14.921153
-Fitted free teacher,2453,1.002978,,
-"Dense, best coefficient MSE",20000,15.624968,15.220033,
-Validation-selected dense,0,15.599915,15.071810,14.921153
+model,step,fit_ppl,heldout_ppl
+Frozen Taylor,7500,15.599915,15.071810
+Fitted free teacher,2453,1.002978,
+"Dense, regressed onto the teacher",20000,15.624968,15.220033

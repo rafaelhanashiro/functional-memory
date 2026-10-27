@@ -1,8 +1,10 @@
 """Distill free polynomial coefficients on their actual teacher activations.
 
-The backbone never receives gradients. Fresh validation selects a deployed model;
-the final test is evaluated only after selection. Teacher regression and deployed
-language-model losses remain separate measurements.
+The backbone never receives gradients. The result is the generator with the lowest
+coefficient-regression error on the fitting batch; after training, it and the Taylor
+baseline are scored once on one fresh held-out batch, which enters no optimizer,
+stopping, or selection decision. Teacher regression and deployed language-model
+losses remain separate measurements.
 """
 from __future__ import annotations
 
@@ -134,29 +136,30 @@ def finish_completion(run, outcome):
         raise RuntimeError("Final selected generator checkpoint is unavailable")
     write_json(run / "completion.json", outcome)
     write_json(run / "metadata.json", outcome)
-    write_json(run / "retention.json", {"retained": str(destination), "selection": "validation best",
-        "capacity_best_retained": False, "teacher_cache_retained": False})
-    summary = {"best_validation_nll": outcome["best_validation_nll"],
-               "capacity_fit_nll": outcome["capacity_best_fit"]["nll"], "test_nll": outcome["test"]["nll"]}
+    write_json(run / "retention.json", {"retained": str(destination),
+        "selection": "lowest coefficient-regression error on the fitting batch",
+        "teacher_cache_retained": False})
+    summary = {"selected_step": outcome["best_step"], "selected_fit_nll": outcome["selected_fit"]["nll"],
+               "selected_heldout_nll": outcome["selected_heldout"]["nll"],
+               "baseline_heldout_nll": outcome["baseline"]["heldout"]["nll"]}
     update_record(run, {"status": "complete", "step": outcome["step"],
         **capture_artifacts(run, checkpoint_directory=destination), "distillation_outcome": summary})
     cache = run / ".runtime"
     if cache.exists(): shutil.rmtree(cache)
 
 
-def save_checkpoint(root, step, generator, optimizer, fit_best, validation_best, controller):
+def save_checkpoint(root, step, generator, optimizer, fit_best, controller):
     destination = root / str(step)
     temporary = root / f".writing-{step}"
     if temporary.exists():
         shutil.rmtree(temporary)
     with ocp.PyTreeCheckpointer() as checkpointer:
-        checkpointer.save(temporary, {"generator": generator, "optimizer": optimizer,
-            "fit_best": fit_best, "validation_best": validation_best})
+        checkpointer.save(temporary, {"generator": generator, "optimizer": optimizer, "fit_best": fit_best})
     write_json(temporary / "controller.json", controller)
     if destination.exists():
         shutil.rmtree(destination)
     temporary.rename(destination)
-    # The latest resumable checkpoint includes both selected candidates.
+    # The latest resumable checkpoint includes the selected candidate.
     for older in root.iterdir():
         if older.is_dir() and older.name.isdigit() and older != destination:
             shutil.rmtree(older)
@@ -208,10 +211,9 @@ def main(argv=None):
     config = parent_config(Path(settings["parent"]["run_directory"]) / "config.yaml")
     teacher_recipe = yaml.safe_load((Path(settings["teacher"]["run_directory"]) / "config.yaml").read_text())
     data_identity, batches, checked_shards = {}, {}, {}
-    for split in ("fit", "validation"):
+    for split in ("fit", "heldout"):
         batches[split], identity = read_batch(settings["splits"][split], config.data.sequence_length, checked_shards)
         data_identity[split] = {**settings["splits"][split], "batch_sha256": identity}
-    data_identity["test"] = settings["splits"]["test"]
     write_json(run / "data_identity.json", data_identity)
     print("Restoring frozen Taylor parent", flush=True)
     parent_graph, parent_params = restore_parent(config, Path(settings["parent"]["checkpoint"]))
@@ -324,7 +326,8 @@ def main(argv=None):
         raise RuntimeError("Regression checkpoint resume changed the next update")
     shutil.rmtree(pilot_path)
     baseline, initial_student = {}, {}
-    for split in ("fit", "validation"):
+    # Qualification: the Taylor-initialized student reproduces its parent on both batches.
+    for split in ("fit", "heldout"):
         baseline[split] = evaluate_lm(parent_losses, parent_params, batches[split], microbatch)
         initial = evaluate_lm(student_losses, student_params, batches[split], microbatch)
         initial_student[split] = initial
@@ -337,18 +340,15 @@ def main(argv=None):
     print("Qualification passed; starting supervised dense fitting", flush=True)
     checkpoints = run / "checkpoints"
     checkpoints.mkdir(exist_ok=True)
-    controller = {"step": 0, "best_validation_nll": initial_student["validation"]["nll"],
-        "best_validation_step": 0, "best_fit_mse": float("inf"), "best_fit_step": 0,
-        "baseline": baseline}
-    fit_best, validation_best = generator, generator
+    controller = {"step": 0, "best_fit_mse": float("inf"), "best_fit_step": 0, "baseline": baseline}
+    fit_best = generator
     previous = sorted((p for p in checkpoints.iterdir() if p.is_dir() and p.name.isdigit()), key=lambda p: int(p.name))
     if previous:
         controller = json.loads((previous[-1] / "controller.json").read_text())
         with ocp.PyTreeCheckpointer() as checkpointer:
             restored = checkpointer.restore(previous[-1], item={"generator": generator, "optimizer": optimizer,
-                "fit_best": fit_best, "validation_best": validation_best})
-        generator, optimizer = restored["generator"], restored["optimizer"]
-        fit_best, validation_best = restored["fit_best"], restored["validation_best"]
+                "fit_best": fit_best})
+        generator, optimizer, fit_best = restored["generator"], restored["optimizer"], restored["fit_best"]
         if (run / "metrics.jsonl").exists():
             rows = [json.loads(line) for line in (run / "metrics.jsonl").read_text().splitlines()]
             (run / "metrics.jsonl").write_text("".join(json.dumps(row) + "\n" for row in rows if row["step"] <= controller["step"]))
@@ -392,26 +392,20 @@ def main(argv=None):
                 reconstruction = full_regression(regression_evaluate, generator, inputs, targets, sample)
                 deployed = replace_generator(student_params, generator)
                 fit = evaluate_lm(student_losses, deployed, batches["fit"], microbatch)
-                validation = evaluate_lm(student_losses, deployed, batches["validation"], microbatch)
                 if reconstruction["factorial_mse"] < controller["best_fit_mse"]:
                     controller.update(best_fit_mse=reconstruction["factorial_mse"], best_fit_step=step)
                     fit_best = generator
-                if validation["nll"] < controller["best_validation_nll"]:
-                    controller.update(best_validation_nll=validation["nll"], best_validation_step=step)
-                    validation_best = generator
-                row = {"event": "evaluation", "step": step, "regression": reconstruction,
-                       "fit": fit, "validation": validation,
-                       "best_validation_step": controller["best_validation_step"]}
+                row = {"event": "evaluation", "step": step, "regression": reconstruction, "fit": fit,
+                       "best_fit_step": controller["best_fit_step"]}
                 stream.write(json.dumps(row, allow_nan=False) + "\n")
-                wandb_run.log({"val/nll": validation["nll"], "val/perplexity": validation["perplexity"],
-                    "train/fit_perplexity": fit["perplexity"], "train/full_factorial_mse": reconstruction["factorial_mse"]}, step=step)
+                wandb_run.log({"train/fit_perplexity": fit["perplexity"],
+                               "train/full_factorial_mse": reconstruction["factorial_mse"]}, step=step)
                 write_json(run / "metadata.json", {"status": "running", **controller, "latest": row})
-                write_json(run / "best_validation.json", {"step": controller["best_validation_step"],
-                    "nll": controller["best_validation_nll"], "perplexity": math.exp(controller["best_validation_nll"])})
-                update_record(run, {"status": "running", "step": step, "best_validation_nll": controller["best_validation_nll"]})
-                print(f"Evaluation step={step}: fit PPL={fit['perplexity']:.5f}, validation PPL={validation['perplexity']:.5f}, best validation step={controller['best_validation_step']}", flush=True)
+                update_record(run, {"status": "running", "step": step, "best_fit_step": controller["best_fit_step"]})
+                print(f"Evaluation step={step}: fit PPL={fit['perplexity']:.5f}, "
+                      f"factorial MSE={reconstruction['factorial_mse']:.6f}, best regression step={controller['best_fit_step']}", flush=True)
             if step % settings["checkpoint_every"] == 0 or step == total or stopped[0]:
-                save_checkpoint(checkpoints, step, generator, optimizer, fit_best, validation_best, controller)
+                save_checkpoint(checkpoints, step, generator, optimizer, fit_best, controller)
             if stopped[0]:
                 update_record(run, {"status": "paused", "step": step})
                 wandb_run.finish()
@@ -421,40 +415,32 @@ def main(argv=None):
         reconstruction = full_regression(regression_evaluate, generator, inputs, targets, sample)
         deployed = replace_generator(student_params, generator)
         fit = evaluate_lm(student_losses, deployed, batches["fit"], microbatch)
-        validation = evaluate_lm(student_losses, deployed, batches["validation"], microbatch)
-    selected = replace_generator(student_params, validation_best)
-    capacity = replace_generator(student_params, fit_best)
+    selected = replace_generator(student_params, fit_best)
     if state_sha256(split_generator_parameters(selected)[1]) != backbone_audit["backbone_parameters_sha256"]:
         raise RuntimeError("Distillation changed frozen backbone parameters")
-    outcome = {"status": "complete", "step": total, "best_step": controller["best_validation_step"],
-        "best_validation_nll": controller["best_validation_nll"], "best_regression_step": controller["best_fit_step"],
+    outcome = {"status": "complete", "step": total, "best_step": controller["best_fit_step"],
         "best_regression_mse": controller["best_fit_mse"],
-        "capacity_best_fit": evaluate_lm(student_losses, capacity, batches["fit"], microbatch),
-        "validation_best_fit": evaluate_lm(student_losses, selected, batches["fit"], microbatch),
-        "validation_best_validation": evaluate_lm(student_losses, selected, batches["validation"], microbatch),
+        "selected_fit": evaluate_lm(student_losses, selected, batches["fit"], microbatch),
+        # The held-out batch scores the selected generator once; it chose nothing.
+        "selected_heldout": evaluate_lm(student_losses, selected, batches["heldout"], microbatch),
         "teacher_fit": acceptance["teacher_native"], "baseline": baseline,
-        "terminal_regression": reconstruction, "terminal_fit": fit, "terminal_validation": validation,
-        "finished_utc": utc()}
-    # The final test enters no optimizer, stopping decision, or checkpoint selection.
-    test, identity = read_batch(settings["splits"]["test"], config.data.sequence_length, checked_shards)
-    outcome["test"] = evaluate_lm(student_losses, selected, test, microbatch)
-    outcome["baseline"]["test"] = evaluate_lm(parent_losses, parent_params, test, microbatch)
-    data_identity["test"] = {**settings["splits"]["test"], "batch_sha256": identity}
-    write_json(run / "data_identity.json", data_identity)
-    final_path = checkpoints / f".selected-{controller['best_validation_step']}"
+        "terminal_regression": reconstruction, "terminal_fit": fit, "finished_utc": utc()}
+    final_path = checkpoints / f".selected-{controller['best_fit_step']}"
     if final_path.exists(): shutil.rmtree(final_path)
     with ocp.PyTreeCheckpointer() as checkpointer:
-        checkpointer.save(final_path, {"generator": validation_best})
-    write_json(final_path / "identity.json", {"step": controller["best_validation_step"],
-        "backbone": settings["parent"], "selection": "lowest fresh validation language-model NLL, including Taylor initialization"})
+        checkpointer.save(final_path, {"generator": fit_best})
+    write_json(final_path / "identity.json", {"step": controller["best_fit_step"],
+        "backbone": settings["parent"], "selection": "lowest coefficient-regression error on the fitting batch"})
     write_json(cache / "finalization.json", outcome)
     finish_completion(run, outcome)
-    wandb_run.summary.update({"test_perplexity": outcome["test"]["perplexity"],
-        "baseline_test_perplexity": outcome["baseline"]["test"]["perplexity"],
-        "capacity_best_fit_perplexity": outcome["capacity_best_fit"]["perplexity"]})
+    wandb_run.summary.update({"selected_fit_perplexity": outcome["selected_fit"]["perplexity"],
+        "selected_heldout_perplexity": outcome["selected_heldout"]["perplexity"],
+        "baseline_heldout_perplexity": outcome["baseline"]["heldout"]["perplexity"]})
     wandb_run.finish()
-    print(json.dumps({"complete": run.name, "capacity_fit_ppl": outcome["capacity_best_fit"]["perplexity"],
-        "test_ppl": outcome["test"]["perplexity"], "baseline_test_ppl": outcome["baseline"]["test"]["perplexity"]}), flush=True)
+    print(json.dumps({"complete": run.name, "selected_step": outcome["best_step"],
+        "selected_fit_ppl": outcome["selected_fit"]["perplexity"],
+        "selected_heldout_ppl": outcome["selected_heldout"]["perplexity"],
+        "baseline_heldout_ppl": outcome["baseline"]["heldout"]["perplexity"]}), flush=True)
 
 
 if __name__ == "__main__":

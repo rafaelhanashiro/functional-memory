@@ -1,4 +1,4 @@
-"""Regenerate the selected teacher-distillation comparison from pinned metrics.
+"""Regenerate the selected teacher-distillation comparison (fitting and fresh batch) from pinned metrics.
 
 Only the explicitly selected distillation run is verified. Its committed
 completion and evaluation measurements contain the teacher and Taylor replays;
@@ -19,7 +19,7 @@ from scaffolds.records.selections import verify_pinned_runs
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
 ROLE = "dense_teacher_distillation_m4_head_scale"
-COLUMNS = ("model", "step", "fit_ppl", "validation_ppl", "test_ppl")
+COLUMNS = ("model", "step", "fit_ppl", "heldout_ppl")
 
 
 def perplexity(measurement):
@@ -30,6 +30,11 @@ def perplexity(measurement):
 
 
 def comparison_rows():
+    """Two batches: the fitting batch and one fresh held-out batch.
+
+    The dense generator is the snapshot with the lowest coefficient-regression error on
+    the fitting batch; the held-out batch only scores it and the Taylor baseline.
+    """
     selection = yaml.safe_load((HERE / "selection.yaml").read_text())
     entries = [entry for entry in selection["runs"] if entry.get("role") == ROLE]
     if len(entries) != 1:
@@ -48,42 +53,36 @@ def comparison_rows():
             or settings["parent"]["run_id"] != entry["parent_run_id"]
             or settings["teacher"]["run_id"] != entry["teacher_run_id"]):
         raise ValueError("Expected a completed degree-four dense distillation with the selected teacher and parent")
-    capacity_step = completion["best_regression_step"]
-    evaluations = [row for row in map(json.loads, (run / "metrics.jsonl").read_text().splitlines())
-                   if row.get("event") == "evaluation" and row["step"] == capacity_step]
-    if len(evaluations) != 1:
-        raise ValueError("The coefficient-best snapshot needs exactly one pinned evaluation")
-    capacity_evaluation = evaluations[0]
-    if not math.isclose(capacity_evaluation["fit"]["nll"], completion["capacity_best_fit"]["nll"], abs_tol=1e-8):
-        raise ValueError("Coefficient-best replay and recorded fitting evaluation disagree")
     baseline = completion["baseline"]
+    if "selected_heldout" in completion:
+        step, fit, heldout, baseline_heldout = (completion["best_step"], completion["selected_fit"],
+                                                completion["selected_heldout"], baseline["heldout"])
+    else:
+        # Runs that also selected on fresh data recorded the lowest-regression-error
+        # snapshot's fresh-batch score in its pinned evaluation row.
+        step = completion["best_regression_step"]
+        evaluations = [row for row in map(json.loads, (run / "metrics.jsonl").read_text().splitlines())
+                       if row.get("event") == "evaluation" and row["step"] == step]
+        if len(evaluations) != 1:
+            raise ValueError("The lowest-regression-error snapshot needs exactly one pinned evaluation")
+        if not math.isclose(evaluations[0]["fit"]["nll"], completion["capacity_best_fit"]["nll"], abs_tol=1e-8):
+            raise ValueError("Selected-snapshot replay and recorded fitting evaluation disagree")
+        fit, heldout, baseline_heldout = completion["capacity_best_fit"], evaluations[0]["validation"], baseline["validation"]
     return [
         {"model": "Frozen Taylor", "step": settings["parent"]["checkpoint_step"],
-         "fit_ppl": perplexity(baseline["fit"]), "validation_ppl": perplexity(baseline["validation"]),
-         "test_ppl": perplexity(baseline["test"])},
+         "fit_ppl": perplexity(baseline["fit"]), "heldout_ppl": perplexity(baseline_heldout)},
         {"model": "Fitted free teacher", "step": settings["teacher"]["checkpoint_step"],
-         "fit_ppl": perplexity(completion["teacher_fit"]), "validation_ppl": "", "test_ppl": ""},
-        {"model": "Dense, best coefficient MSE", "step": capacity_step,
-         "fit_ppl": perplexity(completion["capacity_best_fit"]),
-         "validation_ppl": perplexity(capacity_evaluation["validation"]), "test_ppl": ""},
-        {"model": "Validation-selected dense", "step": completion["best_step"],
-         "fit_ppl": perplexity(completion["validation_best_fit"]),
-         "validation_ppl": perplexity(completion["validation_best_validation"]),
-         "test_ppl": perplexity(completion["test"])},
+         "fit_ppl": perplexity(completion["teacher_fit"]), "heldout_ppl": ""},
+        {"model": "Dense, regressed onto the teacher", "step": step,
+         "fit_ppl": perplexity(fit), "heldout_ppl": perplexity(heldout)},
     ]
 
 
 def markdown(rows):
-    lines = ["| Model / selected snapshot | Fitting PPL | Fresh validation PPL | Untouched test PPL |",
-             "| --- | ---: | ---: | ---: |"]
+    lines = ["| Model | Fitting batch PPL | Fresh batch PPL |", "| --- | ---: | ---: |"]
     for index, row in enumerate(rows):
-        name = row["model"]
-        if index == 2:
-            name += f" (update {row['step']:,})"
-        elif index == 3:
-            name += f" ({'initialization, ' if row['step'] == 0 else ''}update {row['step']:,})"
-        missing = "Not applicable" if index == 1 else "Not evaluated"
-        lines.append(f"| {name} | {row['fit_ppl']} | {row['validation_ppl'] or missing} | {row['test_ppl'] or missing} |")
+        name = row["model"] + (f" (update {row['step']:,})" if index == 2 else "")
+        lines.append(f"| {name} | {row['fit_ppl']} | {row['heldout_ppl'] or 'Not applicable'} |")
     return "\n".join(lines)
 
 

@@ -67,12 +67,11 @@ def prepare(teacher):
     splits = {}
     for name, manifest, start in (
         ("fit", source["data"]["eval_manifest"], 0),
-        ("validation", source["data"]["train_manifest"], 5_000_000),
-        ("test", source["data"]["train_manifest"], 5_000_256),
+        ("heldout", source["data"]["train_manifest"], 5_000_000),
     ):
         splits[name] = {"manifest": manifest, "manifest_sha256": sha256(manifest),
             "start_sequence": start, "sequence_count": 256,
-            "role": "teacher fitting" if name == "fit" else "held out; never optimizer inputs"}
+            "role": "teacher fitting" if name == "fit" else "held out; scored once after training, selects nothing"}
     checked = {}
     for split in splits.values():
         _, identity = read_batch(split, source["data"]["sequence_length"], checked)
@@ -95,12 +94,11 @@ def prepare(teacher):
         "learning_rate": .001, "min_learning_rate": .0001, "schedule": "cosine over fixed budget",
         "beta1": .9, "beta2": .95, "epsilon": 1e-8, "clip_norm": 1.,
         "log_every": 25, "eval_every": 1000, "checkpoint_every": 1000,
-        "checkpoint_selection": "lowest fresh validation deployed language-model NLL, including Taylor initialization",
-        "capacity_selection": "lowest full fitting coefficient MSE; evaluated on fitting sequences only",
-        "test_policy": "evaluate selected generator and Taylor baseline once after training; no adaptation",
+        "checkpoint_selection": "lowest full fitting coefficient MSE, including the Taylor initialization",
+        "heldout_policy": "evaluate the selected generator and the Taylor baseline once after training; no adaptation",
         "sampling": "uniform query tokens with replacement; same positions across layers and heads; seed folded with update",
         "dense_architecture_reference_run": "r04a5b2a3e8dd",
-        "retention": "validation-best generator only; source backbone remains at its parent"}
+        "retention": "selected generator only; source backbone remains at its parent"}
     selection = yaml.safe_load((TOPIC / "selection.yaml").read_text())
     role = "dense_teacher_distillation_m4_head_scale"
     if any(entry["role"] == role for entry in selection["runs"]):

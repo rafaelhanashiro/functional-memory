@@ -25,7 +25,7 @@ backbone frozen. They live in the
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. The original
 coefficient fits report fitting perplexity. The teacher-distillation experiment
-below separately evaluates fresh validation and test sequences.
+below also scores its generator once on a fresh batch.
 
 ## Dense distillation from the free teacher
 
@@ -50,24 +50,25 @@ over examples and orders independently for each layer/head. Each update samples
 4,096 query tokens with replacement. Adam uses betas 0.9/0.95, epsilon 1e-8,
 no decay, and independent per-layer/head clipping at one. A fixed 20,000-update
 budget uses cosine LR 0.001 to 0.0001. Full reconstruction errors, per-layer/head
-errors, and ordinary deployed fitting and validation PPL are measured every 1,000
+errors, and ordinary deployed fitting-batch PPL are measured every 1,000
 updates. No teacher activations or coefficients enter a deployed forward.
 
-The original evaluation manifest was almost entirely used for selecting the
-pretrained checkpoint, so fresh data come from unused portions of the packed
-training manifest. Validation uses sequence indices `[5000000, 5000256)` and
-final testing `[5000256, 5000512)`, beyond this backbone's training prefix. Neither
-set enters a coefficient fit or gradient update; recipes pin their manifest and
-token checksums. Validation selects the lowest deployed NLL, including the
-initial Taylor-equivalent student. Final testing evaluates that selected generator
-and the unchanged Taylor baseline only after selection.
-
-The capacity result is separate: the snapshot with the lowest full coefficient
-MSE is evaluated on the fitting batch at completion. Its measurements are retained
-even if fresh validation chooses an earlier snapshot or the Taylor initialization.
-Only the validation-best generator checkpoint remains after completion. A strong
-fit plus improved test PPL would support a transferable coefficient rule; comparing
+The comparison uses two batches. The **fitting batch** is the teacher's: the
+regression's inputs and targets, and the first score of the deployed generator.
+The **fresh batch** is sequence indices `[5000000, 5000256)` of the packed
+training manifest, beyond this backbone's training prefix; the original
+evaluation manifest was almost entirely used for selecting the pretrained
+checkpoint. The result is the snapshot with the lowest full coefficient MSE on the
+fitting batch (snapshots every 1,000 updates, plus the Taylor initialization). It
+and the frozen Taylor baseline are scored once on the fresh batch, which selects
+nothing. Recipes pin both batches' manifest and token checksums. A strong fit plus
+improved fresh-batch PPL would support a transferable coefficient rule; comparing
 optimization routes additionally requires a matched direct-loss dense control.
+
+This run also scored every snapshot on the fresh batch and a second fresh batch,
+selecting by fresh-batch NLL, and kept only that selection's checkpoint: update 0,
+the Taylor-equivalent initialization. The comparison below uses its pinned
+measurements; the reported generator's update-20,000 weights are not retained.
 First-layer repeated tokens have identical inputs but can have different free
 targets, so exact raw regression may be impossible there; regression error alone
 does not establish a functional limitation.
@@ -91,12 +92,11 @@ on this allocation, with aggregate teacher PPL **1.002978**. Native coefficient
 projection parity and optimizer checkpoint resume were exact; the backbone hash
 remained unchanged. No logged regression update clipped its gradients.
 
-| Model / selected snapshot | Fitting PPL | Fresh validation PPL | Untouched test PPL |
-| --- | ---: | ---: | ---: |
-| Frozen Taylor | 15.599915 | 15.071810 | 14.921153 |
-| Fitted free teacher | 1.002978 | Not applicable | Not applicable |
-| Dense, best coefficient MSE (update 20,000) | 15.624968 | 15.220033 | Not evaluated |
-| Validation-selected dense (initialization, update 0) | 15.599915 | 15.071810 | 14.921153 |
+| Model | Fitting batch PPL | Fresh batch PPL |
+| --- | ---: | ---: |
+| Frozen Taylor | 15.599915 | 15.071810 |
+| Fitted free teacher | 1.002978 | Not applicable |
+| Dense, regressed onto the teacher (update 20,000) | 15.624968 | 15.220033 |
 
 The table and `distillation_summary.csv` regenerate from the explicitly selected
 run's pinned measurements:
@@ -106,12 +106,10 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.result
 ```
 
 Raw factorial-coordinate MSE fell from **0.549740 to 0.495616** (9.85%), while
-mean angular error fell from **35.78 to 34.41 degrees**. The best coefficient fit
-was the terminal snapshot; it did not reproduce the teacher's language-model
-behavior. Every evaluated trained snapshot had worse fresh validation NLL than
-initialization. Consequently, validation selected the Taylor-equivalent initial
-generator, and the final test evaluated that fallback. Its identical test PPL
-must not be presented as successful generalization by a trained dense generator.
+mean angular error fell from **35.78 to 34.41 degrees**. The lowest-error snapshot
+was the terminal one. It did not reproduce the teacher's language-model behavior:
+it is slightly worse than frozen Taylor on the fitting batch (15.625 against 15.600,
+where the teacher reaches 1.003) and worse on the fresh batch (15.220 against 15.072).
 
 The optimal constant predictor for this coefficient objective has MSE **0.520781**.
 Moving the mean away from Taylor explains **53.5%** of the dense fit's total MSE
