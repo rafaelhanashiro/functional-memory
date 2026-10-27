@@ -1,5 +1,45 @@
 {
   "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b",
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+      "sha256": "93cbcc3d010f0a56b2b837e548bb5f9bf3d7d84d821c3d018ce79a3bf3a123c1",
+      "size_bytes": 679
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 1,
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "node": "mastiff",
+      "partition": "standard",
+      "phase": "startup",
+      "slurm_job_id": "227082",
+      "source_commit": "34cd410a551d78798cca2b3a427a4080758d04cb"
+    },
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "device_count": 1,
+      "device_kind": "NVIDIA H100 PCIe",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "CUDA_VISIBLE_DEVICES": "0",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "XLA_FLAGS": null
+      },
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/bin/python",
+      "resolved_attention_backend": "mosaic",
+      "slurm_job_id": "227083",
+      "slurm_restart_count": 0,
+      "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
+      "started_utc": "2026-10-27T01:08:29.673235+00:00"
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/rec777591a61b/config.yaml",
     "sha256": "8c545715f7249de22ede4f09b8578042313f1fe96933c1216cdca32e30c00208"
@@ -30,13 +70,61 @@
       "start_sequence": 5000000
     }
   },
+  "error": null,
+  "frozen_execution_sha256": "a6b00440fb6a7b8330ee1d2f2bff716f92cb002fdc07e8f338b7102ca944bb14",
   "home_cluster": "kennel",
   "label": "dense-teacher-distillation-m4-b256-head-scale",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+    "sha256": "93cbcc3d010f0a56b2b837e548bb5f9bf3d7d84d821c3d018ce79a3bf3a123c1",
+    "size_bytes": 679
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
   "name": "dense-teacher-distillation-m4-b256-head-scale",
   "parent_run_id": "r816ab0fbe119",
   "record_schema_version": 1,
   "run_id": "rec777591a61b",
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device_count": 1,
+    "device_kind": "NVIDIA H100 PCIe",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null
+    },
+    "node": "mastiff.csail.mit.edu",
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/scaffolds/transformer/.venv/bin/python",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "227083",
+    "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd"
+  },
   "seed": 42,
-  "status": "planned",
+  "source_commit": "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
+  "status": "running",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--cpus-per-task=12",
+      "--mem=160G",
+      "--time=24:00:00",
+      "--job-name=distill-rec777591a61b",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/runs/rec777591a61b/training.log",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation/experiments/transformer_200m_4b/coefficient_distillation.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/m4-oracle-distillation",
+      "33d754abf4ff50a5903b36fb4fc350c9109ab1bd",
+      "rec777591a61b"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "227083",
+    "submitted_utc": "2026-10-27T01:08:05.948768+00:00"
+  },
   "teacher_run_id": "rda6029c3286f"
 }
