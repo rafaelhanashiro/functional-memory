@@ -8,5 +8,30 @@
   "name": "exp-2.5x",
   "record_schema_version": 1,
   "run_id": "re76c45df98cb",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier",
+      "--job-name=re76c45df98cb",
+      "--output=experiments/transformer_200m_4b/runs/re76c45df98cb/training.log",
+      "--error=experiments/transformer_200m_4b/runs/re76c45df98cb/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/re76c45df98cb/config.yaml",
+      "2237ba1c9d872d587924de137a25da86be54682e",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "2237ba1c9d872d587924de137a25da86be54682e",
+    "partition": "standard,long",
+    "slurm_job_id": "227457"
+  }
 }

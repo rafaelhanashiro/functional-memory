@@ -8,5 +8,30 @@
   "name": "softmax-2.5x",
   "record_schema_version": 1,
   "run_id": "rbbb05a6db785",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier",
+      "--job-name=rbbb05a6db785",
+      "--output=experiments/transformer_200m_4b/runs/rbbb05a6db785/training.log",
+      "--error=experiments/transformer_200m_4b/runs/rbbb05a6db785/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/rbbb05a6db785/config.yaml",
+      "2237ba1c9d872d587924de137a25da86be54682e",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "2237ba1c9d872d587924de137a25da86be54682e",
+    "partition": "standard,long",
+    "slurm_job_id": "227458"
+  }
 }
