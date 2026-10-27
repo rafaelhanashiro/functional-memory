@@ -1,0 +1,13 @@
+{
+  "condition": "affine_sigmoid",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r917f3650296e/config.yaml",
+    "sha256": "ebc03fab1d1ec6421e0309eae114ee9f58b0885225d728a0305c2ec847fc1a9b"
+  },
+  "home_cluster": "kennel",
+  "label": "affine-sigmoid-m4",
+  "name": "affine-sigmoid-m4",
+  "record_schema_version": 1,
+  "run_id": "r917f3650296e",
+  "status": "planned"
+}

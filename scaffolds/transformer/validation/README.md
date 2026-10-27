@@ -11,6 +11,17 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Coefficient forms and the forget gate
+
+The [record](runs/coefficient-forms/qualification.json) pins the qualified source. On
+CPU, all 102 test files passed (16 contain only GPU cases). Independent FP64
+references verify pure tanh $c_r = \tanh(w_r^\top x)$, affine sigmoid
+$b + a\,\sigma(w^\top x)$, and blocked attention whose weights carry a Gated DeltaNet
+forget gate $\prod_{j=i+1}^{t}\alpha_j$, including derivatives through the cumulative log
+decay. Acceptance's softmax controls drop the gate. On one B300 (job 227513, CUDA 13) and
+one H100 PCIe (job 227514), 57 checks each passed, including BF16 production-backend loss and
+gradients against FP32 and BF16 blocked references for all three runs.
+
 ### Teacher-activation coefficient distillation
 
 The native capture/student adapters and independent dense regressions have 13

@@ -1,0 +1,13 @@
+{
+  "condition": "pure_tanh",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r1d578d107115/config.yaml",
+    "sha256": "c95536b06862b3007f6e2b76c721450c4778759505d6cb62413b18b731cf04d2"
+  },
+  "home_cluster": "kennel",
+  "label": "pure-tanh-m4",
+  "name": "pure-tanh-m4",
+  "record_schema_version": 1,
+  "run_id": "r1d578d107115",
+  "status": "planned"
+}

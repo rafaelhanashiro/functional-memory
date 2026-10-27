@@ -1,0 +1,57 @@
+{
+  "format": "shared-transformer-coefficient-forms-validation",
+  "source_commit": "b920aa058bfc2e2c64c844779256bdc23ac61692",
+  "date": "2026-10-27",
+  "result": "passed",
+  "cpu": {
+    "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q <file> -m 'not gpu', for every file in scaffolds/transformer/tests, scaffolds/records/tests, experiments/transformer_200m_4b/tests",
+    "source_commit": "73bcf272",
+    "files": 102,
+    "files_without_cpu_tests": 16,
+    "passed": 1939,
+    "skipped": 18,
+    "failed": 0
+  },
+  "gpu": {
+    "command": "sbatch --partition=debug --gres=gpu:<b300|h100>:1 scaffolds/transformer/validation/qualify_coefficient_forms.sbatch b920aa05",
+    "allocations": [
+      {
+        "slurm_job_id": "227513",
+        "partition": "debug",
+        "gpu": "NVIDIA B300 SXM6 AC",
+        "environment": "cuda13",
+        "passed": 57,
+        "failed": 0,
+        "seconds": 276.93
+      },
+      {
+        "slurm_job_id": "227514",
+        "partition": "debug",
+        "gpu": "NVIDIA H100 PCIe",
+        "environment": "cuda12",
+        "passed": 57,
+        "failed": 0,
+        "seconds": 213.8
+      }
+    ]
+  },
+  "checks": [
+    "Pure tanh and affine sigmoid coefficients and all derivatives against independent FP64 references",
+    "Blocked forget-gate attention and derivatives (q, k, v, coefficients, cumulative log decay) against an FP64 dense reference",
+    "Forget gate formula, Gated DeltaNet initialization ranges, mechanism-stream draws, and decay only on w_alpha",
+    "affine_sigmoid at a = 0 equals the tanh model exactly; a forget gate held at alpha = 1 equals the ungated model",
+    "Each run trains its new parameters; diagnostics, acceptance controls and test selection cover all three",
+    "BF16 production backend (Mosaic, or blocked with the forget gate) loss and every gradient against FP32 and BF16 blocked references"
+  ],
+  "limit": "Full-size pilots, initialization identity and resumption are checked by each run's launcher acceptance.",
+  "file_sha256": {
+    "scaffolds/transformer/attention/input_dependent.py": "b8f3973bd9d3b34ab1a92dc57ac4f408b89f35d5c7443e4570b51f49654cf0b1",
+    "scaffolds/transformer/attention/forget_gate.py": "cd89d339620258f1f3f25c3969367a22ac8357d2956f4c7ca6862339d6e2d4fe",
+    "scaffolds/transformer/attention/backends/reference.py": "ad3e5262226d76bd12ed9f28e30b6cf3f027cccad05754c48271c24357f136d1",
+    "scaffolds/transformer/attention/multihead.py": "87a886aff5e43930be3e28f82b9bbb700b17619aafe84469e3a50bbca402948d",
+    "scaffolds/transformer/attention/parameters.py": "b53730b056d861a27d19391e23da1f1cc437d540845bb85f4121fa86c0bfd18e",
+    "scaffolds/transformer/configs/base.py": "a3312a4d53e295244e7a637a70eae6678b264fa83258a8f56bf27d008d0fd6d4",
+    "scaffolds/transformer/acceptance.py": "a9105dfda3a656361b10b1a13145aea96688ce4211dd7867625950ebfa7c63d4",
+    "scaffolds/transformer/tests/test_coefficient_forms.py": "8f3908b42ec110d585bb3f6ac85a6de4eacded441bebbb1ca5d74a59d35fd693"
+  }
+}

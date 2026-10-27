@@ -1,0 +1,13 @@
+{
+  "condition": "query_forget_gate",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml",
+    "sha256": "6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-forget-gate",
+  "name": "query-m4-forget-gate",
+  "record_schema_version": 1,
+  "run_id": "r111843b4c7cc",
+  "status": "planned"
+}
