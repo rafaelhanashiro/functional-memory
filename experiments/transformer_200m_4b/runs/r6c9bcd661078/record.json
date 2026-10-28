@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r6c9bcd661078/config.yaml",
+    "sha256": "c071ca75f7a0e5b65694ba7e15e0c8dfc81abfd0369c7c2c4becc325cf7fa985"
+  },
+  "home_cluster": "orcd",
+  "label": "static-m8-2.5x",
+  "name": "static-m8-2.5x",
+  "record_schema_version": 1,
+  "run_id": "r6c9bcd661078",
+  "status": "planned"
+}

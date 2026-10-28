@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml",
+    "sha256": "f92f8ed5d7c2cca0db11ea37120dbd301ff25e691873613c7a2bf83568652dcb"
+  },
+  "home_cluster": "orcd",
+  "label": "query_key-m4-2.5x",
+  "name": "query_key-m4-2.5x",
+  "record_schema_version": 1,
+  "run_id": "r751984d1ca00",
+  "status": "planned"
+}
