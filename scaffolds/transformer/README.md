@@ -880,7 +880,10 @@ results code built with the `views` dependency group
 
 Both shared launchers default to one GPU. Independent training runs are submitted
 without inter-run dependencies. Keep the recipe's global batch size fixed; the
-training runtime uses gradient accumulation for the configured microbatch. An
+training runtime uses gradient accumulation for the configured microbatch. On one
+device the whole update, all of its microbatches, is one compiled step (a `lax.scan`),
+as in the data-parallel step; dispatching each microbatch separately had left a single
+GPU idle for about 40% of every update. An
 explicit multi-GPU allocation must override both Slurm's `--gres` request and the
 launcher's fourth positional argument (`GPU_COUNT`), for example `--gres=gpu:2`
 and `2` on Kennel, or `--gres=gpu:h200:2` and `2` on ORCD. Allocation changes are
