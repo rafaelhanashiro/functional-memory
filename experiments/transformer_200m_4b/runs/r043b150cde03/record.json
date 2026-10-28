@@ -6,9 +6,11 @@
     "path": "experiments/transformer_200m_4b/runs/r043b150cde03/config.yaml",
     "sha256": "dc6422332d5aa36a6392313e89f1ac82cc45c96ed98ca900d40025b1b1df1760"
   },
+  "frozen_execution_sha256": "80f67343de6a7442bbf21a641cb3720d591c1a1e31dcf2b57d887cc0a773d60e",
   "generator_readout": "diagonal",
   "home_cluster": "orcd",
   "label": "query-key-generator-m4-full-batch-head-scale",
+  "log_path": "/orcd/pool/006/rafah/functional_memory/worktrees/query-key-overfit-m4-head-scale/experiments/transformer_200m_4b/runs/r043b150cde03/training.log",
   "name": "query-key-generator-m4-full-batch-head-scale",
   "parent_run_id": "r501f5cca0d4c",
   "parent_study": "transformer_200m_4b",
@@ -102,5 +104,35 @@
     "step": 7500,
     "validation_nll": 2.6893237578241447
   },
-  "status": "planned"
+  "source_commit": "6b4c5c9f7fff7730aba50c94f4bf934b0a22ccea",
+  "status": "submitted",
+  "submission": {
+    "cluster": "orcd",
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=mit_preemptable,mit_normal_gpu",
+      "--gres=gpu:h100:1",
+      "--exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=12:00:00",
+      "--time-min=06:00:00",
+      "--job-name=coefficient-fit-r043b150cde03",
+      "--output=/orcd/pool/006/rafah/functional_memory/worktrees/query-key-overfit-m4-head-scale/experiments/transformer_200m_4b/runs/r043b150cde03/training.log",
+      "--error=/orcd/pool/006/rafah/functional_memory/worktrees/query-key-overfit-m4-head-scale/experiments/transformer_200m_4b/runs/r043b150cde03/training.log",
+      "/orcd/pool/006/rafah/functional_memory/worktrees/query-key-overfit-m4-head-scale/experiments/transformer_200m_4b/coefficient_fit_orcd.sbatch",
+      "/orcd/pool/006/rafah/functional_memory/worktrees/query-key-overfit-m4-head-scale",
+      "6b4c5c9f7fff7730aba50c94f4bf934b0a22ccea",
+      "r043b150cde03",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "partition": "mit_preemptable,mit_normal_gpu",
+    "phase": "training",
+    "slurm_job_id": "27165104",
+    "submitted_utc": "2026-10-28T23:52:50.798151+00:00"
+  }
 }
