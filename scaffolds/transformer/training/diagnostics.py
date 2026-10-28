@@ -474,6 +474,19 @@ def qk_norm_identity(model) -> dict:
                 attention_score_formula="exp(gamma_h) * " + identity["attention_score_formula"]
                                         + "; gamma_h learned independently per layer/head, initially zero",
             )
+            if getattr(model, "qk_norm_token_scale", "none") == "cosine":
+                gate_count = model.num_layers * model.num_heads * (model.hidden_size + 1)
+                identity.update(
+                    qk_norm_token_scale="cosine",
+                    qk_norm_token_scale_input="pre_attention_rmsnorm_activation",
+                    qk_norm_token_scale_shape=[model.num_layers, model.num_heads, model.hidden_size + 1],
+                    qk_norm_token_scale_initial_amplitude=0.0,
+                    qk_norm_parameter_count=identity["qk_norm_parameter_count"] + gate_count,
+                    attention_score_formula="exp(a_h cos(w_h, x_t)) * " + identity["attention_score_formula"]
+                                            + "; a_h learned per layer/head, initially zero; w_h drawn "
+                                            "N(0, 1/hidden_size), direction only; x_t is the attention input "
+                                            "after the block input RMSNorm",
+                )
         return identity
     return {
         "qk_norm": True,
@@ -699,6 +712,26 @@ def qk_norm_gain_report(params) -> dict:
     }
 
 
+def qk_norm_token_scale_report(params, raw_layers) -> dict:
+    """Per-token gate amplitudes a_h ([L,H,1]) and the realized log scale delta on the diagnostic sample."""
+    amplitude = np.asarray(jax.device_get(params["qk_norm_token_scale_amplitude"][...]), dtype=np.float64)
+    kernel = np.asarray(jax.device_get(params["qk_norm_token_scale_kernel"][...]), dtype=np.float64)
+    sample = {statistic: np.stack([np.asarray(layer[f"token_scale_log_delta_{statistic}"], np.float64)
+                                   for layer in raw_layers]) for statistic in ("mean", "std", "min", "max")}
+    return {
+        "formula": "delta_th = a_h cos(w_h, x_t); query scale exp(gamma_h + delta_th)",
+        "raw_parameter_names": ["a_h"],
+        "raw": _serializable(amplitude),
+        "effective_coefficient_names": ["a_h"],
+        "effective": _serializable(amplitude),
+        "axes": ["layer", "head", "scalar"],
+        "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+        "log_delta_sample": {name: _serializable(values) for name, values in sample.items()},
+        "finite": bool(np.isfinite(amplitude).all() and np.isfinite(kernel).all()
+                       and all(np.isfinite(values).all() for values in sample.values())),
+    }
+
+
 def qk_norm_head_scale_report(params) -> dict:
     """Independent score multipliers on top of the retained RMSNorm gains."""
     raw = np.asarray(jax.device_get(params["qk_norm_head_log_scale"][...]), dtype=np.float64)
@@ -777,7 +810,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_")):
+            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -858,6 +891,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     scale_report = None
     gain_report = None
     head_scale_report = None
+    token_scale_report = None
     if config.model.qk_norm:
         if config.model.qk_norm_type == "rms_norm":
             gain_report = qk_norm_gain_report(params)
@@ -867,6 +901,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 head_scale_report = qk_norm_head_scale_report(params)
                 if not head_scale_report["finite"]:
                     issues.append("Nonfinite QK RMSNorm head scales")
+            if getattr(config.model, "qk_norm_token_scale", "none") != "none":
+                token_scale_report = qk_norm_token_scale_report(params, raw_layers)
+                if not token_scale_report["finite"]:
+                    issues.append("Nonfinite per-token QK scale gate")
         else:
             scale_report = qk_norm_scale_report(params, config)
             if not scale_report["finite"]:
@@ -904,4 +942,6 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["qk_norm_gains"] = gain_report
     if head_scale_report is not None:
         report["qk_norm_head_scales"] = head_scale_report
+    if token_scale_report is not None:
+        report["qk_norm_token_scales"] = token_scale_report
     return report

@@ -10,7 +10,9 @@ from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
-from scaffolds.transformer.attention.qk_norm import cosine_score_operands, rms_score_operands, scale_rms_queries
+from scaffolds.transformer.attention.qk_norm import (
+    TOKEN_SCALE_PARAMETERS, cosine_score_operands, rms_score_operands, scale_rms_queries, token_log_scale,
+)
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
@@ -60,6 +62,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         qk_norm_type=config.qk_norm_type,
         qk_norm_head_scale=config.qk_norm_head_scale,
+        qk_norm_token_scale=getattr(config, "qk_norm_token_scale", "none"),
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
@@ -86,6 +89,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_scale: str = "none",
         qk_norm_type: str = "cosine_log_scale",
         qk_norm_head_scale: bool = False,
+        qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
         rngs: nnx.Rngs,
     ):
@@ -105,6 +109,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("qk_norm_head_scale must be a boolean")
         if qk_norm_head_scale and (not qk_norm or qk_norm_type != "rms_norm"):
             raise ValueError("QK head scaling requires enabled QK RMSNorm")
+        if qk_norm_token_scale not in ("none", "cosine"):
+            raise ValueError(f"Unknown QK token scale: {qk_norm_token_scale}")
+        if qk_norm_token_scale != "none" and not qk_norm_head_scale:
+            raise ValueError("The per-token query scale extends QK RMS head scaling")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
         if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
@@ -216,6 +224,7 @@ class MultiHeadAttention(nnx.Module):
         self.qk_norm = qk_norm
         self.qk_norm_type = qk_norm_type
         self.qk_norm_head_scale = qk_norm_head_scale
+        self.qk_norm_token_scale = qk_norm_token_scale
         self.qk_norm_eps = qk_norm_eps
         self.attention_output_scaling = attention_output_scaling
         self.rms_norm_eps = rms_norm_eps
@@ -271,6 +280,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
         if self.qk_norm_head_scale != (head_log_scale is not None):
             raise ValueError("QK RMS head scaling requires exactly its model-owned qk_norm_head_log_scale parameter")
+        token_scale_kernel, token_scale_amplitude = (parameters.pop(name, None) for name in TOKEN_SCALE_PARAMETERS)
+        if ((self.qk_norm_token_scale != "none") != (token_scale_kernel is not None)
+                or (token_scale_kernel is None) != (token_scale_amplitude is None)):
+            raise ValueError("The per-token query scale requires exactly its model-owned kernel and amplitude")
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
@@ -363,6 +376,10 @@ class MultiHeadAttention(nnx.Module):
         if (self.positional_encoding == "path") != all(value is not None for value in path_parameters.values()):
             if self.positional_encoding == "path" or any(value is not None for value in path_parameters.values()):
                 raise ValueError("PaTH position encoding requires exactly its model-owned gate parameters")
+        token_log_scales = None
+        if self.qk_norm_token_scale != "none":
+            # Bounded per-token log scale from the same attention input as the coefficient generators.
+            token_log_scales = token_log_scale(x, token_scale_kernel, token_scale_amplitude, eps=self.qk_norm_eps)
         q, k, v = self.q_proj(x), self.k_proj(x), self.v_proj(x)
         if self.backend != "manual":
             q, k, v = (operand.astype(self.dtype) for operand in (q, k, v))
@@ -373,7 +390,7 @@ class MultiHeadAttention(nnx.Module):
             if self.qk_norm_type == "rms_norm":
                 q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
                 if self.qk_norm_head_scale:
-                    q = scale_rms_queries(q, head_log_scale)
+                    q = scale_rms_queries(q, head_log_scale, token_log_scales)
             else:
                 # Preserve the historical scaled-cosine arithmetic exactly.
                 q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
@@ -414,6 +431,13 @@ class MultiHeadAttention(nnx.Module):
                 "forget_gate_log_alpha_mean": jnp.mean(log_alpha, axis=(0, 1)),
                 "forget_gate_log_alpha_min": jnp.min(log_alpha, axis=(0, 1)),
                 "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
+            }))
+        if return_diagnostics and token_log_scales is not None:
+            diagnostics.update(jax.lax.stop_gradient({
+                "token_scale_log_delta_mean": jnp.mean(token_log_scales, axis=(0, 1)),
+                "token_scale_log_delta_std": jnp.std(token_log_scales, axis=(0, 1)),
+                "token_scale_log_delta_min": jnp.min(token_log_scales, axis=(0, 1)),
+                "token_scale_log_delta_max": jnp.max(token_log_scales, axis=(0, 1)),
             }))
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)

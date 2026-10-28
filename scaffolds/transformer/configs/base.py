@@ -167,6 +167,11 @@ class ModelConfig:
     # Add a positive scalar exp(gamma) per layer/head after RMSNorm's channel
     # gains. gamma starts at zero; the existing channel gains remain per layer.
     qk_norm_head_scale: bool = False
+    # "cosine" multiplies each query's scale by exp(a_h cos(w_h, x_t)), a per-token log scale
+    # bounded by |a_h| and read from the attention input x_t. a_h starts at zero, so the
+    # model starts exactly at its static head scale; w_h is drawn N(0, 1/hidden_size) and
+    # only its direction matters. Requires qk_norm_head_scale.
+    qk_norm_token_scale: Literal["none", "cosine"] = "none"
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
@@ -511,6 +516,10 @@ class ModelConfig:
                 not self.qk_norm or self.qk_norm_type != "rms_norm"
                 or self.attention_mechanism != "dot_product"):
             raise ValueError("QK head scaling requires enabled dot-product QK RMSNorm")
+        if self.qk_norm_token_scale not in ("none", "cosine"):
+            raise ValueError(f"Unknown QK token scale: {self.qk_norm_token_scale}")
+        if self.qk_norm_token_scale != "none" and not self.qk_norm_head_scale:
+            raise ValueError("The per-token query scale requires QK RMS head scaling")
         if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
             raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
         allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")
@@ -596,6 +605,9 @@ class ContinuationConfig:
     parent_checkpoint_sha256: str = ""
     parent_data_identity_sha256: str = ""
     parent_step: int = 0
+    # Constant learning rate of the parameters the continuation introduces, which have their
+    # own Adam clock; null gives them the backbone's optim.learning_rate.
+    new_parameter_learning_rate: float | None = None
 
 
 @dataclass
@@ -627,6 +639,13 @@ def validate_config(config: Config) -> None:
             raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
         if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
             raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
+        rate = continuation.new_parameter_learning_rate
+        if rate is not None and (not isinstance(rate, (int, float)) or isinstance(rate, bool)
+                                 or not math.isfinite(rate) or rate <= 0):
+            raise ValueError("continuation.new_parameter_learning_rate must be null or finite and positive")
+        if rate is not None and config.model.attention_coefficients != "learned" and (
+                config.model.qk_norm_token_scale == "none"):
+            raise ValueError("continuation.new_parameter_learning_rate applies to introduced parameters only")
         if config.model.attention_coefficients == "learned":
             model = config.model
             if (model.attention_coefficient_conditioning not in ("static", "query")
@@ -644,7 +663,7 @@ def validate_config(config: Config) -> None:
                                  "coefficients with no inner bias and either zero amplitude or zero projection")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
-              continuation.parent_step)):
+              continuation.parent_step, continuation.new_parameter_learning_rate is not None)):
         raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")

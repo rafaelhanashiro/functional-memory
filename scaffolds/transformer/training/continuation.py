@@ -13,7 +13,9 @@ from flax import nnx
 from scaffolds.records import _tree_descriptor
 from scaffolds.transformer.configs import load_config, validate_config
 from scaffolds.transformer.training.checkpointing import state_sha256
-from scaffolds.transformer.training.optim import ContinuationAdamState, split_continuation_parameters
+from scaffolds.transformer.training.optim import (
+    ContinuationAdamState, continuation_introduces_parameters, split_continuation_parameters,
+)
 from scaffolds.transformer.training.state import create_state
 
 
@@ -36,7 +38,8 @@ def _parent_config(config):
                              "attention_coefficient_amplitude_initial",
                              "attention_coefficient_projection_initial_std",
                              "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
-                             "attention_coefficient_feature_count", "attention_coefficient_readout_scale"}
+                             "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
+                             "qk_norm_token_scale"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -58,8 +61,15 @@ def _parent_config(config):
 
 
 def _check_taylor_initialization(config, coefficients):
-    """Check the realized arrays, including an identically zero query-dependent term."""
+    """Check the realized arrays, including identically zero query-dependent and token-scale terms."""
     model = config.model
+    token_scale = model.qk_norm_token_scale != "none"
+    token_names = {"qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude"} if token_scale else set()
+    if model.attention_coefficients != "learned":
+        if set(coefficients) != token_names:
+            raise ValueError("Continuation parameter tree differs from its recipe")
+        _check_token_scale_initialization(coefficients)
+        return
     expected = np.asarray([1.0 if model.attention_coefficient_scale == "factorial"
                            else 1.0 / math.factorial(order)
                            for order in range(model.attention_degree + 1)], np.float32)
@@ -68,8 +78,10 @@ def _check_taylor_initialization(config, coefficients):
     readout_name = "query_polynomial_mixing" if dense else "query_polynomial_amplitude"
     names = ({"query_polynomial_bias", readout_name, "query_polynomial_kernel"}
              if query else {"polynomial_coefficients"})
-    if set(coefficients) != names:
+    if set(coefficients) != names | token_names:
         raise ValueError("Continuation coefficient parameter tree differs from its recipe")
+    if token_scale:
+        _check_token_scale_initialization(coefficients)
     bias = np.asarray(coefficients["query_polynomial_bias" if query else "polynomial_coefficients"][...])
     if not np.array_equal(bias, np.broadcast_to(expected, bias.shape)):
         raise ValueError("Continuation coefficients are not exactly Taylor initialized")
@@ -84,6 +96,14 @@ def _check_taylor_initialization(config, coefficients):
             expected_readout *= np.eye(model.attention_degree + 1, kernel.shape[-1], dtype=np.float32)
         if not np.all(readout == expected_readout):
             raise ValueError("Continuation query amplitude or mixing differs from its initialization recipe")
+
+
+def _check_token_scale_initialization(parameters):
+    """The gate starts closed: zero amplitudes and a finite, nonzero direction per layer/head."""
+    amplitude = np.asarray(parameters["qk_norm_token_scale_amplitude"][...])
+    kernel = np.asarray(parameters["qk_norm_token_scale_kernel"][...])
+    if np.any(amplitude != 0) or not np.all(np.isfinite(kernel)) or np.any(np.all(kernel == 0, axis=-1)):
+        raise ValueError("Continuation token scale is not identically zero with a finite nonzero direction")
 
 
 def initialize_continuation_state(config, state=None):
@@ -111,10 +131,10 @@ def initialize_continuation_state(config, state=None):
     if state is None:
         state = create_state(config, rng)
     new_coefficient_count = None
-    if config.model.attention_coefficients == "learned":
+    if continuation_introduces_parameters(config):
         coefficients, backbone = split_continuation_parameters(state.params)
         if not jax.tree.leaves(coefficients):
-            raise ValueError("Continuation did not introduce its coefficient array")
+            raise ValueError("Continuation did not introduce its new parameter arrays")
         if jax.tree.structure(backbone) != jax.tree.structure(parent.params):
             raise ValueError("Continuation backbone parameter tree differs from parent")
         _check_taylor_initialization(config, coefficients)

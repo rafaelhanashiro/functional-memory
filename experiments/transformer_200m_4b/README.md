@@ -227,6 +227,29 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch
   r6186c797b4db --conditioning query --partition standard --time-limit 06:00:00
 ```
 
+The [per-token query scale topic](results/exploratory/token_query_scale_continuation/README.md)
+compares a bounded per-token score scale on Q, `exp(gamma_h + a_h cos(w_h, x_t))`, with a
+matched fixed-Taylor continuation of the canonical head-scaled parent. Both train all
+backbone parameters for 2,000 additional updates; the gate starts closed (`a_h = 0`) and
+its parameters use their own constant learning rate of 0.001. Prepare in its own
+worktree, then commit frozen inputs before independent submission:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
+  --conditioning token_scale \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119
+# Already allocated below; reuse these IDs for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  r82203a85ef8e --conditioning token_scale --partition standard --time-limit 10:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  ra988273933f7 --conditioning token_scale --partition standard --time-limit 20:00:00
+```
+
+The acceptance pilot projects the allocation from its slowest steady update, so a
+single checkpoint-save stall during the pilot can project far beyond the real cost
+(about 3.2 s per update for both branches on an H100 PCIe); the longer limit only
+clears that projection.
+
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
