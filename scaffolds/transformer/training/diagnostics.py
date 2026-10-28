@@ -146,7 +146,12 @@ def attention_identity(config) -> dict:
     conditioning = config.model.attention_coefficient_conditioning
     query_conditioned = conditioning in ("query", "query_key")
     key_conditioned = conditioning == "query_key"
-    query_tanh = query_conditioned and config.model.attention_coefficient_activation == "tanh"
+    activation = config.model.attention_coefficient_activation
+    # Affine generators b + a*f(x W) (tanh, affine_sigmoid); pure ones f(x W) (sigmoid, pure_tanh).
+    query_tanh = query_conditioned and activation in ("tanh", "affine_sigmoid")
+    query_sigmoid = query_conditioned and activation in ("sigmoid", "pure_tanh")
+    feature = "sigmoid" if activation in ("sigmoid", "affine_sigmoid") else "tanh"
+    forget_gate = getattr(config.model, "attention_forget_gate", False)
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -263,6 +268,10 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        elif query_sigmoid:
+            features = config.model.attention_coefficient_feature_count or degree + 1
+            per_polynomial = features * config.model.hidden_size + (
+                (degree + 1) * features if config.model.attention_coefficient_readout == "dense" else 0)
         else:
             per_polynomial = (degree + 1) * (
                 config.model.hidden_size + 1 + int(query_tanh)
@@ -293,13 +302,14 @@ def attention_identity(config) -> dict:
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
             ", beta initially 0" if inner_bias else "")
-        amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
-        tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
-            " + beta)" if inner_bias else ")")
+        amplitude_scale = (config.model.attention_coefficient_amplitude_scale
+                           if query_tanh or query_sigmoid else "none")
+        tanh_formula = (f"c(x_t) = b + (a/r!)*{feature}(x_t W" if amplitude_scale == "factorial"
+                        else f"c(x_t) = b + a*{feature}(x_t W") + (" + beta)" if inner_bias else ")")
         if config.model.attention_coefficient_readout == "dense":
             readout_scale = config.model.attention_coefficient_readout_scale
-            tanh_formula = ("c_r(x_t) = b_r + sum_j (V_rj/r!)*tanh(x_t W_j" if amplitude_scale == "factorial"
-                            else "c_r(x_t) = b_r + sum_j V_rj*tanh(x_t W_j") + (
+            tanh_formula = (f"c_r(x_t) = b_r + sum_j (V_rj/r!)*{feature}(x_t W_j" if amplitude_scale == "factorial"
+                            else f"c_r(x_t) = b_r + sum_j V_rj*{feature}(x_t W_j") + (
                                 " + beta_j)" if inner_bias else ")")
             if readout_scale != 1.0:
                 tanh_formula = tanh_formula.replace("b_r + sum_j", f"b_r + {readout_scale:.9g} * sum_j")
@@ -312,6 +322,15 @@ def attention_identity(config) -> dict:
             identity["attention_coefficient_feature_count"] = features
             if readout_scale != 1.0:
                 identity["attention_coefficient_readout_scale"] = readout_scale
+        if query_sigmoid:
+            dense = config.model.attention_coefficient_readout == "dense"
+            factorial = "/r!" if amplitude_scale == "factorial" else ""
+            tanh_formula = (f"c_r(x_t) = sum_j (V_rj{factorial})*{feature}(x_t W_j), j = 1..{features}" if dense
+                            else f"c_r(x_t) = {feature}(x_t W_r){factorial}")
+            if dense and readout_scale != 1.0:
+                tanh_formula = tanh_formula.replace("= sum_j", f"= {readout_scale:.9g} * sum_j")
+            tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
+                ", V initially the identity" if dense else "")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -322,15 +341,24 @@ def attention_identity(config) -> dict:
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
+            **({"attention_coefficient_kernel_weight_decay": True}
+               if config.model.attention_coefficient_kernel_weight_decay else {}),
+            **({"attention_forget_gate": True,
+                "forget_gate_parameter_count": (config.model.hidden_size + 2) * config.model.num_layers
+                * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
-                               + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; "
-                                  if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
+                               + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; " if query_tanh
+                                  else f"{tanh_formula} per layer/head, {tanh_start}; " if query_sigmoid
+                                  else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
                                + ("f(x_i) = 1 + a_k*tanh(x_i W_k) per layer/head, W_k drawn like W and a_k starting "
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
-                               + " after the block input RMSNorm"),
+                               + " after the block input RMSNorm"
+                               + ("; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = "
+                                  "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                                  "DeltaNet's initialization" if forget_gate else "")),
         )
     if mode != "fixed":
         identity.update({
@@ -357,7 +385,7 @@ def attention_identity(config) -> dict:
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
             "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
-                                         "pallas_triton_query_polynomial" if query_tanh else
+                                         "pallas_triton_query_polynomial" if query_tanh or query_sigmoid else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
@@ -371,7 +399,7 @@ def attention_identity(config) -> dict:
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         identity.update({
             "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
-                                         else "pallas_mosaic_gpu_query_polynomial" if query_tanh
+                                         else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
                                          if not normalized else "pallas_mosaic_gpu"),
             # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
@@ -545,13 +573,14 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
-                             readout_scale=1.0) -> dict:
+                             readout_scale=1.0, activation="tanh") -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
     effective coefficients. Summary arrays have shape [layers,heads,degree+1].
     """
-    bias = np.asarray(jax.device_get(params["query_polynomial_bias"][...]), dtype=np.float64)
+    bias = (np.asarray(jax.device_get(params["query_polynomial_bias"][...]), dtype=np.float64)
+            if "query_polynomial_bias" in params else None)
     kernel = np.asarray(jax.device_get(params["query_polynomial_kernel"][...]), dtype=np.float64)
     amplitude = (np.asarray(jax.device_get(params["query_polynomial_amplitude"][...]), dtype=np.float64)
                  if "query_polynomial_amplitude" in params else None)
@@ -568,24 +597,28 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
     report = {
         "conditioning": "query",
         "sample": "fixed_diagnostic_sample",
-        "effective_coefficient_names": [_coefficient_name(r) for r in range(bias.shape[-1])],
+        "effective_coefficient_names": [_coefficient_name(r) for r in range(summaries["mean"].shape[-1])],
         "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
-        "projection_bias": _serializable(bias),
+        **({"projection_bias": _serializable(bias)} if bias is not None else {}),
         "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
-        "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+        "finite": bool((bias is None or np.isfinite(bias).all()) and np.isfinite(kernel).all()
                        and (amplitude is None or np.isfinite(amplitude).all())
                        and (mixing is None or np.isfinite(mixing).all())
                        and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
     if amplitude is not None:
-        report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+        report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
             factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
+    if activation in ("sigmoid", "pure_tanh"):
+        report.update(activation=activation)
+        if mixing is None and amplitude_scale == "factorial":
+            report[f"{activation}_feature_scale"] = "1/r!"
     if mixing is not None:
-        report.update(activation="tanh", readout="dense", modulation_mixing=_serializable(mixing),
+        report.update(activation=activation, readout="dense", modulation_mixing=_serializable(mixing),
                       modulation_mixing_axes=["layer", "head", "output_order", "feature"])
         effective_mixing = mixing * readout_scale
         if amplitude_scale == "factorial":
@@ -616,6 +649,27 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         report["finite"] = bool(report["finite"] and np.isfinite(key_amplitude).all() and np.isfinite(key_kernel).all()
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
+
+def forget_gate_report(params, raw_layers) -> dict:
+    """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H])."""
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+    rate, dt, kernel = np.exp(get("forget_gate_log_rate")[..., 0]), np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0]), \
+        get("forget_gate_kernel")
+    sample = {statistic: np.stack([np.asarray(layer[f"forget_gate_log_alpha_{statistic}"], np.float64)
+                                   for layer in raw_layers]) for statistic in ("mean", "min", "max")}
+    with np.errstate(divide="ignore"):
+        half_life = np.log(0.5) / sample["mean"]
+    return {
+        "formula": "log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias)",
+        "rate_exp_A_log": _serializable(rate),
+        "softplus_dt_bias": _serializable(dt),
+        "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+        "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+        "mean_half_life_tokens": _serializable(half_life),
+        "finite": bool(np.isfinite(rate).all() and np.isfinite(dt).all() and np.isfinite(kernel).all()
+                       and all(np.isfinite(values).all() for values in sample.values())),
+    }
+
 
 def qk_norm_scale_report(params, config) -> dict:
     """Record the log scales gamma and the score bounds exp(gamma), shared ([1]) or per layer and head ([L, H, 1])."""
@@ -723,7 +777,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_")):
+            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -762,9 +816,14 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = query_coefficient_report(
             params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
             coefficient_scale=config.model.attention_coefficient_scale,
-            readout_scale=config.model.attention_coefficient_readout_scale)
+            readout_scale=config.model.attention_coefficient_readout_scale,
+            activation=config.model.attention_coefficient_activation)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
+        if getattr(config.model, "attention_forget_gate", False):
+            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers)
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:

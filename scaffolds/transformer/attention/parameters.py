@@ -24,6 +24,34 @@ class AttentionParameterSpec:
     # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
     # mechanism stream so the backbone's initialization is unchanged.
     initial_std: float = 0.0
+    # A named random draw (RANDOM_INITIALIZERS) from the same mechanism stream; it replaces
+    # ``initial``, which then only fixes the shape.
+    initializer: str | None = None
+
+
+def _mamba2_dt_bias(key, shape):
+    from scaffolds.transformer.attention.gated_deltanet import DT_FLOOR, DT_RANGE
+
+    dt = jnp.maximum(jnp.exp(jax.random.uniform(key, shape, jnp.float32, math.log(DT_RANGE[0]),
+                                                math.log(DT_RANGE[1]))), DT_FLOOR)
+    return dt + jnp.log(-jnp.expm1(-dt))      # inverse softplus
+
+
+def _mamba2_log_rate(key, shape):
+    from scaffolds.transformer.attention.gated_deltanet import A_LOG_RANGE
+
+    return jnp.log(jax.random.uniform(key, shape, jnp.float32, *A_LOG_RANGE))
+
+
+def _uniform_fan_in(key, shape):
+    bound = 1.0 / math.sqrt(shape[-1])
+    return jax.random.uniform(key, shape, jnp.float32, -bound, bound)
+
+
+# Gated DeltaNet's decay-gate draws: a PyTorch-default Linear row over the last axis,
+# exp(A_log) ~ Uniform(0, 16), and softplus(dt_bias) log-uniform on [0.001, 0.1].
+RANDOM_INITIALIZERS = {"uniform_fan_in": _uniform_fan_in, "mamba2_log_rate": _mamba2_log_rate,
+                       "mamba2_dt_bias": _mamba2_dt_bias}
 
 
 # The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
@@ -50,6 +78,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
                 projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
                 tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
+                kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
                 readout=getattr(config, "attention_coefficient_readout", "diagonal"),
                 feature_count=getattr(config, "attention_coefficient_feature_count", None))
@@ -94,6 +123,10 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                   qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing))
         if config.qk_norm_head_scale:
             specs += rms_head_scale_specs()
+    if getattr(config, "attention_forget_gate", False):
+        from scaffolds.transformer.attention.forget_gate import parameter_specs as forget_gate_specs
+
+        specs += forget_gate_specs(hidden_size=config.hidden_size)
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 
@@ -124,11 +157,16 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
         shape = (initial.shape if spec.sharing == "global" else (num_layers, *initial.shape)
                  if spec.sharing == "per_layer" else (num_layers, num_heads, *initial.shape))
         value = jnp.broadcast_to(initial, shape)
-        if spec.initial_std:
+        if spec.initial_std or spec.initializer:
             if key is None:
                 raise ValueError(f"{spec.name} has a random initialization and needs the mechanism key")
             name_key = jax.random.fold_in(key, zlib.crc32(spec.name.encode()) & 0x7FFFFFFF)
-            value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
+            if spec.initializer:
+                if spec.initial_std or spec.initializer not in RANDOM_INITIALIZERS:
+                    raise ValueError(f"{spec.name} needs one known random initialization")
+                value = RANDOM_INITIALIZERS[spec.initializer](name_key, shape)
+            else:
+                value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
         values[spec.name] = value
     return values
 

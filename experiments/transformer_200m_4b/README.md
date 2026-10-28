@@ -256,6 +256,35 @@ for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
 done
 ```
 
+## Coefficient forms and forget gate
+
+Three degree-four runs copy `query-m4-head-scale` (`r2b22f2ff6461`) and change one part
+of its query attention; see the [coefficient forms](results/exploratory/coefficient_forms/README.md)
+and [forget gate](results/exploratory/forget_gate/README.md) topics.
+
+| Run | Label | Change |
+| --- | --- | --- |
+| `r1d578d107115` | pure-tanh-m4 | `attention_coefficient_activation: pure_tanh`, unscaled, no `b` or `a` |
+| `r917f3650296e` | affine-sigmoid-m4 | `attention_coefficient_activation: affine_sigmoid` |
+| `r111843b4c7cc` | query-m4-forget-gate | `attention_forget_gate: true` on `attention_backend: blocked` |
+
+Pure tanh and affine sigmoid launch from `worktrees/coefficient-forms-4b`, and the forget
+gate from `worktrees/forget-gate-4b` (branch `claude/forget-gate-4b`), whose diagnostics
+summarize the gate's per-head statistics. After committing the inputs, submit each run on
+one B300 or H100, excluding the B200 node `shiba` (and, for the slower blocked forget gate,
+the H100 PCIe node `mastiff`):
+
+```bash
+sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=<run_id> \
+  --output=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  --error=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+Each record's `submission` holds its exact command and partition.
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under
