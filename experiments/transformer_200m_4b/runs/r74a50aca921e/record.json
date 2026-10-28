@@ -1,21 +1,90 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.12 hours",
+    "failed_utc": "2026-10-28T07:11:56.223128+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "0ca468ff54ca97a48506e76c1ac011d41304c26188161fe23c7fdb62b0cfd2e2"
+    },
+    "identity": "b5fe7d7fdfbc24a2e5af890ff829ff241f05127740f328fe923895daf6294da8",
+    "pilot_metadata": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/H100-1/pilot/metadata.json",
+      "sha256": "ecbbc7e466eb63003191150553b70fa3fdaae577c0f84dffd7bb46155903cf6f"
+    },
+    "slurm_job_id": "228297",
+    "stage": "pilot",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
+      "sha256": "2065ca19971486422e5d27bd1cb7d108bc35f4703926f1608fe7295cc27c155f",
+      "size_bytes": 7672
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/H100-1",
+      "allocation": "JobId=228297 JobName=r74a50aca921e UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=19046 Nice=1000 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:04:39 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-28T02:12:26 EligibleTime=2026-10-28T02:12:26 AccrueTime=2026-10-28T02:12:26 StartTime=2026-10-28T02:12:29 EndTime=2026-10-29T02:12:29 Deadline=N/A PreemptEligibleTime=2026-10-28T04:12:29 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-28T02:12:29 Scheduler=Main Partition=standard AllocNode:Sid=kennel:452975 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
+      "config_sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f",
+      "exit_code": 1,
+      "finished_utc": "2026-10-28T07:11:57.707962+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "d71aef057e0e85740cf20082f498266a89829283",
+      "slurm_job_id": "228297",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-28T06:17:08.540257+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/B300-1",
+      "allocation": "JobId=228614 JobName=r74a50aca921e UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=19046 Nice=1000 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:28 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-28T12:28:12 EligibleTime=2026-10-28T12:28:12 AccrueTime=2026-10-28T12:28:12 StartTime=2026-10-28T12:28:13 EndTime=2026-10-29T12:28:13 Deadline=N/A PreemptEligibleTime=2026-10-28T14:28:13 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-28T12:28:13 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:1089306 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
+      "config_sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
+      "slurm_job_id": "228614",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-28T16:28:41.742350+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
     "sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f"
   },
+  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.12 hours",
+  "frozen_execution_sha256": "bca793c8641a4d1822031e4ed79071e2295c52e524394c87ae1f372636c7ed99",
   "home_cluster": "kennel",
   "label": "query-m4-path-head-scale",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
+    "sha256": "2065ca19971486422e5d27bd1cb7d108bc35f4703926f1608fe7295cc27c155f",
+    "size_bytes": 7672
+  },
+  "log_path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
   "name": "query-m4-path-head-scale",
   "record_schema_version": 1,
   "run_id": "r74a50aca921e",
-  "status": "submitted",
+  "source_commit": "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
       "--nice=1000",
       "--partition=standard,long",
-      "--gres=gpu:1",
+      "--gres=gpu:b300:1",
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
@@ -25,12 +94,12 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
-      "d71aef057e0e85740cf20082f498266a89829283",
+      "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
       "1",
-      "B300,H100"
+      "B300"
     ],
     "partition": "standard,long",
-    "slurm_job_id": "228297",
-    "submitted_utc": "2026-10-28T06:12:26.442107+00:00"
+    "slurm_job_id": "228614",
+    "submitted_utc": "2026-10-28T16:28:13.139797+00:00"
   }
 }

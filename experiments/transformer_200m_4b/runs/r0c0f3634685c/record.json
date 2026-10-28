@@ -1,21 +1,86 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-10-28T06:35:57.677643+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "320c85a2c6ad9119acb88914e97c5ea155d9cace9887e18c2e293f3b6dec4da2"
+    },
+    "identity": "770a3bc830054b09c7189bc39edbaeb8e771627ca22381e785936004257ffd99",
+    "slurm_job_id": "228296",
+    "stage": "gpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log",
+      "sha256": "2b6d8ebd8b1b1c92588e634af1a74cdf19c88d33d49f600166ced560873c3b11",
+      "size_bytes": 10416
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/.runtime/acceptance/H100-1",
+      "allocation": "JobId=228296 JobName=r0c0f3634685c UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:04:43 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-28T02:12:25 EligibleTime=2026-10-28T02:12:25 AccrueTime=2026-10-28T02:12:25 StartTime=2026-10-28T02:12:25 EndTime=2026-10-29T02:12:25 Deadline=N/A PreemptEligibleTime=2026-10-28T04:12:25 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-28T02:12:25 Scheduler=Main Partition=standard AllocNode:Sid=kennel:452975 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml",
+      "config_sha256": "78bbf27a8ba9cd2d6bd97cf4ca8cef179c85c7f9a58e41b71835c21506d4b68c",
+      "exit_code": 1,
+      "finished_utc": "2026-10-28T06:35:58.524035+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "d71aef057e0e85740cf20082f498266a89829283",
+      "slurm_job_id": "228296",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-28T06:17:08.539391+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/.runtime/acceptance/B300-1",
+      "allocation": "JobId=228613 JobName=r0c0f3634685c UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:30 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-28T12:28:11 EligibleTime=2026-10-28T12:28:11 AccrueTime=2026-10-28T12:28:11 StartTime=2026-10-28T12:28:11 EndTime=2026-10-29T12:28:11 Deadline=N/A PreemptEligibleTime=2026-10-28T14:28:11 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-28T12:28:11 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1089306 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml",
+      "config_sha256": "78bbf27a8ba9cd2d6bd97cf4ca8cef179c85c7f9a58e41b71835c21506d4b68c",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
+      "slurm_job_id": "228613",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-28T16:28:41.757318+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml",
     "sha256": "78bbf27a8ba9cd2d6bd97cf4ca8cef179c85c7f9a58e41b71835c21506d4b68c"
   },
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+  "frozen_execution_sha256": "bca793c8641a4d1822031e4ed79071e2295c52e524394c87ae1f372636c7ed99",
   "home_cluster": "kennel",
   "label": "dense-query-m4-k5-head-scale",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log",
+    "sha256": "2b6d8ebd8b1b1c92588e634af1a74cdf19c88d33d49f600166ced560873c3b11",
+    "size_bytes": 10416
+  },
+  "log_path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/training.log",
   "name": "dense-query-m4-k5-head-scale",
   "record_schema_version": 1,
   "run_id": "r0c0f3634685c",
-  "status": "submitted",
+  "source_commit": "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
       "--nice=0",
       "--partition=standard,long",
-      "--gres=gpu:1",
+      "--gres=gpu:b300:1",
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
@@ -25,12 +90,12 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml",
-      "d71aef057e0e85740cf20082f498266a89829283",
+      "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
       "1",
-      "B300,H100"
+      "B300"
     ],
     "partition": "standard,long",
-    "slurm_job_id": "228296",
-    "submitted_utc": "2026-10-28T06:12:25.999801+00:00"
+    "slurm_job_id": "228613",
+    "submitted_utc": "2026-10-28T16:28:12.909646+00:00"
   }
 }
