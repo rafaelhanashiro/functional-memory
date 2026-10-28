@@ -2,8 +2,8 @@
 
 How do attention variants perform under the 200M-parameter recipe, and how do their
 comparisons change with the training-token budget? The budget is a per-run setting:
-the reference is 1× Chinchilla (about 4B tokens), and runs at other budgets change only
-`optim.total_steps`. The folder keeps its original `transformer_200m_4b` name.
+the reference is 1× Chinchilla (about 4B tokens), and a run at another budget scales its
+schedule with the data: updates, warmup and validation cadence. The folder keeps its original `transformer_200m_4b` name.
 This self-contained study owns its [recipe](recipe.yaml), [run index](runs.csv),
 [membership](sweep.yaml), and [results](results/README.md), including exploratory
 diagnostics. Reusable model, attention, data, optimizer, and runtime code live in
@@ -48,18 +48,48 @@ specify their own fitting objective, trainable parameters, and stopping rule.
 
 ### Token budgets
 
-A run at another budget copies its reference recipe and changes only
-`optim.total_steps` (and so the cosine horizon); warmup (455 updates), peak and
-floor learning rate, data order, seed, and validation cadence stay the same.
+A run at another budget is the data-scaled reference: it copies its reference recipe
+and multiplies `optim.total_steps` (and so the cosine horizon), `optim.warmup_steps`
+(6.01% of the run), and the validation cadence (`train.eval_early_every`,
+`train.eval_early_until`, `train.eval_every`) by the budget's factor, rounding warmup
+to whole updates. Peak and floor learning rate, weight decay, batch, data order, seed,
+and checkpoint interval stay the same.
 With the same shuffle seed, a longer run first sees exactly the tokens of a
 shorter one. The 12.0B-token training set covers up to about 22,900 updates
 without repeating data. `runs.csv` records each run's `training_steps`; compare
 runs at the same budget, or the same variant across budgets.
 
-| Budget | Updates | Prediction tokens |
-| --- | ---: | ---: |
-| 1× Chinchilla (reference) | 7,570 | 3,968,860,160 |
-| 2.5× Chinchilla | 18,925 | 9,922,150,400 |
+| Budget | Updates | Warmup | Validation | Prediction tokens |
+| --- | ---: | ---: | --- | ---: |
+| 1× Chinchilla (reference) | 7,570 | 455 | every 100 through 1,500, then every 500 | 3,968,860,160 |
+| 2.5× Chinchilla | 18,925 | 1,138 | every 250 through 3,750, then every 1,250 | 9,922,150,400 |
+
+The 2.5× runs repeat five 1× runs that use the canonical QK setup at the 2.5× budget.
+All five are complete; the [token_budget topic](results/exploratory/token_budget/README.md)
+compares them with their 1x partners. Each ran on one GPU:
+
+| 2.5× run | Label | 1× partner |
+| --- | --- | --- |
+| `r8ccda981be2b` | `softmax-2.5x` | none with the canonical QK setup |
+| `rfe12e5c36e94` | `exp-2.5x` | `r6a76e7fbde45` (`exp-head-scale`) |
+| `r4f1682c1b54d` | `fixed-m4-2.5x` | `r816ab0fbe119` (`fixed-m4-head-scale`) |
+| `raa81f92b6aaf` | `static-m4-2.5x` | `r4339a245820e` (`static-m4-head-scale`) |
+| `reb9b5be4ff1b` | `query-m4-2.5x` | `r2b22f2ff6461` (`query-m4-head-scale`) |
+
+They exclude the H100 PCIe node `mastiff`, whose throughput projects past 24 hours,
+and the B200 node `shiba`. Each requests 24 hours on `standard,long`, except exp,
+which requests 48 hours on `long` (its pilot projects about 23 hours):
+
+```bash
+sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name=<run_id> \
+  --output=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  --error=experiments/transformer_200m_4b/runs/<run_id>/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/<run_id>/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+Each record's `submission` holds its exact command and partition.
 
 Regenerate the reference image from the current recipe with:
 
