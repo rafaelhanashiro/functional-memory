@@ -15,6 +15,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r1d578d107115/config.yaml
       sha256: c95536b06862b3007f6e2b76c721450c4778759505d6cb62413b18b731cf04d2
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r1d578d107115/metrics.jsonl
+      sha256: 9cb2e5adddb6436597555e2331da5b156e737740a5866602a199708bed0db97f
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r1d578d107115/completion.json
+      sha256: f0c69770155b561beca60f64c0045ab967dc43efabe68481243435cb77ffec5c
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r1d578d107115/metadata.json
+      sha256: c3ff833f0035666615e4e72787965a07de2d36d295fa74052e95ac04d21d7bb0
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r1d578d107115/best_validation.json
+      sha256: 80db5f1f70a27c99762ffd2fc3c6040eb61db4b77016c6775c25616e441663bd
 - study: transformer_200m_4b
   run_id: r917f3650296e
   label: affine-sigmoid-m4
@@ -23,6 +35,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r917f3650296e/config.yaml
       sha256: ebc03fab1d1ec6421e0309eae114ee9f58b0885225d728a0305c2ec847fc1a9b
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r917f3650296e/metrics.jsonl
+      sha256: dd1894e1154e59ed4b233dcae81c0c74f8a3b040cf268b489c99be548c46922d
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r917f3650296e/completion.json
+      sha256: 34096b8769de4ffa6a159bd0351b36afdceceedd40e13fccb33d8857efa30613
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r917f3650296e/metadata.json
+      sha256: d4b9c1faec767ba5dd3812a8d7a7d7883ee7e3c7047c7cb288a2ab56a35206e2
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r917f3650296e/best_validation.json
+      sha256: bbbcd5120e4e8da50b52aedb39dffccfee29d267305420be7752ee28ded2baaf
 - study: transformer_200m_4b
   run_id: r2b22f2ff6461
   label: query-m4-head-scale

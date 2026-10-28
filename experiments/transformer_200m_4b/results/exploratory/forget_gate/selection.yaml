@@ -15,6 +15,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml
       sha256: 6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/metrics.jsonl
+      sha256: 09b7c0905423d4d6d373f9193d87a1fffe15f65cca5623bbdb9353f3530bc728
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/completion.json
+      sha256: 64ebe8537a2976234408f3e584961f5680dd1bcbe0d0644f945cfb850e61f1d6
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/metadata.json
+      sha256: 1ebe0eaabacd53dda41a0ae26b5d5fa38441241e9be0f2dea7867f919a33e4f9
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/best_validation.json
+      sha256: d4a7512dc680323361dea814b1702dadd92ac293f125b3d239227ef57d2489b0
 - study: transformer_200m_4b
   run_id: r2b22f2ff6461
   label: query-m4-head-scale

@@ -29,7 +29,25 @@ Controls in the [selection](selection.yaml), all with per-head QK scaling:
 
 ## Findings
 
-Pending.
+Validation perplexity (terminal, update 7,570; best at 7,500 in parentheses):
+
+| Run | 1,000 | 2,500 | 5,000 | Terminal |
+| --- | ---: | ---: | ---: | ---: |
+| Affine sigmoid `r917f3650296e` | 27.04 | 19.03 | 16.02 | **14.762** (14.756) |
+| Pure tanh `r1d578d107115` | 77.73 | 33.32 | 25.14 | 22.638 (22.628) |
+| Query (affine tanh) `r2b22f2ff6461` | 27.08 | 19.05 | 16.05 | 14.779 (14.774) |
+| Static `r4339a245820e` | 27.51 | 19.11 | 16.04 | 14.773 (14.767) |
+| Fixed Taylor `r816ab0fbe119` | 28.21 | 19.16 | 16.01 | 14.724 (14.722) |
+
+- Affine sigmoid ties affine tanh (−0.1%) at every checkpoint, as the reparameterization
+  predicts; the feature function does not matter once $b$ and $a$ are free.
+- Pure tanh is **53%** worse than every affine form. Its start, a random signed
+  polynomial with unit-scale coefficients, loses the first thousand updates (PPL 1,516 at
+  update 100 against 27 for the affine runs) and never recovers; it was still improving
+  at the end, so part of the gap is the start rather than the form.
+- With the pure sigmoid runs 9–12% worse in the `sigmoid_coefficients` topic, every
+  generator that removes the affine terms loses; none of the affine variants beats
+  fixed Taylor.
 
 ## Open decision
 
