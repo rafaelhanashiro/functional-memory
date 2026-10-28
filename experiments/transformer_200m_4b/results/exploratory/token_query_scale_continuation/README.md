@@ -27,8 +27,8 @@ and execution record.
 
 The gate adds, per layer and head, a direction `w_h` (896 entries drawn `N(0, 1/896)`;
 only its direction matters) and an amplitude `a_h` starting at zero: **188,370
-parameters**. Zero amplitude reproduces the parent exactly. Both vectors are normalized
-with `eps = 1e-6`, so `|delta| <= |a_h|` without saturation.
+parameters**. Zero amplitude reproduces the parent's function. Both vectors are
+normalized with `eps = 1e-6`, so `|delta| <= |a_h|` without saturation.
 
 All backbone parameters continue training in both runs, preserving pretrained Adam
 moments and clock, the next training-data position, and the RNG step. The gate's
@@ -53,4 +53,52 @@ are unit-tested in `scaffolds/transformer/tests/test_token_query_scale.py` and
 
 ## Findings and open decision
 
-Both runs are allocated and not yet complete.
+Both runs completed all **2,000** updates on one H100 each (Kennel `mastiff`, `standard`
+partition): control job **228301**, gate job **228305**. The gate's first allocation
+(job 228303) failed the acceptance pilot's runtime projection, which multiplies the
+slowest steady pilot update by the whole budget: a 17.8 s checkpoint-save stall projected
+16.7 h, while both branches actually train at about 3.2 s per update; the resubmission
+projected 6.4 h. Trainer runtimes were **2 h 31 min** (control) and **2 h 12 min** (gate).
+
+The restored baselines differ by **6e-6 nats** on the 19 held-out batches (NLL 2.689318
+against 2.689324): with `a_h = 0` the gate is the parent's function, and the remaining
+difference is the differently compiled Mosaic program (bitwise identical on the CPU
+reference backend; 1.1e-4 nats apart on the single acceptance batch).
+
+| Continuation | Initial PPL | Terminal PPL | Validation-best PPL / step |
+| --- | ---: | ---: | --- |
+| Fixed Taylor | 14.7216 | 14.5064 | 14.5064 / 9,500 |
+| Per-token query scale | 14.7217 | 14.5057 | 14.5057 / 9,500 |
+
+The gate ends **0.0007 PPL (0.0048%)**, or **0.0000477 nats/token**, below the control.
+The two trajectories agree to within 1.4e-5 nats through update 1,000, after which the
+gate's small advantage grows monotonically but never exceeds 5e-5 nats. This is a tie
+at the resolution of the comparison; the earlier query-generator continuation's
+advantage over its control was of the same order (0.0027 PPL in 500 updates).
+
+The gate did open. At update 9,500 the amplitudes have mean `|a_h|` **0.21** and
+maximum **0.98**; 137 of 210 heads exceed 0.1 and 54 exceed 0.3, with per-layer means
+near zero except layer 13 (−0.22). The realized modulation stays small: on the
+diagnostic sequence the per-token log scale `delta_th` has a standard deviation of
+0.004–0.042 per layer (largest in layers 11–14), so typical queries change their scale by
+1–4%, and the extreme token reaches `exp(0.43) = 1.5x`. The model therefore uses the
+freedom only mildly, and that use does not move held-out loss.
+
+Taken with the pretraining and continuation results for learned coefficients, this is
+further evidence that at degree four with the canonical QK normalization the loss is
+nearly flat in the remaining per-query degrees of freedom: temperature, like the
+coefficient shape, is not where a gain over Taylor lies.
+
+**Open decision:** discard the topic and its runs, or test the gate in full 4B
+pretraining. This continuation does not motivate the pretraining run.
+
+Measurements live only in each selected run; `summary.csv` derives every selected
+evaluation with the gate's amplitude and realized-scale statistics, distinguishing
+terminal from validation-best. Regenerate after intentionally incorporating new
+measurements:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
+  experiments/transformer_200m_4b/results/exploratory/token_query_scale_continuation
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.results.exploratory.token_query_scale_continuation.collect
+```

@@ -212,8 +212,13 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
   r82203a85ef8e --conditioning token_scale --partition standard --time-limit 10:00:00
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  ra988273933f7 --conditioning token_scale --partition standard --time-limit 10:00:00
+  ra988273933f7 --conditioning token_scale --partition standard --time-limit 20:00:00
 ```
+
+The acceptance pilot projects the allocation from its slowest steady update, so a
+single checkpoint-save stall during the pilot can project far beyond the real cost
+(about 3.2 s per update for both branches on an H100 PCIe); the longer limit only
+clears that projection.
 
 ## Teacher-activation coefficient distillation
 
