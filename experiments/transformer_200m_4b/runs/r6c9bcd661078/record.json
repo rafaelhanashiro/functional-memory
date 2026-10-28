@@ -8,5 +8,27 @@
   "name": "static-m8-2.5x",
   "record_schema_version": 1,
   "run_id": "r6c9bcd661078",
-  "status": "planned"
+  "status": "pending",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--job-name=r6c9bcd661078",
+      "--output=experiments/transformer_200m_4b/runs/r6c9bcd661078/training.log",
+      "--gres=gpu:h100:1",
+      "--exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409",
+      "scaffolds/transformer/launchers/orcd.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r6c9bcd661078/config.yaml",
+      "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "launch_commit": "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
+    "partition": "mit_preemptable,mit_normal_gpu",
+    "slurm_job_id": "27137409",
+    "submitted_utc": "2026-10-28T17:40:59+00:00"
+  }
 }
