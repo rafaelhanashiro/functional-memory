@@ -3,6 +3,7 @@
 import copy
 from dataclasses import replace
 import hashlib
+import math
 
 import jax
 import jax.numpy as jnp
@@ -120,3 +121,51 @@ def test_new_parameters_use_their_own_learning_rate_then_open_the_direction(pret
 def test_rejects_a_new_parameter_rate_without_new_parameters(pretrained, tmp_path):
     with pytest.raises(ValueError, match="introduced parameters"):
         child_config(pretrained, tmp_path / "fixed", gate=False, new_rate=1e-2)
+
+
+def forget_gate_config(pretrained, path, *, new_rate=1e-2):
+    """Zero-amplitude tanh query coefficients with Gated DeltaNet's forget gate, on the blocked backend."""
+    parent, _, continuation, _ = pretrained
+    config = copy.deepcopy(parent)
+    config.continuation = replace(continuation, new_parameter_learning_rate=new_rate)
+    config.optim.total_steps = 6
+    config.train.workdir = path
+    config.model = replace(config.model, attention_coefficients="learned", attention_coefficient_sharing="per_head",
+                           attention_coefficient_scale="factorial", attention_coefficient_conditioning="query",
+                           attention_coefficient_activation="tanh", attention_coefficient_amplitude_scale="factorial",
+                           attention_coefficient_amplitude_initial=0.0,
+                           attention_coefficient_projection_initial_std=1 / math.sqrt(config.model.hidden_size),
+                           attention_forget_gate=True, attention_backend="blocked")
+    validate_config(config)
+    return config
+
+
+def test_forget_gate_continuation_starts_open_on_the_parent_backbone(pretrained, tmp_path):
+    _, parent, _, batch = pretrained
+    fixed, _ = initialize_continuation_state(child_config(pretrained, tmp_path / "fixed", gate=False))
+    gated, audit = initialize_continuation_state(forget_gate_config(pretrained, tmp_path / "forget"))
+    introduced, backbone = split_continuation_parameters(gated.params)
+    assert set(introduced) == {"query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
+                               "forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias"}
+    assert_equal_tree(backbone, parent.params)
+    assert_equal_tree(gated.opt_state[1].backbone, parent.opt_state[1])
+    assert int(gated.opt_state[1].coefficients[0].count) == 0
+    assert audit["new_coefficient_optimizer_count"] == 0
+    for name in ("forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias"):
+        assert np.all(np.isfinite(np.asarray(introduced[name][...])))
+    rate = np.exp(np.asarray(introduced["forget_gate_log_rate"][...]))
+    assert np.all(rate > 0) and np.all(rate < 16)
+    # Gated DeltaNet's initialization decays from the first step, so the function differs from the parent.
+    inputs = batch[:, :-1]
+    fixed_logits = np.asarray(nnx.merge(fixed.graphdef, fixed.params)(inputs, deterministic=True))
+    gated_logits = np.asarray(nnx.merge(gated.graphdef, gated.params)(inputs, deterministic=True))
+    assert not np.allclose(gated_logits, fixed_logits, atol=1e-5)
+    _, grads = loop.loss_and_grads(gated, batch, jax.random.PRNGKey(0))
+    before = {name: np.asarray(gated.params[name][...]) for name in ("forget_gate_log_rate", "forget_gate_dt_bias")}
+    after, *_ = loop.train_step(gated, batch, jax.random.PRNGKey(0))
+    for name, value in before.items():
+        gradient = np.abs(np.asarray(grads[name][...]))
+        step = np.abs(np.asarray(after.params[name][...]) - value)
+        np.testing.assert_allclose(step[gradient > 1e-6], 1e-2, rtol=1e-2)
+    assert int(after.opt_state[1].coefficients[0].count) == 1
+    assert int(after.opt_state[1].backbone[0].count) == 4

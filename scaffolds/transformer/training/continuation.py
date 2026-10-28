@@ -39,7 +39,7 @@ def _parent_config(config):
                              "attention_coefficient_projection_initial_std",
                              "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
                              "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
-                             "qk_norm_token_scale"}
+                             "qk_norm_token_scale", "attention_forget_gate"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -65,10 +65,19 @@ def _check_taylor_initialization(config, coefficients):
     model = config.model
     token_scale = model.qk_norm_token_scale != "none"
     token_names = {"qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude"} if token_scale else set()
+    if model.attention_forget_gate:
+        # The gate starts open with Gated DeltaNet's random initialization, not at the identity.
+        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS
+
+        token_names |= set(FORGET_GATE_PARAMETERS)
+        if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in FORGET_GATE_PARAMETERS
+                   if name in coefficients):
+            raise ValueError("Continuation forget gate parameters are not finite")
     if model.attention_coefficients != "learned":
         if set(coefficients) != token_names:
             raise ValueError("Continuation parameter tree differs from its recipe")
-        _check_token_scale_initialization(coefficients)
+        if token_scale:
+            _check_token_scale_initialization(coefficients)
         return
     expected = np.asarray([1.0 if model.attention_coefficient_scale == "factorial"
                            else 1.0 / math.factorial(order)

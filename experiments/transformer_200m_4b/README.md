@@ -250,6 +250,23 @@ single checkpoint-save stall during the pilot can project far beyond the real co
 (about 3.2 s per update for both branches on an H100 PCIe); the longer limit only
 clears that projection.
 
+The [forget-gate continuation topic](results/exploratory/forget_gate_continuation/README.md)
+is a positive control for the protocol: it adds the pretraining winner's attention (tanh
+query coefficients at zero amplitude plus Gated DeltaNet's forget gate at its standard
+open initialization, on the blocked backend) to the same parent, reusing the completed
+fixed-Taylor control above. Prepare with `--control`, then commit frozen inputs before
+submission; the blocked backend trains at about 6 s per update on a B300 and slower on an
+H100, so the allocation is a day:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
+  --conditioning forget_gate --control r82203a85ef8e \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119
+# Already allocated below; reuse this ID for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  rd5ea49c1fde6 --conditioning forget_gate --partition standard,long --time-limit 24:00:00
+```
+
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
