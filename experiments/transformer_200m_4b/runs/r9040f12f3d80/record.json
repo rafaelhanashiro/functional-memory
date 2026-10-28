@@ -1,11 +1,57 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r9040f12f3d80/.runtime/acceptance/B300-1",
+      "allocation": "JobId=228295 JobName=r9040f12f3d80 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:17 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-28T02:12:22 EligibleTime=2026-10-28T02:12:22 AccrueTime=2026-10-28T02:12:22 StartTime=2026-10-28T02:12:22 EndTime=2026-10-29T02:12:22 Deadline=N/A PreemptEligibleTime=2026-10-28T04:12:22 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-28T02:12:22 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:452975 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r9040f12f3d80/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r9040f12f3d80/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/r9040f12f3d80/config.yaml",
+      "config_sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "d71aef057e0e85740cf20082f498266a89829283",
+      "slurm_job_id": "228295",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-28T06:12:39.217785+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r9040f12f3d80/config.yaml",
     "sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897"
   },
+  "frozen_execution_sha256": "b36612b78bfa39bee46f4f2e84f4a33b945b6441294f3ababef08e0c6269bb13",
+  "home_cluster": "kennel",
   "label": "softmax-head-scale",
+  "log_path": "experiments/transformer_200m_4b/runs/r9040f12f3d80/training.log",
   "name": "softmax-head-scale",
   "record_schema_version": 1,
   "run_id": "r9040f12f3d80",
-  "status": "planned"
+  "source_commit": "d71aef057e0e85740cf20082f498266a89829283",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r9040f12f3d80",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r9040f12f3d80/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r9040f12f3d80/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r9040f12f3d80/config.yaml",
+      "d71aef057e0e85740cf20082f498266a89829283",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "228295",
+    "submitted_utc": "2026-10-28T06:12:25.651032+00:00"
+  }
 }
