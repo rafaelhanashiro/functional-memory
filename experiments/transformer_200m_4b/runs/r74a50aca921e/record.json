@@ -1,26 +1,26 @@
 {
   "acceptance": {
     "allocation_seconds": 86400,
-    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.12 hours",
-    "failed_utc": "2026-10-28T07:11:56.223128+00:00",
+    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 22.87 hours",
+    "failed_utc": "2026-10-28T17:16:47.142891+00:00",
     "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/H100-1/failure.json",
-      "sha256": "0ca468ff54ca97a48506e76c1ac011d41304c26188161fe23c7fdb62b0cfd2e2"
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/B300-1/failure.json",
+      "sha256": "d453228429a2e33a7ed92f515bc2c5e57ef67b017be3748cbd5390dab24de3d5"
     },
-    "identity": "b5fe7d7fdfbc24a2e5af890ff829ff241f05127740f328fe923895daf6294da8",
+    "identity": "432fea71b987e1c9d432e1d5e7e4b8c7265cf2c7283edcaa735a12ba7b213807",
     "pilot_metadata": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/H100-1/pilot/metadata.json",
-      "sha256": "ecbbc7e466eb63003191150553b70fa3fdaae577c0f84dffd7bb46155903cf6f"
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/.runtime/acceptance/B300-1/pilot/metadata.json",
+      "sha256": "da7bb6802f66b298076de81f87055f8ae9100372e1d570aafa738312c2724711"
     },
-    "slurm_job_id": "228297",
+    "slurm_job_id": "228614",
     "stage": "pilot",
     "status": "failed"
   },
   "artifacts": [
     {
       "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
-      "sha256": "2065ca19971486422e5d27bd1cb7d108bc35f4703926f1608fe7295cc27c155f",
-      "size_bytes": 7672
+      "sha256": "dfa7954771ba051766deebfdd0000bdfb26d8bfc193b7d23c1f86673b3fe9841",
+      "size_bytes": 15404
     }
   ],
   "attempts": [
@@ -48,6 +48,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
       "config_sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f",
+      "exit_code": 1,
+      "finished_utc": "2026-10-28T17:16:47.834103+00:00",
       "gpu_count": 1,
       "gpu_type": "B300",
       "home_cluster": "kennel",
@@ -63,43 +65,43 @@
     "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
     "sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f"
   },
-  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.12 hours",
+  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 22.87 hours",
   "frozen_execution_sha256": "bca793c8641a4d1822031e4ed79071e2295c52e524394c87ae1f372636c7ed99",
   "home_cluster": "kennel",
   "label": "query-m4-path-head-scale",
   "log": {
     "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
-    "sha256": "2065ca19971486422e5d27bd1cb7d108bc35f4703926f1608fe7295cc27c155f",
-    "size_bytes": 7672
+    "sha256": "dfa7954771ba051766deebfdd0000bdfb26d8bfc193b7d23c1f86673b3fe9841",
+    "size_bytes": 15404
   },
   "log_path": "experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
   "name": "query-m4-path-head-scale",
   "record_schema_version": 1,
   "run_id": "r74a50aca921e",
   "source_commit": "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
-  "status": "acceptance",
+  "status": "submitted",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
       "--nice=1000",
-      "--partition=standard,long",
+      "--partition=long",
       "--gres=gpu:b300:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--time=24:00:00",
+      "--time=48:00:00",
       "--job-name=r74a50aca921e",
       "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
       "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softmax-dense-path-m4-4b/experiments/transformer_200m_4b/runs/r74a50aca921e/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
-      "08ec6ce8dbe65058d3bd4fbe034a8f9ab47fea7b",
+      "33f2b46ca3d2aeedb5bcbd8804aa24ed0f6416d5",
       "1",
       "B300"
     ],
-    "partition": "standard,long",
-    "slurm_job_id": "228614",
-    "submitted_utc": "2026-10-28T16:28:13.139797+00:00"
+    "partition": "long",
+    "slurm_job_id": "228629",
+    "submitted_utc": "2026-10-28T17:18:08.314034+00:00"
   }
 }
