@@ -235,6 +235,22 @@ head log scales/effective scales in `attention_diagnostics.qk_norm_head_scales`;
 W&B mirrors their mean, minimum, and maximum. Historical RMSNorm recipes with
 `qk_norm_head_scale: false` have no additional scalar or parameter array.
 
+`qk_norm_token_scale: cosine` (default `none`; requires the head scale) gives each
+query its own bounded log scale from the attention input `x_t`, the activation after
+the block's pre-attention RMSNorm: `delta_th = a_h cos(w_h, x_t)`, and Q is multiplied
+by `exp(gamma_h + delta_th)` instead of `exp(gamma_h)`. Each layer/head owns a direction
+`qk_norm_token_scale_kernel` (`[num_layers, num_heads, hidden_size]`, drawn
+`N(0, 1/hidden_size)` from the mechanism stream; only its direction matters) and an
+amplitude `qk_norm_token_scale_amplitude` (`[num_layers, num_heads, 1]`, initially zero),
+both FP32 without weight decay. Both vectors are normalized as `v / sqrt(||v||² + eps)`
+with `qk_norm_eps`, so `|delta| <= |a_h|` without saturation, and a zero amplitude
+reproduces the head-scaled model exactly. The gate restores the per-token query-norm
+freedom that RMSNorm removes; a per-query temperature of the degree-`m` Taylor kernel is
+the same operation. Validation records amplitudes, direction norms, and the realized
+`delta` statistics in `attention_diagnostics.qk_norm_token_scales`; W&B mirrors the
+amplitudes. A continuation may introduce the gate beside a fixed-Taylor parent and give
+it its own constant learning rate (`continuation.new_parameter_learning_rate`).
+
 The historical `qk_norm_type: cosine_log_scale` normalizes Q and K per head in
 FP32 as `x̂ = x / sqrt(||x||² + qk_norm_eps)`, then feeds
 `q' = exp(gamma) sqrt(d_K) q̂` and `k' = k̂` to the unchanged kernels. Its score is

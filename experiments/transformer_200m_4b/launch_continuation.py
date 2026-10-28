@@ -1,4 +1,9 @@
-"""Allocate and submit matched fixed/learned continuations of one Taylor checkpoint."""
+"""Allocate and submit matched continuations of one Taylor checkpoint.
+
+Each pair continues the same pretrained state: a fixed-Taylor control and a branch that
+introduces learned static coefficients, query-dependent coefficients, or the per-token
+query scale gate.
+"""
 from __future__ import annotations
 
 import argparse
@@ -18,9 +23,21 @@ from scaffolds.records.selections import refresh_selection
 
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
-UPDATES = 500
 LEARNING_RATE = 0.0001
 DEFAULT_TIME_LIMIT = "06:00:00"
+CONDITIONINGS = ("static", "query", "token_scale")
+TOPICS = {"static": "taylor_static_continuation", "query": "taylor_query_continuation",
+          "token_scale": "token_query_scale_continuation"}
+# Additional updates per comparison. The token-scale pair runs longer because its gate opens
+# from zero at Adam's step size; the gate also has its own constant learning rate, while the
+# coefficient branches keep the backbone's.
+UPDATES = {"static": 500, "query": 500, "token_scale": 2000}
+NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001}
+QUESTIONS = {
+    "static": "Does enabling static coefficients after Taylor pretraining improve matched continuation?",
+    "query": "Does enabling query coefficients after Taylor pretraining improve matched continuation?",
+    "token_scale": "Does a per-token query scale gate after Taylor pretraining improve matched continuation?",
+}
 
 
 def sha256(path: Path) -> str:
@@ -28,9 +45,13 @@ def sha256(path: Path) -> str:
 
 
 def topic_path(conditioning: str) -> Path:
-    if conditioning not in ("static", "query"):
-        raise ValueError("Continuation conditioning must be static or query")
-    return STUDY / f"results/exploratory/taylor_{conditioning}_continuation"
+    if conditioning not in CONDITIONINGS:
+        raise ValueError("Continuation conditioning must be static, query or token_scale")
+    return STUDY / f"results/exploratory/{TOPICS[conditioning]}"
+
+
+def branch_role(conditioning: str) -> str:
+    return "token_query_scale" if conditioning == "token_scale" else f"learned_{conditioning}"
 
 
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -> dict[str, dict]:
@@ -38,16 +59,21 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
     topic_path(conditioning)
     result = {}
     degree = source["model"]["attention_degree"]
-    for role in ("fixed_taylor", f"learned_{conditioning}"):
+    for role in ("fixed_taylor", branch_role(conditioning)):
         recipe = deepcopy(source)
         recipe["optim"].update(learning_rate=LEARNING_RATE, min_learning_rate=LEARNING_RATE,
-                               warmup_steps=0, total_steps=continuation["parent_step"] + UPDATES)
+                               warmup_steps=0, total_steps=continuation["parent_step"] + UPDATES[conditioning])
         recipe["train"].update(source_commit="auto", micro_batch_size=8, log_every=10, eval_every=100,
                                eval_early_every=None, eval_early_until=0, ckpt_every=100,
                                wandb_run_name=f"taylor-m{degree}-continuation-{role}",
                                wandb_group=STUDY.name, wandb_dir=None, wandb_mode="online")
         recipe["continuation"] = deepcopy(continuation)
-        if role != "fixed_taylor":
+        # The frozen recipes state the gate explicitly, including the control's closed one.
+        recipe["model"]["qk_norm_token_scale"] = "none"
+        if role == "token_query_scale":
+            recipe["model"].update(qk_norm_token_scale="cosine")
+            recipe["continuation"]["new_parameter_learning_rate"] = NEW_PARAMETER_LEARNING_RATE[conditioning]
+        elif role != "fixed_taylor":
             recipe["model"].update(attention_coefficients="learned",
                                    attention_coefficient_sharing="per_head",
                                    attention_coefficient_scale="factorial")
@@ -79,6 +105,10 @@ def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
                 "attention_coefficient_conditioning": "static", "attention_normalization": False,
                 "attention_output_scaling": "head_rms_norm", "qk_norm": True,
                 "initialization": "transformer_truncated_reference", "attention_backend": "mosaic"}
+    if conditioning == "token_scale":
+        expected.update(qk_norm_type="rms_norm", qk_norm_head_scale=True)
+        if model.get("qk_norm_token_scale", "none") != "none":
+            raise ValueError("The token-scale pair starts from a parent without the gate")
     if (not isinstance(model.get("attention_degree"), int) or model["attention_degree"] < 1
             or any(model.get(key) != value for key, value in expected.items())):
         raise ValueError("Expected a 4B fixed Taylor parent with QK/head RMSNorm")
@@ -100,6 +130,7 @@ def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
         "parent_step": int(best["step"]),
     }
     run_ids = {}
+    updates, new_rate = UPDATES[conditioning], NEW_PARAMETER_LEARNING_RATE[conditioning]
     for role, recipe in recipes(source, continuation, conditioning=conditioning).items():
         run = create_run(STUDY, recipe, label=f"taylor-m{model['attention_degree']}-continuation-{role}")
         run_ids[role] = run.name
@@ -112,19 +143,22 @@ def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
                                      "sha256": continuation["parent_data_identity_sha256"]},
             "source_configuration": {"path": continuation["parent_config"],
                                      "sha256": continuation["parent_config_sha256"]},
-            "continuation": {"start_step": best["step"], "updates": UPDATES,
-                             "new_prediction_tokens": UPDATES * source["data"]["batch_size"]
+            "continuation": {"start_step": best["step"], "updates": updates,
+                             "new_prediction_tokens": updates * source["data"]["batch_size"]
                                                       * (source["data"]["sequence_length"] - 1),
                              "backbone_optimizer": "preserve pretrained moments and step",
-                             "new_coefficient_optimizer": "zero moments and fresh Adam clock",
+                             "new_parameter_optimizer": "zero moments and fresh Adam clock"
+                                                        + (f" at constant learning rate {new_rate}"
+                                                           if new_rate is not None else ""),
                              "data_start_sequence": best["step"] * source["data"]["batch_size"]},
         })
     selection = {
         "schema_version": 1, "opened": datetime.now(UTC).date().isoformat(),
-        "question": f"Does enabling {conditioning} coefficients after Taylor pretraining improve matched continuation?",
+        "question": QUESTIONS[conditioning],
         "settings": {"metric": "validation_perplexity", "parent_run_id": parent.name,
-                     "parent_step": best["step"], "updates": UPDATES,
+                     "parent_step": best["step"], "updates": updates,
                      "evaluation_every": 100, "learning_rate": LEARNING_RATE,
+                     "new_parameter_learning_rate": new_rate,
                      "primary_comparison": "terminal held-out NLL/PPL at the same continuation update",
                      "validation_best": "reported separately from terminal"},
         "runs": [{"study": STUDY.name, "run_id": run_id, "role": role, "sources": {}}
@@ -200,12 +234,12 @@ def main(argv=None) -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
-    prep.add_argument("--conditioning", choices=("static", "query"), default="static")
+    prep.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
     launch.add_argument("--time-limit", default=DEFAULT_TIME_LIMIT)
-    launch.add_argument("--conditioning", choices=("static", "query"), default="static")
+    launch.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
     args = parser.parse_args(argv)
     if args.command == "prepare":
         prepare(args.parent, conditioning=args.conditioning)

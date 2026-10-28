@@ -32,11 +32,13 @@ def make_optimizer(config: Config):
             weight_decay=config.optim.weight_decay,
             mask=partial(attention_weight_decay_mask, excluded_names=excluded),
         )
-    if config.continuation.parent_checkpoint and config.model.attention_coefficients == "learned":
-        # Newly introduced coefficients have their own Adam clock; using the backbone's
-        # old count with zero coefficient moments would misapply bias correction.
-        coefficient_adam = optax.adamw(schedule, b1=config.optim.beta1, b2=config.optim.beta2,
-                                       weight_decay=0.0)
+    if config.continuation.parent_checkpoint and continuation_introduces_parameters(config):
+        # Newly introduced parameters have their own Adam clock; using the backbone's
+        # old count with zero moments would misapply bias correction. They may also
+        # use their own constant learning rate.
+        new_rate = config.continuation.new_parameter_learning_rate
+        coefficient_adam = optax.adamw(schedule if new_rate is None else optax.constant_schedule(new_rate),
+                                       b1=config.optim.beta1, b2=config.optim.beta2, weight_decay=0.0)
         backbone_adam = adam
 
         def init(params):
@@ -61,11 +63,24 @@ class ContinuationAdamState(NamedTuple):
     coefficients: object
 
 
+# The arrays a continuation can introduce beside its fixed-Taylor parent: learned static or
+# query coefficients, and the per-token query scale gate.
+CONTINUATION_PARAMETERS = frozenset({
+    "polynomial_coefficients", "query_polynomial_bias", "query_polynomial_kernel",
+    "query_polynomial_amplitude", "query_polynomial_mixing",
+    "qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude",
+})
+
+
+def continuation_introduces_parameters(config) -> bool:
+    """Whether the recipe adds parameter arrays that its parent checkpoint lacks."""
+    return (config.model.attention_coefficients == "learned"
+            or getattr(config.model, "qk_norm_token_scale", "none") != "none")
+
+
 def split_continuation_parameters(params):
-    """Separate new static/query coefficient parameters from the retained backbone."""
-    names = {"polynomial_coefficients", "query_polynomial_bias",
-             "query_polynomial_kernel", "query_polynomial_amplitude", "query_polynomial_mixing"}
-    return params.split(lambda path, _: path[0] in names, ...)
+    """Separate the introduced coefficient or token-scale parameters from the retained backbone."""
+    return params.split(lambda path, _: path[0] in CONTINUATION_PARAMETERS, ...)
 
 
 def attention_weight_decay_mask(params, *, excluded_names):

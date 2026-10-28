@@ -515,9 +515,11 @@ def initialization_facts(config) -> dict:
         for kind in ("parameters", "optimizer"):
             if continuation[f"parent_{kind}_sha256"] != continuation[f"backbone_{kind}_sha256"]:
                 raise RuntimeError(f"Continuation changed the parent's backbone {kind}")
-        if (config.model.attention_coefficients == "learned"
+        from scaffolds.transformer.training.optim import continuation_introduces_parameters
+
+        if (continuation_introduces_parameters(config)
                 and continuation.get("new_coefficient_optimizer_count") != 0):
-            raise RuntimeError("New coefficients must start with a fresh optimizer clock")
+            raise RuntimeError("New parameters must start with a fresh optimizer clock")
     else:
         rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
         params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)

@@ -1,0 +1,29 @@
+schema_version: 1
+opened: '2026-10-28'
+question: Does a per-token query scale gate after Taylor pretraining improve matched
+  continuation?
+settings:
+  metric: validation_perplexity
+  parent_run_id: r816ab0fbe119
+  parent_step: 7500
+  updates: 2000
+  evaluation_every: 100
+  learning_rate: 0.0001
+  new_parameter_learning_rate: 0.001
+  primary_comparison: terminal held-out NLL/PPL at the same continuation update
+  validation_best: reported separately from terminal
+runs:
+- study: transformer_200m_4b
+  run_id: r82203a85ef8e
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/config.yaml
+      sha256: bed709ea6000043993783b76fc27d3ca4c1c2920e83a54f70a272eebef46e150
+- study: transformer_200m_4b
+  run_id: ra988273933f7
+  role: token_query_scale
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/ra988273933f7/config.yaml
+      sha256: b95cc11f35f0d45b454fd5051002db610559e4da6489b14bb10a9cd0f638795c
