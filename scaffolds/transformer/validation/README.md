@@ -509,6 +509,24 @@ measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order ab
 (updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
 node's other load; losses again differed by no more than between identical trials.
 
+### Single-device gradient accumulation
+
+Before 7e5c962f the single-device update dispatched one program per microbatch and
+added each microbatch's gradients with one kernel per parameter; the data-parallel step
+already accumulated inside one compiled `lax.scan`. The single-device step now does the
+same. Timing on one B300 (`akita`, CUDA 13), 100 updates on the packed training data,
+seconds per update between updates 40 and 100, 16 microbatches per update
+([`runs/single-device-accumulation/`](runs/single-device-accumulation/)):
+
+| Recipe | Step compute (16 x benchmark) | Before | After |
+| --- | ---: | ---: | ---: |
+| 10 x 1024 softmax (`rdf00da0866a8`) | 0.75 s | 1.27 s (414k tokens/s) | 0.83 s (629k tokens/s) |
+| 15 x 896 softmax (`r8ccda981be2b`) | 0.93 s | 1.58 s (331k tokens/s) | 1.02 s (516k tokens/s) |
+
+Both recipes now run within 10% of their step compute, a 1.5x speedup for every
+single-GPU run. The 200M / 4B acceptance passed its CPU, distributed, GPU, hardware,
+initialization and pilot stages on the new step.
+
 ## Sampled performance
 
 Benchmarks used one H100, four layers of width256, eight heads, sequence length512,
