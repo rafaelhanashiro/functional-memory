@@ -65,8 +65,8 @@ runs at the same budget, or the same variant across budgets.
 | 2.5× Chinchilla | 18,925 | 1,138 | every 250 through 3,750, then every 1,250 | 9,922,150,400 |
 
 The 2.5× runs repeat five 1× runs that use the canonical QK setup at the 2.5× budget.
-They execute from `worktrees/200m-chinchilla-2p5x` (branch
-`claude/200m-chinchilla-2p5x`), each on one GPU:
+All five are complete; the [token_budget topic](results/exploratory/token_budget/README.md)
+compares them with their 1x partners. Each ran on one GPU:
 
 | 2.5× run | Label | 1× partner |
 | --- | --- | --- |
