@@ -91,6 +91,31 @@ sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --me
 
 Each record's `submission` holds its exact command and partition.
 
+Five further 2.5× runs extend the comparison to key–query attention and to degree 8.
+Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests
+(`/home/rafah/projects/ofm/datasets/fineweb_12b/`). They execute from a worktree on
+branch `claude/200m-2p5x-key-query-m8`, one H100 each. Degree-8 fixed Taylor, static,
+and query use the Mosaic kernels; key–query uses the fused query–key kernel.
+
+| 2.5× run | Label | Source recipe | 1× partner |
+| --- | --- | --- | --- |
+| `r751984d1ca00` | `query_key-m4-2.5x` | `r501f5cca0d4c` (`query_key-m4-head-scale`) at the 2.5× schedule | `r501f5cca0d4c` |
+| `r0ea4c732c5ac` | `fixed-m8-2.5x` | `r4f1682c1b54d` with `attention_degree: 8` | none with the canonical QK setup |
+| `r6c9bcd661078` | `static-m8-2.5x` | `raa81f92b6aaf` with `attention_degree: 8` | none with the canonical QK setup |
+| `r77bca86ef253` | `query-m8-2.5x` | `reb9b5be4ff1b` with `attention_degree: 8` | none with the canonical QK setup |
+| `rb7e83a4b653f` | `query_key-m8-2.5x` | `r536dee0929d5` (`query_key-m8-head-scale`) at the 2.5× schedule | `r536dee0929d5` |
+
+From the worktree root on ORCD, after committing the frozen inputs:
+
+```bash
+for run in r751984d1ca00 r0ea4c732c5ac r6c9bcd661078 r77bca86ef253 rb7e83a4b653f; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 Regenerate the reference image from the current recipe with:
 
 ```bash
