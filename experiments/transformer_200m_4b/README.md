@@ -95,7 +95,9 @@ Five further 2.5× runs extend the comparison to key–query attention and to de
 Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests
 (`/home/rafah/projects/ofm/datasets/fineweb_12b/`). They execute from a worktree on
 branch `claude/200m-2p5x-key-query-m8`, one H100 each. Degree-8 fixed Taylor, static,
-and query use the Mosaic kernels; key–query uses the fused query–key kernel.
+and query use the Mosaic kernels; key–query uses the fused query–key kernel with the
+same 32-by-32 backward tiles at degrees 4 and 8 as its 1× partners, and its GPU
+acceptance runs the head-scale query–key backend tests.
 
 | 2.5× run | Label | Source recipe | 1× partner |
 | --- | --- | --- | --- |
