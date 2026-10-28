@@ -276,6 +276,47 @@ generator, Adam state, fixed data identities, and the lowest-regression-error
 candidate. Completed runs retain that selected generator and refer to the unchanged
 parent checkpoint for their frozen backbone.
 
+## Query–key polynomial pretraining
+
+Three full-budget pretraining runs use unnormalized learned polynomial attention
+whose order-r coefficient depends on both the query and the key,
+`c_r(x_t) [1 + a_key_r tanh(W_key_r x_i)]` with `c_r(x_t) = [b_r + a_r tanh(W_r x_t)] / r!`.
+Offsets start at one and amplitudes at zero, so each run starts at fixed Taylor;
+coefficient projections start from N(0, 1/896). Learned parameters are independent
+per layer and head, the attention output uses per-head RMSNorm, and QK normalization
+is the canonical setup with the learned per-head score scale. The degree-four fixed,
+static, and query runs with the same QK setup are `r816ab0fbe119`, `r4339a245820e`,
+and `r2b22f2ff6461`.
+
+| Degree | Run |
+| --- | --- |
+| 4 | `r501f5cca0d4c` |
+| 8 | `r536dee0929d5` |
+| 12 | `r2459b843ca81` |
+
+Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests. Each ran on one
+H100 80GB HBM3 with the fused query–key kernel (allocated with
+`--allow-triton-attention`; 32-by-32 backward tiles at degrees 4, 8, and 12) at source
+commit `bf99d0e` (branch `claude/transformer-200m-4b-query-key-head-scale-orcd`).
+GPU acceptance ran the fused query–key head-scale backend tests at degrees 4, 8, and
+12. Retained checkpoints and logs are under ORCD's artifact root,
+`/orcd/pool/006/rafah/functional_memory/artifacts/`, at the paths recorded in each
+run. The node exclusions skip the throttled `node3009` and `node3209`, the H100 NVL
+nodes `node1708`, `node1709`, and `node4508`, `node2801` (failed CUDA
+initialization), and `node3409` (half the expected update rate). From a worktree at
+the source commit, each run was submitted as below; the runtime override gives
+acceptance a 96-hour qualification horizon.
+
+```bash
+for run in r501f5cca0d4c r536dee0929d5 r2459b843ca81; do
+  TRANSFORMER_ALLOCATION_SECONDS=345600 sbatch --parsable --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ## Coefficient forms and forget gate
 
 Three degree-four runs copy `query-m4-head-scale` (`r2b22f2ff6461`) and change one part
@@ -307,7 +348,7 @@ Each record's `submission` holds its exact command and partition.
 
 ## Execution and records
 
-Home cluster: **Kennel**. Data manifests live under
+Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
 Retained checkpoints and logs live under this study in the primary Kennel checkout,
 at the locations recorded in each run. The frozen recipe and execution record
