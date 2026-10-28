@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml",
+    "sha256": "c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f"
+  },
+  "label": "query-m4-path-head-scale",
+  "name": "query-m4-path-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r74a50aca921e",
+  "status": "planned"
+}

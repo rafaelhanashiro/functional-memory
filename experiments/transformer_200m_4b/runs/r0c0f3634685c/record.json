@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml",
+    "sha256": "78bbf27a8ba9cd2d6bd97cf4ca8cef179c85c7f9a58e41b71835c21506d4b68c"
+  },
+  "label": "dense-query-m4-k5-head-scale",
+  "name": "dense-query-m4-k5-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r0c0f3634685c",
+  "status": "planned"
+}

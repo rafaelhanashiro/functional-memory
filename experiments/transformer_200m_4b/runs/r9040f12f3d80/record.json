@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r9040f12f3d80/config.yaml",
+    "sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897"
+  },
+  "label": "softmax-head-scale",
+  "name": "softmax-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r9040f12f3d80",
+  "status": "planned"
+}
