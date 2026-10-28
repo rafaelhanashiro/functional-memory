@@ -495,6 +495,24 @@ def external_replay_diagnostics(graph, params, tokens, table, *, generator=False
             jax.device_get(statistics(reference, replay, repeated, tokens[:, 1:])).items()}
 
 
+def reference_backend_agreement(graph, reference_graph, params, tokens):
+    """Restored-parent forward on its production backend against the blocked reference."""
+    @jax.jit
+    def compare(source, inputs):
+        labels = inputs[:, 1:]
+        production = nnx.merge(graph, source)(inputs[:, :-1], deterministic=True).astype(jnp.float32)
+        reference = nnx.merge(reference_graph, source)(inputs[:, :-1], deterministic=True).astype(jnp.float32)
+        error = production - reference
+        return {"production_nll": optax.softmax_cross_entropy_with_integer_labels(production, labels).mean(axis=1),
+                "reference_nll": optax.softmax_cross_entropy_with_integer_labels(reference, labels).mean(axis=1),
+                "logit_max_absolute_error": jnp.max(jnp.abs(error)),
+                "logit_relative_rms_error": jnp.sqrt(jnp.mean(jnp.square(error))) /
+                    jnp.maximum(jnp.sqrt(jnp.mean(jnp.square(reference))), 1e-30),
+                "all_logits_finite": jnp.all(jnp.isfinite(production)) & jnp.all(jnp.isfinite(reference))}
+
+    return {name: np.asarray(value).tolist() for name, value in jax.device_get(compare(params, tokens)).items()}
+
+
 def plateau_action(history: list[float], step: int, reduced_at: int | None, oracle: dict):
     """Return reduce/stop/continue from best-so-far loss at evaluated steps."""
     window = int(oracle["plateau_window"])
@@ -700,6 +718,11 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
         if not np.array_equal(np.asarray(left), np.asarray(right)):
             raise RuntimeError("Resumed coefficient update differs from uninterrupted update")
     shutil.rmtree(directory)
+    next_group_norms = ({name: float(value) for name, value in jax.device_get(next_a[5]).items()}
+                        if generator else {})
+    if generator and not all(np.isfinite(value) and value > 0 for value in next_group_norms.values()):
+        raise RuntimeError(f"Generator parameter group has no finite nonzero gradient after one update: "
+                           f"{next_group_norms}")
     # Adam need not decrease loss on its first step near a trained solution.
     # Require strict improvement within a bounded, disposable optimization probe,
     # always measured by the identical compiled training forward. These candidate
@@ -741,6 +764,11 @@ def qualify(run: Path, functions, params, tokens, table, optimizer, learning_rat
             "gradient_norm_min": float(norms.min()), "gradient_norm_max": float(norms.max()),
             "checkpoint_resume_exact": True, "frozen_parameter_sha256": frozen_sha256,
             "generator_gradient_norms": group_norms,
+            "generator_gradient_norms_after_one_update": next_group_norms,
+            **({"trainable_parameter_names": sorted(group_norms),
+                "frozen_parameter_names": sorted(".".join(map(str, path))
+                                                 for path, _ in nnx.to_flat_state(frozen))}
+               if generator else {}),
             "frozen_parameter_scope": "backbone" if generator else "all_pretrained_parameters",
             "device": jax.devices()[0].device_kind}
 
@@ -816,10 +844,15 @@ def main(argv=None):
     exact_static = static and oracle.get("static_initialization") == "checkpoint"
     if exact_static and config.model.attention_coefficient_conditioning != "static":
         raise ValueError("Exact static initialization requires a static parent checkpoint")
-    if generator and (config.model.attention_coefficient_conditioning != "query"
+    conditioning = config.model.attention_coefficient_conditioning
+    if generator and (conditioning not in ("query", "query_key")
                       or config.model.attention_coefficient_activation != "tanh"
                       or config.model.attention_coefficients != "learned"):
-        raise ValueError("Generator fitting requires the original learned tanh query-only model")
+        raise ValueError("Generator fitting requires a learned tanh query or query-key model")
+    # A query-key parent keeps its own trained key generator; nothing is added or reset.
+    native_query_key = generator and conditioning == "query_key"
+    if native_query_key and recipe["model"] != yaml.safe_load(source_config.read_text())["model"]:
+        raise ValueError("A query-key generator fit runs the parent's model unchanged")
     # GPU BF16 fusion/layout choices can shift separately compiled forwards by
     # several 1e-4 nats even with exact coefficients. Internal replay remains
     # strict; this independently measured bound is absolute, per example.
@@ -871,7 +904,12 @@ def main(argv=None):
         graph, params = convert_generator_readout(config, graph, params, readout)
         runtime.update(generator_readout=readout, optimizer_updates_per_step=1,
                        generator_shared_across_sequences=True,
-                       optimizer_initialization="fresh zero moments")
+                       optimizer_initialization="fresh zero moments", generator_conditioning=conditioning)
+        if native_query_key:
+            trainable = sorted({str(path[-1]) for path, _ in
+                                nnx.to_flat_state(split_generator_parameters(params)[0])})
+            if trainable != sorted(oracle["trainable_parameters"]) or "key_polynomial_kernel" not in trainable:
+                raise ValueError(f"Query-key generator parameters {trainable} differ from the recipe's")
         if readout != original_readout:
             conversion_compare = make_conversion_diagnostics(original_graph, graph)
             conversion = {"source_readout": original_readout, "target_readout": readout,
@@ -957,6 +995,29 @@ def main(argv=None):
         maximum_capture_error = max(maximum_capture_error, float(error))
         if index % 4 == 0 or index + 1 == len(token_chunks):
             print(f"Captured coefficients for microbatch {index + 1}/{len(token_chunks)}; external replay NLL {np.mean(external_replay_losses):.6f}", flush=True)
+    reference_agreement = None
+    if native_query_key:
+        # Capture replays the production graph against itself; this checks the restored
+        # parent against an independently implemented attention backend.
+        print("Comparing the restored forward with the blocked reference backend", flush=True)
+        reference_config = replace(config, model=replace(config.model, attention_backend="blocked"))
+        reference_model = nnx.eval_shape(lambda: build_model(
+            reference_config.model, nnx.Rngs(params=config.train.seed, dropout=config.train.seed)))
+        for _, module in nnx.iter_graph(reference_model):
+            if isinstance(module, nnx.Module) and hasattr(module, "dtype"):
+                module.dtype = {"bfloat16": jnp.bfloat16, "float32": jnp.float32}[config.train.dtype]
+        reference_agreement = reference_backend_agreement(
+            graph, nnx.split(reference_model, nnx.Param)[0], params, token_chunks[0])
+        reference_error = float(np.max(np.abs(np.asarray(reference_agreement["production_nll"])
+                                              - np.asarray(reference_agreement["reference_nll"]))))
+        reference_agreement.update(reference_backend="blocked", sequence_count=int(token_chunks[0].shape[0]),
+                                   nll_max_absolute_error=reference_error, nll_atol=external_nll_atol)
+        print("Reference backend agreement: " + json.dumps(reference_agreement), flush=True)
+        if not reference_agreement["all_logits_finite"] or reference_error > external_nll_atol:
+            _write_json(run / "oracle_acceptance_failure.json",
+                        {"status": "failed", "phase": "reference_backend_agreement", "time_utc": _utc(),
+                         **reference_agreement})
+            raise RuntimeError("The restored parent's forward disagrees with the blocked reference backend")
     if generator and count > 1:
         # Keep one generator and optimizer for the full batch. A scan holds one
         # microbatch's activations at a time and returns one mean-gradient update.
@@ -1007,7 +1068,9 @@ def main(argv=None):
         acceptance.update(generator_readout=runtime["generator_readout"],
                           generator_shared_across_sequences=True, optimizer_updates_per_step=1,
                           sequence_count=count, microbatch_size=microbatch,
-                          optimizer_initialization="fresh zero moments")
+                          optimizer_initialization="fresh zero moments", generator_conditioning=conditioning)
+        if reference_agreement is not None:
+            acceptance["reference_backend_agreement"] = reference_agreement
         if conversion is not None:
             acceptance["readout_conversion"] = conversion
     print(f"Qualification passed: training NLL {acceptance['separate_training_forward_nll']:.6f} "
