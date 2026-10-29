@@ -1,4 +1,4 @@
-# Coefficient fitting with frozen 4B backbones
+# Coefficient fitting with frozen Transformer++ backbones
 
 Opened: **2026-10-23**. Home cluster: **Kennel**, except `r043b150cde03` (ORCD).
 
@@ -6,7 +6,7 @@ How much can polynomial coefficients fit one sequence or a full batch, and how
 does sharing coefficients across sequences constrain that capacity? These exploratory
 fits start at the first packed evaluation sequence and keep each source checkpoint's
 backbone frozen. They live in the
-[200M / 4B study](../../../README.md) and enter no canonical comparison.
+[Transformer++ study](../../../README.md) and enter no canonical comparison.
 
 | Run | Trained parameters | Source checkpoint | Status |
 | --- | --- | --- | --- |
@@ -601,8 +601,8 @@ the next **256** sequences (1,024–1,279).
 
 ## Free coefficients from the static checkpoint
 
-The source is degree-eight learned-static run `r9b8acfcbeb89` from the 200M / 4B
-setup, using its retained validation-best checkpoint at step **7,500**. The
+The source is degree-eight learned-static run `r9b8acfcbeb89` from the Transformer++
+study, using its retained validation-best checkpoint at step **7,500**. The
 backbone has 15 layers, width 896, 14 heads, QK RMSNorm, unnormalized polynomial
 attention, and per-head RMSNorm on its output. Every pretrained parameter is
 frozen. Free effective monomial coefficients have axes
@@ -641,7 +641,7 @@ All pretrained parameters retained their original checksum.
 
 Free query coefficients nearly memorize this sequence from the learned-static
 checkpoint. The open decision is whether this capacity motivates a more expressive
-shared coefficient generator for the 4B setup. This gain does not establish that a shared causal
+shared coefficient generator for Transformer++. This gain does not establish that a shared causal
 coefficient generator can realize it, or explain the small held-out gap between
 learned-static and fixed Taylor pretraining.
 
@@ -929,7 +929,7 @@ Opened: **2026-10-24**. Run `r7505c6d49711` fits independent degree-eight
 coefficient tables on the first **256 packed evaluation sequences**, restoring
 the query-only parent `r98d5895c02d0` at its retained step **7,500**. It tests
 whether successful fits across sequences share a compact family of polynomial
-shapes. This is the 4B counterpart of the older 10B batch oracle; both its parent
+shapes. This is the Transformer++ counterpart of the older 10B batch oracle; both its parent
 and its retained artifacts have **Kennel** as their home cluster.
 
 All pretrained parameters stay frozen. Effective monomial coefficients have shape

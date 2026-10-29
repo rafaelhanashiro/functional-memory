@@ -7,10 +7,10 @@ without a new mechanism, same data and seed) has returned ties for learned stati
 coefficients, query-dependent coefficients, and the
 [per-token query scale](../token_query_scale_continuation/README.md). Is the protocol
 sensitive at all? The [forget gate](../forget_gate/README.md) is the one degree-four
-mechanism known to beat fixed Taylor in full 4B pretraining (14.320 against 14.724, 2.7%).
+mechanism known to beat fixed Taylor in full Transformer++ pretraining (14.320 against 14.724, 2.7%).
 If its continuation shows no gain either, the protocol, or the Taylor-adapted backbone
 it starts from, cannot be trusted to rank mechanisms; if it shows a clear gain, the earlier
-ties are informative. This topic lives in the [200M / 4B study](../../../README.md) and
+ties are informative. This topic lives in the [Transformer++ study](../../../README.md) and
 enters no canonical comparison.
 
 ## Runs and method

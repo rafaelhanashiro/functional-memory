@@ -261,7 +261,7 @@ This is CPU correctness evidence. Full-context GPU kernels, production memory an
 throughput, and checkpoint continuation are qualified separately in each run's
 acceptance record before production begins.
 
-### B300 query-key performance at the 200M / 4B shape
+### B300 query-key performance at the Transformer++ shape
 
 On 2026-10-23, job `224602`, source `ba403d0`, compared resident attention
 operands on one B300 using the new setup's local shape `[16, 2048, 14, 64]`.
@@ -308,7 +308,7 @@ at degrees 8/12, but uses its production BF16 weight arithmetic; it is not a
 matched-precision comparison with the query-key BF16x3 products.
 
 The [training context](runs/query-key-4b-b300/training-context.json) pins the
-existing 4B runs and their input hashes: softmax measures 0.501 s/update on two
+existing Transformer++ runs and their input hashes: softmax measures 0.501 s/update on two
 B300s, and query-only degree 8 measures 0.801 s/update on two B300s. The selected
 query-key runs request one B300 and had not started when inspected. Single-GPU
 training also uses Python gradient accumulation, unlike the compiled scan on
@@ -354,7 +354,7 @@ sbatch scaffolds/transformer/validation/profile_query_key_4b.sbatch \
 
 ### B300 query-key production qualification
 
-The qualification targets the new 200M model / 4B prediction-token recipe:
+The qualification targets the Transformer++ recipe, 200M parameters and 4B prediction tokens:
 one B300, 15 layers, 14 heads, width 64, context 2048, BF16, microbatch 16,
 global batch 256, and query-key polynomial degrees 8 and 12. Forward retains
 64-by-64 tiles; the qualified backward uses 32-by-32. Mathematical definitions,
@@ -422,7 +422,7 @@ and acceptance changes are integrated into the primary scaffold. The
 [retained-artifact manifest](runs/query-key-b300-qualification/retained-artifacts.json)
 pins the decision, logs and CPU smoke scripts.
 
-Full-model reproduction uses the complete frozen 4B source at tag
+Full-model reproduction uses the complete frozen Transformer++ source at tag
 `validation/query-key-b300-4b-20261023` (`8924c44721df6b661275125d33b498bff49f8b59`).
 Create a detached worktree of that tag, sync its own locked CUDA 13 environment,
 and use fresh diagnostic output paths. Preserve the recipe's QK RMSNorm, FP32
@@ -464,7 +464,7 @@ all input/gain gradients, context-2048 parity with the blocked and original
 implementations, causality, and nonfinite masking. The forward output remains
 byte-identical to the original kernel in the production-context comparisons.
 
-**Degree 4** uses the same 32-by-32 backward from source `b81bb7b`. On the 200M / 4B
+**Degree 4** uses the same 32-by-32 backward from source `b81bb7b`. On the Transformer++
 attention shape `[batch=16, time=2048, heads=14, width=64]`, the
 [H100](runs/query-key-m4/h100-tuning.json) (job `225050`, `dogo`) and
 [B300](runs/query-key-m4/b300-tuning.json) (job `225051`, `akita`) benchmarks measured:
@@ -630,7 +630,7 @@ seconds per update between updates 40 and 100, 16 microbatches per update
 | 15 x 896 softmax (`r8ccda981be2b`) | 0.93 s | 1.58 s (331k tokens/s) | 1.02 s (516k tokens/s) |
 
 Both recipes now run within 10% of their step compute, a 1.5x speedup for every
-single-GPU run. The 200M / 4B acceptance passed its CPU, distributed, GPU, hardware,
+single-GPU run. The Transformer++ acceptance passed its CPU, distributed, GPU, hardware,
 initialization and pilot stages on the new step.
 
 ## Sampled performance

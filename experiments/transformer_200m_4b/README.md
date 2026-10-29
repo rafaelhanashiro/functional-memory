@@ -1,6 +1,6 @@
-# 200M Transformer setup
+# Transformer++
 
-How do attention variants perform under the 200M-parameter recipe, and how do their
+How do attention variants perform under the Transformer++ recipe, and how do their
 comparisons change with the training-token budget? The budget is a per-run setting:
 the reference is 1× Chinchilla (about 4B tokens), and a run at another budget scales its
 schedule with the data: updates, warmup and validation cadence. The folder keeps its original `transformer_200m_4b` name.
@@ -11,7 +11,7 @@ the [Transformer scaffold](../../scaffolds/transformer/README.md).
 
 ## Reference recipe
 
-![200M reference recipe with learned per-head QK score scaling](recipe.png)
+![Transformer++ reference recipe with learned per-head QK score scaling](recipe.png)
 
 The pretraining reference has 15 layers, width 896, 14 query/KV heads of width 64,
 SwiGLU width 2304, context 2048, vocabulary 32,000, untied embeddings, and RoPE

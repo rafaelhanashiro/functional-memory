@@ -10,7 +10,7 @@ number per token and head, where `x_t` is the activation after the block's pre-a
 RMSNorm. For the degree-four Taylor kernel this is exactly a per-query temperature. The
 fitting-batch analyses in [coefficient_oracle](../coefficient_oracle/README.md) motivated
 the question but say nothing about held-out text. This topic tests degree four in the
-[200M / 4B study](../../../README.md) and enters no canonical comparison.
+[Transformer++ study](../../../README.md) and enters no canonical comparison.
 
 ## Runs and method
 
@@ -89,7 +89,7 @@ further evidence that at degree four with the canonical QK normalization the los
 nearly flat in the remaining per-query degrees of freedom: temperature, like the
 coefficient shape, is not where a gain over Taylor lies.
 
-**Open decision:** discard the topic and its runs, or test the gate in full 4B
+**Open decision:** discard the topic and its runs, or test the gate in full Transformer++
 pretraining. This continuation does not motivate the pretraining run.
 
 Measurements live only in each selected run; `summary.csv` derives every selected

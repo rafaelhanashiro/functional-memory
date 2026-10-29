@@ -4,7 +4,7 @@ Opened: **2026-10-24**. Home cluster: **Kennel**.
 
 Does enabling query-dependent polynomial coefficients after fixed-Taylor
 pretraining improve held-out performance beyond matched additional Taylor
-training? This topic tests degree four in the [200M / 4B study](../../../README.md).
+training? This topic tests degree four in the [Transformer++ study](../../../README.md).
 The degree-eight static continuation is a separate comparison in
 [taylor_static_continuation](../taylor_static_continuation/README.md).
 

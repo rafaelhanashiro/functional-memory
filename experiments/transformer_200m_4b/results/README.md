@@ -1,6 +1,6 @@
-# 200M / 4B results
+# Transformer++ results
 
-Results for the [200M / 4B setup](../README.md) live here. Selections name explicit
+Results for the [Transformer++ study](../README.md) live here. Selections name explicit
 run IDs and pin their scientific inputs; measurements, recipes, execution records,
 and retained artifacts remain under `../runs/`.
 

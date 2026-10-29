@@ -1,6 +1,6 @@
-# Exploratory 200M / 4B diagnostics
+# Exploratory Transformer++ diagnostics
 
-Open questions within the [200M / 4B study](../../README.md). Each topic owns its
+Open questions within the [Transformer++ study](../../README.md). Each topic owns its
 findings and explicit selection; its runs remain under the study's `runs/`.
 These diagnostics enter no canonical pretraining comparison. A topic closes by
 promotion into a maintained collection or by discarding its results and runs.

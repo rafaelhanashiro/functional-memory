@@ -5,7 +5,7 @@ Opened: **2026-10-24**. Home cluster: **Kennel**.
 Does enabling learned static coefficients after the backbone has trained with
 fixed Taylor improve a matched continuation? This tests whether coefficient
 learning benefits an established representation, given that jointly trained
-static coefficients slightly trail fixed Taylor in the 4B recipe.
+static coefficients slightly trail fixed Taylor in the Transformer++ recipe.
 
 ## Runs and method
 

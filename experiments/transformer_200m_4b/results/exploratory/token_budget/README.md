@@ -2,7 +2,7 @@
 
 Opened 2026-10-27.
 
-**Question.** Do the comparisons between attention variants change when the 200M
+**Question.** Do the comparisons between attention variants change when the Transformer++
 recipe trains 2.5x longer, with warmup and validation cadence scaled with the budget?
 
 ## Runs
