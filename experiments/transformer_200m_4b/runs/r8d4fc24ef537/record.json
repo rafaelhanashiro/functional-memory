@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
+    "sha256": "efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-alibi-no-rope",
+  "name": "query-m4-alibi-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r8d4fc24ef537",
+  "status": "planned"
+}

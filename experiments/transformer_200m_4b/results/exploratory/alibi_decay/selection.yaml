@@ -1,0 +1,66 @@
+schema_version: 1
+opened: '2026-10-29'
+question: Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent
+  forget gate without RoPE in 4B pretraining of degree-four tanh query attention?
+settings:
+  metric: validation_perplexity
+  primary_comparison: terminal held-out PPL at update 7,570; validation-best reported
+    separately
+  shared_recipe: zero-amplitude tanh query coefficients, canonical QK RMSNorm with
+    per-head scaling, head RMSNorm output scaling, blocked reference backend, no positional
+    encoding, 4B tokens (7,570 updates of 256 sequences)
+  difference: attention_forget_gate_form constant (log alpha_t = -exp(A_h), ALiBi
+    slopes at initialization) against input (Gated DeltaNet's gate)
+runs:
+- study: transformer_200m_4b
+  run_id: r8d4fc24ef537
+  role: primary_constant_decay_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml
+      sha256: efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183
+- study: transformer_200m_4b
+  run_id: r82a80d3091e2
+  role: control_forget_gate_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r82a80d3091e2/config.yaml
+      sha256: ba57a2a3595634092de292c42b7d9a862fe51289054573e52b16e5234416ed81
+- study: transformer_200m_4b
+  run_id: r111843b4c7cc
+  role: reference_forget_gate_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/config.yaml
+      sha256: 6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/metrics.jsonl
+      sha256: 09b7c0905423d4d6d373f9193d87a1fffe15f65cca5623bbdb9353f3530bc728
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/completion.json
+      sha256: 64ebe8537a2976234408f3e584961f5680dd1bcbe0d0644f945cfb850e61f1d6
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/metadata.json
+      sha256: 1ebe0eaabacd53dda41a0ae26b5d5fa38441241e9be0f2dea7867f919a33e4f9
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r111843b4c7cc/best_validation.json
+      sha256: d4a7512dc680323361dea814b1702dadd92ac293f125b3d239227ef57d2489b0
+- study: transformer_200m_4b
+  run_id: r816ab0fbe119
+  role: reference_fixed_taylor_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914
