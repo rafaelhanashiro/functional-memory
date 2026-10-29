@@ -31,6 +31,12 @@ on H100 PCIe. Both completed 7,570 production updates with finite validation los
 using the Mosaic query kernel and the locked CUDA 12 environment. These executions
 qualify the optimizer options on those H100 variants; they do not add B300 evidence.
 
+Integration with the forget-gate continuation implementation passed 48 CPU checks
+across `test_query_coefficient_learning_rate.py`, `test_parameter_policy.py`,
+`test_continuation.py`, `test_token_scale_continuation.py`, and
+`test_continuation_acceptance.py`, including the separate Adam state for introduced
+gate parameters and the a,b-only learning-rate selection.
+
 ```bash
 JAX_PLATFORMS=cpu OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TMPDIR=/tmp \
   scaffolds/transformer/.venv/bin/python -m pytest -q \
