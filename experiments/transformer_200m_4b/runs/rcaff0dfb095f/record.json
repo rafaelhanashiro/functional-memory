@@ -3,9 +3,34 @@
     "path": "experiments/transformer_200m_4b/runs/rcaff0dfb095f/config.yaml",
     "sha256": "c715c36b888e6ca1455e19b6e4304e6e06b51b9b70b1f424def93a06827e02bd"
   },
+  "home_cluster": "kennel",
   "label": "dense-query-m4-k5-head-scale-vdivsqrt5",
   "name": "dense-query-m4-k5-head-scale-vdivsqrt5",
   "record_schema_version": 1,
   "run_id": "rcaff0dfb095f",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=rcaff0dfb095f",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-no-rope-dense-sqrt-4b/experiments/transformer_200m_4b/runs/rcaff0dfb095f/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-no-rope-dense-sqrt-4b/experiments/transformer_200m_4b/runs/rcaff0dfb095f/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/rcaff0dfb095f/config.yaml",
+      "57a40202d1f1ddb7ec7065797f36251ed7cb4832",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "229254",
+    "submitted_utc": "2026-10-29T04:58:39.857927+00:00"
+  }
 }
