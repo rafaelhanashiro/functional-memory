@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r82a80d3091e2/config.yaml",
+    "sha256": "ba57a2a3595634092de292c42b7d9a862fe51289054573e52b16e5234416ed81"
+  },
+  "label": "query-m4-forget-gate-no-rope",
+  "name": "query-m4-forget-gate-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r82a80d3091e2",
+  "status": "planned"
+}
