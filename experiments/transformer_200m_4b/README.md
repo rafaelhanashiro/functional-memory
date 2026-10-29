@@ -138,7 +138,9 @@ and key W. Their matched controls and limitations are in the same
 [query optimization topic](results/exploratory/query_optimization/README.md).
 Both are fresh Kennel executions in `worktrees/fox-query-key-wdecay-4b`.
 FoX requests a B300, where the no-RoPE recipe fits a 24-hour allocation; query-key
-accepts an H100 or B300 and passes backend-specific GPU acceptance before training.
+requests 36 hours on `long` and accepts an H100 or B300. Its H100 PCIe pilot projects
+23.45 hours, requiring more than a 24-hour allocation with the two-hour reserve.
+Backend-specific GPU acceptance and a resume pilot precede production training.
 
 From that worktree, after committing the complete frozen execution set, the
 independent launch commands are:
@@ -153,8 +155,8 @@ sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --me
   "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
 
 run=r79d829a16029
-sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=36:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
   --output="experiments/transformer_200m_4b/runs/$run/training.log" \
   --error="experiments/transformer_200m_4b/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \

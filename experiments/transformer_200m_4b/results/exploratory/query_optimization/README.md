@@ -84,12 +84,12 @@ parameter policies remain unchanged. For query-key the effective coefficient is
 there is no second division by r! on the key factor.
 
 FoX uses the blocked implementation and disables RoPE, matching its control.
-Its no-decay control is still training; its finalized measurements are needed before
-reporting that comparison. Query-key uses the canonical Mosaic backend while its
+Its no-decay control is complete; the matched comparison awaits the decay run.
+Query-key uses the canonical Mosaic backend while its
 historical control used fused Triton. Exact degree-four QK/head-scale and output-RMSNorm
 forward/gradient checks gate production in acceptance, together with the training pilot
 and checkpoint-resume checks. Backend rounding can affect trajectories and is a limitation
-of the query-key comparison. No extension results are available yet.
+of the query-key comparison. No completed extension results are available yet.
 
 ## Selection and open decision
 

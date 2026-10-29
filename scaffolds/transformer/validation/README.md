@@ -33,8 +33,12 @@ with QK RMSNorm, nonunit learned per-head score scales, RoPE, and output RMSNorm
 It checks the output, every input/gain gradient, coefficient and key-factor
 gradients separately by order, and an aligned score-scale gradient for each head
 against the blocked reference. The existing query-only Mosaic qualification does
-not establish this per-order query-key composition's correctness. This new GPU
-gate is pending qualification; no production qualification is claimed here.
+not establish this per-order query-key composition's correctness. This GPU gate
+passed on one H100 PCIe in job 229719 at source `bcb6ae11`, together with all 81
+GPU acceptance checks (no skips). The full-recipe 20-step pilot had finite loss
+and valid attention diagnostics; its 23.45-hour projection requires an allocation
+longer than 24 hours once the two-hour reserve is included. Checkpoint-resume
+acceptance remains required before production; this does not qualify B300.
 The acceptance and head-scale CPU selection regressions passed 62 checks
 (`test_qk_head_scale.py` and `test_acceptance.py`, `-m 'not gpu' -k acceptance`).
 

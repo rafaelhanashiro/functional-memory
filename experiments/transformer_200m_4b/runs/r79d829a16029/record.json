@@ -1,4 +1,12 @@
 {
+  "acceptance": null,
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r79d829a16029/training.log",
+      "sha256": "917547a75b46da55c61635ce4e503fbfe1af2947cca85805b5199a8357086f4a",
+      "size_bytes": 4839
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-query-key-wdecay-4b/experiments/transformer_200m_4b/runs/r79d829a16029/.runtime/acceptance/H100-1",
@@ -6,6 +14,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_200m_4b/runs/r79d829a16029/config.yaml",
       "config_sha256": "8c50ed1dd573d12749994c40a61903aaca7db2b357739f208b3884c63f4d8e0d",
+      "exit_code": 1,
+      "finished_utc": "2026-10-29T16:32:03.899618+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -21,19 +31,25 @@
     "path": "experiments/transformer_200m_4b/runs/r79d829a16029/config.yaml",
     "sha256": "8c50ed1dd573d12749994c40a61903aaca7db2b357739f208b3884c63f4d8e0d"
   },
+  "error": null,
   "frozen_execution_sha256": "817d6d997fa3c13132a7aa63b95668445d15c54c911c63229adcdf308c0c2e84",
   "home_cluster": "kennel",
   "label": "query-key-m4-qk-w-decay",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r79d829a16029/training.log",
+    "sha256": "917547a75b46da55c61635ce4e503fbfe1af2947cca85805b5199a8357086f4a",
+    "size_bytes": 4839
+  },
   "log_path": "experiments/transformer_200m_4b/runs/r79d829a16029/training.log",
   "name": "query-key-m4-qk-w-decay",
   "record_schema_version": 1,
   "run_id": "r79d829a16029",
   "source_commit": "bcb6ae11a016e5b455cb38dbb872e5065e75018a",
-  "status": "acceptance",
+  "status": "submitted",
   "submission": {
-    "command": "sbatch --parsable --hold --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r79d829a16029 --output=experiments/transformer_200m_4b/runs/r79d829a16029/training.log --error=experiments/transformer_200m_4b/runs/r79d829a16029/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/r79d829a16029/config.yaml bcb6ae11a016e5b455cb38dbb872e5065e75018a 1 B300,H100",
-    "partition": "standard",
-    "slurm_job_id": "229719",
-    "submitted_utc": "2026-10-29T16:05:03.545125+00:00"
+    "command": "sbatch --parsable --hold --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=36:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r79d829a16029 --output=experiments/transformer_200m_4b/runs/r79d829a16029/training.log --error=experiments/transformer_200m_4b/runs/r79d829a16029/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/r79d829a16029/config.yaml bcb6ae11a016e5b455cb38dbb872e5065e75018a 1 B300,H100",
+    "partition": "long",
+    "slurm_job_id": "229791",
+    "submitted_utc": "2026-10-29T18:25:51.836525+00:00"
   }
 }
