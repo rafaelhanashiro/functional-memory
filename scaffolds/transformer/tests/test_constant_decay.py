@@ -62,6 +62,15 @@ def test_constant_form_has_one_parameter_at_alibi_slopes():
     assert "ALiBi" in identity["attention_formula"]
 
 
+def test_acceptance_softmax_comparison_drops_the_form_with_the_gate():
+    """The acceptance's derived softmax controls must validate without the gate."""
+    from scaffolds.transformer import acceptance
+
+    config = _config(positional_encoding="rope")
+    facts = acceptance.matches_softmax_backbone_initialization(config)  # raises on any mismatch
+    assert facts["mechanism_parameters"]["forget_gate_log_rate"]["initializer"] == "alibi_log_slope"
+
+
 def test_constant_form_requires_the_gate():
     with pytest.raises(ValueError, match="requires the forget gate"):
         _config(attention_forget_gate=False)
