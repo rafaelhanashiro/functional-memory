@@ -32,6 +32,7 @@ import os
 from pathlib import Path
 import shlex
 import shutil
+import statistics
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -312,7 +313,7 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
         entry_module=entry_module,
         cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
             "model", "training", "telemetry", "checkpoint_audit", "parameter_policy",
-            "query_coefficient_learning_rate")),
+            "query_coefficient_learning_rate", "runtime_timing")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
         check_initialization=(None if (config.model.attention_mechanism in ("gla", "gated_deltanet")
@@ -509,6 +510,61 @@ def remaining_work_counts(config) -> tuple[int, int]:
     return len(evaluations) + 1, len(checkpoints) + 1
 
 
+def project_runtime(timing: dict, config) -> dict:
+    """Project a full execution from separately warmed pilot measurements.
+
+    The disposable pilot (including startup, warmups, and its training updates)
+    is charged once. It does not replace any production updates. Diagnostics
+    recur per validation; only evaluation batches scale with ``eval_batches``.
+    """
+    def samples(name: str) -> list[float]:
+        values = timing.get(name)
+        if (not isinstance(values, list) or not values
+                or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                       or not math.isfinite(value) or value <= 0 for value in values)):
+            raise RuntimeError(f"Pilot requires positive finite {name}; rerun its timing profile")
+        return values
+
+    pilot = timing.get("runtime_seconds")
+    if (isinstance(pilot, bool) or not isinstance(pilot, (int, float))
+            or not math.isfinite(pilot) or pilot <= 0):
+        raise RuntimeError("Pilot requires a positive finite runtime_seconds")
+    updates = samples("train_step_seconds")[1:]  # First update includes compilation.
+    if not updates:
+        raise RuntimeError("Pilot has no synchronized warm training updates")
+    batches = samples("evaluation_batch_seconds")
+    if len(batches) < 3:
+        raise RuntimeError("Pilot requires at least three warm evaluation_batch_seconds samples")
+    rates = {
+        "training_update": statistics.median(updates),
+        "diagnostics": statistics.median(samples("diagnostic_seconds")),
+        "evaluation_batch": statistics.median(batches),
+        "checkpoint": max(samples("checkpoint_seconds")),
+    }
+    evaluations, checkpoints = remaining_work_counts(config)
+    counts = {
+        "training_updates": config.optim.total_steps - continuation_start_step(config),
+        "validation_events": evaluations,
+        "batches_per_validation": config.train.eval_batches,
+        "checkpoint_events": checkpoints,
+    }
+    if counts["training_updates"] <= 0:
+        raise RuntimeError("Pilot runtime projection requires remaining training updates")
+    components = {
+        "pilot_overhead": float(pilot),
+        "training": rates["training_update"] * counts["training_updates"],
+        "diagnostics": rates["diagnostics"] * evaluations,
+        "evaluation": rates["evaluation_batch"] * config.train.eval_batches * evaluations,
+        "checkpointing": rates["checkpoint"] * checkpoints,
+    }
+    projected = sum(components.values())
+    if not math.isfinite(projected):
+        raise RuntimeError("Pilot has no finite projected runtime")
+    return {"method": "warm_components_v1", "counts": counts, "seconds_per_unit": rates,
+            "components_seconds": components, "projected_seconds": projected,
+            "reserve_seconds": 2 * 3600}
+
+
 def initialization_facts(config) -> dict:
     """Parameter count and hash of the initialization training will use."""
     import jax
@@ -699,7 +755,8 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
         config.train.eval_early_until = 0
         config.train.eval_batches = 1
         # Model, context, batch, seed, LR schedule, and step horizon are the production recipe's.
-        return run_training(config, resume=True, stop_after_step=args.stop_after_step, audit_checkpoint=True)
+        return run_training(config, resume=True, stop_after_step=args.stop_after_step,
+                            audit_checkpoint=True, profile_timing=True)
     raise ValueError(args.worker)
 
 
@@ -775,19 +832,14 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             validation = next(row for row in records if row["step"] == pilot_stop)
             if not math.isfinite(validation["validation_nll"]) or not validation["attention_diagnostics"]["valid"]:
                 raise RuntimeError("Pilot validation or attention diagnostics failed")
-            timing = outcome["timing"]
-            steady = timing["train_step_seconds"][1:]
-            if not steady or any(not math.isfinite(x) or x <= 0 for x in steady):
-                raise RuntimeError("Pilot has no valid synchronized steady update timing")
-            config = experiment["config"]
-            total = config["optim"]["total_steps"] - start_step
-            evaluations, checkpoints = remaining_work_counts(load_config(args.config))
-            # Compilation once plus conservative evaluation and checkpoint costs.
-            projected = (timing["runtime_seconds"] + max(steady) * total
-                         + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
-                         + max(timing["checkpoint_seconds"]) * checkpoints)
+            projection = project_runtime(outcome["timing"], load_config(args.config))
+            # Keep the component costs even when the budget gate rejects the allocation.
+            write_json(directory / "runtime-projection.json", projection)
+            print(f"acceptance_runtime_projection={json.dumps(projection, sort_keys=True)}", flush=True)
+            projected = projection["projected_seconds"]
             require_allocation_budget(projected, experiment["allocation_seconds"])
-            record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600)
+            record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600,
+                   runtime_projection=projection)
         stage = "resume"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):

@@ -57,16 +57,18 @@ def test_scratch_pilot_targets_absolute_stop_without_changing_recipe(tmp_path, m
     assert scratch.train.eval_batches == 1
     assert scratch.optim.total_steps == 8000
     assert scratch.continuation.parent_step == 7500
-    assert captured["options"] == {"resume": True, "stop_after_step": 7520, "audit_checkpoint": True}
+    assert captured["options"] == {"resume": True, "stop_after_step": 7520, "audit_checkpoint": True,
+                                   "profile_timing": True}
     assert path.read_bytes() == original
 
 
-def test_acceptance_offsets_pilot_resume_and_runtime_projection(tmp_path, monkeypatch):
+@pytest.mark.parametrize("fits_budget", (True, False))
+def test_acceptance_offsets_pilot_resume_and_runtime_projection(tmp_path, monkeypatch, fits_budget):
     config = continuation_config(tmp_path)
     args = SimpleNamespace(config=tmp_path / "recipe.yaml", directory=tmp_path / "acceptance",
                            gpu_count=1, gpu_type="B300")
     experiment = {"identity": "test", "source_commit": "c" * 40, "config": config_to_dict(config),
-                  "allocation_seconds": 24 * 3600}
+                  "allocation_seconds": 24 * 3600 if fits_budget else 2 * 3600 + 1100}
     spec = acceptance.AcceptanceSpec(entry_module="unused", cpu_tests=(), pilot_steps=20)
     calls = []
     audited = []
@@ -86,6 +88,7 @@ def test_acceptance_offsets_pilot_resume_and_runtime_projection(tmp_path, monkey
                 "data_parallel_devices": 1, "attention_backend": "mosaic",
                 "data_start_sequence": 7520 * config.data.batch_size,
                 "timing": {"train_step_seconds": [30.0, 2.0], "evaluation_seconds": [3.0],
+                           "diagnostic_seconds": [0.5], "evaluation_batch_seconds": [1.0, 1.0, 1.0],
                            "checkpoint_seconds": [4.0], "runtime_seconds": 50.0}}
 
     monkeypatch.setattr(acceptance, "_run_worker", worker)
@@ -97,12 +100,22 @@ def test_acceptance_offsets_pilot_resume_and_runtime_projection(tmp_path, monkey
     args.directory.mkdir()
     for stage in ("cpu-tests", "cpu-distributed-tests", "gpu-tests"):
         (args.directory / f"{stage}.json").write_text("{}\n")
+    expected_seconds = 50 + 2 * 500 + 0.5 * 6 + 1 * 19 * 6 + 4 * 6
+    if not fits_budget:
+        with pytest.raises(RuntimeError, match="reserve"):
+            acceptance._run(spec, args, experiment)
+        assert calls == [7520] and not audited
+        projection = json.loads((args.directory / "runtime-projection.json").read_text())
+        assert projection["projected_seconds"] == expected_seconds
+        assert json.loads((args.directory / "failure.json").read_text())["stage"] == "pilot"
+        assert not (args.directory / "success.json").exists()
+        return
     acceptance._run(spec, args, experiment)
     assert calls == [7520, 7521]
     assert len(audited) == 1
     result = json.loads((args.directory / "pilot.json").read_text())
-    expected_seconds = 50 + 2 * 500 + 3 * 19 * 6 + 4 * 6
     assert result["projected_hours"] == pytest.approx(expected_seconds / 3600)
+    assert result["runtime_projection"]["components_seconds"]["diagnostics"] == 3
     assert (args.directory / "success.json").exists()
 
 

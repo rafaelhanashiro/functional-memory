@@ -32,7 +32,8 @@ def test_scratch_pilot_overrides_early_evaluation_without_mutating_production_re
     assert scratch.train.eval_every == 20 and scratch.train.eval_early_every is None
     assert scratch.train.eval_early_until == 0 and evaluation_due(scratch, 20)
     assert scratch.optim.total_steps == 7570
-    assert captured["options"] == {"resume": True, "stop_after_step": 20, "audit_checkpoint": True}
+    assert captured["options"] == {"resume": True, "stop_after_step": 20, "audit_checkpoint": True,
+                                   "profile_timing": True}
     assert path.read_bytes() == original
     frozen = load_config(path)
     assert (frozen.train.eval_every, frozen.train.eval_early_every, frozen.train.eval_early_until) == (500, 100, 1500)
@@ -48,6 +49,89 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
         preflight.require_passing_tests(report)
     report.write_text('<testsuite><testcase name="a"/><testcase name="b"/></testsuite>')
     assert preflight.require_passing_tests(report) == 2
+
+
+def timing_profile():
+    return {"runtime_seconds": 600.0, "setup_seconds": 80.0,
+            "diagnostic_warmup_seconds": 40.0, "evaluation_warmup_seconds": 50.0,
+            "train_step_seconds": [100.0, 2.0, 2.0, 2.0, 20.0],
+            "diagnostic_seconds": [3.0, 3.0, 9.0],
+            "evaluation_batch_seconds": [5.0, 5.0, 15.0],
+            "evaluation_seconds": [98.0], "checkpoint_seconds": [6.0, 7.0]}
+
+
+def projection_config():
+    from scaffolds.transformer.configs import Config
+    config = Config()
+    config.optim.total_steps = 7570
+    config.train.eval_every = config.train.ckpt_every = 500
+    config.train.eval_early_every, config.train.eval_early_until = 100, 1500
+    config.train.eval_batches = 19
+    return config
+
+
+def test_projection_separates_once_only_costs_from_validation_and_batch_work():
+    config = projection_config()
+    timing = timing_profile()
+    result = preflight.project_runtime(timing, config)
+    assert result["counts"] == {"training_updates": 7570, "validation_events": 28,
+                                "batches_per_validation": 19, "checkpoint_events": 28}
+    assert result["components_seconds"] == {
+        "pilot_overhead": 600, "training": 2 * 7570, "diagnostics": 3 * 28,
+        "evaluation": 5 * 19 * 28, "checkpointing": 7 * 28,
+    }
+    assert result["projected_seconds"] == 600 + 2 * 7570 + 3 * 28 + 5 * 19 * 28 + 7 * 28
+    assert result["reserve_seconds"] == 7200
+    # Cold evaluation combines compilation and diagnostics, so it cannot be scaled
+    # like warmed batches. Increasing actual once-only pilot cost adds exactly once.
+    timing["evaluation_seconds"] = [1e9]
+    assert preflight.project_runtime(timing, config) == result
+    timing["runtime_seconds"] += 17
+    timing["diagnostic_warmup_seconds"] += 17
+    assert preflight.project_runtime(timing, config)["projected_seconds"] == result["projected_seconds"] + 17
+
+
+def test_more_validation_batches_only_scale_warm_batch_work():
+    config = projection_config()
+    full = preflight.project_runtime(timing_profile(), config)
+    config.train.eval_batches = 1
+    small = preflight.project_runtime(timing_profile(), config)
+    assert full["projected_seconds"] - small["projected_seconds"] == 18 * 28 * 5
+    for name in ("pilot_overhead", "training", "diagnostics", "checkpointing"):
+        assert full["components_seconds"][name] == small["components_seconds"][name]
+
+
+@pytest.mark.parametrize("name", ("train_step_seconds", "diagnostic_seconds", "evaluation_batch_seconds",
+                                  "checkpoint_seconds"))
+@pytest.mark.parametrize("bad", (None, [], [0.0], [-1.0], [float("nan")], [float("inf")], [True], ["2"]))
+def test_projection_rejects_missing_or_invalid_measurements(name, bad):
+    timing = timing_profile()
+    timing[name] = bad
+    with pytest.raises(RuntimeError, match=name):
+        preflight.project_runtime(timing, projection_config())
+
+
+def test_projection_rejects_cold_training_sample_without_warm_updates():
+    timing = timing_profile()
+    timing["train_step_seconds"] = [100.0]
+    with pytest.raises(RuntimeError, match="warm training updates"):
+        preflight.project_runtime(timing, projection_config())
+
+
+@pytest.mark.parametrize("count", (1, 2))
+def test_projection_rejects_incomplete_warm_batch_profile(count):
+    timing = timing_profile()
+    timing["evaluation_batch_seconds"] = [1.0] * count
+    with pytest.raises(RuntimeError, match="at least three"):
+        preflight.project_runtime(timing, projection_config())
+
+
+@pytest.mark.parametrize("bad", (None, 0, -1, float("nan"), float("inf"), True, "600"))
+def test_projection_rejects_invalid_once_only_cost(bad):
+    timing = timing_profile()
+    timing["runtime_seconds"] = bad
+    with pytest.raises(RuntimeError, match="runtime_seconds"):
+        preflight.project_runtime(timing, projection_config())
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares", "fixed", "fixed_square"))

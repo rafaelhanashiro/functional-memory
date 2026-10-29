@@ -933,6 +933,19 @@ qualification horizon (48 hours by default) instead of limiting full training to
 one backfilled allocation. Other callers use that same fallback unless they set
 the runtime override; this budget never changes the recipe.
 
+The runtime projection separates the disposable pilot's elapsed time (including
+startup and compilation, counted once) from production work. The pilot enables
+`run_training(..., profile_timing=True)` to warm diagnostics and evaluation
+separately, then measure diagnostics once per validation and at least three warm
+global evaluation batches. Median warm update, diagnostic, and batch timings are
+multiplied only by their corresponding production counts; checkpoint estimates
+use the largest measured write time. The pilot's updates never replace production
+updates. Continuations count their remaining updates and baseline validation.
+`runtime-projection.json` and `pilot.json` expose the component costs, with the
+projection also printed before the allocation check. The two-hour reserve covers
+other acceptance work and runtime variation. Normal training leaves profiling off;
+its validation data, metrics, optimizer, and update sequence are unchanged.
+
 Studies configure these shared modules with execution modules at their root
 (for example `experiments/<study>/acceptance.py`):
 

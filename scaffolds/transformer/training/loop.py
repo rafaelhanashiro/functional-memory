@@ -363,6 +363,7 @@ def evaluate(
     data_parallel: DataParallelFunctions | None = None,
     eval_seed: int = 0,
     micro_batch_size: int | None = None,
+    batch_seconds: list[float] | None = None,
 ) -> float:
     """Mean token NLL, with bounded evaluation memory and a fixed data prefix."""
     if num_batches < 1:
@@ -370,6 +371,7 @@ def evaluate(
     nll_sum, token_count = 0.0, 0
     eval_rng = jax.random.PRNGKey(eval_seed)
     for batch_index in range(num_batches):
+        batch_start = time.perf_counter() if batch_seconds is not None else None
         batch = next(eval_iter)
         micro_size = micro_batch_size or len(batch)
         for offset in range(0, len(batch), micro_size):
@@ -383,6 +385,10 @@ def evaluate(
             count = micro_batch.shape[0] * (micro_batch.shape[1] - 1)
             nll_sum += float(loss) * count
             token_count += count
+        if batch_seconds is not None:
+            # float(loss) synchronizes every microbatch. Include the global
+            # batch's data fetch, transfers, and all bounded-memory forwards.
+            batch_seconds.append(time.perf_counter() - batch_start)
     return nll_sum / token_count
 
 
@@ -556,7 +562,7 @@ def _perplexity(config, state, step, nll, sample, provenance, *, diagnostics=Non
 
 
 def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None,
-                 audit_checkpoint: bool = False) -> dict:
+                 audit_checkpoint: bool = False, profile_timing: bool = False) -> dict:
     """Train with an exact packed-data cursor and transactional local validation metrics."""
     validate_config(config)
     resolve_workdir(config)
@@ -578,7 +584,7 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         validate_resume_progress(config, manager.latest_step())
         try:
             return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
-                                 audit_checkpoint=audit_checkpoint)
+                                 audit_checkpoint=audit_checkpoint, profile_timing=profile_timing)
         except BaseException as error:
             _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
             raise
@@ -591,9 +597,13 @@ def _update_audit(step, batches, rng):
     return {"step": step, "batch_sha256": state_sha256(batches), "rng_sha256": state_sha256(rng)}
 
 
-def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
+def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False,
+                  profile_timing=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
+    if profile_timing:
+        timing.update(setup_seconds=0.0, diagnostic_warmup_seconds=0.0, evaluation_warmup_seconds=0.0,
+                      diagnostic_seconds=[], evaluation_batch_seconds=[])
     check_all_gradients = requires_update_checks(config.model)
     completion_path = config.train.workdir / "completion.json"
     latest_before = manager.latest_step()
@@ -692,6 +702,58 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     _write_status(config, diagnostic_sample=diagnostic_provenance)
     wandb_run, wandb_run_id = tracking.init_run(
         config, tracking.runtime_settings(layout.device_count, jax.devices()[0].device_kind))
+    diagnostics_warmed = evaluation_warmed = False
+
+    def collect_diagnostics():
+        nonlocal diagnostics_warmed
+        if not profile_timing:
+            return attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+        if not diagnostics_warmed:
+            warmup_start = time.perf_counter()
+            warmup = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+            timing["diagnostic_warmup_seconds"] = time.perf_counter() - warmup_start
+            diagnostics_warmed = True
+            # The first call includes compilation and ordinary work. An invalid
+            # result must reach the existing failure path, never be discarded.
+            if not warmup["valid"]:
+                return warmup
+        diagnostic_start = time.perf_counter()
+        report = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+        timing["diagnostic_seconds"].append(time.perf_counter() - diagnostic_start)
+        return report
+
+    def evaluate_prefix(num_batches, *, batch_seconds=None):
+        return evaluate(
+            state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest), num_batches,
+            data_parallel=data_parallel, eval_seed=config.train.seed,
+            micro_batch_size=layout.global_micro_batch_size,
+            **({"batch_seconds": batch_seconds} if batch_seconds is not None else {}),
+        )
+
+    def collect_evaluation():
+        nonlocal evaluation_warmed
+        if not profile_timing:
+            return evaluate_prefix(config.train.eval_batches)
+        if not evaluation_warmed:
+            warmup_start = time.perf_counter()
+            warmup_loss = evaluate_prefix(1)
+            timing["evaluation_warmup_seconds"] = time.perf_counter() - warmup_start
+            evaluation_warmed = True
+            if not math.isfinite(warmup_loss):
+                return warmup_loss
+        samples = timing["evaluation_batch_seconds"]
+        eval_loss = evaluate_prefix(config.train.eval_batches, batch_seconds=samples)
+        if not math.isfinite(eval_loss):
+            return eval_loss
+        # A pilot can validate on one global batch. Replay its fixed prefix to
+        # obtain at least three warm samples without consuming any training data
+        # or changing the validation average, sequence indices, or RNG seeds.
+        for _ in range(max(0, 3 - len(samples))):
+            profile_loss = evaluate_prefix(1, batch_seconds=samples)
+            if not math.isfinite(profile_loss):
+                return profile_loss
+        return eval_loss
+
     try:
         metrics_store = ValidationMetricsStore(config.train.workdir)
         _recover_pending_validation(metrics_store=metrics_store, latest_checkpoint_step=manager.latest_step(),
@@ -707,18 +769,18 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         telemetry_window = telemetry.TelemetryWindow()
         telemetry_values = previous_telemetry = None
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
+        if profile_timing:
+            jax.block_until_ready(state)
+            timing["setup_seconds"] = time.perf_counter() - runtime_start
         if fresh_continuation:
             # Measure the child itself before its first update. Persist the baseline
             # transactionally so it can remain the validation-best checkpoint.
             baseline_start = time.perf_counter()
-            diagnostics = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+            diagnostics = collect_diagnostics()
             if not diagnostics["valid"]:
                 _fail_numerics(config, state, start_step, "Invalid continuation baseline diagnostics",
                                diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics)
-            eval_loss = evaluate(
-                state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest),
-                config.train.eval_batches, data_parallel=data_parallel, eval_seed=config.train.seed,
-                micro_batch_size=layout.global_micro_batch_size)
+            eval_loss = collect_evaluation()
             if not math.isfinite(eval_loss):
                 _fail_numerics(config, state, start_step, "Nonfinite continuation baseline validation loss",
                                diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
@@ -744,6 +806,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 "wandb_run_id": wandb_run_id, "is_best": True,
             }
             timing["evaluation_seconds"].append(time.perf_counter() - baseline_start)
+            checkpoint_start = time.perf_counter() if profile_timing else None
             metrics_store.stage(record)
             if not save_checkpoint(manager, start_step, state, metrics={
                 "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
@@ -751,6 +814,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             }):
                 raise RuntimeError("Failed to save continuation baseline")
             manager.wait_until_finished()
+            if profile_timing:
+                timing["checkpoint_seconds"].append(time.perf_counter() - checkpoint_start)
             best_nll = eval_loss
             write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
             metrics_store.commit(record, latest_checkpoint_step=manager.latest_step(),
@@ -790,7 +855,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             loss_value = float(loss)
             # The host scalar synchronizes the update. Keep early measurements
             # so pilots can separate compilation from steady training speed.
-            if len(timing["train_step_seconds"]) < 8:
+            if len(timing["train_step_seconds"]) < (32 if profile_timing else 8):
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if telemetry_vector is not None:
                 previous_telemetry = telemetry_values
@@ -844,16 +909,12 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 evaluation_start = time.perf_counter()
                 if not train_losses:
                     train_losses.append(loss_value)
-                diagnostics = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+                diagnostics = collect_diagnostics()
                 if not diagnostics["valid"]:
                     _fail_numerics(config, state, step,
                                    f"Invalid attention diagnostics at step {step}: {'; '.join(diagnostics['issues'])}",
                                    diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics)
-                eval_loss = evaluate(
-                    state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest),
-                    config.train.eval_batches, data_parallel=data_parallel, eval_seed=config.train.seed,
-                    micro_batch_size=layout.global_micro_batch_size,
-                )
+                eval_loss = collect_evaluation()
                 if not math.isfinite(eval_loss):
                     _fail_numerics(config, state, step,
                                    f"Nonfinite validation loss at step {step}: {eval_loss}",
