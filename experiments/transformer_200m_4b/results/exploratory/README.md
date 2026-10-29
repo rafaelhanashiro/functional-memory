@@ -15,4 +15,3 @@ promotion into a maintained collection or by discarding its results and runs.
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale, `exp(gamma_h + a_h cos(w_h, x_t))` on Q, improve a matched degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does the matched continuation protocol detect the forget gate, which beats fixed Taylor by 2.7% in pretraining? | 2026-10-28 |
-| [constant_decay_continuation](constant_decay_continuation/README.md) | Does a constant ALiBi-style decay per head, `exp(-lambda_h (t - i))`, recover the forget gate's continuation gain without token dependence? | 2026-10-29 |
