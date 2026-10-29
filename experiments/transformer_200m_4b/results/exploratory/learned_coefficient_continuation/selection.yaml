@@ -1,0 +1,60 @@
+schema_version: 1
+opened: '2026-10-29'
+question: Does enabling static coefficients after fixed-kernel pretraining improve
+  matched continuation?
+settings:
+  metric: validation_perplexity
+  updates: 2000
+  evaluation_every: 100
+  learning_rate: 0.0001
+  new_parameter_learning_rate: 0.001
+  primary_comparison: terminal held-out NLL/PPL at the same continuation update
+  validation_best: reported separately from terminal
+runs:
+- study: transformer_200m_4b
+  run_id: r82203a85ef8e
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/config.yaml
+      sha256: bed709ea6000043993783b76fc27d3ca4c1c2920e83a54f70a272eebef46e150
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/metrics.jsonl
+      sha256: c28418b4eb00f040be3148b298274ae7ebcf61ed6d2e15c49182b7654ccd5481
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/completion.json
+      sha256: 8f0888c346b25ae5ec953a849ba9a3d34caaa351daa7ad381ac4c1618414e7c8
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/metadata.json
+      sha256: f716b9ce4eb0867f6e7327164aceac0cbfc37e7da1a8a2e0d57a6b5e6034b28a
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r82203a85ef8e/best_validation.json
+      sha256: 18609d814b9a87d132683cb5253d57ed8037373bbafbf8c155980a2ec9fe2467
+- study: transformer_200m_4b
+  run_id: r2e081e09c19a
+  role: learned_static
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r2e081e09c19a/config.yaml
+      sha256: 46195b83589b9ef0cb340370a952c504f4b08ba53f5eb2d7b892d2f2d6cba343
+- study: transformer_200m_4b
+  run_id: rae91f24b06b4
+  role: learned_query_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rae91f24b06b4/config.yaml
+      sha256: 901440e2c669410c94c72dff78c37fae33fd379a0c7138c8e09c04482c94df9b
+- study: transformer_200m_4b
+  run_id: r7e6a68545d4f
+  role: exp_learned_static
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r7e6a68545d4f/config.yaml
+      sha256: 216fbb616273c31085871cba694c01c4a60042a619a0a52e0e38a816e8c33461
+- study: transformer_200m_4b
+  run_id: r673e14eab803
+  role: exp_learned_query_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r673e14eab803/config.yaml
+      sha256: b44815d776f57d4604de63bcb577006782220af5e1a76a72aa07e45862acba74

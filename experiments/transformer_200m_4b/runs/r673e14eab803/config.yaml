@@ -50,6 +50,9 @@ model:
   attention_coefficient_sharing: per_head
   attention_coefficient_conditioning: query
   attention_coefficient_activation: tanh
+  attention_coefficient_readout: diagonal
+  attention_coefficient_readout_scale: 1.0
+  attention_coefficient_feature_count: null
   attention_coefficient_amplitude_initial: 0.0
   attention_coefficient_projection_initial_std: 0.03340765523905305
   attention_coefficient_tanh_bias: false
@@ -68,7 +71,11 @@ model:
   qk_norm_sharing: per_layer
   qk_norm_initial_scale: null
   qk_norm_eps: 1.0e-06
+  qk_norm_head_scale: true
   initialization: transformer_truncated_reference
+  qk_norm_token_scale: none
+  attention_forget_gate: false
+  attention_coefficient_kernel_weight_decay: true
 optim:
   learning_rate: 0.0001
   min_learning_rate: 0.0001
@@ -80,13 +87,13 @@ optim:
   beta2: 0.95
   grad_clip_norm: 1.0
   warmup_steps: 0
-  total_steps: 8000
+  total_steps: 9500
 train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_200m_4b/runs/r6186c797b4db
-  checkpoint_dir: experiments/transformer_200m_4b/runs/r6186c797b4db/checkpoints
+  workdir: experiments/transformer_200m_4b/runs/r673e14eab803
+  checkpoint_dir: experiments/transformer_200m_4b/runs/r673e14eab803/checkpoints
   micro_batch_size: 8
   log_every: 10
   eval_every: 100
@@ -96,14 +103,15 @@ train:
   ckpt_every: 100
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: taylor-m4-continuation-learned_query
+  wandb_run_name: exp-m4-continuation-learned_query_decay
   wandb_group: transformer_200m_4b
   wandb_dir: null
   wandb_mode: online
 continuation:
-  parent_config: /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109/config.yaml
-  parent_config_sha256: 9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d
+  parent_config: /data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml
+  parent_config_sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
   parent_data_identity_sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
-  parent_checkpoint: /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109/checkpoints/7500
-  parent_checkpoint_sha256: f1c896b4461bec910cf355d7b4e672b0c94155e6d0613e558c8e5db069f07679
+  parent_checkpoint: /data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/checkpoints/7500
+  parent_checkpoint_sha256: b50edd2aaaab3444bf6dbd476671cf5f34a4e8188f0ef245ab6ea39c97b61d47
   parent_step: 7500
+  new_parameter_learning_rate: 0.001
