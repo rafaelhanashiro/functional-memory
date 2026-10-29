@@ -343,6 +343,8 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             **({"attention_coefficient_kernel_weight_decay": True}
                if config.model.attention_coefficient_kernel_weight_decay else {}),
+            **({"attention_coefficient_key_kernel_weight_decay": True}
+               if config.model.attention_coefficient_key_kernel_weight_decay else {}),
             **({"attention_forget_gate": True,
                 "forget_gate_parameter_count": (config.model.hidden_size + 2) * config.model.num_layers
                 * config.model.num_heads} if forget_gate else {}),
@@ -460,9 +462,11 @@ def qk_norm_identity(model) -> dict:
             "qk_norm_gain_shared_across_heads": True,
             "qk_norm_stats_dtype": "float32",
             "attention_score_formula": (
-                "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), "
-                "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
-                "independent Q/K channel gains per layer, shared across heads"),
+                ("<g_Q * q / sqrt(mean(q^2) + eps), g_K * k / sqrt(mean(k^2) + eps)> / sqrt(d_K); "
+                 if model.positional_encoding == "none" else
+                 "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); ")
+                + "independent Q/K channel gains per layer, shared across heads"),
+            **({"positional_encoding": "none"} if model.positional_encoding == "none" else {}),
         }
         if model.qk_norm_head_scale:
             identity.update(

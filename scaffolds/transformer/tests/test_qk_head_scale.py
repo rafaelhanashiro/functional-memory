@@ -294,7 +294,13 @@ def test_acceptance_selects_every_query_key_head_scale_degree_on_gpu(degree):
     expected = [f"{acceptance.QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{m}-fused]" for m in (4, 8, 12)]
     assert _head_scale_backend_tests(model, backend="fused") == expected
     assert _head_scale_backend_tests(model, backend="fused", cpu=True) == []
-    assert _head_scale_backend_tests(model, backend="mosaic") == []
+    mosaic_expected = ([f"{acceptance.QK_HEAD_SCALE_BACKEND_TESTS}[query_key-4-mosaic]"]
+                       if degree == 4 else [])
+    assert _head_scale_backend_tests(model, backend="mosaic") == mosaic_expected
+    assert _head_scale_backend_tests(model, backend="mosaic", cpu=True) == []
+    assert _head_scale_backend_tests({**model, "qk_norm_head_scale": False}, backend="mosaic") == []
+    assert _head_scale_backend_tests({**model, "attention_coefficient_conditioning": "query"},
+                                     backend="mosaic") == []
     assert _head_scale_backend_tests({**model, "qk_norm_head_scale": False}, backend="fused") == []
     assert _head_scale_backend_tests({**model, "attention_coefficient_conditioning": "query"},
                                      backend="fused") == []

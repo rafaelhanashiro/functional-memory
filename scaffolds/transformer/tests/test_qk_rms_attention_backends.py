@@ -21,7 +21,7 @@ CASES = [("softmax", 0, "cudnn"), ("exp", 0, "fused")] + [
     (family, degree, "fused" if family == "query_key" else "mosaic")
     for family in ("fixed", "static", "query", "query_key") for degree in (2, 4, 8, 12)
 ]
-HEAD_SCALE_CASES = [("exp", 0, "fused"), ("fixed", 4, "mosaic")] + [
+HEAD_SCALE_CASES = [("exp", 0, "fused"), ("fixed", 4, "mosaic"), ("query_key", 4, "mosaic")] + [
     ("query_key", degree, "fused") for degree in (4, 8, 12)]
 
 

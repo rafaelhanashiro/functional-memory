@@ -11,6 +11,44 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query/key projection decay and attention without RoPE (2026-10-29)
+
+CPU checks passed all four independent query/key coefficient-projection decay
+settings. Real AdamW updates confirm that enabled projections decay at the base
+learning rate, both amplitudes and the query bias remain exempt and trainable,
+and embeddings and normalization parameters retain their exemptions. Legacy
+recipes keep key projection decay disabled, including recipes that already decay
+the query projection; changing this setting on resume is rejected. Initialization
+acceptance, diagnostics, W&B tags, and existing config, sigmoid, and coefficient-LR
+regressions passed: 135 checks, with four GPU-only cases skipped.
+
+Two additional checks passed for `positional_encoding: none`: the forget-gate
+configuration validates, its forward skips RoPE, and its finite output differs
+from the RoPE control. Separate assertions verified the no-RoPE score description
+and registration of these tests in CPU acceptance. Production GPU qualification
+and resume pilots remain mandatory for each launched recipe.
+
+Degree-four query-key Mosaic acceptance now includes the full-context composition
+with QK RMSNorm, nonunit learned per-head score scales, RoPE, and output RMSNorm.
+It checks the output, every input/gain gradient, coefficient and key-factor
+gradients separately by order, and an aligned score-scale gradient for each head
+against the blocked reference. The existing query-only Mosaic qualification does
+not establish this per-order query-key composition's correctness. This new GPU
+gate is pending qualification; no production qualification is claimed here.
+The acceptance and head-scale CPU selection regressions passed 62 checks
+(`test_qk_head_scale.py` and `test_acceptance.py`, `-m 'not gpu' -k acceptance`).
+
+```bash
+JAX_PLATFORMS=cpu OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TMPDIR=/tmp \
+  scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_parameter_policy.py \
+  scaffolds/transformer/tests/test_config.py \
+  scaffolds/transformer/tests/test_query_coefficient_learning_rate.py \
+  scaffolds/transformer/tests/test_sigmoid_coefficients.py \
+  scaffolds/transformer/tests/test_tracking.py \
+  scaffolds/transformer/tests/test_positional_encoding_none.py
+```
+
 ### Query coefficient learning-rate multiplier (2026-10-29)
 
 CPU qualification passed 17 focused checks for

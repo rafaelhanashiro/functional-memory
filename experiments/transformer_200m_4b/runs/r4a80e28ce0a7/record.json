@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r4a80e28ce0a7/config.yaml",
+    "sha256": "cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-forget-gate-no-rope-w-decay",
+  "name": "query-m4-forget-gate-no-rope-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r4a80e28ce0a7",
+  "status": "planned"
+}

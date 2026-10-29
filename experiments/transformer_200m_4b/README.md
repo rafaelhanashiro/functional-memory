@@ -131,6 +131,36 @@ done
 Each record captures its submission command and job ID. Resumptions keep the same
 run ID, recipe, launch commit, and checkpoint; do not submit a duplicate live job.
 
+Two additional degree-four runs extend projection decay to FoX without RoPE
+(`r4a80e28ce0a7`) and query-key (`r79d829a16029`). They keep the base learning-rate
+schedule and exempt coefficient a and b from decay; query-key decays both query
+and key W. Their matched controls and limitations are in the same
+[query optimization topic](results/exploratory/query_optimization/README.md).
+Both are fresh Kennel executions in `worktrees/fox-query-key-wdecay-4b`.
+FoX requests a B300, where the no-RoPE recipe fits a 24-hour allocation; query-key
+accepts an H100 or B300 and passes backend-specific GPU acceptance before training.
+
+From that worktree, after committing the complete frozen execution set, the
+independent launch commands are:
+
+```bash
+run=r4a80e28ce0a7
+sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --job-name="$run" \
+  --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+  --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+
+run=r79d829a16029
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+  --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ### Coefficient fitting
 
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)

@@ -366,6 +366,12 @@ degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r 
 With both factorial options enabled its entire pair coefficient is
 `[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
 The key factor is dimensionless and receives no second factorial division.
+`model.attention_coefficient_kernel_weight_decay` controls decay of the query
+projection `W`; `model.attention_coefficient_key_kernel_weight_decay` independently
+controls the key projection `W_k` and requires `query_key` conditioning. Both default
+to `false` and, when enabled, use the existing `optim.weight_decay` and base learning
+rate. Biases, query/key amplitudes, and any dense mixing matrix remain exempt.
+Setting the query flag alone preserves the historical policy of no decay on `W_k`.
 The pair coefficient factorizes, so nothing pairwise is stored: the blocked reference
 scales each key column, the fused Triton kernel (`backends/fused_query_key_polynomial.py`)
 forms `c_r(x_t) f_r(x_i)` inside each tile in one pass (its key-side backward also
@@ -373,6 +379,11 @@ accumulates the key-factor gradient), and the Mosaic query kernel runs once per 
 the factor folded into degree-specific values. The per-order path rounds each partial
 output to V's dtype before summing, which at degree one corrupts the gradient after head
 RMSNorm. Diagnostics report the key factors beside the query coefficients.
+
+`model.positional_encoding: none` skips RoPE in dot-product attention; its default
+remains `rope`. It composes with `attention_forget_gate: true` on the blocked
+reference backend: token order enters through the causal mask and cumulative
+forget gate, with QK normalization and coefficient generation unchanged.
 
 For H100 and B300 BF16 query-key attention at context 2048, Q/K and value width 64,
 and degree 4, 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the

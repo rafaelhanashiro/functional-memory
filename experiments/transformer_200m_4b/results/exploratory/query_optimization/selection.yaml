@@ -67,3 +67,41 @@ runs:
     best_validation.json:
       path: experiments/transformer_200m_4b/runs/rb74fa2ebede6/best_validation.json
       sha256: bb039e9b3efa3f27958025c349508284a772d1e01a5cb829a7868af14a10638c
+- study: transformer_200m_4b
+  run_id: r501f5cca0d4c
+  label: query_key-m4-head-scale
+  role: query_key_control
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r501f5cca0d4c/config.yaml
+      sha256: 528f0597f330122b6310fee2f667164dad2def5b49e6c5161339d72a5cd47aef
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r501f5cca0d4c/metrics.jsonl
+      sha256: 047fc7a7f05fe346e67e3f7ce24ca3375bfda2da0ba9f081ea96a63d870398c8
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r501f5cca0d4c/completion.json
+      sha256: 4c34373bd2bc7253475eec88de74102ac14c323bf822baaf7abde06ab779b67a
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r501f5cca0d4c/metadata.json
+      sha256: 976dc82be42abe791cf85db718ca9c73bb477616b8678d9aa508ff98500918e8
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r501f5cca0d4c/best_validation.json
+      sha256: f49fab95eed4e0d882ca29f10208bacf29c57f6db64008eca11d83c8ff6a7b25
+- study: transformer_200m_4b
+  run_id: r4a80e28ce0a7
+  label: query-m4-forget-gate-no-rope-w-decay
+  role: fox_no_rope_projection_decay
+  control_run_id: r82a80d3091e2
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r4a80e28ce0a7/config.yaml
+      sha256: cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763
+- study: transformer_200m_4b
+  run_id: r79d829a16029
+  label: query-key-m4-qk-w-decay
+  role: query_key_projection_decay
+  control_run_id: r501f5cca0d4c
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r79d829a16029/config.yaml
+      sha256: 8c50ed1dd573d12749994c40a61903aaca7db2b357739f208b3884c63f4d8e0d

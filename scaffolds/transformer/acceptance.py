@@ -134,12 +134,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             and model.get("attention_coefficients", "fixed") == "learned"
             and model.get("attention_coefficient_conditioning", "static") == "query_key"
             and model.get("attention_coefficient_activation", "identity") == "tanh"
-            and resolved_backend == "fused"):
-        # Every qualified degree runs together, so runs at different degrees share one
-        # GPU stage and a failure surfaces before any of them trains. A degree without
-        # a parametrized case has no node id, so acceptance fails closed.
-        degrees = sorted({*QUERY_KEY_HEAD_SCALE_DEGREES, int(model["attention_degree"])})
-        paths.extend(f"{QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{degree}-fused]" for degree in degrees)
+            and (resolved_backend == "fused"
+                 or (resolved_backend == "mosaic" and model.get("attention_degree") == 4))):
+        # Fused's qualified degrees run together. Mosaic's per-order composition
+        # requires its own degree-four QK/head/output-gain gate before production;
+        # the underlying query-only kernel checks do not qualify that composition.
+        degrees = (sorted({*QUERY_KEY_HEAD_SCALE_DEGREES, int(model["attention_degree"])})
+                   if resolved_backend == "fused" else (4,))
+        paths.extend(f"{QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{degree}-{resolved_backend}]" for degree in degrees)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":
@@ -312,7 +314,9 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
         entry_module=entry_module,
         cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
             "model", "training", "telemetry", "checkpoint_audit", "parameter_policy",
-            "query_coefficient_learning_rate")),
+            "query_coefficient_learning_rate")) + (
+                ("scaffolds/transformer/tests/test_positional_encoding_none.py",)
+                if config.model.positional_encoding == "none" else ()),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
         check_initialization=(None if (config.model.attention_mechanism in ("gla", "gated_deltanet")
@@ -568,6 +572,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_kernel_weight_decay=False,
+                                           attention_coefficient_key_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
@@ -618,7 +623,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False, positional_encoding="rope",
+        attention_coefficient_kernel_weight_decay=False, attention_coefficient_key_kernel_weight_decay=False,
+        attention_forget_gate=False, positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False))

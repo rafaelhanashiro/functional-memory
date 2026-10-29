@@ -20,14 +20,16 @@ PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
-                    feature_count: int | None = None, kernel_weight_decay: bool = False):
+                    feature_count: int | None = None, kernel_weight_decay: bool = False,
+                    key_kernel_weight_decay: bool = False):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
-    and dense V. kernel_weight_decay decays the query W only."""
+    and dense V. kernel_weight_decay decays the query W only; key_kernel_weight_decay
+    independently decays the key W for query_key conditioning."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
@@ -91,7 +93,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
             AttentionParameterSpec(
                 name="key_polynomial_kernel", argument="key_polynomial_kernel",
                 initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
-                sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
+                sharing="per_head", weight_decay=bool(key_kernel_weight_decay), initial_std=float(projection_initial_std),
             ),
             AttentionParameterSpec(
                 name="key_polynomial_amplitude", argument="key_polynomial_amplitude",
