@@ -28,10 +28,14 @@ def _parent_config(config):
     if parent.continuation.parent_checkpoint:
         raise ValueError("A continuation parent must use the original shared optimizer")
     if parent.model.attention_coefficients != "fixed" or parent.model.attention_fixed_coefficients is not None:
-        raise ValueError("Continuation requires a fixed Taylor parent")
-    if (parent.model.attention_mechanism != "dot_product" or parent.model.attention_degree is None
-            or parent.model.quadratic_mode != "fixed"):
-        raise ValueError("Continuation requires polynomial dot-product attention")
+        raise ValueError("Continuation requires a fixed Taylor or exp parent")
+    if parent.model.attention_mechanism != "dot_product" or parent.model.quadratic_mode != "fixed":
+        raise ValueError("Continuation requires dot-product attention")
+    exp_parent = parent.model.attention_degree is None
+    if exp_parent and (parent.model.attention_normalization or config.model.attention_degree is None):
+        # An unnormalized exp parent continues with a polynomial kernel of an integer degree:
+        # fixed Taylor as the control, or Taylor-initialized learned coefficients.
+        raise ValueError("Continuing an exp parent requires an unnormalized exp parent and a polynomial degree")
     allowed_model_changes = {"attention_coefficients", "attention_coefficient_sharing",
                              "attention_coefficient_scale", "attention_backend",
                              "attention_coefficient_conditioning", "attention_coefficient_activation",
@@ -39,7 +43,10 @@ def _parent_config(config):
                              "attention_coefficient_projection_initial_std",
                              "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
                              "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
-                             "qk_norm_token_scale", "attention_forget_gate"}
+                             "qk_norm_token_scale", "attention_forget_gate",
+                             "attention_coefficient_kernel_weight_decay"}
+    if exp_parent:
+        allowed_model_changes |= {"attention_degree"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -55,8 +62,9 @@ def _parent_config(config):
     if continuation.parent_step > parent.optim.total_steps:
         raise ValueError("Continuation parent step exceeds its training budget")
     # Acceptance restores on CPU with the blocked reference; backend is execution,
-    # and does not change any checkpoint parameter or optimizer shape.
-    parent.model.attention_backend = config.model.attention_backend
+    # and does not change any checkpoint parameter or optimizer shape. An exp parent
+    # keeps a backend that evaluates exp, which the child's polynomial kernel may not.
+    parent.model.attention_backend = "blocked" if exp_parent else config.model.attention_backend
     return parent
 
 

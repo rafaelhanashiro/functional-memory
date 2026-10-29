@@ -243,22 +243,26 @@ shared runtime qualification run on every allocation; the scientific global batc
 stays fixed through gradient accumulation. See the topic for comparison settings,
 findings, and regeneration.
 
-The [query continuation topic](results/exploratory/taylor_query_continuation/README.md)
-compares degree-four query-dependent coefficients with a matched fixed-Taylor
-continuation. Both train all backbone parameters for the same 500 additional
-updates. The query generator starts with the study's zero-amplitude/random-projection
-initialization, reproducing Taylor exactly. Prepare in its own worktree, then
-commit frozen inputs before independent submission:
+The [learned-coefficient topic](results/exploratory/learned_coefficient_continuation/README.md)
+introduces degree-four static or query coefficients (the latter with a decayed projection
+`W`) after 7,500 updates of fixed-Taylor or unnormalized-exp pretraining, 2,000 updates each
+with the canonical QK norm. The Taylor-parent branches reuse the fixed-Taylor control
+`r82203a85ef8e`; the exp-parent branches switch to the degree-four Mosaic kernel and have no
+control of their own. Prepare in one worktree, then commit frozen inputs before submission:
 
 ```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
-  --conditioning query \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_200m_4b/runs/r79da929de109
+PREPARE="scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare --topic learned_coefficient_continuation"
+TAYLOR=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119
+EXP=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45
+JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $TAYLOR --control r82203a85ef8e
+JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $TAYLOR --control r82203a85ef8e
+JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $EXP --control none --degree 4
+JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $EXP --control none --degree 4
 # Already allocated below; reuse these IDs for resumptions.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  rf311afb9339e --conditioning query --partition standard --time-limit 06:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  r6186c797b4db --conditioning query --partition standard --time-limit 06:00:00
+for RUN in r2e081e09c19a rae91f24b06b4 r7e6a68545d4f r673e14eab803; do
+  scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+    $RUN --topic learned_coefficient_continuation --partition standard,long --time-limit 10:00:00
+done
 ```
 
 The [per-token query scale topic](results/exploratory/token_query_scale_continuation/README.md)

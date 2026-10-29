@@ -1,8 +1,10 @@
-"""Allocate and submit matched continuations of one Taylor checkpoint.
+"""Allocate and submit matched continuations of one pretrained checkpoint.
 
-Each pair continues the same pretrained state: a fixed-Taylor control and a branch that
-introduces learned static coefficients, query-dependent coefficients, or the per-token
-query scale gate.
+A continuation resumes a completed fixed-kernel parent (fixed Taylor, or unnormalized exp)
+at its validation-best checkpoint and trains all parameters on fresh data, optionally
+introducing a mechanism: learned static coefficients, query-dependent coefficients, the
+per-token query scale gate, or the forget gate. Each branch is compared with a fixed-Taylor
+continuation of the same parent and budget, allocated alongside it or reused.
 """
 from __future__ import annotations
 
@@ -26,57 +28,89 @@ STUDY = ROOT / "experiments/transformer_200m_4b"
 LEARNING_RATE = 0.0001
 DEFAULT_TIME_LIMIT = "06:00:00"
 CONDITIONINGS = ("static", "query", "token_scale", "forget_gate")
-TOPICS = {"static": "taylor_static_continuation", "query": "taylor_query_continuation",
-          "token_scale": "token_query_scale_continuation", "forget_gate": "forget_gate_continuation"}
-# Additional updates per comparison. The gate pairs run longer because their gates open at
-# Adam's step size; the gates also have their own constant learning rate, while the
-# coefficient branches keep the backbone's.
-UPDATES = {"static": 500, "query": 500, "token_scale": 2000, "forget_gate": 2000}
-NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001, "forget_gate": 0.001}
+# Default topics of the single-pair comparisons; several allocations may share one topic.
+TOPICS = {"static": "taylor_static_continuation", "token_scale": "token_query_scale_continuation",
+          "forget_gate": "forget_gate_continuation"}
+# Additional updates and the introduced parameters' own constant learning rate; the
+# backbone keeps LEARNING_RATE. The coefficient pairs allocated before 2026-10-28 used 500
+# updates at the backbone's rate; their records hold those settings.
+UPDATES = 2000
+NEW_PARAMETER_LEARNING_RATE = 0.001
+BRANCH_ROLES = {"static": "learned_static", "query": "learned_query", "token_scale": "token_query_scale",
+                "forget_gate": "query_forget_gate"}
 QUESTIONS = {
-    "static": "Does enabling static coefficients after Taylor pretraining improve matched continuation?",
-    "query": "Does enabling query coefficients after Taylor pretraining improve matched continuation?",
+    "static": "Does enabling static coefficients after fixed-kernel pretraining improve matched continuation?",
+    "query": "Does enabling query coefficients after fixed-kernel pretraining improve matched continuation?",
     "token_scale": "Does a per-token query scale gate after Taylor pretraining improve matched continuation?",
     "forget_gate": "Does the matched continuation detect the forget gate, which beats fixed Taylor in pretraining?",
 }
-BRANCH_ROLES = {"static": "learned_static", "query": "learned_query", "token_scale": "token_query_scale",
-                "forget_gate": "query_forget_gate"}
 
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def topic_path(conditioning: str) -> Path:
+def topic_path(conditioning: str, topic: str | None = None) -> Path:
     if conditioning not in CONDITIONINGS:
-        raise ValueError("Continuation conditioning must be static, query or token_scale")
-    return STUDY / f"results/exploratory/{TOPICS[conditioning]}"
+        raise ValueError("Continuation conditioning must be static, query, token_scale or forget_gate")
+    name = topic or TOPICS.get(conditioning)
+    if not name:
+        raise ValueError(f"The {conditioning} continuation needs an explicit --topic")
+    return STUDY / "results/exploratory" / name
 
 
-def branch_role(conditioning: str) -> str:
-    return BRANCH_ROLES[conditioning]
+def parent_kind(model: dict) -> str:
+    """"taylor" for a fixed Taylor polynomial parent, "exp" for an unnormalized exp parent."""
+    return "exp" if model.get("attention_degree") is None else "taylor"
 
 
-def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -> dict[str, dict]:
-    """Match additional training while enabling the requested coefficient family."""
-    topic_path(conditioning)
+def branch_role(conditioning: str, *, kind: str, kernel_weight_decay: bool) -> str:
+    """The branch's selection role; exp parents' branches carry an ``exp_`` prefix."""
+    role = BRANCH_ROLES[conditioning]
+    if kernel_weight_decay:
+        role += "_decay"
+    return f"{kind}_{role}" if kind == "exp" else role
+
+
+def recipes(source: dict, continuation: dict, *, conditioning: str = "static", updates: int = UPDATES,
+            new_rate: float | None = NEW_PARAMETER_LEARNING_RATE, kernel_weight_decay: bool = False,
+            degree: int | None = None) -> dict[str, dict]:
+    """Match additional training while enabling the requested mechanism.
+
+    An exp parent needs ``degree``: both branches switch to the degree-``degree`` polynomial
+    kernel on Mosaic, the control as fixed Taylor and the branch with its learned mechanism.
+    """
+    kind = parent_kind(source["model"])
+    if kind == "exp":
+        if not isinstance(degree, int) or degree < 1:
+            raise ValueError("Continuing an exp parent needs the polynomial degree")
+    elif degree not in (None, source["model"]["attention_degree"]):
+        raise ValueError("A Taylor parent keeps its degree")
+    degree = source["model"]["attention_degree"] if degree is None else degree
+    if kernel_weight_decay and conditioning != "query":
+        raise ValueError("Kernel weight decay applies to query coefficients")
     result = {}
-    degree = source["model"]["attention_degree"]
-    for role in ("fixed_taylor", branch_role(conditioning)):
+    for role in ("fixed_taylor", branch_role(conditioning, kind=kind, kernel_weight_decay=kernel_weight_decay)):
         recipe = deepcopy(source)
         recipe["optim"].update(learning_rate=LEARNING_RATE, min_learning_rate=LEARNING_RATE,
-                               warmup_steps=0, total_steps=continuation["parent_step"] + UPDATES[conditioning])
+                               warmup_steps=0, total_steps=continuation["parent_step"] + updates)
         recipe["train"].update(source_commit="auto", micro_batch_size=8, log_every=10, eval_every=100,
                                eval_early_every=None, eval_early_until=0, ckpt_every=100,
-                               wandb_run_name=f"taylor-m{degree}-continuation-{role}",
+                               wandb_run_name=f"{kind}-m{degree}-continuation-{role.removeprefix('exp_')}",
                                wandb_group=STUDY.name, wandb_dir=None, wandb_mode="online")
         recipe["continuation"] = deepcopy(continuation)
-        # The frozen recipes state the gate explicitly, including the control's closed one.
+        # The frozen recipes state every gate explicitly, including the control's closed ones.
         recipe["model"]["qk_norm_token_scale"] = "none"
-        if role == "token_query_scale":
+        recipe["model"].setdefault("attention_forget_gate", False)
+        if kind == "exp":
+            recipe["model"].update(attention_degree=degree, attention_backend="mosaic")
+        if role == "fixed_taylor":
+            result[role] = recipe
+            continue
+        recipe["continuation"]["new_parameter_learning_rate"] = new_rate
+        if conditioning == "token_scale":
             recipe["model"].update(qk_norm_token_scale="cosine")
-            recipe["continuation"]["new_parameter_learning_rate"] = NEW_PARAMETER_LEARNING_RATE[conditioning]
-        elif role != "fixed_taylor":
+        else:
             recipe["model"].update(attention_coefficients="learned",
                                    attention_coefficient_sharing="per_head",
                                    attention_coefficient_scale="factorial")
@@ -84,7 +118,6 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
                 # The pretraining winner: zero-amplitude tanh query coefficients with Gated
                 # DeltaNet's forget gate, on the blocked reference backend (Mosaic has no gate).
                 recipe["model"].update(attention_forget_gate=True, attention_backend="blocked")
-                recipe["continuation"]["new_parameter_learning_rate"] = NEW_PARAMETER_LEARNING_RATE[conditioning]
             if conditioning in ("query", "forget_gate"):
                 recipe["model"].update(
                     attention_coefficient_conditioning="query",
@@ -93,32 +126,36 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
                     attention_coefficient_projection_initial_std=1 / math.sqrt(source["model"]["hidden_size"]),
                     attention_coefficient_tanh_bias=False,
                     attention_coefficient_amplitude_scale="factorial",
+                    attention_coefficient_kernel_weight_decay=bool(kernel_weight_decay),
                 )
         result[role] = recipe
     return result
 
 
-def existing_control(control: str, parent: Path, conditioning: str, continuation: dict) -> dict:
+def existing_control(control: str, parent: Path, continuation: dict, updates: int) -> dict:
     """A completed fixed-Taylor continuation of the same parent and budget, reused as the control."""
     run = STUDY / "runs" / control
     record = load_run(run)
     recipe = yaml.safe_load((run / "config.yaml").read_text())
-    expected_steps = continuation["parent_step"] + UPDATES[conditioning]
     if (record["status"] != "complete" or record.get("condition") != "fixed_taylor"
             or record.get("parent_run_id") != parent.name
             or recipe["continuation"]["parent_checkpoint_sha256"] != continuation["parent_checkpoint_sha256"]
-            or recipe["optim"]["total_steps"] != expected_steps
+            or recipe["optim"]["total_steps"] != continuation["parent_step"] + updates
             or recipe["optim"]["learning_rate"] != LEARNING_RATE
             or recipe["model"].get("attention_coefficients") != "fixed"):
         raise ValueError("The control must be a complete fixed-Taylor continuation of this parent with the same budget")
     return record
 
 
-def prepare(parent: Path, *, conditioning: str = "static", control: str | None = None) -> dict[str, str]:
+def prepare(parent: Path, *, conditioning: str = "static", control: str | None = None, topic: str | None = None,
+            updates: int = UPDATES, new_rate: float | None = NEW_PARAMETER_LEARNING_RATE,
+            kernel_weight_decay: bool = False, degree: int | None = None) -> dict[str, str]:
+    """Allocate a branch and, unless a control is reused or declined, its fixed-Taylor control.
+
+    Allocations may share a topic: an existing selection gains the new runs.
+    """
     parent = parent.resolve()
-    topic = topic_path(conditioning)
-    if (topic / "selection.yaml").exists():
-        raise ValueError("This continuation pair is already allocated; reuse its permanent run IDs")
+    topic_directory = topic_path(conditioning, topic)
     record = load_run(parent)
     validate_record(parent, checkpoint_hashes=True)
     if record["status"] != "complete" or record["home_cluster"] != "kennel":
@@ -127,15 +164,16 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
     model = source["model"]
     expected = {"attention_coefficients": "fixed",
                 "attention_coefficient_conditioning": "static", "attention_normalization": False,
-                "attention_output_scaling": "head_rms_norm", "qk_norm": True,
-                "initialization": "transformer_truncated_reference", "attention_backend": "mosaic"}
-    if conditioning == "token_scale":
-        expected.update(qk_norm_type="rms_norm", qk_norm_head_scale=True)
-        if model.get("qk_norm_token_scale", "none") != "none":
-            raise ValueError("The token-scale pair starts from a parent without the gate")
-    if (not isinstance(model.get("attention_degree"), int) or model["attention_degree"] < 1
+                "attention_output_scaling": "head_rms_norm", "qk_norm": True, "qk_norm_type": "rms_norm",
+                "qk_norm_head_scale": True, "initialization": "transformer_truncated_reference"}
+    kind = parent_kind(model)
+    if kind == "taylor":
+        expected["attention_backend"] = "mosaic"
+    if (model.get("attention_fixed_coefficients") is not None or model.get("attention_forget_gate", False)
+            or model.get("qk_norm_token_scale", "none") != "none"
+            or (kind == "taylor" and (not isinstance(model["attention_degree"], int) or model["attention_degree"] < 1))
             or any(model.get(key) != value for key, value in expected.items())):
-        raise ValueError("Expected a 4B fixed Taylor parent with QK/head RMSNorm")
+        raise ValueError("Expected a 4B fixed Taylor or exp parent with canonical QK/head RMSNorm")
     if source["optim"]["total_steps"] != 7570 or source["data"]["batch_size"] != 256:
         raise ValueError("Expected the 4B recipe and its 256-sequence scientific batch")
     descriptor = record["selected_checkpoint"]
@@ -144,7 +182,7 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
         checkpoint = parent.parents[3] / checkpoint
     best = json.loads((parent / "best_validation.json").read_text())
     if not checkpoint.is_dir() or descriptor["step"] != best["step"] or best["step"] != 7500:
-        raise ValueError("Expected the validation-best Taylor checkpoint at update 7500")
+        raise ValueError("Expected the validation-best checkpoint at update 7500")
     continuation = {
         "parent_config": str(parent / "config.yaml"),
         "parent_config_sha256": sha256(parent / "config.yaml"),
@@ -154,19 +192,21 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
         "parent_step": int(best["step"]),
     }
     run_ids = {}
-    updates, new_rate = UPDATES[conditioning], NEW_PARAMETER_LEARNING_RATE[conditioning]
-    if control is not None:
-        existing_control(control, parent, conditioning, continuation)
+    if control not in (None, "none"):
+        existing_control(control, parent, continuation, updates)
         run_ids["fixed_taylor"] = control
-    for role, recipe in recipes(source, continuation, conditioning=conditioning).items():
+    allocated = recipes(source, continuation, conditioning=conditioning, updates=updates, new_rate=new_rate,
+                        kernel_weight_decay=kernel_weight_decay, degree=degree)
+    for role, recipe in allocated.items():
         if role == "fixed_taylor" and control is not None:
             continue
-        run = create_run(STUDY, recipe, label=f"taylor-m{model['attention_degree']}-continuation-{role}")
+        run = create_run(STUDY, recipe, label=recipe["train"]["wandb_run_name"])
         run_ids[role] = run.name
         update_record(run, {
             "home_cluster": "kennel", "seed": source["train"]["seed"],
             "experiment_kind": "matched_checkpoint_continuation", "condition": role,
             "parent_run_id": parent.name, "parent_study": parent.parent.parent.name,
+            "parent_kernel": kind,
             "source_checkpoint": {**descriptor, "path": str(checkpoint)},
             "source_data_identity": {"path": str(parent / "data_identity.json"),
                                      "sha256": continuation["parent_data_identity_sha256"]},
@@ -178,26 +218,30 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
                              "backbone_optimizer": "preserve pretrained moments and step",
                              "new_parameter_optimizer": "zero moments and fresh Adam clock"
                                                         + (f" at constant learning rate {new_rate}"
-                                                           if new_rate is not None else ""),
+                                                           if role != "fixed_taylor" and new_rate is not None else ""),
                              "data_start_sequence": best["step"] * source["data"]["batch_size"]},
         })
-    selection = {
-        "schema_version": 1, "opened": datetime.now(UTC).date().isoformat(),
-        "question": QUESTIONS[conditioning],
-        "settings": {"metric": "validation_perplexity", "parent_run_id": parent.name,
-                     "parent_step": best["step"], "updates": updates,
-                     "evaluation_every": 100, "learning_rate": LEARNING_RATE,
-                     "new_parameter_learning_rate": new_rate,
-                     "primary_comparison": "terminal held-out NLL/PPL at the same continuation update",
-                     "validation_best": "reported separately from terminal"},
-        "runs": [{"study": STUDY.name, "run_id": run_id, "role": role, "sources": {}}
-                 for role, run_id in run_ids.items()],
-    }
-    if control is not None:
-        selection["settings"]["control"] = f"reused fixed-Taylor continuation {control}"
-    topic.mkdir(parents=True, exist_ok=True)
-    (topic / "selection.yaml").write_text(yaml.safe_dump(selection, sort_keys=False))
-    refresh_selection(topic)
+    selection_path = topic_directory / "selection.yaml"
+    if selection_path.exists():
+        selection = yaml.safe_load(selection_path.read_text())
+        known = {entry["run_id"] for entry in selection["runs"]}
+        selection["runs"].extend({"study": STUDY.name, "run_id": run_id, "role": role, "sources": {}}
+                                 for role, run_id in run_ids.items() if run_id not in known)
+    else:
+        selection = {
+            "schema_version": 1, "opened": datetime.now(UTC).date().isoformat(),
+            "question": QUESTIONS[conditioning],
+            "settings": {"metric": "validation_perplexity", "updates": updates,
+                         "evaluation_every": 100, "learning_rate": LEARNING_RATE,
+                         "new_parameter_learning_rate": new_rate,
+                         "primary_comparison": "terminal held-out NLL/PPL at the same continuation update",
+                         "validation_best": "reported separately from terminal"},
+            "runs": [{"study": STUDY.name, "run_id": run_id, "role": role, "sources": {}}
+                     for role, run_id in run_ids.items()],
+        }
+    topic_directory.mkdir(parents=True, exist_ok=True)
+    selection_path.write_text(yaml.safe_dump(selection, sort_keys=False))
+    refresh_selection(topic_directory)
     regenerate_index(STUDY)
     print(json.dumps(run_ids, sort_keys=True), flush=True)
     return run_ids
@@ -226,14 +270,14 @@ def live_job_state(job_id: str) -> str:
 
 
 def submit(run_id: str, *, partition: str = "standard,long", time_limit: str = DEFAULT_TIME_LIMIT,
-           conditioning: str = "static") -> str:
+           conditioning: str = "static", topic: str | None = None) -> str:
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = changes(ROOT, commit, STUDY.name, "transformer")
     if dirty:
         raise ValueError(f"Commit the frozen inputs before submitting: {dirty}")
-    selection = yaml.safe_load((topic_path(conditioning) / "selection.yaml").read_text())
+    selection = yaml.safe_load((topic_path(conditioning, topic) / "selection.yaml").read_text())
     if run_id not in {entry["run_id"] for entry in selection["runs"]}:
-        raise ValueError("Run is not a member of the explicitly selected continuation pair")
+        raise ValueError("Run is not a member of the explicitly selected continuation topic")
     run = STUDY / "runs" / run_id
     record = load_run(run)
     validate_record(run, checkpoint_hashes=False)
@@ -266,18 +310,28 @@ def main(argv=None) -> None:
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
     prep.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
-    prep.add_argument("--control", help="reuse this completed fixed-Taylor continuation as the control")
+    prep.add_argument("--control", help="reuse this completed fixed-Taylor continuation as the control, "
+                                        "or 'none' to allocate the branch alone")
+    prep.add_argument("--topic", help="results/exploratory topic directory (default: the conditioning's)")
+    prep.add_argument("--updates", type=int, default=UPDATES)
+    prep.add_argument("--new-parameter-learning-rate", type=float, default=NEW_PARAMETER_LEARNING_RATE)
+    prep.add_argument("--kernel-weight-decay", action="store_true",
+                      help="apply optim.weight_decay to the query coefficient projection W")
+    prep.add_argument("--degree", type=int, help="polynomial degree when continuing an exp parent")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
     launch.add_argument("--time-limit", default=DEFAULT_TIME_LIMIT)
     launch.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
+    launch.add_argument("--topic")
     args = parser.parse_args(argv)
     if args.command == "prepare":
-        prepare(args.parent, conditioning=args.conditioning, control=args.control)
+        prepare(args.parent, conditioning=args.conditioning, control=args.control, topic=args.topic,
+                updates=args.updates, new_rate=args.new_parameter_learning_rate,
+                kernel_weight_decay=args.kernel_weight_decay, degree=args.degree)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit,
-               conditioning=args.conditioning)
+               conditioning=args.conditioning, topic=args.topic)
 
 
 if __name__ == "__main__":

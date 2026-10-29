@@ -36,9 +36,14 @@ def make_optimizer(config: Config):
         # Newly introduced parameters have their own Adam clock; using the backbone's
         # old count with zero moments would misapply bias correction. They may also
         # use their own constant learning rate.
+        # Weight decay follows each array's declaration, as in pretraining: only arrays
+        # declared with decay (the query coefficient projection W under
+        # attention_coefficient_kernel_weight_decay, or the forget gate's w_alpha) decay.
         new_rate = config.continuation.new_parameter_learning_rate
         coefficient_adam = optax.adamw(schedule if new_rate is None else optax.constant_schedule(new_rate),
-                                       b1=config.optim.beta1, b2=config.optim.beta2, weight_decay=0.0)
+                                       b1=config.optim.beta1, b2=config.optim.beta2,
+                                       weight_decay=config.optim.weight_decay,
+                                       mask=partial(attention_weight_decay_mask, excluded_names=excluded))
         backbone_adam = adam
 
         def init(params):
