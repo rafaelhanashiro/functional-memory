@@ -55,12 +55,33 @@ def make_optimizer(config: Config):
                 backbone_state, coefficient_state)
 
         adam = optax.GradientTransformation(init, update)
+    query_scale = config.optim.query_coefficient_learning_rate_scale
+    if query_scale != 1.0:
+        adam_update = adam.update
+
+        def update_query_coefficients(updates, state, params=None):
+            # Scale Adam's completed update, after global clipping and moment
+            # normalization. Multiplying raw gradients would not multiply Adam's LR.
+            updates, state = adam_update(updates, state, params)
+
+            def scale_parameter(path, value):
+                keys = tuple(entry.key for entry in path if isinstance(entry, jax.tree_util.DictKey))
+                return value * query_scale if keys and keys[0] in QUERY_COEFFICIENT_READOUTS else value
+
+            return jax.tree.map_with_path(scale_parameter, updates), state
+
+        # The multiplier has no state. Keep the original optimizer state layout,
+        # moments, and counters, including the unchanged default checkpoint format.
+        adam = optax.GradientTransformation(adam.init, update_query_coefficients)
     return optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
 
 
 class ContinuationAdamState(NamedTuple):
     backbone: object
     coefficients: object
+
+
+QUERY_COEFFICIENT_READOUTS = frozenset({"query_polynomial_bias", "query_polynomial_amplitude"})
 
 
 # The arrays a continuation can introduce beside its fixed-Taylor parent: learned static or

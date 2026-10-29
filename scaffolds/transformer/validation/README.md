@@ -11,6 +11,29 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query coefficient learning-rate multiplier (2026-10-29)
+
+CPU qualification passed 17 focused checks for
+`optim.query_coefficient_learning_rate_scale`: only the stored query bias and
+amplitude updates scale, after shared clipping and Adam normalization; projection
+and backbone updates, Adam moments, and the optimizer state layout remain unchanged.
+Checks span warmup through the cosine floor, verify the independent projection
+weight-decay flag and no decay on bias/amplitude, reject unsupported recipes, and
+preserve frozen resume settings. Configuration, training, parameter-policy, and
+continuation regressions passed another 92 checks, including accumulated-gradient
+equivalence and exact checkpoint resume; five multi-device cases were skipped on
+the single CPU device. Production GPU pilots and resume checks remain mandatory.
+
+```bash
+JAX_PLATFORMS=cpu OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TMPDIR=/tmp \
+  scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_query_coefficient_learning_rate.py \
+  scaffolds/transformer/tests/test_config.py \
+  scaffolds/transformer/tests/test_training.py \
+  scaffolds/transformer/tests/test_parameter_policy.py \
+  scaffolds/transformer/tests/test_continuation.py
+```
+
 ### Coefficient forms and the forget gate
 
 The [record](runs/coefficient-forms/qualification.json) pins the qualified source. On

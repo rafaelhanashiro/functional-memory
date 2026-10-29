@@ -106,6 +106,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_denominator_parameterization", "direct")
         value["model"].setdefault("attention_denominator_constant", "fixed")
         value.setdefault("optim", {}).setdefault("coefficient_penalty_denominator", True)
+        value["optim"].setdefault("query_coefficient_learning_rate_scale", 1.0)
         value["model"].setdefault("attention_coefficient_sharing", "global")
         value["model"].setdefault("attention_coefficient_conditioning", "static")
         value["model"].setdefault("attention_coefficient_activation", "identity")

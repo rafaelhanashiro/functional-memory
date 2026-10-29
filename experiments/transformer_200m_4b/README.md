@@ -99,6 +99,39 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_200m_4b/plot_reci
 
 ## Exploratory diagnostics
 
+### Query coefficient optimization
+
+Two degree-four query/tanh runs test weight decay on the projection and a higher
+learning rate on the coefficient offsets and amplitudes, separately. Both copy
+`query-m4-head-scale` (`r2b22f2ff6461`) at the 1x Chinchilla budget and keep
+factorial scaling on the entire coefficient. Their methods, explicit control,
+and findings belong to the [query optimization topic](results/exploratory/query_optimization/README.md).
+Their home cluster is Kennel; each uses one GPU with no dependency on the other.
+
+| Run | Label | Change from the control |
+| --- | --- | --- |
+| `rca97cc9db8f2` | `query-m4-w-decay` | Weight decay 0.1 on query projection W only |
+| `rb74fa2ebede6` | `query-m4-ab-lr-3x` | 3x learning rate on a,b only; W retains its base LR and no decay |
+
+From their isolated worktree, with both recipes and the implementation committed,
+submit each independently after checking the live standard/long allowances:
+
+```bash
+for run in rca97cc9db8f2 rb74fa2ebede6; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+Each record captures its submission command and job ID. Resumptions keep the same
+run ID, recipe, launch commit, and checkpoint; do not submit a duplicate live job.
+
+### Coefficient fitting
+
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)
 compares the fitting capacity of free query coefficients and the trained tanh
 query generator on one sequence, and coefficients shared across a full batch,

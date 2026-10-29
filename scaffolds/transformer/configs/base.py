@@ -554,6 +554,9 @@ class ModelConfig:
 class OptimConfig:
     learning_rate: float = 1e-3
     min_learning_rate: float = 1e-4
+    # Multiply only the diagonal tanh query generator's stored a and b updates.
+    # The projection W and all other parameters retain the base LR schedule.
+    query_coefficient_learning_rate_scale: float = 1.0
     weight_decay: float = 0.1
     weight_decay_policy: Literal["exclude_embeddings_norms_biases_v1"] = "exclude_embeddings_norms_biases_v1"
     # Penalty weight lambda on learned polynomial coefficients, added to the training
@@ -667,6 +670,23 @@ def validate_config(config: Config) -> None:
         raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")
+    query_scale = optim.query_coefficient_learning_rate_scale
+    if (not isinstance(query_scale, (int, float)) or isinstance(query_scale, bool)
+            or not math.isfinite(query_scale) or query_scale <= 0):
+        raise ValueError("optim.query_coefficient_learning_rate_scale must be finite and positive")
+    if query_scale != 1.0:
+        model = config.model
+        if (model.attention_mechanism != "dot_product" or model.attention_coefficients != "learned"
+                or model.attention_coefficient_parameterization != "direct"
+                or model.attention_coefficient_conditioning != "query"
+                or model.attention_coefficient_activation != "tanh"
+                or model.attention_coefficient_readout != "diagonal"):
+            raise ValueError("optim.query_coefficient_learning_rate_scale requires learned direct "
+                             "query-conditioned tanh coefficients with diagonal readout")
+        if continuation.parent_checkpoint:
+            raise ValueError("optim.query_coefficient_learning_rate_scale is not supported for "
+                             "checkpoint continuations; their introduced parameters use "
+                             "continuation.new_parameter_learning_rate")
     if data.source not in ("synthetic", "packed"):
         raise ValueError("data.source must be synthetic or packed")
     for name, value in (

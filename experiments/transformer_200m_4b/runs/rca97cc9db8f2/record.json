@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rca97cc9db8f2/config.yaml",
+    "sha256": "75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay",
+  "name": "query-m4-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rca97cc9db8f2",
+  "status": "planned"
+}

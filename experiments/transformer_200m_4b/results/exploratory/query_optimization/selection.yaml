@@ -1,0 +1,45 @@
+topic: query_optimization
+study: transformer_200m_4b
+comparison:
+  metric: held-out validation perplexity
+  tokens_per_update: 524288
+  report:
+  - terminal (update 7570)
+  - validation-best
+runs:
+- study: transformer_200m_4b
+  run_id: r2b22f2ff6461
+  label: query-m4-head-scale
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9
+- study: transformer_200m_4b
+  run_id: rca97cc9db8f2
+  label: query-m4-w-decay
+  role: projection_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+- study: transformer_200m_4b
+  run_id: rb74fa2ebede6
+  label: query-m4-ab-lr-3x
+  role: coefficient_learning_rate
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rb74fa2ebede6/config.yaml
+      sha256: 2437f0766dcf4f9a83e76140d952ce529ac5ad65283ddae9eb3c19410db62118

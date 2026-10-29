@@ -292,6 +292,17 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
+For learned query-conditioned tanh coefficients with diagonal readout,
+`optim.query_coefficient_learning_rate_scale` (default `1.0`) multiplies the learning
+rate of the stored bias `b` and amplitude `a` at every layer, head, and order. It
+scales the completed Adam update after global gradient clipping; the projection
+`W` and all other parameters keep the base schedule. Both `a` and `b` remain
+excluded from weight decay. A value of `3.0` gives them three times both peak and
+minimum LR with the same warmup and cosine horizon, without changing their forward
+factorial scaling or optimizer moments. The optimizer state layout stays unchanged.
+The multiplier is frozen in each run's recipe and supports ordinary checkpoint
+resumption. Checkpoint continuations from a different recipe use their existing
+`continuation.new_parameter_learning_rate` option instead.
 For tanh, `attention_coefficient_amplitude_initial` (default 1) sets the starting
 `a_r`, and `attention_coefficient_projection_initial_std` (default 0) draws each kernel
 entry from `N(0, std^2)`. The draw uses a mechanism stream derived from the seed
