@@ -85,18 +85,20 @@ QUERY_COEFFICIENT_READOUTS = frozenset({"query_polynomial_bias", "query_polynomi
 
 
 # The arrays a continuation can introduce beside its fixed-Taylor parent: learned static or
-# query coefficients, and the per-token query scale gate.
+# query coefficients, the per-token query scale gate, and the forget gate.
 CONTINUATION_PARAMETERS = frozenset({
     "polynomial_coefficients", "query_polynomial_bias", "query_polynomial_kernel",
     "query_polynomial_amplitude", "query_polynomial_mixing",
     "qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude",
+    "forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias",
 })
 
 
 def continuation_introduces_parameters(config) -> bool:
     """Whether the recipe adds parameter arrays that its parent checkpoint lacks."""
     return (config.model.attention_coefficients == "learned"
-            or getattr(config.model, "qk_norm_token_scale", "none") != "none")
+            or getattr(config.model, "qk_norm_token_scale", "none") != "none"
+            or getattr(config.model, "attention_forget_gate", False))
 
 
 def split_continuation_parameters(params):

@@ -25,19 +25,22 @@ ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
 LEARNING_RATE = 0.0001
 DEFAULT_TIME_LIMIT = "06:00:00"
-CONDITIONINGS = ("static", "query", "token_scale")
+CONDITIONINGS = ("static", "query", "token_scale", "forget_gate")
 TOPICS = {"static": "taylor_static_continuation", "query": "taylor_query_continuation",
-          "token_scale": "token_query_scale_continuation"}
-# Additional updates per comparison. The token-scale pair runs longer because its gate opens
-# from zero at Adam's step size; the gate also has its own constant learning rate, while the
+          "token_scale": "token_query_scale_continuation", "forget_gate": "forget_gate_continuation"}
+# Additional updates per comparison. The gate pairs run longer because their gates open at
+# Adam's step size; the gates also have their own constant learning rate, while the
 # coefficient branches keep the backbone's.
-UPDATES = {"static": 500, "query": 500, "token_scale": 2000}
-NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001}
+UPDATES = {"static": 500, "query": 500, "token_scale": 2000, "forget_gate": 2000}
+NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001, "forget_gate": 0.001}
 QUESTIONS = {
     "static": "Does enabling static coefficients after Taylor pretraining improve matched continuation?",
     "query": "Does enabling query coefficients after Taylor pretraining improve matched continuation?",
     "token_scale": "Does a per-token query scale gate after Taylor pretraining improve matched continuation?",
+    "forget_gate": "Does the matched continuation detect the forget gate, which beats fixed Taylor in pretraining?",
 }
+BRANCH_ROLES = {"static": "learned_static", "query": "learned_query", "token_scale": "token_query_scale",
+                "forget_gate": "query_forget_gate"}
 
 
 def sha256(path: Path) -> str:
@@ -51,7 +54,7 @@ def topic_path(conditioning: str) -> Path:
 
 
 def branch_role(conditioning: str) -> str:
-    return "token_query_scale" if conditioning == "token_scale" else f"learned_{conditioning}"
+    return BRANCH_ROLES[conditioning]
 
 
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -> dict[str, dict]:
@@ -77,7 +80,12 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
             recipe["model"].update(attention_coefficients="learned",
                                    attention_coefficient_sharing="per_head",
                                    attention_coefficient_scale="factorial")
-            if conditioning == "query":
+            if conditioning == "forget_gate":
+                # The pretraining winner: zero-amplitude tanh query coefficients with Gated
+                # DeltaNet's forget gate, on the blocked reference backend (Mosaic has no gate).
+                recipe["model"].update(attention_forget_gate=True, attention_backend="blocked")
+                recipe["continuation"]["new_parameter_learning_rate"] = NEW_PARAMETER_LEARNING_RATE[conditioning]
+            if conditioning in ("query", "forget_gate"):
                 recipe["model"].update(
                     attention_coefficient_conditioning="query",
                     attention_coefficient_activation="tanh",
@@ -90,7 +98,23 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
     return result
 
 
-def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
+def existing_control(control: str, parent: Path, conditioning: str, continuation: dict) -> dict:
+    """A completed fixed-Taylor continuation of the same parent and budget, reused as the control."""
+    run = STUDY / "runs" / control
+    record = load_run(run)
+    recipe = yaml.safe_load((run / "config.yaml").read_text())
+    expected_steps = continuation["parent_step"] + UPDATES[conditioning]
+    if (record["status"] != "complete" or record.get("condition") != "fixed_taylor"
+            or record.get("parent_run_id") != parent.name
+            or recipe["continuation"]["parent_checkpoint_sha256"] != continuation["parent_checkpoint_sha256"]
+            or recipe["optim"]["total_steps"] != expected_steps
+            or recipe["optim"]["learning_rate"] != LEARNING_RATE
+            or recipe["model"].get("attention_coefficients") != "fixed"):
+        raise ValueError("The control must be a complete fixed-Taylor continuation of this parent with the same budget")
+    return record
+
+
+def prepare(parent: Path, *, conditioning: str = "static", control: str | None = None) -> dict[str, str]:
     parent = parent.resolve()
     topic = topic_path(conditioning)
     if (topic / "selection.yaml").exists():
@@ -131,7 +155,12 @@ def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
     }
     run_ids = {}
     updates, new_rate = UPDATES[conditioning], NEW_PARAMETER_LEARNING_RATE[conditioning]
+    if control is not None:
+        existing_control(control, parent, conditioning, continuation)
+        run_ids["fixed_taylor"] = control
     for role, recipe in recipes(source, continuation, conditioning=conditioning).items():
+        if role == "fixed_taylor" and control is not None:
+            continue
         run = create_run(STUDY, recipe, label=f"taylor-m{model['attention_degree']}-continuation-{role}")
         run_ids[role] = run.name
         update_record(run, {
@@ -164,6 +193,8 @@ def prepare(parent: Path, *, conditioning: str = "static") -> dict[str, str]:
         "runs": [{"study": STUDY.name, "run_id": run_id, "role": role, "sources": {}}
                  for role, run_id in run_ids.items()],
     }
+    if control is not None:
+        selection["settings"]["control"] = f"reused fixed-Taylor continuation {control}"
     topic.mkdir(parents=True, exist_ok=True)
     (topic / "selection.yaml").write_text(yaml.safe_dump(selection, sort_keys=False))
     refresh_selection(topic)
@@ -235,6 +266,7 @@ def main(argv=None) -> None:
     prep = sub.add_parser("prepare")
     prep.add_argument("--parent", type=Path, required=True)
     prep.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
+    prep.add_argument("--control", help="reuse this completed fixed-Taylor continuation as the control")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
@@ -242,7 +274,7 @@ def main(argv=None) -> None:
     launch.add_argument("--conditioning", choices=CONDITIONINGS, default="static")
     args = parser.parse_args(argv)
     if args.command == "prepare":
-        prepare(args.parent, conditioning=args.conditioning)
+        prepare(args.parent, conditioning=args.conditioning, control=args.control)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit,
                conditioning=args.conditioning)
