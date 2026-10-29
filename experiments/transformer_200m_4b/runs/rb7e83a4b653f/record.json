@@ -135,7 +135,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "1d7759a8f9f5b5efc454d5c73fc4bde265192177eeda10a70ba8badad488280d"
+      "sha256": "74f2b43eb6429fff4e2294ce0e76b249eaa5e140e3e4399f10a03ce42528b68d"
     },
     "resolved_config": {
       "continuation": {
@@ -331,7 +331,7 @@
   "seed": 42,
   "source_commit": "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
   "status": "running",
-  "step": 7500,
+  "step": 8750,
   "submission": {
     "command": [
       "sbatch",
@@ -354,8 +354,8 @@
     "slurm_job_id": "27137405",
     "submitted_utc": "2026-10-28T17:40:59+00:00"
   },
-  "training_tokens": 3932160000,
-  "updated_utc": "2026-10-29T07:37:49.086192+00:00",
+  "training_tokens": 4587520000,
+  "updated_utc": "2026-10-29T09:27:10.168351+00:00",
   "wandb_run": {
     "path": "experiments/transformer_200m_4b/runs/rb7e83a4b653f/wandb_run.json",
     "sha256": "a0cc22e08e36749a81d8cdfaeb74f182f76826ec80ef94fef46ccd58337ce1d8",
