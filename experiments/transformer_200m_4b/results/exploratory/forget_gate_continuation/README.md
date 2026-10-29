@@ -47,4 +47,53 @@ separately. Launch commands are in the
 
 ## Findings and open decision
 
-The branch is allocated and not yet complete.
+The branch completed all **2,000** updates on one H100 (Kennel `mastiff`, `long`
+partition, job **228802**; its first allocation, job 228741 on `standard`, failed the
+acceptance pilot's slowest-step runtime projection, 31 h against a 24 h limit). The blocked
+backend trained at **16.7 s per update**; the trainer ran **9 h 57 min**.
+
+| Continuation | Restored PPL | Terminal PPL | Validation-best PPL / step |
+| --- | ---: | ---: | --- |
+| Fixed Taylor control | 14.7216 | 14.5064 | 14.5064 / 9,500 |
+| Query coefficients + forget gate | 40.9385 | **14.4417** | 14.4417 / 9,500 |
+
+| Update | 0 | 100 | 200 | 500 | 1,000 | 1,500 | 2,000 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gate − control (nats/token) | +1.0228 | +0.0034 | −0.0005 | −0.0025 | −0.0034 | −0.0039 | **−0.0045** |
+
+The open initialization costs about one nat at the restored baseline; the model recovers
+within 100 updates, overtakes the control by update 200, and its lead grows monotonically
+to **0.0647 PPL (0.45%)**, or **0.00447 nats/token**, at the end: roughly 16% of the full
+pretraining gap after a quarter of the pretraining tokens at the schedule's final learning
+rate, and about 50 times the protocol's numerical resolution (the two query-scale
+baselines differed by 6e-6 nats on the same batches). The protocol therefore does detect a
+mechanism known to help, and the earlier ties are informative nulls.
+
+What the gate learned differs from the pretraining winner's short-range forgetting. At
+update 9,500 the per-head mean `log alpha` has median **−0.0041** per token (half-lives of
+46 / 168 / 367 tokens at the 10th / 50th / 90th percentiles, against a median of 2.2 tokens
+in pretraining), but the distribution over tokens is very skewed: the most negative token
+per head has median `log alpha = −0.97` and reaches **−83** in some heads. The gate is
+near the identity on most tokens and fires hard on a few, segmenting the context at
+content-selected boundaries. Against this, the ungated Taylor kernel on the same parent
+puts more than half of its attention mass beyond 256 tokens for late queries (the Taylor
+quartic never drops below 0.27, so every distant key keeps a floor weight); the resets remove
+that mass. The query coefficients also opened further than in the earlier query
+continuation (mean `|a_r|` **0.18**, maximum **1.58**, at ten times its learning rate).
+
+Whether the token dependence of the resets matters, or any learnable decay with distance
+would do, is the question of the
+[constant-decay continuation](../constant_decay_continuation/README.md).
+
+**Open decision:** discard the topic once the constant-decay comparison has been read, or
+keep it as the protocol's positive control.
+
+Measurements live only in each selected run; `summary.csv` derives every selected
+evaluation with the gate's half-life and per-token statistics, distinguishing terminal from
+validation-best. Regenerate after intentionally incorporating new measurements:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
+  experiments/transformer_200m_4b/results/exploratory/forget_gate_continuation
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.results.exploratory.forget_gate_continuation.collect
+```
