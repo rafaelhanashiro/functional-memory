@@ -297,3 +297,40 @@ def test_reference_backend_agreement_compares_fused_with_blocked(query_key_fitti
     np.testing.assert_allclose(report["production_nll"], report["reference_nll"], rtol=0, atol=1e-5)
     # The same graph on both sides agrees exactly.
     assert reference_backend_agreement(blocked, blocked, source, tokens)["logit_max_absolute_error"] == 0
+
+
+def test_capped_generator_fit_finalizes_its_best_generator(tmp_path):
+    import json
+    import orbax.checkpoint as ocp
+    import yaml
+    from scaffolds.transformer.configs.loader import config_to_dict
+    from scaffolds.transformer.training.coefficient_fit import finalize_stopped
+
+    config = Config(model=query_key_model())
+    config.data.synthetic_vocab_size, config.data.sequence_length, config.data.batch_size = 16, 14, 2
+    config.train.micro_batch_size = 2
+    parent = tmp_path / "parent.yaml"
+    parent.write_text(yaml.safe_dump(config_to_dict(config)))
+    run = tmp_path / "run"
+    (run / "checkpoints").mkdir(parents=True)
+    recipe = {"model": config_to_dict(config)["model"],
+              "oracle": {"parameterization": "query_coefficient_generator", "generator_readout": "diagonal",
+                         "parent_config": str(parent), "parent_run_id": "rparent", "parent_checkpoint": "/parent"}}
+    (run / "config.yaml").write_text(yaml.safe_dump(recipe))
+    (run / "record.json").write_text(json.dumps({"run_id": "run", "status": "paused"}))
+    generator = split_generator_parameters(nnx.split(build_model(config.model, 7), nnx.Param)[1])[0]
+    best = jax.tree.map(lambda value: value + 1., generator)
+    tx = optax.chain(optax.clip_by_global_norm(1.), optax.scale_by_adam())
+    controller = {"step": 10, "best_step": 9, "best_loss": 1.5, "initial_loss": 2.7, "reduced_at": 4}
+    save_state(run / "checkpoints", 10, [generator], [tx.init(generator)], [best], controller)
+    (run / "metrics.jsonl").write_text("".join(json.dumps({"step": s, "nll": 2. - s / 10}) + "\n" for s in range(11)))
+    outcome = finalize_stopped(run, "safety update budget exhausted")
+    assert outcome["status"] == "complete" and outcome["best_step"] == 9 and outcome["step"] == 10
+    assert outcome["frozen_parameter_scope"] == "backbone" and outcome["stopping"] == "safety update budget exhausted"
+    assert [p.name for p in (run / "checkpoints").iterdir()] == ["9"]
+    with ocp.StandardCheckpointer() as checkpointer:
+        saved = checkpointer.restore(run / "checkpoints/9/best", target={"generator_parameters": [best]})
+    _equal(saved["generator_parameters"][0], best)
+    identity = json.loads((run / "checkpoints/9/coefficient_identity.json").read_text())
+    assert identity["layout"] == "model_parameter_tree"
+    assert json.loads((run / "record.json").read_text())["status"] == "complete"

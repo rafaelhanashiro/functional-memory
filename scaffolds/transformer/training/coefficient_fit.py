@@ -171,6 +171,17 @@ def _write_json(path: Path, value):
     temporary.replace(path)
 
 
+def _json_safe(value):
+    """Nonfinite floats become null, so a failure record can always be written."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    return value
+
+
 def _sha256(path: Path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -580,16 +591,17 @@ def _retain_completed_best(run: Path, outcome: dict) -> Path:
 
 
 def finalize_stopped(run: Path, reason: str) -> dict:
-    """Seal a stopped free-table fit's best snapshot as its result, without more updates.
+    """Seal a stopped free-table or generator fit's best snapshot as its result, without more updates.
 
-    Reads the latest resumable checkpoint's best tables and controller, writes the same
-    best-coefficient save and completion as a converged fit, and records why it stopped.
+    Reads the latest resumable checkpoint's best tables or generator and its controller,
+    writes the same best save and completion as a converged fit, and records why it stopped.
     """
     recipe = yaml.safe_load((run / "config.yaml").read_text())
     oracle = recipe["oracle"]
-    if oracle["parameterization"] not in {"free_per_example_query_coefficients",
-                                          "free_per_example_query_key_coefficients"}:
-        raise ValueError("Early finalization applies to per-example free-table fits")
+    generator = oracle["parameterization"] == "query_coefficient_generator"
+    if not generator and oracle["parameterization"] not in {"free_per_example_query_coefficients",
+                                                            "free_per_example_query_key_coefficients"}:
+        raise ValueError("Early finalization applies to per-example free-table and generator fits")
     if (run / "completion.json").exists():
         raise FileExistsError("The fit is already complete")
     root = run / "checkpoints"
@@ -597,13 +609,19 @@ def finalize_stopped(run: Path, reason: str) -> dict:
     if latest is None:
         raise FileNotFoundError("No resumable checkpoint to finalize")
     controller = json.loads((latest / "controller.json").read_text())
-    model = recipe["model"]
-    microbatch = int(oracle["microbatch_size"])
-    shape = (microbatch, model["num_layers"], recipe["data"]["sequence_length"] - 1,
-             model["num_heads"], model["attention_degree"] + 1)
-    leaf = jax.ShapeDtypeStruct(shape, jnp.float32)
     query_key = oracle["parameterization"] == "free_per_example_query_key_coefficients"
-    template = [(leaf, leaf) if query_key else leaf for _ in range(int(oracle["sequence_count"]) // microbatch)]
+    if generator:
+        # The generator's tree comes from the parent model, which the fit ran unchanged.
+        config = parent_config(Path(oracle["parent_config"]))
+        model = nnx.eval_shape(lambda: build_model(config.model, nnx.Rngs(params=0, dropout=0)))
+        template = [split_generator_parameters(nnx.split(model, nnx.Param)[1])[0]]
+    else:
+        model = recipe["model"]
+        microbatch = int(oracle["microbatch_size"])
+        shape = (microbatch, model["num_layers"], recipe["data"]["sequence_length"] - 1,
+                 model["num_heads"], model["attention_degree"] + 1)
+        leaf = jax.ShapeDtypeStruct(shape, jnp.float32)
+        template = [(leaf, leaf) if query_key else leaf for _ in range(int(oracle["sequence_count"]) // microbatch)]
     item = {"best": template}
     with ocp.PyTreeCheckpointer() as checkpointer:
         best = checkpointer.restore(latest / "default", args=ocp.args.PyTreeRestore(
@@ -622,12 +640,15 @@ def finalize_stopped(run: Path, reason: str) -> dict:
     if final_path.exists():
         shutil.rmtree(final_path)
     with ocp.StandardCheckpointer() as checkpointer:
-        checkpointer.save(final_path, {"coefficients": best})
+        checkpointer.save(final_path, {"generator_parameters" if generator else "coefficients": best})
     _write_json(checkpoint / "coefficient_identity.json", {"step": best_step,
-                "layout": ("microbatches of (c, g), each [example,layer,position,head,order]; pair coefficient "
+                "layout": ("model_parameter_tree" if generator else
+                           "microbatches of (c, g), each [example,layer,position,head,order]; pair coefficient "
                            "c_r(t) g_r(i)" if query_key else "microbatches of [example,layer,query,head,order]"),
-                "coordinates": "effective_monomial_c and key factor g" if query_key else "effective_monomial_c",
-                "optimizer_coordinates": "factorial(order)*c", "parameterization": oracle["parameterization"],
+                "coordinates": ("stored_generator_parameters" if generator else
+                                "effective_monomial_c and key factor g" if query_key else "effective_monomial_c"),
+                "optimizer_coordinates": "stored_generator_parameters" if generator else "factorial(order)*c",
+                "parameterization": oracle["parameterization"],
                 "parent_run_id": oracle["parent_run_id"], "parent_checkpoint": oracle["parent_checkpoint"]})
     outcome = {"status": "complete", "step": step, "best_step": best_step,
                "initial_nll": controller["initial_loss"], "best_nll": controller["best_loss"],
@@ -636,7 +657,11 @@ def finalize_stopped(run: Path, reason: str) -> dict:
                "nll_reduction": controller["initial_loss"] - controller["best_loss"],
                "learning_rate_reduced_at": controller["reduced_at"], "finished_utc": _utc(),
                "stopping": reason, "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
-               "parameterization": oracle["parameterization"], "frozen_parameter_scope": "all_pretrained_parameters"}
+               "parameterization": oracle["parameterization"],
+               "frozen_parameter_scope": "backbone" if generator else "all_pretrained_parameters"}
+    if generator:
+        outcome.update(generator_readout=oracle.get("generator_readout", "diagonal"), optimizer_updates_per_step=1,
+                       coefficient_sharing="one input-dependent generator per layer/head shared across the fitting batch")
     _write_json(run / "completion.json", outcome)
     _write_json(run / "metadata.json", outcome)
     checkpoint = _retain_completed_best(run, outcome)
@@ -778,7 +803,7 @@ def main(argv=None):
     parser.add_argument("--run", type=Path, required=True)
     parser.add_argument("--qualify-only", action="store_true")
     parser.add_argument("--finalize-stopped", metavar="REASON",
-                        help="seal a stopped free-table fit's best snapshot as its result")
+                        help="seal a stopped free-table or generator fit's best snapshot as its result")
     args = parser.parse_args(argv)
     run = args.run.resolve()
     if args.finalize_stopped:
@@ -1016,7 +1041,7 @@ def main(argv=None):
         if not reference_agreement["all_logits_finite"] or reference_error > external_nll_atol:
             _write_json(run / "oracle_acceptance_failure.json",
                         {"status": "failed", "phase": "reference_backend_agreement", "time_utc": _utc(),
-                         **reference_agreement})
+                         **_json_safe(reference_agreement)})
             raise RuntimeError("The restored parent's forward disagrees with the blocked reference backend")
     if generator and count > 1:
         # Keep one generator and optimizer for the full batch. A scan holds one
@@ -1178,7 +1203,7 @@ def main(argv=None):
                              "train/first_sequence_nll": float(losses[0]), "train/step_seconds": terminal["seconds"]}
             if generator:
                 wandb_metrics["train/gradient_norm"] = float(norms[0])
-                wandb_metrics.update({f"attention/query_coefficients/{name}/gradient_norm": value
+                wandb_metrics.update({f"attention/{name.split('_')[0]}_coefficients/{name}/gradient_norm": value
                                       for name, value in terminal["generator_gradient_norms"].items()})
             if shared:
                 wandb_metrics["train/gradient_norm"] = float(norms[0])

@@ -62,6 +62,11 @@ request_requeue() {
     wait "$STEP_PID" || true
     STEP_PID=""
   fi
+  # Record the attempt before requeueing: the requeue terminates this job's processes.
+  trap - EXIT
+  stop_watchdog
+  rm -rf -- "$TMPDIR"
+  "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code 0 || true
   scontrol requeue "$SLURM_JOB_ID"
   exit 0
 }
