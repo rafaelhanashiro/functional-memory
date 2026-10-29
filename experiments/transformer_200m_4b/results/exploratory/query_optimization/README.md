@@ -38,10 +38,25 @@ schedule. Neither run decays a or b. The backbone decay policy is unchanged.
 
 ## Findings and limits
 
-Pending. Compare terminal validation PPL against terminal PPL and validation-best
-PPL against validation-best PPL. Inspect coefficient variation, projection magnitude,
-and tanh saturation when available in the run's diagnostics; report the sampled
-inputs and limits of those measurements. Preserve numerical failures explicitly.
+Both optimizer ablations completed all 7,570 updates successfully. Lower validation
+PPL is better; every validation-best checkpoint below is at update 7,500.
+
+| Condition | Terminal PPL | Validation-best PPL | Terminal change from control |
+| --- | ---: | ---: | ---: |
+| Control | 14.779161 | 14.773754 | 0 |
+| W decay 0.1 | 14.713560 | 14.708539 | -0.065600 (-0.44%) |
+| 3x LR on a,b | 14.924409 | 14.919761 | +0.145249 (+0.98%) |
+
+Projection decay gives a small improvement in this comparison. Tripling the a,b
+learning rate worsens held-out PPL; this run does not support adopting that multiplier.
+The same ordering holds for terminal and validation-best metrics. Coefficient
+diagnostics remain with the run measurements; these PPL differences alone do not
+establish a mechanism involving saturation or coefficient variation.
+
+The W-decay job took 5h 15m on an H100 SXM and the higher-LR job took 7h 29m on an
+H100 PCIe. These are complete Slurm allocations including acceptance checks,
+validation, and checkpointing. Different GPU variants prevent attributing the
+wall-clock difference to the optimizer change.
 
 This is a single-seed comparison. The historical control accumulates microbatches
 in a host loop; the new runs use the shared trainer's compiled accumulation loop.
@@ -58,6 +73,6 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
   experiments/transformer_200m_4b/results/exploratory/query_optimization
 ```
 
-Decide whether either intervention improves held-out quality enough to justify
-confirmation. Promote this comparison into its own canonical collection, or
+Decide whether the small W-decay improvement warrants confirmation; neither change
+is a new default. Promote this comparison into its own canonical collection, or
 discard the topic. These runs enter no canonical comparison while the topic is open.

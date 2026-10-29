@@ -24,6 +24,13 @@ continuation regressions passed another 92 checks, including accumulated-gradien
 equivalence and exact checkpoint resume; five multi-device cases were skipped on
 the single CPU device. Production GPU pilots and resume checks remain mandatory.
 
+Both single-H100 executions at source `9c39f921` passed the shared CPU,
+distributed-CPU, GPU, initialization, pilot, and resume acceptance stages: the
+projection-decay configuration on H100 80GB HBM3, and the 3x readout-LR configuration
+on H100 PCIe. Both completed 7,570 production updates with finite validation losses
+using the Mosaic query kernel and the locked CUDA 12 environment. These executions
+qualify the optimizer options on those H100 variants; they do not add B300 evidence.
+
 ```bash
 JAX_PLATFORMS=cpu OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 TMPDIR=/tmp \
   scaffolds/transformer/.venv/bin/python -m pytest -q \

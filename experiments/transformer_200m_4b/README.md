@@ -107,6 +107,7 @@ learning rate on the coefficient offsets and amplitudes, separately. Both copy
 factorial scaling on the entire coefficient. Their methods, explicit control,
 and findings belong to the [query optimization topic](results/exploratory/query_optimization/README.md).
 Their home cluster is Kennel; each uses one GPU with no dependency on the other.
+Both runs are complete.
 
 | Run | Label | Change from the control |
 | --- | --- | --- |
