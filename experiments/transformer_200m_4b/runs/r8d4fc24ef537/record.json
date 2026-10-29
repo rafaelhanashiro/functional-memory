@@ -1,4 +1,24 @@
 {
+  "acceptance": {
+    "allocation_seconds": 172800,
+    "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/scaffolds/transformer/.venv-cuda13/bin/python', '-m', 'experiments.transformer_200m_4b.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1', '--gpu-count', '1', '--gpu-type', 'B300', '--worker', 'initialization', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1/initialization-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
+    "failed_utc": "2026-10-29T16:07:14.194873+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1/failure.json",
+      "sha256": "51e9a3abe1c49b76d6de9cc15bcccef01c99936c99e2bb43ed58ab7476ff0410"
+    },
+    "identity": "fbb0ff3d0b5ba7945a7aa253d8c35de145c363e178b4d179d1bcc83e49863de8",
+    "slurm_job_id": "229701",
+    "stage": "initialization",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
+      "sha256": "9d3127076b88272543eb357a6785a046f435adb4e3fac0fc7d9e57b16b017fae",
+      "size_bytes": 5443
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1",
@@ -6,6 +26,8 @@
       "allocation_seconds": 172800,
       "config_path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
       "config_sha256": "efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183",
+      "exit_code": 1,
+      "finished_utc": "2026-10-29T16:07:14.483961+00:00",
       "gpu_count": 1,
       "gpu_type": "B300",
       "home_cluster": "kennel",
@@ -21,15 +43,21 @@
     "path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
     "sha256": "efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183"
   },
-  "frozen_execution_sha256": "661895edaf14063076ebccad87706f62e2b03ebf4d79d1eea2fa89c924d1dfa6",
+  "error": "CalledProcessError: Command '['/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/scaffolds/transformer/.venv-cuda13/bin/python', '-m', 'experiments.transformer_200m_4b.acceptance', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml', '--directory', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1', '--gpu-count', '1', '--gpu-type', 'B300', '--worker', 'initialization', '--output', '/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1/initialization-result.json', '--stop-after-step', '20']' returned non-zero exit status 1.",
+  "frozen_execution_sha256": "7212a3ec5efd61b98b2eac69618deb7ce1b9334d3b660ee37f06f477c1c7e22c",
   "home_cluster": "kennel",
   "label": "query-m4-alibi-no-rope",
-  "log_path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
+  "log": {
+    "path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
+    "sha256": "9d3127076b88272543eb357a6785a046f435adb4e3fac0fc7d9e57b16b017fae",
+    "size_bytes": 5443
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
   "name": "query-m4-alibi-no-rope",
   "record_schema_version": 1,
   "run_id": "r8d4fc24ef537",
-  "source_commit": "14e1857c610813990e991786772f3f8b727cc988",
-  "status": "acceptance",
+  "source_commit": "165fd780f15886ceaaa26510a3f2e672f088297f",
+  "status": "submitted",
   "submission": {
     "command": [
       "sbatch",
@@ -46,12 +74,12 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_200m_4b.acceptance",
       "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
-      "14e1857c610813990e991786772f3f8b727cc988",
+      "165fd780f15886ceaaa26510a3f2e672f088297f",
       "1",
       "B300"
     ],
     "partition": "long",
-    "slurm_job_id": "229701",
-    "submitted_utc": "2026-10-29T15:52:48.884844+00:00"
+    "slurm_job_id": "229720",
+    "submitted_utc": "2026-10-29T16:11:17.695494+00:00"
   }
 }
