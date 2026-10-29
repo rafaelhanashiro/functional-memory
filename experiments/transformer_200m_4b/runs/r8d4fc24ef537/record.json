@@ -1,12 +1,57 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/.runtime/acceptance/B300-1",
+      "allocation": "JobId=229701 JobName=r8d4fc24ef537 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=2-00:00:00 TimeMin=N/A SubmitTime=2026-10-29T11:52:48 EligibleTime=2026-10-29T11:52:48 AccrueTime=2026-10-29T11:52:48 StartTime=2026-10-29T11:52:48 EndTime=2026-10-31T11:52:48 Deadline=N/A PreemptEligibleTime=2026-10-29T11:52:48 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-29T11:52:48 Scheduler=Main Partition=long AllocNode:Sid=kennel:2462745 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 172800,
+      "config_path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
+      "config_sha256": "efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "14e1857c610813990e991786772f3f8b727cc988",
+      "slurm_job_id": "229701",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-29T15:52:54.894810+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
     "sha256": "efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183"
   },
+  "frozen_execution_sha256": "661895edaf14063076ebccad87706f62e2b03ebf4d79d1eea2fa89c924d1dfa6",
   "home_cluster": "kennel",
   "label": "query-m4-alibi-no-rope",
+  "log_path": "experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
   "name": "query-m4-alibi-no-rope",
   "record_schema_version": 1,
   "run_id": "r8d4fc24ef537",
-  "status": "planned"
+  "source_commit": "14e1857c610813990e991786772f3f8b727cc988",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--nice=0",
+      "--partition=long",
+      "--gres=gpu:b300:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=48:00:00",
+      "--job-name=r8d4fc24ef537",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/alibi-decay-4b/experiments/transformer_200m_4b/runs/r8d4fc24ef537/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_200m_4b.acceptance",
+      "experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml",
+      "14e1857c610813990e991786772f3f8b727cc988",
+      "1",
+      "B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "229701",
+    "submitted_utc": "2026-10-29T15:52:48.884844+00:00"
+  }
 }
