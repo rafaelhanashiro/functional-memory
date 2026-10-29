@@ -464,9 +464,11 @@ def qk_norm_identity(model) -> dict:
             "qk_norm_gain_shared_across_heads": True,
             "qk_norm_stats_dtype": "float32",
             "attention_score_formula": (
-                "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), "
-                "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
-                "independent Q/K channel gains per layer, shared across heads"),
+                ("<g_Q * q / sqrt(mean(q^2) + eps), g_K * k / sqrt(mean(k^2) + eps)> / sqrt(d_K); "
+                 if model.positional_encoding == "none" else
+                 "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); ")
+                + "independent Q/K channel gains per layer, shared across heads"),
+            **({"positional_encoding": "none"} if model.positional_encoding == "none" else {}),
         }
         if model.qk_norm_head_scale:
             identity.update(

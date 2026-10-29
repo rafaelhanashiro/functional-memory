@@ -125,7 +125,7 @@ class ModelConfig:
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
     # causal SiLU convolution, and L2 normalization per head; beta_t = 2 sigmoid(x_t W + b).
-    positional_encoding: Literal["rope", "path"] = "rope"
+    positional_encoding: Literal["rope", "path", "none"] = "rope"
     path_w_rank: int = 32
     path_conv_size: int = 3
     # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
@@ -249,7 +249,7 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
-        if self.positional_encoding not in ("rope", "path"):
+        if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
         for name in ("path_w_rank", "path_conv_size"):
             value = getattr(self, name)
@@ -420,9 +420,9 @@ class ModelConfig:
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding != "rope" or self.attention_backend != "blocked"):
+                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
             raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE, on the blocked reference backend")
+                             "attention with RoPE or no positional encoding, on the blocked reference backend")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

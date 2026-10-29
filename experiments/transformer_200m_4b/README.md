@@ -303,26 +303,34 @@ whose order-r coefficient depends on both the query and the key,
 `c_r(x_t) [1 + a_key_r tanh(W_key_r x_i)]` with `c_r(x_t) = [b_r + a_r tanh(W_r x_t)] / r!`.
 Offsets start at one and amplitudes at zero, so each run starts at fixed Taylor;
 coefficient projections start from N(0, 1/896). Learned parameters are independent
-per layer and head, and the attention output uses per-head RMSNorm.
+per layer and head, the attention output uses per-head RMSNorm, and QK normalization
+is the canonical setup with the learned per-head score scale. The degree-four fixed,
+static, and query runs with the same QK setup are `r816ab0fbe119`, `r4339a245820e`,
+and `r2b22f2ff6461`.
 
 | Degree | Run |
 | --- | --- |
-| 4 | `r097fcda6a3af` |
-| 8 | `rf0a5652acaa6` |
-| 12 | `ree2eb2e4287e` |
+| 4 | `r501f5cca0d4c` |
+| 8 | `r536dee0929d5` |
+| 12 | `r2459b843ca81` |
 
-Their recipe precedes the per-head QK score scale: QK RMSNorm uses the per-layer
-gains only. Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests.
-Each ran on one H100 80GB HBM3 with the fused query–key kernel at source commit
-`fc0903e` (branch `claude/transformer-200m-4b-query-key-orcd`). Retained
-checkpoints and logs are under ORCD's artifact root,
+Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests. Each ran on one
+H100 80GB HBM3 with the fused query–key kernel (allocated with
+`--allow-triton-attention`; 32-by-32 backward tiles at degrees 4, 8, and 12) at source
+commit `bf99d0e` (branch `claude/transformer-200m-4b-query-key-head-scale-orcd`).
+GPU acceptance ran the fused query–key head-scale backend tests at degrees 4, 8, and
+12. Retained checkpoints and logs are under ORCD's artifact root,
 `/orcd/pool/006/rafah/functional_memory/artifacts/`, at the paths recorded in each
-run. From a worktree at the source commit, each run was submitted as below; the
-recorded commands also pass a trailing `96`, which this launcher ignores.
+run. The node exclusions skip the throttled `node3009` and `node3209`, the H100 NVL
+nodes `node1708`, `node1709`, and `node4508`, `node2801` (failed CUDA
+initialization), and `node3409` (half the expected update rate). From a worktree at
+the source commit, each run was submitted as below; the runtime override gives
+acceptance a 96-hour qualification horizon.
 
 ```bash
-for run in r097fcda6a3af rf0a5652acaa6 ree2eb2e4287e; do
-  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+for run in r501f5cca0d4c r536dee0929d5 r2459b843ca81; do
+  TRANSFORMER_ALLOCATION_SECONDS=345600 sbatch --parsable --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
     --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
     scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
     "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
