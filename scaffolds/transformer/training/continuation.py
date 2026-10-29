@@ -62,8 +62,9 @@ def _parent_config(config):
     if continuation.parent_step > parent.optim.total_steps:
         raise ValueError("Continuation parent step exceeds its training budget")
     # Acceptance restores on CPU with the blocked reference; backend is execution,
-    # and does not change any checkpoint parameter or optimizer shape.
-    parent.model.attention_backend = config.model.attention_backend
+    # and does not change any checkpoint parameter or optimizer shape. An exp parent
+    # keeps a backend that evaluates exp, which the child's polynomial kernel may not.
+    parent.model.attention_backend = "blocked" if exp_parent else config.model.attention_backend
     return parent
 
 
