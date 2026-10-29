@@ -505,7 +505,8 @@ Opened **2026-10-28**. Home cluster: **ORCD**. How far can the trained query-key
 coefficient generators alone fit a fixed batch? Run `r043b150cde03`
 (selection role `query_key_generator_full_batch_m4_head_scale`) starts from the
 degree-four query-key pretraining run `r501f5cca0d4c` at its validation-best step
-**7,500**, after 7,570 updates (3,968,860,160 prediction tokens). That parent uses
+**7,500** (3,932,160,000 training tokens; the full run trained 7,570 updates,
+3,968,860,160 prediction tokens). That parent uses
 the canonical QK RMSNorm with learned per-head score scales; its retained checkpoint
 in ORCD's artifact root has directory SHA256 `8e7eafad…efc1a`. The fit runs the
 parent's model unchanged, on the fused query-key kernel.
