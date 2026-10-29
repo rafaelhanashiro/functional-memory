@@ -11,6 +11,49 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Acceptance runtime projection (2026-10-29)
+
+Acceptance times cold diagnostic/evaluation calls separately, then collects warm
+diagnostic calls and at least three full global evaluation batches. Median warm
+training-update, diagnostic, and evaluation-batch times scale with their respective
+production counts. Checkpoint writes use their largest measured time. The disposable
+pilot's complete elapsed time is included once; its updates do not replace production
+updates. The two-hour allocation reserve remains. `runtime-projection.json` records
+the cost breakdown even when an allocation is rejected.
+
+The acceptance and continuation checks passed 110 cases. Timing, training, and
+continuation checks passed 32 cases on one CPU device; five explicitly distributed
+cases were skipped there. All six new timing checks and those five distributed
+cases passed with two forced CPU devices. The timing checks compare exact model,
+optimizer, batch/RNG, and checkpoint hashes; preserve validation measurements and
+the packed-data cursor; cover continuation baselines; and reject invalid warmup or
+extra-probe outputs. A broader two-device invocation hit an existing mocked-diagnostics
+fixture in `test_training.py` that assumes one device, so only the targeted two-device
+checks are claimed here.
+
+The GPU qualification harness runs a 20-update pilot, measures a full warmed
+validation on its checkpoint, and audits the next update in a fresh process.
+The input recipe stays immutable; successful qualification removes the disposable
+checkpoints. The [H100 qualification](runtime_estimate_gpu.json) uses the 200M
+degree-four query-attention recipe, global batch 256, microbatch 16, context 2,048,
+and 19 held-out batches. In job 229866 at source `057a8b71`, cold diagnostics took
+21.48 seconds and the cold evaluation batch 17.13 seconds; warm diagnostics took
+0.069 seconds and the median warm evaluation batch 1.063 seconds. The new estimate
+for one full validation was 20.26 seconds; a separately restored process measured
+18.67 seconds (8.54% overprediction). Exact fresh-process resume checks passed,
+and the disposable checkpoints were removed. This is one sampled validation on H100 SXM,
+not a claim of full-training wall-time accuracy or B300 qualification.
+
+Run from a committed checkout, after checking live scheduler allowances:
+
+```bash
+sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=collie,samoyed,doodle,terrier,shiba \
+  --output=scaffolds/transformer/validation/logs/runtime-estimate-%j.log \
+  scaffolds/transformer/validation/runtime_estimate.sbatch \
+  "$(git rev-parse HEAD)" <recipe.yaml> <new-qualification.json>
+```
+
 ### Query coefficient learning-rate multiplier (2026-10-29)
 
 CPU qualification passed 17 focused checks for
