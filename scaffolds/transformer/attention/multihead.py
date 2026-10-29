@@ -66,6 +66,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
+        attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
         rngs=rngs,
     )
 
@@ -91,6 +92,7 @@ class MultiHeadAttention(nnx.Module):
         qk_norm_head_scale: bool = False,
         qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
+        attention_forget_gate_form: str = "input",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path"):
@@ -173,6 +175,9 @@ class MultiHeadAttention(nnx.Module):
                                       or positional_encoding != "rope" or backend != "blocked"):
             raise ValueError("The forget gate requires nonlinear query coefficients with RoPE on the blocked backend")
         self.attention_forget_gate = attention_forget_gate
+        if attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {attention_forget_gate_form}")
+        self.attention_forget_gate_form = attention_forget_gate_form
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -331,16 +336,22 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
-        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS, log_decay
+        from scaffolds.transformer.attention.forget_gate import (
+            PARAMETERS as FORGET_GATE_PARAMETERS, constant_log_decay, log_decay, parameter_names,
+        )
 
-        forget_gate = [parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS]
-        if any(value is None for value in forget_gate) if self.attention_forget_gate else any(
-                value is not None for value in forget_gate):
-            raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
+        gate_names = parameter_names(self.attention_forget_gate_form) if self.attention_forget_gate else ()
+        forget_gate = {name: parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS}
+        if any(forget_gate[name] is None for name in gate_names) or any(
+                value is not None for name, value in forget_gate.items() if name not in gate_names):
+            raise ValueError("The forget gate requires exactly its model-owned parameters for its form")
         log_alpha = None
         if self.attention_forget_gate:
             # Cumulative FP32 log decay L_t; the kernel multiplies each weight by exp(L_t - L_i).
-            log_alpha = log_decay(x, *forget_gate)
+            if self.attention_forget_gate_form == "constant":
+                log_alpha = constant_log_decay(x, forget_gate["forget_gate_log_rate"])
+            else:
+                log_alpha = log_decay(x, *(forget_gate[name] for name in FORGET_GATE_PARAMETERS))
             parameters["query_log_decay"] = jnp.cumsum(log_alpha, axis=1)
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (

@@ -25,22 +25,26 @@ ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_200m_4b"
 LEARNING_RATE = 0.0001
 DEFAULT_TIME_LIMIT = "06:00:00"
-CONDITIONINGS = ("static", "query", "token_scale", "forget_gate")
+CONDITIONINGS = ("static", "query", "token_scale", "forget_gate", "constant_decay")
 TOPICS = {"static": "taylor_static_continuation", "query": "taylor_query_continuation",
-          "token_scale": "token_query_scale_continuation", "forget_gate": "forget_gate_continuation"}
+          "token_scale": "token_query_scale_continuation", "forget_gate": "forget_gate_continuation",
+          "constant_decay": "constant_decay_continuation"}
 # Additional updates per comparison. The gate pairs run longer because their gates open at
 # Adam's step size; the gates also have their own constant learning rate, while the
 # coefficient branches keep the backbone's.
-UPDATES = {"static": 500, "query": 500, "token_scale": 2000, "forget_gate": 2000}
-NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001, "forget_gate": 0.001}
+UPDATES = {"static": 500, "query": 500, "token_scale": 2000, "forget_gate": 2000, "constant_decay": 2000}
+NEW_PARAMETER_LEARNING_RATE = {"static": None, "query": None, "token_scale": 0.001, "forget_gate": 0.001,
+                               "constant_decay": 0.001}
 QUESTIONS = {
     "static": "Does enabling static coefficients after Taylor pretraining improve matched continuation?",
     "query": "Does enabling query coefficients after Taylor pretraining improve matched continuation?",
     "token_scale": "Does a per-token query scale gate after Taylor pretraining improve matched continuation?",
     "forget_gate": "Does the matched continuation detect the forget gate, which beats fixed Taylor in pretraining?",
+    "constant_decay": "Does a constant ALiBi-style decay per head recover the forget gate's continuation gain "
+                      "without token dependence?",
 }
 BRANCH_ROLES = {"static": "learned_static", "query": "learned_query", "token_scale": "token_query_scale",
-                "forget_gate": "query_forget_gate"}
+                "forget_gate": "query_forget_gate", "constant_decay": "query_constant_decay"}
 
 
 def sha256(path: Path) -> str:
@@ -80,12 +84,15 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static") -
             recipe["model"].update(attention_coefficients="learned",
                                    attention_coefficient_sharing="per_head",
                                    attention_coefficient_scale="factorial")
-            if conditioning == "forget_gate":
+            if conditioning in ("forget_gate", "constant_decay"):
                 # The pretraining winner: zero-amplitude tanh query coefficients with Gated
-                # DeltaNet's forget gate, on the blocked reference backend (Mosaic has no gate).
-                recipe["model"].update(attention_forget_gate=True, attention_backend="blocked")
+                # DeltaNet's forget gate, on the blocked reference backend (Mosaic has no gate);
+                # or the same with a constant ALiBi-style decay per head instead of the gate.
+                recipe["model"].update(attention_forget_gate=True, attention_backend="blocked",
+                                       attention_forget_gate_form="constant" if conditioning == "constant_decay"
+                                       else "input")
                 recipe["continuation"]["new_parameter_learning_rate"] = NEW_PARAMETER_LEARNING_RATE[conditioning]
-            if conditioning in ("query", "forget_gate"):
+            if conditioning in ("query", "forget_gate", "constant_decay"):
                 recipe["model"].update(
                     attention_coefficient_conditioning="query",
                     attention_coefficient_activation="tanh",

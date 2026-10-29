@@ -264,7 +264,25 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
   --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119
 # Already allocated below; reuse this ID for resumptions.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
-  rd5ea49c1fde6 --conditioning forget_gate --partition standard,long --time-limit 24:00:00
+  rd5ea49c1fde6 --conditioning forget_gate --partition long --time-limit 48:00:00
+```
+
+On an H100 PCIe the blocked backend trains this recipe at 16.7 s per update (about 10 h
+for the budget), and the pilot's slowest-step projection reached 31 h, beyond `standard`'s
+24 h limit; the `long` allocation only clears that projection.
+
+The [constant-decay topic](results/exploratory/constant_decay_continuation/README.md) asks
+whether the gate's token dependence matters: the same branch with
+`attention_forget_gate_form: constant`, one learned rate per layer and head starting at
+ALiBi's slopes, against the same control.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation prepare \
+  --conditioning constant_decay --control r82203a85ef8e \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/r816ab0fbe119
+# Already allocated below; reuse this ID for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
+  rfe7957b8f530 --conditioning constant_decay --partition long --time-limit 48:00:00
 ```
 
 ## Teacher-activation coefficient distillation

@@ -98,6 +98,10 @@ class ModelConfig:
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
+    # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
+    # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
+    attention_forget_gate_form: Literal["input", "constant"] = "input"
     # Apply optim.weight_decay to the query coefficient projection W; b, a, V, and any key
     # projection stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -409,6 +413,10 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
+        if self.attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
+        if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
+            raise ValueError("A forget gate form requires the forget gate")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"

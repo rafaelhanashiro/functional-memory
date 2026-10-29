@@ -48,10 +48,20 @@ def _uniform_fan_in(key, shape):
     return jax.random.uniform(key, shape, jnp.float32, -bound, bound)
 
 
+def _alibi_log_slope(key, shape):
+    """Deterministic: log 2^(-8 h / H) for head h of H, the same in every layer; [L, H, 1]."""
+    from scaffolds.transformer.attention.forget_gate import alibi_log_slopes
+
+    if len(shape) != 3 or shape[-1] != 1:
+        raise ValueError("ALiBi slopes initialize a per-head [layers, heads, 1] parameter")
+    slopes = jnp.asarray(alibi_log_slopes(shape[1]), jnp.float32).reshape(1, shape[1], 1)
+    return jnp.broadcast_to(slopes, shape)
+
+
 # Gated DeltaNet's decay-gate draws: a PyTorch-default Linear row over the last axis,
 # exp(A_log) ~ Uniform(0, 16), and softplus(dt_bias) log-uniform on [0.001, 0.1].
 RANDOM_INITIALIZERS = {"uniform_fan_in": _uniform_fan_in, "mamba2_log_rate": _mamba2_log_rate,
-                       "mamba2_dt_bias": _mamba2_dt_bias}
+                       "mamba2_dt_bias": _mamba2_dt_bias, "alibi_log_slope": _alibi_log_slope}
 
 
 # The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
@@ -129,7 +139,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     if getattr(config, "attention_forget_gate", False):
         from scaffolds.transformer.attention.forget_gate import parameter_specs as forget_gate_specs
 
-        specs += forget_gate_specs(hidden_size=config.hidden_size)
+        specs += forget_gate_specs(hidden_size=config.hidden_size,
+                                   form=getattr(config, "attention_forget_gate_form", "input"))
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 
