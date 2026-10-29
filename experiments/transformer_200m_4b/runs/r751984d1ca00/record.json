@@ -49,8 +49,8 @@
   "artifacts": [
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/best_validation.json",
-      "sha256": "390fab7adb03801c3299cb5ca7702157328ba1a3c931b717c545b6c947bb0364",
-      "size_bytes": 183
+      "sha256": "a95d2053a58e9ebbb4f1e67fc25cee22b7af5577ac6d882f56ab04201103cb32",
+      "size_bytes": 184
     },
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.json",
@@ -64,13 +64,13 @@
     },
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/metadata.json",
-      "sha256": "47b3417a517bca4d0eb4eb5ee7d9fca3e9706f9af8a1555893b9ccd04a7cfd7d",
-      "size_bytes": 850202
+      "sha256": "37f9bd2a3f5373e3dc488b68734c9e174cbc664ef24c79d4043b88ff7512b88f",
+      "size_bytes": 849990
     },
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/metrics.jsonl",
-      "sha256": "e39227a039cdf8c458a5014b862550f9822c90832ed21accb9a50d885d34a6c2",
-      "size_bytes": 6680803
+      "sha256": "18f2f8062749ff6f4519c70f67bce95e7e8e0ed90487911e3b67220d1f306e38",
+      "size_bytes": 8343745
     },
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/wandb_run.json",
@@ -79,8 +79,8 @@
     },
     {
       "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/training.log",
-      "sha256": "d13c55c029ca5b0a0d731aa17e131a5527f81aa939aff4002624d00528e98809",
-      "size_bytes": 479922
+      "sha256": "9416b4600cc05b37f0cbce9969f31b034e8c70bc96a87c86976cedc7b2de54f5",
+      "size_bytes": 825208
     }
   ],
   "attempts": [
@@ -121,6 +121,8 @@
       "allocation": "JobId=27137407 JobName=r751984d1ca00 UserId=rafah(208950) GroupId=rafah(100208950) MCS_label=N/A Priority=35462 Nice=0 Account=mit_general QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=2 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=2-00:00:00 TimeMin=06:00:00 SubmitTime=2026-10-29T02:24:28 EligibleTime=2026-10-29T02:35:37 AccrueTime=2026-10-29T02:51:15 StartTime=2026-10-29T03:36:13 EndTime=2026-10-31T03:36:13 Deadline=N/A PreemptEligibleTime=2026-10-29T03:36:13 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-29T03:36:13 Scheduler=Backfill Partition=mit_preemptable AllocNode:Sid=login006:560045 ReqNodeList=(null) ExcNodeList=node[1708-1709,2801,3009,3209,3409,4508] NodeList=node1701 BatchHost=node1701 NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=NO Exclusive=NO Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null) Command=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/scaffolds/transformer/launchers/orcd.sbatch SubmitLine=sbatch --parsable --job-name=r751984d1ca00 --output=experiments/transformer_200m_4b/runs/r751984d1ca00/training.log --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml 8ef54e88bc223302a2cc5bd1c37007f3bb9a302f 1 H100 WorkDir=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8 Comment=***TEST_COMMENT*** StdErr= StdIn=/dev/null StdOut=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/training.log TresPerNode=gres/gpu:h100:1 TresPerTask=cpu=16",
       "config_path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml",
       "config_sha256": "f92f8ed5d7c2cca0db11ea37120dbd301ff25e691873613c7a2bf83568652dcb",
+      "exit_code": 0,
+      "finished_utc": "2026-10-29T11:25:15.100239+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "orcd",
@@ -129,12 +131,42 @@
       "slurm_partition": "mit_preemptable",
       "slurm_restart_count": "2",
       "started_utc": "2026-10-29T07:36:16.843173+00:00"
+    },
+    {
+      "acceptance_directory": "/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/.runtime/acceptance/H100-1",
+      "allocation": "JobId=27137407 JobName=r751984d1ca00 UserId=rafah(208950) GroupId=rafah(100208950) MCS_label=N/A Priority=35051 Nice=0 Account=mit_general QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=3 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:28 TimeLimit=06:53:00 TimeMin=06:00:00 SubmitTime=2026-10-29T07:25:27 EligibleTime=2026-10-29T07:27:28 AccrueTime=2026-10-29T07:28:54 StartTime=2026-10-29T07:36:16 EndTime=2026-10-29T14:29:16 Deadline=N/A PreemptEligibleTime=2026-10-29T07:36:16 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-29T07:36:16 Scheduler=Backfill Partition=mit_preemptable AllocNode:Sid=login006:560045 ReqNodeList=(null) ExcNodeList=node[1708-1709,2801,3009,3209,3409,4508] NodeList=node2641 BatchHost=node2641 NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=NO Exclusive=NO Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null) Command=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/scaffolds/transformer/launchers/orcd.sbatch SubmitLine=sbatch --parsable --job-name=r751984d1ca00 --output=experiments/transformer_200m_4b/runs/r751984d1ca00/training.log --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml 8ef54e88bc223302a2cc5bd1c37007f3bb9a302f 1 H100 WorkDir=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8 Comment=***TEST_COMMENT*** StdErr= StdIn=/dev/null StdOut=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/training.log TresPerNode=gres/gpu:h100:1 TresPerTask=cpu=16",
+      "config_path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml",
+      "config_sha256": "f92f8ed5d7c2cca0db11ea37120dbd301ff25e691873613c7a2bf83568652dcb",
+      "exit_code": 0,
+      "finished_utc": "2026-10-29T12:31:30.622609+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "orcd",
+      "launch_commit": "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
+      "slurm_job_id": "27137407",
+      "slurm_partition": "mit_preemptable",
+      "slurm_restart_count": "3",
+      "started_utc": "2026-10-29T11:36:44.796086+00:00"
+    },
+    {
+      "acceptance_directory": "/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/.runtime/acceptance/H100-1",
+      "allocation": "JobId=27137407 JobName=r751984d1ca00 UserId=rafah(208950) GroupId=rafah(100208950) MCS_label=N/A Priority=35011 Nice=0 Account=mit_general QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=4 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:50 TimeLimit=2-00:00:00 TimeMin=06:00:00 SubmitTime=2026-10-29T08:31:40 EligibleTime=2026-10-29T08:33:41 AccrueTime=2026-10-29T08:34:57 StartTime=2026-10-29T08:35:35 EndTime=2026-10-31T08:35:35 Deadline=N/A PreemptEligibleTime=2026-10-29T08:35:35 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-29T08:35:35 Scheduler=Backfill Partition=mit_preemptable AllocNode:Sid=login006:560045 ReqNodeList=(null) ExcNodeList=node[1708-1709,2801,3009,3209,3409,4508] NodeList=node2900 BatchHost=node2900 NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1,gres/gpu:h100=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=NO Exclusive=NO Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null) Command=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/scaffolds/transformer/launchers/orcd.sbatch SubmitLine=sbatch --parsable --job-name=r751984d1ca00 --output=experiments/transformer_200m_4b/runs/r751984d1ca00/training.log --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml 8ef54e88bc223302a2cc5bd1c37007f3bb9a302f 1 H100 WorkDir=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8 Comment=***TEST_COMMENT*** StdErr= StdIn=/dev/null StdOut=/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/training.log TresPerNode=gres/gpu:h100:1 TresPerTask=cpu=16",
+      "config_path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml",
+      "config_sha256": "f92f8ed5d7c2cca0db11ea37120dbd301ff25e691873613c7a2bf83568652dcb",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "orcd",
+      "launch_commit": "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
+      "slurm_job_id": "27137407",
+      "slurm_partition": "mit_preemptable",
+      "slurm_restart_count": "4",
+      "started_utc": "2026-10-29T12:36:25.017176+00:00"
     }
   ],
   "best_validation": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/best_validation.json",
-    "sha256": "390fab7adb03801c3299cb5ca7702157328ba1a3c931b717c545b6c947bb0364",
-    "size_bytes": 183
+    "sha256": "a95d2053a58e9ebbb4f1e67fc25cee22b7af5577ac6d882f56ab04201103cb32",
+    "size_bytes": 184
   },
   "config": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/config.yaml",
@@ -160,7 +192,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "9fbfb1e01f0254eccc95719b97d46727bf2a0baf12b11174dfba79c3b533b99e"
+      "sha256": "b49fc1c909a4666e9a1bff72a3d51cf07fcf953e9a5727ee3f2331d00d91f0e2"
     },
     "resolved_config": {
       "continuation": {
@@ -335,19 +367,19 @@
   "label": "query_key-m4-2.5x",
   "log": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/training.log",
-    "sha256": "d13c55c029ca5b0a0d731aa17e131a5527f81aa939aff4002624d00528e98809",
-    "size_bytes": 479922
+    "sha256": "9416b4600cc05b37f0cbce9969f31b034e8c70bc96a87c86976cedc7b2de54f5",
+    "size_bytes": 825208
   },
   "log_path": "/orcd/pool/006/rafah/functional_memory/worktrees/200m-2p5x-key-query-m8/experiments/transformer_200m_4b/runs/r751984d1ca00/training.log",
   "metadata": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/metadata.json",
-    "sha256": "47b3417a517bca4d0eb4eb5ee7d9fca3e9706f9af8a1555893b9ccd04a7cfd7d",
-    "size_bytes": 850202
+    "sha256": "37f9bd2a3f5373e3dc488b68734c9e174cbc664ef24c79d4043b88ff7512b88f",
+    "size_bytes": 849990
   },
   "metrics": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/metrics.jsonl",
-    "sha256": "e39227a039cdf8c458a5014b862550f9822c90832ed21accb9a50d885d34a6c2",
-    "size_bytes": 6680803
+    "sha256": "18f2f8062749ff6f4519c70f67bce95e7e8e0ed90487911e3b67220d1f306e38",
+    "size_bytes": 8343745
   },
   "name": "query_key-m4-2.5x",
   "numerical_failure_path": null,
@@ -356,7 +388,7 @@
   "seed": 42,
   "source_commit": "8ef54e88bc223302a2cc5bd1c37007f3bb9a302f",
   "status": "running",
-  "step": 8750,
+  "step": 10000,
   "submission": {
     "command": [
       "sbatch",
@@ -379,8 +411,8 @@
     "slurm_job_id": "27137407",
     "submitted_utc": "2026-10-28T17:40:59+00:00"
   },
-  "training_tokens": 4587520000,
-  "updated_utc": "2026-10-29T10:32:23.089015+00:00",
+  "training_tokens": 5242880000,
+  "updated_utc": "2026-10-29T12:40:13.742502+00:00",
   "wandb_run": {
     "path": "experiments/transformer_200m_4b/runs/r751984d1ca00/wandb_run.json",
     "sha256": "6387f399adafbae9ef1b853c6d282e12bfcc927c1a7cb3360284c526cc54a2a3",
