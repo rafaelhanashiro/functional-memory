@@ -12,10 +12,13 @@ from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.coefficient_fit import (
     GENERATOR_PARAMETER_NAMES, make_generator_functions, qualify, restore_state,
     save_state, split_generator_parameters, _generator_group_norms,
-    convert_generator_readout, make_conversion_diagnostics,
+    convert_generator_readout, make_conversion_diagnostics, reference_backend_agreement,
 )
 
-DIAGONAL_PARAMETER_NAMES = GENERATOR_PARAMETER_NAMES - {"query_polynomial_mixing"}
+KEY_PARAMETER_NAMES = {"key_polynomial_kernel", "key_polynomial_amplitude"}
+DIAGONAL_PARAMETER_NAMES = GENERATOR_PARAMETER_NAMES - {"query_polynomial_mixing"} - KEY_PARAMETER_NAMES
+QUERY_KEY_PARAMETER_NAMES = {"query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
+                             *KEY_PARAMETER_NAMES}
 
 
 @pytest.fixture(scope="module")
@@ -230,3 +233,104 @@ def test_group_norms_include_all_layer_leaves():
         "second": {"query_polynomial_bias": nnx.Param(jnp.asarray([4.]))},
     })
     assert float(_generator_group_norms(state)["query_polynomial_bias"]) == 5.
+
+
+def query_key_model(backend="blocked"):
+    """A trained-like native query-key parent: nonzero key amplitudes and per-head QK scales."""
+    return ModelConfig(
+        vocab_size=16, max_seq_len=13, num_layers=2, hidden_size=8, num_heads=2,
+        num_kv_heads=2, qk_head_dim=2, value_head_dim=4, intermediate_size=12,
+        attention_degree=4, attention_normalization=False, attention_coefficients="learned",
+        attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query_key",
+        attention_coefficient_activation="tanh", attention_coefficient_scale="factorial",
+        attention_coefficient_amplitude_scale="factorial",
+        attention_coefficient_projection_initial_std=.2, attention_coefficient_amplitude_initial=.2,
+        attention_backend=backend, attention_output_scaling="head_rms_norm",
+        qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer", qk_norm_head_scale=True,
+        rms_norm_fp32=True, initialization="transformer_truncated_reference", remat=False,
+    )
+
+
+@pytest.fixture(scope="module")
+def query_key_fitting():
+    model = build_model(query_key_model(), 7)
+    model.key_polynomial_amplitude[...] = jnp.full(model.key_polynomial_amplitude.shape, .3)
+    model.qk_norm_head_log_scale[...] = jnp.full(model.qk_norm_head_log_scale.shape, .2)
+    graph, source = nnx.split(model, nnx.Param)
+    options = dict(clip_norm=1., beta1=.9, beta2=.95, epsilon=1e-8)
+    return graph, source, jnp.arange(26).reshape(2, 13) % 16, make_generator_functions(graph, options)
+
+
+def test_native_query_key_fit_trains_both_restored_generators_and_freezes_the_rest(query_key_fitting, tmp_path):
+    graph, source, tokens, functions = query_key_fitting
+    capture, initialize, step, _ = functions
+    generator, frozen = split_generator_parameters(source)
+    assert set(generator.keys()) == QUERY_KEY_PARAMETER_NAMES
+    frozen_names = {str(path[-1]) for path, _ in nnx.to_flat_state(frozen)}
+    assert {"qk_norm_head_log_scale", "qk_norm_q_gain", "qk_norm_k_gain", "output_norm_scale"} <= frozen_names
+    initial = capture(source, tokens)[0]
+    # The pretrained key generator is restored unchanged, not reset to identity factors.
+    _equal(initial, generator)
+    assert float(jnp.min(jnp.abs(initial["key_polynomial_amplitude"][...]))) > 0
+    groups = step(initial, initialize(initial), source, tokens, 1e-3)[5]
+    assert set(groups) == QUERY_KEY_PARAMETER_NAMES
+    assert all(np.isfinite(value) and float(value) > 0 for value in groups.values())
+    frozen_hash = state_sha256(frozen)
+    report = qualify(tmp_path, functions, source, tokens, initial, initialize(initial), 1e-3,
+                     graph=graph, generator=True)
+    assert report["checkpoint_resume_exact"]
+    assert set(report["trainable_parameter_names"]) == QUERY_KEY_PARAMETER_NAMES
+    assert set(report["generator_gradient_norms_after_one_update"]) == QUERY_KEY_PARAMETER_NAMES
+    assert all(value > 0 for value in report["generator_gradient_norms_after_one_update"].values())
+    assert any(name.endswith("qk_norm_head_log_scale") for name in report["frozen_parameter_names"])
+    assert report["frozen_parameter_sha256"] == frozen_hash == state_sha256(split_generator_parameters(source)[1])
+
+
+def test_reference_backend_agreement_compares_fused_with_blocked(query_key_fitting, monkeypatch):
+    from scaffolds.transformer.tests.test_query_key_polynomial import _interpret
+
+    _interpret(monkeypatch)
+    blocked, source, tokens, _ = query_key_fitting
+    fused, _ = nnx.split(build_model(query_key_model("fused"), 7), nnx.Param)
+    report = reference_backend_agreement(fused, blocked, source, tokens)
+    assert report["all_logits_finite"]
+    np.testing.assert_allclose(report["production_nll"], report["reference_nll"], rtol=0, atol=1e-5)
+    # The same graph on both sides agrees exactly.
+    assert reference_backend_agreement(blocked, blocked, source, tokens)["logit_max_absolute_error"] == 0
+
+
+def test_capped_generator_fit_finalizes_its_best_generator(tmp_path):
+    import json
+    import orbax.checkpoint as ocp
+    import yaml
+    from scaffolds.transformer.configs.loader import config_to_dict
+    from scaffolds.transformer.training.coefficient_fit import finalize_stopped
+
+    config = Config(model=query_key_model())
+    config.data.synthetic_vocab_size, config.data.sequence_length, config.data.batch_size = 16, 14, 2
+    config.train.micro_batch_size = 2
+    parent = tmp_path / "parent.yaml"
+    parent.write_text(yaml.safe_dump(config_to_dict(config)))
+    run = tmp_path / "run"
+    (run / "checkpoints").mkdir(parents=True)
+    recipe = {"model": config_to_dict(config)["model"],
+              "oracle": {"parameterization": "query_coefficient_generator", "generator_readout": "diagonal",
+                         "parent_config": str(parent), "parent_run_id": "rparent", "parent_checkpoint": "/parent"}}
+    (run / "config.yaml").write_text(yaml.safe_dump(recipe))
+    (run / "record.json").write_text(json.dumps({"run_id": "run", "status": "paused"}))
+    generator = split_generator_parameters(nnx.split(build_model(config.model, 7), nnx.Param)[1])[0]
+    best = jax.tree.map(lambda value: value + 1., generator)
+    tx = optax.chain(optax.clip_by_global_norm(1.), optax.scale_by_adam())
+    controller = {"step": 10, "best_step": 9, "best_loss": 1.5, "initial_loss": 2.7, "reduced_at": 4}
+    save_state(run / "checkpoints", 10, [generator], [tx.init(generator)], [best], controller)
+    (run / "metrics.jsonl").write_text("".join(json.dumps({"step": s, "nll": 2. - s / 10}) + "\n" for s in range(11)))
+    outcome = finalize_stopped(run, "safety update budget exhausted")
+    assert outcome["status"] == "complete" and outcome["best_step"] == 9 and outcome["step"] == 10
+    assert outcome["frozen_parameter_scope"] == "backbone" and outcome["stopping"] == "safety update budget exhausted"
+    assert [p.name for p in (run / "checkpoints").iterdir()] == ["9"]
+    with ocp.StandardCheckpointer() as checkpointer:
+        saved = checkpointer.restore(run / "checkpoints/9/best", target={"generator_parameters": [best]})
+    _equal(saved["generator_parameters"][0], best)
+    identity = json.loads((run / "checkpoints/9/coefficient_identity.json").read_text())
+    assert identity["layout"] == "model_parameter_tree"
+    assert json.loads((run / "record.json").read_text())["status"] == "complete"

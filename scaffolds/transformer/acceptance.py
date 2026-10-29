@@ -61,6 +61,7 @@ DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
     "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
+QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
@@ -127,6 +128,18 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         degree = model.get("attention_degree")
         family = "exp" if degree is None else "fixed"
         paths.append(f"{QK_HEAD_SCALE_BACKEND_TESTS}[{family}-{degree or 0}-{resolved_backend}]")
+    if (not cpu and model.get("qk_norm_head_scale", False)
+            and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "learned"
+            and model.get("attention_coefficient_conditioning", "static") == "query_key"
+            and model.get("attention_coefficient_activation", "identity") == "tanh"
+            and resolved_backend == "fused"):
+        # Every qualified degree runs together, so runs at different degrees share one
+        # GPU stage and a failure surfaces before any of them trains. A degree without
+        # a parametrized case has no node id, so acceptance fails closed.
+        degrees = sorted({*QUERY_KEY_HEAD_SCALE_DEGREES, int(model["attention_degree"])})
+        paths.extend(f"{QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{degree}-fused]" for degree in degrees)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

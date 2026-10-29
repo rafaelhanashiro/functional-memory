@@ -374,8 +374,8 @@ the factor folded into degree-specific values. The per-order path rounds each pa
 output to V's dtype before summing, which at degree one corrupts the gradient after head
 RMSNorm. Diagnostics report the key factors beside the query coefficients.
 
-For H100 BF16 query-key attention at context 2048, Q/K and value width 64, and
-degree 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
+For H100 and B300 BF16 query-key attention at context 2048, Q/K and value width 64,
+and degree 4, 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
 original forward tiles. Other devices and shapes keep their original geometry.
 The arithmetic precision and coefficient parameterization are unchanged.
 Kernel timings and qualification are in the
@@ -409,8 +409,11 @@ are mutually exclusive. Query-key conditioning rejects both operations.
 `training.coefficient_fit` runs fixed-input adaptation from a pinned pretrained
 checkpoint. Its `free_per_example_query_coefficients` mode optimizes captured
 coefficient tables; `query_coefficient_generator` mode optimizes only the original
-query generator's bias, amplitude, projection, and optional inner tanh bias.
-Generator mode currently accepts one sequence. It recomputes all activations
+query generator's bias, amplitude, projection, and optional inner tanh bias, and for
+a query-key parent also its trained key projection and amplitude (key factors carry
+no factorial scaling). A query-key parent's model is restored unchanged, and its
+restored forward must agree with the blocked reference backend before fitting.
+Generator mode accepts one sequence or a fixed batch. It recomputes all activations
 through the frozen backbone and uses native stored parameter coordinates, keeping
 factorial scaling inside the model. `shared_batch_query_coefficients` optimizes
 one `[layer,query,head,order]` table shared across every fitting sequence. It

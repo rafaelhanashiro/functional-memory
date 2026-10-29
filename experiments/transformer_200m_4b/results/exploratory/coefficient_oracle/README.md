@@ -1,6 +1,6 @@
 # Coefficient fitting with frozen 4B backbones
 
-Opened: **2026-10-23**. Home cluster: **Kennel**.
+Opened: **2026-10-23**. Home cluster: **Kennel**, except `r043b150cde03` (ORCD).
 
 How much can polynomial coefficients fit one sequence or a full batch, and how
 does sharing coefficients across sequences constrain that capacity? These exploratory
@@ -25,6 +25,7 @@ backbone frozen. They live in the
 | `rec777591a61b` | Dense generator supervised by free coefficients on teacher activations | Taylor `r816ab0fbe119`, step 7,500; teacher `rda6029c3286f`, step 2,453 | Complete |
 | `r84e37a39e2a0` | Original degree-four query generator on 1,024 sequences, with per-head QK scaling | Query-only `r2b22f2ff6461`, step 7,500 | Complete |
 | `rf033859dd68e` | None: frozen evaluation of `r84e37a39e2a0` and its parent on the next 256 sequences | Query-only `r2b22f2ff6461`, step 7,500; fit `r84e37a39e2a0`, update 4,452 | Complete |
+| `r043b150cde03` | Trained degree-four query and key generators on 256 sequences, with per-head QK scaling | Query-key `r501f5cca0d4c`, step 7,500 | Complete; stopped at the 10,000-update budget |
 
 The source backbones differ. These are fitting-capacity diagnostics, not a
 matched-backbone comparison of coefficient parameterizations. The original
@@ -497,6 +498,79 @@ checkpoint are checked before evaluation. The bounded gradient/FP32 control uses
 instrumentation bound explicitly, and native checkpoint replay remains required.
 Raw regeneration requires retained home-cluster checkpoints and data, while
 figures and summaries require only committed compact measurements.
+
+## Degree-four query-key generator from its own checkpoint
+
+Opened **2026-10-28**. Home cluster: **ORCD**. How far can the trained query-key
+coefficient generators alone fit a fixed batch? Run `r043b150cde03`
+(selection role `query_key_generator_full_batch_m4_head_scale`) starts from the
+degree-four query-key pretraining run `r501f5cca0d4c` at its validation-best step
+**7,500** (3,932,160,000 training tokens; the full run trained 7,570 updates,
+3,968,860,160 prediction tokens). That parent uses
+the canonical QK RMSNorm with learned per-head score scales; its retained checkpoint
+in ORCD's artifact root has directory SHA256 `8e7eafad…efc1a`. The fit runs the
+parent's model unchanged, on the fused query-key kernel.
+
+Both pretrained generators are restored unchanged, and only they train:
+`query_polynomial_bias`, `query_polynomial_amplitude`, `query_polynomial_kernel`,
+`key_polynomial_kernel`, and `key_polynomial_amplitude` (1,884,750 parameters).
+Everything else is frozen, including Q/K/V, all normalization gains, and the
+per-head QK scales. Coefficients remain functions of the inputs; this is neither
+free per-token coefficient fitting nor coefficient distillation. The objective is
+ordinary next-token NLL on the first **256** packed evaluation sequences (2,048
+predictions each, batch SHA256 `f2b3cfea…f170a`). Adam starts from fresh moments at
+LR **0.001** in the model's stored coordinates, keeping its factorial scaling, with
+betas **0.9/0.95**, epsilon **1e-8**, no weight decay, and one global clip at **1**
+on the gradient averaged over all 32 microbatches of eight. The shared stopping
+rule above applies, with its 10,000-update safety budget; the lowest-fitting-NLL
+checkpoint is retained.
+
+Before fitting, GPU qualification compares the restored fused forward with the
+blocked reference backend on the first microbatch, and checks finite, nonzero
+gradients for all five groups before and after one update, unchanged frozen
+parameters, and exact checkpoint resume. Fitting perplexity measures capacity on
+the fitting batch, not generalization. Its parent backbone and training budget
+differ from the other fits' parents, so comparisons with them are not
+matched-backbone comparisons.
+
+Allocated on ORCD with
+`python -m experiments.transformer_200m_4b.launch_coefficient_fit prepare --parent experiments/transformer_200m_4b/runs/r501f5cca0d4c --sequence-count 256 --home-cluster orcd`;
+from the committed experiment worktree, submitted on one H100 with:
+
+```bash
+python -m experiments.transformer_200m_4b.launch_coefficient_fit submit r043b150cde03 --cluster orcd
+```
+
+### Findings
+
+Qualification passed on both H100 allocations with identical measurements: the
+restored fused forward matched the blocked reference within **0.00097** nats per
+sequence, and checkpoint resume was exact. Training ran at 3.35 s/update and
+resumed exactly at update 6,156 after one time-limit requeue.
+
+| Update | Best fitting PPL |
+| ---: | ---: |
+| 0 | 15.622 |
+| 500 | 7.889 |
+| 2,000 | 5.821 |
+| 4,543 (LR cut to 0.0001) | 4.893 |
+| 9,959 (retained) | **4.470** |
+
+Fitting NLL fell from **2.7487** to **1.4973**; per-sequence fitting perplexity
+narrowed from 5.54–34.23 to 2.57–6.58. The plateau rule cut the learning rate at
+update 4,543, but the best NLL kept improving by 0.0012–0.0020 nats per 200 updates
+and never met the 0.001 stopping threshold, so the run paused at the safety budget.
+Its best update, **9,959**, is sealed as the result (`--finalize-stopped`); a longer
+budget would likely lower fitting perplexity only slightly further. Gradient norms
+exceeded the clip in most updates at both learning rates (median about 2 after the
+cut). Frozen parameters were unchanged throughout.
+
+For context only, the query-only generator fit `rc95f2055e96d` reached a best
+fitting PPL of **8.016** (converged at 5,273) from a different parent backbone,
+with 942,900 trainable parameters to this fit's 1,884,750. The query-key generators
+passed that value by update 500. This is a capacity comparison across backbones
+and parameter counts, not a matched ablation, and fitting perplexity is not
+held-out performance.
 
 ## Degree-four query generator on 1,024 sequences
 

@@ -20,6 +20,17 @@ STUDY = ROOT / "experiments/transformer_200m_4b"
 TOPIC = STUDY / "results/exploratory/coefficient_oracle"
 PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients",
                     "free_per_example_query_coefficients", "free_per_example_query_key_coefficients")
+# Submission policy per home cluster (CLUSTERS.md). ORCD requests must name one GPU type;
+# its jobs take 12 hours with a 6-hour minimum and requeue before the limit.
+CLUSTERS = {
+    "kennel": {"partition": "standard,long", "exclude": "collie,samoyed,doodle,terrier,shiba",
+               "gpu_types": {"B300", "H100"}, "cpus": 8, "memory": "96G", "time": "02:00:00",
+               "time_min": None, "script": "coefficient_fit.sbatch"},
+    "orcd": {"partition": "mit_preemptable,mit_normal_gpu",
+             "exclude": "node3009,node3209,node1708,node1709,node4508,node2801,node3409",
+             "gpu_types": {"H100"}, "cpus": 16, "memory": "128G", "time": "12:00:00",
+             "time_min": "06:00:00", "script": "coefficient_fit_orcd.sbatch"},
+}
 
 
 def sha256(path):
@@ -69,11 +80,15 @@ def parent_degree(model, parameterization="query_coefficient_generator"):
 
     degree = model.get("attention_degree")
     fitting_role("query_generator_single_sequence", degree)
-    query = (model["attention_coefficient_conditioning"] == "query"
-             and model["attention_coefficients"] == "learned"
-             and model["attention_coefficient_activation"] == "tanh"
-             and model["attention_coefficient_scale"] == "factorial"
-             and model["attention_coefficient_amplitude_scale"] == "factorial")
+    generator = (model["attention_coefficients"] == "learned"
+                 and model["attention_coefficient_activation"] == "tanh"
+                 and model["attention_coefficient_scale"] == "factorial"
+                 and model["attention_coefficient_amplitude_scale"] == "factorial")
+    query = generator and model["attention_coefficient_conditioning"] == "query"
+    # A trained query-key generator runs on the one-pass fused kernel; Mosaic would
+    # evaluate it once per order.
+    query_key = (generator and model["attention_coefficient_conditioning"] == "query_key"
+                 and parameterization == "query_coefficient_generator")
     static = (model["attention_coefficient_conditioning"] == "static"
               and model["attention_coefficients"] == "learned"
               and model["attention_coefficient_activation"] == "identity"
@@ -83,15 +98,16 @@ def parent_degree(model, parameterization="query_coefficient_generator"):
               and model.get("attention_fixed_coefficients") is None
               and model.get("attention_fixed_square_factors") is None
               and model.get("attention_coefficient_initialization", "taylor") == "taylor")
-    if parameterization == "query_coefficient_generator" and not query:
-        raise ValueError("Expected a 4B factorial-scaled query-only parent")
-    if (not (query or static or (taylor and parameterization in {"free_per_example_query_coefficients",
-                                                                  "free_per_example_query_key_coefficients"}))
+    if parameterization == "query_coefficient_generator" and not (query or query_key):
+        raise ValueError("Expected a 4B factorial-scaled query-key or query-only parent")
+    if (not (query or query_key or static
+             or (taylor and parameterization in {"free_per_example_query_coefficients",
+                                                 "free_per_example_query_key_coefficients"}))
             or model["attention_normalization"]
             or model.get("attention_coefficient_parameterization", "direct") != "direct"
             or model["initialization"] != "transformer_truncated_reference"
-            or not model["qk_norm"] or model["attention_backend"] != "mosaic"):
-        raise ValueError("Expected a compatible 4B unnormalized query, static, or fixed Taylor parent")
+            or not model["qk_norm"] or model["attention_backend"] != ("fused" if query_key else "mosaic")):
+        raise ValueError("Expected a compatible 4B unnormalized query, query-key, static, or fixed Taylor parent")
     # The shared model validator owns supported Mosaic widths and degrees.
     checked = dict(model)
     if "gdn_polynomial_degree" not in {field.name for field in fields(ModelConfig)}:
@@ -101,7 +117,7 @@ def parent_degree(model, parameterization="query_coefficient_generator"):
 
 
 def prepare(parent: Path, *, parameterization="query_coefficient_generator", sequence_count=None,
-            generator_readout="diagonal"):
+            generator_readout="diagonal", home_cluster="kennel"):
     if parameterization not in PARAMETERIZATIONS:
         raise ValueError(f"Unknown coefficient parameterization: {parameterization}")
     if generator_readout not in {"diagonal", "dense"}:
@@ -116,16 +132,24 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     parent = parent.resolve()
     record = load_run(parent)
     validate_record(parent, checkpoint_hashes=False)
-    if record["status"] != "complete" or record["home_cluster"] != "kennel":
-        raise ValueError("The parent must be a completed Kennel run")
+    if home_cluster not in CLUSTERS:
+        raise ValueError(f"Home cluster must be one of {sorted(CLUSTERS)}")
+    # The fit reads the parent's retained checkpoint, which stays on its home cluster.
+    if record["status"] != "complete" or record["home_cluster"] != home_cluster:
+        raise ValueError(f"The parent must be a completed {home_cluster} run")
     source = yaml.safe_load((parent / "config.yaml").read_text())
     count, role = fitting_scope(parameterization, int(source["data"]["batch_size"]), sequence_count)
     model = source["model"]
     degree = parent_degree(model, parameterization)
     if model.get("attention_coefficient_readout", "diagonal") != "diagonal":
         raise ValueError("The fitting parent must have the original diagonal query readout")
+    query_key = model["attention_coefficient_conditioning"] == "query_key" and not table
+    if query_key and generator_readout != "diagonal":
+        raise ValueError("A query-key generator keeps its diagonal readout")
     if generator_readout == "dense":
         role = role.replace("query_generator_", "dense_query_generator_", 1)
+    if query_key:
+        role = role.replace("query_generator_", "query_key_generator_", 1)
     role = fitting_role(role, degree)
     if model.get("qk_norm_head_scale", False):
         role += "_head_scale"
@@ -155,7 +179,8 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         )))
         sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
     recipe = deepcopy(source)
-    generator_prefix = "query-generator-dense" if generator_readout == "dense" else "query-generator"
+    generator_prefix = ("query-generator-dense" if generator_readout == "dense" else
+                        "query-key-generator" if query_key else "query-generator")
     suffix = "single-sequence" if count == 1 else "full-batch" if count == int(source["data"]["batch_size"]) else f"{count}-sequences"
     label = f"shared-coefficients-m{degree}-full-batch" if shared else f"{generator_prefix}-m{degree}-{suffix}"
     if static:
@@ -209,6 +234,14 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
                 trainable_parameters=["query_polynomial_bias", "query_polynomial_mixing", "query_polynomial_kernel"],
                 initialization="restore parent W and b; initialize V=diag(parent amplitude), preserving the parent function",
             )
+        if query_key:
+            recipe["oracle"].update(
+                trainable_parameters=["query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
+                                      "key_polynomial_kernel", "key_polynomial_amplitude"],
+                frozen_parameters=("all parameters outside the query and key coefficient generators, including "
+                                   "Q/K/V projections, normalization gains, and per-head QK score scales"),
+                initialization="restore the trained query and key coefficient generators without resetting parameters",
+            )
     if shared:
         recipe["oracle"].update(
             trainable_parameters=["shared_effective_monomial_coefficients"],
@@ -254,14 +287,15 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
         )
     run = create_run(STUDY, recipe, label=label)
     update_record(run, {
-        "home_cluster": "kennel", "seed": source["train"]["seed"],
+        "home_cluster": home_cluster, "seed": source["train"]["seed"],
         "parent_run_id": parent.name, "parent_study": parent.parent.parent.name,
         "coefficient_sharing": ("shared across query positions, sequences, and causal keys; separate per layer/head/order" if static else
                                 "shared across sequences and causal keys; separate per layer/query position/head/order"
                                 if shared else "query factor per sequence/layer/query position/head/order times a key factor "
                                 "per sequence/layer/key position/head/order" if free_query_key else
                                 "shared across causal keys; separate per sequence/layer/query position/head/order"
-                                if free else "shared query-conditioned generator per layer and head"),
+                                if free else "shared query- and key-conditioned generators per layer and head"
+                                if query_key else "shared query-conditioned generator per layer and head"),
         "coefficient_parameterization": parameterization,
         **({"generator_readout": generator_readout} if not table else {}),
         "checkpoint_retention": "best fitting parameters; backbone referenced by source checkpoint",
@@ -292,10 +326,17 @@ def live_job_state(job_id):
     return result.stdout.strip()
 
 
-def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type=None,
-           qualify_only=False):
-    if gpu_type not in {None, "B300", "H100"}:
-        raise ValueError("GPU type must be B300 or H100")
+def submit(run_id, *, partition=None, time_limit=None, gpu_type=None,
+           qualify_only=False, cluster="kennel"):
+    if cluster not in CLUSTERS:
+        raise ValueError(f"Cluster must be one of {sorted(CLUSTERS)}")
+    policy = CLUSTERS[cluster]
+    partition, time_limit = partition or policy["partition"], time_limit or policy["time"]
+    if cluster == "orcd":
+        # An untyped GPU request matches no ORCD Hopper node.
+        gpu_type = gpu_type or "H100"
+    if gpu_type not in {None, *policy["gpu_types"]}:
+        raise ValueError(f"GPU type must be one of {sorted(policy['gpu_types'])} on {cluster}")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     dirty = changes(ROOT, commit, STUDY.name, "transformer")
     if dirty:
@@ -310,13 +351,18 @@ def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type
         live = live_job_state(previous)
         if live:
             raise ValueError(f"Run already has live job {previous}: {live}")
+    if record.get("home_cluster") != cluster:
+        raise ValueError(f"Run {run_id} belongs to {record.get('home_cluster')}, not {cluster}")
     log = run / "training.log"
     gpu_request = f"gpu:{gpu_type.lower()}:1" if gpu_type else "gpu:1"
     command = ["sbatch", "--parsable", "--nice=0", f"--partition={partition}",
-               f"--gres={gpu_request}", "--exclude=collie,samoyed,doodle,terrier,shiba",
-               "--cpus-per-task=8", "--mem=96G", f"--time={time_limit}",
+               f"--gres={gpu_request}", f"--exclude={policy['exclude']}",
+               f"--cpus-per-task={policy['cpus']}", f"--mem={policy['memory']}", f"--time={time_limit}",
+               *([f"--time-min={policy['time_min']}"] if policy["time_min"] else []),
                f"--job-name=coefficient-fit-{run_id}", f"--output={log}", f"--error={log}",
-               str(STUDY / "coefficient_fit.sbatch"), str(ROOT), commit, run_id]
+               str(STUDY / policy["script"]), str(ROOT), commit, run_id]
+    if cluster == "orcd":
+        command.append(gpu_type)
     if qualify_only:
         command.append("--qualify-only")
     job = subprocess.check_output(command, cwd=ROOT, text=True).strip().split(";")[0]
@@ -326,6 +372,7 @@ def submit(run_id, *, partition="standard,long", time_limit="02:00:00", gpu_type
         **({"error": None} if record.get("error") else {}),
         "frozen_execution_sha256": frozen_hash(ROOT, commit, STUDY.name, "transformer"),
         "submission": {"slurm_job_id": job, "partition": partition, "command": command,
+                       "cluster": cluster, "gpu_type": gpu_type, "gpu_count": 1,
                        "phase": "qualification" if qualify_only else "training",
                        "submitted_utc": datetime.now(UTC).isoformat()}, "log_path": str(log)})
     regenerate_index(STUDY)
@@ -341,19 +388,21 @@ def main():
     # fitting_scope admits 1, the parent's batch, or a larger generator batch (a multiple of 8).
     prep.add_argument("--sequence-count", type=int)
     prep.add_argument("--generator-readout", choices=("diagonal", "dense"), default="diagonal")
+    prep.add_argument("--home-cluster", choices=sorted(CLUSTERS), default="kennel")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
-    launch.add_argument("--partition", default="standard,long")
-    launch.add_argument("--time-limit", default="02:00:00")
+    launch.add_argument("--cluster", choices=sorted(CLUSTERS), default="kennel")
+    launch.add_argument("--partition", help="default: the cluster's partitions")
+    launch.add_argument("--time-limit", help="default: the cluster's job limit")
     launch.add_argument("--gpu-type", choices=("B300", "H100"))
     launch.add_argument("--qualify-only", action="store_true")
     args = parser.parse_args()
     if args.command == "prepare":
         prepare(args.parent, parameterization=args.parameterization, sequence_count=args.sequence_count,
-                generator_readout=args.generator_readout)
+                generator_readout=args.generator_readout, home_cluster=args.home_cluster)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit, gpu_type=args.gpu_type,
-               qualify_only=args.qualify_only)
+               qualify_only=args.qualify_only, cluster=args.cluster)
 
 
 if __name__ == "__main__":

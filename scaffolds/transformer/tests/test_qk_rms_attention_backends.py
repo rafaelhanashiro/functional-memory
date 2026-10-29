@@ -21,6 +21,8 @@ CASES = [("softmax", 0, "cudnn"), ("exp", 0, "fused")] + [
     (family, degree, "fused" if family == "query_key" else "mosaic")
     for family in ("fixed", "static", "query", "query_key") for degree in (2, 4, 8, 12)
 ]
+HEAD_SCALE_CASES = [("exp", 0, "fused"), ("fixed", 4, "mosaic")] + [
+    ("query_key", degree, "fused") for degree in (4, 8, 12)]
 
 
 def _inputs(family, degree, *, head_scale=False):
@@ -155,20 +157,31 @@ def test_full_context_qk_rms_backend(family, degree, backend):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize(("family", "degree", "backend"), [("exp", 0, "fused"), ("fixed", 4, "mosaic")],
-                         ids=["exp-0-fused", "fixed-4-mosaic"])
+@pytest.mark.parametrize(("family", "degree", "backend"), HEAD_SCALE_CASES,
+                         ids=[f"{family}-{degree}-{backend}" for family, degree, backend in HEAD_SCALE_CASES])
 def test_full_context_qk_rms_head_scale_backend(family, degree, backend):
-    """Fixed controls retain QK/output gains and differentiate each head's scalar."""
+    """QK/output gains are retained and each head's scalar is differentiated."""
     _check_full_context(family, degree, backend, head_scale=True)
     operands, _ = _inputs(family, degree, head_scale=True)
-    reference_operands = tuple(x.astype(jnp.float32) for x in operands)
+    if family == "query_key":
+        # Learned coefficients have no closed-form control. The blocked composition
+        # supplies each head's tangent and shares the production operand rounding,
+        # which high orders would otherwise amplify against an FP32 oracle.
+        reference_gamma = operands[5]
 
-    def reference(gamma):
-        return _smooth_head_scale_reference(family, *reference_operands[:5], gamma, reference_operands[6])
+        def reference(gamma):
+            return _operation(family, degree, "blocked", *operands[:5], gamma, *operands[6:],
+                              head_scale=True).astype(jnp.float32)
+    else:
+        reference_operands = tuple(x.astype(jnp.float32) for x in operands)
+        reference_gamma = reference_operands[5]
+
+        def reference(gamma):
+            return _smooth_head_scale_reference(family, *reference_operands[:5], gamma, reference_operands[6])
 
     with jax.default_matmul_precision("highest"):
         tangent = jax.jit(lambda gamma: jax.jvp(reference, (gamma,), (jnp.ones_like(gamma),))[1])(
-            reference_operands[5])
+            reference_gamma)
     cotangent = tangent.astype(jnp.bfloat16)
     # Heads are independent. For each head, cotangent=dY/dgamma makes the
     # scalar VJP its squared tangent norm (up to the cotangent's BF16 rounding),
@@ -176,7 +189,7 @@ def test_full_context_qk_rms_head_scale_backend(family, degree, backend):
     expected = jnp.sum(tangent * cotangent.astype(jnp.float32), axis=(0, 1, 3))[:, None]
 
     def loss(gamma):
-        output = _operation(family, degree, backend, *operands[:5], gamma, operands[6], head_scale=True)
+        output = _operation(family, degree, backend, *operands[:5], gamma, *operands[6:], head_scale=True)
         return jnp.sum(output.astype(jnp.float32) * cotangent.astype(jnp.float32))
 
     actual = jax.jit(jax.grad(loss))(operands[5])

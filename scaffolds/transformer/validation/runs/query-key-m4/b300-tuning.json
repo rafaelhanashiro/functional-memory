@@ -1,0 +1,2900 @@
+{
+  "candidate_status_counts": {
+    "accepted": 7,
+    "unsupported_resources": 1
+  },
+  "completed_at_utc": "2026-10-24T20:34:11.013151+00:00",
+  "configuration": {
+    "budget_policy": "checked between candidates; an ongoing compilation is not interrupted",
+    "candidates": [
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 32,
+        "id": "q32_k64_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 64,
+        "id": "q64_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 32,
+        "id": "q32_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 32,
+        "block_q": 128,
+        "id": "q128_k32_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "block_k": 64,
+        "block_q": 64,
+        "id": "q64_k64_w8_s2",
+        "num_stages": 2,
+        "num_warps": 8
+      },
+      {
+        "block_k": 128,
+        "block_q": 64,
+        "id": "q64_k128_w4_s2",
+        "num_stages": 2,
+        "num_warps": 4
+      },
+      {
+        "id": "production",
+        "uses_kernel_defaults": true
+      }
+    ],
+    "coefficient_formula": "(beta + alpha*tanh(z))/r!: beta=1+.2*tanh(N), alpha=.4*tanh(N), z=N",
+    "degrees": [
+      4
+    ],
+    "dtype": "bfloat16",
+    "iterations": 10,
+    "key_factor_formula": "1+.3*tanh(N), independently varying by batch/token/head/degree",
+    "max_minutes": 30.0,
+    "objective": "sum(float32(output)*float32(dynamic_cotangent)); output returned as aux; gradients all five operands",
+    "parity": "global and every batch/head; coefficient/factor gradients also each degree and head/degree; limits relative L2 and 3x relative max",
+    "precision": "unchanged production FP32 polynomial and BF16x3 mixed products",
+    "reference": "production 64x64/4warp/2stage, independent immutable host copies; not an independent correctness oracle",
+    "score_formula": "score_scale*cosine(q,k), normalized before BF16 conversion",
+    "score_scale": 8.0,
+    "seed": 0,
+    "shape": [
+      16,
+      2048,
+      14,
+      64
+    ],
+    "timing": "synchronized resident compiled calls; no compilation, copies, or comparisons",
+    "warmup": 3
+  },
+  "created_at_utc": "2026-10-24T20:33:12.988488+00:00",
+  "elapsed_seconds": 57.343941072933376,
+  "format": "query-key-polynomial-tile-tuning",
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA B300 SXM6 AC",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "225051",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+    },
+    "hostname": "akita.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6"
+    },
+    "platform": "Linux-6.17.0-1014-nvidia-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "b81bb7bfb7d07ae92c27981368e6f9cb1aa136cf",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "c8fc64909df8487d5b02f1d4af8a41af6b075faf0be34803b51f09a0f7471289",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "07c78127f6ae50107d51f2acfcd5982f3b97e95c4cee1787eff401cd90b69389",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "37b1b0fad5a8ea13c0ebdd9c798d4a868fe385ccb8dc234ac8d80db5b2feec15",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fla_path_attention.py": "26e19eb6f7bbbc523b79aa3fe0f3f51f71c9cb6ad422ece5ef10cecc45b52dc3",
+      "scaffolds/transformer/attention/backends/fla_path_attention_kernels.py": "82b13d08a02984b857c40f69ef581294b55c997bcb85ad282b8f7a650e8b5e98",
+      "scaffolds/transformer/attention/backends/fla_path_polynomial_kernels.py": "48d3fe6001eb878c2b9951d2321059e4c5ac5d3caf402f49d9bb619feddf10f2",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_key_polynomial.py": "20b6a04287352ca51ddc69f0d7399889b9c19a0e40230bda849de065ed055290",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "e3166a51081cf27d2cd5e8f36a99963364e943912b0c9bdf16157ffd9e4c2781",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "c3d9a08ebd88bef7a8f17199bdff830d04ba981c9b7ecc3f290c8bcb3983cbcc",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "4b202fba8c034b9e8befeaf151906fb4e9aa7b2dca0bb3c93063133e0951b7be",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "98f2edab325a3ab75bb79f932f5ad85ca9313b246db99bdefbcb82e64cb4588b",
+      "scaffolds/transformer/attention/backends/reference.py": "b9b1ff122d8dd9e8e42cd8001c7d592c27c06eb49b116359c419b7ff6316773e",
+      "scaffolds/transformer/attention/backends/selection.py": "f5e92bd344414b18e495df6160acbc6fa7bfafb827a8bbd95f7311f253304213",
+      "scaffolds/transformer/attention/backends/triton_port.py": "bf7323f3dfe4b9deb089d4c11a7c959c781e892c55d6db990ec234b1a9e2597b",
+      "scaffolds/transformer/attention/core.py": "a7a6a93c12452c3fea43794642245662e77821d1bf8ed9c40df1b75bc5003b62",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "77a4dfb7ef07166aef61b225d44f73faa84a3a760b476d7718cadc8568be355f",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "df703faa591ef9fa39ba1eea48c16f6783d5dcbe53d0c93728a6c10c75768c40",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "47d5306125e93523664bd35fb056663f657778333f0839d7b7732d25adefa7a8",
+      "scaffolds/transformer/attention/path.py": "a0aa3a256501cab961a4fdf0517ada6f255642e8016765505dbd6520912712ee",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "e451588ac3ab3a8bfa3167fe90daa0763182c0eb48c3cb17edf67971bdf752ac",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "327957b89995b8edb6eb70c3b994b0bf3c1de750813d87979378f2a0bc153155",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/benchmarks/tune_query_key.py": "ba61cc729d60f392f38065df289c82419b58de26ee2892934e700e8bd9ad2091",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA B300 SXM6 AC"
+      }
+    ]
+  },
+  "results": [
+    {
+      "baseline": {
+        "config": {
+          "block_k": 64,
+          "block_q": 64,
+          "id": "q64_k64_w4_s2",
+          "num_stages": 2,
+          "num_warps": 4
+        },
+        "forward": {
+          "compilation_seconds": 1.0971951223909855,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 194510848,
+            "available": true,
+            "generated_code_size_in_bytes": 93424,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 58720256,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 133955584
+          },
+          "max_ms": 1.9873417913913727,
+          "median_ms": 1.911533996462822,
+          "min_ms": 1.6965381801128387,
+          "p10_ms": 1.8450303003191948,
+          "p90_ms": 1.9376186653971672,
+          "samples_ms": [
+            1.9320938736200333,
+            1.9207987934350967,
+            1.922723837196827,
+            1.6965381801128387,
+            1.9873417913913727,
+            1.8780212849378586,
+            1.882387325167656,
+            1.9022691994905472,
+            1.9228626042604446,
+            1.8615294247865677
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "forward_backward": {
+          "compilation_seconds": 7.776634278707206,
+          "compiled_memory": {
+            "alias_size_in_bytes": 0,
+            "argument_size_in_bytes": 253231104,
+            "available": true,
+            "generated_code_size_in_bytes": 614728,
+            "host_alias_size_in_bytes": 0,
+            "host_argument_size_in_bytes": 0,
+            "host_output_size_in_bytes": 0,
+            "host_temp_size_in_bytes": 0,
+            "is_measured_allocator_peak": false,
+            "output_size_in_bytes": 253231164,
+            "source": "compiled.memory_analysis",
+            "temp_size_in_bytes": 133956152
+          },
+          "max_ms": 31.314524821937084,
+          "median_ms": 20.025169011205435,
+          "min_ms": 19.93273850530386,
+          "p10_ms": 19.940755795687437,
+          "p90_ms": 21.304335538297888,
+          "samples_ms": [
+            20.084877498447895,
+            19.941646605730057,
+            20.090071484446526,
+            31.314524821937084,
+            20.192092284560204,
+            19.946862012147903,
+            19.93273850530386,
+            20.082514733076096,
+            19.967823289334774,
+            19.96385771781206
+          ],
+          "timed_iterations": 10,
+          "warmup_iterations": 3
+        },
+        "is_baseline": true,
+        "parity": {
+          "backward_forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "forward": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.006,
+            "relative_max_tolerance": 0.018000000000000002
+          },
+          "gradient_coefficients": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 70,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_factors": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_degree": [
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 0,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 2,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 3,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              {
+                "accepted": true,
+                "count": 1,
+                "degree": 4,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              }
+            ],
+            "per_head_degree": {
+              "accepted": true,
+              "count": 70,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_k": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_q": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.025,
+            "relative_max_tolerance": 0.07500000000000001
+          },
+          "gradient_v": {
+            "accepted": true,
+            "all_finite": true,
+            "global": {
+              "accepted": true,
+              "count": 1,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "per_batch_head": {
+              "accepted": true,
+              "count": 224,
+              "failed_count": 0,
+              "max_relative_l2_error": 0.0,
+              "nonzero_error_with_zero_reference": false
+            },
+            "relative_l2_tolerance": 0.015,
+            "relative_max_tolerance": 0.045
+          },
+          "objective": {
+            "absolute_error": 0.0,
+            "accepted": true,
+            "actual": -85274.015625,
+            "policy": "finite only; scalar objective can cancel",
+            "reference": -85274.015625
+          }
+        },
+        "status": "accepted"
+      },
+      "best": {
+        "forward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "median_ms": 1.5178974717855453,
+          "speedup_over_baseline": 1.259330114183688
+        },
+        "forward_backward": {
+          "candidate": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "median_ms": 7.7706896699965,
+          "speedup_over_baseline": 2.5770130917111316
+        }
+      },
+      "candidates": [
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 1.0971951223909855,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 93424,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 1.9873417913913727,
+            "median_ms": 1.911533996462822,
+            "min_ms": 1.6965381801128387,
+            "p10_ms": 1.8450303003191948,
+            "p90_ms": 1.9376186653971672,
+            "samples_ms": [
+              1.9320938736200333,
+              1.9207987934350967,
+              1.922723837196827,
+              1.6965381801128387,
+              1.9873417913913727,
+              1.8780212849378586,
+              1.882387325167656,
+              1.9022691994905472,
+              1.9228626042604446,
+              1.8615294247865677
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 7.776634278707206,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 614728,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 31.314524821937084,
+            "median_ms": 20.025169011205435,
+            "min_ms": 19.93273850530386,
+            "p10_ms": 19.940755795687437,
+            "p90_ms": 21.304335538297888,
+            "samples_ms": [
+              20.084877498447895,
+              19.941646605730057,
+              20.090071484446526,
+              31.314524821937084,
+              20.192092284560204,
+              19.946862012147903,
+              19.93273850530386,
+              20.082514733076096,
+              19.967823289334774,
+              19.96385771781206
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": true,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -85274.015625,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 32,
+            "id": "q32_k64_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.4766857447102666,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 51296,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.0922115072607994,
+            "median_ms": 2.014735247939825,
+            "min_ms": 1.939845271408558,
+            "p10_ms": 1.9436498172581196,
+            "p90_ms": 2.0523027516901493,
+            "samples_ms": [
+              1.947084441781044,
+              2.0922115072607994,
+              2.0038075745105743,
+              1.9440725445747375,
+              2.0478684455156326,
+              2.0291004329919815,
+              1.939845271408558,
+              1.9904058426618576,
+              2.040991559624672,
+              2.0256629213690758
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.0978250792250037,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 165152,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 7.8843729570508,
+            "median_ms": 7.7706896699965,
+            "min_ms": 7.596686482429504,
+            "p10_ms": 7.688464131206274,
+            "p90_ms": 7.846365217119455,
+            "samples_ms": [
+              7.730293087661266,
+              7.760852575302124,
+              7.822210900485516,
+              7.8421421349048615,
+              7.596686482429504,
+              7.84207321703434,
+              7.698661647737026,
+              7.8843729570508,
+              7.780526764690876,
+              7.739418186247349
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.3279949097151304e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.4231201763529763e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4282608319880877e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4169724252988084e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.393453341426188e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.3600632251987276e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.3183902531664263e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.4511323654534702e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6979204484111072e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.8171322569562451e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7067486545694436e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6992356375410712e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6935512732261146e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6909960147932264e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6727035238447227e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.742803903465442e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7441843676789905e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.667957864459101e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.682774503411077e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.7648010994422e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -85274.015625,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 64,
+            "id": "q64_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 1.1252173986285925,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 71824,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.4756183847784996,
+            "median_ms": 2.327818423509598,
+            "min_ms": 2.254493534564972,
+            "p10_ms": 2.26385360583663,
+            "p90_ms": 2.419883757829666,
+            "samples_ms": [
+              2.254493534564972,
+              2.33247596770525,
+              2.413691021502018,
+              2.312970347702503,
+              2.399574965238571,
+              2.264893613755703,
+              2.3735640570521355,
+              2.3231608793139458,
+              2.2805603221058846,
+              2.4756183847784996
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.8593895621597767,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 240256,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 10.898688808083534,
+            "median_ms": 10.869997087866068,
+            "min_ms": 10.68580336868763,
+            "p10_ms": 10.707064904272556,
+            "p90_ms": 10.894845705479383,
+            "samples_ms": [
+              10.68580336868763,
+              10.833147913217545,
+              10.881170630455017,
+              10.865720920264721,
+              10.894418694078922,
+              10.892820544540882,
+              10.874273255467415,
+              10.709427297115326,
+              10.855704545974731,
+              10.898688808083534
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.5847356572325584e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.7063304589859388e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5951029006722297e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6001801662327816e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5943408174001205e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.59343811331902e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.582748772993907e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6310891632325763e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7631083569667855e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.157407516385367e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 9.296875,
+              "accepted": true,
+              "actual": -85264.71875,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 32,
+            "id": "q32_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 0.34899277705699205,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 44192,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.3659737780690193,
+            "median_ms": 2.068266738206148,
+            "min_ms": 1.895601861178875,
+            "p10_ms": 1.9022118300199509,
+            "p90_ms": 2.3184819146990776,
+            "samples_ms": [
+              2.012118697166443,
+              2.0676301792263985,
+              1.895601861178875,
+              1.9425023347139359,
+              1.9029462710022926,
+              2.068903297185898,
+              2.2403718903660774,
+              2.3659737780690193,
+              2.3132050409913063,
+              2.1268827840685844
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.386815721169114,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 116392,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 8.433889597654343,
+            "median_ms": 8.356348611414433,
+            "min_ms": 8.26380681246519,
+            "p10_ms": 8.272259123623371,
+            "p90_ms": 8.413410931825638,
+            "samples_ms": [
+              8.26380681246519,
+              8.395074866712093,
+              8.411135524511337,
+              8.338497020304203,
+              8.330978453159332,
+              8.374200202524662,
+              8.394681848585606,
+              8.273198269307613,
+              8.433889597654343,
+              8.311459794640541
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.718014223620548e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.8997927035189463e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7498963483668202e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7458045221370082e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7334351537330617e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.727778448001522e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7152711404812859e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.767330448906199e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6979204484111072e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.8171322569562451e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7067486545694436e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6992356375410712e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6935512732261146e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6909960147932264e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6727035238447227e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.742803903465442e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7441843676789905e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.667957864459101e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7631083569667855e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.157407516385367e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.682774503411077e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.7648010994422e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 9.296875,
+              "accepted": true,
+              "actual": -85264.71875,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 32,
+            "block_q": 128,
+            "id": "q128_k32_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "forward": {
+            "compilation_seconds": 1.1945362333208323,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 94760,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.1071452647447586,
+            "median_ms": 2.0266887731850147,
+            "min_ms": 1.8922584131360054,
+            "p10_ms": 1.9936442375183105,
+            "p90_ms": 2.0978991873562336,
+            "samples_ms": [
+              2.0088497549295425,
+              2.1071452647447586,
+              2.045883797109127,
+              2.0049093291163445,
+              1.8922584131360054,
+              2.0968718454241753,
+              2.0278580486774445,
+              2.0657433196902275,
+              2.025519497692585,
+              2.025224268436432
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 8.065791295841336,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 424832,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 16.25942625105381,
+            "median_ms": 16.106131952255964,
+            "min_ms": 15.981834381818771,
+            "p10_ms": 16.010877676308155,
+            "p90_ms": 16.149024851620197,
+            "samples_ms": [
+              15.981834381818771,
+              16.03279449045658,
+              16.014104709029198,
+              16.09685644507408,
+              16.136758029460907,
+              16.05353783816099,
+              16.11734926700592,
+              16.115838661789894,
+              16.25942625105381,
+              16.115407459437847
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.4573816252204644e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 7.685643596839776e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.4936400165571935e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6396710050931093e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.506726514739964e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.5015648943205386e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.500521794608197e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.497228788580947e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4926048890103182e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.5377810642397567e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.4546489825240021e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.5348695413358463e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4642397780970956e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.459081545440581e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4497595397782667e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.438798942293565e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.4273337435561621e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.4985244989156605e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 4.645125582712874e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.605479630414842e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7631083569667855e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.157407516385367e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 4.6613708568735e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.185383495270988e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 9.296875,
+              "accepted": true,
+              "actual": -85264.71875,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 64,
+            "block_q": 64,
+            "id": "q64_k64_w8_s2",
+            "num_stages": 2,
+            "num_warps": 8
+          },
+          "forward": {
+            "compilation_seconds": 0.7013146243989468,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 72064,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 1.5768902376294136,
+            "median_ms": 1.5178974717855453,
+            "min_ms": 1.47272739559412,
+            "p10_ms": 1.4891089871525764,
+            "p90_ms": 1.5620852820575237,
+            "samples_ms": [
+              1.506342552602291,
+              1.5768902376294136,
+              1.513672061264515,
+              1.536642201244831,
+              1.5553701668977737,
+              1.5166793018579483,
+              1.47272739559412,
+              1.5191156417131424,
+              1.490929163992405,
+              1.5604402869939804
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 3.8486490389332175,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 329272,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 11.92054245620966,
+            "median_ms": 11.82541809976101,
+            "min_ms": 11.74909621477127,
+            "p10_ms": 11.75180021673441,
+            "p90_ms": 11.916580330580473,
+            "samples_ms": [
+              11.74909621477127,
+              11.75210066139698,
+              11.857558973133564,
+              11.836620979011059,
+              11.916140094399452,
+              11.92054245620966,
+              11.754031293094158,
+              11.79480366408825,
+              11.85671892017126,
+              11.81421522051096
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.995535741889432e-08,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.0727973889578829e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.0588553956457055e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.0614012169229617e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.0521231249142534e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.0330725152001822e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 9.909458033857792e-08,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.074226441158013e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 0.0,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -85274.015625,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        },
+        {
+          "config": {
+            "block_k": 128,
+            "block_q": 64,
+            "id": "q64_k128_w4_s2",
+            "num_stages": 2,
+            "num_warps": 4
+          },
+          "error": "JaxRuntimeError: RESOURCE_EXHAUSTED: Tensor memory size limit exceeded: requested 544, available: 512",
+          "failed_stage": {
+            "candidate": "q64_k128_w4_s2",
+            "degree": 4,
+            "operation": "forward_backward"
+          },
+          "forward": {
+            "compilation_seconds": 3.026061285287142,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 134528,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.3790867999196053,
+            "median_ms": 2.21511023119092,
+            "min_ms": 2.0865481346845627,
+            "p10_ms": 2.141442894935608,
+            "p90_ms": 2.3552989587187767,
+            "samples_ms": [
+              2.206706441938877,
+              2.0865481346845627,
+              2.2928081452846527,
+              2.3790867999196053,
+              2.2235140204429626,
+              2.352655865252018,
+              2.1475423127412796,
+              2.2042961791157722,
+              2.1767783910036087,
+              2.229745499789715
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "status": "unsupported_resources",
+          "traceback": "Traceback (most recent call last):\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/benchmarks/tune_query_key.py\", line 269, in benchmark\n    outputs = measure(candidate, arrays, candidate_entry, report, args)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/benchmarks/tune_query_key.py\", line 133, in measure\n    timing, result = time_program(program, arguments, warmup=args.warmup, iterations=args.iterations)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/benchmarks/benchmark_attention.py\", line 97, in time_program\n    compiled = jax.jit(function).lower(*arguments).compile()\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/stages.py\", line 586, in compile\n    return Compiled(self._lowering.compile(**kw), self._lowering.const_args,\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py\", line 1246, in compile\n    executable = UnloadedMeshExecutable.from_hlo(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py\", line 1779, in from_hlo\n    xla_executable = _cached_compilation(\n                     ^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/interpreters/pxla.py\", line 1561, in _cached_compilation\n    xla_executable = compiler.compile_or_get_cached(\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/compiler.py\", line 485, in compile_or_get_cached\n    return _compile_and_write_cache(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/compiler.py\", line 753, in _compile_and_write_cache\n    executable = backend_compile_and_load(\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/profiler.py\", line 384, in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/compiler.py\", line 379, in backend_compile_and_load\n    raise e\n  File \"/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/jax/_src/compiler.py\", line 369, in backend_compile_and_load\n    return backend.compile_and_load(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\njax.errors.JaxRuntimeError: RESOURCE_EXHAUSTED: Tensor memory size limit exceeded: requested 544, available: 512\n"
+        },
+        {
+          "config": {
+            "id": "production",
+            "uses_kernel_defaults": true
+          },
+          "forward": {
+            "compilation_seconds": 0.4053462538868189,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 194510848,
+              "available": true,
+              "generated_code_size_in_bytes": 93424,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 58720256,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133955584
+            },
+            "max_ms": 2.108926884829998,
+            "median_ms": 1.994383055716753,
+            "min_ms": 1.9417302682995796,
+            "p10_ms": 1.9533869810402393,
+            "p90_ms": 2.088769245892763,
+            "samples_ms": [
+              1.9958438351750374,
+              2.013830468058586,
+              1.9853543490171432,
+              1.983235590159893,
+              2.108926884829998,
+              2.0452290773391724,
+              2.0865295082330704,
+              1.9929222762584686,
+              1.954682171344757,
+              1.9417302682995796
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "forward_backward": {
+            "compilation_seconds": 2.1914094518870115,
+            "compiled_memory": {
+              "alias_size_in_bytes": 0,
+              "argument_size_in_bytes": 253231104,
+              "available": true,
+              "generated_code_size_in_bytes": 165752,
+              "host_alias_size_in_bytes": 0,
+              "host_argument_size_in_bytes": 0,
+              "host_output_size_in_bytes": 0,
+              "host_temp_size_in_bytes": 0,
+              "is_measured_allocator_peak": false,
+              "output_size_in_bytes": 253231164,
+              "source": "compiled.memory_analysis",
+              "temp_size_in_bytes": 133956152
+            },
+            "max_ms": 8.251585066318512,
+            "median_ms": 8.15576408058405,
+            "min_ms": 8.022179827094078,
+            "p10_ms": 8.136154431849718,
+            "p90_ms": 8.196790050715208,
+            "samples_ms": [
+              8.022179827094078,
+              8.190701715648174,
+              8.161399513483047,
+              8.149215951561928,
+              8.148818276822567,
+              8.251585066318512,
+              8.150128647685051,
+              8.149673230946064,
+              8.170007728040218,
+              8.170080371201038
+            ],
+            "timed_iterations": 10,
+            "warmup_iterations": 3
+          },
+          "is_baseline": false,
+          "parity": {
+            "backward_forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "forward": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 0.0,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.006,
+              "relative_max_tolerance": 0.018000000000000002
+            },
+            "gradient_coefficients": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.718014223620548e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.8997927035189463e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7498963483668202e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7458045221370082e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7334351537330617e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.727778448001522e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7152711404812859e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.767330448906199e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_factors": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.6979204484111072e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.8171322569562451e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_degree": [
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 0,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.7067486545694436e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 1,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6992356375410712e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 2,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6935512732261146e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 3,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6909960147932264e-07,
+                  "nonzero_error_with_zero_reference": false
+                },
+                {
+                  "accepted": true,
+                  "count": 1,
+                  "degree": 4,
+                  "failed_count": 0,
+                  "max_relative_l2_error": 1.6727035238447227e-07,
+                  "nonzero_error_with_zero_reference": false
+                }
+              ],
+              "per_head_degree": {
+                "accepted": true,
+                "count": 70,
+                "failed_count": 0,
+                "max_relative_l2_error": 1.742803903465442e-07,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_k": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7441843676789905e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 8.667957864459101e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_q": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.7631083569667855e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.157407516385367e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.025,
+              "relative_max_tolerance": 0.07500000000000001
+            },
+            "gradient_v": {
+              "accepted": true,
+              "all_finite": true,
+              "global": {
+                "accepted": true,
+                "count": 1,
+                "failed_count": 0,
+                "max_relative_l2_error": 3.682774503411077e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "per_batch_head": {
+                "accepted": true,
+                "count": 224,
+                "failed_count": 0,
+                "max_relative_l2_error": 9.7648010994422e-05,
+                "nonzero_error_with_zero_reference": false
+              },
+              "relative_l2_tolerance": 0.015,
+              "relative_max_tolerance": 0.045
+            },
+            "objective": {
+              "absolute_error": 0.0,
+              "accepted": true,
+              "actual": -85274.015625,
+              "policy": "finite only; scalar objective can cancel",
+              "reference": -85274.015625
+            }
+          },
+          "status": "accepted"
+        }
+      ],
+      "degree": 4
+    }
+  ],
+  "schema_version": 1,
+  "status": "complete"
+}

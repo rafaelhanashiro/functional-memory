@@ -252,7 +252,7 @@ def test_live_job_lookup_preserves_scheduler_errors(monkeypatch):
 @pytest.mark.parametrize('qualify_only', [False, True])
 def test_submit_selects_gpu_without_changing_run_recipe(tmp_path, monkeypatch, gpu_type, gres, qualify_only):
     monkeypatch.setattr(launcher, 'STUDY', tmp_path)
-    monkeypatch.setattr(launcher, 'load_run', lambda _: {'status': 'planned'})
+    monkeypatch.setattr(launcher, 'load_run', lambda _: {'status': 'planned', 'home_cluster': 'kennel'})
     monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
     monkeypatch.setattr(launcher, 'changes', lambda *a: [])
     monkeypatch.setattr(launcher, 'frozen_hash', lambda *a: 'f' * 64)
@@ -285,3 +285,105 @@ def test_generator_fits_a_larger_fixed_batch_named_by_its_size(count):
 def test_generator_rejects_other_batch_sizes(count):
     with pytest.raises(ValueError):
         fitting_scope('query_coefficient_generator', 256, count)
+
+
+QUERY_KEY_PARENT = 'r501f5cca0d4c'
+QUERY_KEY_TRAINABLE = ['query_polynomial_bias', 'query_polynomial_amplitude', 'query_polynomial_kernel',
+                       'key_polynomial_kernel', 'key_polynomial_amplitude']
+
+
+def query_key_parent():
+    return yaml.safe_load((Path(__file__).parents[1] / 'runs' / QUERY_KEY_PARENT / 'config.yaml').read_text())
+
+
+def test_query_key_parent_is_a_fused_generator_parent_only():
+    model = query_key_parent()['model']
+    assert model['attention_coefficient_conditioning'] == 'query_key' and model['qk_norm_head_scale'] is True
+    assert launcher.parent_degree(model) == 4
+    with pytest.raises(ValueError, match='compatible 4B'):
+        launcher.parent_degree({**model, 'attention_backend': 'mosaic'})
+    for mode in ('static_coefficients', 'free_per_example_query_coefficients'):
+        with pytest.raises(ValueError, match='compatible 4B'):
+            launcher.parent_degree(model, mode)
+
+
+def test_prepare_keeps_a_native_query_key_parent_and_trains_both_generators(tmp_path, monkeypatch):
+    import numpy as np
+    from scaffolds.transformer.data import packed
+
+    source = query_key_parent()
+    manifest = tmp_path / 'eval-manifest.json'
+    manifest.write_text('{}\n')
+    source['data']['eval_manifest'] = str(manifest)
+    parent = tmp_path / 'source/experiments/transformer_200m_4b/runs' / QUERY_KEY_PARENT
+    (parent / 'checkpoints/7500').mkdir(parents=True)
+    (parent / 'config.yaml').write_text(yaml.safe_dump(source))
+    (parent / 'best_validation.json').write_text(json.dumps({'step': 7500}))
+    descriptor = {'path': str(parent / 'checkpoints/7500'), 'step': 7500, 'sha256': 'c' * 64}
+    monkeypatch.setattr(launcher, 'load_run', lambda _: {
+        'status': 'complete', 'home_cluster': 'orcd', 'selected_checkpoint': descriptor})
+    monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
+    study = tmp_path / 'child/experiments/transformer_200m_4b'
+    topic = study / 'results/exploratory/coefficient_oracle'
+    topic.mkdir(parents=True)
+    (topic / 'selection.yaml').write_text(yaml.safe_dump({'settings': {}, 'runs': []}))
+    (study / 'runs/r3c0f21ab7dce').mkdir(parents=True)
+    (study / 'runs/r3c0f21ab7dce/data_identity.json').write_text(json.dumps(
+        {'manifest_sha256': launcher.sha256(manifest), 'batch_sha256': 'b' * 64}))
+    monkeypatch.setattr(launcher, 'STUDY', study)
+    monkeypatch.setattr(launcher, 'TOPIC', topic)
+    captured = {}
+    monkeypatch.setattr(launcher, 'create_run', lambda _, recipe, label: captured.update(recipe=recipe, label=label)
+                        or study / 'runs/r000000000009')
+    monkeypatch.setattr(launcher, 'update_record', lambda run, changes: captured.update(record=changes))
+    monkeypatch.setattr(launcher, 'refresh_selection', lambda *a: None)
+    monkeypatch.setattr(launcher, 'regenerate_index', lambda *a: None)
+    batch = np.arange(256 * 5, dtype=np.int32).reshape(256, 5)
+    monkeypatch.setattr(packed, 'PackedBatchIterator', lambda *a, **kw: iter([batch]))
+    with pytest.raises(ValueError, match='completed kennel run'):
+        launcher.prepare(parent, sequence_count=256)
+    launcher.prepare(parent, sequence_count=256, home_cluster='orcd')
+    recipe = captured['recipe']
+    assert recipe['model'] == source['model']
+    assert recipe['oracle']['trainable_parameters'] == QUERY_KEY_TRAINABLE
+    assert 'per-head QK score scales' in recipe['oracle']['frozen_parameters']
+    assert recipe['oracle']['initialization'].startswith('restore the trained query and key')
+    assert recipe['oracle']['microbatch_size'] == 8 and recipe['oracle']['sequence_count'] == 256
+    assert recipe['oracle']['learning_rate'] == 0.001 and recipe['oracle']['max_updates'] == 10000
+    assert recipe['condition'] == 'coefficient_oracle/query_key_generator_full_batch_m4_head_scale'
+    assert captured['label'] == 'query-key-generator-m4-full-batch-head-scale'
+    assert captured['record']['home_cluster'] == 'orcd'
+    assert 'key-conditioned' in captured['record']['coefficient_sharing']
+    with pytest.raises(ValueError, match='diagonal readout'):
+        launcher.prepare(parent, sequence_count=256, home_cluster='orcd', generator_readout='dense')
+
+
+def test_orcd_submission_requests_a_typed_hopper_and_requeues(tmp_path, monkeypatch):
+    monkeypatch.setattr(launcher, 'STUDY', tmp_path)
+    monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
+    monkeypatch.setattr(launcher, 'changes', lambda *a: [])
+    monkeypatch.setattr(launcher, 'frozen_hash', lambda *a: 'f' * 64)
+    monkeypatch.setattr(launcher, 'regenerate_index', lambda *a: None)
+    captured = {}
+    def check_output(command, **kwargs):
+        if command[0] == 'git':
+            return 'c' * 40 + '\n'
+        captured['command'] = command
+        return '27200000\n'
+    monkeypatch.setattr(launcher.subprocess, 'check_output', check_output)
+    monkeypatch.setattr(launcher, 'update_record', lambda run, changes: captured.update(record=changes))
+    monkeypatch.setattr(launcher, 'load_run', lambda _: {'status': 'planned', 'home_cluster': 'kennel'})
+    with pytest.raises(ValueError, match='belongs to kennel'):
+        launcher.submit('r000000000009', cluster='orcd')
+    monkeypatch.setattr(launcher, 'load_run', lambda _: {'status': 'planned', 'home_cluster': 'orcd'})
+    with pytest.raises(ValueError, match='GPU type'):
+        launcher.submit('r000000000009', cluster='orcd', gpu_type='B300')
+    launcher.submit('r000000000009', cluster='orcd')
+    command = captured['command']
+    for argument in ('--partition=mit_preemptable,mit_normal_gpu', '--gres=gpu:h100:1', '--time=12:00:00',
+                     '--time-min=06:00:00', '--cpus-per-task=16', '--mem=128G',
+                     '--exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409'):
+        assert argument in command
+    assert command[-5].endswith('coefficient_fit_orcd.sbatch') and command[-1] == 'H100'
+    submission = captured['record']['submission']
+    assert submission['cluster'] == 'orcd' and submission['gpu_type'] == 'H100' and submission['gpu_count'] == 1

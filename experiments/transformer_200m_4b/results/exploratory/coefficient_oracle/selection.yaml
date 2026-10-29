@@ -349,3 +349,20 @@ runs:
     metadata.json:
       path: experiments/transformer_200m_4b/runs/rf033859dd68e/metadata.json
       sha256: 1a92c09e3507f83f3dc56fe9d083a2a8a567c6d22a56244cf3f8c040ae7ced91
+- study: transformer_200m_4b
+  run_id: r043b150cde03
+  role: query_key_generator_full_batch_m4_head_scale
+  parent_run_id: r501f5cca0d4c
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r043b150cde03/config.yaml
+      sha256: dc6422332d5aa36a6392313e89f1ac82cc45c96ed98ca900d40025b1b1df1760
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r043b150cde03/metrics.jsonl
+      sha256: b140e662ccb2f498d9482bc47daf19757056558f4c63aaa2efd7e32ec17d9f65
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r043b150cde03/completion.json
+      sha256: b803b594340fd87ed5dd02bbfd1aeda4095aee7f06f1a68d93eb3d19336f7d47
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r043b150cde03/metadata.json
+      sha256: b803b594340fd87ed5dd02bbfd1aeda4095aee7f06f1a68d93eb3d19336f7d47
