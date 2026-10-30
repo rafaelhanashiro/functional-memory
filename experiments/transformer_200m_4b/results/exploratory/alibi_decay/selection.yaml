@@ -19,6 +19,18 @@ runs:
     config.yaml:
       path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/config.yaml
       sha256: efb17a6b72d606deedcae5fa1365ca438b6b930a84280ceb606928c27502c183
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/metrics.jsonl
+      sha256: d55bc52087d3fbcb009a9ff3803a27977930ddede2758e88d56478bb524aad94
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/completion.json
+      sha256: 95f54978918290076f1d2f9d61670201c230db9030c63ad69f4365c7458dd224
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/metadata.json
+      sha256: 5a3577d4459d1ce070502b0d7b73c95c88a3abe76638763057169f3c77c847e4
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r8d4fc24ef537/best_validation.json
+      sha256: 30354ec4f98617db13ece53ca144be95d81a504893a5b0bfc7cc45fb47b0f4f8
 - study: transformer_200m_4b
   run_id: r82a80d3091e2
   role: control_forget_gate_no_rope
