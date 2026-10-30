@@ -50,7 +50,8 @@ blocked backend match the control. Both use one B300 on Kennel.
 ## Findings and open decision
 
 The constant-decay control and the no-RoPE forget-gate control completed training.
-The projection-decay comparison is awaiting training; no outcome is available yet.
+The projection-decay run is submitted as Kennel job `229963` on one B300 in
+`standard`, with full acceptance before training. No outcome is available yet.
 Decide whether learned constant decay matches the input-dependent gate and whether
 decaying the coefficient projection improves the constant-decay variant. These
 runs remain exploratory and enter no canonical comparison.
