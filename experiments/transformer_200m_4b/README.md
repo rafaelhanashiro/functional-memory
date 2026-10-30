@@ -428,3 +428,26 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
+
+## ALiBi-style decay with coefficient projection weight decay
+
+Run `r69076c8f91c1` (`query-m4-alibi-no-rope-w-decay`) tests AdamW weight decay
+0.1 on the tanh coefficient projection W against the constant-decay control
+`r8d4fc24ef537`. Coefficient a,b and learned log-slopes remain exempt. The
+[ALiBi exploratory topic](results/exploratory/alibi_decay/README.md) records the
+question, matched recipe, run IDs, and open decision. Home cluster: Kennel.
+
+From the experiment worktree, after syncing both locked environments and committing
+its frozen inputs, launch one B300 on `standard`:
+
+```bash
+sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --job-name=r69076c8f91c1 \
+  --output=experiments/transformer_200m_4b/runs/r69076c8f91c1/training.log \
+  --error=experiments/transformer_200m_4b/runs/r69076c8f91c1/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/r69076c8f91c1/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
+The launcher checks initialization, CPU/GPU correctness, full-recipe throughput,
+and fresh-process checkpoint resumption before production training.

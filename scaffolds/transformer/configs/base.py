@@ -98,6 +98,10 @@ class ModelConfig:
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
+    # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
+    # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
+    attention_forget_gate_form: Literal["input", "constant"] = "input"
     # Apply optim.weight_decay to the query coefficient projection W; b, a, V, and any key
     # projection stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -121,7 +125,7 @@ class ModelConfig:
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
     # causal SiLU convolution, and L2 normalization per head; beta_t = 2 sigmoid(x_t W + b).
-    positional_encoding: Literal["rope", "path"] = "rope"
+    positional_encoding: Literal["rope", "path", "none"] = "rope"
     path_w_rank: int = 32
     path_conv_size: int = 3
     # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
@@ -245,7 +249,7 @@ class ModelConfig:
             raise ValueError("model.qk_head_dim must be even for RoPE")
         if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
-        if self.positional_encoding not in ("rope", "path"):
+        if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
         for name in ("path_w_rank", "path_conv_size"):
             value = getattr(self, name)
@@ -409,12 +413,16 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
+        if self.attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
+        if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
+            raise ValueError("A forget gate form requires the forget gate")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding != "rope" or self.attention_backend != "blocked"):
+                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
             raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE, on the blocked reference backend")
+                             "attention with RoPE or no positional encoding, on the blocked reference backend")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

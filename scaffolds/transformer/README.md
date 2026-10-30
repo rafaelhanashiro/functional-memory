@@ -289,7 +289,9 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 `query_polynomial_kernel` has shape `[layers, heads, hidden_size, m+1]`, while
 `query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
 `[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
-decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+decay by default. `model.attention_coefficient_kernel_weight_decay: true` applies
+`optim.weight_decay` to the query projection `W` only; offsets and amplitudes remain
+exempt. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
 For learned query-conditioned tanh coefficients with diagonal readout,
@@ -310,6 +312,15 @@ entry from `N(0, std^2)`. The draw uses a mechanism stream derived from the seed
 acceptance regenerates the kernel exactly. Starting at `a_r = 0` with a random kernel
 keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonzero;
 `a_r = 0` with a zero kernel would leave both gradients zero and is rejected.
+
+On the blocked backend, `model.attention_forget_gate: true` multiplies each
+query-conditioned polynomial weight by a causal decay. Its default
+`attention_forget_gate_form: input` uses the input-dependent Mamba-2 gate.
+The `constant` form learns one log rate per layer and head, giving the factor
+`exp(-exp(A_log) * (t - i))`. Rates start at `2^(-8h/H)` for heads `h = 1..H`,
+identically in each layer, and the log rates are exempt from weight decay.
+`model.positional_encoding: none` skips RoPE while preserving QK normalization;
+positions then enter through causality and the optional decay.
 `attention_coefficient_tanh_bias: true` adds a learned offset inside the tanh,
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant

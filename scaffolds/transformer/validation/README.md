@@ -2244,3 +2244,31 @@ frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
 The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
 also passes with eight-sequence microbatches and one mean-gradient Adam update
 per full batch, using the same static tensor shape.
+
+## Constant decay and coefficient projection weight decay
+
+On 2026-10-30, 165 CPU checks passed for the blocked constant-decay polynomial
+attention path, no positional encoding, optional query-projection decay, shared
+acceptance, and checkpoint continuations. The constant decay, parameter
+initialization, forward path, and diagnostics match source `165fd780`.
+Tests verify that enabling query-projection decay preserves every initial
+parameter and the parameter count, applies AdamW decay only to the projection
+among the coefficient and gate parameters, and leaves the offsets, amplitudes,
+and learned log rates trainable without decay. Acceptance includes the constant
+decay and no-positional-encoding tests for every matching recipe.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml \
+  scaffolds/transformer/tests/test_constant_decay.py \
+  scaffolds/transformer/tests/test_positional_encoding_none.py \
+  scaffolds/transformer/tests/test_acceptance.py \
+  scaffolds/transformer/tests/test_query_coefficient_learning_rate.py \
+  scaffolds/transformer/tests/test_parameter_policy.py \
+  scaffolds/transformer/tests/test_token_scale_continuation.py \
+  scaffolds/transformer/tests/test_continuation.py \
+  scaffolds/transformer/tests/test_exp_parent_continuation.py
+```
+
+GPU production execution still requires the shared hardware, kernel,
+initialization, full-recipe pilot, and exact-resume acceptance stages.

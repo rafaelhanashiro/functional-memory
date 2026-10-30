@@ -7,6 +7,7 @@ promotion into a maintained collection or by discarding its results and runs.
 
 | Topic | Question | Opened |
 | --- | --- | --- |
+| [alibi_decay](alibi_decay/README.md) | Does learned constant distance decay match the input-dependent gate without RoPE, and does coefficient W decay improve it? | 2026-10-29 |
 | [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? | 2026-10-29 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How do coefficient fits reveal capacity and conditioning, and can a dense generator distill the free solution and generalize to fresh sequences? | 2026-10-23 |
 | [taylor_static_continuation](taylor_static_continuation/README.md) | Does learning static coefficients after Taylor pretraining improve matched continuation? | 2026-10-24 |

@@ -51,6 +51,18 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
     assert preflight.require_passing_tests(report) == 2
 
 
+@pytest.mark.parametrize("cpu", [False, True])
+@pytest.mark.parametrize("encoding,form", [("rope", "input"), ("none", "input"), ("rope", "constant"),
+                                           ("none", "constant")])
+def test_no_rope_and_constant_decay_require_their_cpu_checks(cpu, encoding, form):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    config = {"model": {"positional_encoding": encoding, "attention_forget_gate": True,
+                         "attention_forget_gate_form": form}}
+    paths = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=cpu)
+    assert ("scaffolds/transformer/tests/test_positional_encoding_none.py" in paths) == (cpu and encoding == "none")
+    assert ("scaffolds/transformer/tests/test_constant_decay.py" in paths) == (cpu and form == "constant")
+
+
 def timing_profile():
     return {"runtime_seconds": 600.0, "setup_seconds": 80.0,
             "diagnostic_warmup_seconds": 40.0, "evaluation_warmup_seconds": 50.0,

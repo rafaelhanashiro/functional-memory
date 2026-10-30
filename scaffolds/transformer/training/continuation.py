@@ -43,7 +43,7 @@ def _parent_config(config):
                              "attention_coefficient_projection_initial_std",
                              "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
                              "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
-                             "qk_norm_token_scale", "attention_forget_gate",
+                             "qk_norm_token_scale", "attention_forget_gate", "attention_forget_gate_form",
                              "attention_coefficient_kernel_weight_decay"}
     if exp_parent:
         allowed_model_changes |= {"attention_degree"}
@@ -74,11 +74,12 @@ def _check_taylor_initialization(config, coefficients):
     token_scale = model.qk_norm_token_scale != "none"
     token_names = {"qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude"} if token_scale else set()
     if model.attention_forget_gate:
-        # The gate starts open with Gated DeltaNet's random initialization, not at the identity.
-        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS
+        # Both gate forms decay from initialization, rather than starting at the identity.
+        from scaffolds.transformer.attention.forget_gate import parameter_names
 
-        token_names |= set(FORGET_GATE_PARAMETERS)
-        if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in FORGET_GATE_PARAMETERS
+        gate_names = parameter_names(getattr(model, "attention_forget_gate_form", "input"))
+        token_names |= set(gate_names)
+        if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in gate_names
                    if name in coefficients):
             raise ValueError("Continuation forget gate parameters are not finite")
     if model.attention_coefficients != "learned":
