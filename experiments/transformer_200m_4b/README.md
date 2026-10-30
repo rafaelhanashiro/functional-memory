@@ -258,8 +258,9 @@ JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $TAYLOR --control r822
 JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $TAYLOR --control r82203a85ef8e
 JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $EXP --control none --degree 4
 JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $EXP --control none --degree 4
+JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $EXP --control-only --degree 4
 # Already allocated below; reuse these IDs for resumptions.
-for RUN in r2e081e09c19a rae91f24b06b4 r7e6a68545d4f r673e14eab803; do
+for RUN in r2e081e09c19a rae91f24b06b4 r7e6a68545d4f r673e14eab803 rddcbe6dfb1eb; do
   scaffolds/transformer/.venv/bin/python -m experiments.transformer_200m_4b.launch_continuation submit \
     $RUN --topic learned_coefficient_continuation --partition standard,long --time-limit 10:00:00
 done

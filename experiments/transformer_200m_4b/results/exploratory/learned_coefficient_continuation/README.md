@@ -22,6 +22,7 @@ canonical comparison.
 | Learned query, decayed W | `rae91f24b06b4` | Taylor `r816ab0fbe119` | tanh query coefficients at zero amplitude, W decayed |
 | Exp → learned static | `r7e6a68545d4f` | exp `r6a76e7fbde45` (14.2572) | degree-four kernel with static coefficients, Taylor at start |
 | Exp → learned query, decayed W | `r673e14eab803` | exp `r6a76e7fbde45` | degree-four kernel with tanh query coefficients, W decayed |
+| Exp → fixed Taylor (control) | `rddcbe6dfb1eb` | exp `r6a76e7fbde45` | degree-four fixed Taylor kernel, no learned coefficients |
 
 Every branch resumes its parent's validation-best checkpoint at update **7,500** (weights,
 Adam moments and clock, data cursor, RNG) and trains all parameters for **2,000** updates
@@ -37,8 +38,10 @@ branches swap the exp kernel for the degree-four Taylor polynomial on Mosaic at 
 (the parent ran the fused exp kernel): with scores of order 4, `p_4(s)` is a poor
 approximation of `exp(s)`, so their restored baselines are far above 14.26 and the runs test
 whether a backbone adapted to exp recovers to a better polynomial model than one adapted to
-Taylor. They have no fixed-Taylor control of their own, so they are read against each other,
-against the Taylor-parent pair, and against the parents' perplexities. The earlier degree-four
+Taylor. Their own control, fixed Taylor continued from the exp checkpoint (allocated after the four
+branches, at the user's request), starts as the same function and keeps its coefficients
+fixed, so it attributes the exp-start gains between the exp-adapted backbone and the learned
+coefficients. The earlier degree-four
 query continuation from an older QK-norm parent (500 updates at the backbone's learning rate,
 tie at 14.686 against 14.689) was deleted with its runs on 2026-10-29.
 
@@ -87,9 +90,10 @@ the Taylor parent) rather than to the learned coefficients is not identified; th
 between the two exp branches, −0.0032 nats, does isolate query dependence with decayed `W`
 in that regime, five times its effect from the Taylor start.
 
-**Open decision:** allocate the fixed-Taylor continuation of the exp parent (one run) to
-attribute the exp-start gain, or close the topic with these four. Discard or promote after
-that decision.
+The fixed-Taylor continuation of the exp parent, `rddcbe6dfb1eb`, is allocated and not yet
+complete; it attributes the exp-start gains.
+
+**Open decision:** discard or promote the topic once that control has been read.
 
 Measurements live only in each selected run; `summary.csv` derives every selected
 evaluation with the mean factorial-coordinate coefficients and the query generator's

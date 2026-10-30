@@ -106,3 +106,10 @@ runs:
     best_validation.json:
       path: experiments/transformer_200m_4b/runs/r673e14eab803/best_validation.json
       sha256: 12af7f7348846662faaf7ac97189733e98399407bf27da04c4aaa4741c201844
+- study: transformer_200m_4b
+  run_id: rddcbe6dfb1eb
+  role: exp_fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rddcbe6dfb1eb/config.yaml
+      sha256: bccadc1c25ad19dfd9a3be96d5a6e4479395c0bafaa7769dcc400ec4ba1124c7

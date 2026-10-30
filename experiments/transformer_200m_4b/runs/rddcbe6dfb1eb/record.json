@@ -1,0 +1,131 @@
+{
+  "condition": "exp_fixed_taylor",
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rddcbe6dfb1eb/config.yaml",
+    "sha256": "bccadc1c25ad19dfd9a3be96d5a6e4479395c0bafaa7769dcc400ec4ba1124c7"
+  },
+  "continuation": {
+    "backbone_optimizer": "preserve pretrained moments and step",
+    "data_start_sequence": 1920000,
+    "new_parameter_optimizer": "zero moments and fresh Adam clock",
+    "new_prediction_tokens": 1048576000,
+    "start_step": 7500,
+    "updates": 2000
+  },
+  "experiment_kind": "matched_checkpoint_continuation",
+  "home_cluster": "kennel",
+  "label": "exp-m4-continuation-fixed_taylor",
+  "name": "exp-m4-continuation-fixed_taylor",
+  "parent_kernel": "exp",
+  "parent_run_id": "r6a76e7fbde45",
+  "parent_study": "transformer_200m_4b",
+  "record_schema_version": 1,
+  "run_id": "rddcbe6dfb1eb",
+  "seed": 42,
+  "source_checkpoint": {
+    "file_count": 17,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "a47c8116edd364fb4f6027f537f30e30d0b379aef3b67549d1636eaa79b11d60",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "fd1a8124568e271f65b9ca65e5b21269f435a1a24a04a6a611c60c7a5039acd9",
+        "size_bytes": 215303
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "5f13b7362b78fb38bffa2b7daa32f24d61f4976b4c0dc28dc51cc64b3db65f27",
+        "size_bytes": 67472
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "769bb156a5036d45863a32cde14e34b64718e018d5845dd6353bb2b35e5386bf",
+        "size_bytes": 73730
+      },
+      {
+        "path": "default/d/7513b2f1f688631a3f5e67a961a58f40",
+        "sha256": "6bfb0608e02d32b358afd3d90204a81c85e2a9da075d54422dc1d346fd8a479c",
+        "size_bytes": 7111
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "769d5408c731b9185807fdbf961b815bbf68c7d8db00752749e2c6f71ab1330c",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/2edfb578493d877c959c01886d4c1170",
+        "sha256": "a89637a54ab43654f55c28a6925ffdfb9fe83b042a0da8bd4cefefeba0529771",
+        "size_bytes": 953
+      },
+      {
+        "path": "default/ocdbt.process_0/d/38296692796fca2581b70b015d2a8a94",
+        "sha256": "f39b210cad3b0c5ffbb0e20c4100cc0ea92933daf16012150f8d769500299755",
+        "size_bytes": 557
+      },
+      {
+        "path": "default/ocdbt.process_0/d/58e41d6fd7b6c79e3127126f67ce57ba",
+        "sha256": "b7f908d0a42d59c719d01427caec8b6af921934916c7eccc6532e41e9bf8431b",
+        "size_bytes": 404
+      },
+      {
+        "path": "default/ocdbt.process_0/d/59a436943a0fbfce37916cfc178fe6b7",
+        "sha256": "9b4ca78643872b4f247f4f46ef3168a1b1baca5bf27f59df4798c9a357b316cb",
+        "size_bytes": 624107520
+      },
+      {
+        "path": "default/ocdbt.process_0/d/636185491492ba6d409794035a4926b0",
+        "sha256": "c9d0860d6e36641e9482f4877a485b0e1c2e2a2f6ac0e487afcab773cfbc885c",
+        "size_bytes": 1431564288
+      },
+      {
+        "path": "default/ocdbt.process_0/d/63f57a3b2c77da285f3522bca7098a61",
+        "sha256": "e2732767806c24578347930b693f9dcb3a3bd160e3a0487b37c1769af52c9b1d",
+        "size_bytes": 230
+      },
+      {
+        "path": "default/ocdbt.process_0/d/7430ff64d213e7635fbb35f075dabf10",
+        "sha256": "a908a97f246267f5d06bee6b3491b194b2bf495991d7d3b83e5d39b297512c7c",
+        "size_bytes": 127246336
+      },
+      {
+        "path": "default/ocdbt.process_0/d/9d59f731c4fe317e59d6264f190be64a",
+        "sha256": "398eb5b99897ca2a4466f056a634cc27d050c4e315e62268d05916f27f1d919a",
+        "size_bytes": 737
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ca0e265bf88df61c51aa132fed59632c",
+        "sha256": "bf13e5b20e227b26363f04cb6ab22ccf22685c94a082d94efde6a423b87369b5",
+        "size_bytes": 814
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "d796dbddc133fc522a0ad636f5c857d3473a22202526739e014bd18bd87c88d4",
+        "size_bytes": 460
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "720aa5d2a1fb245f5f38dc720dc39501c1cd8ce96d2c02ba1488d32f4d3853a5",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/checkpoints/7500",
+    "sha256": "b50edd2aaaab3444bf6dbd476671cf5f34a4e8188f0ef245ab6ea39c97b61d47",
+    "size_bytes": 2183286536,
+    "step": 7500,
+    "validation_nll": 2.657260386567367
+  },
+  "source_configuration": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/config.yaml",
+    "sha256": "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6"
+  },
+  "source_data_identity": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_200m_4b/runs/r6a76e7fbde45/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+  },
+  "status": "planned"
+}

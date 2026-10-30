@@ -65,11 +65,15 @@ def parent_kind(model: dict) -> str:
 
 
 def branch_role(conditioning: str, *, kind: str, kernel_weight_decay: bool) -> str:
-    """The branch's selection role; exp parents' branches carry an ``exp_`` prefix."""
+    """The branch's selection role; exp parents' runs carry an ``exp_`` prefix."""
     role = BRANCH_ROLES[conditioning]
     if kernel_weight_decay:
         role += "_decay"
     return f"{kind}_{role}" if kind == "exp" else role
+
+
+def control_role(kind: str) -> str:
+    return "exp_fixed_taylor" if kind == "exp" else "fixed_taylor"
 
 
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static", updates: int = UPDATES,
@@ -90,7 +94,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
     if kernel_weight_decay and conditioning != "query":
         raise ValueError("Kernel weight decay applies to query coefficients")
     result = {}
-    for role in ("fixed_taylor", branch_role(conditioning, kind=kind, kernel_weight_decay=kernel_weight_decay)):
+    for role in (control_role(kind), branch_role(conditioning, kind=kind, kernel_weight_decay=kernel_weight_decay)):
         recipe = deepcopy(source)
         recipe["optim"].update(learning_rate=LEARNING_RATE, min_learning_rate=LEARNING_RATE,
                                warmup_steps=0, total_steps=continuation["parent_step"] + updates)
@@ -104,7 +108,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
         recipe["model"].setdefault("attention_forget_gate", False)
         if kind == "exp":
             recipe["model"].update(attention_degree=degree, attention_backend="mosaic")
-        if role == "fixed_taylor":
+        if role == control_role(kind):
             result[role] = recipe
             continue
         recipe["continuation"]["new_parameter_learning_rate"] = new_rate
@@ -137,7 +141,7 @@ def existing_control(control: str, parent: Path, continuation: dict, updates: in
     run = STUDY / "runs" / control
     record = load_run(run)
     recipe = yaml.safe_load((run / "config.yaml").read_text())
-    if (record["status"] != "complete" or record.get("condition") != "fixed_taylor"
+    if (record["status"] != "complete" or record.get("condition") not in ("fixed_taylor", "exp_fixed_taylor")
             or record.get("parent_run_id") != parent.name
             or recipe["continuation"]["parent_checkpoint_sha256"] != continuation["parent_checkpoint_sha256"]
             or recipe["optim"]["total_steps"] != continuation["parent_step"] + updates
@@ -149,11 +153,16 @@ def existing_control(control: str, parent: Path, continuation: dict, updates: in
 
 def prepare(parent: Path, *, conditioning: str = "static", control: str | None = None, topic: str | None = None,
             updates: int = UPDATES, new_rate: float | None = NEW_PARAMETER_LEARNING_RATE,
-            kernel_weight_decay: bool = False, degree: int | None = None) -> dict[str, str]:
+            kernel_weight_decay: bool = False, degree: int | None = None,
+            control_only: bool = False) -> dict[str, str]:
     """Allocate a branch and, unless a control is reused or declined, its fixed-Taylor control.
 
-    Allocations may share a topic: an existing selection gains the new runs.
+    ``control_only`` allocates just the fixed-Taylor continuation of the parent, for example
+    the control of exp-parent branches allocated earlier. Allocations may share a topic: an
+    existing selection gains the new runs.
     """
+    if control_only and control is not None:
+        raise ValueError("A control-only allocation does not reuse a control")
     parent = parent.resolve()
     topic_directory = topic_path(conditioning, topic)
     record = load_run(parent)
@@ -194,11 +203,13 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
     run_ids = {}
     if control not in (None, "none"):
         existing_control(control, parent, continuation, updates)
-        run_ids["fixed_taylor"] = control
+        run_ids[control_role(kind)] = control
     allocated = recipes(source, continuation, conditioning=conditioning, updates=updates, new_rate=new_rate,
                         kernel_weight_decay=kernel_weight_decay, degree=degree)
     for role, recipe in allocated.items():
-        if role == "fixed_taylor" and control is not None:
+        if role == control_role(kind) and control is not None:
+            continue
+        if control_only and role != control_role(kind):
             continue
         run = create_run(STUDY, recipe, label=recipe["train"]["wandb_run_name"])
         run_ids[role] = run.name
@@ -218,7 +229,7 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
                              "backbone_optimizer": "preserve pretrained moments and step",
                              "new_parameter_optimizer": "zero moments and fresh Adam clock"
                                                         + (f" at constant learning rate {new_rate}"
-                                                           if role != "fixed_taylor" and new_rate is not None else ""),
+                                                           if role != control_role(kind) and new_rate is not None else ""),
                              "data_start_sequence": best["step"] * source["data"]["batch_size"]},
         })
     selection_path = topic_directory / "selection.yaml"
@@ -318,6 +329,8 @@ def main(argv=None) -> None:
     prep.add_argument("--kernel-weight-decay", action="store_true",
                       help="apply optim.weight_decay to the query coefficient projection W")
     prep.add_argument("--degree", type=int, help="polynomial degree when continuing an exp parent")
+    prep.add_argument("--control-only", action="store_true",
+                      help="allocate only the parent's fixed-Taylor continuation")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
@@ -328,7 +341,8 @@ def main(argv=None) -> None:
     if args.command == "prepare":
         prepare(args.parent, conditioning=args.conditioning, control=args.control, topic=args.topic,
                 updates=args.updates, new_rate=args.new_parameter_learning_rate,
-                kernel_weight_decay=args.kernel_weight_decay, degree=args.degree)
+                kernel_weight_decay=args.kernel_weight_decay, degree=args.degree,
+                control_only=args.control_only)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit,
                conditioning=args.conditioning, topic=args.topic)
