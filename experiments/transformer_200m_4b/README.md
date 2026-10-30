@@ -159,6 +159,37 @@ done
 Each record captures its submission command and job ID. Resumptions keep the same
 run ID, recipe, launch commit, and checkpoint; do not submit a duplicate live job.
 
+### Projection decay at 2.5×
+
+Four 2.5× runs repeat the completed query and key–query runs at degrees 4 and 8 with
+weight decay 0.1 on the coefficient projections W
+(`model.attention_coefficient_kernel_weight_decay: true`; for key–query, both the query
+W and the key W_k). Each recipe is otherwise its control's; the query m = 4 recipe takes
+ORCD's FineWeb manifests. The question, controls, and findings belong to the
+[query optimization topic](results/exploratory/query_optimization/README.md#projection-decay-at-25).
+Home cluster: **ORCD**, one H100 each, executing from the worktree
+`/orcd/pool/006/rafah/functional_memory/worktrees/transformer_pp_2p5x_w_decay` (branch
+`claude/transformer-pp-2p5x-w-decay-orcd`). Key–query keeps its controls' fused
+query–key kernel (`records create --allow-triton-attention`).
+
+| Run | Label | Recipe |
+| --- | --- | --- |
+| `r77b617af91db` | `query-m4-w-decay-2.5x` | `reb9b5be4ff1b` with ORCD data paths |
+| `ra15cbb16beb7` | `query-m8-w-decay-2.5x` | `r77bca86ef253` |
+| `rb6313357059e` | `query_key-m4-w-decay-2.5x` | `r751984d1ca00` |
+| `r5bd803b3e562` | `query_key-m8-w-decay-2.5x` | `rb7e83a4b653f` |
+
+From the worktree root on ORCD, after committing the frozen inputs:
+
+```bash
+for run in r77b617af91db rb6313357059e ra15cbb16beb7 r5bd803b3e562; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ### Coefficient fitting
 
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)

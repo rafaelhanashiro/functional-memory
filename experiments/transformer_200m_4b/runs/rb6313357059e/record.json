@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/rb6313357059e/config.yaml",
+    "sha256": "4e27390a47f08d44d832017a6350dd4b6aafbcddd396d429c04831e76fcf7fd8"
+  },
+  "label": "query_key-m4-w-decay-2.5x",
+  "name": "query_key-m4-w-decay-2.5x",
+  "record_schema_version": 1,
+  "run_id": "rb6313357059e",
+  "status": "planned"
+}

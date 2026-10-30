@@ -63,9 +63,33 @@ in a host loop; the new runs use the shared trainer's compiled accumulation loop
 The averaging, clipping, and AdamW mathematics agree, but floating-point training
 trajectories need not be identical. Small differences warrant confirmation.
 
+## Projection decay at 2.5×
+
+Does W decay still help at 2.5× Chinchilla, at degree 8, and with key–query
+coefficients? Four fresh runs each copy a completed 2.5× run from the
+[token_budget topic](../token_budget/README.md) (18,925 updates, warmup 1,138) and
+change only `model.attention_coefficient_kernel_weight_decay: true`, which applies the
+shared weight decay 0.1 to the projections W. With key–query coefficients
+`[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`, both the query
+projection `w_r` and the key projection `w_k_r` decay; `b`, `a`, and `a^k` never decay.
+Every run keeps the canonical per-head QK scale, seed 42, and its control's backend
+(Mosaic for query, the fused Triton kernel for key–query).
+
+| Variant | Control without decay | W decay 0.1 |
+| --- | --- | --- |
+| Query m = 4 | `reb9b5be4ff1b` (`query-m4-2.5x`) | `r77b617af91db` (`query-m4-w-decay-2.5x`) |
+| Query m = 8 | `r77bca86ef253` (`query-m8-2.5x`) | `ra15cbb16beb7` (`query-m8-w-decay-2.5x`) |
+| Key–query m = 4 | `r751984d1ca00` (`query_key-m4-2.5x`) | `rb6313357059e` (`query_key-m4-w-decay-2.5x`) |
+| Key–query m = 8 | `rb7e83a4b653f` (`query_key-m8-2.5x`) | `r5bd803b3e562` (`query_key-m8-w-decay-2.5x`) |
+
+All four are submitted on ORCD, one H100 each, like the m = 8 and key–query controls
+(launch commit `8ef54e8`). The query m = 4 control trained on a Kennel B300 with the
+pre-7e5c962f training loop, so that pair also differs in hardware and loop.
+
 ## Selection and open decision
 
-The [selection](selection.yaml) names the control and both optimizer ablations.
+The [selection](selection.yaml) names the control and both optimizer ablations; the
+2.5× pairs join it when they finish.
 After collecting run measurements, refresh their scientific input hashes with:
 
 ```bash
@@ -73,6 +97,7 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
   experiments/transformer_200m_4b/results/exploratory/query_optimization
 ```
 
-Decide whether the small W-decay improvement warrants confirmation; neither change
-is a new default. Promote this comparison into its own canonical collection, or
+The 2.5× pairs test whether the small W-decay improvement holds; once they finish,
+decide whether W decay becomes the default for new query and key–query runs. Neither
+change is a default yet. Promote this comparison into its own canonical collection, or
 discard the topic. These runs enter no canonical comparison while the topic is open.

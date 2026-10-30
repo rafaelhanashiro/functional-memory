@@ -74,6 +74,18 @@ on H100 PCIe. Both completed 7,570 production updates with finite validation los
 using the Mosaic query kernel and the locked CUDA 12 environment. These executions
 qualify the optimizer options on those H100 variants; they do not add B300 evidence.
 
+### Query-key projection decay (2026-10-30)
+
+With `model.attention_coefficient_kernel_weight_decay: true`, query-key coefficients
+decay the key projection `W_k` as well as the query `W`; `b`, `a`, and the key amplitude
+stay undecayed. On CPU, a focused check of the parameter declarations and one AdamW
+step passed with the flag off and on: both projections shrink by exactly
+`1 - lr * 0.1` while `b`, `a`, and `a_k` keep their values. With the key projection
+left undecayed, the check fails. The query-key, parameter-policy, coefficient-scale,
+QK head-scale, sigmoid-coefficient, and query learning-rate suites passed 147 checks;
+16 GPU checks were deselected. Production acceptance repeats the query-key CPU and GPU
+tests on each allocation.
+
 Integration with the forget-gate continuation implementation passed 48 CPU checks
 across `test_query_coefficient_learning_rate.py`, `test_parameter_policy.py`,
 `test_continuation.py`, `test_token_scale_continuation.py`, and

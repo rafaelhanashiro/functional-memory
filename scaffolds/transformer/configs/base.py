@@ -98,8 +98,8 @@ class ModelConfig:
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
-    # Apply optim.weight_decay to the query coefficient projection W; b, a, V, and any key
-    # projection stay excluded.
+    # Apply optim.weight_decay to the coefficient projections: the query W and, under
+    # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
     # Dense readout mixes all degree+1 tanh or sigmoid features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/ra15cbb16beb7/config.yaml",
+    "sha256": "0dae96d5f92ac80f38d103ede4a63d72d1fd5003a0a1d2b8683802559891bdaa"
+  },
+  "label": "query-m8-w-decay-2.5x",
+  "name": "query-m8-w-decay-2.5x",
+  "record_schema_version": 1,
+  "run_id": "ra15cbb16beb7",
+  "status": "planned"
+}
