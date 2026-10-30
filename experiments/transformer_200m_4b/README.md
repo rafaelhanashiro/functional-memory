@@ -91,6 +91,34 @@ sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --me
 
 Each record's `submission` holds its exact command and partition.
 
+Five further 2.5× runs extend the comparison to key–query attention and to degree 8.
+Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests
+(`/home/rafah/projects/ofm/datasets/fineweb_12b/`). They ran from launch commit
+`8ef54e8`, one H100 each; retained checkpoints and logs are under ORCD's artifact root at
+the paths recorded in each run. Degree-8 fixed Taylor, static,
+and query use the Mosaic kernels; key–query uses the fused query–key kernel with the
+same 32-by-32 backward tiles at degrees 4 and 8 as its 1× partners, and its GPU
+acceptance runs the head-scale query–key backend tests.
+
+| 2.5× run | Label | Source recipe | 1× partner |
+| --- | --- | --- | --- |
+| `r751984d1ca00` | `query_key-m4-2.5x` | `r501f5cca0d4c` (`query_key-m4-head-scale`) at the 2.5× schedule | `r501f5cca0d4c` |
+| `r0ea4c732c5ac` | `fixed-m8-2.5x` | `r4f1682c1b54d` with `attention_degree: 8` | none with the canonical QK setup |
+| `r6c9bcd661078` | `static-m8-2.5x` | `raa81f92b6aaf` with `attention_degree: 8` | none with the canonical QK setup |
+| `r77bca86ef253` | `query-m8-2.5x` | `reb9b5be4ff1b` with `attention_degree: 8` | none with the canonical QK setup |
+| `rb7e83a4b653f` | `query_key-m8-2.5x` | `r536dee0929d5` (`query_key-m8-head-scale`) at the 2.5× schedule | `r536dee0929d5` |
+
+From the worktree root on ORCD, after committing the frozen inputs:
+
+```bash
+for run in r751984d1ca00 r0ea4c732c5ac r6c9bcd661078 r77bca86ef253 rb7e83a4b653f; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 Regenerate the reference image from the current recipe with:
 
 ```bash
@@ -408,10 +436,11 @@ Each record's `submission` holds its exact command and partition.
 
 ## Execution and records
 
-Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under
+Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
+above, and the coefficient-oracle fit `r043b150cde03` (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
-Retained checkpoints and logs live under this study in the primary Kennel checkout,
-at the locations recorded in each run. The frozen recipe and execution record
+Retained checkpoints and logs live under this study in the primary Kennel checkout, or
+for ORCD runs under ORCD's artifact root, at the locations recorded in each run. The frozen recipe and execution record
 identify the source commit, dependency lock, source checkpoint, and submitted
 command. Reproducing a completed execution uses that recorded source; a fresh
 execution receives a new ID and its own frozen recipe.
