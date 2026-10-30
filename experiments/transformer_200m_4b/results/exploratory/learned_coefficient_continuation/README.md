@@ -22,6 +22,7 @@ canonical comparison.
 | Learned query, decayed W | `rae91f24b06b4` | Taylor `r816ab0fbe119` | tanh query coefficients at zero amplitude, W decayed |
 | Exp → learned static | `r7e6a68545d4f` | exp `r6a76e7fbde45` (14.2572) | degree-four kernel with static coefficients, Taylor at start |
 | Exp → learned query, decayed W | `r673e14eab803` | exp `r6a76e7fbde45` | degree-four kernel with tanh query coefficients, W decayed |
+| Exp → fixed Taylor (control) | `rddcbe6dfb1eb` | exp `r6a76e7fbde45` | degree-four fixed Taylor kernel, no learned coefficients |
 
 Every branch resumes its parent's validation-best checkpoint at update **7,500** (weights,
 Adam moments and clock, data cursor, RNG) and trains all parameters for **2,000** updates
@@ -37,8 +38,10 @@ branches swap the exp kernel for the degree-four Taylor polynomial on Mosaic at 
 (the parent ran the fused exp kernel): with scores of order 4, `p_4(s)` is a poor
 approximation of `exp(s)`, so their restored baselines are far above 14.26 and the runs test
 whether a backbone adapted to exp recovers to a better polynomial model than one adapted to
-Taylor. They have no fixed-Taylor control of their own, so they are read against each other,
-against the Taylor-parent pair, and against the parents' perplexities. The earlier degree-four
+Taylor. Their own control, fixed Taylor continued from the exp checkpoint (allocated after the four
+branches, at the user's request), starts as the same function and keeps its coefficients
+fixed, so it attributes the exp-start gains between the exp-adapted backbone and the learned
+coefficients. The earlier degree-four
 query continuation from an older QK-norm parent (500 updates at the backbone's learning rate,
 tie at 14.686 against 14.689) was deleted with its runs on 2026-10-29.
 
@@ -46,10 +49,11 @@ Launch commands are in the [study README](../../../README.md#matched-taylor-cont
 
 ## Findings and open decision
 
-All four branches completed their 2,000 updates on one GPU each (static-Taylor 84 min on a
+All five runs completed their 2,000 updates on one GPU each (static-Taylor 84 min on a
 `dogo` H100, query-Taylor 57 min on an `akita` B300, the exp branches 124 and 147 min on the
-`mastiff` H100 PCIe; the acceptance pilot's slowest-step projection needed 20–48 h limits,
-as in the earlier continuations). Every validation-best is the terminal checkpoint.
+`mastiff` H100 PCIe, the exp control 83 min on `dogo`; the acceptance pilot's slowest-step
+projection needed 20–48 h limits, as in the earlier continuations). Every validation-best is
+the terminal checkpoint.
 
 | Continuation | Restored PPL | Terminal PPL @ 9,500 | Δ vs control (nats/token) |
 | --- | ---: | ---: | ---: |
@@ -58,6 +62,7 @@ as in the earlier continuations). Every validation-best is the terminal checkpoi
 | Taylor → learned query, decayed W | 14.7216 | 14.4869 | −0.0014 |
 | Exp → learned static | 286.14 | 14.4483 | −0.0040 |
 | Exp → learned query, decayed W | 286.14 | **14.4026** | **−0.0072** |
+| Exp → fixed Taylor (control) | 286.14 | 14.5606 | +0.0037 |
 
 | Δ vs control (nats) at update | 100 | 500 | 1,000 | 1,500 | 2,000 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -65,6 +70,12 @@ as in the earlier continuations). Every validation-best is the terminal checkpoi
 | Taylor → query, decayed W | −0.00007 | −0.0004 | −0.0008 | −0.0011 | −0.0014 |
 | Exp → static | +0.103 | +0.018 | +0.005 | −0.0007 | −0.0040 |
 | Exp → query, decayed W | +0.095 | +0.014 | +0.002 | −0.0040 | −0.0072 |
+| Exp → fixed Taylor | +0.111 | +0.028 | +0.014 | +0.007 | +0.0037 |
+
+| Δ vs the exp parent's own fixed-Taylor control (nats) | 100 | 500 | 1,000 | 1,500 | 2,000 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Exp → static | −0.0084 | −0.0103 | −0.0090 | −0.0080 | **−0.0077** |
+| Exp → query, decayed W | −0.0168 | −0.0140 | −0.0116 | −0.0114 | **−0.0109** |
 
 **From the Taylor checkpoint**, learned coefficients now help, a little, with the canonical
 QK norm and their own learning rate: static ends **0.07%** below the control and the
@@ -81,15 +92,22 @@ models are within 10% of the control after 100 updates, cross it at updates 1,40
 and end **0.40%** (static) and **0.72%** (query, decayed W) below it: 14.4026 is the lowest
 perplexity any continuation in this study has reached, below the forget-gate branch
 (14.4417). Both exp-start solutions also take the `u_3`-heavy shape (static mean `u_r`
-0.81 / 0.59 / 0.54 / 1.38 / 1.00). Without a fixed-Taylor continuation of the exp parent, the
-share of this gain that belongs to the exp-adapted backbone (its parent is 3% better than
-the Taylor parent) rather than to the learned coefficients is not identified; the difference
-between the two exp branches, −0.0032 nats, does isolate query dependence with decayed `W`
-in that regime, five times its effect from the Taylor start.
+0.81 / 0.59 / 0.54 / 1.38 / 1.00).
 
-**Open decision:** allocate the fixed-Taylor continuation of the exp parent (one run) to
-attribute the exp-start gain, or close the topic with these four. Discard or promote after
-that decision.
+**Attribution.** The exp parent's own fixed-Taylor continuation, the same start with the
+coefficients held at Taylor, ends at **14.5606**: 0.37% *above* the Taylor-backbone control.
+Two thousand updates do not carry an exp-adapted backbone with the fixed quartic past a
+Taylor-adapted one, so none of the exp-start gain is the backbone's. All of it, and more, is
+the learned coefficients: **−0.0077 nats** (static) and **−0.0109 nats** (query, decayed W)
+against their own control, five to eight times their effect from the Taylor start. The
+advantage is present at the first evaluation (−0.008 and −0.017 nats at update 100) and then
+roughly constant: on a backbone whose Q/K statistics were shaped by exp, the fixed Taylor
+quartic is the wrong kernel, and learned coefficients repair that mismatch at once rather than
+accumulating a slow gain. Query dependence with decayed `W` adds −0.0032 nats over static
+coefficients in that regime.
+
+**Open decision:** discard the topic, or promote it with the forget-gate and query-scale
+continuations into a collection on what continued pretraining can and cannot add.
 
 Measurements live only in each selected run; `summary.csv` derives every selected
 evaluation with the mean factorial-coordinate coefficients and the query generator's
