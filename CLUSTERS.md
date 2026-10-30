@@ -196,7 +196,9 @@ interval. `mit_preemptable` preempts without grace time (`GraceTime=0`) whenever
 higher-tier job needs the node, which also loses up to one checkpoint interval;
 `mit_normal_gpu` never preempts. On 2026-10-08 and 09, GPU 0 of `node3009` and of
 `node3209` (8×H100 each) ran at 90–93°C, throttled to 345 MHz, and slowed 2-GPU jobs
-about 3.5×; exclude both until they are repaired. The 2×H100 NVL nodes (`node1708`,
+about 3.5×; exclude both until they are repaired. On 2026-10-29 an H100 of `node2900`
+ran at 86°C under thermal slowdown at 540 MHz and slowed a one-GPU 200M run about
+2.6×; exclude it as well. The 2×H100 NVL nodes (`node1708`,
 `node1709`) train the 200M recipe about 1.6× slower than H100 80GB HBM3.
 A requeue or preemption resets the job's submit time and with it its queue age, so
 later runs of the same sweep can overtake it. H200 uses direct device transfer. ORCD nodes
