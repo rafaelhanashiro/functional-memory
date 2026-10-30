@@ -1,13 +1,46 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/path-dense-wdecay-4b/experiments/transformer_200m_4b/runs/rdacb58b7981c/.runtime/acceptance/H100-1",
+      "allocation": "JobId=229969 JobName=rdacb58b7981c UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:15 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-10-30T01:29:23 EligibleTime=2026-10-30T01:29:23 AccrueTime=2026-10-30T01:29:23 StartTime=2026-10-30T01:29:24 EndTime=2026-10-31T01:29:24 Deadline=N/A PreemptEligibleTime=2026-10-30T03:29:24 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-30T01:29:24 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3492385 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path-dense-wdecay-4b/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path-dense-wdecay-4b StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path-dense-wdecay-4b/experiments/transformer_200m_4b/runs/rdacb58b7981c/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/path-dense-wdecay-4b/experiments/transformer_200m_4b/runs/rdacb58b7981c/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_200m_4b/runs/rdacb58b7981c/config.yaml",
+      "config_sha256": "86c190ff2c3cba0e506027cd058431f0efb490706d14c7922d6c1e5615b023d7",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "6c87d57e075c152571c8d68a832474566e43417a",
+      "slurm_job_id": "229969",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-10-30T05:29:39.425354+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_200m_4b/runs/rdacb58b7981c/config.yaml",
     "sha256": "86c190ff2c3cba0e506027cd058431f0efb490706d14c7922d6c1e5615b023d7"
   },
+  "frozen_execution_sha256": "454426c625165256d3837e3c56a55c19c4bf15463f7f296929e5903e75bc9076",
   "home_cluster": "kennel",
   "label": "dense-query-m4-k5-head-scale-vdivsqrt5-w-decay",
+  "log_path": "experiments/transformer_200m_4b/runs/rdacb58b7981c/training.log",
   "name": "dense-query-m4-k5-head-scale-vdivsqrt5-w-decay",
   "record_schema_version": 1,
   "run_id": "rdacb58b7981c",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "6c87d57e075c152571c8d68a832474566e43417a",
+  "status": "acceptance",
+  "submission": {
+    "allowed_gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "command": "sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=rdacb58b7981c --output=experiments/transformer_200m_4b/runs/rdacb58b7981c/training.log --error=experiments/transformer_200m_4b/runs/rdacb58b7981c/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance experiments/transformer_200m_4b/runs/rdacb58b7981c/config.yaml 6c87d57e075c152571c8d68a832474566e43417a 1 B300,H100",
+    "gpu_count": 1,
+    "launch_commit": "6c87d57e075c152571c8d68a832474566e43417a",
+    "slurm_job_id": "229969",
+    "slurm_partition": "standard",
+    "submitted_utc": "2026-10-30T05:29:23.177949+00:00"
+  }
 }

@@ -99,6 +99,8 @@ For dense coefficients, only the tanh feature projection W gains decay; the mixi
 matrix V and coefficient b stay exempt. The entire coefficient keeps its factorial
 order scaling, separate from the dense mixing factor 1/sqrt(K).
 
+Submitted jobs: PaTH `229968` and dense K=5 `229969` on `standard`; dense K=9
+`229970` on `long`. Each requests one B300 or H100 with acceptance before training.
 These comparisons have no outcomes yet. Report terminal and validation-best results
 separately when training completes. The older dense K=9 control used a host gradient
 accumulation loop; the shared trainer now uses compiled accumulation with the same
