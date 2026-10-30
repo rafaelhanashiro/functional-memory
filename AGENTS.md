@@ -266,6 +266,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   ([attention scaling results](results/attention_scaling/README.md)). This is a practice
   for new runs: historical recipes and resumptions keep their settings, and the
   scaffold's default stays `none`.
+- New dense query-coefficient experiments always use
+  `model.attention_coefficient_readout_scale: 1/sqrt(K)`, where K is
+  `model.attention_coefficient_feature_count` (or degree + 1 when omitted).
+  Thus K=5 uses 0.4472135954999579 and K=9 uses 1/3. This scales the dense
+  mixing term and is separate from the polynomial's factorial order scaling.
+  Use the corresponding scaled runs as controls for new comparisons. Historical
+  recipes and resumptions keep their recorded settings.
 - Experiments sharing a model family use one shared model, attention, data pipeline,
   optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names,
   GPU-model workarounds, and transport policy out of model definitions, optimizer
