@@ -67,3 +67,43 @@ runs:
     best_validation.json:
       path: experiments/transformer_200m_4b/runs/rb74fa2ebede6/best_validation.json
       sha256: bb039e9b3efa3f27958025c349508284a772d1e01a5cb829a7868af14a10638c
+- study: transformer_200m_4b
+  run_id: r1f2c24c109f9
+  role: path_projection_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r1f2c24c109f9/config.yaml
+      sha256: 17bbed3929ce93783318bb3033b661ca0a27b5375ff32537778c287d21b19426
+- study: transformer_200m_4b
+  run_id: rdacb58b7981c
+  role: dense_k5_projection_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rdacb58b7981c/config.yaml
+      sha256: 86c190ff2c3cba0e506027cd058431f0efb490706d14c7922d6c1e5615b023d7
+- study: transformer_200m_4b
+  run_id: r753a7e8d3212
+  role: dense_k9_projection_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r753a7e8d3212/config.yaml
+      sha256: 43f8c8190dfdcd8f63ebf03a5bd03d2e05a1d51b3a603f2d40ed7b52a9523ca8
+- study: transformer_200m_4b
+  run_id: r74a50aca921e
+  role: path_no_projection_decay_control
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r74a50aca921e/config.yaml
+      sha256: c0f8b47ff4bb460f5df4a103d88029fd6aaf832eae88a22729823fa27218773f
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r74a50aca921e/metrics.jsonl
+      sha256: ee34ac0ee554487c09f2c4e0dbdfc3cff4f884f078a0c9ede821074397f4f2ac
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r74a50aca921e/completion.json
+      sha256: 5b94e6a26b73d5acf26687899d589e15da09cd0d0a64aa98ac1461b3b2970aec
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r74a50aca921e/metadata.json
+      sha256: 5f3a4a4351e3e6cc637ce4a17119c07c2336cb67ac3b91da843aaba4a16f5a57
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r74a50aca921e/best_validation.json
+      sha256: a62f7627e94804c72ac7d7b35616640f586ae2fd3578d517ac6b0c837f2915a4

@@ -7,7 +7,7 @@ promotion into a maintained collection or by discarding its results and runs.
 
 | Topic | Question | Opened |
 | --- | --- | --- |
-| [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? | 2026-10-29 |
+| [query_optimization](query_optimization/README.md) | Does projection weight decay improve degree-four query/tanh attention, including PaTH and dense generators, and does 3x LR on a,b help? | 2026-10-29 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How do coefficient fits reveal capacity and conditioning, and can a dense generator distill the free solution and generalize to fresh sequences? | 2026-10-23 |
 | [taylor_static_continuation](taylor_static_continuation/README.md) | Does learning static coefficients after Taylor pretraining improve matched continuation? | 2026-10-24 |
 | [coefficient_forms](coefficient_forms/README.md) | Does the query generator's form matter at m = 4: pure tanh, and affine sigmoid against affine tanh? | 2026-10-27 |

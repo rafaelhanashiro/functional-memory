@@ -76,3 +76,32 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
 Decide whether the small W-decay improvement warrants confirmation; neither change
 is a new default. Promote this comparison into its own canonical collection, or
 discard the topic. These runs enter no canonical comparison while the topic is open.
+
+## Projection decay across PaTH and dense generators
+
+Three additional degree-four runs test whether coefficient-projection decay transfers
+to PaTH and to dense tanh features. Each matches its named control's resolved recipe
+except for `model.attention_coefficient_kernel_weight_decay: true` (AdamW decay 0.1).
+All retain seed 42, the same data order and reference initialization, QK RMSNorm with
+per-head score scales, 7,570 updates, batch 256, and the 0.001-to-0.0001 LR schedule.
+The coefficient learning-rate multiplier remains 1. Each run starts fresh on one GPU
+on Kennel, with no scheduling dependencies.
+
+| Variant | W-decay run | No-W-decay control | Dense mixing scale | Backend |
+| --- | --- | --- | --- | --- |
+| PaTH | `r1f2c24c109f9` | `r74a50aca921e` | not applicable | fused |
+| Dense K=5 | `rdacb58b7981c` | `rcaff0dfb095f` | 1/sqrt(5) | Mosaic |
+| Dense K=9 | `r753a7e8d3212` | `r04a5b2a3e8dd` | 1/3 | Mosaic |
+
+For PaTH, the change applies to the polynomial coefficient tanh W. Its own
+transformation projections already receive decay 0.1; coefficient a,b stay exempt.
+For dense coefficients, only the tanh feature projection W gains decay; the mixing
+matrix V and coefficient b stay exempt. The entire coefficient keeps its factorial
+order scaling, separate from the dense mixing factor 1/sqrt(K).
+
+These comparisons have no outcomes yet. Report terminal and validation-best results
+separately when training completes. The older dense K=9 control used a host gradient
+accumulation loop; the shared trainer now uses compiled accumulation with the same
+averaging and optimizer mathematics. Floating-point trajectories may differ, so a
+small single-seed change needs confirmation. Launch commands are in the
+[study README](../../../README.md#path-and-dense-coefficient-projection-decay).

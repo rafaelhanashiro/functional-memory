@@ -428,3 +428,37 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
+
+## PaTH and dense coefficient projection decay
+
+The [query optimization topic](results/exploratory/query_optimization/README.md#projection-decay-across-path-and-dense-generators)
+compares coefficient tanh W decay 0.1 against matched PaTH and dense K=5/K=9
+controls. Dense runs retain 1/sqrt(K) mixing scale. Home cluster: Kennel.
+
+| Run | Label | Partition | GPUs |
+| --- | --- | --- | --- |
+| `r1f2c24c109f9` | query-m4-path-head-scale-w-decay | standard | 1 |
+| `rdacb58b7981c` | dense-query-m4-k5-head-scale-vdivsqrt5-w-decay | standard | 1 |
+| `r753a7e8d3212` | dense-query-m4-k9-head-scale-vdiv3-w-decay | long | 1 |
+
+From the experiment worktree, sync both locked CUDA environments and commit the
+frozen inputs before submitting. These commands use the two remaining standard
+GPU slots and one long allocation; each may run on B300 or H100 and must pass its
+allocation's full acceptance before training. Independent runs have no dependencies.
+
+```bash
+for run in r1f2c24c109f9 rdacb58b7981c; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --error="experiments/transformer_200m_4b/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r753a7e8d3212 \
+  --output=experiments/transformer_200m_4b/runs/r753a7e8d3212/training.log \
+  --error=experiments/transformer_200m_4b/runs/r753a7e8d3212/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_200m_4b.acceptance \
+  experiments/transformer_200m_4b/runs/r753a7e8d3212/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```

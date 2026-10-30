@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_200m_4b/runs/r753a7e8d3212/config.yaml",
+    "sha256": "43f8c8190dfdcd8f63ebf03a5bd03d2e05a1d51b3a603f2d40ed7b52a9523ca8"
+  },
+  "home_cluster": "kennel",
+  "label": "dense-query-m4-k9-head-scale-vdiv3-w-decay",
+  "name": "dense-query-m4-k9-head-scale-vdiv3-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r753a7e8d3212",
+  "seed": 42,
+  "status": "planned"
+}

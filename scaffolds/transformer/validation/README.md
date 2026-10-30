@@ -11,6 +11,34 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### PaTH and scaled-dense coefficient projection decay (2026-10-30)
+
+CPU qualification passed 141 checks for the optimizer policy, coefficient learning-rate
+multiplier, dense readout scaling, and acceptance selection; four GPU cases were
+deselected. The parameter-policy checks instantiate degree-four PaTH and dense
+K=5/K=9 models with canonical QK RMSNorm/head scales, head RMSNorm output scaling,
+and reference initialization. Dense readouts retain 1/sqrt(K) mixing scales.
+Enabling coefficient-projection decay preserves every initial parameter value and
+the parameter count. Zero-gradient AdamW updates decay only the requested coefficient
+W and the already-decayed backbone/PaTH projections; coefficient a,b or V,b,
+normalization scales, embeddings, and the PaTH strength bias remain exempt.
+Nonzero-gradient updates verify those exempt parameters still learn.
+
+The standard acceptance adapter already includes these parameter-policy checks.
+Its PaTH selection requires the fused PaTH GPU tests; dense selections require the
+Mosaic dense-readout and joint scaled-readout/head-scale GPU tests. Every production
+allocation still runs its own full-recipe initialization, timed pilot, and exact
+fresh-process resume checks; these CPU results do not replace GPU qualification.
+
+```bash
+JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml \
+  scaffolds/transformer/tests/test_parameter_policy.py \
+  scaffolds/transformer/tests/test_query_coefficient_learning_rate.py \
+  scaffolds/transformer/tests/test_dense_mixing_scale.py \
+  scaffolds/transformer/tests/test_acceptance.py -m 'not gpu' -q
+```
+
 ### Acceptance runtime projection (2026-10-29)
 
 Acceptance times cold diagnostic/evaluation calls separately, then collects warm
