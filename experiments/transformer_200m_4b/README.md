@@ -93,8 +93,9 @@ Each record's `submission` holds its exact command and partition.
 
 Five further 2.5× runs extend the comparison to key–query attention and to degree 8.
 Home cluster: **ORCD**, with ORCD's byte-identical FineWeb manifests
-(`/home/rafah/projects/ofm/datasets/fineweb_12b/`). They execute from a worktree on
-branch `claude/200m-2p5x-key-query-m8`, one H100 each. Degree-8 fixed Taylor, static,
+(`/home/rafah/projects/ofm/datasets/fineweb_12b/`). They ran from launch commit
+`8ef54e8`, one H100 each; retained checkpoints and logs are under ORCD's artifact root at
+the paths recorded in each run. Degree-8 fixed Taylor, static,
 and query use the Mosaic kernels; key–query uses the fused query–key kernel with the
 same 32-by-32 backward tiles at degrees 4 and 8 as its 1× partners, and its GPU
 acceptance runs the head-scale query–key backend tests.
@@ -434,10 +435,11 @@ Each record's `submission` holds its exact command and partition.
 
 ## Execution and records
 
-Home cluster: **Kennel**, except the query–key pretraining runs above (ORCD). Data manifests live under
+Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
+above, and the coefficient-oracle fit `r043b150cde03` (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
-Retained checkpoints and logs live under this study in the primary Kennel checkout,
-at the locations recorded in each run. The frozen recipe and execution record
+Retained checkpoints and logs live under this study in the primary Kennel checkout, or
+for ORCD runs under ORCD's artifact root, at the locations recorded in each run. The frozen recipe and execution record
 identify the source commit, dependency lock, source checkpoint, and submitted
 command. Reproducing a completed execution uses that recorded source; a fresh
 execution receives a new ID and its own frozen recipe.
