@@ -11,6 +11,46 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Continuation projection decay and FoX without RoPE (2026-10-31)
+
+The optional `qk_norm_token_scale_kernel_weight_decay` policy decays only the
+query-temperature direction; its default remains false. The continuation validator
+permits an explicit RoPE-to-none transition for a forget-gate child while preserving
+every backbone parameter and its Adam history. Other continuations reject that
+positional-encoding change.
+
+Forty-five targeted CPU checks passed: 13 continuation-allocation tests, 16 token-scale
+and parameter-policy tests, five FoX/restoration/positional-encoding checks, and 11
+acceptance/initialization checks. Zero-gradient updates verify the actual AdamW change
+on query-temperature `w`, coefficient `W`, and forget-gate `w_alpha`, with amplitudes
+and biases exempt. Restoration tests verify exact parent weights and optimizer
+hashes, independent optimizer clocks, and finite subsequent training. The query
+temperature's decay flag leaves initialization and forward values unchanged.
+Shared acceptance includes these mechanism checks before its full-recipe GPU pilot
+and fresh-process resume; CPU checks alone do not qualify a GPU allocation.
+
+At source `22be3818`, both degree-four continuations passed all acceptance stages
+on one H100 with the locked CUDA 12 environment. The allocations used global batch
+256, microbatch eight, and 2,048 prediction tokens per sequence. Test counts below
+are CPU / distributed CPU / GPU; every case passed with no skips or errors.
+
+| Mechanism and job | Hardware and backend | Passing tests | Runtime projection | Production trainer runtime |
+| --- | --- | ---: | ---: | ---: |
+| FoX without RoPE, decay on coefficient and forget-gate projections (`230954`) | `mastiff`, H100 PCIe, blocked | 517 / 9 / 24 | 9.63 h | 9.46 h |
+| Query-temperature, decay on its direction (`230957`) | `dogo`, H100 SXM, Mosaic | 334 / 9 / 48 | 1.60 h | 1.51 h |
+
+Both restored exactly the pretrained backbone parameters and Adam history at step
+7,500, with new-parameter optimizer count zero. Their 20-update GPU pilots and
+fresh-process resumptions matched checkpoint-state, next-batch, and RNG hashes;
+the production restoration audits matched the qualified restorations. The actual
+configured decay masks select only the requested projection arrays, leaving
+amplitudes, coefficient biases, and forget-gate rate/bias parameters exempt.
+Both completed all 2,000 production updates with 21 finite validation measurements
+and no numerical-failure record. The runtime projections include pilot elapsed
+time once and exclude the separate two-hour allocation reserve; production trainer
+times exclude acceptance. These executions qualify the two H100 configurations,
+not B300 or other untested hardware/backend combinations.
+
 ### Acceptance runtime projection (2026-10-29)
 
 Acceptance times cold diagnostic/evaluation calls separately, then collects warm

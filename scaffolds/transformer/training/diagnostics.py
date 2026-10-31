@@ -483,6 +483,9 @@ def qk_norm_identity(model) -> dict:
                     qk_norm_token_scale_input="pre_attention_rmsnorm_activation",
                     qk_norm_token_scale_shape=[model.num_layers, model.num_heads, model.hidden_size + 1],
                     qk_norm_token_scale_initial_amplitude=0.0,
+                    qk_norm_token_scale_kernel_weight_decay=getattr(
+                        model, "qk_norm_token_scale_kernel_weight_decay", False),
+                    qk_norm_token_scale_amplitude_weight_decay=False,
                     qk_norm_parameter_count=identity["qk_norm_parameter_count"] + gate_count,
                     attention_score_formula="exp(a_h cos(w_h, x_t)) * " + identity["attention_score_formula"]
                                             + "; a_h learned per layer/head, initially zero; w_h drawn "

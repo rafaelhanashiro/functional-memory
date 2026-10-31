@@ -172,6 +172,9 @@ class ModelConfig:
     # model starts exactly at its static head scale; w_h is drawn N(0, 1/hidden_size) and
     # only its direction matters. Requires qk_norm_head_scale.
     qk_norm_token_scale: Literal["none", "cosine"] = "none"
+    # Opt in to AdamW decay on the token-scale direction w only. Its amplitude a
+    # remains exempt, and existing recipes retain their no-decay behavior.
+    qk_norm_token_scale_kernel_weight_decay: bool = False
     # Weight initialization: the scaffold's Flax defaults, or an architecture's reference
     # recipe ("transformer_reference" for dot-product attention, "gla_reference" for GLA);
     # see models/initialization.py.
@@ -520,6 +523,10 @@ class ModelConfig:
             raise ValueError(f"Unknown QK token scale: {self.qk_norm_token_scale}")
         if self.qk_norm_token_scale != "none" and not self.qk_norm_head_scale:
             raise ValueError("The per-token query scale requires QK RMS head scaling")
+        if not isinstance(self.qk_norm_token_scale_kernel_weight_decay, bool):
+            raise ValueError("model.qk_norm_token_scale_kernel_weight_decay must be a boolean")
+        if self.qk_norm_token_scale_kernel_weight_decay and self.qk_norm_token_scale == "none":
+            raise ValueError("Token-scale projection weight decay requires an enabled per-token query scale")
         if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
             raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
         allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")

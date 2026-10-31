@@ -242,7 +242,11 @@ by `exp(gamma_h + delta_th)` instead of `exp(gamma_h)`. Each layer/head owns a d
 `qk_norm_token_scale_kernel` (`[num_layers, num_heads, hidden_size]`, drawn
 `N(0, 1/hidden_size)` from the mechanism stream; only its direction matters) and an
 amplitude `qk_norm_token_scale_amplitude` (`[num_layers, num_heads, 1]`, initially zero),
-both FP32 without weight decay. Both vectors are normalized as `v / sqrt(||v||² + eps)`
+both FP32 and exempt from weight decay by default. Set
+`qk_norm_token_scale_kernel_weight_decay: true` to apply `optim.weight_decay` to the
+direction `w_h` only; the amplitude remains exempt. This policy also applies to the
+new-parameter optimizer in continuations and is recorded in attention diagnostics.
+Both vectors are normalized as `v / sqrt(||v||² + eps)`
 with `qk_norm_eps`, so `|delta| <= |a_h|` without saturation, and a zero amplitude
 reproduces the head-scaled model exactly. The gate restores the per-token query-norm
 freedom that RMSNorm removes; a per-query temperature of the degree-`m` Taylor kernel is

@@ -113,6 +113,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(("scaffolds/transformer/tests/test_continuation.py",
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
     model = config["model"]
+    if cpu and model.get("qk_norm_token_scale", "none") != "none":
+        paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
+                      "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
+        if config.get("continuation", {}).get("parent_checkpoint"):
+            paths.append("scaffolds/transformer/tests/test_token_scale_continuation.py")
+    if (cpu and model.get("attention_forget_gate", False)
+            and config.get("continuation", {}).get("parent_checkpoint")):
+        paths.append("scaffolds/transformer/tests/test_forget_gate_continuation.py")
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):
@@ -677,7 +685,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False, positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
-        attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False))
+        attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
+        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

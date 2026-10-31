@@ -92,6 +92,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("qk_norm", False)
         value["model"].setdefault("qk_norm_head_scale", False)
         value["model"].setdefault("qk_norm_token_scale", "none")
+        value["model"].setdefault("qk_norm_token_scale_kernel_weight_decay", False)
         value["continuation"].setdefault("new_parameter_learning_rate", None)
         value["model"].setdefault("attention_coefficients", "fixed")
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)

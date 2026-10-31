@@ -69,17 +69,19 @@ def rms_head_scale_specs():
 TOKEN_SCALE_PARAMETERS = ("qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude")
 
 
-def token_scale_specs(*, hidden_size: int):
+def token_scale_specs(*, hidden_size: int, kernel_weight_decay: bool = False):
     """The per-token gate's direction w_h, drawn N(0, 1/hidden_size), and amplitude a_h, initially zero."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if not isinstance(hidden_size, int) or isinstance(hidden_size, bool) or hidden_size <= 0:
         raise ValueError("The per-token query scale requires a positive integer hidden size")
+    if not isinstance(kernel_weight_decay, bool):
+        raise ValueError("Token-scale projection weight decay must be a boolean")
     return (
         AttentionParameterSpec(
             name="qk_norm_token_scale_kernel", argument="qk_norm_token_scale_kernel",
             initial=(0.0,) * hidden_size, initial_shape=(hidden_size,), sharing="per_head",
-            weight_decay=False, initial_std=1.0 / math.sqrt(hidden_size),
+            weight_decay=kernel_weight_decay, initial_std=1.0 / math.sqrt(hidden_size),
         ),
         AttentionParameterSpec(
             name="qk_norm_token_scale_amplitude", argument="qk_norm_token_scale_amplitude",

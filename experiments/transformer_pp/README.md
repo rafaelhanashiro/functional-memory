@@ -356,6 +356,42 @@ On an H100 PCIe the blocked backend trains this recipe at 16.7 s per update (abo
 for the budget), and the pilot's slowest-step projection reached 31 h, beyond `standard`'s
 24 h limit; the `long` allocation only clears that projection.
 
+### CPT with projection weight decay
+
+Two additional continuations reuse Taylor parent `r816ab0fbe119` at update 7,500 and
+fixed-Taylor control `r82203a85ef8e`. Both train all parameters for 2,000 more updates
+with the same data order and constant learning rates: 0.0001 for the backbone and
+0.001 for introduced parameters. FoX **without RoPE**, `r554ce7da6a8a`, applies decay
+0.1 to the coefficient projection `W` and forget-gate projection `w_alpha`; their
+amplitudes and biases remain exempt. Query-temperature **with RoPE**, `re563830cf150`,
+applies decay 0.1 to its direction `w` only, leaving its amplitude exempt. Definitions,
+controls, and findings belong to the [forget-gate topic](results/exploratory/forget_gate_continuation/README.md)
+and [query-temperature topic](results/exploratory/token_query_scale_continuation/README.md).
+
+Prepare fresh reproductions in an isolated worktree; the commands below allocate new IDs:
+
+```bash
+PARENT=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENT" --conditioning forget_gate --control r82203a85ef8e --no-rope --kernel-weight-decay
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENT" --conditioning token_scale --control r82203a85ef8e --token-scale-kernel-weight-decay
+```
+
+The two recorded runs are complete. For a fresh reproduction, substitute the new
+allocated IDs below after committing frozen inputs. Submit independently; these limits
+include GPU acceptance. Check live allowances before reproducing:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  r554ce7da6a8a --conditioning forget_gate --partition standard --time-limit 24:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  re563830cf150 --conditioning token_scale --partition standard --time-limit 10:00:00
+```
+
+Each allocation qualifies the actual configuration, parameter decay policy, checkpoint
+restoration, finite training pilot, and fresh-process resume before production begins.
+
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
