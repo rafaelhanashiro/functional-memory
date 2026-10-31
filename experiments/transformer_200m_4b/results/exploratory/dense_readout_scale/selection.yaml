@@ -1,0 +1,83 @@
+question: Does the dense query readout need a 1/sqrt(K) scale under the canonical
+  QK setup?
+settings:
+  metric: best validation perplexity
+  comparison: K = 5 dense readout at scale 1 against 1/sqrt(5), with fixed Taylor
+    and query controls
+runs:
+- study: transformer_200m_4b
+  run_id: r0c0f3634685c
+  role: dense_k5_scale_1
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r0c0f3634685c/config.yaml
+      sha256: 78bbf27a8ba9cd2d6bd97cf4ca8cef179c85c7f9a58e41b71835c21506d4b68c
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r0c0f3634685c/metrics.jsonl
+      sha256: 3d67d25c5941cdc9395bb5bdaf0fa3b511cc615d0511b7aab2e36007bb314679
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r0c0f3634685c/completion.json
+      sha256: e7400b3d9300498e10a1691ea1c6cab51b3c60cb0b5d0909c050e41046d757bd
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r0c0f3634685c/metadata.json
+      sha256: d1a63d6e731fde2c25627d9b74e9da4eb795f045843033787be6ac6137e88a8e
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r0c0f3634685c/best_validation.json
+      sha256: 7a74928deaef80a56407dc3206c1d4514b121b826476c468b925adae8db8589b
+- study: transformer_200m_4b
+  run_id: rcaff0dfb095f
+  role: dense_k5_inverse_sqrt_k
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/rcaff0dfb095f/config.yaml
+      sha256: c715c36b888e6ca1455e19b6e4304e6e06b51b9b70b1f424def93a06827e02bd
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/rcaff0dfb095f/metrics.jsonl
+      sha256: 857835b1285e47fa97eb5ae6688a1f98e6987fc0d67f20c5b16f4d71bc6b9bbe
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/rcaff0dfb095f/completion.json
+      sha256: 0f1f7e5ed02fd97c4a961f07d9ac1cfcd357aa683110013f3ee71ffd919b29d2
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/rcaff0dfb095f/metadata.json
+      sha256: 062d31f2efb9e6e2ba42f53a5f3ddddfb10de360f6858b93c4f390561cbe3f8e
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/rcaff0dfb095f/best_validation.json
+      sha256: ecf1d6ee9c290421c6b2741d3f3307b17febd4e26a2411f983ae55297d12252b
+- study: transformer_200m_4b
+  run_id: r816ab0fbe119
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914
+- study: transformer_200m_4b
+  run_id: r2b22f2ff6461
+  role: tanh_query
+  sources:
+    config.yaml:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_200m_4b/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9

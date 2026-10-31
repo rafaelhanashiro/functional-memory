@@ -93,7 +93,7 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate: bool = False,
         rngs: nnx.Rngs,
     ):
-        if positional_encoding not in ("rope", "path"):
+        if positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {positional_encoding}")
         if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
             raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
@@ -170,8 +170,9 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("attention_forget_gate must be a boolean")
         if attention_forget_gate and (attention_coefficient_conditioning != "query"
                                       or attention_coefficient_activation == "identity"
-                                      or positional_encoding != "rope" or backend != "blocked"):
-            raise ValueError("The forget gate requires nonlinear query coefficients with RoPE on the blocked backend")
+                                      or positional_encoding not in ("rope", "none") or backend != "blocked"):
+            raise ValueError("The forget gate requires nonlinear query coefficients with RoPE or no positional "
+                             "encoding on the blocked backend")
         self.attention_forget_gate = attention_forget_gate
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
@@ -398,9 +399,11 @@ class MultiHeadAttention(nnx.Module):
             result = self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
                                           path_parameters, output_norm_scale, return_diagnostics)
             return (result, effective_coefficients) if return_coefficients else result
-        positions = jnp.arange(seq_len)
-        q = apply_rope(q, positions, self.rope_theta)
-        k = apply_rope(k, positions, self.rope_theta)
+        if self.positional_encoding == "rope":
+            positions = jnp.arange(seq_len)
+            q = apply_rope(q, positions, self.rope_theta)
+            k = apply_rope(k, positions, self.rope_theta)
+        # "none": positions enter only through the causal mask (and a forget gate's decay).
         if self.backend != "manual":
             q, k = q.astype(self.dtype), k.astype(self.dtype)
         if coefficients is not None:

@@ -16,3 +16,5 @@ promotion into a maintained collection or by discarding its results and runs.
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale, `exp(gamma_h + a_h cos(w_h, x_t))` on Q, improve a matched degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does the matched continuation protocol detect the forget gate, which beats fixed Taylor by 2.7% in pretraining? | 2026-10-28 |
 | [learned_coefficient_continuation](learned_coefficient_continuation/README.md) | Do learned static or query (decayed-W) degree-four coefficients help when introduced after fixed-Taylor or exp pretraining, with the canonical QK norm? | 2026-10-29 |
+| [taylor_query_continuation](taylor_query_continuation/README.md) | Does learning query-dependent coefficients after degree-four Taylor pretraining improve matched continuation? | 2026-10-24 |
+| [dense_readout_scale](dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale under the canonical QK setup? | 2026-10-29 |
