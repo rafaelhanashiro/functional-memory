@@ -360,9 +360,9 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transfor
   --parent "$PARENT" --conditioning token_scale --control r82203a85ef8e --token-scale-kernel-weight-decay
 ```
 
-The two IDs above are already allocated in `worktrees/cpt-gate-decay`, branch
-`codex/cpt-gate-decay`. After committing frozen inputs, submit independently; these
-limits include GPU acceptance. Check live allowances before reproducing:
+The two recorded runs are complete. For a fresh reproduction, substitute the new
+allocated IDs below after committing frozen inputs. Submit independently; these limits
+include GPU acceptance. Check live allowances before reproducing:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \

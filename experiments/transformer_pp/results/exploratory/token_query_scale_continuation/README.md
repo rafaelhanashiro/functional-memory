@@ -14,8 +14,8 @@ the question but say nothing about held-out text. This topic tests degree four i
 
 ## Runs and method
 
-Both runs start from the validation-best checkpoint at update **7,500** of the canonical
-fixed-Taylor degree-four parent `r816ab0fbe119` (held-out PPL **14.7242**; QK RMSNorm
+All three runs start from the validation-best checkpoint at update **7,500** of the canonical
+fixed-Taylor degree-four parent `r816ab0fbe119` (held-out PPL **14.7218**; QK RMSNorm
 with per-head scaling, head RMSNorm output scaling, Mosaic). The parent's configuration,
 checkpoint, and packed-data identity are pinned by SHA256 in each child's frozen recipe
 and execution record.
@@ -24,18 +24,19 @@ and execution record.
 | --- | --- | --- |
 | Fixed Taylor control | `r82203a85ef8e` | None |
 | Per-token query scale | `ra988273933f7` | `qk_norm_token_scale: cosine` |
+| Per-token query scale + direction decay | `re563830cf150` | Same gate; decay only `w_h` at 0.1 |
 
 The gate adds, per layer and head, a direction `w_h` (896 entries drawn `N(0, 1/896)`;
 only its direction matters) and an amplitude `a_h` starting at zero: **188,370
 parameters**. Zero amplitude reproduces the parent's function. Both vectors are
 normalized with `eps = 1e-6`, so `|delta| <= |a_h|` without saturation.
 
-All backbone parameters continue training in both runs, preserving pretrained Adam
+All backbone parameters continue training in each run, preserving pretrained Adam
 moments and clock, the next training-data position, and the RNG step. The gate's
-parameters have zero Adam moments, their own clock, no weight decay, and a constant
-learning rate of **0.001**; the backbone keeps **0.0001**. The separate rate lets `a_h`
+parameters have zero Adam moments, their own clock, no weight decay in the original gate
+run, and a constant learning rate of **0.001**; the backbone keeps **0.0001**. The separate rate lets `a_h`
 reach order one within the budget; the query-generator continuation's amplitudes reached
-at most 0.043 in 500 updates at 0.0001. Both train **2,000** additional updates, from
+at most 0.043 in 500 updates at 0.0001. All three train **2,000** additional updates, from
 7,500 to **9,500**, with the same seed and data order, a 256-sequence global batch, one
 GPU, microbatch eight, and 32 accumulation steps: **1,048,576,000 prediction tokens per
 run** beyond the source checkpoint. Data continues at sequence 1,920,000 without
@@ -60,15 +61,12 @@ exempt. It uses the same Taylor checkpoint at update 7,500, 2,000 further update
 data order, seed, RoPE, and closed gate initialization as `ra988273933f7`. Both new
 gate parameters use constant LR 0.001; the backbone uses 0.0001 and retains its Adam
 history. The frozen configuration is in [its run directory](../../../runs/re563830cf150/config.yaml).
-It runs independently on one H100 or B300 on Kennel; commands are in the
+It completed on one H100 SXM on Kennel; commands are in the
 [study README](../../../README.md#cpt-with-projection-weight-decay).
 
-Both runs completed all **2,000** updates on one H100 each (Kennel `mastiff`, `standard`
-partition): control job **228301**, gate job **228305**. The gate's first allocation
-(job 228303) failed the acceptance pilot's runtime projection, which multiplies the
-slowest steady pilot update by the whole budget: a 17.8 s checkpoint-save stall projected
-16.7 h, while both branches actually train at about 3.2 s per update; the resubmission
-projected 6.4 h. Trainer runtimes were **2 h 31 min** (control) and **2 h 12 min** (gate).
+The original control and no-decay gate runs completed all **2,000** updates on one H100
+each (Kennel `mastiff`, `standard` partition): control job **228301**, gate job **228305**.
+Trainer runtimes were **2 h 31 min** (control) and **2 h 12 min** (gate).
 
 The restored baselines differ by **6e-6 nats** on the 19 held-out batches (NLL 2.689318
 against 2.689324): with `a_h = 0` the gate is the parent's function, and the remaining
@@ -79,29 +77,37 @@ reference backend; 1.1e-4 nats apart on the single acceptance batch).
 | --- | ---: | ---: | --- |
 | Fixed Taylor | 14.7216 | 14.5064 | 14.5064 / 9,500 |
 | Per-token query scale | 14.7217 | 14.5057 | 14.5057 / 9,500 |
+| Per-token query scale + direction decay | 14.7217 | 14.5056 | 14.5056 / 9,500 |
 
-The gate ends **0.0007 PPL (0.0048%)**, or **0.0000477 nats/token**, below the control.
+The original no-decay gate ends **0.0007 PPL (0.0048%)**, or **0.0000477 nats/token**,
+below the control.
 The two trajectories agree to within 1.4e-5 nats through update 1,000, after which the
 gate's small advantage grows monotonically but never exceeds 5e-5 nats. This is a tie
 at the resolution of the comparison; the earlier query-generator continuation's
 advantage over its control was of the same order (0.0027 PPL in 500 updates).
 
-The gate did open. At update 9,500 the amplitudes have mean `|a_h|` **0.21** and
-maximum **0.98**; 137 of 210 heads exceed 0.1 and 54 exceed 0.3, with per-layer means
+With direction decay, terminal and validation-best PPL are both **14.505602** at update
+9,500: **0.000130 PPL** (**0.00000894 nats/token**) below the no-decay gate, and
+**0.000821 PPL** below fixed Taylor. The two gate runs differ by at most **0.000343 PPL**
+over the recorded evaluations, and their difference changes sign during training.
+This remains a tie; a single seed on different H100 variants and executed sources does
+not establish a weight-decay benefit. The initial PPLs agree within 0.00000004, consistent
+with unchanged initialization and a closed gate in both runs.
+
+The original no-decay gate did open. At update 9,500 its amplitudes have mean `|a_h|`
+**0.21** and maximum **0.98**; 137 of 210 heads exceed 0.1 and 54 exceed 0.3, with per-layer means
 near zero except layer 13 (−0.22). The realized modulation stays small: on the
 diagnostic sequence the per-token log scale `delta_th` has a standard deviation of
 0.004–0.042 per layer (largest in layers 11–14), so typical queries change their scale by
 1–4%, and the extreme token reaches `exp(0.43) = 1.5x`. The model therefore uses the
 freedom only mildly, and that use does not move held-out loss.
 
-Taken with the pretraining and continuation results for learned coefficients, this is
-further evidence that at degree four with the canonical QK normalization the loss is
-nearly flat in the remaining per-query degrees of freedom: temperature, like the
-coefficient shape, is not where a gain over Taylor lies.
+For this parent, seed, and budget, neither gate variant establishes a meaningful gain
+over continuing fixed Taylor. This does not determine whether query-dependent
+temperature would help under a different training protocol.
 
-**Open decision:** determine whether decaying the direction changes the continuation
-result, then retain or discard the topic. The completed no-decay continuation alone
-does not motivate a full-pretraining run.
+**Open decision:** retain or discard the topic. Direction decay has not changed the
+conclusion of this comparison; these results alone do not motivate a full-pretraining run.
 
 Measurements live only in each selected run; `summary.csv` derives every selected
 evaluation with the gate's amplitude and realized-scale statistics, distinguishing
