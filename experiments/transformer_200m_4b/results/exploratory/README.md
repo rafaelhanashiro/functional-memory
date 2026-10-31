@@ -14,3 +14,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [forget_gate](forget_gate/README.md) | Does a Gated DeltaNet forget gate improve m = 4 tanh query attention? | 2026-10-27 |
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale, `exp(gamma_h + a_h cos(w_h, x_t))` on Q, improve a matched degree-four Taylor continuation? | 2026-10-28 |
+| [dense_readout_scale](dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale under the canonical QK setup? | 2026-10-29 |
