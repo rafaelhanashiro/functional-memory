@@ -125,6 +125,24 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
+## Query coefficients across key width and degree
+
+The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
+`query-m4-w-decay`'s recipe at `d_K = 8, 16, 32, 64` and `m = 2, 4, 8`, reusing
+`rca97cc9db8f2` for `d_K = 64`, `m = 4`. Each new run takes one B300 or H100 on
+`standard,long`:
+
+```bash
+for RUN in r7bede0f75198 r1c80ab3a466b r16b23893884d rc90fb11d4772 rb5fe0aef572a rd10c2ebe1181 r18d67098c780 rcb1f56f31981 rf5b51bd384bc rd6b4d16d81bb r25fffc16c2f3; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Exploratory diagnostics
 
 ### Query coefficient optimization
