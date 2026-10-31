@@ -13,7 +13,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | [coefficient_forms](coefficient_forms/README.md) | Does the query generator's form matter at m = 4: pure tanh, and affine sigmoid against affine tanh? | 2026-10-27 |
 | [forget_gate](forget_gate/README.md) | Does a Gated DeltaNet forget gate improve m = 4 tanh query attention? | 2026-10-27 |
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
-| [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale improve degree-four Taylor continuation, with or without direction weight decay? | 2026-10-28 |
+| [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale with direction weight decay improve degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? | 2026-10-28 |
 | [learned_coefficient_continuation](learned_coefficient_continuation/README.md) | Do learned static or query (decayed-W) degree-four coefficients help when introduced after fixed-Taylor or exp pretraining, with the canonical QK norm? | 2026-10-29 |
 | [taylor_query_continuation](taylor_query_continuation/README.md) | Does learning query-dependent coefficients after degree-four Taylor pretraining improve matched continuation? | 2026-10-24 |

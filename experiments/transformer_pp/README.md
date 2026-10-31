@@ -316,24 +316,10 @@ The [per-token query scale topic](results/exploratory/token_query_scale_continua
 compares a bounded per-token score scale on Q, `exp(gamma_h + a_h cos(w_h, x_t))`, with a
 matched fixed-Taylor continuation of the canonical head-scaled parent. Both train all
 backbone parameters for 2,000 additional updates; the gate starts closed (`a_h = 0`) and
-its parameters use their own constant learning rate of 0.001. Prepare in its own
-worktree, then commit frozen inputs before independent submission:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
-  --conditioning token_scale \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
-# Already allocated below; reuse these IDs for resumptions.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r82203a85ef8e --conditioning token_scale --partition standard --time-limit 10:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  ra988273933f7 --conditioning token_scale --partition standard --time-limit 20:00:00
-```
-
-The acceptance pilot projects the allocation from its slowest steady update, so a
-single checkpoint-save stall during the pilot can project far beyond the real cost
-(about 3.2 s per update for both branches on an H100 PCIe); the longer limit only
-clears that projection.
+its parameters use their own constant learning rate of 0.001. The query-temperature
+run `re563830cf150` applies weight decay 0.1 to its direction `w` and leaves the
+amplitude exempt; `r82203a85ef8e` is the fixed-Taylor control. Reproduction commands
+are in [CPT with projection weight decay](#cpt-with-projection-weight-decay).
 
 The [forget-gate continuation topic](results/exploratory/forget_gate_continuation/README.md)
 is a positive control for the protocol: it adds the pretraining winner's attention (tanh
