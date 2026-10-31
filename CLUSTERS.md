@@ -124,6 +124,16 @@ UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
   uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 ```
 
+Native FLA training uses its independent CUDA PyTorch environment at
+`scaffolds/transformer/native_fla/.venv`, synced from that directory's lock with
+`uv sync --project scaffolds/transformer/native_fla --locked --link-mode hardlink`.
+It pins Torch 2.9.1+cu130, CUDA 13.2 libraries and cuBLAS 13.2.2.2, and runs eager
+FLA autograd. Its launcher requests one B300 explicitly (`--gres=gpu:b300:1`),
+uses the locked assembler, and keeps the global batch through accumulation.
+Use `--acceptance` for a debug allocation; production defaults to `standard` and
+24 hours, with checkpoint/requeue on the advance wall-time signal. Select `long`
+when the measured runtime needs it, subject to the live allowances above.
+
 On CUDA 12, B300 runs stopped on infinite gradient norms at finite losses, also with
 the gradient all-reduce on the compute stream (`--xla_gpu_disable_async_collectives=ALLCOLLECTIVES`,
 still set on B300 at no measurable cost) and on a single GPU; a checkpoint that failed

@@ -59,7 +59,15 @@ def main() -> None:
         recipe = yaml.safe_load(args.config.read_text())
         if not isinstance(recipe, dict):
             parser.error("--config must contain a YAML mapping")
-        if isinstance(recipe.get("model"), dict):
+        if recipe.get("implementation") == "native_fla":
+            from scaffolds.transformer.native_fla.config import load_config
+
+            recipe = load_config(args.config)
+            recipe["train"]["source_commit"] = "auto"
+            study = args.study.parent if args.study.name == "sweep.yaml" else args.study
+            recipe["train"]["wandb_group"] = study.name
+            recipe["train"]["wandb_run_name"] = args.label or recipe["train"]["wandb_run_name"]
+        elif isinstance(recipe.get("model"), dict):
             from scaffolds.transformer.configs import Config, config_to_dict, load_config
             from scaffolds.transformer.models.initialization import REFERENCE
             supplied_model = recipe["model"]

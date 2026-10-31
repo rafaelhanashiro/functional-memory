@@ -22,6 +22,11 @@ recipes the CLI resolves scaffold defaults into a complete config and resets the
 source-commit request to `auto`; execution resolves that request separately. The CLI
 also assigns the target study as the W&B group, uses the new label or ID as its
 name, and clears the copied local W&B directory.
+Native FLA recipes explicitly select `implementation: native_fla`; their dedicated
+loader validates the complete upstream model and training settings without merging
+JAX defaults. The index derives key/value head widths from FLA's `head_dim` and
+`expand_v` and records the implementation separately. The immutable recipe keeps
+one model configuration in upstream FLA's field names.
 `validate` checks every run, or only the named IDs or labels. It requires the record's
 `status` to agree with the run's outcome files: `completion.json` only for `complete`, and
 `numerical_failure_step_*.json` only for a numerical failure (exactly one). It re-hashes each

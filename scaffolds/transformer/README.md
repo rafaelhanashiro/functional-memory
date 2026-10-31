@@ -985,6 +985,12 @@ Studies configure these shared modules with execution modules at their root
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 
+The [native FLA runtime](native_fla/README.md) provides a separate CUDA PyTorch
+entrypoint for upstream `GatedDeltaNetForCausalLM`, including its own environment,
+strict reference configuration, packed-data trainer, checkpointing and acceptance.
+It shares the scaffold's data/record interfaces without using the JAX Transformer
+backbone or its architecture/optimizer defaults.
+
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).
 

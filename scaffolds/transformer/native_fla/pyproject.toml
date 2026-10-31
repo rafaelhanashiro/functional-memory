@@ -1,0 +1,52 @@
+[project]
+name = "functional-memory-native-fla-runtime"
+version = "0.1.0"
+description = "Isolated CUDA PyTorch runtime for native upstream FLA training"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "torch==2.9.1+cu130",
+    "flash-linear-attention",
+    "triton==3.7.1",
+    "transformers==5.18.0",
+    "einops==0.8.2",
+    "numpy==2.4.6",
+    "pyyaml==6.0.3",
+    "pytest==9.1.1",
+    "wandb==0.30.0",
+    # Match the validated JAX CUDA 13.2 assembler/runtime used on Kennel B300.
+    "nvidia-cuda-nvcc==13.2.86",
+    "nvidia-nvvm==13.2.86",
+]
+
+[tool.uv]
+package = false
+environments = ["sys_platform == 'linux' and platform_machine == 'x86_64'"]
+# The official cu130 Torch wheel pins CUDA 13.0, cuDNN 9.13, and Triton 3.5.1.
+# cuBLAS 13.2 fixes the documented Blackwell concurrent-kernel corruption; retain
+# the same core CUDA 13.2 libraries and cuDNN as scaffolds/transformer/uv.lock.
+# Triton 3.7.1 matches the source-pinned FLA kernel comparison and its JAX bridge.
+# These are explicit resolver overrides, never edits to installed packages.
+# This runtime uses native FLA autograd with eager BF16 autocast, not Inductor.
+override-dependencies = [
+    "triton==3.7.1",
+    "nvidia-cublas==13.2.2.2",
+    "nvidia-cuda-runtime==13.2.86",
+    "nvidia-cuda-nvrtc==13.2.86",
+    "nvidia-cuda-cupti==13.2.86",
+    "nvidia-cudnn-cu13==9.22.0.52",
+    "nvidia-nvjitlink==13.2.86",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+flash-linear-attention = { git = "https://github.com/fla-org/flash-linear-attention.git", rev = "516143e31fce09925e6c39ac37148444bad176c4" }
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["../../.."]
+markers = ["gpu: requires a CUDA device"]

@@ -11,7 +11,7 @@ a result collection can combine runs from several studies.
 | Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
-| Transformer++: attention variants in its 200M recipe, token budget per run (1× and 2.5× Chinchilla) | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
+| Transformer++: attention variants, token budgets, and a native FLA Gated DeltaNet baseline | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in

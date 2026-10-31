@@ -26,8 +26,8 @@ import yaml
 
 RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
-    "run_id", "label", "status", "home_cluster", "model_id", "condition",
-    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
+    "run_id", "label", "status", "home_cluster", "model_id", "condition", "implementation",
+    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim", "value_head_dim",
     "gdn_erase_mode", "gdn_write_activation",
     "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
     "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "qk_norm_token_scale", "initialization",
@@ -432,6 +432,15 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     model = config.get("model", {})
     model_id = model if isinstance(model, str) else model.get("model_id") if isinstance(model, dict) else None
     model = model if isinstance(model, dict) else {}
+    if config.get("implementation") == "native_fla":
+        # The immutable recipe has one model configuration, in upstream FLA's
+        # vocabulary. Translate only this derived view for the shared index.
+        head_dim, expand_v = model.get("head_dim"), model.get("expand_v")
+        value_head_dim = (int(head_dim * expand_v)
+                          if isinstance(head_dim, int) and isinstance(expand_v, (int, float)) else None)
+        model = dict(model, attention_mechanism="gated_deltanet", qk_head_dim=head_dim,
+                     value_head_dim=value_head_dim, gdn_erase_mode="tied", gdn_write_activation="sigmoid",
+                     qk_norm=False, initialization="fla_reference")
     train = config.get("train", {})
     train = train if isinstance(train, dict) else {}
     optim = config.get("optim", {})
@@ -495,6 +504,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "home_cluster": record.get("home_cluster"),
         "model_id": _first(model_id, record.get("model_id"), metadata.get("model_id")),
         "condition": _first(condition_name, record.get("condition"), metadata.get("condition")),
+        "implementation": _first(config.get("implementation"), record.get("implementation"), metadata.get("implementation")),
         "attention_mechanism": _first(model.get("attention_mechanism"), metadata.get("attention_mechanism")),
         "attention_family": "learned_polynomial" if free_coefficients else _attention_family(model, record, kernel),
         "attention_kernel": kernel,
@@ -503,6 +513,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "gdn_write_activation": _first(model.get("gdn_write_activation"), get("gdn_linear_write_activation"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
+        "value_head_dim": _first(model.get("value_head_dim"), record.get("value_head_dim"), metadata.get("value_head_dim")),
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),
