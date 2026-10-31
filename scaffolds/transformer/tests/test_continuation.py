@@ -185,6 +185,14 @@ def test_changed_parent_inputs_are_rejected(pretrained, tmp_path):
         initialize_continuation_state(changed)
 
 
+@pytest.mark.parametrize("learned,query", [(False, False), (True, False), (True, True)])
+def test_ungated_continuation_cannot_silently_remove_rope(pretrained, tmp_path, learned, query):
+    config = child_config(pretrained, tmp_path / "child", learned=learned, query=query)
+    config.model = replace(config.model, positional_encoding="none")
+    with pytest.raises(ValueError, match="parent model.positional_encoding"):
+        initialize_continuation_state(config)
+
+
 def test_query_continuation_rejects_non_taylor_initialization(pretrained, tmp_path):
     config = child_config(pretrained, tmp_path / "query", learned=True, query=True)
     changed = copy.deepcopy(config)

@@ -53,6 +53,16 @@ are unit-tested in `scaffolds/transformer/tests/test_token_query_scale.py` and
 
 ## Findings and open decision
 
+The direction-decay branch **`re563830cf150`** adds weight decay **0.1** only to
+`qk_norm_token_scale_kernel` (`w_h`), with
+`model.qk_norm_token_scale_kernel_weight_decay: true`. Its amplitude `a_h` remains
+exempt. It uses the same Taylor checkpoint at update 7,500, 2,000 further updates,
+data order, seed, RoPE, and closed gate initialization as `ra988273933f7`. Both new
+gate parameters use constant LR 0.001; the backbone uses 0.0001 and retains its Adam
+history. The frozen configuration is in [its run directory](../../../runs/re563830cf150/config.yaml).
+It runs independently on one H100 or B300 on Kennel; commands are in the
+[study README](../../../README.md#cpt-with-projection-weight-decay).
+
 Both runs completed all **2,000** updates on one H100 each (Kennel `mastiff`, `standard`
 partition): control job **228301**, gate job **228305**. The gate's first allocation
 (job 228303) failed the acceptance pilot's runtime projection, which multiplies the
@@ -89,8 +99,9 @@ further evidence that at degree four with the canonical QK normalization the los
 nearly flat in the remaining per-query degrees of freedom: temperature, like the
 coefficient shape, is not where a gain over Taylor lies.
 
-**Open decision:** discard the topic and its runs, or test the gate in full Transformer++
-pretraining. This continuation does not motivate the pretraining run.
+**Open decision:** determine whether decaying the direction changes the continuation
+result, then retain or discard the topic. The completed no-decay continuation alone
+does not motivate a full-pretraining run.
 
 Measurements live only in each selected run; `summary.csv` derives every selected
 evaluation with the gate's amplitude and realized-scale statistics, distinguishing

@@ -125,7 +125,10 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         if config.qk_norm_head_scale:
             specs += rms_head_scale_specs()
         if getattr(config, "qk_norm_token_scale", "none") == "cosine":
-            specs += token_scale_specs(hidden_size=config.hidden_size)
+            specs += token_scale_specs(
+                hidden_size=config.hidden_size,
+                kernel_weight_decay=getattr(config, "qk_norm_token_scale_kernel_weight_decay", False),
+            )
     if getattr(config, "attention_forget_gate", False):
         from scaffolds.transformer.attention.forget_gate import parameter_specs as forget_gate_specs
 

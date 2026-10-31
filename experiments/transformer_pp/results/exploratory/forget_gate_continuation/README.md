@@ -47,6 +47,22 @@ separately. Launch commands are in the
 
 ## Findings and open decision
 
+The no-RoPE, decayed-projection branch **`r554ce7da6a8a`** tests the FoX configuration
+that achieved the best degree-four polynomial pretraining PPL. It uses the same Taylor
+parent at update 7,500 and the same 2,000-update budget, data order, seed, evaluation,
+and learning rates as the control: 0.0001 for the restored backbone, 0.001 for all new
+parameters. It removes RoPE, keeps full factorial scaling of the query coefficients,
+and applies weight decay **0.1** to both the coefficient projection `W` and the forget
+gate projection `w_alpha`. Coefficient `a,b`, gate `A_log,b_dt`, and normalization gains
+remain exempt. Both the backbone parameters and Adam history are restored exactly;
+removing RoPE and introducing an open gate intentionally changes the initial function.
+This is a comparison of complete FoX recipes, not an isolated weight-decay ablation
+against the earlier RoPE branch. The existing fixed-Taylor control is reused.
+
+The run is independent and uses one H100 or B300 on Kennel. The frozen configuration is
+in [its run directory](../../../runs/r554ce7da6a8a/config.yaml); preparation and submission
+commands are in the [study README](../../../README.md#cpt-with-projection-weight-decay).
+
 The branch completed all **2,000** updates on one H100 (Kennel `mastiff`, `long`
 partition, job **228802**; its first allocation, job 228741 on `standard`, failed the
 acceptance pilot's slowest-step runtime projection, 31 h against a 24 h limit). The blocked
@@ -85,8 +101,8 @@ Whether the token dependence of the resets matters, or any learnable decay with 
 would do, is the question of the
 [constant-decay continuation](../constant_decay_continuation/README.md).
 
-**Open decision:** discard the topic once the constant-decay comparison has been read, or
-keep it as the protocol's positive control.
+**Open decision:** determine whether the no-RoPE, decayed-projection recipe transfers its
+pretraining advantage to continuation, then retain or discard this comparison.
 
 Measurements live only in each selected run; `summary.csv` derives every selected
 evaluation with the gate's half-life and per-token statistics, distinguishing terminal from

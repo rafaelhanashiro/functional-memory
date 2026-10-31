@@ -51,3 +51,10 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/ra988273933f7/best_validation.json
       sha256: ab34077b935e5a0780b5e850519f169b18cdec82ad120b0979b469c26c57f0d0
+- study: transformer_pp
+  run_id: re563830cf150
+  role: token_query_scale_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/re563830cf150/config.yaml
+      sha256: 2dfa8cfcd51266add41242eceee5bed8b8f73626c9bde87fbeaaf75afee0b5c5

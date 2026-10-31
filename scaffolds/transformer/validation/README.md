@@ -11,6 +11,24 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Continuation projection decay and FoX without RoPE (2026-10-31)
+
+The optional `qk_norm_token_scale_kernel_weight_decay` policy decays only the
+query-temperature direction; its default remains false. The continuation validator
+permits an explicit RoPE-to-none transition for a forget-gate child while preserving
+every backbone parameter and its Adam history. Other continuations reject that
+positional-encoding change.
+
+Forty-five targeted CPU checks passed: 13 continuation-allocation tests, 16 token-scale
+and parameter-policy tests, five FoX/restoration/positional-encoding checks, and 11
+acceptance/initialization checks. Zero-gradient updates verify the actual AdamW change
+on query-temperature `w`, coefficient `W`, and forget-gate `w_alpha`, with amplitudes
+and biases exempt. Restoration tests verify exact parent weights and optimizer
+hashes, independent optimizer clocks, and finite subsequent training. The query
+temperature's decay flag leaves initialization and forward values unchanged.
+Shared acceptance includes these mechanism checks before its full-recipe GPU pilot
+and fresh-process resume; CPU checks alone do not qualify a GPU allocation.
+
 ### Acceptance runtime projection (2026-10-29)
 
 Acceptance times cold diagnostic/evaluation calls separately, then collects warm

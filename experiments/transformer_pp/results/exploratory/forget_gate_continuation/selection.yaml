@@ -52,3 +52,10 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rd5ea49c1fde6/best_validation.json
       sha256: a4e1ff14d95fce82540b810380af096e02150b5fd75d516ba85f550b8d168125
+- study: transformer_pp
+  run_id: r554ce7da6a8a
+  role: query_forget_gate_no_rope_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r554ce7da6a8a/config.yaml
+      sha256: 009aa181a562ebb5c0acc1d0a65ca7f05da09f5b6fb24bdcd146660f032b05c6
