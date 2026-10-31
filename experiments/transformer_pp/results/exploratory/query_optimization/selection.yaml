@@ -1,0 +1,69 @@
+topic: query_optimization
+study: transformer_pp
+comparison:
+  metric: held-out validation perplexity
+  tokens_per_update: 524288
+  report:
+  - terminal (update 7570)
+  - validation-best
+runs:
+- study: transformer_pp
+  run_id: r2b22f2ff6461
+  label: query-m4-head-scale
+  role: control
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  label: query-m4-w-decay
+  role: projection_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: rb74fa2ebede6
+  label: query-m4-ab-lr-3x
+  role: coefficient_learning_rate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb74fa2ebede6/config.yaml
+      sha256: 2437f0766dcf4f9a83e76140d952ce529ac5ad65283ddae9eb3c19410db62118
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb74fa2ebede6/metrics.jsonl
+      sha256: 1fcadbaa9b577df0f7f5c785b520d6b8e41508b450aac05cf9c6372d53efa961
+    completion.json:
+      path: experiments/transformer_pp/runs/rb74fa2ebede6/completion.json
+      sha256: d2eacd193fae882f3b61447f156d55afe08b29bba38afc903424bb0f0772eae0
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb74fa2ebede6/metadata.json
+      sha256: e1495dcc7a0d54e2fe9fba08be05089e56d0f0321a1023dee286839280685400
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rb74fa2ebede6/best_validation.json
+      sha256: bb039e9b3efa3f27958025c349508284a772d1e01a5cb829a7868af14a10638c

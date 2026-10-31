@@ -555,7 +555,7 @@ def test_cli_preserves_explicit_truncated_reference_initialization(tmp_path, mon
 
     source = tmp_path / "recipe.yaml"
     source.write_text("model:\n  initialization: transformer_truncated_reference\n  rms_norm_fp32: true\n")
-    study = tmp_path / "transformer_200m_4b"
+    study = tmp_path / "transformer_pp"
     monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
     main()
     run = Path(capsys.readouterr().out.strip())
@@ -753,3 +753,66 @@ def test_free_sequence_coefficients_from_taylor_are_indexed_as_the_fitted_polyno
     for name in ("coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale"):
         assert row[name] == ""
     assert (run / "config.yaml").read_bytes() == original
+
+
+def test_rename_study_moves_retained_locations_and_keeps_execution_history(tmp_path):
+    from scaffolds.records import rename_study
+
+    root = tmp_path / "checkout"
+    (root / ".git").mkdir(parents=True)
+    (root / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    study = root / "experiments" / "new_name"
+    run = study / "runs" / "r0123456789ab"
+    run.mkdir(parents=True)
+    (run / "config.yaml").write_text("train:\n  workdir: experiments/old_name/runs/r0123456789ab\n")
+    worktree = "/somewhere/worktrees/older/experiments/old_name/runs/rparent000000/checkpoints/500"
+    record = {
+        "run_id": "r0123456789ab", "label": "x", "status": "complete", "parent_study": "old_name",
+        "config": {"path": "experiments/old_name/runs/r0123456789ab/config.yaml", "sha256": "0" * 64},
+        "log_path": f"{root}/experiments/old_name/runs/r0123456789ab/training.log",
+        "selected_checkpoint": {"path": f"{root}/experiments/old_name/runs/r0123456789ab/checkpoints/7570", "kind": "directory"},
+        "source_checkpoint": {"path": worktree},
+        "artifacts": [{"path": "/orcd/artifacts/experiments/old_name/runs/r0123456789ab/metrics.jsonl", "sha256": "1" * 64}],
+        "submission": {"command": ["sbatch", "experiments/old_name/runs/r0123456789ab/config.yaml"]},
+        "attempts": [{"config_path": "experiments/old_name/runs/r0123456789ab/config.yaml"}],
+        "execution": {"resolved_config": {"train": {"workdir": f"{root}/experiments/old_name/runs/r0123456789ab"}}},
+        "acceptance": {"path": "experiments/old_name/runs/r0123456789ab/acceptance.json",
+                       "summary": {"reused_tests": {"cpu-tests": {"acceptance_directory": "experiments/old_name/acc"}}}},
+    }
+    (run / "record.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    (study / "sweep.yaml").write_text("schema_version: 1\nexperiment: old_name\nrun_ids:\n- r0123456789ab\n")
+    topic = study / "results" / "exploratory" / "topic"
+    topic.mkdir(parents=True)
+    (topic / "selection.yaml").write_text(
+        "study: old_name\nruns:\n- study: old_name\n  run_id: r0123456789ab\n  sources:\n    config.yaml:\n"
+        "      path: experiments/old_name/runs/r0123456789ab/config.yaml\n")
+    (root / "results" / "temp").mkdir(parents=True)
+    (root / "results" / "temp" / "scratch.yaml").write_text("path: experiments/old_name/x\n")
+
+    changes = rename_study(study, "old_name", "new_name")
+
+    assert changes == ["r0123456789ab: 5 locations", "experiments/new_name/results/exploratory/topic/selection.yaml",
+                       "experiments/new_name/sweep.yaml"]
+    renamed = json.loads((run / "record.json").read_text())
+    assert renamed["parent_study"] == "new_name"
+    assert renamed["config"]["path"] == "experiments/new_name/runs/r0123456789ab/config.yaml"
+    assert renamed["log_path"] == f"{root}/experiments/new_name/runs/r0123456789ab/training.log"
+    assert renamed["selected_checkpoint"]["path"].endswith("experiments/new_name/runs/r0123456789ab/checkpoints/7570")
+    assert renamed["acceptance"]["path"] == "experiments/new_name/runs/r0123456789ab/acceptance.json"
+    # Another cluster's root, a worktree, and execution history are untouched.
+    assert renamed["artifacts"][0]["path"].startswith("/orcd/artifacts/experiments/old_name/")
+    assert renamed["source_checkpoint"]["path"] == worktree
+    assert renamed["submission"] == record["submission"] and renamed["attempts"] == record["attempts"]
+    assert renamed["execution"] == record["execution"]
+    assert renamed["acceptance"]["summary"] == record["acceptance"]["summary"]
+    # The frozen recipe keeps its path; selections and membership follow the folder.
+    assert "experiments/old_name/" in (run / "config.yaml").read_text()
+    assert (topic / "selection.yaml").read_text() == (
+        "study: new_name\nruns:\n- study: new_name\n  run_id: r0123456789ab\n  sources:\n    config.yaml:\n"
+        "      path: experiments/new_name/runs/r0123456789ab/config.yaml\n")
+    assert "experiment: new_name" in (study / "sweep.yaml").read_text()
+    assert (root / "results" / "temp" / "scratch.yaml").read_text() == "path: experiments/old_name/x\n"
+    # A second pass with another root moves that root's locations too, and nothing else.
+    assert rename_study(study, "old_name", "new_name", ("/orcd/artifacts",)) == ["r0123456789ab: 1 locations"]
+    assert json.loads((run / "record.json").read_text())["artifacts"][0]["path"] == \
+        "/orcd/artifacts/experiments/new_name/runs/r0123456789ab/metrics.jsonl"

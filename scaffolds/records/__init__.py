@@ -548,6 +548,99 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+# Record subtrees that describe past executions rather than where retained files
+# live now: submission commands, Slurm attempts, resolved runtime configurations,
+# and the acceptance directories whose tests a later attempt reused.
+EXECUTION_HISTORY = ("submission", "analysis_submissions", "attempts", "execution", "acceptance.summary")
+
+
+def rename_study_paths(record: Mapping[str, Any], old: str, new: str, roots: tuple[str, ...] = ()) -> tuple[dict[str, Any], int]:
+    """Point a record's retained-file locations at a renamed study folder.
+
+    Repository-relative paths under ``experiments/<old>/``, absolute paths under
+    ``<root>/experiments/<old>/`` for each of ``roots``, and ``parent_study``/``study``
+    names equal to ``old`` move to ``new``. Locations under other roots (another
+    cluster's artifact root, a worktree) and the subtrees in ``EXECUTION_HISTORY``
+    stay as they are. Returns the rewritten record and the number of changed strings.
+    """
+    prefixes = [(f"experiments/{old}/", f"experiments/{new}/")]
+    prefixes += [(f"{root.rstrip('/')}/experiments/{old}/", f"{root.rstrip('/')}/experiments/{new}/") for root in roots]
+    count = 0
+
+    def visit(value: Any, path: list[str]) -> Any:
+        nonlocal count
+        dotted = ".".join(path)
+        if any(dotted == key or dotted.startswith(key + ".") for key in EXECUTION_HISTORY):
+            return value
+        if isinstance(value, dict):
+            return {key: visit(item, path + [key]) for key, item in value.items()}
+        if isinstance(value, list):
+            return [visit(item, path + ["[]"]) for item in value]
+        if isinstance(value, str):
+            if path and path[-1] in ("parent_study", "study") and value == old:
+                count += 1
+                return new
+            for before, after in prefixes:
+                if value.startswith(before):
+                    count += 1
+                    return after + value[len(before):]
+                if value == before[:-1]:
+                    count += 1
+                    return after[:-1]
+        return value
+
+    return visit(deepcopy(dict(record)), []), count
+
+
+def rename_study(study: str | Path, old: str, new: str, artifact_roots: tuple[str, ...] = ()) -> list[str]:
+    """Rewrite records, selections, and the membership file after ``git mv experiments/<old> experiments/<new>``.
+
+    ``study`` is the renamed folder. The checkout root always counts as a root whose
+    ``experiments/<old>/`` tree moved; ``artifact_roots`` adds others (for example a
+    cluster's artifact root, after moving that tree too). Frozen recipes are inputs
+    and keep their paths; execution history keeps its paths; the record says where
+    each retained file lives now. Returns one line per changed file.
+    """
+    study = _study_path(study).resolve()
+    root = _repository(study)
+    if root is None:
+        raise ValueError(f"Not inside a Git checkout: {study}")
+    roots = (str(root), *artifact_roots)
+    changes: list[str] = []
+    for run in sorted(path for path in (study / "runs").iterdir() if path.is_dir()):
+        record_path = run / "record.json"
+        if not record_path.is_file():
+            continue
+        original = record_path.read_text()
+        record = json.loads(original)
+        renamed, count = rename_study_paths(record, old, new, roots)
+        if count:
+            if json.dumps(record, indent=2, sort_keys=True) + "\n" != original:
+                raise ValueError(f"{record_path} is not in the records' canonical JSON style; rewrite it by hand")
+            _atomic_write(record_path, json.dumps(renamed, indent=2, sort_keys=True) + "\n")
+            changes.append(f"{run.name}: {count} locations")
+    study_pattern = re.compile(rf"^(\s*-?\s*study: ){re.escape(old)}$", re.MULTILINE)
+    for directory in (root / "results", study / "results"):
+        if not directory.is_dir():
+            continue
+        for selection in sorted(directory.rglob("*.yaml")):
+            if "temp" in selection.relative_to(root).parts:
+                continue
+            text = selection.read_text()
+            updated = study_pattern.sub(rf"\g<1>{new}", text.replace(f"experiments/{old}/", f"experiments/{new}/"))
+            if updated != text:
+                _atomic_write(selection, updated)
+                changes.append(str(selection.relative_to(root)))
+    sweep = study / "sweep.yaml"
+    if sweep.is_file():
+        text = sweep.read_text()
+        updated = re.sub(rf"^experiment: {re.escape(old)}$", f"experiment: {new}", text, flags=re.MULTILINE)
+        if updated != text:
+            _atomic_write(sweep, updated)
+            changes.append(str(sweep.relative_to(root)))
+    return changes
+
+
 def regenerate_index(study: str | Path) -> Path:
     """Write a byte-stable CSV from registered configs, records, and raw metrics.
 

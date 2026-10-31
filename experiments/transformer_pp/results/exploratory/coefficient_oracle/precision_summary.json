@@ -1,0 +1,3370 @@
+{
+  "bounded_repeatability_control": {
+    "anchor_forwards": {
+      "diagnostic": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_delta_from_native": 0.0038068294525146484,
+        "mean_delta_from_native": 0.0005393773317337036,
+        "mean_nll": 2.155145213007927
+      },
+      "native_return_coefficients": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_delta_from_native": 0.0,
+        "mean_delta_from_native": 0.0,
+        "mean_nll": 2.1546058356761932
+      },
+      "ordinary_native": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_delta_from_native": 0.0,
+        "mean_delta_from_native": 0.0,
+        "mean_nll": 2.1546058356761932
+      }
+    },
+    "independent_logit_comparisons": {
+      "diagnostic_vs_native_return_coefficients": {
+        "exactly_equal": false,
+        "max_absolute_error": 5.7265625,
+        "relative_rms_error": 0.02229655161499977
+      },
+      "diagnostic_vs_ordinary_native": {
+        "exactly_equal": false,
+        "max_absolute_error": 5.7265625,
+        "relative_rms_error": 0.02229655161499977
+      },
+      "native_return_coefficients_vs_ordinary_native": {
+        "exactly_equal": true,
+        "max_absolute_error": 0.0,
+        "relative_rms_error": 0.0
+      }
+    },
+    "limits": "Same fitted BF16 checkpoint and worst B8 fitting microbatch, no training or precision conversion. Exact repeatability is checked separately for every compiled program. The native coefficient-return API adds no hand-written generator statistics. Materialized-logit controls return additional arrays and may themselves compile differently from their NLL-anchor programs; their loss changes are recorded rather than conflated with the original discrepancy.",
+    "materialized_logit_forwards": {
+      "diagnostic": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_nll_delta_from_anchor": 0.0
+      },
+      "native_return_coefficients": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_nll_delta_from_anchor": 0.0
+      },
+      "ordinary_native": {
+        "arrays_repeat_exactly": true,
+        "max_absolute_nll_delta_from_anchor": 0.0
+      }
+    },
+    "microbatch_sequence_count": 8,
+    "microbatch_start_index": 200,
+    "snapshot": "after",
+    "within_compiled_native_hook_logit_parity": {
+      "logit_max_absolute_error": 0.0,
+      "logit_relative_rms_error": 0.0
+    },
+    "worst_sequence_index": 203
+  },
+  "generator_change": {
+    "limits": "Before and after coefficients are captured from each generator's own causal native forward, so later-layer inputs also change. Parameter differences are accumulated changes, not Adam update estimates from gradient norms.",
+    "sampled_direction_angle_degrees_quantiles": [
+      0.036836074674256654,
+      3.520376709992271,
+      10.23067887206361,
+      29.45352964077383,
+      67.65999394136557,
+      97.43898881333084,
+      151.22208397264615
+    ],
+    "sampled_factorial_coordinate_delta_rms": 0.6615666278213004,
+    "sampled_radius_ratio_quantiles": [
+      0.034280101271589314,
+      0.315363659673445,
+      0.680322516391155,
+      0.9510273604973991,
+      1.1926583412748137,
+      1.5269109523870343,
+      2.3725529697908683
+    ]
+  },
+  "generator_change_quantile_probabilities": [
+    0.0,
+    0.01,
+    0.1,
+    0.5,
+    0.9,
+    0.99,
+    1.0
+  ],
+  "gradient_coordinate": "u_r=r!c_r; error-vector norms are pooled across selected layer/head/query rows",
+  "interpretation_limits": [
+    "Generator statistics average the instrumented B256 forward; its failed per-sequence parity bound remains visible. The VJP/conditioning probe covers only sequence0 and uses instrumented-execution cotangents.",
+    "Uniform samples and deliberately minimum-RMS samples are separate. Query0 has one causal key and theoretical basis-output rank at most1; its nearly zero directional derivative makes relative ratios and floating-point rank estimates unreliable. Excluding it is explicitly reported, not silently selected.",
+    "Native-output tangent geometry evaluates the smooth RMS Jacobian at the captured rounded output. Smooth-FP64 geometry evaluates it at T*u. Neither includes the coefficient generator Jacobian or represents a whole-model Hessian.",
+    "Coefficient tangent singular values measure changes in u; angular-direction singular values multiply them by ||u||. Fixed-ray radius is excluded from tangent conditioning but its response is reported separately.",
+    "FP32 controls change the attention backend to blocked as well as arithmetic. Improved parity supports precision/execution sensitivity, but does not isolate a compiler operation or prove the cause of the optimization gap.",
+    "Small pooled kernel-only coefficient-VJP discrepancies are evidence against a concrete backward-kernel error on sampled tensors; they do not prove correctness at every checkpoint or determine B256 clipping causes."
+  ],
+  "parameter_changes": {
+    "query_polynomial_amplitude": {
+      "delta_relative_l2": 2.001129353660517,
+      "delta_rms": 0.4988824318554287
+    },
+    "query_polynomial_bias": {
+      "delta_relative_l2": 0.32879140352612735,
+      "delta_rms": 0.312919135474197
+    },
+    "query_polynomial_kernel": {
+      "delta_relative_l2": 2.537408853630787,
+      "delta_rms": 0.14898338908483988
+    }
+  },
+  "pooled_relative_error_formula": "sqrt(sum(row.absolute_l2_error**2))/sqrt(sum(row.reference_l2_norm**2))",
+  "quantile_probabilities": [
+    0.0,
+    0.1,
+    0.5,
+    0.9,
+    0.99,
+    1.0
+  ],
+  "role": "query_generator_full_batch_m4_head_scale",
+  "run_id": "rc95f2055e96d",
+  "schema_version": 1,
+  "selected_checkpoint_step": 5273,
+  "snapshots": {
+    "after": {
+      "bf16_vjp_capture_parity": {
+        "checks": {
+          "finite_measurements": true,
+          "instrumented_native_nll": false,
+          "native_checkpoint_nll": true
+        },
+        "established_nll_atol": 0.002,
+        "failed_checks": [
+          "instrumented_native_nll"
+        ],
+        "instrumented_minus_native_nll": 0.0020134449005126953,
+        "instrumented_nll": 1.971005916595459,
+        "logit_errors_are_measured_without_an_added_acceptance_threshold": true,
+        "logit_max_absolute_error": 4.5,
+        "logit_relative_rms_error": 0.018748050555586815,
+        "native_minus_recorded_nll": -0.00031888484954833984,
+        "native_nll": 1.9689924716949463,
+        "recorded_sequence_nll": 1.9693113565444946
+      },
+      "cotangent_execution": "Instrumented compiled execution with capture/native NLL discrepancy beyond the established bound; these are not claimed to be the native checkpoint's exact cotangents.",
+      "fp32_blocked_capture_parity": {
+        "backend": "blocked",
+        "instrumented_minus_native_nll": 2.384185791015625e-07,
+        "instrumented_nll": 1.9678053855895996,
+        "interpretation": "Same before/after checkpoint arrays and sequence. Native and instrumented graphs both use FP32 module arithmetic with blocked attention. The loss is not required to equal BF16 checkpoint NLL; changing the backend as well as arithmetic prevents attributing any difference to one precise cause.",
+        "logit_max_absolute_error": 0.0021212100982666016,
+        "logit_relative_rms_error": 3.3001319934555795e-06,
+        "matmul_precision": "highest",
+        "module_dtype": "float32",
+        "native_nll": 1.9678051471710205,
+        "same_checkpoint_parameter_arrays": true
+      },
+      "generator": {
+        "factorial_coefficient_rms": 0.9420852412453656,
+        "independent_compiled_nll_comparison": {
+          "absolute_delta_quantiles": [
+            9.5367431640625e-07,
+            0.00011873245239257812,
+            0.0007789134979248047,
+            0.001886606216430664,
+            0.003323060274124145,
+            0.0038068294525146484
+          ],
+          "aggregate_nll_passed": true,
+          "established_nll_atol": 0.002,
+          "max_absolute_nll_delta": 0.0038068294525146484,
+          "mean_nll_delta": 3.902427852153778e-05,
+          "original_per_sequence_bound_passed": false,
+          "sequence_count": 256,
+          "sequences_exceeding_bound": 22,
+          "signed_delta_quantiles": [
+            -0.0033860206604003906,
+            -0.0015560388565063477,
+            6.210803985595703e-05,
+            0.0014395713806152344,
+            0.0031545698642730683,
+            0.0038068294525146484
+          ]
+        },
+        "output_normalization": {
+          "maximum_inverse_rms_denominator": 197.73739624023438,
+          "mean_head_mean_square_below_100epsilon_fraction": 1.8165225886453602e-08,
+          "mean_head_mean_square_below_epsilon_fraction": 0.0,
+          "minimum_raw_output_head_rms": 0.004957357421517372
+        },
+        "preactivation_rms": 5.231006460841267,
+        "sampled_coefficient_radius_quantiles": [
+          0.07692448049783707,
+          0.6955194979906082,
+          1.472862136363983,
+          2.063079833984375,
+          2.6157853603363037,
+          3.2819907450675925,
+          4.284993648529053
+        ],
+        "sampled_quantile_probabilities": [
+          0.0,
+          0.01,
+          0.1,
+          0.5,
+          0.9,
+          0.99,
+          1.0
+        ],
+        "statistics": {
+          "cancellation_ratio_lt001_fraction": {
+            "global_mean": 0.009283013116745722,
+            "per_order_mean": [
+              0.017874935695103237,
+              0.011038253420875187,
+              0.008330635797409783,
+              0.00470259530203683,
+              0.004468645368303571
+            ]
+          },
+          "cancellation_ratio_mean": {
+            "global_mean": 0.6315492409751529,
+            "per_order_mean": [
+              0.5403297606678236,
+              0.6043483499260176,
+              0.5153473167547158,
+              0.8412225406439532,
+              0.6564982368832543
+            ]
+          },
+          "coefficient_mean_square_factorial_coordinates": {
+            "global_mean": 0.8875246017723388,
+            "per_order_mean": [
+              1.1337401394333158,
+              0.7577016283824508,
+              0.5976957892333823,
+              1.2621497857960917,
+              0.6863356660164538
+            ]
+          },
+          "direction_amplitude_jacobian_mean_square": {
+            "global_mean": 0.25563083145590054,
+            "per_order_mean": [
+              0.25844339307929787,
+              0.25025937601569154,
+              0.2879513290311609,
+              0.22526347161758514,
+              0.25623658753576734
+            ]
+          },
+          "direction_bias_jacobian_mean_square": {
+            "global_mean": 0.2983107964481626,
+            "per_order_mean": [
+              0.2987881923360484,
+              0.2986517399904274,
+              0.3245611056685448,
+              0.2624905084215459,
+              0.30706243582424664
+            ]
+          },
+          "direction_jacobian_norm_floor_fraction": {
+            "global_mean": 0.0,
+            "per_order_mean": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "direction_projection_jacobian_frobenius_mean_square": {
+            "global_mean": 9.784498082457098,
+            "per_order_mean": [
+              18.25272864233464,
+              14.832595486584164,
+              5.805232896368959,
+              4.87328371901472,
+              5.158649667983007
+            ]
+          },
+          "preactivation_mean_square": {
+            "global_mean": 27.363428593363082,
+            "per_order_mean": [
+              33.97096115066891,
+              28.783698227292014,
+              27.170961267607552,
+              28.212896705809094,
+              18.678625615437827
+            ]
+          },
+          "saturated_099_fraction": {
+            "global_mean": 0.5587786174955822,
+            "per_order_mean": [
+              0.5816178639729818,
+              0.5666537602742513,
+              0.577473004659017,
+              0.5932930719284785,
+              0.47485538664318266
+            ]
+          },
+          "tanh_derivative_lt001_fraction": {
+            "global_mean": 0.5105015400477818,
+            "per_order_mean": [
+              0.5348742621285575,
+              0.5196189153762091,
+              0.5286638259887695,
+              0.5462133135114398,
+              0.42313738323393324
+            ]
+          },
+          "tanh_derivative_mean": {
+            "global_mean": 0.17396706732947712,
+            "per_order_mean": [
+              0.1638197926881936,
+              0.1709386057309097,
+              0.16408522094085626,
+              0.15751399018237722,
+              0.21347772710504875
+            ]
+          }
+        },
+        "statistics_axes": [
+          "layer",
+          "head",
+          "order"
+        ],
+        "statistics_forward": "instrumented_native_forward",
+        "stored_parameter_rms": {
+          "query_polynomial_amplitude": 0.6805005566173015,
+          "query_polynomial_bias": 0.8143766672737078,
+          "query_polynomial_kernel": 0.16270238128474382
+        },
+        "within_compiled_wrapper_logit_comparison": {
+          "logit_max_absolute_error": 0.0,
+          "logit_relative_rms_error": 0.0
+        }
+      },
+      "vjp_sample_groups": {
+        "minimum_rms_targeted": {
+          "epsilon_fraction_quantiles": [
+            1.401108871740721e-13,
+            8.435553264798544e-12,
+            3.175442675771607e-10,
+            7.216135840256904e-08,
+            4.353459872914402e-06,
+            5.0323881096164575e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 0.00022718274259378609,
+              "pooled_actual_l2_norm": 0.02448861005443323,
+              "pooled_cosine": 0.999957019454468,
+              "pooled_reference_l2_norm": 0.02449549009976657,
+              "pooled_relative_l2_error": 0.009274472226050746,
+              "row_relative_error_quantiles": [
+                0.00023637915965093187,
+                0.0011285090914293792,
+                0.009351565748215012,
+                9178436.41714023,
+                205742583.37000993,
+                5359724357.169823
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 111.03087263116424,
+              "pooled_actual_l2_norm": 41574.28053880598,
+              "pooled_cosine": 0.9999965484797955,
+              "pooled_reference_l2_norm": 41594.04976956002,
+              "pooled_relative_l2_error": 0.002669393176338903,
+              "row_relative_error_quantiles": [
+                0.000285157050790196,
+                0.0009285401532452588,
+                0.001993016262554705,
+                0.00404664944005635,
+                0.006314971406225111,
+                0.010536194687532162
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 0.00017733119876354276,
+              "pooled_actual_l2_norm": 0.02449318906835741,
+              "pooled_cosine": 0.9999737979237522,
+              "pooled_reference_l2_norm": 0.02449549009976657,
+              "pooled_relative_l2_error": 0.007239340712976085,
+              "row_relative_error_quantiles": [
+                0.00017285517147699607,
+                0.00085926725077971,
+                0.008840342952999377,
+                6984301.584406611,
+                118023705.17658602,
+                2162854016.7712755
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 7.604001571956179e-09,
+              "pooled_actual_l2_norm": 0.02448861005443323,
+              "pooled_cosine": 0.9999999999999833,
+              "pooled_reference_l2_norm": 0.024488616224741855,
+              "pooled_relative_l2_error": 3.105116884584742e-07,
+              "row_relative_error_quantiles": [
+                8.151245948293776e-09,
+                8.93386629824636e-08,
+                2.4194589167201057e-07,
+                1.2976286349710507e-05,
+                0.00020423254058658436,
+                0.0037322184848541744
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 4.0729873234609204e-05,
+              "pooled_actual_l2_norm": 0.023600140554272578,
+              "pooled_cosine": 0.9999985119096071,
+              "pooled_reference_l2_norm": 0.023598969471924403,
+              "pooled_relative_l2_error": 0.0017259174508897674,
+              "row_relative_error_quantiles": [
+                0.00119926088703447,
+                0.0014108349485341776,
+                0.001664579013701729,
+                0.0018789899148432237,
+                0.0020555710446805322,
+                0.002290033019590371
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                0.36777304899304236,
+                1.202135458553276,
+                1.9371576907495156,
+                2.5187041930829546,
+                3.1047469196280657,
+                3.280422770023728
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  1.5314704336547234e-08,
+                  2.4886629677939312e-18,
+                  5.486129345339238e-19,
+                  2.644564560126736e-19
+                ],
+                [
+                  0.00210103425784351,
+                  1.9935167476223956e-16,
+                  9.293396547972285e-17,
+                  3.0858888942262555e-17
+                ],
+                [
+                  2.201146680449397,
+                  0.2567263499063539,
+                  0.07249061380999866,
+                  0.011724271022673125
+                ],
+                [
+                  141.01701899919112,
+                  13.632037156169336,
+                  3.7426520925815745,
+                  1.7310074524996855
+                ],
+                [
+                  1181.969080887949,
+                  65.24903883889957,
+                  26.37419900413622,
+                  8.469392533521928
+                ],
+                [
+                  1431.3120941681507,
+                  119.81263540565757,
+                  71.31105746361004,
+                  18.08999578695684
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  1.7459106042553064e-08,
+                  5.197585762729028e-18,
+                  1.1457810136139835e-18,
+                  5.523187062375509e-19
+                ],
+                [
+                  0.004959321977563882,
+                  4.11528531463748e-16,
+                  1.959790556752735e-16,
+                  6.394931664557276e-17
+                ],
+                [
+                  3.6530432579301015,
+                  0.5163898821764507,
+                  0.127939531118557,
+                  0.021986511430903917
+                ],
+                [
+                  255.31233613587003,
+                  21.846864726410274,
+                  5.58616781718137,
+                  2.7247303438453585
+                ],
+                [
+                  1284.1930475988772,
+                  104.42204680622275,
+                  52.80649269118843,
+                  17.080686561319894
+                ],
+                [
+                  2407.7259099764233,
+                  242.70803934157746,
+                  72.84047785103938,
+                  19.316365507956775
+                ]
+              ],
+              "finite_condition_quantiles": [
+                8.499093085290184,
+                26.155785654383045,
+                112.01251241051791,
+                42060799551570.51,
+                65187157079141.32,
+                70322572324185.914
+              ],
+              "log_radius_relative_response_quantiles": [
+                8.929609720674095e-06,
+                6.0358914819274445e-05,
+                0.0021161879524470885,
+                1.1741577693806249,
+                2.8717894386119225,
+                3.1948117084308865
+              ],
+              "log_radius_response_norm_quantiles": [
+                1.0368156310669211e-08,
+                0.002531213744174358,
+                0.010183300290005838,
+                0.021628679728036906,
+                0.032459554056157976,
+                0.03401819960922601
+              ],
+              "numerical_rank_counts": {
+                "1": 1,
+                "2": 14,
+                "3": 35,
+                "4": 160
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 50,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                0.36777304899304236,
+                1.202135458553276,
+                1.9371576907495156,
+                2.5187041930829546,
+                3.1047469196280657,
+                3.280422770023728
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  3.111044638702919e-13,
+                  1.5911634888200725e-19,
+                  4.6442280416479676e-23,
+                  2.7811188709864773e-23
+                ],
+                [
+                  2.5950199476684666e-10,
+                  1.8369143566587919e-16,
+                  1.0237144981467636e-16,
+                  2.854889186111512e-17
+                ],
+                [
+                  2.200709395420949,
+                  0.25641899833643256,
+                  0.07360008371100432,
+                  0.01144021514361946
+                ],
+                [
+                  141.2092174688957,
+                  13.628822085902248,
+                  3.7394977142404264,
+                  1.7255077245279766
+                ],
+                [
+                  1183.3226824564892,
+                  65.27880230336864,
+                  26.39590240277127,
+                  8.475298046363088
+                ],
+                [
+                  1430.0734282960336,
+                  119.98762444908866,
+                  71.30287026665982,
+                  18.089008154152307
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  6.271865772899535e-13,
+                  3.323153356919424e-19,
+                  9.699494813286889e-23,
+                  5.808381462400283e-23
+                ],
+                [
+                  5.391482982373739e-10,
+                  3.801056113924442e-16,
+                  1.9439355842342972e-16,
+                  5.705831427918783e-17
+                ],
+                [
+                  3.655404948290059,
+                  0.5162496570282318,
+                  0.12783664503378211,
+                  0.021997082401548983
+                ],
+                [
+                  256.36832758343,
+                  21.818446701046952,
+                  5.5876537238241575,
+                  2.724250598444475
+                ],
+                [
+                  1283.1549825866164,
+                  104.39749671334454,
+                  52.850364341026555,
+                  17.092764046234286
+                ],
+                [
+                  2410.7727783423306,
+                  243.06251988107664,
+                  72.83211506188262,
+                  19.33628992452157
+                ]
+              ],
+              "finite_condition_quantiles": [
+                8.502442367648257,
+                29.20885630376117,
+                186.0044537596309,
+                1736113764.7878056,
+                3347025936348.126,
+                26533314620547.54
+              ],
+              "log_radius_relative_response_quantiles": [
+                3.464621596009436e-14,
+                1.0606575291923386e-12,
+                5.915989831776124e-10,
+                1.1741586060399294,
+                2.8717893584107532,
+                3.1948044833510068
+              ],
+              "log_radius_response_norm_quantiles": [
+                9.172945682577014e-13,
+                3.9313882540603634e-11,
+                1.7790775148506298e-09,
+                2.927415887324343e-07,
+                2.995051644200979e-05,
+                0.00040515740350557906
+              ],
+              "numerical_rank_counts": {
+                "2": 11,
+                "3": 8,
+                "4": 191
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 19,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 73,
+          "raw_output_rms_quantiles": [
+            0.14096198548640215,
+            3.722766574047068,
+            56.14765563438378,
+            344.3710214119673,
+            1631.3736452185392,
+            2671.5546244584734
+          ],
+          "sample_count": 210
+        },
+        "uniform_all": {
+          "epsilon_fraction_quantiles": [
+            1.7408508852408186e-18,
+            2.0314428630335431e-16,
+            3.269140513660403e-14,
+            3.4922002773961574e-12,
+            8.323063577962684e-09,
+            5.0323881096164575e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 0.00028123222963714813,
+              "pooled_actual_l2_norm": 0.08056656259563237,
+              "pooled_cosine": 0.9999939590124616,
+              "pooled_reference_l2_norm": 0.0805402291549946,
+              "pooled_relative_l2_error": 0.0034918230626825556,
+              "row_relative_error_quantiles": [
+                0.00010811052884853432,
+                0.0011272332668308788,
+                0.0041841757842325834,
+                0.03469277861563173,
+                7246599900.985871,
+                498172264386.39594
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 57649.30554069627,
+              "pooled_actual_l2_norm": 35277051.25276847,
+              "pooled_cosine": 0.9999987527629327,
+              "pooled_reference_l2_norm": 35291810.810196444,
+              "pooled_relative_l2_error": 0.0016335037567423527,
+              "row_relative_error_quantiles": [
+                2.748195721180777e-05,
+                0.0005651585269824374,
+                0.0016003609050805397,
+                0.002702366010314709,
+                0.00393610421620725,
+                0.008585280196912503
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 0.00016229229093392498,
+              "pooled_actual_l2_norm": 0.08061248824139836,
+              "pooled_cosine": 0.9999983737192829,
+              "pooled_reference_l2_norm": 0.0805402291549946,
+              "pooled_relative_l2_error": 0.002015046302160423,
+              "row_relative_error_quantiles": [
+                1.9420397118394006e-05,
+                0.0007880936518517225,
+                0.003274732757513955,
+                0.023838414183587613,
+                3319742068.302776,
+                414568610340.1133
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 2.9601589061145896e-08,
+              "pooled_actual_l2_norm": 0.08056656259563237,
+              "pooled_cosine": 0.9999999999999923,
+              "pooled_reference_l2_norm": 0.08056659045070227,
+              "pooled_relative_l2_error": 3.67417671463443e-07,
+              "row_relative_error_quantiles": [
+                8.151245948293776e-09,
+                1.4265299123658763e-07,
+                2.622048261875502e-07,
+                7.487602788832312e-07,
+                3.187050206485662e-05,
+                0.0037322184848541744
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 4.100762506438207e-05,
+              "pooled_actual_l2_norm": 0.023791329821117525,
+              "pooled_cosine": 0.999998515650984,
+              "pooled_reference_l2_norm": 0.023790171026360604,
+              "pooled_relative_l2_error": 0.0017237213225135598,
+              "row_relative_error_quantiles": [
+                0.0010233701250580974,
+                0.0014090522591718563,
+                0.0016432555684834718,
+                0.0018805158882875843,
+                0.002113359523596241,
+                0.0023561563826053735
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                0.1106882527846285,
+                1.4891928356707558,
+                2.073255791548899,
+                2.6155679380880494,
+                3.194916830466656,
+                3.77679182386583
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  3.527441970798375e-11,
+                  2.4886629677939312e-18,
+                  5.486129345339238e-19,
+                  2.644564560126736e-19
+                ],
+                [
+                  0.01979319130985295,
+                  0.0033481478531033745,
+                  0.0010109975168916944,
+                  0.00046281942760165314
+                ],
+                [
+                  1.2520194206922182,
+                  0.27344684162164673,
+                  0.07297666955150231,
+                  0.03970906994046543
+                ],
+                [
+                  20.45918699305569,
+                  2.2175328780767876,
+                  0.6252302737878576,
+                  0.31409823134588216
+                ],
+                [
+                  104.19485896938531,
+                  9.892104208823064,
+                  3.0582177334140686,
+                  1.364741577892893
+                ],
+                [
+                  323.4585893172083,
+                  42.8917662162775,
+                  18.521615892555143,
+                  5.839161426303836
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  6.12402990829155e-11,
+                  5.197585762729028e-18,
+                  1.1457810136139835e-18,
+                  5.523187062375509e-19
+                ],
+                [
+                  0.042707971536851144,
+                  0.0066885618046954665,
+                  0.00206091106200113,
+                  0.0009046826526340475
+                ],
+                [
+                  2.540763925216475,
+                  0.5498360514681895,
+                  0.1488193038161327,
+                  0.08101286915680231
+                ],
+                [
+                  39.310763923382126,
+                  4.440665300651056,
+                  1.235892931030658,
+                  0.6095685103243719
+                ],
+                [
+                  183.2855352704589,
+                  19.60472364015288,
+                  5.941837640901912,
+                  2.685549893281606
+                ],
+                [
+                  600.4680733431991,
+                  86.18984164567934,
+                  35.364979682536614,
+                  11.845792958634185
+                ]
+              ],
+              "finite_condition_quantiles": [
+                5.366924025867144,
+                13.800995721156198,
+                37.399317424792194,
+                152.9337065920941,
+                37493629298531.625,
+                70322572324185.914
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.5512856534650667e-05,
+                0.0002545186101700302,
+                0.001536227470030752,
+                0.01136832203415866,
+                1.546957744282456,
+                4.166857250570422
+              ],
+              "log_radius_response_norm_quantiles": [
+                1.112280896042026e-10,
+                0.0004404314656850706,
+                0.004822556767442473,
+                0.014926240747609402,
+                0.02585962359603102,
+                0.044014682599046576
+              ],
+              "numerical_rank_counts": {
+                "1": 2,
+                "2": 37,
+                "3": 102,
+                "4": 3219
+              },
+              "sample_count": 3360,
+              "undefined_condition_count": 141,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                0.1106882527846285,
+                1.4891928356707558,
+                2.073255791548899,
+                2.6155679380880494,
+                3.194916830466656,
+                3.77679182386583
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  6.413273078070162e-15,
+                  1.5911634888200725e-19,
+                  4.6442280416479676e-23,
+                  2.7811188709864773e-23
+                ],
+                [
+                  0.01764075815477017,
+                  0.003318012584501809,
+                  0.001000530773942711,
+                  0.00043775112620357846
+                ],
+                [
+                  1.2533885722166964,
+                  0.27415251093539417,
+                  0.07288255730950112,
+                  0.039768286347940024
+                ],
+                [
+                  20.426946908586313,
+                  2.2148416363893264,
+                  0.6266616970445715,
+                  0.3133714245376141
+                ],
+                [
+                  104.28546746442733,
+                  9.886841917876264,
+                  3.0597494723476064,
+                  1.3652470852794225
+                ],
+                [
+                  323.67510961308585,
+                  42.847816563636655,
+                  18.513455445725587,
+                  5.841181528932696
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  1.12036220091812e-14,
+                  3.323153356919424e-19,
+                  9.699494813286889e-23,
+                  5.808381462400283e-23
+                ],
+                [
+                  0.037127348802324475,
+                  0.006691151858836265,
+                  0.002051107506675204,
+                  0.0008890551645973109
+                ],
+                [
+                  2.542676004510688,
+                  0.5513217588930698,
+                  0.14893226226315806,
+                  0.08099218453886356
+                ],
+                [
+                  39.275767103867814,
+                  4.433133389361307,
+                  1.2358032554237817,
+                  0.6103879580585886
+                ],
+                [
+                  183.39327970422892,
+                  19.608666862455916,
+                  5.9469759555863515,
+                  2.6832874098233326
+                ],
+                [
+                  600.7208420833059,
+                  86.1015260099371,
+                  35.37932036618902,
+                  11.849891101458063
+                ]
+              ],
+              "finite_condition_quantiles": [
+                5.36485795400976,
+                14.035966641251342,
+                39.365064864660226,
+                227.87027414763256,
+                266797373.4298417,
+                26533314620547.54
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.3253824368532253e-16,
+                1.1038212134389743e-15,
+                3.9304090152543613e-14,
+                1.5011591766109296e-12,
+                1.546959563367809,
+                4.1668794424775
+              ],
+              "log_radius_response_norm_quantiles": [
+                7.698671356377082e-18,
+                2.8813220411022003e-16,
+                1.3249486272507133e-13,
+                2.4502241163491903e-11,
+                2.604983574498021e-08,
+                0.00040515740350557906
+              ],
+              "numerical_rank_counts": {
+                "2": 1,
+                "4": 3359
+              },
+              "sample_count": 3360,
+              "undefined_condition_count": 1,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 210,
+          "raw_output_rms_quantiles": [
+            0.14096198548640215,
+            535.1190726099297,
+            5530.753822252985,
+            70161.31109364745,
+            361355.3784215272,
+            757912.7510639578
+          ],
+          "sample_count": 3360
+        },
+        "uniform_excluding_query0": {
+          "epsilon_fraction_quantiles": [
+            1.7408508852408186e-18,
+            1.695104555176126e-16,
+            2.602952416671258e-14,
+            1.5264287885288575e-12,
+            3.032893765894e-11,
+            2.0895764590969407e-10
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 0.00010686711064349325,
+              "pooled_actual_l2_norm": 0.08056614057407963,
+              "pooled_cosine": 0.999999171715003,
+              "pooled_reference_l2_norm": 0.08054022914010711,
+              "pooled_relative_l2_error": 0.0013268786516312005,
+              "row_relative_error_quantiles": [
+                0.00010811052884853432,
+                0.0010914919744157026,
+                0.003915305924394287,
+                0.018514643761547735,
+                0.07222100279843635,
+                0.38639193650773407
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 57643.63823289447,
+              "pooled_actual_l2_norm": 35275411.44896763,
+              "pooled_cosine": 0.9999987528994216,
+              "pooled_reference_l2_norm": 35290170.16449063,
+              "pooled_relative_l2_error": 0.001633419106913124,
+              "row_relative_error_quantiles": [
+                2.748195721180777e-05,
+                0.0005531635496892086,
+                0.0015834660761732031,
+                0.002641687402717283,
+                0.003638730178293887,
+                0.008585280196912503
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 0.00011124402051121756,
+              "pooled_actual_l2_norm": 0.08061240086094604,
+              "pooled_cosine": 0.9999994480993998,
+              "pooled_reference_l2_norm": 0.08054022914010711,
+              "pooled_relative_l2_error": 0.0013812230446687505,
+              "row_relative_error_quantiles": [
+                1.9420397118394006e-05,
+                0.0007307413387442901,
+                0.0029746278179766297,
+                0.013309088020137246,
+                0.04658505381746862,
+                0.34414148479447826
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 2.949795856341972e-08,
+              "pooled_actual_l2_norm": 0.08056614057407963,
+              "pooled_cosine": 0.999999999999993,
+              "pooled_reference_l2_norm": 0.08056616843028082,
+              "pooled_relative_l2_error": 3.6613331796889703e-07,
+              "row_relative_error_quantiles": [
+                2.7154393351554324e-08,
+                1.434178494454861e-07,
+                2.569921363105249e-07,
+                5.928964451455033e-07,
+                2.4363093323018883e-06,
+                1.964343631044119e-05
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 1.8746304361122533e-08,
+              "pooled_actual_l2_norm": 1.1735579401255556e-05,
+              "pooled_cosine": 0.999998728309588,
+              "pooled_reference_l2_norm": 1.173663219314052e-05,
+              "pooled_relative_l2_error": 0.0015972473238173742,
+              "row_relative_error_quantiles": [
+                0.0010233701250580974,
+                0.0014081714172632055,
+                0.001640459155644338,
+                0.0018817835768498298,
+                0.0021143319741519446,
+                0.0023561563826053735
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                0.1106882527846285,
+                1.4828789306738985,
+                2.0656991922061376,
+                2.6005202635676974,
+                3.190687326139757,
+                3.77679182386583
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  0.002470043315922763,
+                  0.00020921745217584794,
+                  4.1167295043910114e-05,
+                  3.212905599454379e-06
+                ],
+                [
+                  0.04551395313417064,
+                  0.013266947516997305,
+                  0.0028429007117137368,
+                  0.0013546394472530837
+                ],
+                [
+                  1.5191783527144045,
+                  0.3132577604413911,
+                  0.08330883935911332,
+                  0.0444302352263798
+                ],
+                [
+                  22.25207942620643,
+                  2.390259118316218,
+                  0.6637067867072768,
+                  0.33187429287625064
+                ],
+                [
+                  106.57061874161785,
+                  10.2498579260181,
+                  3.1834230828756134,
+                  1.3831984054895945
+                ],
+                [
+                  323.4585893172083,
+                  42.8917662162775,
+                  18.521615892555143,
+                  5.839161426303836
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.00575601310405546,
+                  0.00045358924188813323,
+                  9.423343335510105e-05,
+                  9.043349783515716e-06
+                ],
+                [
+                  0.08740266932343563,
+                  0.025938489987924956,
+                  0.005566639792669632,
+                  0.002652672288723503
+                ],
+                [
+                  2.9947929876800603,
+                  0.6475162247940904,
+                  0.16964903954377364,
+                  0.09176411074848731
+                ],
+                [
+                  41.70806425105186,
+                  4.726376310235949,
+                  1.3093412111324898,
+                  0.6426265704838332
+                ],
+                [
+                  191.78283448603855,
+                  19.678555990492523,
+                  6.023237186946137,
+                  2.7493113125635307
+                ],
+                [
+                  600.4680733431991,
+                  86.18984164567934,
+                  35.364979682536614,
+                  11.845792958634185
+                ]
+              ],
+              "finite_condition_quantiles": [
+                5.366924025867144,
+                13.666336491853139,
+                36.70928424386585,
+                137.62655141409144,
+                470.5159119814043,
+                5595.787326208682
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.5512856534650667e-05,
+                0.0002433063231364525,
+                0.0013798740624334548,
+                0.007267867108961493,
+                0.018302781314214474,
+                0.09267570752263697
+              ],
+              "log_radius_response_norm_quantiles": [
+                5.9505463273843014e-05,
+                0.00042085115791431305,
+                0.004801262809327659,
+                0.015044594113333644,
+                0.026048618143776556,
+                0.044014682599046576
+              ],
+              "numerical_rank_counts": {
+                "4": 3150
+              },
+              "sample_count": 3150,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                0.1106882527846285,
+                1.4828789306738985,
+                2.0656991922061376,
+                2.6005202635676974,
+                3.190687326139757,
+                3.77679182386583
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  0.0024693589141810282,
+                  0.00020983201562195433,
+                  3.26743489502552e-05,
+                  3.0526756611162097e-06
+                ],
+                [
+                  0.045515757380543594,
+                  0.013365562970953825,
+                  0.0028491426270180085,
+                  0.0013520930148599119
+                ],
+                [
+                  1.5181551466068837,
+                  0.3133734125893759,
+                  0.08325193233065538,
+                  0.044472287217464185
+                ],
+                [
+                  22.271602467410432,
+                  2.391742356772837,
+                  0.6634901877831487,
+                  0.3318396659617662
+                ],
+                [
+                  106.48874652947029,
+                  10.242955558659435,
+                  3.1849245203518706,
+                  1.3824611640043711
+                ],
+                [
+                  323.67510961308585,
+                  42.847816563636655,
+                  18.513455445725587,
+                  5.841181528932696
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.005754418222958247,
+                  0.00045492163249280065,
+                  7.083889520400862e-05,
+                  8.592351354421101e-06
+                ],
+                [
+                  0.0877036525000135,
+                  0.025900218918009803,
+                  0.005562095151822409,
+                  0.00265236382518024
+                ],
+                [
+                  2.999049576193369,
+                  0.6467351218469601,
+                  0.16959564870296184,
+                  0.09161133956754522
+                ],
+                [
+                  41.837458325528274,
+                  4.732706577085978,
+                  1.3102862043718224,
+                  0.6433407599006243
+                ],
+                [
+                  191.81862467867606,
+                  19.666362888677778,
+                  6.022563099747659,
+                  2.7480921364613313
+                ],
+                [
+                  600.7208420833059,
+                  86.1015260099371,
+                  35.37932036618902,
+                  11.849891101458063
+                ]
+              ],
+              "finite_condition_quantiles": [
+                5.36485795400976,
+                13.71218962576226,
+                36.701306356959975,
+                138.21422621669774,
+                524.0683343420004,
+                9981.451530093333
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.3253824368532253e-16,
+                1.0408783519046265e-15,
+                3.137304244729136e-14,
+                5.532117774601499e-13,
+                5.083594702061099e-12,
+                8.374488219025202e-11
+              ],
+              "log_radius_response_norm_quantiles": [
+                7.698671356377082e-18,
+                2.376110307853503e-16,
+                9.980997198546255e-14,
+                1.0053969907124598e-11,
+                2.4706195235872917e-10,
+                1.7850881859654568e-09
+              ],
+              "numerical_rank_counts": {
+                "4": 3150
+              },
+              "sample_count": 3150,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 0,
+          "raw_output_rms_quantiles": [
+            69.17845628139271,
+            809.3996045297979,
+            6198.2211082756285,
+            76807.16922599233,
+            364696.6908575143,
+            757912.7510639578
+          ],
+          "sample_count": 3150
+        },
+        "uniform_query0_only": {
+          "epsilon_fraction_quantiles": [
+            2.1739858090872386e-15,
+            1.4900434400475477e-13,
+            2.4945986435033786e-11,
+            1.6898280248204844e-08,
+            4.353459872914402e-06,
+            5.0323881096164575e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 0.00026013647889020294,
+              "pooled_actual_l2_norm": 0.00026077092166918256,
+              "pooled_cosine": 0.41216549892704885,
+              "pooled_reference_l2_norm": 1.548574691959795e-06,
+              "pooled_relative_l2_error": 167.98445708872322,
+              "row_relative_error_quantiles": [
+                70.07742378967453,
+                61859.578493168396,
+                65623625.253848925,
+                23826347705.00689,
+                306979520221.43353,
+                498172264386.39594
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 808.3319860924123,
+              "pooled_actual_l2_norm": 340135.5560620687,
+              "pooled_cosine": 0.9999972859217061,
+              "pooled_reference_l2_norm": 340294.02579754376,
+              "pooled_relative_l2_error": 0.002375392821539939,
+              "row_relative_error_quantiles": [
+                0.00018027354375708377,
+                0.0006673945881881741,
+                0.00178631943247924,
+                0.003812187471363856,
+                0.005183992253317353,
+                0.006030141367949177
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 0.00011816748959456471,
+              "pooled_actual_l2_norm": 0.00011869247547850387,
+              "pooled_cosine": 0.34478604616972647,
+              "pooled_reference_l2_norm": 1.548574691959795e-06,
+              "pooled_relative_l2_error": 76.30725867346969,
+              "row_relative_error_quantiles": [
+                0.00383176978129736,
+                29231.76711291884,
+                45655236.49740038,
+                13161867634.641663,
+                252212046058.49976,
+                414568610340.1133
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 2.4747758556535106e-09,
+              "pooled_actual_l2_norm": 0.00026077092166918256,
+              "pooled_cosine": 0.9999999999556493,
+              "pooled_reference_l2_norm": 0.00026077061723291036,
+              "pooled_relative_l2_error": 9.490240433963982e-06,
+              "row_relative_error_quantiles": [
+                8.151245948293776e-09,
+                9.997202219024253e-08,
+                4.9038055235934535e-06,
+                6.0361590389827636e-05,
+                0.00037147923182653087,
+                0.0037322184848541744
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 4.100762077952108e-05,
+              "pooled_actual_l2_norm": 0.023791326926705287,
+              "pooled_cosine": 0.9999985156509348,
+              "pooled_reference_l2_norm": 0.023790168131288023,
+              "pooled_relative_l2_error": 0.0017237213521660339,
+              "row_relative_error_quantiles": [
+                0.0012216158352563223,
+                0.0014348972865630093,
+                0.0016749639553417166,
+                0.0018598893985497073,
+                0.002083929913666833,
+                0.002182259290977324
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                0.3627036087095287,
+                1.602940549040671,
+                2.2051492513618687,
+                2.76956236351146,
+                3.2676779241152585,
+                3.5281938884006805
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  3.527441970798375e-11,
+                  2.4886629677939312e-18,
+                  5.486129345339238e-19,
+                  2.644564560126736e-19
+                ],
+                [
+                  0.0008313862232066256,
+                  7.666770649335631e-17,
+                  2.863377298650449e-17,
+                  3.430461286567526e-18
+                ],
+                [
+                  0.0035016102162706286,
+                  2.2009862507118845e-16,
+                  9.806453097522772e-17,
+                  2.461150631067099e-17
+                ],
+                [
+                  0.02189788116254511,
+                  1.3857065474486195e-15,
+                  6.927677573820622e-16,
+                  2.1398394673743573e-16
+                ],
+                [
+                  0.1226406276466586,
+                  6.176677427820656e-15,
+                  2.466014599046697e-15,
+                  9.201129541375906e-16
+                ],
+                [
+                  0.45942409917831867,
+                  3.14388167767099e-14,
+                  2.299467593749177e-14,
+                  9.365361786968511e-15
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  6.12402990829155e-11,
+                  5.197585762729028e-18,
+                  1.1457810136139835e-18,
+                  5.523187062375509e-19
+                ],
+                [
+                  0.0016777177443317683,
+                  1.724002150668429e-16,
+                  5.750434438785537e-17,
+                  7.597800964708264e-18
+                ],
+                [
+                  0.007358241522328899,
+                  4.989905141220756e-16,
+                  2.1771638672176784e-16,
+                  5.613458513280394e-17
+                ],
+                [
+                  0.047335430294939605,
+                  2.769677760416547e-15,
+                  1.3179081553490062e-15,
+                  4.475918735901519e-16
+                ],
+                [
+                  0.24505591330354887,
+                  1.2809080574595204e-14,
+                  5.860382354577526e-15,
+                  1.6259944218155458e-15
+                ],
+                [
+                  1.5071052760421961,
+                  1.0313261041692314e-13,
+                  7.543225853466471e-14,
+                  3.072234605548162e-14
+                ]
+              ],
+              "finite_condition_quantiles": [
+                1220538.2471061489,
+                15958081145133.209,
+                36694404314344.75,
+                58881209090645.16,
+                69900930321361.375,
+                70322572324185.914
+              ],
+              "log_radius_relative_response_quantiles": [
+                0.008266926107281636,
+                0.15592526877606516,
+                0.6851570187069357,
+                1.9433371837374913,
+                3.1024986603946547,
+                4.166857250570422
+              ],
+              "log_radius_response_norm_quantiles": [
+                1.112280896042026e-10,
+                0.002042556949322422,
+                0.005024510530943771,
+                0.012478288321624537,
+                0.018576688038720778,
+                0.024740191105938353
+              ],
+              "numerical_rank_counts": {
+                "1": 2,
+                "2": 37,
+                "3": 102,
+                "4": 69
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 141,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                0.3627036087095287,
+                1.602940549040671,
+                2.2051492513618687,
+                2.76956236351146,
+                3.2676779241152585,
+                3.5281938884006805
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  6.413273078070162e-15,
+                  1.5911634888200725e-19,
+                  4.6442280416479676e-23,
+                  2.7811188709864773e-23
+                ],
+                [
+                  3.45089240092025e-13,
+                  8.170627199250936e-17,
+                  3.0074881802848135e-17,
+                  3.925208045174761e-18
+                ],
+                [
+                  3.927429673156411e-11,
+                  2.176645806467043e-16,
+                  9.397206432934719e-17,
+                  2.4964109686917657e-17
+                ],
+                [
+                  3.2420678164087173e-07,
+                  1.417860851510585e-15,
+                  7.34481346852611e-16,
+                  1.8847255162815925e-16
+                ],
+                [
+                  0.0004825384707778612,
+                  8.8936529347046e-15,
+                  2.438827475017138e-15,
+                  1.1002949016634492e-15
+                ],
+                [
+                  0.0031886873952690306,
+                  3.2410638645456774e-14,
+                  1.744984169493917e-14,
+                  8.75374931878714e-15
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  1.12036220091812e-14,
+                  3.323153356919424e-19,
+                  9.699494813286889e-23,
+                  5.808381462400283e-23
+                ],
+                [
+                  8.210612075681412e-13,
+                  1.6907889022646499e-16,
+                  6.097563502139514e-17,
+                  8.012405332143727e-18
+                ],
+                [
+                  8.771743082127135e-11,
+                  4.971907650524471e-16,
+                  2.0964840743394834e-16,
+                  5.299756905584855e-17
+                ],
+                [
+                  6.250115050509964e-07,
+                  2.7613654064161944e-15,
+                  1.1964777704135306e-15,
+                  3.8907823186826123e-16
+                ],
+                [
+                  0.0013107999369278774,
+                  2.100095498999713e-14,
+                  5.7520597874900054e-15,
+                  1.9326275833329098e-15
+                ],
+                [
+                  0.006358254951497573,
+                  1.063205970035674e-13,
+                  5.72428580293879e-14,
+                  2.871599858842903e-14
+                ]
+              ],
+              "finite_condition_quantiles": [
+                6443.6938014636935,
+                68038.48028876178,
+                1750561.407195872,
+                1042879424.8606799,
+                3098576021014.106,
+                26533314620547.54
+              ],
+              "log_radius_relative_response_quantiles": [
+                0.008266926108806564,
+                0.15592526880502877,
+                0.685136028362672,
+                1.9433370084387693,
+                3.102499096518259,
+                4.1668794424775
+              ],
+              "log_radius_response_norm_quantiles": [
+                1.4348137274361536e-14,
+                6.476826026883752e-13,
+                9.44064985253263e-11,
+                1.0319564599546319e-07,
+                2.995051644200979e-05,
+                0.00040515740350557906
+              ],
+              "numerical_rank_counts": {
+                "2": 1,
+                "4": 209
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 1,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 210,
+          "raw_output_rms_quantiles": [
+            0.14096198548640215,
+            7.6927079913773335,
+            200.21878451510023,
+            2590.6600397703237,
+            14947.92295057589,
+            21447.251649395548
+          ],
+          "sample_count": 210
+        }
+      }
+    },
+    "before": {
+      "bf16_vjp_capture_parity": {
+        "checks": {
+          "finite_measurements": true,
+          "instrumented_native_nll": true,
+          "native_checkpoint_nll": true
+        },
+        "established_nll_atol": 0.002,
+        "failed_checks": [],
+        "instrumented_minus_native_nll": 0.0007867813110351562,
+        "instrumented_nll": 2.5891671180725098,
+        "logit_errors_are_measured_without_an_added_acceptance_threshold": true,
+        "logit_max_absolute_error": 0.20263671875,
+        "logit_relative_rms_error": 0.0037743905559182167,
+        "native_minus_recorded_nll": -0.0003724098205566406,
+        "native_nll": 2.5883803367614746,
+        "recorded_sequence_nll": 2.5887527465820312
+      },
+      "cotangent_execution": "Instrumented compiled execution; native/capture NLL agrees within the established bound, but bitwise identity is not asserted.",
+      "fp32_blocked_capture_parity": {
+        "backend": "blocked",
+        "instrumented_minus_native_nll": 0.0,
+        "instrumented_nll": 2.5883989334106445,
+        "interpretation": "Same before/after checkpoint arrays and sequence. Native and instrumented graphs both use FP32 module arithmetic with blocked attention. The loss is not required to equal BF16 checkpoint NLL; changing the backend as well as arithmetic prevents attributing any difference to one precise cause.",
+        "logit_max_absolute_error": 2.956390380859375e-05,
+        "logit_relative_rms_error": 4.6101860107228276e-07,
+        "matmul_precision": "highest",
+        "module_dtype": "float32",
+        "native_nll": 2.5883989334106445,
+        "same_checkpoint_parameter_arrays": true
+      },
+      "generator": {
+        "factorial_coefficient_rms": 0.9775901860254566,
+        "independent_compiled_nll_comparison": {
+          "absolute_delta_quantiles": [
+            3.337860107421875e-06,
+            6.914138793945312e-05,
+            0.00033593177795410156,
+            0.0007369518280029297,
+            0.00115131139755249,
+            0.0013570785522460938
+          ],
+          "aggregate_nll_passed": true,
+          "established_nll_atol": 0.002,
+          "max_absolute_nll_delta": 0.0013570785522460938,
+          "mean_nll_delta": -2.2649765014648438e-06,
+          "original_per_sequence_bound_passed": true,
+          "sequence_count": 256,
+          "sequences_exceeding_bound": 0,
+          "signed_delta_quantiles": [
+            -0.0013570785522460938,
+            -0.0005688667297363281,
+            -2.0623207092285156e-05,
+            0.0006064176559448242,
+            0.0009575724601745604,
+            0.0011684894561767578
+          ]
+        },
+        "output_normalization": {
+          "maximum_inverse_rms_denominator": 150.4651336669922,
+          "mean_head_mean_square_below_100epsilon_fraction": 9.082612943226801e-09,
+          "mean_head_mean_square_below_epsilon_fraction": 0.0,
+          "minimum_raw_output_head_rms": 0.006570394150912762
+        },
+        "preactivation_rms": 3.581094960902148,
+        "sampled_coefficient_radius_quantiles": [
+          1.2515500783920288,
+          1.8399593830108643,
+          2.0254812002182008,
+          2.187883734703064,
+          2.319294238090515,
+          2.613675274848938,
+          3.036543846130371
+        ],
+        "sampled_quantile_probabilities": [
+          0.0,
+          0.01,
+          0.1,
+          0.5,
+          0.9,
+          0.99,
+          1.0
+        ],
+        "statistics": {
+          "cancellation_ratio_lt001_fraction": {
+            "global_mean": 0.0008756474086216518,
+            "per_order_mean": [
+              0.00019019898914155505,
+              0.0002843039376395089,
+              0.003903734116327195,
+              0.0,
+              0.0
+            ]
+          },
+          "cancellation_ratio_mean": {
+            "global_mean": 0.8274961545140971,
+            "per_order_mean": [
+              0.7145759493822144,
+              0.7542422541195438,
+              0.7678775615635373,
+              0.9908007340771812,
+              0.9099842734280087
+            ]
+          },
+          "coefficient_mean_square_factorial_coordinates": {
+            "global_mean": 0.9556825718132868,
+            "per_order_mean": [
+              0.6511862007790201,
+              0.720065343475324,
+              0.6041192365100696,
+              1.9575221742902482,
+              0.8455199040117718
+            ]
+          },
+          "direction_amplitude_jacobian_mean_square": {
+            "global_mean": 0.1356225802217211,
+            "per_order_mean": [
+              0.14375967684955823,
+              0.14766060078427906,
+              0.15240662197271984,
+              0.10680285188413802,
+              0.12748314961791038
+            ]
+          },
+          "direction_bias_jacobian_mean_square": {
+            "global_mean": 0.1697213418285052,
+            "per_order_mean": [
+              0.1850327438541821,
+              0.18224265195784115,
+              0.18524659070230665,
+              0.12241687615002905,
+              0.17366784647816702
+            ]
+          },
+          "direction_jacobian_norm_floor_fraction": {
+            "global_mean": 0.0,
+            "per_order_mean": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "direction_projection_jacobian_frobenius_mean_square": {
+            "global_mean": 0.7171955248297206,
+            "per_order_mean": [
+              2.0525398072486585,
+              0.6974606515630537,
+              0.37234033995405064,
+              0.2918686384682646,
+              0.17176818691457585
+            ]
+          },
+          "preactivation_mean_square": {
+            "global_mean": 12.824241118998755,
+            "per_order_mean": [
+              10.957856716428484,
+              11.486580659094312,
+              13.441387416067577,
+              19.753681059110733,
+              8.481699744292667
+            ]
+          },
+          "saturated_099_fraction": {
+            "global_mean": 0.4752224059331985,
+            "per_order_mean": [
+              0.42170867011660623,
+              0.46960918789818173,
+              0.49684392838251024,
+              0.6566685631161644,
+              0.3312816801525298
+            ]
+          },
+          "tanh_derivative_lt001_fraction": {
+            "global_mean": 0.41504688807896206,
+            "per_order_mean": [
+              0.36566844213576544,
+              0.40577617826915924,
+              0.43434662591843376,
+              0.5975143250964937,
+              0.27192886897495816
+            ]
+          },
+          "tanh_derivative_mean": {
+            "global_mean": 0.20154975543363401,
+            "per_order_mean": [
+              0.23613602795864955,
+              0.19996183166220882,
+              0.18924203739658033,
+              0.11119457085003757,
+              0.27121430930069385
+            ]
+          }
+        },
+        "statistics_axes": [
+          "layer",
+          "head",
+          "order"
+        ],
+        "statistics_forward": "instrumented_native_forward",
+        "stored_parameter_rms": {
+          "query_polynomial_amplitude": 0.24930044174448804,
+          "query_polynomial_bias": 0.9517254165355056,
+          "query_polynomial_kernel": 0.05871477466930786
+        },
+        "within_compiled_wrapper_logit_comparison": {
+          "logit_max_absolute_error": 0.0,
+          "logit_relative_rms_error": 0.0
+        }
+      },
+      "vjp_sample_groups": {
+        "minimum_rms_targeted": {
+          "epsilon_fraction_quantiles": [
+            1.7129617978475403e-13,
+            9.760188525430243e-13,
+            3.602789184704536e-11,
+            1.7916678911859867e-08,
+            1.8715678612367103e-06,
+            4.9314217370031875e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 8.025010323349723e-05,
+              "pooled_actual_l2_norm": 0.00833491501176636,
+              "pooled_cosine": 0.9999906423796917,
+              "pooled_reference_l2_norm": 0.008406530267942568,
+              "pooled_relative_l2_error": 0.00954616240894566,
+              "row_relative_error_quantiles": [
+                0.00026531519868959116,
+                0.0015989547479174136,
+                0.011337934462465154,
+                54491613.92760556,
+                3997353749.6473103,
+                5204779742.685438
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 135.17020345346884,
+              "pooled_actual_l2_norm": 66273.613498539,
+              "pooled_cosine": 0.9999979323674989,
+              "pooled_reference_l2_norm": 66263.0781300407,
+              "pooled_relative_l2_error": 0.002039902269378409,
+              "row_relative_error_quantiles": [
+                0.0003475507128800779,
+                0.0008227636301459682,
+                0.0017806565411739373,
+                0.003145493680862581,
+                0.0060293345513523855,
+                0.010660093962158263
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 8.854369460874484e-05,
+              "pooled_actual_l2_norm": 0.008328849314868821,
+              "pooled_cosine": 0.9999871055421841,
+              "pooled_reference_l2_norm": 0.008406530267942568,
+              "pooled_relative_l2_error": 0.010532727746951324,
+              "row_relative_error_quantiles": [
+                5.505371129204093e-05,
+                0.0009014256399255869,
+                0.008981061324875172,
+                45846798.54222608,
+                3849451417.8229566,
+                6966088320.318685
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 2.307059342247803e-09,
+              "pooled_actual_l2_norm": 0.00833491501176636,
+              "pooled_cosine": 0.9999999999999963,
+              "pooled_reference_l2_norm": 0.008334917202921179,
+              "pooled_relative_l2_error": 2.767945123005225e-07,
+              "row_relative_error_quantiles": [
+                1.7448172299403618e-10,
+                1.0931342882822083e-07,
+                2.629184395145725e-07,
+                1.1347969294620723e-05,
+                0.00011573369124440304,
+                0.000165798098644013
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 9.402219860669091e-07,
+              "pooled_actual_l2_norm": 0.0005169769866233939,
+              "pooled_cosine": 0.9999983544003757,
+              "pooled_reference_l2_norm": 0.0005169098405933792,
+              "pooled_relative_l2_error": 0.001818928393755466,
+              "row_relative_error_quantiles": [
+                0.0010433836734494884,
+                0.0014233952582409638,
+                0.0016480467291643403,
+                0.0018698758837031985,
+                0.0020794951620308156,
+                0.0020871871700305147
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                1.7687696708216125,
+                2.0133848160812056,
+                2.168346581131156,
+                2.31236860189496,
+                2.4364778003071836,
+                2.5696826657123917
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  0.00037960586039288924,
+                  3.385423866640635e-17,
+                  9.492645800086799e-19,
+                  2.1780943680716363e-19
+                ],
+                [
+                  0.0010018058703095182,
+                  1.0027236193511592e-16,
+                  5.1245044854301316e-17,
+                  1.3535754545128742e-17
+                ],
+                [
+                  0.6233006325643776,
+                  0.09103068770673708,
+                  0.01573409597209938,
+                  0.004930201090319214
+                ],
+                [
+                  32.278835563520765,
+                  2.1440201206184195,
+                  0.5614323007613341,
+                  0.3078094608288162
+                ],
+                [
+                  341.85216776316975,
+                  10.479037349050257,
+                  2.5867557329112256,
+                  1.064859920953244
+                ],
+                [
+                  607.3000436562169,
+                  31.32845632092193,
+                  3.8923301707273326,
+                  3.335466561796691
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.0008452324869495901,
+                  7.647213852600154e-17,
+                  2.0716622687591395e-18,
+                  4.753443892417782e-19
+                ],
+                [
+                  0.002162098503399999,
+                  2.301132505966243e-16,
+                  1.1798739819367687e-16,
+                  3.210725486892408e-17
+                ],
+                [
+                  1.2788989936995399,
+                  0.1925077575205185,
+                  0.034763592353912826,
+                  0.010760113849261333
+                ],
+                [
+                  64.59874513082528,
+                  4.563343115053004,
+                  1.263930333855983,
+                  0.6003685220615279
+                ],
+                [
+                  747.9266928130793,
+                  21.26142991307376,
+                  5.405336092893731,
+                  2.212226853791323
+                ],
+                [
+                  1234.6207441693546,
+                  63.68970735412823,
+                  7.902182172764537,
+                  6.771641470887039
+                ]
+              ],
+              "finite_condition_quantiles": [
+                6.04813028454329,
+                17.807417106364788,
+                124.82499843272606,
+                36929531057036.9,
+                62148007158984.234,
+                69123052618288.836
+              ],
+              "log_radius_relative_response_quantiles": [
+                2.1216653497401526e-05,
+                0.00017590348660718276,
+                0.006013334984896642,
+                1.8184765651249977,
+                2.8093419290567683,
+                4.499512079763355
+              ],
+              "log_radius_response_norm_quantiles": [
+                0.0004854375712844007,
+                0.002179422225104105,
+                0.006671293401369403,
+                0.016890271726833394,
+                0.024467050473665628,
+                0.02932319461417396
+              ],
+              "numerical_rank_counts": {
+                "1": 1,
+                "2": 17,
+                "3": 30,
+                "4": 162
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 48,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                1.7687696708216125,
+                2.0133848160812056,
+                2.168346581131156,
+                2.31236860189496,
+                2.4364778003071836,
+                2.5696826657123917
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  2.329959708977408e-13,
+                  2.816996196475322e-17,
+                  9.248938991538103e-19,
+                  1.4645223243761073e-20
+                ],
+                [
+                  2.6052203383311617e-11,
+                  1.1028916249515509e-16,
+                  5.472836543529586e-17,
+                  1.521878644371726e-17
+                ],
+                [
+                  0.6217369130058887,
+                  0.09153089236806447,
+                  0.01575985848887157,
+                  0.0015658546700332153
+                ],
+                [
+                  32.2642330322444,
+                  2.1445543510775313,
+                  0.5624980876165704,
+                  0.30815262846303354
+                ],
+                [
+                  347.3243879060272,
+                  10.481047708426704,
+                  2.593043525719774,
+                  1.0675843918248415
+                ],
+                [
+                  607.4945542630884,
+                  31.35266479210584,
+                  3.893615532032335,
+                  3.3356471337293385
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  4.902597266028132e-13,
+                  6.147774660909154e-17,
+                  2.0184760222117942e-18,
+                  3.196153849054047e-20
+                ],
+                [
+                  5.760620328242926e-11,
+                  2.3649196226909466e-16,
+                  1.2223481198963412e-16,
+                  3.4214677655534005e-17
+                ],
+                [
+                  1.2785388994181635,
+                  0.1935231800044076,
+                  0.03482159594931995,
+                  0.0034973783735478964
+                ],
+                [
+                  64.71667505950617,
+                  4.564506170350707,
+                  1.2663252994655683,
+                  0.6011702853602452
+                ],
+                [
+                  748.1418921226252,
+                  21.265531719540473,
+                  5.418458207306834,
+                  2.2179039699310468
+                ],
+                [
+                  1235.0161777490375,
+                  63.7389223690463,
+                  7.9047917045217195,
+                  6.772008066793471
+                ]
+              ],
+              "finite_condition_quantiles": [
+                6.051038616538894,
+                19.30331028106112,
+                196.34422549090988,
+                1254778608.5430698,
+                8891987159891.223,
+                26637101730977.324
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.4380550478428112e-14,
+                8.097771961292319e-13,
+                2.2046146794506616e-10,
+                1.8184776155164362,
+                2.809342399760635,
+                4.499511205790585
+              ],
+              "log_radius_response_norm_quantiles": [
+                5.203076097594362e-13,
+                3.5380930775796626e-12,
+                1.572108383124431e-10,
+                9.441970596086409e-08,
+                5.840784017642214e-06,
+                0.00010164468131669657
+              ],
+              "numerical_rank_counts": {
+                "2": 11,
+                "3": 7,
+                "4": 192
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 18,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 75,
+          "raw_output_rms_quantiles": [
+            0.14239778002364414,
+            7.4761801054388055,
+            166.60282365299963,
+            1012.229409294293,
+            1825.7195404647848,
+            2416.162620477717
+          ],
+          "sample_count": 210
+        },
+        "uniform_all": {
+          "epsilon_fraction_quantiles": [
+            1.4315655250897959e-18,
+            9.24907466546206e-17,
+            1.5825575254651717e-14,
+            1.0041216297825615e-12,
+            9.56730619005445e-10,
+            4.9314217370031875e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 1.407096019695971e-05,
+              "pooled_actual_l2_norm": 0.006936919231535106,
+              "pooled_cosine": 0.999997975952379,
+              "pooled_reference_l2_norm": 0.0069386924626748505,
+              "pooled_relative_l2_error": 0.0020278979465729752,
+              "row_relative_error_quantiles": [
+                0.00012752244839805217,
+                0.0011016600356862662,
+                0.0044267112092390305,
+                0.03507265806716024,
+                14189243819.813797,
+                51130190514950.84
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 70967.33158802002,
+              "pooled_actual_l2_norm": 42149824.37255503,
+              "pooled_cosine": 0.99999859001222,
+              "pooled_reference_l2_norm": 42144629.2425565,
+              "pooled_relative_l2_error": 0.001683899772366704,
+              "row_relative_error_quantiles": [
+                2.9259844152418047e-05,
+                0.0005736908043528622,
+                0.0015993307144962759,
+                0.0026646898359423367,
+                0.003806838266778089,
+                0.006322800766610426
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 1.4648799533373382e-05,
+              "pooled_actual_l2_norm": 0.006933262219180776,
+              "pooled_cosine": 0.9999980761967682,
+              "pooled_reference_l2_norm": 0.0069386924626748505,
+              "pooled_relative_l2_error": 0.0021111757888353368,
+              "row_relative_error_quantiles": [
+                3.283954134594802e-05,
+                0.0008074709889196373,
+                0.003182825315571309,
+                0.02555205661817268,
+                18687717720.26604,
+                19207232778158.863
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 1.7777360022909155e-09,
+              "pooled_actual_l2_norm": 0.006936919231535106,
+              "pooled_cosine": 0.9999999999999938,
+              "pooled_reference_l2_norm": 0.0069369208333011365,
+              "pooled_relative_l2_error": 2.562716290139537e-07,
+              "row_relative_error_quantiles": [
+                1.7448172299403618e-10,
+                1.4049506399708775e-07,
+                2.61453144857481e-07,
+                7.523893652094203e-07,
+                2.7047685880524963e-05,
+                0.06666645899646839
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 9.265355725375439e-07,
+              "pooled_actual_l2_norm": 0.0005039965380832136,
+              "pooled_cosine": 0.9999983177182248,
+              "pooled_reference_l2_norm": 0.0005039338221966567,
+              "pooled_relative_l2_error": 0.0018386056496441506,
+              "row_relative_error_quantiles": [
+                0.0010968273722179623,
+                0.0014101524745449754,
+                0.0016428231988845467,
+                0.0018901137134444577,
+                0.002098784028755216,
+                0.002291553440182572
+              ],
+              "sample_count": 3360,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                1.743491843440478,
+                2.025314324330014,
+                2.190507101800973,
+                2.31979353835007,
+                2.6099547463425092,
+                2.869323248571616
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  8.951163305384709e-05,
+                  2.8377953645999996e-17,
+                  9.492645800086799e-19,
+                  2.1780943680716363e-19
+                ],
+                [
+                  0.016878314238008695,
+                  0.0027319587389589943,
+                  0.0007651599907443869,
+                  0.00035650829450405245
+                ],
+                [
+                  0.9116955837565395,
+                  0.19468577264332554,
+                  0.05307070898106342,
+                  0.027858569132472935
+                ],
+                [
+                  12.775250270477535,
+                  1.0845548092070583,
+                  0.29466741384084166,
+                  0.1645117976201044
+                ],
+                [
+                  54.573785018560386,
+                  5.040626421133151,
+                  1.5312473307634507,
+                  0.7866675299006685
+                ],
+                [
+                  183.1337185420219,
+                  14.0972302429716,
+                  3.4095741949186675,
+                  1.7797124140672624
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.00020999668567887566,
+                  6.026061671490576e-17,
+                  2.0716622687591395e-18,
+                  4.753443892417782e-19
+                ],
+                [
+                  0.037326139823331356,
+                  0.006039283168541248,
+                  0.001743976602383488,
+                  0.0007880376350067814
+                ],
+                [
+                  2.0114176274100184,
+                  0.42818518127029714,
+                  0.11707918006607776,
+                  0.062389989142056776
+                ],
+                [
+                  26.93304030496415,
+                  2.2666772350618167,
+                  0.6209688207051235,
+                  0.3484793143258161
+                ],
+                [
+                  110.118660743005,
+                  10.493744305786588,
+                  3.2560515313906278,
+                  1.6420442015551875
+                ],
+                [
+                  383.41507564024255,
+                  28.889108087093867,
+                  7.218696740519337,
+                  3.7369099057644646
+                ]
+              ],
+              "finite_condition_quantiles": [
+                4.555795220944449,
+                14.316876664418913,
+                40.877681686139105,
+                150.17674800884555,
+                28757605972816.51,
+                69123052618288.836
+              ],
+              "log_radius_relative_response_quantiles": [
+                2.1899584275221194e-05,
+                0.0003397873395070208,
+                0.0018974902916204265,
+                0.013211317875945974,
+                1.7707996605782796,
+                4.499512079763355
+              ],
+              "log_radius_response_norm_quantiles": [
+                4.8775490202885465e-05,
+                0.00041876813538659915,
+                0.004561237495543064,
+                0.014707229584302369,
+                0.023635145517004283,
+                0.03909360211694018
+              ],
+              "numerical_rank_counts": {
+                "1": 2,
+                "2": 47,
+                "3": 93,
+                "4": 3218
+              },
+              "sample_count": 3360,
+              "undefined_condition_count": 142,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                1.743491843440478,
+                2.025314324330014,
+                2.190507101800973,
+                2.31979353835007,
+                2.6099547463425092,
+                2.869323248571616
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  2.8045545910425694e-15,
+                  2.816996196475322e-17,
+                  9.248938991538103e-19,
+                  1.4645223243761073e-20
+                ],
+                [
+                  0.015955967598841027,
+                  0.002727517187771366,
+                  0.0007665735855190153,
+                  0.0003538877425015033
+                ],
+                [
+                  0.9097815367358916,
+                  0.1946103591385799,
+                  0.05305664676554489,
+                  0.027952778395032074
+                ],
+                [
+                  12.779392207345298,
+                  1.0890946410365132,
+                  0.29490406467132,
+                  0.16449546192192155
+                ],
+                [
+                  54.60628416974127,
+                  5.037670582367637,
+                  1.531304646936199,
+                  0.7850172153477397
+                ],
+                [
+                  182.4983978015313,
+                  14.131695101426093,
+                  3.412649901458607,
+                  1.7739469026385142
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  5.0977970052964364e-15,
+                  6.147774660909154e-17,
+                  2.0184760222117942e-18,
+                  3.196153849054047e-20
+                ],
+                [
+                  0.03537045818243699,
+                  0.00603442764063296,
+                  0.0017396872268339218,
+                  0.0007882883171205304
+                ],
+                [
+                  2.011800337533315,
+                  0.428547268322712,
+                  0.11709655624082901,
+                  0.06234870571788275
+                ],
+                [
+                  26.941420790139222,
+                  2.267174135707515,
+                  0.620079896209816,
+                  0.3483909559658159
+                ],
+                [
+                  110.16490423757202,
+                  10.475532461151161,
+                  3.2539152955297297,
+                  1.6406955001241619
+                ],
+                [
+                  382.0849462041653,
+                  28.938460023866988,
+                  7.225208577923475,
+                  3.737465692185342
+                ]
+              ],
+              "finite_condition_quantiles": [
+                4.553405279931083,
+                14.451717323216347,
+                43.05505751017748,
+                219.2993497008421,
+                43505446.27377134,
+                26637101730977.324
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.0508303696252924e-16,
+                9.53592174878905e-16,
+                2.028565690080463e-14,
+                7.503531429167863e-13,
+                1.7707994912470224,
+                4.499511205790585
+              ],
+              "log_radius_response_norm_quantiles": [
+                6.353962972554806e-18,
+                1.7712596580249044e-16,
+                5.903687088465698e-14,
+                5.557868543110163e-12,
+                4.481939083355714e-09,
+                0.00010164468131669657
+              ],
+              "numerical_rank_counts": {
+                "4": 3360
+              },
+              "sample_count": 3360,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 210,
+          "raw_output_rms_quantiles": [
+            0.14239778002364414,
+            997.9459891171498,
+            7949.145914477234,
+            103980.25000786631,
+            422782.0666109033,
+            835784.6380124263
+          ],
+          "sample_count": 3360
+        },
+        "uniform_excluding_query0": {
+          "epsilon_fraction_quantiles": [
+            1.4315655250897959e-18,
+            8.15464053522437e-17,
+            1.2483474905714461e-14,
+            4.3187042351179974e-13,
+            9.079027121883113e-12,
+            1.1867878669832248e-10
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 1.3792409622123568e-05,
+              "pooled_actual_l2_norm": 0.006936918678461547,
+              "pooled_cosine": 0.9999980565964298,
+              "pooled_reference_l2_norm": 0.006938692462593732,
+              "pooled_relative_l2_error": 0.001987753412689495,
+              "row_relative_error_quantiles": [
+                0.00012752244839805217,
+                0.0010589098994766585,
+                0.004028705847104059,
+                0.018418151978674906,
+                0.08339337431370811,
+                0.5635449401437007
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 70958.06002561991,
+              "pooled_actual_l2_norm": 42146699.707397304,
+              "pooled_cosine": 0.9999985901887886,
+              "pooled_reference_l2_norm": 42141499.315387696,
+              "pooled_relative_l2_error": 0.0016838048284558787,
+              "row_relative_error_quantiles": [
+                2.9259844152418047e-05,
+                0.000567127436516584,
+                0.0015846164517304062,
+                0.00262609810974214,
+                0.0035676559510279377,
+                0.005125654560308506
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 1.4422620039869795e-05,
+              "pooled_actual_l2_norm": 0.006933261750175468,
+              "pooled_cosine": 0.9999981445894546,
+              "pooled_reference_l2_norm": 0.006938692462593732,
+              "pooled_relative_l2_error": 0.0020785789423038528,
+              "row_relative_error_quantiles": [
+                3.283954134594802e-05,
+                0.0007656152949230296,
+                0.002949580950640126,
+                0.01347341374163165,
+                0.060553576690337375,
+                0.8661307129067594
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 1.7773480258447099e-09,
+              "pooled_actual_l2_norm": 0.006936918678461547,
+              "pooled_cosine": 0.9999999999999939,
+              "pooled_reference_l2_norm": 0.006936920280225635,
+              "pooled_relative_l2_error": 2.562157202398899e-07,
+              "row_relative_error_quantiles": [
+                3.2482100016852294e-08,
+                1.4188043672105794e-07,
+                2.5573419813402e-07,
+                6.142640384753929e-07,
+                2.101477934567146e-06,
+                5.212994757005671e-05
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 4.640606655217919e-09,
+              "pooled_actual_l2_norm": 2.8968337845564635e-06,
+              "pooled_cosine": 0.9999987168651102,
+              "pooled_reference_l2_norm": 2.8968260081368228e-06,
+              "pooled_relative_l2_error": 0.001601962507303868,
+              "row_relative_error_quantiles": [
+                0.0010968273722179623,
+                0.001407367688776589,
+                0.0016422230561902703,
+                0.001891246282990494,
+                0.0021050927642229803,
+                0.002291553440182572
+              ],
+              "sample_count": 3150,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                1.743491843440478,
+                2.0244632419806856,
+                2.189454240349627,
+                2.3175050190836743,
+                2.607188455219749,
+                2.869323248571616
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  0.0025035638607979515,
+                  0.0002075605777548636,
+                  3.9742231047833155e-05,
+                  5.858898424730571e-06
+                ],
+                [
+                  0.031677868030025105,
+                  0.009162616360376038,
+                  0.002008095956497734,
+                  0.0009618565901808724
+                ],
+                [
+                  1.0895220226069573,
+                  0.2250971742566663,
+                  0.05924422410672448,
+                  0.0312774212454284
+                ],
+                [
+                  13.593587682745136,
+                  1.1273301955271002,
+                  0.3145923318033439,
+                  0.1730512869211448
+                ],
+                [
+                  56.905243897732205,
+                  5.150702419597186,
+                  1.5568807306582508,
+                  0.8072753280247771
+                ],
+                [
+                  183.1337185420219,
+                  14.0972302429716,
+                  3.4095741949186675,
+                  1.7797124140672624
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.005446855879039515,
+                  0.0004588795585109998,
+                  8.786849696049417e-05,
+                  1.271787816802152e-05
+                ],
+                [
+                  0.07102407456274715,
+                  0.020247975759376872,
+                  0.004477451996752395,
+                  0.002156251545928603
+                ],
+                [
+                  2.398667960910454,
+                  0.4928160248948401,
+                  0.13197772235467709,
+                  0.0691274251117305
+                ],
+                [
+                  28.594849645769877,
+                  2.3749770636760847,
+                  0.6550238222988841,
+                  0.36429628896810273
+                ],
+                [
+                  116.35567799363078,
+                  10.74854161562892,
+                  3.2915286265748267,
+                  1.7026574206407872
+                ],
+                [
+                  383.41507564024255,
+                  28.889108087093867,
+                  7.218696740519337,
+                  3.7369099057644646
+                ]
+              ],
+              "finite_condition_quantiles": [
+                4.555795220944449,
+                14.182132707430547,
+                39.72603883109965,
+                137.18595185619245,
+                381.29895831576096,
+                11177.33882160136
+              ],
+              "log_radius_relative_response_quantiles": [
+                2.1899584275221194e-05,
+                0.0003275877454680136,
+                0.0016925772541666983,
+                0.008860130590387599,
+                0.021960259571225896,
+                0.07282746651023016
+              ],
+              "log_radius_response_norm_quantiles": [
+                4.8775490202885465e-05,
+                0.00039464372801338083,
+                0.004563664048237219,
+                0.014975386196053878,
+                0.024018554202865253,
+                0.03909360211694018
+              ],
+              "numerical_rank_counts": {
+                "4": 3150
+              },
+              "sample_count": 3150,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                1.743491843440478,
+                2.0244632419806856,
+                2.189454240349627,
+                2.3175050190836743,
+                2.607188455219749,
+                2.869323248571616
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  0.0025000766999050995,
+                  0.00020640177288971194,
+                  3.433719192760132e-05,
+                  4.728224356657783e-06
+                ],
+                [
+                  0.031630669853171825,
+                  0.009173385029892437,
+                  0.001986285894021267,
+                  0.0009473161477864522
+                ],
+                [
+                  1.0915320809655298,
+                  0.22537511006134486,
+                  0.05908165690576972,
+                  0.03130329502933271
+                ],
+                [
+                  13.579481796662238,
+                  1.1263283629895953,
+                  0.31438551322083996,
+                  0.17250380005589905
+                ],
+                [
+                  56.98414123379761,
+                  5.151234320246249,
+                  1.5560250284095583,
+                  0.8068441941771011
+                ],
+                [
+                  182.4983978015313,
+                  14.131695101426093,
+                  3.412649901458607,
+                  1.7739469026385142
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.005439269069248958,
+                  0.0004563176468480384,
+                  7.59134303955075e-05,
+                  1.0453916565767912e-05
+                ],
+                [
+                  0.07084714930780138,
+                  0.020284060153168207,
+                  0.004469118726828257,
+                  0.0021481932799000854
+                ],
+                [
+                  2.400278939114274,
+                  0.4928734128628398,
+                  0.13225394840747623,
+                  0.0691470905722939
+                ],
+                [
+                  28.58961458585263,
+                  2.37190094070604,
+                  0.6535483007170675,
+                  0.36511147705948943
+                ],
+                [
+                  116.31678845977981,
+                  10.749663316875882,
+                  3.290708059959394,
+                  1.6989367674484819
+                ],
+                [
+                  382.0849462041653,
+                  28.938460023866988,
+                  7.225208577923475,
+                  3.737465692185342
+                ]
+              ],
+              "finite_condition_quantiles": [
+                4.553405279931083,
+                14.214617382187857,
+                39.68252687165804,
+                137.4167408684476,
+                416.18371840683795,
+                11143.691028483918
+              ],
+              "log_radius_relative_response_quantiles": [
+                1.0508303696252924e-16,
+                9.02025581027559e-16,
+                1.696352886164171e-14,
+                2.4933455901722405e-13,
+                2.1056031526612937e-12,
+                5.416085232510573e-11
+              ],
+              "log_radius_response_norm_quantiles": [
+                6.353962972554806e-18,
+                1.4860545657839512e-16,
+                4.585607788530094e-14,
+                2.689479881802898e-12,
+                7.173641975280653e-11,
+                1.1927944395759385e-09
+              ],
+              "numerical_rank_counts": {
+                "4": 3150
+              },
+              "sample_count": 3150,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 0,
+          "raw_output_rms_quantiles": [
+            91.79382163306222,
+            1521.6825092898441,
+            8950.190029202466,
+            110738.44468795415,
+            428051.8213122389,
+            835784.6380124263
+          ],
+          "sample_count": 3150
+        },
+        "uniform_query0_only": {
+          "epsilon_fraction_quantiles": [
+            7.40793753911647e-16,
+            5.608663379171847e-14,
+            4.098408726984013e-12,
+            8.011711616282832e-09,
+            1.8448902748267408e-06,
+            4.9314217370031875e-05
+          ],
+          "errors": {
+            "composed_vjp_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 2.785921334133036e-06,
+              "pooled_actual_l2_norm": 2.7700636988958815e-06,
+              "pooled_cosine": -0.4679320851470315,
+              "pooled_reference_l2_norm": 3.355152232599887e-08,
+              "pooled_relative_l2_error": 83.03412605437109,
+              "row_relative_error_quantiles": [
+                27.052345876226223,
+                245790.56729511468,
+                418750736.63069963,
+                49776356869.22552,
+                1568705565232.292,
+                51130190514950.84
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_error_against_smooth_fp64": {
+              "pooled_absolute_l2_error": 1147.1138236927216,
+              "pooled_actual_l2_norm": 513223.54944999254,
+              "pooled_cosine": 0.9999978079953438,
+              "pooled_reference_l2_norm": 513623.8348503663,
+              "pooled_relative_l2_error": 0.0022333734259565845,
+              "row_relative_error_quantiles": [
+                0.00023496404596455887,
+                0.0007115095027145366,
+                0.0018272971290939537,
+                0.003731261110473241,
+                0.005591766540005435,
+                0.006322800766610426
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "forward_rounding_gradient_sensitivity": {
+              "pooled_absolute_l2_error": 2.5642462741527796e-06,
+              "pooled_actual_l2_norm": 2.5501908442160133e-06,
+              "pooled_cosine": -0.4134969887632692,
+              "pooled_reference_l2_norm": 3.355152232599887e-08,
+              "pooled_relative_l2_error": 76.42712152484839,
+              "row_relative_error_quantiles": [
+                25.95480402747518,
+                274023.6856706818,
+                407940551.5513389,
+                48608994624.792046,
+                749730187849.2372,
+                19207232778158.863
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "kernel_vjp_error_given_recorded_raw_cotangent": {
+              "pooled_absolute_l2_error": 3.7138778482847e-11,
+              "pooled_actual_l2_norm": 2.7700636988958815e-06,
+              "pooled_cosine": 0.999999999911877,
+              "pooled_reference_l2_norm": 2.770068886274602e-06,
+              "pooled_relative_l2_error": 1.3407167838628746e-05,
+              "row_relative_error_quantiles": [
+                1.7448172299403618e-10,
+                1.0924604760219038e-07,
+                3.274502543980467e-06,
+                5.078935988653611e-05,
+                0.0002407762023265128,
+                0.06666645899646839
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            },
+            "rms_backward_rounding_error": {
+              "pooled_absolute_l2_error": 9.26523951092116e-07,
+              "pooled_actual_l2_norm": 0.0005039882129116601,
+              "pooled_cosine": 0.9999983177052811,
+              "pooled_reference_l2_norm": 0.0005039254960336996,
+              "pooled_relative_l2_error": 0.001838612966370242,
+              "row_relative_error_quantiles": [
+                0.0011620962850593568,
+                0.0014352565798361136,
+                0.0016456340114871645,
+                0.0018811746881107053,
+                0.002047965342345184,
+                0.0020976606344647536
+              ],
+              "sample_count": 210,
+              "zero_actual_count": 0,
+              "zero_reference_count": 0
+            }
+          },
+          "geometry": {
+            "native_output_geometry": {
+              "coefficient_radius_quantiles": [
+                1.8176850689867918,
+                2.055824730316195,
+                2.210172720784632,
+                2.363408246295013,
+                2.640473489809804,
+                2.7241541716797033
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  8.951163305384709e-05,
+                  2.8377953645999996e-17,
+                  9.492645800086799e-19,
+                  2.1780943680716363e-19
+                ],
+                [
+                  0.0007269935071556659,
+                  6.350192220255663e-17,
+                  2.2992974862098035e-17,
+                  2.717327026019842e-18
+                ],
+                [
+                  0.002105875984069072,
+                  1.4175252027556662e-16,
+                  5.369085770906241e-17,
+                  1.1159510527187902e-17
+                ],
+                [
+                  0.008120521311413095,
+                  4.341168027049612e-16,
+                  2.2007168078451461e-16,
+                  1.0794565355667936e-16
+                ],
+                [
+                  0.04000809688331671,
+                  2.9643469930756175e-15,
+                  1.5078686068527907e-15,
+                  4.793111729773021e-16
+                ],
+                [
+                  0.08829341806744599,
+                  4.997763313511874e-15,
+                  2.6304941360246435e-15,
+                  9.358160805101124e-16
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  0.00020999668567887566,
+                  6.026061671490576e-17,
+                  2.0716622687591395e-18,
+                  4.753443892417782e-19
+                ],
+                [
+                  0.001598684885604638,
+                  1.3914107022461097e-16,
+                  5.0701398799656234e-17,
+                  5.9553671039597346e-18
+                ],
+                [
+                  0.004749669974637077,
+                  3.2585218159523725e-16,
+                  1.1928487060027818e-16,
+                  2.5954279049422962e-17
+                ],
+                [
+                  0.017230068250249534,
+                  9.470539467542712e-16,
+                  5.072486125047526e-16,
+                  2.3062882642277013e-16
+                ],
+                [
+                  0.0847219350824276,
+                  6.827477602244522e-15,
+                  3.4943803804257842e-15,
+                  1.090684773425576e-15
+                ],
+                [
+                  0.19722831211731917,
+                  1.1163917359421351e-14,
+                  5.7179009338453584e-15,
+                  2.034181930830256e-15
+                ]
+              ],
+              "finite_condition_quantiles": [
+                7563563016120.185,
+                12509510680812.834,
+                27341278125977.14,
+                53055882586905.4,
+                66756700433064.336,
+                69123052618288.836
+              ],
+              "log_radius_relative_response_quantiles": [
+                0.013091664519808475,
+                0.21759954821484712,
+                1.015697492407074,
+                2.1409217578497337,
+                3.1867688324041996,
+                4.499512079763355
+              ],
+              "log_radius_response_norm_quantiles": [
+                0.0006414950608857637,
+                0.0021183277328120143,
+                0.004526013656299244,
+                0.011236420274609934,
+                0.01636429192046446,
+                0.0189835903906127
+              ],
+              "numerical_rank_counts": {
+                "1": 2,
+                "2": 47,
+                "3": 93,
+                "4": 68
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 142,
+              "zero_spectrum_count": 0
+            },
+            "smooth_fp64_geometry": {
+              "coefficient_radius_quantiles": [
+                1.8176850689867918,
+                2.055824730316195,
+                2.210172720784632,
+                2.363408246295013,
+                2.640473489809804,
+                2.7241541716797033
+              ],
+              "coefficient_tangent_singular_value_quantiles": [
+                [
+                  2.8045545910425694e-15,
+                  2.816996196475322e-17,
+                  9.248938991538103e-19,
+                  1.4645223243761073e-20
+                ],
+                [
+                  1.1566874068615614e-13,
+                  6.57832265503292e-17,
+                  2.3346282474631207e-17,
+                  2.6101710130286022e-18
+                ],
+                [
+                  6.848984656041581e-12,
+                  1.447013290632988e-16,
+                  5.658545801803451e-17,
+                  1.1864691592425007e-17
+                ],
+                [
+                  1.2036386371662347e-08,
+                  4.43693281940936e-16,
+                  2.056612388069928e-16,
+                  1.0029421078528454e-16
+                ],
+                [
+                  1.3690645293985465e-05,
+                  2.1971222276135404e-15,
+                  1.4260719464877301e-15,
+                  6.138353997189726e-16
+                ],
+                [
+                  0.0031362642839695217,
+                  4.415264330439103e-15,
+                  2.291913474559798e-15,
+                  8.629088394381282e-16
+                ]
+              ],
+              "direction_tangent_singular_value_quantiles": [
+                [
+                  5.0977970052964364e-15,
+                  6.147774660909154e-17,
+                  2.0184760222117942e-18,
+                  3.196153849054047e-20
+                ],
+                [
+                  2.604453505774742e-13,
+                  1.4629378559055926e-16,
+                  5.194513030124443e-17,
+                  5.970137005582365e-18
+                ],
+                [
+                  1.5549603108544315e-11,
+                  3.2483603533851347e-16,
+                  1.2684666758842385e-16,
+                  2.578462848467447e-17
+                ],
+                [
+                  2.6087355079400254e-08,
+                  9.764636336412928e-16,
+                  4.747767366198005e-16,
+                  2.2008395312036386e-16
+                ],
+                [
+                  3.0756206266227265e-05,
+                  4.794967544006762e-15,
+                  3.2748690734179095e-15,
+                  1.2905320495385555e-15
+                ],
+                [
+                  0.00700573298236832,
+                  9.86274119299705e-15,
+                  5.1196367294453396e-15,
+                  1.875703576478326e-15
+                ]
+              ],
+              "finite_condition_quantiles": [
+                1579.9155851857977,
+                33023.63498943887,
+                370566.4446344604,
+                640907724.7973845,
+                7461339200452.949,
+                26637101730977.324
+              ],
+              "log_radius_relative_response_quantiles": [
+                0.013091664520128896,
+                0.21759954813249274,
+                1.016064141860688,
+                2.1409218526035634,
+                3.186754247064532,
+                4.499511205790585
+              ],
+              "log_radius_response_norm_quantiles": [
+                4.661538736810635e-15,
+                2.2436135509593756e-13,
+                1.8758048774741174e-11,
+                2.9094956786023748e-08,
+                2.3148852446459697e-06,
+                0.00010164468131669657
+              ],
+              "numerical_rank_counts": {
+                "4": 210
+              },
+              "sample_count": 210,
+              "undefined_condition_count": 0,
+              "zero_spectrum_count": 0
+            }
+          },
+          "query0_count": 210,
+          "raw_output_rms_quantiles": [
+            0.14239778002364414,
+            11.17374918024074,
+            494.0049865100233,
+            4223.027501309888,
+            18198.139952849637,
+            36741.03142822962
+          ],
+          "sample_count": 210
+        }
+      }
+    }
+  },
+  "source_gpu_jobs": {
+    "batch_functional_probe": "226730",
+    "coefficient_vjp_probe": "226731"
+  },
+  "sources": {
+    "batch_functional_probe": {
+      "path": "experiments/transformer_pp/runs/rc95f2055e96d/batch_functional_probe.json",
+      "sha256": "bcd30375c983af92985ad03aa53207083932668d5f09c00de2e99aaa03d7380a"
+    },
+    "coefficient_vjp_probe": {
+      "path": "experiments/transformer_pp/runs/rc95f2055e96d/coefficient_vjp_probe.json",
+      "sha256": "f27cf9034bdabeb072d425839bf176c9bf2fb0f5951db97cb28acda196a8dcb5"
+    }
+  },
+  "vjp_sequence_index": 0
+}

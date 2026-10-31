@@ -126,7 +126,7 @@ def test_qualification_passes_with_identity_key_factors(taylor, tmp_path):
 
 
 def test_launcher_scope_and_taylor_parent():
-    from experiments.transformer_200m_4b.launch_coefficient_fit import fitting_scope
+    from experiments.transformer_pp.launch_coefficient_fit import fitting_scope
 
     assert fitting_scope("free_per_example_query_key_coefficients", 256, 256) == (
         256, "free_query_key_coefficients_full_batch")

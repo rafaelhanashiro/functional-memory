@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from . import create_run, load_study, regenerate_index, run_directory, validate_record
+from . import create_run, load_study, regenerate_index, rename_study, run_directory, validate_record
 from .selections import refresh_selection
 
 
@@ -44,6 +44,16 @@ def main() -> None:
     )
     refresh = commands.add_parser("refresh", help="re-pin a result's selections to its runs' scientific files")
     refresh.add_argument("result", type=Path, nargs="+")
+    rename = commands.add_parser(
+        "rename-study",
+        help="after `git mv experiments/<old> experiments/<new>`, point run records, result selections, and "
+             "sweep.yaml at the new folder; frozen recipes and execution history keep their paths")
+    rename.add_argument("study", type=Path, help="the renamed study folder, experiments/<new>")
+    rename.add_argument("--from", dest="old", required=True, metavar="OLD", help="the previous folder name")
+    rename.add_argument("--to", dest="new", required=True, metavar="NEW", help="the new folder name")
+    rename.add_argument(
+        "--artifact-root", action="append", default=[], metavar="ROOT",
+        help="another root whose experiments/<old>/ tree was moved as well, such as a cluster's artifact root")
     args = parser.parse_args()
     if args.command == "create":
         recipe = yaml.safe_load(args.config.read_text())
@@ -119,6 +129,9 @@ def main() -> None:
             print("\n".join(f"{result}/{change}" for change in changes) or f"{result}: selections already current")
     elif args.command == "index":
         print(regenerate_index(args.study))
+    elif args.command == "rename-study":
+        changes = rename_study(args.study, args.old, args.new, tuple(args.artifact_root))
+        print("\n".join(changes) or f"{args.study}: nothing referenced experiments/{args.old}")
     else:
         study = args.study.parent if args.study.name == "sweep.yaml" else args.study
         runs = ([run_directory(study, run) for run in args.runs] if args.runs

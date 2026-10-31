@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the worktree root}"
 LAUNCH_COMMIT="${1:?Pass the committed source}"
-git diff --exit-code "$LAUNCH_COMMIT" -- scaffolds/transformer ':!scaffolds/transformer/validation' experiments/transformer_200m_4b/acceptance.py
+git diff --exit-code "$LAUNCH_COMMIT" -- scaffolds/transformer ':!scaffolds/transformer/validation' experiments/transformer_pp/acceptance.py
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda PYTHONUNBUFFERED=1

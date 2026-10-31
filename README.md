@@ -11,7 +11,7 @@ a result collection can combine runs from several studies.
 | Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
-| Transformer++: attention variants in its 200M recipe, token budget per run (1× and 2.5× Chinchilla) | [Results and exploratory diagnostics](experiments/transformer_200m_4b/results/README.md) | [Recipe and runs](experiments/transformer_200m_4b/README.md) |
+| Transformer++: attention variants in its 200M recipe, token budget per run (1× and 2.5× Chinchilla) | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
@@ -21,9 +21,9 @@ training behavior, such as gradient spikes, are in
 
 The established 10B attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
 The separately requested Transformer++ study owns its recipe, runs, results, and exploratory
-diagnostics under `experiments/transformer_200m_4b/`; the folder keeps its original name. Mechanisms and sweeps remain
+diagnostics under `experiments/transformer_pp/`; the folder keeps its original name. Mechanisms and sweeps remain
 runs within their applicable study. The [10B run index](experiments/attention_scaling/runs.csv)
-and [Transformer++ run index](experiments/transformer_200m_4b/runs.csv) expose the settings,
+and [Transformer++ run index](experiments/transformer_pp/runs.csv) expose the settings,
 home cluster, training budget, status, and outcome. Each result collection selects
 its inputs explicitly, so the same run can participate in several comparisons.
 

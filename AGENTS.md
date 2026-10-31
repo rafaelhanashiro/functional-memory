@@ -44,12 +44,12 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 - The established 10B-token shared-Transformer attention experiments belong to
   `experiments/attention_scaling/`. The user-requested Transformer++ study is isolated in
-  `experiments/transformer_200m_4b/` (the folder keeps its original name; the token budget
-  is a per-run setting with 1× Chinchilla as the reference). Its name is its recipe: call it
+  `experiments/transformer_pp/` (the token budget is a per-run setting with 1× Chinchilla
+  as the reference). Its name is its recipe: call it
   Transformer++ in READMEs, indexes, figures, and reports, never by its size or token budget
   ("200M", "4B", "1x"). The study holds its `recipe.yaml`, run membership,
   `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
-  diagnostics belong under `experiments/transformer_200m_4b/results/exploratory/<topic>/`,
+  diagnostics belong under `experiments/transformer_pp/results/exploratory/<topic>/`,
   with their runs in the same study. Add runs deliberately; do not reproduce the old
   grid automatically. Reusable implementations remain in the shared scaffolds.
   Its nested results follow all selection, provenance, and regeneration rules below;
@@ -379,3 +379,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   outputs, and duplicated documentation. An older active worktree keeps its frozen
   execution layout until its jobs finish; migrate retained artifacts into this layout
   when integrating it, without editing live execution paths.
+- Renaming a study folder is `git mv experiments/<old> experiments/<new>` followed by
+  `python -m scaffolds.records rename-study experiments/<new> --from <old> --to <new>`,
+  which repoints run records, selections, and `sweep.yaml`; frozen recipes and execution
+  history keep their recorded paths. A branch that predates the rename merges with
+  `git -c merge.directoryRenames=true merge <branch>`, and the same command then
+  handles the runs it added. Another cluster moves its artifact tree and repoints its
+  runs with `--artifact-root`.

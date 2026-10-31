@@ -1,0 +1,66 @@
+schema_version: 1
+experiment: transformer_pp
+recipe_version: transformer_pp_v1
+home_cluster: kennel
+artifact_root: /data/cl/u/rafah/home/projects/functional-memory
+data_manifests:
+  train:
+    path: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+    sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval:
+    path: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+dependency_lock_sha256: de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0
+run_ids:
+- r3c0f21ab7dce
+- rd7bf9bc37cb6
+- r0963b3e6610b
+- r22854de31b96
+- r5b28697413fa
+- r28fb40a1d0e9
+- r0332cff0b0c0
+- r1f2f749ff099
+- r7505c6d49711
+- r2b22f2ff6461
+- r4339a245820e
+- r816ab0fbe119
+- rc95f2055e96d
+- rda6029c3286f
+- rceea84f19f6b
+- rec777591a61b
+- rc76733052ecb
+- r594b3706ecd7
+- r84e37a39e2a0
+- rf033859dd68e
+- r917f3650296e
+- r1d578d107115
+- r111843b4c7cc
+- r8ccda981be2b
+- rfe12e5c36e94
+- r4f1682c1b54d
+- raa81f92b6aaf
+- reb9b5be4ff1b
+- r82203a85ef8e
+- ra988273933f7
+- r501f5cca0d4c
+- r536dee0929d5
+- r2459b843ca81
+- r9040f12f3d80
+- r0c0f3634685c
+- r74a50aca921e
+- rd5ea49c1fde6
+- rca97cc9db8f2
+- rb74fa2ebede6
+- r043b150cde03
+- r2e081e09c19a
+- rae91f24b06b4
+- r7e6a68545d4f
+- r673e14eab803
+- rddcbe6dfb1eb
+- r751984d1ca00
+- r0ea4c732c5ac
+- r6c9bcd661078
+- r77bca86ef253
+- rb7e83a4b653f
+- rcaff0dfb095f
+- r82a80d3091e2

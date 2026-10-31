@@ -14,7 +14,7 @@ LAUNCH_COMMIT="${1:?Expected committed source}"
 MODE="${2:-all}"
 SAMPLES="${3:-10}"
 if [[ "$MODE" != all && "$MODE" != kernel && "$MODE" != training ]]; then exit 2; fi
-python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_200m_4b --scaffold transformer
+python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_pp --scaffold transformer
 source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$PWD/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda OMP_NUM_THREADS=8 PYTHONUNBUFFERED=1 WANDB_MODE=disabled
@@ -34,8 +34,8 @@ fi
 if [[ "$MODE" != kernel ]]; then
  for RUN_ID in ra2b851b0dd7e r833fbb6eedcb rfd48f7bbe9f4; do
   "$PYTHON" -m scaffolds.transformer.benchmarks.benchmark_training_throughput \
-    --config "experiments/transformer_200m_4b/runs/$RUN_ID/config.yaml" \
-    --experiment transformer_200m_4b --warmup 3 --iterations "$SAMPLES" \
+    --config "experiments/transformer_pp/runs/$RUN_ID/config.yaml" \
+    --experiment transformer_pp --warmup 3 --iterations "$SAMPLES" \
     --scratch "$PWD/.cache/query-key-profile/pilot-$SLURM_JOB_ID-$RUN_ID" \
     --output "$OUTPUT/training-$RUN_ID.json"
  done

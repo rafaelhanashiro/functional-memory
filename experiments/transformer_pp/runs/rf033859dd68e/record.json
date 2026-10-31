@@ -1,0 +1,189 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rf033859dd68e/completion.json",
+      "sha256": "3b75081b9f8f75b271e371f54b36d8b5f74f427e082372af42a776102c758e67",
+      "size_bytes": 2572
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rf033859dd68e/metadata.json",
+      "sha256": "1a92c09e3507f83f3dc56fe9d083a2a8a567c6d22a56244cf3f8c040ae7ced91",
+      "size_bytes": 1142
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rf033859dd68e/metrics.jsonl",
+      "sha256": "65ec8f296f80ae5377581a7a8ee90da7ddb50faff3aeb7cfd0ad451b8d1d32af",
+      "size_bytes": 51373
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf033859dd68e/training.log",
+      "sha256": "37a0464078ad0a2811c9daae5aee044b7407f0862c34af74e10ea12ec3d830a1",
+      "size_bytes": 1671
+    }
+  ],
+  "attempts": [
+    {
+      "attention_backend": "mosaic",
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-generator-1k-4b/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-10-27T21:04:15.741974+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "node": "akita.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-generator-1k-4b/scaffolds/transformer/.venv-cuda13/bin/python",
+      "slurm_job_id": "227948",
+      "source_commit": "dbbe34f542feab662ea2fda3227cabae84aa2340",
+      "started_utc": "2026-10-27T21:03:21.238214+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/rf033859dd68e/completion.json",
+    "sha256": "3b75081b9f8f75b271e371f54b36d8b5f74f427e082372af42a776102c758e67",
+    "size_bytes": 2572
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf033859dd68e/config.yaml",
+    "sha256": "5b0bc6c46ead7557f933f626ca1c5807b14fc853e69d895b615120bbcfb31a7a"
+  },
+  "evaluation_outcome": {
+    "backbone_sha256": "fba0e4975cd3dcc9d61a008cf84a03a901a3dec92e0b7246dfa0c4a6a9c13b77",
+    "checks": [
+      {
+        "deterministic_replay": true,
+        "fitting_replay_absolute_error": 2.8837239369750023e-05,
+        "generator_sha256": "313b902b9e9f881b66cef3d0ec1d9e83919b975a6648891847cb11140a71f726",
+        "parameters_unchanged": true,
+        "role": "pretrained"
+      },
+      {
+        "deterministic_replay": true,
+        "fitting_replay_absolute_error": 1.6380276065319777e-05,
+        "generator_sha256": "ddbc011e6f66b7f6182d90fd0ebc9fee5108430009bb4a038c4b46a0952c16db",
+        "parameters_unchanged": true,
+        "role": "query_generator_1024_sequences_m4_head_scale"
+      }
+    ],
+    "finished_utc": "2026-10-27T21:04:14.596696+00:00",
+    "interpretation": "Frozen shared generators evaluated on the next 256 packed sequences; no adaptation on the new batch.",
+    "measurements": [
+      {
+        "batch": "fitting",
+        "batch_sha256": "af762b310d499fd96c311391a7c9ff24b9ce597cb69e6f5cabca23f58e2aa383",
+        "checkpoint_step": 7500,
+        "nll": 2.69035316654481,
+        "perplexity": 14.736879574350803,
+        "prediction_tokens": 2097152,
+        "role": "pretrained",
+        "sequence_count": 1024,
+        "source_run_id": "r2b22f2ff6461",
+        "start_sequence": 0
+      },
+      {
+        "batch": "heldout",
+        "batch_sha256": "438ab4776bfc1ca9235ca18fcdee5a15f223ca91215d368287968426e114044c",
+        "checkpoint_step": 7500,
+        "nll": 2.7081232564523816,
+        "perplexity": 15.001095870281679,
+        "prediction_tokens": 524288,
+        "role": "pretrained",
+        "sequence_count": 256,
+        "source_run_id": "r2b22f2ff6461",
+        "start_sequence": 1024
+      },
+      {
+        "batch": "fitting",
+        "batch_sha256": "af762b310d499fd96c311391a7c9ff24b9ce597cb69e6f5cabca23f58e2aa383",
+        "checkpoint_step": 4452,
+        "nll": 2.420909572567325,
+        "perplexity": 11.256092893396263,
+        "prediction_tokens": 2097152,
+        "role": "query_generator_1024_sequences_m4_head_scale",
+        "sequence_count": 1024,
+        "source_run_id": "r84e37a39e2a0",
+        "start_sequence": 0
+      },
+      {
+        "batch": "heldout",
+        "batch_sha256": "438ab4776bfc1ca9235ca18fcdee5a15f223ca91215d368287968426e114044c",
+        "checkpoint_step": 4452,
+        "nll": 2.8429811811074615,
+        "perplexity": 17.16686686731833,
+        "prediction_tokens": 524288,
+        "role": "query_generator_1024_sequences_m4_head_scale",
+        "sequence_count": 256,
+        "source_run_id": "r84e37a39e2a0",
+        "start_sequence": 1024
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
+  "generator_run_ids": [
+    "r84e37a39e2a0"
+  ],
+  "home_cluster": "kennel",
+  "label": "query-generator-m4-1024-head-scale-transfer",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf033859dd68e/training.log",
+    "sha256": "37a0464078ad0a2811c9daae5aee044b7407f0862c34af74e10ea12ec3d830a1",
+    "size_bytes": 1671
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf033859dd68e/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/rf033859dd68e/metadata.json",
+    "sha256": "1a92c09e3507f83f3dc56fe9d083a2a8a567c6d22a56244cf3f8c040ae7ced91",
+    "size_bytes": 1142
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rf033859dd68e/metrics.jsonl",
+    "sha256": "65ec8f296f80ae5377581a7a8ee90da7ddb50faff3aeb7cfd0ad451b8d1d32af",
+    "size_bytes": 51373
+  },
+  "name": "query-generator-m4-1024-head-scale-transfer",
+  "parent_run_id": "r2b22f2ff6461",
+  "parent_study": "transformer_pp",
+  "record_schema_version": 1,
+  "run_id": "rf033859dd68e",
+  "runtime": {
+    "attention_backend": "mosaic",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-generator-1k-4b/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B300 SXM6 AC",
+    "node": "akita.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-generator-1k-4b/scaffolds/transformer/.venv-cuda13/bin/python",
+    "slurm_job_id": "227948",
+    "source_commit": "dbbe34f542feab662ea2fda3227cabae84aa2340",
+    "started_utc": "2026-10-27T21:03:21.238214+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "seed": 42,
+  "status": "complete"
+}

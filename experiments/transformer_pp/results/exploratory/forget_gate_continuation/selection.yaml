@@ -1,0 +1,54 @@
+schema_version: 1
+opened: '2026-10-28'
+question: Does the matched continuation detect the forget gate, which beats fixed
+  Taylor in pretraining?
+settings:
+  metric: validation_perplexity
+  parent_run_id: r816ab0fbe119
+  parent_step: 7500
+  updates: 2000
+  evaluation_every: 100
+  learning_rate: 0.0001
+  new_parameter_learning_rate: 0.001
+  primary_comparison: terminal held-out NLL/PPL at the same continuation update
+  validation_best: reported separately from terminal
+  control: reused fixed-Taylor continuation r82203a85ef8e
+runs:
+- study: transformer_pp
+  run_id: r82203a85ef8e
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r82203a85ef8e/config.yaml
+      sha256: bed709ea6000043993783b76fc27d3ca4c1c2920e83a54f70a272eebef46e150
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r82203a85ef8e/metrics.jsonl
+      sha256: c28418b4eb00f040be3148b298274ae7ebcf61ed6d2e15c49182b7654ccd5481
+    completion.json:
+      path: experiments/transformer_pp/runs/r82203a85ef8e/completion.json
+      sha256: 8f0888c346b25ae5ec953a849ba9a3d34caaa351daa7ad381ac4c1618414e7c8
+    metadata.json:
+      path: experiments/transformer_pp/runs/r82203a85ef8e/metadata.json
+      sha256: f716b9ce4eb0867f6e7327164aceac0cbfc37e7da1a8a2e0d57a6b5e6034b28a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r82203a85ef8e/best_validation.json
+      sha256: 18609d814b9a87d132683cb5253d57ed8037373bbafbf8c155980a2ec9fe2467
+- study: transformer_pp
+  run_id: rd5ea49c1fde6
+  role: query_forget_gate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd5ea49c1fde6/config.yaml
+      sha256: 9bbe4d4d56b5c5bd9196d2f45397833804da3e803c25cd8df7ec5696af204e2e
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rd5ea49c1fde6/metrics.jsonl
+      sha256: d791ac559b54b4ad36c934ed9dc41128c473ee9254ef788b706913d72a2367a2
+    completion.json:
+      path: experiments/transformer_pp/runs/rd5ea49c1fde6/completion.json
+      sha256: d4965802004c8553ce3da5b00f974d862e0b8c73576e8ac7021faab03ab7f109
+    metadata.json:
+      path: experiments/transformer_pp/runs/rd5ea49c1fde6/metadata.json
+      sha256: b8d7a6f90f30aed523c562699b2db4499ee0b47fcecea5e928a224e1f8a07bac
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rd5ea49c1fde6/best_validation.json
+      sha256: a4e1ff14d95fce82540b810380af096e02150b5fd75d516ba85f550b8d168125

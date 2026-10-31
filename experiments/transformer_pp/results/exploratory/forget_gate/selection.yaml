@@ -1,0 +1,88 @@
+topic: forget_gate
+study: transformer_pp
+comparison:
+  metric: held-out validation perplexity
+  tokens_per_update: 524288
+  report:
+  - terminal (update 7570)
+  - validation-best
+runs:
+- study: transformer_pp
+  run_id: r111843b4c7cc
+  label: query-m4-forget-gate
+  role: forget_gate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r111843b4c7cc/config.yaml
+      sha256: 6b7a2c55f5c44500a6e1761cb5cf6dc28d3761448f826731fceb3e644bdf52c5
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r111843b4c7cc/metrics.jsonl
+      sha256: 09b7c0905423d4d6d373f9193d87a1fffe15f65cca5623bbdb9353f3530bc728
+    completion.json:
+      path: experiments/transformer_pp/runs/r111843b4c7cc/completion.json
+      sha256: 64ebe8537a2976234408f3e584961f5680dd1bcbe0d0644f945cfb850e61f1d6
+    metadata.json:
+      path: experiments/transformer_pp/runs/r111843b4c7cc/metadata.json
+      sha256: 1ebe0eaabacd53dda41a0ae26b5d5fa38441241e9be0f2dea7867f919a33e4f9
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r111843b4c7cc/best_validation.json
+      sha256: d4a7512dc680323361dea814b1702dadd92ac293f125b3d239227ef57d2489b0
+- study: transformer_pp
+  run_id: r2b22f2ff6461
+  label: query-m4-head-scale
+  role: tanh_query
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9
+- study: transformer_pp
+  run_id: r816ab0fbe119
+  label: fixed-m4-head-scale
+  role: fixed_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914
+- study: transformer_pp
+  run_id: r82a80d3091e2
+  role: forget_gate_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r82a80d3091e2/config.yaml
+      sha256: ba57a2a3595634092de292c42b7d9a862fe51289054573e52b16e5234416ed81
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r82a80d3091e2/metrics.jsonl
+      sha256: 74c2b852dbce67192ae133135a85f4bf2a9a022b11afeb757d301cf0a61baea7
+    completion.json:
+      path: experiments/transformer_pp/runs/r82a80d3091e2/completion.json
+      sha256: 42b4edc84a97e80bfd3f1827e6aecc9492028b3812ed5044e663596d3f2d2d04
+    metadata.json:
+      path: experiments/transformer_pp/runs/r82a80d3091e2/metadata.json
+      sha256: 0ae7522e7ac2a9ec56d472dc6bde807441687caa556c81d4c30bea86ed18cf09
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r82a80d3091e2/best_validation.json
+      sha256: 1b8cd8f7387d3ed93337ab9158dad4e6cacb7fcc6779c9dc5cad7ca2b8f01c53
