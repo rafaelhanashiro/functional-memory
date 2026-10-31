@@ -1,0 +1,116 @@
+schema_version: 1
+opened: '2026-10-31'
+question: How do key width d_K and degree m shape validation perplexity for tanh query
+  coefficients with a decayed projection W in Transformer++ at 1x?
+settings:
+  metric: validation-best perplexity (terminal reported separately)
+  grid:
+    qk_head_dim:
+    - 8
+    - 16
+    - 32
+    - 64
+    attention_degree:
+    - 2
+    - 4
+    - 8
+  fixed: 14 heads, value_head_dim 64, canonical QK RMSNorm with per-head scale, head
+    RMSNorm output, Mosaic, 4B tokens (7,570 updates)
+  existing_cell: d_K = 64, m = 4 is query-m4-w-decay rca97cc9db8f2, the same recipe
+runs:
+- study: transformer_pp
+  run_id: r7bede0f75198
+  role: query_decay_dk8_m2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7bede0f75198/config.yaml
+      sha256: 1e72c273462a06c441c9f4972b58d096a4299a5a037f7616553d276166f3c5b3
+- study: transformer_pp
+  run_id: r1c80ab3a466b
+  role: query_decay_dk8_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1c80ab3a466b/config.yaml
+      sha256: 42b0c41d4126df04c17a9996259608113267b60ef419ce9b32f692e88de88d83
+- study: transformer_pp
+  run_id: r16b23893884d
+  role: query_decay_dk8_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r16b23893884d/config.yaml
+      sha256: 86c7df0a9f03354e46671838bb3f6432f49592ce1df1253c9ea1569caa0dfed7
+- study: transformer_pp
+  run_id: rc90fb11d4772
+  role: query_decay_dk16_m2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc90fb11d4772/config.yaml
+      sha256: ca9cebff277efede24e7c883a59be49fb8b7dfd2217dc8f21267ea5825155989
+- study: transformer_pp
+  run_id: rb5fe0aef572a
+  role: query_decay_dk16_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb5fe0aef572a/config.yaml
+      sha256: 8b511dc20394b6d506e94a288883fa44d3335dc4a98e7a5d666c714c24ac6176
+- study: transformer_pp
+  run_id: rd10c2ebe1181
+  role: query_decay_dk16_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd10c2ebe1181/config.yaml
+      sha256: c128ec08c1a832752c0c82fe86eb134b2fd7f56b7bc5692c350fe82b82f6c166
+- study: transformer_pp
+  run_id: r18d67098c780
+  role: query_decay_dk32_m2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r18d67098c780/config.yaml
+      sha256: 98e582617f9f2365749ded54fd3a67c928221960cdf9dbdd9d8360e9c929dccb
+- study: transformer_pp
+  run_id: rcb1f56f31981
+  role: query_decay_dk32_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rcb1f56f31981/config.yaml
+      sha256: 3ae91c68910c3bafce801e965204a3358056cfcff114512f7810c954a69b262f
+- study: transformer_pp
+  run_id: rf5b51bd384bc
+  role: query_decay_dk32_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf5b51bd384bc/config.yaml
+      sha256: ca1ace27397450aadb714fd441c11075a5ba69a071decdde06f6c8b59dd90d58
+- study: transformer_pp
+  run_id: rd6b4d16d81bb
+  role: query_decay_dk64_m2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd6b4d16d81bb/config.yaml
+      sha256: 636924229735ba73a51ff60a582216c005cf6ff33cbb8c0331db5931783dd773
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: query_decay_dk64_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: query_decay_dk64_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2

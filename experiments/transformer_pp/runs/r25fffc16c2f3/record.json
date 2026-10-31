@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml",
+    "sha256": "ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-dk64-w-decay",
+  "name": "query-m8-dk64-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r25fffc16c2f3",
+  "status": "planned"
+}
