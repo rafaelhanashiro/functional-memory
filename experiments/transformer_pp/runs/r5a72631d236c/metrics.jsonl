@@ -1,0 +1,3 @@
+{"grad_norm": 0.6175392270088196, "learning_rate": 2.9296875e-07, "step": 1, "train_loss": 10.578453063964844, "train_step_seconds": 3.324507122859359, "training_tokens": 524288}
+{"grad_norm": 0.618569552898407, "learning_rate": 2.9296874999999996e-06, "step": 10, "train_loss": 10.567283630371094, "train_step_seconds": 1.9449189407750964, "training_tokens": 5242880}
+{"grad_norm": 0.6255209445953369, "learning_rate": 5.859374999999999e-06, "step": 20, "train_loss": 10.535701751708984, "train_step_seconds": 1.9450020622462034, "training_tokens": 10485760}

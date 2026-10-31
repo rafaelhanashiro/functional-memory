@@ -11,6 +11,37 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Native FLA Gated DeltaNet (2026-10-31)
+
+The [native-runtime qualification](native_fla_gdn.json) passed on one NVIDIA B300
+SXM6 AC in job 230994 at source `fa2d034f`. It uses the pinned upstream FLA model,
+200,205,878 parameters, nine layers, three heads with K=256/V=512, context 2048,
+global batch 256 and microbatch 8, through CUDA PyTorch with BF16 autocast and FP32
+master parameters. Model construction, training, fused loss, validation and full
+optimizer checkpointing all passed at the production dimensions.
+
+The CPU suite passed 60 runtime cases in the allocation. Four native-record tests
+and 50 existing record/selection cases passed separately on CPU. Tests verify
+upstream initialization/defaults, all-parameter weight decay, stock TorchTitan
+schedule boundaries, next-token alignment, atomic checkpoints, signal forwarding,
+and interrupted finalization.
+
+An uninterrupted three-update pilot was compared with two updates followed by a
+fresh-process restore and one update. All 662 compared tensors and 811 scalar
+state entries matched exactly, including model, optimizer, RNG and input cursor;
+the final training loss, gradient norm and validation metrics also matched exactly.
+The pilot checkpoints were then removed. This qualifies resume and finite short
+training on B300, not convergence or numerical stability over a complete run.
+
+Cold compilation made the first update take 308.43 seconds. The next two global
+updates took 1.991 and 1.984 seconds, projecting approximately 11.3 hours for
+20,480 training updates before evaluation/checkpoint overhead. The sampled
+256-sequence validation took 0.761 seconds. This is a short throughput sample,
+not a guaranteed end-to-end runtime. Exact environment, source, configuration and
+data identities are in the linked record. Reproduce through
+`python -m scaffolds.transformer.native_fla.launch --run <canonical-run-directory> --acceptance`
+using that runtime's locked environment and a committed frozen execution set.
+
 ### Acceptance runtime projection (2026-10-29)
 
 Acceptance times cold diagnostic/evaluation calls separately, then collects warm
