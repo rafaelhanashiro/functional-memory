@@ -10,7 +10,8 @@ with the pretrained backbone frozen. Its fitting
 perplexity is not held-out validation perplexity and enters no canonical
 pretraining comparison. Findings and interpretation belong to the topic README.
 
-The [exploratory index](exploratory/README.md) lists open questions. Refresh the
+The [exploratory index](exploratory/README.md) lists open questions, and the
+[diagnostics index](diagnostics/README.md) lists closed records of model behavior. Refresh the
 oracle's explicit selection from the repository/worktree root with:
 
 ```bash
