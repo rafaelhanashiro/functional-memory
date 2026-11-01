@@ -18,9 +18,11 @@
   "resolved_backend": "upstream_fla_chunk",
   "slurm_job_id": "231004",
   "source_commit": "fa2d034fde0eec9165ef49dd5e844e2f60d6c27f",
-  "started_utc": "2026-10-31T05:15:32.786812+00:00",
-  "status": "running",
+  "started_utc": "2026-10-31T15:09:54.587651+00:00",
+  "status": "complete",
+  "step": 20480,
   "torch_compile": false,
+  "updated_utc": "2026-10-31T16:01:12.019236+00:00",
   "versions": {
     "flash-linear-attention": "0.6.0",
     "torch": "2.9.1+cu130",
