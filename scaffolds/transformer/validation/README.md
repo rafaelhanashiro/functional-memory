@@ -13,6 +13,18 @@ for these synthetic checks. The authoritative record is
 
 ### Native FLA Gated DeltaNet (2026-10-31)
 
+The native configuration also supports explicit training-token budgets while
+preserving all architecture and optimizer values except the horizon and
+proportional warmup. At 7,570 updates, warmup is 379 updates (5%, rounded half up).
+The extended CPU suite passed 87 runtime cases and four native-record cases.
+Added checks cover budget rounding, unchanged default recipes and model settings,
+the shorter schedule's first/peak/final learning rates, and resumed-step indexing.
+The [1× recipe qualification](native_fla_1x.json) passed on B300 in job 231755
+at source `d4fcd98c`: the full-model three-update control and two-plus-one
+fresh-process resume matched exactly across 662 tensors, RNG/input state and
+training/validation metrics. Warm updates took 1.981 and 2.038 seconds. Each run's
+acceptance record also retains its qualification identity and outcome.
+
 The [native-runtime qualification](native_fla_gdn.json) passed on one NVIDIA B300
 SXM6 AC in job 230994 at source `fa2d034f`. It uses the pinned upstream FLA model,
 200,205,878 parameters, nine layers, three heads with K=256/V=512, context 2048,
