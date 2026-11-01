@@ -1,0 +1,23 @@
+question: How do the Transformer++ attention variants use context beyond their 2,048-token
+  training length, and at 4,096 tokens?
+settings:
+  metric: per-position validation NLL
+  comparison: 2,048-token checkpoints scored at 4,096 tokens; source checkpoints are
+    pinned by the evaluation run's recipe
+runs:
+- study: transformer_pp
+  run_id: r8e4d56dfc830
+  role: extrapolation_evaluation
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml
+      sha256: 6809828a3e4de911fb88131240e74728db727c4448a421a08b7bf056c559ae38
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r8e4d56dfc830/metrics.jsonl
+      sha256: 5260ae4d8791d3aa7e4de3e0fb156f2e0cf683c423ac078413e0edb2d6ac4c3b
+    completion.json:
+      path: experiments/transformer_pp/runs/r8e4d56dfc830/completion.json
+      sha256: 6901cac49c34de5800833937554b536d6ac4e0b12654f517c0754d627827b992
+    metadata.json:
+      path: experiments/transformer_pp/runs/r8e4d56dfc830/metadata.json
+      sha256: 0146ef3871af93b43ac456e63d14e12fe895623e554a3cf6aa23c88c617c24f6
