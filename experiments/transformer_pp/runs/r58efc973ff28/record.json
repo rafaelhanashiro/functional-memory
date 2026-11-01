@@ -3,9 +3,34 @@
     "path": "experiments/transformer_pp/runs/r58efc973ff28/config.yaml",
     "sha256": "c945d54c36573fd03b1fa9ac31237a44ed8c136e7d288c01c5d0e04007eacd27"
   },
+  "home_cluster": "kennel",
   "label": "query-m4-forget-gate-no-rope-wdecay-4k",
   "name": "query-m4-forget-gate-no-rope-wdecay-4k",
   "record_schema_version": 1,
   "run_id": "r58efc973ff28",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:b300:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=48:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r58efc973ff28",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k-train/experiments/transformer_pp/runs/r58efc973ff28/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k-train/experiments/transformer_pp/runs/r58efc973ff28/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r58efc973ff28/config.yaml",
+      "60bd76662e41290bf6b3f9b963d0c618a0844c6b",
+      "1",
+      "B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "231953",
+    "submitted_utc": "2026-11-01T05:41:06.348722+00:00"
+  }
 }

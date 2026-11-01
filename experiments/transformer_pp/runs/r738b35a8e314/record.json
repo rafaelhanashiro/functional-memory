@@ -3,9 +3,34 @@
     "path": "experiments/transformer_pp/runs/r738b35a8e314/config.yaml",
     "sha256": "797dc8ab65a5ba346f1b8dfaaa3ffb8d1fc4bc9a3891598197b6535d120ef820"
   },
+  "home_cluster": "kennel",
   "label": "query-m4-wdecay-4k",
   "name": "query-m4-wdecay-4k",
   "record_schema_version": 1,
   "run_id": "r738b35a8e314",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r738b35a8e314",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k-train/experiments/transformer_pp/runs/r738b35a8e314/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k-train/experiments/transformer_pp/runs/r738b35a8e314/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r738b35a8e314/config.yaml",
+      "60bd76662e41290bf6b3f9b963d0c618a0844c6b",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "231952",
+    "submitted_utc": "2026-11-01T05:41:06.163330+00:00"
+  }
 }
