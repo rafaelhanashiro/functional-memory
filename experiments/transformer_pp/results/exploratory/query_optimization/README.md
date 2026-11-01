@@ -63,9 +63,55 @@ in a host loop; the new runs use the shared trainer's compiled accumulation loop
 The averaging, clipping, and AdamW mathematics agree, but floating-point training
 trajectories need not be identical. Small differences warrant confirmation.
 
+## Projection decay at 2.5×
+
+Does W decay still help at 2.5× Chinchilla, at degree 8, and with key–query
+coefficients? Four fresh runs each copy a completed 2.5× run from the
+[token_budget topic](../token_budget/README.md) (18,925 updates, warmup 1,138) and
+change only `model.attention_coefficient_kernel_weight_decay: true`, which applies the
+shared weight decay 0.1 to the projections W. With key–query coefficients
+`[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`, both the query
+projection `w_r` and the key projection `w_k_r` decay; `b`, `a`, and `a^k` never decay.
+Every run keeps the canonical per-head QK scale, seed 42, and its control's backend
+(Mosaic for query, the fused Triton kernel for key–query).
+
+| Variant | Control without decay | W decay 0.1 |
+| --- | --- | --- |
+| Query m = 4 | `reb9b5be4ff1b` (`query-m4-2.5x`) | `r77b617af91db` (`query-m4-w-decay-2.5x`) |
+| Query m = 8 | `r77bca86ef253` (`query-m8-2.5x`) | `ra15cbb16beb7` (`query-m8-w-decay-2.5x`) |
+| Key–query m = 4 | `r751984d1ca00` (`query_key-m4-2.5x`) | `rb6313357059e` (`query_key-m4-w-decay-2.5x`) |
+| Key–query m = 8 | `rb7e83a4b653f` (`query_key-m8-2.5x`) | `r5bd803b3e562` (`query_key-m8-w-decay-2.5x`) |
+
+All four ran on ORCD, one H100 each, from launch commit `7662886`, as did the m = 8 and
+key–query controls (launch commit `8ef54e8`). The query m = 4 control trained on a
+Kennel B300 with the pre-7e5c962f training loop, so that pair also differs in hardware
+and loop.
+
+Terminal validation perplexity; every run's validation best is its terminal checkpoint.
+
+| Pair | Control | W decay 0.1 | Change | W decay vs fixed Taylor at the degree |
+| --- | ---: | ---: | ---: | ---: |
+| Query m = 4 | 12.723783 | 12.689001 | -0.034782 (-0.27%) | -0.17% (12.710060, `r4f1682c1b54d`) |
+| Query m = 8 | 12.475082 | 12.461680 | -0.013402 (-0.11%) | -0.11% (12.475191, `r0ea4c732c5ac`) |
+| Key–query m = 4 | 12.664493 | 12.673930 | +0.009437 (+0.07%) | -0.28% |
+| Key–query m = 8 | 12.449164 | 12.433672 | -0.015492 (-0.12%) | -0.33% |
+
+- Decay lowers query perplexity at both degrees, by less than at 1x (-0.44%), and leaves
+  key–query level: +0.07% at m = 4 and -0.12% at m = 8.
+- Decay about halves the projections: the mean per-(layer, head, order) `||w_r||` ends at
+  1.33–1.45 against 2.31–2.53 without decay, and the key–query key projection at
+  1.25–1.39 against 2.17–2.38; the mean stored `|a_r|` is 6–10% larger with decay.
+- Key–query m = 8 with decay, 12.434, is the lowest 2.5x perplexity in the study, 0.12%
+  below exp (12.449, `rfe12e5c36e94`).
+- Each pair is one seed, and every difference is under 0.3%, within the unresolved range;
+  the query m = 4 pair also differs in hardware and training loop. Decay acts over 2.5x
+  more updates here than at 1x (summed learning rate times 0.1: 1.04 against 0.41), so the
+  1x and 2.5x gains measure different decay strengths.
+
 ## Selection and open decision
 
-The [selection](selection.yaml) names the control and both optimizer ablations.
+The [selection](selection.yaml) names the 1x control and both optimizer ablations, and
+the four 2.5× pairs (roles `*_2p5x_control` and `*_2p5x_w_decay`).
 After collecting run measurements, refresh their scientific input hashes with:
 
 ```bash
@@ -73,6 +119,7 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
   experiments/transformer_pp/results/exploratory/query_optimization
 ```
 
-Decide whether the small W-decay improvement warrants confirmation; neither change
-is a new default. Promote this comparison into its own canonical collection, or
-discard the topic. These runs enter no canonical comparison while the topic is open.
+At 2.5× the W-decay improvement holds for query coefficients at a smaller size and is
+absent for key–query. Decide whether W decay becomes the default for new query runs,
+and whether a second seed is worth its cost; neither change is a default yet. Promote
+this comparison into its own canonical collection, or discard the topic. These runs enter no canonical comparison while the topic is open.

@@ -293,7 +293,8 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 `query_polynomial_kernel` has shape `[layers, heads, hidden_size, m+1]`, while
 `query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
 `[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
-decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+decay, except that `model.attention_coefficient_kernel_weight_decay: true` decays the
+kernel `W` with `optim.weight_decay`. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
 For learned query-conditioned tanh coefficients with diagonal readout,
@@ -366,7 +367,8 @@ interpretation belong to the calling study.
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
-`[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+`[layers, heads, m+1]`; drawn, started, and decayed like `W` and `a`, so the start is
+unchanged).
 With both factorial options enabled its entire pair coefficient is
 `[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
 The key factor is dimensionless and receives no second factorial division.

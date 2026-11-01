@@ -13,9 +13,9 @@ import pytest
 
 from scaffolds.transformer import acceptance
 from scaffolds.transformer.attention.input_dependent import (
-    project_key_factors, query_key_polynomial_attention, query_polynomial_attention,
+    parameter_specs, project_key_factors, query_key_polynomial_attention, query_polynomial_attention,
 )
-from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict, validate_config
 from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.attention.backends import fused_query_key_polynomial as fused_pair
 from scaffolds.transformer.tests.test_query_tanh_polynomial import _assert_close, _interpret as _interpret_query
@@ -276,6 +276,29 @@ def test_diagnostics_report_actual_key_factors_and_keep_fp32_without_weight_deca
     expected = project_key_factors(x, model.key_polynomial_kernel[0], model.key_polynomial_amplitude[0])
     np.testing.assert_allclose(key["effective_summary"]["mean"][0], jnp.mean(expected, axis=(0, 1)), rtol=1e-5, atol=1e-6)
     assert all(np.isfinite(value) for value in attention_metrics(report).values())
+
+
+@pytest.mark.parametrize("decay", (False, True))
+def test_kernel_weight_decay_covers_both_projections_but_not_a_or_b(decay):
+    specs = parameter_specs(hidden_size=8, degree=2, activation="tanh", amplitude_initial=0.0,
+                            conditioning="query_key", kernel_weight_decay=decay)
+    assert {spec.name: spec.weight_decay for spec in specs} == {
+        "query_polynomial_bias": False, "query_polynomial_kernel": decay, "query_polynomial_amplitude": False,
+        "key_polynomial_kernel": decay, "key_polynomial_amplitude": False}
+    config = _config(2)
+    config.model = replace(config.model, attention_coefficient_kernel_weight_decay=decay)
+    config.optim.min_learning_rate = config.optim.learning_rate
+    validate_config(config)
+    state = create_state(config, jax.random.PRNGKey(0))
+    # The actual initialization has a=0 and a_k=0; ones expose accidental decay.
+    state = state.replace(params=jax.tree.map(jnp.ones_like, state.params))
+    params = dict(nnx.to_flat_state(state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params)).params))
+    factor = 1 - config.optim.learning_rate * config.optim.weight_decay
+    assert factor < 1
+    for name in ("query_polynomial_kernel", "key_polynomial_kernel"):
+        np.testing.assert_allclose(params[(name,)][...], factor if decay else 1.0, rtol=1e-6)
+    for name in ("query_polynomial_bias", "query_polynomial_amplitude", "key_polynomial_amplitude"):
+        np.testing.assert_array_equal(params[(name,)][...], 1.0)
 
 
 def test_tiny_training_and_checkpoint_resume_preserve_key_parameters(tmp_path):
