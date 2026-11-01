@@ -45,10 +45,11 @@ both passes.
 - Both degree-four polynomial models break: perplexity rises within about 150 positions
   past 2,048 and reaches about 300 (fixed Taylor) and 260 (query) by position 4,096.
 - RoPE alone does not explain the failure, since exp and softmax use RoPE and extrapolate.
-  A plausible cause, not yet tested: polynomial weights are not monotone in the score, so
-  the large scores of either sign that unseen RoPE phases produce at distances beyond 2,048
-  receive large weights, while exp suppresses negative scores. The gated model sees no
-  RoPE phases and decays distant keys.
+  The [extrapolation_scores diagnostic](../../diagnostics/extrapolation_scores/README.md)
+  finds the polynomial models' scores at unseen distances no larger than at seen ones;
+  their weights decay too slowly with distance instead, so a late query puts 31–37% of its
+  weight on keys more than 2,048 tokens back, against 9% for exp. The gated model has no
+  RoPE and decays distant keys.
 
 ## Training at 4,096 tokens
 
