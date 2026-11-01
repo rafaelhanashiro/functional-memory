@@ -1,0 +1,20 @@
+{
+  "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml",
+    "sha256": "6809828a3e4de911fb88131240e74728db727c4448a421a08b7bf056c559ae38"
+  },
+  "home_cluster": "kennel",
+  "label": "per-position-extrapolation-2k-to-4k",
+  "name": "per-position-extrapolation-2k-to-4k",
+  "parent_run_ids": [
+    "r6a76e7fbde45",
+    "r9040f12f3d80",
+    "rca97cc9db8f2",
+    "r816ab0fbe119",
+    "r4a80e28ce0a7"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r8e4d56dfc830",
+  "status": "planned"
+}
