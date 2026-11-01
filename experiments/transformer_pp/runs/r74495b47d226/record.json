@@ -3,10 +3,38 @@
     "path": "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
     "sha256": "132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f"
   },
+  "frozen_execution_sha256": "63c7934a68ef40b078ae9766d2c6ca61bf887a940135cfeeedd4befff01a0515",
   "home_cluster": "kennel",
   "label": "query-m4-fox-path-head-scale-w-decay",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log",
   "name": "query-m4-fox-path-head-scale-w-decay",
   "record_schema_version": 1,
   "run_id": "r74495b47d226",
-  "status": "planned"
+  "source_commit": "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r74495b47d226",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
+      "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "232288",
+    "submitted_utc": "2026-11-01T21:25:44.040989+00:00"
+  }
 }
