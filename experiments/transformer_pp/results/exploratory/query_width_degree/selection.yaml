@@ -14,6 +14,7 @@ settings:
     - 2
     - 4
     - 8
+    - 12
   fixed: 14 heads, value_head_dim 64, canonical QK RMSNorm with per-head scale, head
     RMSNorm output, Mosaic, 7,570 updates of 256 sequences
   existing_cell: d_K = 64, m = 4 is query-m4-w-decay rca97cc9db8f2, the same recipe
@@ -246,3 +247,31 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
       sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: r1b1123bf96e0
+  role: query_decay_dk8_m12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1b1123bf96e0/config.yaml
+      sha256: 4df73cb040118f5fc9fdab695ba04ec156853b86571b727ee150063c26caacc7
+- study: transformer_pp
+  run_id: rcdfee1e67fd4
+  role: query_decay_dk16_m12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rcdfee1e67fd4/config.yaml
+      sha256: 42eb077d25a8996245ac15ad22c30fda877cc4d3ce2de7edfb0b6928ed478bc6
+- study: transformer_pp
+  run_id: r4f3aa6be7108
+  role: query_decay_dk32_m12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4f3aa6be7108/config.yaml
+      sha256: 4704e04ea05d4e8f8378fbf9f583e47cd149123e14494b8ffabfcc73c14336ef
+- study: transformer_pp
+  run_id: r0fceea0627c8
+  role: query_decay_dk64_m12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+      sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0

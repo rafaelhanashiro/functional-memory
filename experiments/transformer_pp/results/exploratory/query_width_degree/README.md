@@ -12,12 +12,12 @@ canonical comparison.
 
 ## Runs
 
-| `d_K` \ `m` | 2 | 4 | 8 |
-| --- | --- | --- | --- |
-| 8 | `r7bede0f75198` | `r1c80ab3a466b` | `r16b23893884d` |
-| 16 | `rc90fb11d4772` | `rb5fe0aef572a` | `rd10c2ebe1181` |
-| 32 | `r18d67098c780` | `rcb1f56f31981` | `rf5b51bd384bc` |
-| 64 | `rd6b4d16d81bb` | `rca97cc9db8f2` | `r25fffc16c2f3` |
+| `d_K` \ `m` | 2 | 4 | 8 | 12 |
+| --- | --- | --- | --- | --- |
+| 8 | `r7bede0f75198` | `r1c80ab3a466b` | `r16b23893884d` | `r1b1123bf96e0` |
+| 16 | `rc90fb11d4772` | `rb5fe0aef572a` | `rd10c2ebe1181` | `rcdfee1e67fd4` |
+| 32 | `r18d67098c780` | `rcb1f56f31981` | `rf5b51bd384bc` | `r4f3aa6be7108` |
+| 64 | `rd6b4d16d81bb` | `rca97cc9db8f2` | `r25fffc16c2f3` | `r0fceea0627c8` |
 
 Every run is `query-m4-w-decay`'s recipe with `qk_head_dim` and `attention_degree` changed:
 degree-`m` unnormalized polynomial attention with tanh query coefficients
@@ -28,11 +28,15 @@ changes, so narrower keys shrink the Q/K projections), canonical QK RMSNorm with
 scaling, head RMSNorm output scaling, Mosaic kernels, reference initialization, and the study's
 recipe: 7,570 updates of 256 sequences, learning rate 0.001 with cosine decay to 0.0001,
 warmup 455, weight decay 0.1. The `d_K = 64`, `m = 4` cell reuses `rca97cc9db8f2`, whose recipe
-is identical up to run names.
+is identical up to run names. The `m = 12` column, the largest degree the Mosaic query
+kernels are qualified for, was added after the first twelve cells.
 
 Launch commands are in the [study README](../../../README.md#query-coefficients-across-key-width-and-degree).
 
 ## Findings and open decision
+
+The four `m = 12` runs are allocated and not yet complete; the findings below cover the
+first twelve cells.
 
 All eleven new runs completed their 7,570 updates on one GPU each (B300 or H100, 2.4–4.7 h).
 Validation-best perplexity; the best checkpoint is update 7,500 except at `m = 2`,

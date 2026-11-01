@@ -129,8 +129,8 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
 `query-m4-w-decay`'s recipe at `d_K = 8, 16, 32, 64` and `m = 2, 4, 8`, reusing
-`rca97cc9db8f2` for `d_K = 64`, `m = 4`. Each new run takes one B300 or H100 on
-`standard,long`:
+`rca97cc9db8f2` for `d_K = 64`, `m = 4`; the `m = 12` column (`r1b1123bf96e0`, `rcdfee1e67fd4`, `r4f3aa6be7108`, `r0fceea0627c8`) uses
+the same command. Each new run takes one B300 or H100 on `standard,long`:
 
 ```bash
 for RUN in r7bede0f75198 r1c80ab3a466b r16b23893884d rc90fb11d4772 rb5fe0aef572a rd10c2ebe1181 r18d67098c780 rcb1f56f31981 rf5b51bd384bc rd6b4d16d81bb r25fffc16c2f3; do
