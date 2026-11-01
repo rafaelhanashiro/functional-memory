@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r738b35a8e314/config.yaml",
+    "sha256": "797dc8ab65a5ba346f1b8dfaaa3ffb8d1fc4bc9a3891598197b6535d120ef820"
+  },
+  "label": "query-m4-wdecay-4k",
+  "name": "query-m4-wdecay-4k",
+  "record_schema_version": 1,
+  "run_id": "r738b35a8e314",
+  "status": "planned"
+}

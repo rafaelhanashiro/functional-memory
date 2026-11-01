@@ -125,6 +125,49 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
+### Context length
+
+A 4,096-token run copies its 2,048-token reference recipe and changes only the context:
+`model.max_seq_len` 4,096, `data.sequence_length` 4,097, `data.batch_size` 128 and global
+microbatch 8, reading `/data/cl/u/rafah/home/datasets/fineweb_12b_seq4097` (the same token
+stream re-cut into 4,097-token rows; its README gives the construction). Tokens per update
+(524,288), the update count, warmup, learning rates, validation cadence and validation tokens
+(19 × 128 sequences, 9,961,472 tokens) stay the same, so a 1× run is still 7,570 updates.
+`runs.csv` records each run's `context_length`.
+
+| 4,096-token run | Label | 2,048-token partner |
+| --- | --- | --- |
+| `r636f433be44f` | `softmax-head-scale-4k` | `r9040f12f3d80` |
+| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` (on `codex/qk-head-controls-4b`) |
+| `r339a31ad8d4b` | `fixed-m4-head-scale-4k` | `r816ab0fbe119` |
+| `r738b35a8e314` | `query-m4-wdecay-4k` | `rca97cc9db8f2` |
+| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` (on `codex/fox-query-key-wdecay-4b`) |
+
+The forget-gate partner's recipe sets `attention_coefficient_key_kernel_weight_decay: false`,
+a key this scaffold does not define; it only applies to query-key coefficients, so the
+4,096-token recipe omits it. Each run uses one GPU. The forget gate runs on the blocked
+reference backend, whose cost grows with the context, so it requests 48 hours on `long`
+and a B300:
+
+```bash
+for run in r636f433be44f r2047d29a0d9f r339a31ad8d4b r738b35a8e314; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=48:00:00 \
+  --job-name=r58efc973ff28 --output=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  --error=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/r58efc973ff28/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
+The [context_length topic](results/exploratory/context_length/README.md) compares these runs
+with their 2,048-token partners and scores the 2,048-token checkpoints at 4,096 tokens.
+
 ## Query coefficients across key width and degree
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains

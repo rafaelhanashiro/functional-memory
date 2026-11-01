@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2047d29a0d9f/config.yaml",
+    "sha256": "74d67759eda4297b87b6d7f0834a28863275ff19c7d57da4e32b38c1b40fc0f6"
+  },
+  "label": "exp-head-scale-4k",
+  "name": "exp-head-scale-4k",
+  "record_schema_version": 1,
+  "run_id": "r2047d29a0d9f",
+  "status": "planned"
+}

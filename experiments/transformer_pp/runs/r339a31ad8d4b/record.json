@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r339a31ad8d4b/config.yaml",
+    "sha256": "1269143299a1f930e5be77792444369d2ce66c3443dff9af16692858054baf98"
+  },
+  "label": "fixed-m4-head-scale-4k",
+  "name": "fixed-m4-head-scale-4k",
+  "record_schema_version": 1,
+  "run_id": "r339a31ad8d4b",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r636f433be44f/config.yaml",
+    "sha256": "b928f01af740169ebf6af0787d66a2dc4b27306ab34fa006fd695c037e83f6c6"
+  },
+  "label": "softmax-head-scale-4k",
+  "name": "softmax-head-scale-4k",
+  "record_schema_version": 1,
+  "run_id": "r636f433be44f",
+  "status": "planned"
+}

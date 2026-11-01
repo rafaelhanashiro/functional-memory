@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r58efc973ff28/config.yaml",
+    "sha256": "c945d54c36573fd03b1fa9ac31237a44ed8c136e7d288c01c5d0e04007eacd27"
+  },
+  "label": "query-m4-forget-gate-no-rope-wdecay-4k",
+  "name": "query-m4-forget-gate-no-rope-wdecay-4k",
+  "record_schema_version": 1,
+  "run_id": "r58efc973ff28",
+  "status": "planned"
+}
