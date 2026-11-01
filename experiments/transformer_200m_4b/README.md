@@ -167,10 +167,10 @@ weight decay 0.1 on the coefficient projections W
 W and the key W_k). Each recipe is otherwise its control's; the query m = 4 recipe takes
 ORCD's FineWeb manifests. The question, controls, and findings belong to the
 [query optimization topic](results/exploratory/query_optimization/README.md#projection-decay-at-25).
-Home cluster: **ORCD**, one H100 each, executing from the worktree
-`/orcd/pool/006/rafah/functional_memory/worktrees/transformer_pp_2p5x_w_decay` (branch
-`claude/transformer-pp-2p5x-w-decay-orcd`). Key–query keeps its controls' fused
-query–key kernel (`records create --allow-triton-attention`).
+Home cluster: **ORCD**. All four are complete: they ran from launch commit `7662886`,
+one H100 each, and their retained checkpoints and logs are under ORCD's artifact root
+at the paths recorded in each run. Key–query keeps its controls' fused query–key kernel
+(`records create --allow-triton-attention`).
 
 | Run | Label | Recipe |
 | --- | --- | --- |
