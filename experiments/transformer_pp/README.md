@@ -215,6 +215,24 @@ contain exact launch commands, frozen-source identity, hardware and acceptance
 evidence. Latest and validation-best checkpoints are retained during training;
 completion retains only validation best and preserves terminal metrics separately.
 
+## Query coefficients across key width and degree
+
+The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
+`query-m4-w-decay`'s recipe at `d_K = 8, 16, 32, 64` and `m = 2, 4, 8`, reusing
+`rca97cc9db8f2` for `d_K = 64`, `m = 4`. Each new run takes one B300 or H100 on
+`standard,long`:
+
+```bash
+for RUN in r7bede0f75198 r1c80ab3a466b r16b23893884d rc90fb11d4772 rb5fe0aef572a rd10c2ebe1181 r18d67098c780 rcb1f56f31981 rf5b51bd384bc rd6b4d16d81bb r25fffc16c2f3; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Exploratory diagnostics
 
 ### Query coefficient optimization
@@ -248,6 +266,37 @@ done
 
 Each record captures its submission command and job ID. Resumptions keep the same
 run ID, recipe, launch commit, and checkpoint; do not submit a duplicate live job.
+
+### Projection decay at 2.5×
+
+Four 2.5× runs repeat the completed query and key–query runs at degrees 4 and 8 with
+weight decay 0.1 on the coefficient projections W
+(`model.attention_coefficient_kernel_weight_decay: true`; for key–query, both the query
+W and the key W_k). Each recipe is otherwise its control's; the query m = 4 recipe takes
+ORCD's FineWeb manifests. The question, controls, and findings belong to the
+[query optimization topic](results/exploratory/query_optimization/README.md#projection-decay-at-25).
+Home cluster: **ORCD**. All four are complete: they ran from launch commit `7662886`,
+one H100 each, and their retained checkpoints and logs are under ORCD's artifact root
+at the paths recorded in each run. Key–query keeps its controls' fused query–key kernel
+(`records create --allow-triton-attention`).
+
+| Run | Label | Recipe |
+| --- | --- | --- |
+| `r77b617af91db` | `query-m4-w-decay-2.5x` | `reb9b5be4ff1b` with ORCD data paths |
+| `ra15cbb16beb7` | `query-m8-w-decay-2.5x` | `r77bca86ef253` |
+| `rb6313357059e` | `query_key-m4-w-decay-2.5x` | `r751984d1ca00` |
+| `r5bd803b3e562` | `query_key-m8-w-decay-2.5x` | `rb7e83a4b653f` |
+
+From the worktree root on ORCD, after committing the frozen inputs:
+
+```bash
+for run in r77b617af91db rb6313357059e ra15cbb16beb7 r5bd803b3e562; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_200m_4b/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_200m_4b.acceptance \
+    "experiments/transformer_200m_4b/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
 
 ### Coefficient fitting
 
@@ -388,24 +437,10 @@ The [per-token query scale topic](results/exploratory/token_query_scale_continua
 compares a bounded per-token score scale on Q, `exp(gamma_h + a_h cos(w_h, x_t))`, with a
 matched fixed-Taylor continuation of the canonical head-scaled parent. Both train all
 backbone parameters for 2,000 additional updates; the gate starts closed (`a_h = 0`) and
-its parameters use their own constant learning rate of 0.001. Prepare in its own
-worktree, then commit frozen inputs before independent submission:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
-  --conditioning token_scale \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
-# Already allocated below; reuse these IDs for resumptions.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r82203a85ef8e --conditioning token_scale --partition standard --time-limit 10:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  ra988273933f7 --conditioning token_scale --partition standard --time-limit 20:00:00
-```
-
-The acceptance pilot projects the allocation from its slowest steady update, so a
-single checkpoint-save stall during the pilot can project far beyond the real cost
-(about 3.2 s per update for both branches on an H100 PCIe); the longer limit only
-clears that projection.
+its parameters use their own constant learning rate of 0.001. The query-temperature
+run `re563830cf150` applies weight decay 0.1 to its direction `w` and leaves the
+amplitude exempt; `r82203a85ef8e` is the fixed-Taylor control. Reproduction commands
+are in [CPT with projection weight decay](#cpt-with-projection-weight-decay).
 
 The [forget-gate continuation topic](results/exploratory/forget_gate_continuation/README.md)
 is a positive control for the protocol: it adds the pretraining winner's attention (tanh
@@ -427,6 +462,42 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_cont
 On an H100 PCIe the blocked backend trains this recipe at 16.7 s per update (about 10 h
 for the budget), and the pilot's slowest-step projection reached 31 h, beyond `standard`'s
 24 h limit; the `long` allocation only clears that projection.
+
+### CPT with projection weight decay
+
+Two additional continuations reuse Taylor parent `r816ab0fbe119` at update 7,500 and
+fixed-Taylor control `r82203a85ef8e`. Both train all parameters for 2,000 more updates
+with the same data order and constant learning rates: 0.0001 for the backbone and
+0.001 for introduced parameters. FoX **without RoPE**, `r554ce7da6a8a`, applies decay
+0.1 to the coefficient projection `W` and forget-gate projection `w_alpha`; their
+amplitudes and biases remain exempt. Query-temperature **with RoPE**, `re563830cf150`,
+applies decay 0.1 to its direction `w` only, leaving its amplitude exempt. Definitions,
+controls, and findings belong to the [forget-gate topic](results/exploratory/forget_gate_continuation/README.md)
+and [query-temperature topic](results/exploratory/token_query_scale_continuation/README.md).
+
+Prepare fresh reproductions in an isolated worktree; the commands below allocate new IDs:
+
+```bash
+PARENT=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENT" --conditioning forget_gate --control r82203a85ef8e --no-rope --kernel-weight-decay
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENT" --conditioning token_scale --control r82203a85ef8e --token-scale-kernel-weight-decay
+```
+
+The two recorded runs are complete. For a fresh reproduction, substitute the new
+allocated IDs below after committing frozen inputs. Submit independently; these limits
+include GPU acceptance. Check live allowances before reproducing:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  r554ce7da6a8a --conditioning forget_gate --partition standard --time-limit 24:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  re563830cf150 --conditioning token_scale --partition standard --time-limit 10:00:00
+```
+
+Each allocation qualifies the actual configuration, parameter decay policy, checkpoint
+restoration, finite training pilot, and fresh-process resume before production begins.
 
 ## Teacher-activation coefficient distillation
 

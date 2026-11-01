@@ -64,10 +64,13 @@ def parent_kind(model: dict) -> str:
     return "exp" if model.get("attention_degree") is None else "taylor"
 
 
-def branch_role(conditioning: str, *, kind: str, kernel_weight_decay: bool) -> str:
+def branch_role(conditioning: str, *, kind: str, kernel_weight_decay: bool,
+                no_rope: bool = False, token_scale_kernel_weight_decay: bool = False) -> str:
     """The branch's selection role; exp parents' runs carry an ``exp_`` prefix."""
     role = BRANCH_ROLES[conditioning]
-    if kernel_weight_decay:
+    if no_rope:
+        role += "_no_rope"
+    if kernel_weight_decay or token_scale_kernel_weight_decay:
         role += "_decay"
     return f"{kind}_{role}" if kind == "exp" else role
 
@@ -78,7 +81,8 @@ def control_role(kind: str) -> str:
 
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static", updates: int = UPDATES,
             new_rate: float | None = NEW_PARAMETER_LEARNING_RATE, kernel_weight_decay: bool = False,
-            degree: int | None = None) -> dict[str, dict]:
+            degree: int | None = None, no_rope: bool = False,
+            token_scale_kernel_weight_decay: bool = False) -> dict[str, dict]:
     """Match additional training while enabling the requested mechanism.
 
     An exp parent needs ``degree``: both branches switch to the degree-``degree`` polynomial
@@ -91,10 +95,16 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
     elif degree not in (None, source["model"]["attention_degree"]):
         raise ValueError("A Taylor parent keeps its degree")
     degree = source["model"]["attention_degree"] if degree is None else degree
-    if kernel_weight_decay and conditioning != "query":
+    if kernel_weight_decay and conditioning not in ("query", "forget_gate"):
         raise ValueError("Kernel weight decay applies to query coefficients")
+    if no_rope and conditioning != "forget_gate":
+        raise ValueError("Removing RoPE is supported for the forget-gate continuation")
+    if token_scale_kernel_weight_decay and conditioning != "token_scale":
+        raise ValueError("Token-scale kernel weight decay requires token_scale conditioning")
     result = {}
-    for role in (control_role(kind), branch_role(conditioning, kind=kind, kernel_weight_decay=kernel_weight_decay)):
+    branch = branch_role(conditioning, kind=kind, kernel_weight_decay=kernel_weight_decay,
+                         no_rope=no_rope, token_scale_kernel_weight_decay=token_scale_kernel_weight_decay)
+    for role in (control_role(kind), branch):
         recipe = deepcopy(source)
         recipe["optim"].update(learning_rate=LEARNING_RATE, min_learning_rate=LEARNING_RATE,
                                warmup_steps=0, total_steps=continuation["parent_step"] + updates)
@@ -105,6 +115,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
         recipe["continuation"] = deepcopy(continuation)
         # The frozen recipes state every gate explicitly, including the control's closed ones.
         recipe["model"]["qk_norm_token_scale"] = "none"
+        recipe["model"]["qk_norm_token_scale_kernel_weight_decay"] = False
         recipe["model"].setdefault("attention_forget_gate", False)
         if kind == "exp":
             recipe["model"].update(attention_degree=degree, attention_backend="mosaic")
@@ -113,7 +124,8 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
             continue
         recipe["continuation"]["new_parameter_learning_rate"] = new_rate
         if conditioning == "token_scale":
-            recipe["model"].update(qk_norm_token_scale="cosine")
+            recipe["model"].update(qk_norm_token_scale="cosine",
+                                   qk_norm_token_scale_kernel_weight_decay=token_scale_kernel_weight_decay)
         else:
             recipe["model"].update(attention_coefficients="learned",
                                    attention_coefficient_sharing="per_head",
@@ -122,6 +134,8 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
                 # The pretraining winner: zero-amplitude tanh query coefficients with Gated
                 # DeltaNet's forget gate, on the blocked reference backend (Mosaic has no gate).
                 recipe["model"].update(attention_forget_gate=True, attention_backend="blocked")
+                if no_rope:
+                    recipe["model"]["positional_encoding"] = "none"
             if conditioning in ("query", "forget_gate"):
                 recipe["model"].update(
                     attention_coefficient_conditioning="query",
@@ -154,7 +168,8 @@ def existing_control(control: str, parent: Path, continuation: dict, updates: in
 def prepare(parent: Path, *, conditioning: str = "static", control: str | None = None, topic: str | None = None,
             updates: int = UPDATES, new_rate: float | None = NEW_PARAMETER_LEARNING_RATE,
             kernel_weight_decay: bool = False, degree: int | None = None,
-            control_only: bool = False) -> dict[str, str]:
+            control_only: bool = False, no_rope: bool = False,
+            token_scale_kernel_weight_decay: bool = False) -> dict[str, str]:
     """Allocate a branch and, unless a control is reused or declined, its fixed-Taylor control.
 
     ``control_only`` allocates just the fixed-Taylor continuation of the parent, for example
@@ -205,7 +220,8 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
         existing_control(control, parent, continuation, updates)
         run_ids[control_role(kind)] = control
     allocated = recipes(source, continuation, conditioning=conditioning, updates=updates, new_rate=new_rate,
-                        kernel_weight_decay=kernel_weight_decay, degree=degree)
+                        kernel_weight_decay=kernel_weight_decay, degree=degree, no_rope=no_rope,
+                        token_scale_kernel_weight_decay=token_scale_kernel_weight_decay)
     for role, recipe in allocated.items():
         if role == control_role(kind) and control is not None:
             continue
@@ -328,6 +344,10 @@ def main(argv=None) -> None:
     prep.add_argument("--new-parameter-learning-rate", type=float, default=NEW_PARAMETER_LEARNING_RATE)
     prep.add_argument("--kernel-weight-decay", action="store_true",
                       help="apply optim.weight_decay to the query coefficient projection W")
+    prep.add_argument("--token-scale-kernel-weight-decay", action="store_true",
+                      help="apply optim.weight_decay to the query-temperature direction w only")
+    prep.add_argument("--no-rope", action="store_true",
+                      help="remove RoPE in the forget-gate branch; keep the fixed-Taylor control unchanged")
     prep.add_argument("--degree", type=int, help="polynomial degree when continuing an exp parent")
     prep.add_argument("--control-only", action="store_true",
                       help="allocate only the parent's fixed-Taylor continuation")
@@ -342,7 +362,8 @@ def main(argv=None) -> None:
         prepare(args.parent, conditioning=args.conditioning, control=args.control, topic=args.topic,
                 updates=args.updates, new_rate=args.new_parameter_learning_rate,
                 kernel_weight_decay=args.kernel_weight_decay, degree=args.degree,
-                control_only=args.control_only)
+                control_only=args.control_only, no_rope=args.no_rope,
+                token_scale_kernel_weight_decay=args.token_scale_kernel_weight_decay)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit,
                conditioning=args.conditioning, topic=args.topic)

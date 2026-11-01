@@ -181,6 +181,28 @@ def test_query_conditioning_requires_its_checks_even_with_an_empty_adapter(cpu, 
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
 
 
+@pytest.mark.parametrize("continuation", (False, True))
+def test_query_temperature_acceptance_requires_gate_and_decay_checks(continuation):
+    config = {"model": {"qk_norm_token_scale": "cosine"},
+              "continuation": {"parent_checkpoint": "parent" if continuation else ""}}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    assert "scaffolds/transformer/tests/test_token_query_scale.py" in paths
+    assert "scaffolds/transformer/tests/test_token_scale_weight_decay.py" in paths
+    assert ("scaffolds/transformer/tests/test_token_scale_continuation.py" in paths) == continuation
+    assert preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False) == ()
+
+
+def test_fox_continuation_requires_backbone_restoration_and_projection_decay_checks():
+    config = {"model": {"attention_forget_gate": True, "positional_encoding": "none"},
+              "continuation": {"parent_checkpoint": "parent"}}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=True)
+    assert "scaffolds/transformer/tests/test_forget_gate_continuation.py" in paths
+    assert "scaffolds/transformer/tests/test_continuation.py" in paths
+    assert "scaffolds/transformer/tests/test_continuation_acceptance.py" in paths
+
+
 @pytest.mark.parametrize("conditioning,kernel_tests", (("static", "mosaic_taylor"), ("query", "mosaic_query")))
 def test_mosaic_backend_requires_its_kernel_and_repeatability_tests(conditioning, kernel_tests):
     config = {"model": {"attention_degree": 2, "attention_normalization": conditioning == "static",

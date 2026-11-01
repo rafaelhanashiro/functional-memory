@@ -27,7 +27,8 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
-    and dense V. kernel_weight_decay decays the query W only."""
+    and dense V. kernel_weight_decay decays the projections W and W_k; b, a, a_k, beta, and V
+    never decay."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
@@ -91,7 +92,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
             AttentionParameterSpec(
                 name="key_polynomial_kernel", argument="key_polynomial_kernel",
                 initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
-                sharing="per_head", weight_decay=False, initial_std=float(projection_initial_std),
+                sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
             ),
             AttentionParameterSpec(
                 name="key_polynomial_amplitude", argument="key_polynomial_amplitude",

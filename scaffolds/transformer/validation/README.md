@@ -53,6 +53,45 @@ not a guaranteed end-to-end runtime. Exact environment, source, configuration an
 data identities are in the linked record. Reproduce through
 `python -m scaffolds.transformer.native_fla.launch --run <canonical-run-directory> --acceptance`
 using that runtime's locked environment and a committed frozen execution set.
+### Continuation projection decay and FoX without RoPE (2026-10-31)
+
+The optional `qk_norm_token_scale_kernel_weight_decay` policy decays only the
+query-temperature direction; its default remains false. The continuation validator
+permits an explicit RoPE-to-none transition for a forget-gate child while preserving
+every backbone parameter and its Adam history. Other continuations reject that
+positional-encoding change.
+
+Forty-five targeted CPU checks passed: 13 continuation-allocation tests, 16 token-scale
+and parameter-policy tests, five FoX/restoration/positional-encoding checks, and 11
+acceptance/initialization checks. Zero-gradient updates verify the actual AdamW change
+on query-temperature `w`, coefficient `W`, and forget-gate `w_alpha`, with amplitudes
+and biases exempt. Restoration tests verify exact parent weights and optimizer
+hashes, independent optimizer clocks, and finite subsequent training. The query
+temperature's decay flag leaves initialization and forward values unchanged.
+Shared acceptance includes these mechanism checks before its full-recipe GPU pilot
+and fresh-process resume; CPU checks alone do not qualify a GPU allocation.
+
+At source `22be3818`, both degree-four continuations passed all acceptance stages
+on one H100 with the locked CUDA 12 environment. The allocations used global batch
+256, microbatch eight, and 2,048 prediction tokens per sequence. Test counts below
+are CPU / distributed CPU / GPU; every case passed with no skips or errors.
+
+| Mechanism and job | Hardware and backend | Passing tests | Runtime projection | Production trainer runtime |
+| --- | --- | ---: | ---: | ---: |
+| FoX without RoPE, decay on coefficient and forget-gate projections (`230954`) | `mastiff`, H100 PCIe, blocked | 517 / 9 / 24 | 9.63 h | 9.46 h |
+| Query-temperature, decay on its direction (`230957`) | `dogo`, H100 SXM, Mosaic | 334 / 9 / 48 | 1.60 h | 1.51 h |
+
+Both restored exactly the pretrained backbone parameters and Adam history at step
+7,500, with new-parameter optimizer count zero. Their 20-update GPU pilots and
+fresh-process resumptions matched checkpoint-state, next-batch, and RNG hashes;
+the production restoration audits matched the qualified restorations. The actual
+configured decay masks select only the requested projection arrays, leaving
+amplitudes, coefficient biases, and forget-gate rate/bias parameters exempt.
+Both completed all 2,000 production updates with 21 finite validation measurements
+and no numerical-failure record. The runtime projections include pilot elapsed
+time once and exclude the separate two-hour allocation reserve; production trainer
+times exclude acceptance. These executions qualify the two H100 configurations,
+not B300 or other untested hardware/backend combinations.
 
 ### Acceptance runtime projection (2026-10-29)
 
@@ -116,6 +155,18 @@ projection-decay configuration on H100 80GB HBM3, and the 3x readout-LR configur
 on H100 PCIe. Both completed 7,570 production updates with finite validation losses
 using the Mosaic query kernel and the locked CUDA 12 environment. These executions
 qualify the optimizer options on those H100 variants; they do not add B300 evidence.
+
+### Query-key projection decay (2026-10-30)
+
+With `model.attention_coefficient_kernel_weight_decay: true`, query-key coefficients
+decay the key projection `W_k` as well as the query `W`; `b`, `a`, and the key amplitude
+stay undecayed. On CPU, a focused check of the parameter declarations and one AdamW
+step passed with the flag off and on: both projections shrink by exactly
+`1 - lr * 0.1` while `b`, `a`, and `a_k` keep their values. With the key projection
+left undecayed, the check fails. The query-key, parameter-policy, coefficient-scale,
+QK head-scale, sigmoid-coefficient, and query learning-rate suites passed 147 checks;
+16 GPU checks were deselected. Production acceptance repeats the query-key CPU and GPU
+tests on each allocation.
 
 Integration with the forget-gate continuation implementation passed 48 CPU checks
 across `test_query_coefficient_learning_rate.py`, `test_parameter_policy.py`,

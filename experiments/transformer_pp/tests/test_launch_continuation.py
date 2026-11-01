@@ -26,7 +26,7 @@ def test_matched_pair_preserves_parent_science_except_new_coefficients():
         assert recipe["train"]["eval_batches"] == 19
         assert recipe["train"]["micro_batch_size"] == 8
         assert recipe["train"]["eval_every"] == recipe["train"]["ckpt_every"] == 100
-        assert recipe["optim"]["total_steps"] - recipe["continuation"]["parent_step"] == 500
+        assert recipe["optim"]["total_steps"] - recipe["continuation"]["parent_step"] == 2000
         assert recipe["optim"]["learning_rate"] == recipe["optim"]["min_learning_rate"] == 1e-4
         assert recipe["optim"]["warmup_steps"] == 0
         assert recipe["optim"]["beta1"] == 0.9 and recipe["optim"]["beta2"] == 0.95
@@ -34,6 +34,7 @@ def test_matched_pair_preserves_parent_science_except_new_coefficients():
     learned["model"].update(attention_coefficients="fixed", attention_coefficient_sharing="global",
                             attention_coefficient_scale="none")
     learned["train"]["wandb_run_name"] = pair["fixed_taylor"]["train"]["wandb_run_name"]
+    assert learned["continuation"].pop("new_parameter_learning_rate") == 0.001
     assert learned == pair["fixed_taylor"]
 
 
@@ -65,7 +66,9 @@ def test_query_pair_matches_canonical_m4_initialization_and_training():
     assert source == original
     assert set(pair) == {"fixed_taylor", "learned_query"}
     control, query = pair["fixed_taylor"], pair["learned_query"]
-    assert control["model"] == source["model"]
+    assert control["model"] == {**source["model"], "qk_norm_token_scale": "none",
+                                "qk_norm_token_scale_kernel_weight_decay": False,
+                                "attention_forget_gate": False}
     assert query["model"]["attention_degree"] == 4
     assert query["model"]["attention_coefficient_conditioning"] == "query"
     assert query["model"]["attention_coefficient_activation"] == "tanh"
@@ -76,10 +79,57 @@ def test_query_pair_matches_canonical_m4_initialization_and_training():
     assert query["model"]["attention_coefficient_amplitude_scale"] == "factorial"
     assert control["data"] == query["data"] == source["data"]
     assert control["optim"] == query["optim"]
-    assert control["continuation"] == query["continuation"]
-    assert query["optim"]["total_steps"] == 8000
+    assert query["continuation"] == {**control["continuation"], "new_parameter_learning_rate": 0.001}
+    assert query["optim"]["total_steps"] == 9500
     assert query["train"]["wandb_run_name"] == "taylor-m4-continuation-learned_query"
-    assert launch_continuation.topic_path("query") != launch_continuation.topic_path("static")
+    assert launch_continuation.topic_path("query", "learned_coefficient_continuation") != launch_continuation.topic_path("static")
+
+
+@pytest.mark.parametrize("conditioning,options,role", [
+    ("forget_gate", {"kernel_weight_decay": True, "no_rope": True}, "query_forget_gate_no_rope_decay"),
+    ("token_scale", {"token_scale_kernel_weight_decay": True}, "token_query_scale_decay"),
+])
+def test_decay_variants_preserve_the_matched_control_and_training(conditioning, options, role):
+    source = {
+        "model": {"attention_degree": 4, "hidden_size": 896, "positional_encoding": "rope",
+                  "attention_coefficients": "fixed", "attention_backend": "mosaic",
+                  "qk_norm": True, "qk_norm_head_scale": True},
+        "optim": {"learning_rate": 0.001, "min_learning_rate": 0.0001, "weight_decay": 0.1},
+        "data": {"batch_size": 256, "shuffle_seed": 0},
+        "train": {"seed": 42, "eval_batches": 19},
+    }
+    parent = {"parent_step": 7500, "parent_checkpoint_sha256": "a" * 64}
+    original = deepcopy(source)
+    control = recipes(source, parent, conditioning=conditioning)["fixed_taylor"]
+    pair = recipes(source, parent, conditioning=conditioning, **options)
+    assert source == original
+    assert pair["fixed_taylor"] == control
+    branch = pair[role]
+    assert branch["data"] == control["data"]
+    assert branch["optim"] == control["optim"]
+    assert branch["continuation"] == {**parent, "new_parameter_learning_rate": 0.001}
+    assert branch["model"]["qk_norm_head_scale"] is True
+    if conditioning == "forget_gate":
+        assert branch["model"]["positional_encoding"] == "none"
+        assert branch["model"]["attention_forget_gate"] is True
+        assert branch["model"]["attention_coefficient_kernel_weight_decay"] is True
+        assert branch["model"]["attention_coefficient_scale"] == "factorial"
+        assert branch["model"]["attention_coefficient_amplitude_scale"] == "factorial"
+    else:
+        assert branch["model"]["positional_encoding"] == "rope"
+        assert branch["model"]["qk_norm_token_scale"] == "cosine"
+        assert branch["model"]["qk_norm_token_scale_kernel_weight_decay"] is True
+        assert branch["model"]["attention_coefficients"] == "fixed"
+
+
+@pytest.mark.parametrize("options,match", [
+    ({"no_rope": True}, "Removing RoPE"),
+    ({"token_scale_kernel_weight_decay": True}, "Token-scale kernel"),
+    ({"kernel_weight_decay": True}, "query coefficients"),
+])
+def test_variant_flags_reject_unrelated_mechanisms(options, match):
+    with pytest.raises(ValueError, match=match):
+        recipes({"model": {"attention_degree": 4}}, {"parent_step": 7500}, **options)
 
 
 def test_default_allocation_leaves_time_after_acceptance_reserve(monkeypatch):

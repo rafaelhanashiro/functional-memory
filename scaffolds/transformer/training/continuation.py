@@ -43,10 +43,17 @@ def _parent_config(config):
                              "attention_coefficient_projection_initial_std",
                              "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
                              "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
-                             "qk_norm_token_scale", "attention_forget_gate",
+                             "qk_norm_token_scale", "qk_norm_token_scale_kernel_weight_decay",
+                             "attention_forget_gate",
                              "attention_coefficient_kernel_weight_decay"}
     if exp_parent:
         allowed_model_changes |= {"attention_degree"}
+    if (parent.model.positional_encoding == "rope" and config.model.positional_encoding == "none"
+            and config.model.attention_forget_gate):
+        # An explicitly requested forget-gate continuation may replace RoPE with
+        # its learned distance decay. This changes the function, not the backbone
+        # parameter tree: every pretrained array and its Adam history still restore.
+        allowed_model_changes.add("positional_encoding")
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")

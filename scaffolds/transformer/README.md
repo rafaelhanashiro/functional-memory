@@ -242,7 +242,11 @@ by `exp(gamma_h + delta_th)` instead of `exp(gamma_h)`. Each layer/head owns a d
 `qk_norm_token_scale_kernel` (`[num_layers, num_heads, hidden_size]`, drawn
 `N(0, 1/hidden_size)` from the mechanism stream; only its direction matters) and an
 amplitude `qk_norm_token_scale_amplitude` (`[num_layers, num_heads, 1]`, initially zero),
-both FP32 without weight decay. Both vectors are normalized as `v / sqrt(||v||² + eps)`
+both FP32 and exempt from weight decay by default. Set
+`qk_norm_token_scale_kernel_weight_decay: true` to apply `optim.weight_decay` to the
+direction `w_h` only; the amplitude remains exempt. This policy also applies to the
+new-parameter optimizer in continuations and is recorded in attention diagnostics.
+Both vectors are normalized as `v / sqrt(||v||² + eps)`
 with `qk_norm_eps`, so `|delta| <= |a_h|` without saturation, and a zero amplitude
 reproduces the head-scaled model exactly. The gate restores the per-token query-norm
 freedom that RMSNorm removes; a per-query temperature of the degree-`m` Taylor kernel is
@@ -289,7 +293,8 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 `query_polynomial_kernel` has shape `[layers, heads, hidden_size, m+1]`, while
 `query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
 `[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
-decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+decay, except that `model.attention_coefficient_kernel_weight_decay: true` decays the
+kernel `W` with `optim.weight_decay`. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
 For learned query-conditioned tanh coefficients with diagonal readout,
@@ -362,7 +367,8 @@ interpretation belong to the calling study.
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
-`[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+`[layers, heads, m+1]`; drawn, started, and decayed like `W` and `a`, so the start is
+unchanged).
 With both factorial options enabled its entire pair coefficient is
 `[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
 The key factor is dimensionless and receives no second factorial division.
