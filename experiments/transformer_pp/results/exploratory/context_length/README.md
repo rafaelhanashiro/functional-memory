@@ -7,7 +7,7 @@ tokens they were trained on, and how do they compare when trained at 4,096 token
 
 ## Length extrapolation of 2,048-token checkpoints
 
-`r8e4d56dfc830``r8e4d56dfc830` scores five validation-best checkpoints (update 7,500, 7,570-update runs)
+`r8e4d56dfc830` scores five validation-best checkpoints (update 7,500, 7,570-update runs)
 per position, with no training:
 
 | Role | Run | Best validation PPL (2,048) |
