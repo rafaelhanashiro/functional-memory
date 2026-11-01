@@ -1,0 +1,271 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r8e4d56dfc830/completion.json",
+      "sha256": "6901cac49c34de5800833937554b536d6ac4e0b12654f517c0754d627827b992",
+      "size_bytes": 5126
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r8e4d56dfc830/metadata.json",
+      "sha256": "0146ef3871af93b43ac456e63d14e12fe895623e554a3cf6aa23c88c617c24f6",
+      "size_bytes": 1006
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r8e4d56dfc830/metrics.jsonl",
+      "sha256": "5260ae4d8791d3aa7e4de3e0fb156f2e0cf683c423ac078413e0edb2d6ac4c3b",
+      "size_bytes": 601807
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r8e4d56dfc830/training.log",
+      "sha256": "9d14d711f94505dd5589ed148f473dece84a11a01b6fef1cca486c4b853c93df",
+      "size_bytes": 4250
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "XLA_FLAGS": null
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-01T05:52:28.600533+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "debug",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "231943",
+      "source_commit": "196f310ad6b487a9017091b8c446dc92fb4fd18b",
+      "started_utc": "2026-11-01T05:38:28.421041+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r8e4d56dfc830/completion.json",
+    "sha256": "6901cac49c34de5800833937554b536d6ac4e0b12654f517c0754d627827b992",
+    "size_bytes": 5126
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml",
+    "sha256": "6809828a3e4de911fb88131240e74728db727c4448a421a08b7bf056c559ae38"
+  },
+  "evaluation_outcome": {
+    "finished_utc": "2026-11-01T05:52:11.394386+00:00",
+    "interpretation": "Validation-best 2,048-token checkpoints scored per position at 2,048 (replaying each model's validation set) and at 4,096 tokens on rows cut from the same validation stream; no gradient or optimizer update.",
+    "measurements": [
+      {
+        "attention_backend": "fused",
+        "checkpoint_step": 7500,
+        "length": "training",
+        "nll": 2.65725492780142,
+        "perplexity": 14.257098567957884,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.657260386567367,
+        "replay_absolute_error": 5.45876594681971e-06,
+        "role": "exp",
+        "seconds": 46.6,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r6a76e7fbde45"
+      },
+      {
+        "attention_backend": "fused",
+        "checkpoint_step": 7500,
+        "length": "evaluation",
+        "nll": 2.646924988889671,
+        "nll_beyond_training_length": 2.633348162620295,
+        "nll_within_training_length": 2.660501815159047,
+        "perplexity": 14.110581668871012,
+        "prediction_tokens": 9961472,
+        "role": "exp",
+        "seconds": 39.1,
+        "sequence_length": 4097,
+        "sequences": 2432,
+        "source_run_id": "r6a76e7fbde45"
+      },
+      {
+        "attention_backend": "cudnn",
+        "checkpoint_step": 7500,
+        "length": "training",
+        "nll": 2.6771063004914,
+        "perplexity": 14.542949423836154,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.677095508889148,
+        "replay_absolute_error": 1.079160225181397e-05,
+        "role": "softmax",
+        "seconds": 44.7,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r9040f12f3d80"
+      },
+      {
+        "attention_backend": "cudnn",
+        "checkpoint_step": 7500,
+        "length": "evaluation",
+        "nll": 2.678666777314615,
+        "nll_beyond_training_length": 2.6766504829481024,
+        "nll_within_training_length": 2.680683071681128,
+        "perplexity": 14.565661075247323,
+        "prediction_tokens": 9961472,
+        "role": "softmax",
+        "seconds": 25.4,
+        "sequence_length": 4097,
+        "sequences": 2432,
+        "source_run_id": "r9040f12f3d80"
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "length": "training",
+        "nll": 2.6884293969675896,
+        "perplexity": 14.708556466064591,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 1.2138323564059306e-06,
+        "role": "query_wdecay_m4",
+        "seconds": 39.2,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2"
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "length": "evaluation",
+        "nll": 3.812940407428055,
+        "nll_beyond_training_length": 4.933841952420488,
+        "nll_within_training_length": 2.6920388624356217,
+        "perplexity": 45.28339492884333,
+        "prediction_tokens": 9961472,
+        "role": "query_wdecay_m4",
+        "seconds": 35.6,
+        "sequence_length": 4097,
+        "sequences": 2432,
+        "source_run_id": "rca97cc9db8f2"
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "length": "training",
+        "nll": 2.6893235128669213,
+        "perplexity": 14.721713501337804,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6893279011312283,
+        "replay_absolute_error": 4.388264307042533e-06,
+        "role": "fixed_taylor_m4",
+        "seconds": 30.5,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r816ab0fbe119"
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "length": "evaluation",
+        "nll": 3.7098936703244028,
+        "nll_beyond_training_length": 4.726880924844361,
+        "nll_within_training_length": 2.692906415804445,
+        "perplexity": 40.849462785933724,
+        "prediction_tokens": 9961472,
+        "role": "fixed_taylor_m4",
+        "seconds": 31.9,
+        "sequence_length": 4097,
+        "sequences": 2432,
+        "source_run_id": "r816ab0fbe119"
+      },
+      {
+        "attention_backend": "blocked",
+        "checkpoint_step": 7500,
+        "length": "training",
+        "nll": 2.6299720698487743,
+        "perplexity": 13.873382411049835,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6299757886874047,
+        "replay_absolute_error": 3.7188386303732557e-06,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 78.0,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r4a80e28ce0a7"
+      },
+      {
+        "attention_backend": "blocked",
+        "checkpoint_step": 7500,
+        "length": "evaluation",
+        "nll": 2.6081756524304422,
+        "nll_beyond_training_length": 2.583084971070811,
+        "nll_within_training_length": 2.6332663337900732,
+        "perplexity": 13.574264073185489,
+        "prediction_tokens": 9961472,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 123.7,
+        "sequence_length": 4097,
+        "sequences": 2432,
+        "source_run_id": "r4a80e28ce0a7"
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
+  "home_cluster": "kennel",
+  "label": "per-position-extrapolation-2k-to-4k",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r8e4d56dfc830/training.log",
+    "sha256": "9d14d711f94505dd5589ed148f473dece84a11a01b6fef1cca486c4b853c93df",
+    "size_bytes": 4250
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r8e4d56dfc830/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r8e4d56dfc830/metadata.json",
+    "sha256": "0146ef3871af93b43ac456e63d14e12fe895623e554a3cf6aa23c88c617c24f6",
+    "size_bytes": 1006
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r8e4d56dfc830/metrics.jsonl",
+    "sha256": "5260ae4d8791d3aa7e4de3e0fb156f2e0cf683c423ac078413e0edb2d6ac4c3b",
+    "size_bytes": 601807
+  },
+  "name": "per-position-extrapolation-2k-to-4k",
+  "parent_run_ids": [
+    "r6a76e7fbde45",
+    "r9040f12f3d80",
+    "rca97cc9db8f2",
+    "r816ab0fbe119",
+    "r4a80e28ce0a7"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r8e4d56dfc830",
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-pp-context-4k/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "231943",
+    "source_commit": "196f310ad6b487a9017091b8c446dc92fb4fd18b",
+    "started_utc": "2026-11-01T05:38:28.421041+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "status": "complete"
+}
