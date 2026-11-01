@@ -86,3 +86,11 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r82a80d3091e2/best_validation.json
       sha256: 1b8cd8f7387d3ed93337ab9158dad4e6cacb7fcc6779c9dc5cad7ca2b8f01c53
+- study: transformer_pp
+  run_id: r74495b47d226
+  label: FoX + PaTH, projection WD
+  role: forget_gate_path_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r74495b47d226/config.yaml
+      sha256: 132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f

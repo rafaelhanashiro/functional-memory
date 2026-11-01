@@ -441,6 +441,11 @@ def attention_identity(config) -> dict:
                 "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
                 "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),
         })
+        if "attention_formula" in identity:
+            identity["attention_formula"] = identity["attention_formula"].replace(
+                "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
+        if model.attention_forget_gate:
+            identity["attention_implementation"] += "_forget_gate"
     return identity
 
 

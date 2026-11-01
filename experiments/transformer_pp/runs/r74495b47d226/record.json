@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
+    "sha256": "132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-fox-path-head-scale-w-decay",
+  "name": "query-m4-fox-path-head-scale-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r74495b47d226",
+  "status": "planned"
+}

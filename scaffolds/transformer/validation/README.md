@@ -11,6 +11,26 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### FoX with PaTH polynomial attention (2026-11-01)
+
+The query-polynomial PaTH reference and its six fused polynomial kernels accept
+cumulative FP32 log decay. Each causal weight is multiplied by `exp(L_t-L_i)`;
+the backward accumulates the query and key contributions to `dL`, then automatic
+differentiation propagates through the cumulative sum to the forget gate.
+Future-key differences are masked before exponentiation. The ungated kernel
+specializations retain their original arithmetic.
+
+Forty-seven focused CPU checks passed: 13 new independent mathematical checks,
+10 existing PaTH reference regressions, nine gated Triton interpreter checks,
+six ungated interpreter regressions, seven combined-model checks, and two
+positional-encoding checks. These cover all seven operand gradients, cumulative
+gate derivatives, chunk and split boundaries, zero/strong gates, causality,
+backbone initialization, parameter counts, and actual zero-gradient AdamW updates.
+Eight new GPU cases cover degree four and width 64 through context 2,048.
+Hardware qualification is pending; shared acceptance requires these GPU tests,
+the existing PaTH tests, and a full-recipe pilot with fresh-process resume before
+production training. CPU/interpreter success alone does not qualify a GPU.
+
 ### Continuation projection decay and FoX without RoPE (2026-10-31)
 
 The optional `qk_norm_token_scale_kernel_weight_decay` policy decays only the

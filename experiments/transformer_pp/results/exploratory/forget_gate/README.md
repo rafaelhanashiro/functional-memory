@@ -75,6 +75,24 @@ mask and the gate's decay, as in the Forgetting Transformer's RoPE-free variant.
   appears to be a better positional signal for this attention than RoPE's rotation.
 - Same cost caveat as above: 5.3 s per update on a B300 on the blocked backend.
 
+### FoX with PaTH and projection decay
+
+`r74495b47d226` tests the combination at degree four, with 7,570 updates (1×),
+seed 42, and the canonical Transformer++ recipe. PaTH replaces RoPE in the scores;
+the FoX product multiplies the resulting polynomial attention weights. Both the
+coefficient projection and forget-gate projection receive weight decay 0.1, as do
+PaTH's projection/convolution weights. Coefficient `a,b`, gate rates/biases, embeddings,
+and normalization parameters remain exempt. Both coefficient `a,b` retain the
+factorial order scaling. The peak/minimum learning rates are 0.001/0.0001, with
+455 warmup updates and the canonical QK RMSNorm plus learned head scale.
+
+The PaTH projection recipe matches `r1f2c24c109f9`; the FoX projection-decay recipe
+matches `r4a80e28ce0a7`. This run uses the shared fused PaTH kernels with cumulative
+log decay and explicit gate gradients. Its GPU tests and full-recipe acceptance
+pilot must pass before production training. The home cluster is Kennel; see the
+[study launch instructions](../../../README.md#fox-with-path).
+
 ## Open decision
 
-Extend the forget gate to fixed Taylor and other degrees (with a Mosaic kernel), or discard the topic.
+Determine whether combining FoX and PaTH improves on either alone with projection
+weight decay, then decide whether to promote this question or discard it.

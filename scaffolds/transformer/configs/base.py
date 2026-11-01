@@ -412,12 +412,15 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
+        forget_backend_supported = (
+            self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
+            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
+                or not forget_backend_supported):
             raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE or no positional encoding, on the blocked reference backend")
+                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay
