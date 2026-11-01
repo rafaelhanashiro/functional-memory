@@ -1,7 +1,7 @@
 """Single-GPU training of the unmodified, pinned FLA causal language model.
 
 The model and fused loss are upstream FLA. This module supplies packed data,
-gradient accumulation, the stock Flame optimizer/schedule, and run lifecycle.
+gradient accumulation, selective AdamW decay, the Flame schedule, and run lifecycle.
 """
 from __future__ import annotations
 
@@ -64,6 +64,64 @@ def learning_rate(config: dict, completed_steps: int) -> float:
     return o["learning_rate"] * factor
 
 
+def optimizer_parameter_groups(model, weight_decay: float) -> list[dict]:
+    """Partition trainable parameters by their role, preserving native exceptions.
+
+    Module identity handles embeddings and norm gains independently of shape or
+    registration name. An exemption wins if a shared parameter has several roles.
+    The untied LM head and convolution/projection kernels retain decay.
+    """
+    from fla.modules import FusedLayerNormGated, FusedRMSNormGated, GroupNorm, LayerNorm, RMSNorm
+
+    norm_types = (torch.nn.LayerNorm, torch.nn.RMSNorm, torch.nn.GroupNorm,
+                  LayerNorm, RMSNorm, GroupNorm, FusedLayerNormGated, FusedRMSNormGated)
+    exempt = set()
+    for module in model.modules():
+        exempt_module = isinstance(module, (torch.nn.Embedding, *norm_types))
+        for name, parameter in module.named_parameters(recurse=False, remove_duplicate=False):
+            if (exempt_module or name == "bias" or name.endswith("_bias")
+                    or getattr(parameter, "_no_weight_decay", False)):
+                exempt.add(id(parameter))
+    decayed, undecayed = [], []
+    for parameter in model.parameters():
+        if parameter.requires_grad:
+            (undecayed if id(parameter) in exempt else decayed).append(parameter)
+    return [{"params": decayed, "weight_decay": weight_decay},
+            {"params": undecayed, "weight_decay": 0.0}]
+
+
+def optimizer_policy_summary(model, optimizer) -> dict:
+    """Record the actual optimizer groups and reject omissions or duplicates."""
+    names = {id(parameter): name for name, parameter in model.named_parameters()
+             if parameter.requires_grad}
+    seen = set()
+    groups = []
+    for group in optimizer.param_groups:
+        parameters = group["params"]
+        identities = [id(parameter) for parameter in parameters]
+        if len(set(identities)) != len(identities) or seen.intersection(identities):
+            raise ValueError("An optimizer parameter appears in multiple groups")
+        if any(identity not in names for identity in identities):
+            raise ValueError("Optimizer contains an unknown or frozen parameter")
+        seen.update(identities)
+        groups.append({"weight_decay": float(group["weight_decay"]),
+                       "parameter_tensors": len(parameters),
+                       "parameter_count": sum(parameter.numel() for parameter in parameters),
+                       "parameter_names": [names[identity] for identity in identities]})
+    if seen != names.keys():
+        raise ValueError("Optimizer groups omit trainable model parameters")
+    return {"groups": groups, "parameter_tensors": len(names),
+            "parameter_count": sum(group["parameter_count"] for group in groups)}
+
+
+def should_evaluate(config: dict, step: int) -> bool:
+    """Use the study's early/late validation cadence and always evaluate terminal."""
+    train = config["train"]
+    interval = (train["eval_early_every"] if step <= train["eval_early_until"]
+                else train["eval_every"])
+    return step == config["optim"]["total_steps"] or step % interval == 0
+
+
 def build_model_optimizer(config: dict):
     from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetForCausalLM
 
@@ -78,11 +136,10 @@ def build_model_optimizer(config: dict):
     if any(p.dtype != torch.float32 for p in model.parameters()):
         raise ValueError("Native model master parameters must remain FP32")
     o = config["optim"]
-    # Stock Flame/TorchTitan uses every trainable parameter in one decay group,
-    # including FLA parameters marked _no_weight_decay by the model itself.
-    optimizer = torch.optim.AdamW(model.parameters(), lr=o["learning_rate"],
+    optimizer = torch.optim.AdamW(optimizer_parameter_groups(model, o["weight_decay"]), lr=o["learning_rate"],
                                  betas=(o["beta1"], o["beta2"]), eps=o["eps"],
                                  weight_decay=o["weight_decay"], fused=True)
+    optimizer_policy_summary(model, optimizer)
     return model, optimizer
 
 
@@ -258,6 +315,8 @@ def run_training(config_path, *, output_dir=None, stop_after_step=None,
     write_json(output / "config.json", config)
     print(json.dumps({"event": "initializing", **metadata}), flush=True)
     model, optimizer = build_model_optimizer(config)
+    metadata["optimizer_parameter_groups"] = optimizer_policy_summary(model, optimizer)
+    write_json(output / "metadata.json", metadata)
     write_json(output / "native_model_config.json", model.config.to_dict())
     criterion = FusedCrossEntropyLoss(inplace_backward=True)
     step, cursor, best, restored_extra = 0, 0, None, {}
@@ -317,7 +376,7 @@ def run_training(config_path, *, output_dir=None, stop_after_step=None,
             metric = {"step": step, "training_tokens": step * tokens_per_step, **last_train}
             if step % config["train"]["log_every"] == 0 or step == 1 or qualification:
                 append_metric(output / "metrics.jsonl", metric, tracker)
-            should_eval = step % config["train"]["eval_every"] == 0 or step == target
+            should_eval = should_evaluate(config, step) or step == target
             improved = False
             if should_eval:
                 validation = {"step": step, "training_tokens": step * tokens_per_step,

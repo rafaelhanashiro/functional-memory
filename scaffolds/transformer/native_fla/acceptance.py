@@ -199,12 +199,17 @@ def run_acceptance(config_path: str | Path, output: str | Path) -> dict:
         pilots[name] = json.loads((output / f"{name}.json").read_text())
     resume = compare_checkpoint_states(output / "reference/checkpoints/3", output / "resumed/checkpoints/3")
     metrics = compare_pilot_summaries(pilots["reference"], pilots["resumed"], config)
+    optimizer_groups = json.loads((output / "reference/metadata.json").read_text())["optimizer_parameter_groups"]
+    resumed_groups = json.loads((output / "resumed/metadata.json").read_text())["optimizer_parameter_groups"]
+    if optimizer_groups != resumed_groups or optimizer_groups["parameter_count"] != parameter_count(config):
+        raise RuntimeError("Native FLA optimizer policy changed across fresh-process resume")
     report = {"status": "passed" if resume["exact"] and metrics["exact"] else "failed",
               "identity": identity, "identity_sha256": identity_sha256,
               **{key: identity[key] for key in ("launch_commit", "config_sha256", "dependency_lock_sha256",
                                                "gpu_count", "gpu_type")},
               "cpu_tests": {"cases": len(cases), "command": test_command},
-              "resume": resume, "metrics": metrics, "pilots": pilots}
+              "resume": resume, "metrics": metrics, "pilots": pilots,
+              "optimizer_parameter_groups": optimizer_groups}
     _write_json(output / "audit.json", report)
     if report["status"] != "passed":
         raise RuntimeError(f"Native FLA resume differs from uninterrupted training; see {output / 'audit.json'}")

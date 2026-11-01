@@ -50,10 +50,10 @@ optim:
   beta2: 0.95
   eps: 1.0e-15
   weight_decay: 0.1
-  weight_decay_policy: all_parameters
+  weight_decay_policy: exclude_embeddings_norms_biases_v1
   grad_clip_norm: 1.0
-  warmup_steps: 379
-  total_steps: 7570
+  warmup_steps: 946
+  total_steps: 18925
   schedule: cosine
   implementation: fused
 train:
@@ -61,14 +61,16 @@ train:
   dtype: bfloat16
   micro_batch_size: 8
   log_every: 10
-  eval_every: 379
+  eval_every: 1250
+  eval_early_every: 250
+  eval_early_until: 3750
   eval_batches: 19
   ckpt_every: 1024
   source_commit: auto
-  workdir: experiments/transformer_pp/runs/r8f464a439af8
-  checkpoint_dir: experiments/transformer_pp/runs/r8f464a439af8/checkpoints
+  workdir: experiments/transformer_pp/runs/r2ebc05346f44
+  checkpoint_dir: experiments/transformer_pp/runs/r2ebc05346f44/checkpoints
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
   wandb_group: transformer_pp
-  wandb_run_name: native-fla-gdn-1x
+  wandb_run_name: native-fla-gdn-2.5x
   wandb_mode: online

@@ -131,89 +131,69 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Native Gated DeltaNet baseline
 
-The canonical GDN baselines train the upstream PyTorch FLA
-`GatedDeltaNetForCausalLM`, with home cluster **Kennel**. Each complete recipe is
-independent of `recipe.yaml`. The models match the approximate Transformer++
-parameter count while retaining their own FLA architecture and initialization
-and Flame optimizer settings.
+The GDN baselines train the upstream PyTorch FLA `GatedDeltaNetForCausalLM`,
+with home cluster **Kennel**, at the study's 1× and 2.5× token budgets. Their complete
+recipes are independent of `recipe.yaml`; the native architecture and initialization
+remain model-specific.
 
 The architecture follows [FLA at `516143e`](https://github.com/fla-org/flash-linear-attention/tree/516143e31fce09925e6c39ac37148444bad176c4/fla/models/gated_deltanet),
 scaled to **200,205,878 parameters**: 9 layers, hidden width 1024, three heads with
 key/query width 256 and value width 512, SwiGLU width 2816, vocabulary 32,000,
 and untied embeddings. It preserves FLA's projection ratios and FFN rounding rule,
 short convolutions of width 4, gates, L2-normalized Q/K, RMSNorm epsilon 1e-6,
-and no positional encoding. Heads are not grouped: no GQA or grouped value attention.
-There is no claim that upstream publishes this exact model size.
+and no positional encoding. There is no grouped query or value attention.
+FLA's full-model constructor supplies untruncated normal initialization with standard
+deviation 0.02 for linear, embedding and convolution weights, no residual projection
+rescaling, unit norm gains, and native decay/time-step initialization.
 
-FLA's constructor supplies all initialization: untruncated normal weights with
-standard deviation 0.02 for linear, embedding and convolution weights, no residual
-projection rescaling, unit norm gains, and native decay/time-step initialization.
-The runtime imports the upstream implementation directly and does not replace
-layers, initialization functions, or arithmetic with the project's JAX port.
+The optimizer retains the [generic Flame reference](https://github.com/fla-org/flame/blob/24dea9133e2166da89a563afbdcefb7c55615646/flame/models/fla.toml)
+and [pinned TorchTitan scheduler](https://github.com/pytorch/torchtitan/tree/0b44d4c437c424b6bf719661c0eb4283dc4068bc/torchtitan/components)
+values: AdamW peak LR **0.0003**, floor **0.00003**, betas **(0.9, 0.95)**,
+epsilon **1e-15**, clipping at **1**, and **5% warmup** followed by cosine decay over
+the run's explicit horizon. These are reference-derived choices, not an LR optimum
+established for this model size. The zero-based TorchTitan scheduler indexing is preserved.
 
-Training follows the [generic Flame configuration at `24dea91`](https://github.com/fla-org/flame/blob/24dea9133e2166da89a563afbdcefb7c55615646/flame/models/fla.toml)
-and its [pinned TorchTitan optimizer/scheduler](https://github.com/pytorch/torchtitan/tree/0b44d4c437c424b6bf719661c0eb4283dc4068bc/torchtitan/components).
-This is a stock training reference, not a published GDN-specific tuned run:
-AdamW with peak LR 0.0003, floor 0.00003, betas (0.9, 0.95), epsilon 1e-15,
-weight decay 0.1 on **all parameters**, gradient clipping at 1, 1024 warmup
-updates and cosine decay over 20,480 updates. The global batch is 256 sequences
-of 2048 predictions, seed 42, totaling **10,737,418,240 prediction tokens**.
-The schedule preserves TorchTitan's zero-based LambdaLR indexing. An explicit
-budget adaptation keeps the warmup fraction at 5%, rounded half up to whole updates,
-and compresses cosine decay to the requested horizon. Peak/floor LR, all other
-optimizer values, model settings, seed and data order stay fixed.
+Weight decay **0.1** applies to projection, gate, FFN, LM-head and convolution kernels.
+Token embeddings, normalization parameters, biases and native `_no_weight_decay`
+parameters (including `A_log` and `dt_bias`) are exempt. The actual optimizer groups
+are checked against the instantiated model and recorded in runtime metadata.
 
-| Run | Label | Budget | Updates | Warmup / validation cadence | Prediction tokens |
-| --- | --- | --- | ---: | ---: | ---: |
-| [`r5a72631d236c`](runs/r5a72631d236c/config.yaml) | native-fla-gdn | Stock Flame horizon | 20,480 | 1,024 | 10,737,418,240 |
-| [`r8f464a439af8`](runs/r8f464a439af8/config.yaml) | native-fla-gdn-1x | Study 1× budget | 7,570 | 379 | 3,968,860,160 |
+| Run | Budget | Updates | Warmup | Validation | Prediction tokens |
+| --- | --- | ---: | ---: | --- | ---: |
+| [`r6b38709ed8d3`](runs/r6b38709ed8d3/config.yaml) | 1× | 7,570 | 379 | every 100 through 1,500, then every 500 | 3,968,860,160 |
+| [`r2ebc05346f44`](runs/r2ebc05346f44/config.yaml) | 2.5× | 18,925 | 946 | every 250 through 3,750, then every 1,250 | 9,922,150,400 |
 
-Both runs train from initialization with seed 42. The 1× run matches the study's
-1× token budget exactly, using the same 200,205,878-parameter model. It retains
-the FLA/Flame peak LR of 0.0003 and uses its own 379-update warmup.
-
-Explicit project adaptations are the existing shuffled, EOS-packed FineWeb-Edu
-corpus and Llama-2 tokenizer, single-GPU accumulation (microbatch 8, 32 microsteps),
-eager BF16 autocast with FP32 master parameters (TorchTitan's single-device
-precision path), and local records/checkpoint/W&B
-integration. Nonfinite losses/gradients stop and record a numerical failure under
-this repository's policy; Flame's generic `skip_nan_inf` option instead skips such
-updates. The project's packed T+1 convention supervises all 2048 prediction
-positions; Flame's 2048-token input/label shifting supervises 2047. The token total
-above counts actual prediction targets here. Validation evaluates the same first
-4864 held-out sequences at the cadence in the table and at the end; logging is
-every 10 updates and regular checkpointing every 1024. These monitoring choices
-are not attributed to FLA defaults. The stock Flame horizon exceeds the study's
-2.5× token budget; the 1× GDN run supports a matched-token comparison with 1×
-Transformer++ runs.
+Both train independently from initialization with seed 42. They use the same shuffled,
+EOS-packed FineWeb-Edu data, Llama-2 tokenizer, global batch 256 and 2,048 next-token
+predictions per sequence as the Transformer++ runs. One GPU accumulates 32 microbatches
+of eight sequences. Native BF16 autocast retains FP32 master parameters and optimizer
+states; the model runs eagerly without `torch.compile`. The explicit next-token targets
+avoid applying FLA's internal label shift twice. Every evaluation uses the first 4,864
+held-out sequences, including evaluation at the final update. Logging is every ten
+updates and regular checkpointing every 1,024 updates; a new validation best is also saved.
 
 The native runtime has its own lock and CUDA PyTorch environment under
-`scaffolds/transformer/native_fla/`. After syncing it and committing frozen inputs,
-run from the experiment worktree root:
+`scaffolds/transformer/native_fla/`. From this experiment's worktree, sync the environment,
+commit the frozen execution inputs, then submit the two runs independently after checking
+live partition allowances:
 
 ```bash
 uv sync --project scaffolds/transformer/native_fla --locked --link-mode hardlink
 scaffolds/transformer/native_fla/.venv/bin/python -m pytest -q \
   scaffolds/transformer/native_fla/tests scaffolds/records/tests/test_native_fla_records.py
-scaffolds/transformer/native_fla/.venv/bin/python \
-  -m scaffolds.transformer.native_fla.launch \
-  --run experiments/transformer_pp/runs/r5a72631d236c --acceptance
-scaffolds/transformer/native_fla/.venv/bin/python \
-  -m scaffolds.transformer.native_fla.launch \
-  --run experiments/transformer_pp/runs/r5a72631d236c --partition standard --time 24:00:00
-
-# The production launcher qualifies this fresh 1× recipe before training.
-scaffolds/transformer/native_fla/.venv/bin/python \
-  -m scaffolds.transformer.native_fla.launch \
-  --run experiments/transformer_pp/runs/r8f464a439af8 --partition standard --time 08:00:00
+scaffolds/transformer/native_fla/.venv/bin/python -m scaffolds.transformer.native_fla.launch \
+  --run experiments/transformer_pp/runs/r6b38709ed8d3 --partition standard --time 08:00:00
+scaffolds/transformer/native_fla/.venv/bin/python -m scaffolds.transformer.native_fla.launch \
+  --run experiments/transformer_pp/runs/r2ebc05346f44 --partition standard --time 16:00:00
 ```
 
-Production requires passing full-shape forward/backward training and a fresh-process
-checkpoint resume audit. The launcher uses one B300 with the locked CUDA 13
-environment; allocation policy lives in [CLUSTERS.md](../../CLUSTERS.md). Records
-contain exact launch commands, frozen-source identity, hardware and acceptance
-evidence. Latest and validation-best checkpoints are retained during training;
-completion retains only validation best and preserves terminal metrics separately.
+The launcher requires a passed full-model forward/backward pilot and exact fresh-process
+checkpoint resume for each frozen recipe before training. It uses one B300 and the locked
+CUDA 13 environment. Allocation policy lives in [CLUSTERS.md](../../CLUSTERS.md).
+Run records capture source identity, hardware, acceptance and scheduler attempts. Latest
+and validation-best checkpoints are retained during training; completion retains only
+validation best and preserves terminal metrics separately. Fresh reproductions receive
+new IDs; resumptions keep their ID and frozen configuration.
 
 ## Query coefficients across key width and degree
 

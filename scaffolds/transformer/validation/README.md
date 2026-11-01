@@ -11,48 +11,15 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
-### Native FLA Gated DeltaNet (2026-10-31)
+### Native FLA Gated DeltaNet
 
-The native configuration also supports explicit training-token budgets while
-preserving all architecture and optimizer values except the horizon and
-proportional warmup. At 7,570 updates, warmup is 379 updates (5%, rounded half up).
-The extended CPU suite passed 87 runtime cases and four native-record cases.
-Added checks cover budget rounding, unchanged default recipes and model settings,
-the shorter schedule's first/peak/final learning rates, and resumed-step indexing.
-The [1× recipe qualification](native_fla_1x.json) passed on B300 in job 231755
-at source `d4fcd98c`: the full-model three-update control and two-plus-one
-fresh-process resume matched exactly across 662 tensors, RNG/input state and
-training/validation metrics. Warm updates took 1.981 and 2.038 seconds. Each run's
-acceptance record also retains its qualification identity and outcome.
+The native runtime preserves the upstream architecture and initialization while using
+explicit token budgets, 5% warmup and selective weight decay. CPU checks cover the
+instantiated model's decay groups, real zero-gradient AdamW updates, next-token target
+alignment, evaluation cadence and scheduler boundaries. Production requires full-model
+GPU training and an exact fresh-process checkpoint/optimizer/RNG/data-cursor resume.
+The current qualification records are added after their GPU acceptance completes.
 
-The [native-runtime qualification](native_fla_gdn.json) passed on one NVIDIA B300
-SXM6 AC in job 230994 at source `fa2d034f`. It uses the pinned upstream FLA model,
-200,205,878 parameters, nine layers, three heads with K=256/V=512, context 2048,
-global batch 256 and microbatch 8, through CUDA PyTorch with BF16 autocast and FP32
-master parameters. Model construction, training, fused loss, validation and full
-optimizer checkpointing all passed at the production dimensions.
-
-The CPU suite passed 60 runtime cases in the allocation. Four native-record tests
-and 50 existing record/selection cases passed separately on CPU. Tests verify
-upstream initialization/defaults, all-parameter weight decay, stock TorchTitan
-schedule boundaries, next-token alignment, atomic checkpoints, signal forwarding,
-and interrupted finalization.
-
-An uninterrupted three-update pilot was compared with two updates followed by a
-fresh-process restore and one update. All 662 compared tensors and 811 scalar
-state entries matched exactly, including model, optimizer, RNG and input cursor;
-the final training loss, gradient norm and validation metrics also matched exactly.
-The pilot checkpoints were then removed. This qualifies resume and finite short
-training on B300, not convergence or numerical stability over a complete run.
-
-Cold compilation made the first update take 308.43 seconds. The next two global
-updates took 1.991 and 1.984 seconds, projecting approximately 11.3 hours for
-20,480 training updates before evaluation/checkpoint overhead. The sampled
-256-sequence validation took 0.761 seconds. This is a short throughput sample,
-not a guaranteed end-to-end runtime. Exact environment, source, configuration and
-data identities are in the linked record. Reproduce through
-`python -m scaffolds.transformer.native_fla.launch --run <canonical-run-directory> --acceptance`
-using that runtime's locked environment and a committed frozen execution set.
 ### Continuation projection decay and FoX without RoPE (2026-10-31)
 
 The optional `qk_norm_token_scale_kernel_weight_decay` policy decays only the

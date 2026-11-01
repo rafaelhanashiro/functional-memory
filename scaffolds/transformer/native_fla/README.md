@@ -5,13 +5,18 @@ the Transformer scaffold as a reusable model-family runtime, with an independent
 CUDA PyTorch environment. It does not instantiate the JAX Transformer backbone or
 load its configuration defaults.
 
-`config.py` pins the upstream architecture, initialization and stock Flame
-optimizer recipe. `reference_recipe()` returns a complete template; callers fill
+`config.py` pins the upstream architecture, initialization and Flame learning-rate,
+Adam and warmup settings, with the project's selective weight-decay policy.
+`reference_recipe()` returns a complete template at 7,570 updates; callers fill
 dataset manifests, output paths and tracking identity. `validate_config()` rejects
 undeclared scientific overrides. `reference_recipe(total_steps=...)` explicitly
 adapts the token budget: warmup keeps the reference's 5% fraction (rounded half up
-to whole updates, minimum one), and evaluation cadence scales by the same factor.
-All other optimizer values and the regular checkpoint cadence remain fixed.
+to whole updates, minimum one). Evaluation follows the project's early/regular
+cadence, scaled with the budget: every 100 through update 1,500, then every 500
+for 7,570 updates; every 250 through update 3,750, then every 1,250 for 18,925
+updates. Both always evaluate at the final update. The corresponding warmups are
+379 and 946 updates. Learning rate remains 0.0003 to 0.00003 and Adam epsilon
+remains 1e-15; the regular checkpoint cadence remains fixed.
 Native FLA owns all layers and their
 initialization; the runtime preserves FP32 master parameters and uses BF16
 autocast. Model execution is eager, without `torch.compile`.
@@ -26,8 +31,10 @@ scaffolds/transformer/native_fla/.venv/bin/python -m pytest -q \
 reader. From each row of T+1 tokens it passes the first T tokens to FLA and applies
 FLA's fused cross-entropy to the last T tokens; passing those targets through
 FLA's `labels` argument would shift them twice. Gradient accumulation keeps the
-configured global batch constant on one GPU. AdamW uses the stock Flame parameter
-group, including weight decay on every parameter. The schedule reproduces the
+configured global batch constant on one GPU. AdamW excludes embeddings, normalization
+parameters, biases, and parameters marked `_no_weight_decay` by the upstream model,
+including GDN's `A_log` and `dt_bias`. Projection matrices, the untied output head,
+and convolution kernels receive weight decay 0.1. The schedule reproduces the
 pinned TorchTitan LambdaLR indexing, including the initial warmup update and
 virtual stable step.
 

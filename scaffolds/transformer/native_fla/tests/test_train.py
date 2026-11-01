@@ -10,7 +10,7 @@ from torch import nn
 import yaml
 
 from scaffolds.transformer.native_fla import train
-from scaffolds.transformer.native_fla.config import reference_recipe
+from scaffolds.transformer.native_fla.config import fla_model_kwargs, parameter_count, reference_recipe
 
 
 @pytest.mark.parametrize("completed_steps,expected", [
@@ -25,11 +25,11 @@ from scaffolds.transformer.native_fla.config import reference_recipe
 def test_learning_rate_matches_pinned_torchtitan_boundaries(completed_steps, expected):
     # The constructor applies LambdaLR(0) before update 1. A one-index shift
     # would alter both the first update and the two-update plateau at the peak.
-    assert train.learning_rate(reference_recipe(), completed_steps) == pytest.approx(expected, rel=1e-12)
+    assert train.learning_rate(reference_recipe(total_steps=20480), completed_steps) == pytest.approx(expected, rel=1e-12)
 
 
 def test_last_update_precedes_the_final_scheduler_tick():
-    recipe = reference_recipe()
+    recipe = reference_recipe(total_steps=20480)
     last = train.learning_rate(recipe, 20479)
     assert 3e-5 < last < 3.000001e-5
     with pytest.raises(ValueError, match="horizon"):
@@ -67,6 +67,25 @@ def test_one_chinchilla_schedule_uses_frozen_horizon_on_resume():
     with pytest.raises(ValueError, match="horizon"):
         train.learning_rate(recipe, 7570)
     assert recipe["optim"]["total_steps"] * recipe["data"]["batch_size"] * (recipe["data"]["sequence_length"] - 1) == 3968860160
+
+
+@pytest.mark.parametrize("total,expected", [
+    (7570, set(range(100, 1501, 100)) | set(range(2000, 7501, 500)) | {7570}),
+    (18925, set(range(250, 3751, 250)) | set(range(5000, 18751, 1250)) | {18925}),
+])
+def test_validation_uses_matched_early_late_and_terminal_steps(total, expected):
+    config = reference_recipe(total_steps=total)
+    assert {step for step in range(1, total + 1) if train.should_evaluate(config, step)} == expected
+
+
+def test_two_and_half_chinchilla_learning_rate_retains_reference_settings():
+    config = reference_recipe(total_steps=18925)
+    assert config["optim"]["warmup_steps"] == 946
+    assert train.learning_rate(config, 0) == pytest.approx(3e-4 / 946)
+    assert train.learning_rate(config, 945) == pytest.approx(3e-4)
+    assert train.learning_rate(config, 946) == pytest.approx(3e-4)
+    assert 3e-5 < train.learning_rate(config, 18924) < 3.000002e-5
+    assert config["optim"]["eps"] == 1e-15
 
 
 def test_batch_loss_supervises_all_next_tokens_without_double_shift(monkeypatch):
@@ -120,7 +139,7 @@ def test_batch_loss_supervises_all_next_tokens_without_double_shift(monkeypatch)
     assert torch.count_nonzero(model.scores.grad[0]) == 6
 
 
-def test_optimizer_uses_native_config_and_every_parameter(monkeypatch):
+def test_optimizer_uses_native_settings_and_selective_groups(monkeypatch):
     import fla.models.gated_deltanet as upstream
 
     calls = {}
@@ -130,7 +149,7 @@ def test_optimizer_uses_native_config_and_every_parameter(monkeypatch):
             super().__init__()
             self.config = config
             self.weight = nn.Parameter(torch.randn(2, 3))
-            self.norm = nn.Parameter(torch.ones(3))
+            self.norm = nn.RMSNorm(3)
             self.decay = nn.Parameter(torch.zeros(1))
             self.decay._no_weight_decay = True
 
@@ -143,9 +162,9 @@ def test_optimizer_uses_native_config_and_every_parameter(monkeypatch):
         return SimpleNamespace(**kwargs)
 
     def optimizer_class(parameters, **kwargs):
-        calls["parameters"] = list(parameters)
+        calls["groups"] = list(parameters)
         calls["optimizer"] = kwargs
-        return SimpleNamespace()
+        return SimpleNamespace(param_groups=calls["groups"])
 
     monkeypatch.setattr(upstream, "GatedDeltaNetConfig", config_class)
     monkeypatch.setattr(upstream, "GatedDeltaNetForCausalLM", TinyModel)
@@ -156,11 +175,108 @@ def test_optimizer_uses_native_config_and_every_parameter(monkeypatch):
     model, _ = train.build_model_optimizer(recipe)
     assert calls["config"] == recipe["model"]
     assert calls["cuda"]
-    assert {id(p) for p in calls["parameters"]} == {id(p) for p in model.parameters()}
-    assert id(model.decay) in {id(p) for p in calls["parameters"]}
+    decayed, undecayed = calls["groups"]
+    assert {id(p) for p in decayed["params"]} == {id(model.weight)}
+    assert {id(p) for p in undecayed["params"]} == {id(model.norm.weight), id(model.decay)}
+    assert decayed["weight_decay"] == 0.1 and undecayed["weight_decay"] == 0.0
     assert all(p.dtype == torch.float32 for p in calls["parameters"])
     assert calls["optimizer"] == {"lr": 3e-4, "betas": (0.9, 0.95), "eps": 1e-15,
                                   "weight_decay": 0.1, "fused": True}
+
+
+def test_decay_policy_uses_roles_and_handles_shared_parameters():
+    class Roles(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.embedding = nn.Embedding(7, 3)
+            self.alias = nn.Linear(3, 7, bias=False)
+            self.alias.weight = self.embedding.weight
+            self.norm = nn.LayerNorm((2, 3))
+            self.projection = nn.Linear(3, 3)
+            self.conv = nn.Conv1d(3, 3, 3)
+            self.scalar = nn.Parameter(torch.tensor(2.))
+            self.special = nn.Parameter(torch.ones(2, 2))
+            self.special._no_weight_decay = True
+            self.frozen = nn.Parameter(torch.ones(3), requires_grad=False)
+
+    model = Roles()
+    groups = train.optimizer_parameter_groups(model, 0.1)
+    decayed = {id(p) for p in groups[0]["params"]}
+    assert decayed == {id(model.projection.weight), id(model.conv.weight), id(model.scalar)}
+    summary = train.optimizer_policy_summary(model, SimpleNamespace(param_groups=groups))
+    assert summary["parameter_tensors"] == len([p for p in model.parameters() if p.requires_grad])
+    assert summary["parameter_count"] == sum(p.numel() for p in model.parameters() if p.requires_grad)
+    assert {name for g in summary["groups"] for name in g["parameter_names"]} == {
+        name for name, p in model.named_parameters() if p.requires_grad}
+
+
+@pytest.mark.parametrize("problem", ["duplicate", "missing", "unknown"])
+def test_policy_audit_rejects_incomplete_or_duplicate_optimizer_groups(problem):
+    model = nn.Linear(3, 2)
+    groups = train.optimizer_parameter_groups(model, 0.1)
+    if problem == "duplicate":
+        groups[1]["params"].append(model.weight)
+    elif problem == "missing":
+        groups[0]["params"].clear()
+    else:
+        groups[0]["params"].append(nn.Parameter(torch.ones(1)))
+    with pytest.raises(ValueError, match="optimizer|Optimizer"):
+        train.optimizer_policy_summary(model, SimpleNamespace(param_groups=groups))
+
+
+def test_full_native_model_decay_groups_cover_all_parameters_and_native_exemptions():
+    from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetForCausalLM
+
+    config = reference_recipe()
+    with torch.device("meta"):
+        model = GatedDeltaNetForCausalLM(GatedDeltaNetConfig(**fla_model_kwargs(config)))
+    groups = train.optimizer_parameter_groups(model, 0.1)
+    summary = train.optimizer_policy_summary(model, SimpleNamespace(param_groups=groups))
+    assert summary["parameter_count"] == parameter_count(config) == 200_205_878
+    decayed = {id(p) for p in groups[0]["params"]}
+    assert id(model.model.embeddings.weight) not in decayed
+    assert id(model.model.norm.weight) not in decayed
+    assert id(model.lm_head.weight) in decayed
+    for layer in model.model.layers:
+        assert id(layer.attn_norm.weight) not in decayed
+        assert id(layer.mlp_norm.weight) not in decayed
+        attention = layer.attn
+        for parameter in (attention.A_log, attention.dt_bias, attention.o_norm.weight):
+            assert id(parameter) not in decayed
+        for projection in (attention.q_proj, attention.k_proj, attention.v_proj, attention.g_proj,
+                           attention.a_proj, attention.b_proj, attention.o_proj,
+                           layer.mlp.gate_proj, layer.mlp.up_proj, layer.mlp.down_proj):
+            assert id(projection.weight) in decayed
+        for convolution in (attention.q_conv1d, attention.k_conv1d, attention.v_conv1d):
+            assert id(convolution.weight) in decayed
+
+
+def test_native_cpu_adamw_update_decays_only_selected_weights():
+    from fla.models.gated_deltanet import GatedDeltaNetConfig, GatedDeltaNetForCausalLM
+
+    kwargs = fla_model_kwargs(reference_recipe())
+    kwargs.update(hidden_size=128, num_hidden_layers=2, num_heads=3, head_dim=32,
+                  intermediate_size=512, vocab_size=1024)
+    torch.manual_seed(42)
+    model = GatedDeltaNetForCausalLM(GatedDeltaNetConfig(**kwargs))
+    groups = train.optimizer_parameter_groups(model, 0.1)
+    optimizer = torch.optim.AdamW(groups, lr=0.01, betas=(0.9, 0.95), eps=1e-15, foreach=False)
+    train.optimizer_policy_summary(model, optimizer)
+    before = {id(p): p.detach().clone() for p in model.parameters()}
+    decayed = {id(p) for p in groups[0]["params"]}
+    for parameter in model.parameters():
+        parameter.grad = torch.zeros_like(parameter)
+    optimizer.step()
+    for parameter in model.parameters():
+        original = before[id(parameter)]
+        expected = original * (1 - 0.01 * 0.1) if id(parameter) in decayed else original
+        torch.testing.assert_close(parameter, expected, rtol=0, atol=0)
+        if id(parameter) in decayed:
+            assert not torch.equal(parameter, original)
+    for layer in model.model.layers:
+        for parameter in (layer.attn.A_log, layer.attn.dt_bias):
+            assert torch.count_nonzero(before[id(parameter)]) > 0
+            assert torch.equal(parameter, before[id(parameter)])
 
 
 def test_rewind_preserves_both_train_and_validation_at_checkpoint(tmp_path):

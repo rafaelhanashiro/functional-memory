@@ -11,7 +11,7 @@ from scaffolds.transformer.native_fla.config import (
 )
 
 
-def complete_recipe(*, total_steps=20480):
+def complete_recipe(*, total_steps=7570):
     recipe = reference_recipe(total_steps=total_steps)
     recipe["data"].update(train_manifest="/data/train/manifest.json", eval_manifest="/data/eval/manifest.json")
     recipe["train"].update(workdir="/runs/example", checkpoint_dir="/runs/example/checkpoints", wandb_mode="disabled")
@@ -25,35 +25,65 @@ def test_reference_is_explicit_and_survives_yaml(tmp_path):
     path.write_text(yaml.safe_dump(recipe))
     assert load_config(path) == recipe
     assert parameter_count(recipe) == 200_205_878
-    assert recipe["data"]["batch_size"] * (recipe["data"]["sequence_length"] - 1) * recipe["optim"]["total_steps"] == 10_737_418_240
+    assert recipe["data"]["batch_size"] * (recipe["data"]["sequence_length"] - 1) * recipe["optim"]["total_steps"] == 3_968_860_160
+    assert reference_recipe() == reference_recipe(total_steps=7570)
 
 
-def test_one_chinchilla_budget_preserves_model_and_optimizer(tmp_path):
+@pytest.mark.parametrize("total_steps,warmup,early_every,early_until,every,tokens", [
+    (7570, 379, 100, 1500, 500, 3_968_860_160),
+    (18925, 946, 250, 3750, 1250, 9_922_150_400),
+])
+def test_matched_budgets_preserve_model_and_native_optimizer(
+        tmp_path, total_steps, warmup, early_every, early_until, every, tokens):
     original = complete_recipe()
-    adapted = complete_recipe(total_steps=7570)
+    adapted = complete_recipe(total_steps=total_steps)
     assert adapted["model"] == original["model"]
     assert adapted["reference"] == original["reference"]
     assert adapted["data"] == original["data"]
-    assert adapted["optim"] == {**original["optim"], "total_steps": 7570, "warmup_steps": 379}
-    assert adapted["train"] == {**original["train"], "eval_every": 379}
+    assert adapted["optim"] == {**original["optim"], "total_steps": total_steps, "warmup_steps": warmup}
+    assert adapted["optim"]["learning_rate"] == 3e-4
+    assert adapted["optim"]["min_learning_rate"] == 3e-5
+    assert adapted["optim"]["eps"] == 1e-15
+    assert adapted["optim"]["weight_decay_policy"] == "exclude_embeddings_norms_biases_v1"
+    assert adapted["train"] == {**original["train"], "eval_every": every,
+                                "eval_early_every": early_every, "eval_early_until": early_until}
     assert adapted["train"]["ckpt_every"] == 1024
-    assert adapted["data"]["batch_size"] * (adapted["data"]["sequence_length"] - 1) * adapted["optim"]["total_steps"] == 3_968_860_160
+    assert adapted["data"]["batch_size"] * (adapted["data"]["sequence_length"] - 1) * adapted["optim"]["total_steps"] == tokens
     path = tmp_path / "config.yaml"
     path.write_text(yaml.safe_dump(adapted))
     assert load_config(path) == adapted
-    # Allocating a different horizon must not mutate the historical template.
+    # Allocating a different horizon must not mutate the default template.
     assert complete_recipe() == original
-    assert reference_recipe() == reference_recipe(total_steps=20480)
 
 
 @pytest.mark.parametrize("total_steps,warmup_steps", [
-    (1, 1), (9, 1), (10, 1), (29, 1), (30, 2), (7570, 379), (7571, 379), (20480, 1024),
+    (1, 1), (9, 1), (10, 1), (29, 1), (30, 2), (7570, 379), (7571, 379), (18925, 946), (20480, 1024),
 ])
 def test_budget_warmup_uses_half_up_rounding(total_steps, warmup_steps):
     recipe = complete_recipe(total_steps=total_steps)
     assert recipe["optim"]["warmup_steps"] == warmup_steps
-    assert recipe["train"]["eval_every"] == warmup_steps
     validate_config(recipe)
+
+
+@pytest.mark.parametrize("total_steps,every,early_every,early_until", [
+    (1, 1, 1, 0), (757, 50, 10, 150), (11355, 750, 150, 2250),
+])
+def test_evaluation_cadence_scales_independently_of_warmup(total_steps, every, early_every, early_until):
+    recipe = complete_recipe(total_steps=total_steps)
+    assert {key: recipe["train"][key] for key in ("eval_every", "eval_early_every", "eval_early_until")} == {
+        "eval_every": every, "eval_early_every": early_every, "eval_early_until": early_until}
+    validate_config(recipe)
+
+
+@pytest.mark.parametrize("key,value", [
+    ("eval_every", 0), ("eval_early_every", 0), ("eval_early_every", True),
+    ("eval_early_until", -1), ("eval_early_until", True), ("eval_early_until", 1500.0),
+])
+def test_invalid_evaluation_cadence_rejected(key, value):
+    recipe = complete_recipe()
+    recipe["train"][key] = value
+    with pytest.raises(ValueError, match=key):
+        validate_config(recipe)
 
 
 @pytest.mark.parametrize("total_steps", [0, -1, True, 7570.0, "7570", None])
@@ -78,7 +108,7 @@ def test_budget_rejects_unscaled_or_misrounded_warmup(warmup_steps):
     ("optim", "learning_rate", 0.001),
     ("optim", "eps", 1e-8),
     ("optim", "warmup_steps", 455),
-    ("optim", "weight_decay_policy", "exclude_embeddings_norms_biases_v1"),
+    ("optim", "weight_decay_policy", "all_parameters"),
     ("model", "initializer_range", 0.01),
     ("model", "tie_word_embeddings", True),
     ("model", "use_short_conv", False),

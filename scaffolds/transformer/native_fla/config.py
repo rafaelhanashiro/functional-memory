@@ -1,9 +1,11 @@
-"""Explicit configuration for the pinned FLA model and stock Flame training recipe.
+"""Explicit native FLA configuration with selective decay and matched token budgets.
 
 No Transformer/JAX defaults are loaded. The upstream training reference is
 Flame's generic ``flame/models/fla.toml``, not a claimed GDN-specific published
 execution. Its eight-device example has a global batch of 256 sequences; GPU
-count is deliberately replaced by accumulation in this runtime.
+count is deliberately replaced by accumulation in this runtime. The native model,
+learning rates, Adam settings, and 5% warmup are preserved; selective decay and
+the token budget/evaluation cadence are explicit project adaptations.
 """
 from __future__ import annotations
 
@@ -68,12 +70,11 @@ _OPTIM = {
     "beta2": 0.95,
     "eps": 1e-15,
     "weight_decay": 0.1,
-    # Stock TorchTitan passes every trainable parameter to one AdamW group;
-    # it does not inspect the model's _no_weight_decay attributes.
-    "weight_decay_policy": "all_parameters",
+    # Exempt embeddings, norms, biases and native _no_weight_decay parameters.
+    "weight_decay_policy": "exclude_embeddings_norms_biases_v1",
     "grad_clip_norm": 1.0,
-    "warmup_steps": 1024,
-    "total_steps": 20480,
+    "warmup_steps": 379,
+    "total_steps": 7570,
     "schedule": "cosine",
     "implementation": "fused",
 }
@@ -90,7 +91,9 @@ _TRAIN = {
     "dtype": "bfloat16",
     "micro_batch_size": 8,
     "log_every": 10,
-    "eval_every": 1024,
+    "eval_every": 500,
+    "eval_early_every": 100,
+    "eval_early_until": 1500,
     "eval_batches": 19,
     "ckpt_every": 1024,
     "source_commit": "auto",
@@ -104,21 +107,23 @@ _TRAIN = {
 }
 
 
-def reference_recipe(*, total_steps: int = 20480) -> dict[str, Any]:
+def reference_recipe(*, total_steps: int = 7570) -> dict[str, Any]:
     """Return explicit scientific settings, with paths and W&B destination unset.
 
     The allocator must set the local dataset manifests, run paths and W&B
     destination before validating or launching this recipe. The packed corpus
     and evaluation/checkpoint cadence are project inputs, not upstream defaults.
-    An explicit token-budget adaptation changes only the training horizon,
-    proportional warmup and evaluation cadence. Warmup retains the reference's
-    5% fraction, rounded half up to an integer with a minimum of one update.
+    The default budget is 7,570 updates. An explicit token budget changes only
+    the training horizon, proportional warmup and evaluation cadence. Warmup
+    retains the reference's 5% fraction, rounded half up to an integer with a
+    minimum of one update. Evaluation is more frequent early in training, with
+    both intervals scaled proportionally from the 7,570-update schedule.
     """
     warmup_steps = _budget_warmup(total_steps)
     recipe = deepcopy({"implementation": "native_fla", "reference": REFERENCE,
                        "data": _DATA, "model": _MODEL, "optim": _OPTIM, "train": _TRAIN})
     recipe["optim"].update(total_steps=total_steps, warmup_steps=warmup_steps)
-    recipe["train"]["eval_every"] = warmup_steps
+    recipe["train"].update(_budget_evaluation(total_steps))
     return recipe
 
 
@@ -144,6 +149,18 @@ def _budget_warmup(total_steps: int) -> int:
     _positive_int(total_steps, "optim.total_steps")
     # Exact half-up rounding of total_steps / 20, without float or banker rounding.
     return max(1, (total_steps + 10) // 20)
+
+
+def _budget_evaluation(total_steps: int) -> dict[str, int]:
+    """Scale the project's evaluation cadence using exact half-up rounding."""
+    _positive_int(total_steps, "optim.total_steps")
+
+    def scaled(updates: int) -> int:
+        return (2 * updates * total_steps + 7570) // (2 * 7570)
+
+    return {"eval_every": max(1, scaled(500)),
+            "eval_early_every": max(1, scaled(100)),
+            "eval_early_until": scaled(1500)}
 
 
 def _reference_value(value: Any, expected: Any, name: str) -> None:
@@ -207,8 +224,10 @@ def validate_config(config: dict[str, Any]) -> None:
             raise ValueError(f"data.{key} must name the explicit packed-data manifest")
     for key in ("seed", "dtype"):
         _reference_value(train[key], _TRAIN[key], f"train.{key}")
-    for key in ("micro_batch_size", "log_every", "eval_every", "eval_batches", "ckpt_every"):
+    for key in ("micro_batch_size", "log_every", "eval_every", "eval_early_every", "eval_batches", "ckpt_every"):
         _positive_int(train[key], f"train.{key}")
+    if type(train["eval_early_until"]) is not int or train["eval_early_until"] < 0:
+        raise ValueError("train.eval_early_until must be a nonnegative integer")
     if data["batch_size"] % train["micro_batch_size"]:
         raise ValueError("train.micro_batch_size must divide the scientific global batch")
     for key in ("workdir", "checkpoint_dir", "source_commit"):

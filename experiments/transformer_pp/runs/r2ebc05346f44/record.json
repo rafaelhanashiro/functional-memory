@@ -1,0 +1,20 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2ebc05346f44/config.yaml",
+    "sha256": "7ed059b077c7c8d36b90317564084ffda65716e27ce787b366535380c0f39dd9"
+  },
+  "home_cluster": "kennel",
+  "implementation": "native_fla",
+  "label": "native-fla-gdn-2.5x",
+  "name": "native-fla-gdn-2.5x",
+  "parameter_count": 200205878,
+  "record_schema_version": 1,
+  "reference": {
+    "fla_commit": "516143e31fce09925e6c39ac37148444bad176c4",
+    "flame_commit": "24dea9133e2166da89a563afbdcefb7c55615646",
+    "torchtitan_commit": "0b44d4c437c424b6bf719661c0eb4283dc4068bc",
+    "training_config": "flame/models/fla.toml"
+  },
+  "run_id": "r2ebc05346f44",
+  "status": "planned"
+}
