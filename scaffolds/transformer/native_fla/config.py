@@ -104,15 +104,22 @@ _TRAIN = {
 }
 
 
-def reference_recipe() -> dict[str, Any]:
+def reference_recipe(*, total_steps: int = 20480) -> dict[str, Any]:
     """Return explicit scientific settings, with paths and W&B destination unset.
 
     The allocator must set the local dataset manifests, run paths and W&B
     destination before validating or launching this recipe. The packed corpus
     and evaluation/checkpoint cadence are project inputs, not upstream defaults.
+    An explicit token-budget adaptation changes only the training horizon,
+    proportional warmup and evaluation cadence. Warmup retains the reference's
+    5% fraction, rounded half up to an integer with a minimum of one update.
     """
-    return deepcopy({"implementation": "native_fla", "reference": REFERENCE,
-                     "data": _DATA, "model": _MODEL, "optim": _OPTIM, "train": _TRAIN})
+    warmup_steps = _budget_warmup(total_steps)
+    recipe = deepcopy({"implementation": "native_fla", "reference": REFERENCE,
+                       "data": _DATA, "model": _MODEL, "optim": _OPTIM, "train": _TRAIN})
+    recipe["optim"].update(total_steps=total_steps, warmup_steps=warmup_steps)
+    recipe["train"]["eval_every"] = warmup_steps
+    return recipe
 
 
 def _mapping(value: Any, name: str) -> dict[str, Any]:
@@ -133,6 +140,12 @@ def _positive_int(value: Any, name: str) -> None:
         raise ValueError(f"{name} must be a positive integer")
 
 
+def _budget_warmup(total_steps: int) -> int:
+    _positive_int(total_steps, "optim.total_steps")
+    # Exact half-up rounding of total_steps / 20, without float or banker rounding.
+    return max(1, (total_steps + 10) // 20)
+
+
 def _reference_value(value: Any, expected: Any, name: str) -> None:
     # YAML booleans must not compare equal to integers such as num_heads=1.
     if type(expected) is bool:
@@ -151,8 +164,8 @@ def _reference_value(value: Any, expected: Any, name: str) -> None:
 def validate_config(config: dict[str, Any]) -> None:
     """Reject omitted defaults and undeclared deviations from the reference.
 
-    This entrypoint intentionally represents one named reference recipe. New
-    training recipes need an explicit reference/profile, not silent overrides.
+    This entrypoint permits an explicit token budget with proportional warmup.
+    Other training recipes need an explicit reference/profile, not silent overrides.
     Qualification may construct small upstream models directly from a copied
     model dictionary; it does not change a production recipe or its schedule.
     """
@@ -164,8 +177,11 @@ def validate_config(config: dict[str, Any]) -> None:
         _fields(_mapping(config[section], section), expected[section], section)
     for key, value in REFERENCE.items():
         _reference_value(config["reference"][key], value, f"reference.{key}")
+    warmup_steps = _budget_warmup(config["optim"]["total_steps"])
     for key, value in _OPTIM.items():
-        _reference_value(config["optim"][key], value, f"optim.{key}")
+        if key not in {"total_steps", "warmup_steps"}:
+            _reference_value(config["optim"][key], value, f"optim.{key}")
+    _reference_value(config["optim"]["warmup_steps"], warmup_steps, "optim.warmup_steps")
 
     model = config["model"]
     for key, value in _MODEL.items():

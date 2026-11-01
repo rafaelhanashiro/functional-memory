@@ -131,11 +131,11 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Native Gated DeltaNet baseline
 
-Run [`r5a72631d236c`](runs/r5a72631d236c/config.yaml), label `native-fla-gdn`, trains
-the upstream PyTorch FLA `GatedDeltaNetForCausalLM`. This is a canonical baseline,
-with home cluster **Kennel**. Its complete recipe is independent of `recipe.yaml`.
-The comparison constraint is approximately equal parameter count, rather than
-matching the Transformer++ depth, initialization or optimizer settings.
+The canonical GDN baselines train the upstream PyTorch FLA
+`GatedDeltaNetForCausalLM`, with home cluster **Kennel**. Each complete recipe is
+independent of `recipe.yaml`. The models match the approximate Transformer++
+parameter count while retaining their own FLA architecture and initialization
+and Flame optimizer settings.
 
 The architecture follows [FLA at `516143e`](https://github.com/fla-org/flash-linear-attention/tree/516143e31fce09925e6c39ac37148444bad176c4/fla/models/gated_deltanet),
 scaled to **200,205,878 parameters**: 9 layers, hidden width 1024, three heads with
@@ -158,7 +158,19 @@ AdamW with peak LR 0.0003, floor 0.00003, betas (0.9, 0.95), epsilon 1e-15,
 weight decay 0.1 on **all parameters**, gradient clipping at 1, 1024 warmup
 updates and cosine decay over 20,480 updates. The global batch is 256 sequences
 of 2048 predictions, seed 42, totaling **10,737,418,240 prediction tokens**.
-The schedule preserves TorchTitan's zero-based LambdaLR indexing.
+The schedule preserves TorchTitan's zero-based LambdaLR indexing. An explicit
+budget adaptation keeps the warmup fraction at 5%, rounded half up to whole updates,
+and compresses cosine decay to the requested horizon. Peak/floor LR, all other
+optimizer values, model settings, seed and data order stay fixed.
+
+| Run | Label | Budget | Updates | Warmup / validation cadence | Prediction tokens |
+| --- | --- | --- | ---: | ---: | ---: |
+| [`r5a72631d236c`](runs/r5a72631d236c/config.yaml) | native-fla-gdn | Stock Flame horizon | 20,480 | 1,024 | 10,737,418,240 |
+| [`r8f464a439af8`](runs/r8f464a439af8/config.yaml) | native-fla-gdn-1x | Study 1× budget | 7,570 | 379 | 3,968,860,160 |
+
+Both runs train from initialization with seed 42. The 1× run matches the study's
+1× token budget exactly, using the same 200,205,878-parameter model. It retains
+the FLA/Flame peak LR of 0.0003 and uses its own 379-update warmup.
 
 Explicit project adaptations are the existing shuffled, EOS-packed FineWeb-Edu
 corpus and Llama-2 tokenizer, single-GPU accumulation (microbatch 8, 32 microsteps),
@@ -168,11 +180,12 @@ integration. Nonfinite losses/gradients stop and record a numerical failure unde
 this repository's policy; Flame's generic `skip_nan_inf` option instead skips such
 updates. The project's packed T+1 convention supervises all 2048 prediction
 positions; Flame's 2048-token input/label shifting supervises 2047. The token total
-above counts actual prediction targets here. Validation evaluates the same first 4864 held-out sequences every
-1024 updates and at the end; logging is every 10 updates and regular checkpointing
-every 1024. These monitoring choices are not attributed to FLA defaults. Training
-budget differs from the 1×/2.5× Transformer++ runs, so terminal losses alone do not
-establish a matched-token comparison.
+above counts actual prediction targets here. Validation evaluates the same first
+4864 held-out sequences at the cadence in the table and at the end; logging is
+every 10 updates and regular checkpointing every 1024. These monitoring choices
+are not attributed to FLA defaults. The stock Flame horizon exceeds the study's
+2.5× token budget; the 1× GDN run supports a matched-token comparison with 1×
+Transformer++ runs.
 
 The native runtime has its own lock and CUDA PyTorch environment under
 `scaffolds/transformer/native_fla/`. After syncing it and committing frozen inputs,
@@ -188,6 +201,11 @@ scaffolds/transformer/native_fla/.venv/bin/python \
 scaffolds/transformer/native_fla/.venv/bin/python \
   -m scaffolds.transformer.native_fla.launch \
   --run experiments/transformer_pp/runs/r5a72631d236c --partition standard --time 24:00:00
+
+# The production launcher qualifies this fresh 1× recipe before training.
+scaffolds/transformer/native_fla/.venv/bin/python \
+  -m scaffolds.transformer.native_fla.launch \
+  --run experiments/transformer_pp/runs/r8f464a439af8 --partition standard --time 08:00:00
 ```
 
 Production requires passing full-shape forward/backward training and a fresh-process

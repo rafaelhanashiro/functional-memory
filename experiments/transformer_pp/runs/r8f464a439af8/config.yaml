@@ -1,0 +1,74 @@
+implementation: native_fla
+reference:
+  fla_commit: 516143e31fce09925e6c39ac37148444bad176c4
+  flame_commit: 24dea9133e2166da89a563afbdcefb7c55615646
+  training_config: flame/models/fla.toml
+  torchtitan_commit: 0b44d4c437c424b6bf719661c0eb4283dc4068bc
+data:
+  source: packed
+  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  batch_size: 256
+  sequence_length: 2049
+  shuffle_seed: 0
+model:
+  hidden_size: 1024
+  num_hidden_layers: 9
+  num_heads: 3
+  num_v_heads: null
+  head_dim: 256
+  expand_v: 2.0
+  intermediate_size: 2816
+  vocab_size: 32000
+  max_position_embeddings: 2048
+  tie_word_embeddings: false
+  initializer_range: 0.02
+  norm_eps: 1.0e-06
+  use_gate: true
+  use_short_conv: true
+  conv_size: 4
+  allow_neg_eigval: false
+  attn_mode: chunk
+  attn: null
+  hidden_ratio: 4
+  hidden_act: swish
+  fuse_norm: true
+  fuse_swiglu: true
+  fuse_cross_entropy: true
+  fuse_linear_cross_entropy: false
+  use_l2warp: false
+  attnres_block_size: null
+  bos_token_id: 1
+  eos_token_id: 2
+  pad_token_id: null
+  use_cache: false
+optim:
+  name: AdamW
+  learning_rate: 0.0003
+  min_learning_rate: 3.0e-05
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-15
+  weight_decay: 0.1
+  weight_decay_policy: all_parameters
+  grad_clip_norm: 1.0
+  warmup_steps: 379
+  total_steps: 7570
+  schedule: cosine
+  implementation: fused
+train:
+  seed: 42
+  dtype: bfloat16
+  micro_batch_size: 8
+  log_every: 10
+  eval_every: 379
+  eval_batches: 19
+  ckpt_every: 1024
+  source_commit: auto
+  workdir: experiments/transformer_pp/runs/r8f464a439af8
+  checkpoint_dir: experiments/transformer_pp/runs/r8f464a439af8/checkpoints
+  wandb_project: functional-memory
+  wandb_entity: rafah-massachusetts-institute-of-technology
+  wandb_group: transformer_pp
+  wandb_run_name: native-fla-gdn-1x
+  wandb_mode: online

@@ -33,6 +33,34 @@ def test_submission_uses_qualified_gpu_and_advance_signal(tmp_path, monkeypatch,
     assert command[-1] == ("acceptance" if acceptance else "production")
 
 
+def test_exact_submission_is_recorded_before_releasing_job(tmp_path, monkeypatch):
+    monkeypatch.setattr(launch, "ROOT", tmp_path)
+    run = tmp_path / "experiments/study/runs/r0123456789ab"
+    run.mkdir(parents=True)
+    monkeypatch.setattr(launch, "check_inputs", lambda *args: {})
+    monkeypatch.setattr(launch, "frozen_hash", lambda *args: "frozen")
+    commands, records, releases = [], [], []
+
+    def check_output(command, **kwargs):
+        if command[0] == "squeue":
+            return ""
+        assert command[0] == "sbatch"
+        commands.append(command.copy())
+        return "123;kennel\n"
+
+    def release(command, **kwargs):
+        assert records[-1]["submission"]["command"] == commands[-1]
+        assert command == ["scontrol", "release", "123"]
+        releases.append(command)
+
+    monkeypatch.setattr(launch.subprocess, "check_output", check_output)
+    monkeypatch.setattr(launch.subprocess, "run", release)
+    monkeypatch.setattr(launch, "update_record", lambda _, fields: records.append(fields))
+    assert launch.submit(run, "a" * 40, partition="standard", time_limit="08:00:00") == "123"
+    assert len(commands) == len(records) == len(releases) == 1
+    assert records[-1]["submission"]["time_limit"] == "08:00:00"
+
+
 @pytest.fixture
 def record_updates(monkeypatch):
     record = {"status": "running", "attempts": [{"phase": "production", "slurm_job_id": "123",

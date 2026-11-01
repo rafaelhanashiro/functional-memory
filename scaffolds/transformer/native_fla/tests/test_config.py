@@ -11,8 +11,8 @@ from scaffolds.transformer.native_fla.config import (
 )
 
 
-def complete_recipe():
-    recipe = reference_recipe()
+def complete_recipe(*, total_steps=20480):
+    recipe = reference_recipe(total_steps=total_steps)
     recipe["data"].update(train_manifest="/data/train/manifest.json", eval_manifest="/data/eval/manifest.json")
     recipe["train"].update(workdir="/runs/example", checkpoint_dir="/runs/example/checkpoints", wandb_mode="disabled")
     return recipe
@@ -26,6 +26,52 @@ def test_reference_is_explicit_and_survives_yaml(tmp_path):
     assert load_config(path) == recipe
     assert parameter_count(recipe) == 200_205_878
     assert recipe["data"]["batch_size"] * (recipe["data"]["sequence_length"] - 1) * recipe["optim"]["total_steps"] == 10_737_418_240
+
+
+def test_one_chinchilla_budget_preserves_model_and_optimizer(tmp_path):
+    original = complete_recipe()
+    adapted = complete_recipe(total_steps=7570)
+    assert adapted["model"] == original["model"]
+    assert adapted["reference"] == original["reference"]
+    assert adapted["data"] == original["data"]
+    assert adapted["optim"] == {**original["optim"], "total_steps": 7570, "warmup_steps": 379}
+    assert adapted["train"] == {**original["train"], "eval_every": 379}
+    assert adapted["train"]["ckpt_every"] == 1024
+    assert adapted["data"]["batch_size"] * (adapted["data"]["sequence_length"] - 1) * adapted["optim"]["total_steps"] == 3_968_860_160
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(adapted))
+    assert load_config(path) == adapted
+    # Allocating a different horizon must not mutate the historical template.
+    assert complete_recipe() == original
+    assert reference_recipe() == reference_recipe(total_steps=20480)
+
+
+@pytest.mark.parametrize("total_steps,warmup_steps", [
+    (1, 1), (9, 1), (10, 1), (29, 1), (30, 2), (7570, 379), (7571, 379), (20480, 1024),
+])
+def test_budget_warmup_uses_half_up_rounding(total_steps, warmup_steps):
+    recipe = complete_recipe(total_steps=total_steps)
+    assert recipe["optim"]["warmup_steps"] == warmup_steps
+    assert recipe["train"]["eval_every"] == warmup_steps
+    validate_config(recipe)
+
+
+@pytest.mark.parametrize("total_steps", [0, -1, True, 7570.0, "7570", None])
+def test_budget_must_be_a_positive_integer(total_steps):
+    with pytest.raises(ValueError, match="optim.total_steps"):
+        reference_recipe(total_steps=total_steps)
+    recipe = complete_recipe()
+    recipe["optim"]["total_steps"] = total_steps
+    with pytest.raises(ValueError, match="optim.total_steps"):
+        validate_config(recipe)
+
+
+@pytest.mark.parametrize("warmup_steps", [378, 1024, 379.0, True])
+def test_budget_rejects_unscaled_or_misrounded_warmup(warmup_steps):
+    recipe = complete_recipe(total_steps=7570)
+    recipe["optim"]["warmup_steps"] = warmup_steps
+    with pytest.raises(ValueError, match="optim.warmup_steps"):
+        validate_config(recipe)
 
 
 @pytest.mark.parametrize("section,key,value", [

@@ -8,7 +8,11 @@ load its configuration defaults.
 `config.py` pins the upstream architecture, initialization and stock Flame
 optimizer recipe. `reference_recipe()` returns a complete template; callers fill
 dataset manifests, output paths and tracking identity. `validate_config()` rejects
-undeclared scientific overrides. Native FLA owns all layers and their
+undeclared scientific overrides. `reference_recipe(total_steps=...)` explicitly
+adapts the token budget: warmup keeps the reference's 5% fraction (rounded half up
+to whole updates, minimum one), and evaluation cadence scales by the same factor.
+All other optimizer values and the regular checkpoint cadence remain fixed.
+Native FLA owns all layers and their
 initialization; the runtime preserves FP32 master parameters and uses BF16
 autocast. Model execution is eager, without `torch.compile`.
 

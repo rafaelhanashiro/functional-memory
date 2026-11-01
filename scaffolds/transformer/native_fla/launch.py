@@ -104,7 +104,8 @@ def submit(run: Path, launch_commit: str, *, partition: str, time_limit: str,
             "source_commit": launch_commit, "home_cluster": "kennel",
             "frozen_execution_sha256": frozen_hash(ROOT, launch_commit, run.parent.parent.name, "transformer"),
             "submission": {"phase": phase, "slurm_job_id": job_id, "partition": partition,
-                           "time_limit": time_limit, "submitted_utc": datetime.now(UTC).isoformat()},
+                           "time_limit": time_limit, "command": command,
+                           "submitted_utc": datetime.now(UTC).isoformat()},
         }
         if not acceptance:
             fields["status"] = "submitted"

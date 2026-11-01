@@ -38,6 +38,37 @@ def test_last_update_precedes_the_final_scheduler_tick():
         train.learning_rate(recipe, -1)
 
 
+@pytest.mark.parametrize("completed_steps,expected", [
+    (0, 3e-4 / 379),
+    (377, 0.0002992084432717678),
+    (378, 0.0003),
+    (379, 0.0003),
+    (380, 0.0002999999871167648),
+    (7569, 0.00003000001288323515),
+])
+def test_one_chinchilla_learning_rate_boundaries(completed_steps, expected):
+    recipe = reference_recipe(total_steps=7570)
+    assert recipe["optim"]["warmup_steps"] == 379
+    assert train.learning_rate(recipe, completed_steps) == pytest.approx(expected, rel=1e-12)
+
+
+def test_one_chinchilla_schedule_uses_frozen_horizon_on_resume():
+    recipe = reference_recipe(total_steps=7570)
+    frozen_recipe = json.dumps(recipe, sort_keys=True)
+    # A fresh process can query a checkpoint's completed step directly: neither
+    # the number of calls nor the remaining allocation changes the cosine horizon.
+    for completed_steps, expected in [(5000, 0.00010652060208669845),
+                                      (3785, 0.00017616367923445307),
+                                      (0, 3e-4 / 379),
+                                      (5000, 0.00010652060208669845)]:
+        assert train.learning_rate(recipe, completed_steps) == pytest.approx(expected, rel=1e-12)
+    assert json.dumps(recipe, sort_keys=True) == frozen_recipe
+    assert 3e-5 < train.learning_rate(recipe, 7569) < 3.000002e-5
+    with pytest.raises(ValueError, match="horizon"):
+        train.learning_rate(recipe, 7570)
+    assert recipe["optim"]["total_steps"] * recipe["data"]["batch_size"] * (recipe["data"]["sequence_length"] - 1) == 3968860160
+
+
 def test_batch_loss_supervises_all_next_tokens_without_double_shift(monkeypatch):
     calls = {}
 
