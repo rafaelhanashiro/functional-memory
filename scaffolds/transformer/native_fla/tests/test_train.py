@@ -179,7 +179,7 @@ def test_optimizer_uses_native_settings_and_selective_groups(monkeypatch):
     assert {id(p) for p in decayed["params"]} == {id(model.weight)}
     assert {id(p) for p in undecayed["params"]} == {id(model.norm.weight), id(model.decay)}
     assert decayed["weight_decay"] == 0.1 and undecayed["weight_decay"] == 0.0
-    assert all(p.dtype == torch.float32 for p in calls["parameters"])
+    assert all(p.dtype == torch.float32 for group in calls["groups"] for p in group["params"])
     assert calls["optimizer"] == {"lr": 3e-4, "betas": (0.9, 0.95), "eps": 1e-15,
                                   "weight_decay": 0.1, "fused": True}
 
