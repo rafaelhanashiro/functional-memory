@@ -1,0 +1,18 @@
+{
+  "checkpoint_retention": "none; reads referenced checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1d87cc903125/config.yaml",
+    "sha256": "b3ca65c41ba98ab0574b235164fc056f82094f072fb9233f09a22d356c689760"
+  },
+  "home_cluster": "kennel",
+  "label": "attention-score-diagnostic-extrapolation",
+  "name": "attention-score-diagnostic-extrapolation",
+  "parent_run_ids": [
+    "r816ab0fbe119",
+    "rca97cc9db8f2",
+    "r6a76e7fbde45"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r1d87cc903125",
+  "status": "planned"
+}
