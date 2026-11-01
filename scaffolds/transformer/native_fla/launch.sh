@@ -86,7 +86,10 @@ TRANSFORMER_ALLOCATION_SECONDS="$("$PYTHON" -m scaffolds.launch.allocation "$SLU
 export TRANSFORMER_ALLOCATION_SECONDS
 JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/native-fla-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$JOB_TMPDIR"
-export TRITON_CACHE_DIR="$EXECUTION_ROOT/.cache/native-fla/triton"
+# Keep autotune winners stable across acceptance, production and resumptions.
+# Concurrent runs must not overwrite each other's cold-cache tuning results.
+export TRITON_CACHE_DIR="$EXECUTION_ROOT/$RUN_ROOT/.runtime/triton-cache"
+export FLA_CACHE_RESULTS=1
 mkdir -p "$TRITON_CACHE_DIR"
 CUDA_HOME="$("$PYTHON" - <<'PY'
 from pathlib import Path

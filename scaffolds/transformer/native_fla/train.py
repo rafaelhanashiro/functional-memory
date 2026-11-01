@@ -218,6 +218,8 @@ def runtime_metadata(config):
             "versions": {name: importlib.metadata.version(name)
                          for name in ("torch", "flash-linear-attention", "triton", "transformers")},
             "parameter_dtype": "float32", "autocast_dtype": "bfloat16",
+            "runtime_settings": {name: os.environ.get(name)
+                                 for name in ("TRITON_CACHE_DIR", "FLA_CACHE_RESULTS")},
             "resolved_backend": "upstream_fla_chunk", "torch_compile": False,
             "dependency_lock_sha256": hashlib.sha256(Path(__file__).with_name("uv.lock").read_bytes()).hexdigest()}
 

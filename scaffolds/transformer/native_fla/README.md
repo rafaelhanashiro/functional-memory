@@ -59,6 +59,12 @@ scaffolds/transformer/native_fla/.venv/bin/python \
 ```
 
 The launcher records allocation, source and frozen-set identity, appends the
-retained log, and rechecks frozen inputs on every start/requeue. Cluster resource
+retained log, and rechecks frozen inputs on every start/requeue. It sets
+`TRITON_CACHE_DIR` to the run's persistent `.runtime/triton-cache/` and
+`FLA_CACHE_RESULTS=1`. Acceptance, production and resumptions share that run's
+autotune choices; independent runs use separate caches so concurrent cold tuning
+cannot overwrite another run's choices. Preserve this cache while a run can
+resume. Both settings enter acceptance identity and training runtime metadata.
+Cluster resource
 policy and supported hardware are documented in [CLUSTERS.md](../../../CLUSTERS.md).
 Scientific recipes and run selections belong to their study, not this package.
