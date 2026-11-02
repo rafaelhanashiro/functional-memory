@@ -1,4 +1,4 @@
-# Context length (2,048 and 4,096 tokens)
+# Context length
 
 Opened 2026-11-01.
 
@@ -51,6 +51,21 @@ both passes.
   weight on keys more than 2,048 tokens back, against 9% for exp. The gated model has no
   RoPE and decays distant keys.
 
+## Extrapolation to 16,384 tokens
+
+`r2a45c518f703` evaluates the same 2,048-token exp, query + W decay (m = 4),
+and FoX no RoPE + W decay (m = 4) checkpoints at 16,384 tokens. It scores 608
+sequences, or 9,961,472 prediction tokens per model, from the same held-out packed
+stream as the earlier evaluation. It first replays the original validation set
+and checks that a longer window preserves the NLL of its identical 2,048-token
+prefix. Checkpoint parameters, RoPE settings, and attention backends are unchanged;
+only the forward length guard is raised. No gradients or optimizer updates occur.
+
+Home cluster: Kennel. The run's recipe pins the checkpoint files and both dataset
+manifests. Results are pending. Repacking preserves stream order and EOS separators;
+row boundaries differ between lengths, so aggregate PPL alone does not establish
+that a model uses distant context.
+
 ## Training at 4,096 tokens
 
 Five runs repeat the models above at 4,096 tokens with the same tokens per update and
@@ -66,4 +81,5 @@ Add context length as a dimension of the Transformer++ comparison, or discard th
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/context_length
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/exploratory/context_length/plot.py
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.exploratory.context_length.plot_16k
 ```

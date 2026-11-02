@@ -505,6 +505,36 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
 
 Each record's `submission` holds its exact command and partition.
 
+## Context length
+
+The [context-length topic](results/exploratory/context_length/README.md) compares
+held-out per-position loss at and beyond the checkpoints' training length.
+`r2a45c518f703` evaluates the validation-best 2,048-token exp, query + W decay,
+and FoX no RoPE + W decay checkpoints at 16,384 tokens on Kennel. It makes no
+optimizer updates and preserves the source models' parameters and attention backends.
+The recipe pins the source checkpoints and the held-out manifests. The long pass
+scores 608 sequences (9,961,472 predictions), following the original validation replay
+and a causal-prefix consistency check.
+
+Prepare the evaluation data outside the repository, then launch from a committed,
+isolated worktree with both locked CUDA environments installed:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.data.repack \
+  /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json \
+  /data/cl/u/rafah/home/datasets/fineweb_12b_seq16385/eval --sequence-length 16385
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=8 --mem=64G \
+  --time=04:00:00 --exclude=collie,samoyed,doodle,terrier,shiba \
+  --job-name=r2a45c518f703 \
+  --output=experiments/transformer_pp/runs/r2a45c518f703/training.log \
+  --error=experiments/transformer_pp/runs/r2a45c518f703/training.log \
+  experiments/transformer_pp/evaluate_per_position.sbatch "$PWD" "$(git rev-parse HEAD)" r2a45c518f703
+```
+
+Repacking refuses to overwrite an existing manifest; reuse the existing data only
+when its manifest and shard checksums match the frozen recipe. A new scientific
+execution gets a fresh run ID. The exact submission is recorded with the run.
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

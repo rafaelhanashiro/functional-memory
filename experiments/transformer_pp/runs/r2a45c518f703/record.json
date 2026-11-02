@@ -1,0 +1,19 @@
+{
+  "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2a45c518f703/config.yaml",
+    "sha256": "0eccb596505252fc95f0f8d604dd68da718bfdd34a03a61a4ac0d5be668a99db"
+  },
+  "home_cluster": "kennel",
+  "label": "per-position-extrapolation-2k-to-16k",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+  "name": "per-position-extrapolation-2k-to-16k",
+  "parent_run_ids": [
+    "r6a76e7fbde45",
+    "rca97cc9db8f2",
+    "r4a80e28ce0a7"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r2a45c518f703",
+  "status": "planned"
+}
