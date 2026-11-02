@@ -99,6 +99,54 @@ def test_production_context_matches_triton(coefficients, degree):
                 f"production context, degree={degree}, {coefficients}")
 
 
+def test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64():
+    """The exact [0,1] kernel, including signed cancellation and output normalization.
+
+    Inputs have the production QK RMSNorm/head-scale/RoPE preparation. The oracle
+    independently differentiates masked dot products and head RMSNorm, without
+    any polynomial, attention, or normalization implementation helpers.
+    """
+    from scaffolds.transformer.attention.output_scaling import scale_attention_output
+    from scaffolds.transformer.attention.positional import apply_rope
+    from scaffolds.transformer.attention.qk_norm import rms_score_operands, scale_rms_queries
+
+    (q, k, v), _, cotangent = _inputs(1, 64, "fixed", time=2048, heads=2, seed=107)
+    q, k = rms_score_operands(q, k, jnp.linspace(.9, 1.1, 64), jnp.linspace(1.1, .9, 64), eps=1e-6)
+    q = scale_rms_queries(q, jnp.log(jnp.asarray([[.8], [1.2]], jnp.float32)))
+    positions = jnp.arange(q.shape[1])
+    q, k = (apply_rope(x, positions).astype(jnp.bfloat16) for x in (q, k))
+    gain = jnp.linspace(.8, 1.2, 128, dtype=jnp.float32).reshape(2, 64)
+    operands = q, k, v, gain
+
+    def production(q, k, v, gain):
+        # Coefficients are constants, not differentiated operands.
+        output = unnormalized_attention(q, k, v, attention_degree=1, backend="mosaic",
+                                        polynomial_coefficients=jnp.asarray([0., 1.], jnp.float32))
+        return scale_attention_output(output, "head_rms_norm", output_norm_scale=gain)
+
+    def reference(q, k, v, gain):
+        scores = jnp.einsum("bthd,bihd->bhti", q, k) / math.sqrt(q.shape[-1])
+        causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(k.shape[1])[None, :]
+        output = jnp.einsum("bhti,bihd->bthd", jnp.where(causal, scores, 0.), v)
+        return output / jnp.sqrt(jnp.mean(output * output, axis=-1, keepdims=True) + 1e-6) * gain
+
+    def evaluate(function, arguments, tangent):
+        output, pullback = jax.vjp(function, *arguments)
+        return output, pullback(tangent)
+
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        expected = jax.jit(partial(evaluate, reference))(
+            tuple(x.astype(jnp.float64) for x in operands), cotangent.astype(jnp.float64))
+        expected = jax.tree.map(lambda x: np.asarray(x, np.float64), expected)
+    actual = jax.jit(partial(evaluate, production))(operands, cotangent)
+    assert actual[0].dtype == jnp.bfloat16
+    _assert_relative(actual[0], expected[0], rtol=.04, name="fixed linear + head RMSNorm output")
+    for name, got, want in zip(("q", "k", "v", "output_gain"), actual[1], expected[1], strict=True):
+        if name == "output_gain":
+            got, want = got[None, None], want[None, None]
+        _assert_relative(got, want, rtol=.04, name=f"fixed linear + head RMSNorm d{name}")
+
+
 def test_model_dispatch_uses_the_kernel_and_reports_diagnostics():
     from scaffolds.transformer.attention.core import attention_core
 

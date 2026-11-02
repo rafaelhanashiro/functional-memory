@@ -2296,3 +2296,27 @@ frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
 The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
 also passes with eight-sequence microbatches and one mean-gradient Adam update
 per full batch, using the same static tensor shape.
+
+## Exact fixed-linear Mosaic attention
+
+On 2026-11-02, all 78 existing fixed-polynomial and configuration CPU checks
+passed for the fixed-coefficient path. They cover forward/QKV gradients,
+coefficients absent from trainable parameters, unchanged initialization, and
+constants preserved through training and checkpoint resume.
+
+`test_mosaic_unnormalized.py::test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64`
+adds an exact `[0,1]` test at 2,048 tokens and key/value width 64. It uses BF16
+operands prepared with canonical QK RMSNorm, per-head scaling and RoPE; an
+independent dense FP64 reference checks signed linear attention followed by head
+RMSNorm, including Q/K/V and output-gain gradients. The tolerance is the existing
+4% composition tolerance. The test is automatically selected for Mosaic
+unnormalized-attention GPU acceptance. GPU execution remains pending.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_fixed_polynomial.py \
+  scaffolds/transformer/tests/test_fixed_polynomial_config.py -m 'not gpu'
+# In a supported GPU allocation, with that allocation's environment:
+python -m pytest -q scaffolds/transformer/tests/test_mosaic_unnormalized.py \
+  -k fixed_linear_full_context
+```

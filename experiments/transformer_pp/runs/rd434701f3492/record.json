@@ -1,0 +1,60 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd434701f3492/config.yaml",
+    "sha256": "45492ea5d60200ae80b45bf7326cb617a1d4a7510b368f17c3e6c755f440c31e"
+  },
+  "control_run_id": "r6a76e7fbde45",
+  "home_cluster": "kennel",
+  "initialization": {
+    "parameter_count": 198453586,
+    "parameter_sha256": "637cb8beb5ce9275aa2b312964a68bc519efdeb4169bc7025ee914b38662f0b4"
+  },
+  "label": "fixed-linear-head-rms",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fixed-linear-1x/experiments/transformer_pp/runs/rd434701f3492/training.log",
+  "name": "fixed-linear-head-rms",
+  "preflight": {
+    "identical_initial_parameters_to": "r6a76e7fbde45",
+    "recipe_changes": {
+      "model.attention_backend": [
+        "fused",
+        "mosaic"
+      ],
+      "model.attention_degree": [
+        null,
+        1
+      ],
+      "model.attention_fixed_coefficients": [
+        null,
+        [
+          0.0,
+          1.0
+        ]
+      ],
+      "train.checkpoint_dir": [
+        "experiments/transformer_200m_4b/runs/r6a76e7fbde45/checkpoints",
+        "experiments/transformer_pp/runs/rd434701f3492/checkpoints"
+      ],
+      "train.wandb_group": [
+        "transformer_200m_4b",
+        "transformer_pp"
+      ],
+      "train.wandb_run_name": [
+        "exp-head-scale",
+        "fixed-linear-head-rms"
+      ],
+      "train.workdir": [
+        "experiments/transformer_200m_4b/runs/r6a76e7fbde45",
+        "experiments/transformer_pp/runs/rd434701f3492"
+      ]
+    },
+    "scientific_change": "exp(s) replaced by fixed p(s)=s"
+  },
+  "recipe_reference": {
+    "config_sha256": "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6",
+    "run_id": "r6a76e7fbde45",
+    "study": "transformer_pp"
+  },
+  "record_schema_version": 1,
+  "run_id": "rd434701f3492",
+  "status": "planned"
+}
