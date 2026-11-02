@@ -89,6 +89,20 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
 
+For unnormalized nonlinear query-polynomial attention on the blocked backend,
+`model.attention_forget_gate: true` adds the existing per-layer/head gate
+`log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
+the pre-attention RMSNorm activation. `attention_forget_gate_mode: cumulative`
+(the historical default) multiplies weights by `exp(L_t - L_i)`, where
+`L_t = sum_{j<=t} log(alpha_j)`. The `query_distance` mode instead multiplies by
+`exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+Both apply attenuation after the polynomial, keep diagonal attenuation one,
+and preserve the coefficient generator and attention-output normalization.
+They share identical parameters and initialization: the gate projection decays,
+while `A_log` and `b_dt` do not. The separate coefficient-projection decay switch
+retains its existing behavior. New-mode GPU acceptance compares outputs and all
+operand gradients against an explicit dense reference at 2,048 tokens.
+
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape

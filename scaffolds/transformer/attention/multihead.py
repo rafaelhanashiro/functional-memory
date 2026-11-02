@@ -66,6 +66,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
+        attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
         rngs=rngs,
     )
 
@@ -91,6 +92,7 @@ class MultiHeadAttention(nnx.Module):
         qk_norm_head_scale: bool = False,
         qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
+        attention_forget_gate_mode: str = "cumulative",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -168,12 +170,17 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
+        if attention_forget_gate_mode not in ("cumulative", "query_distance"):
+            raise ValueError(f"Unknown attention forget gate mode: {attention_forget_gate_mode}")
+        if attention_forget_gate_mode != "cumulative" and not attention_forget_gate:
+            raise ValueError("A query-distance decay mode requires attention_forget_gate")
         if attention_forget_gate and (attention_coefficient_conditioning != "query"
                                       or attention_coefficient_activation == "identity"
                                       or positional_encoding not in ("rope", "none") or backend != "blocked"):
             raise ValueError("The forget gate requires nonlinear query coefficients with RoPE or no positional "
                              "encoding on the blocked backend")
         self.attention_forget_gate = attention_forget_gate
+        self.attention_forget_gate_mode = attention_forget_gate_mode
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -340,9 +347,12 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
         log_alpha = None
         if self.attention_forget_gate:
-            # Cumulative FP32 log decay L_t; the kernel multiplies each weight by exp(L_t - L_i).
+            # The gate and its parameters are identical in both modes. Only the attenuation
+            # changes: exp(L_t-L_i) for FoX, exp((t-i)*log_alpha_t) for query distance.
             log_alpha = log_decay(x, *forget_gate)
-            parameters["query_log_decay"] = jnp.cumsum(log_alpha, axis=1)
+            parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
+                                               if self.attention_forget_gate_mode == "cumulative" else log_alpha)
+            parameters["query_decay_mode"] = self.attention_forget_gate_mode
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):

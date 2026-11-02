@@ -1,0 +1,24 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3e26412b2811/config.yaml",
+    "sha256": "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"
+  },
+  "control_run_id": "r4a80e28ce0a7",
+  "home_cluster": "kennel",
+  "label": "query-m4-query-distance-no-rope-w-decay",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/training.log",
+  "name": "query-m4-query-distance-no-rope-w-decay",
+  "recipe_reference": {
+    "config_sha256": "cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763",
+    "initialization_parameter_count": 199585066,
+    "initialization_parameter_sha256": "41222e5822311b7c7828965e5f4e03b72e820cc14f0928d6af073c8649a7b7d7",
+    "run_id": "r4a80e28ce0a7",
+    "study": "transformer_pp"
+  },
+  "record_schema_version": 1,
+  "run_id": "r3e26412b2811",
+  "scientific_change": {
+    "model.attention_forget_gate_mode": "query_distance"
+  },
+  "status": "planned"
+}

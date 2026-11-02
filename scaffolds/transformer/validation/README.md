@@ -2296,3 +2296,31 @@ frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
 The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
 also passes with eight-sequence microbatches and one mean-gradient Adam update
 per full batch, using the same static tensor shape.
+
+## Query-dependent distance decay
+
+The blocked backend supports `attention_forget_gate_mode: query_distance`:
+the existing FP32 log gate multiplies the already evaluated polynomial by
+`exp((t-i) * log_alpha_t)`. Cumulative FoX remains the historical default.
+
+CPU qualification on 2026-11-02 passed 15 new scaffold checks and 28 experiment
+recipe checks. These cover an independent float64 forward and all operand/gate
+gradients, padded blocks, query-local dependence, zero and strong decay, invalid
+gates, legacy defaults, identical initialization, factorial coefficients, and
+the actual AdamW decay update. Three existing cumulative-FoX regressions passed;
+the run-record suite passed all 63 checks.
+
+The new GPU check uses 2,048 tokens, 64-channel BF16 Q/K/V, and FP32 coefficients
+and attenuation. It compares the output and all five operand gradients to
+independent dense FP32 algebra, with relative L2 error below 0.012 for each.
+GPU qualification is pending. Production is gated on this test, the complete
+shared acceptance suite, an exact full-parameter initialization hash match to
+the control, and a real-model training/evaluation/checkpoint-resume pilot.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_query_distance_decay.py \
+  experiments/transformer_pp/tests/test_query_distance_decay_acceptance.py -m 'not gpu'
+# Run the GPU test inside the allocated job using its selected CUDA environment:
+python -m pytest -q scaffolds/transformer/tests/test_query_distance_decay.py -m gpu
+```

@@ -98,6 +98,9 @@ class ModelConfig:
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
+    # Cumulative FoX uses intervening gates; query_distance uses only the current query's
+    # alpha_t raised to the key distance t-i, with the identical gate parameters.
+    attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -412,6 +415,10 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
+        if self.attention_forget_gate_mode not in ("cumulative", "query_distance"):
+            raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
+        if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
+            raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"

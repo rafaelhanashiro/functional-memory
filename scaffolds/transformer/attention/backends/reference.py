@@ -28,6 +28,7 @@ def blocked_dot_product_attention(
     query_polynomial_coefficients: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
+    query_decay_mode: str = "cumulative",
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -53,6 +54,9 @@ def blocked_dot_product_attention(
     multiply each key's degree-r term, giving the pair coefficient c_r(t) f_r(i).
     A forget gate's cumulative log decay L [batch,time,heads] (FP32, nonincreasing in time)
     multiplies each query-coefficient weight by exp(L_t - L_i), evaluated as one difference.
+    With ``query_decay_mode="query_distance"``, the same array holds raw FP32 log alpha_t
+    instead: each polynomial weight is multiplied by exp((t-i)*log alpha_t). Gates from
+    intervening tokens are unused. A nonfinite or positive raw log alpha poisons its query.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -121,8 +125,12 @@ def blocked_dot_product_attention(
                             or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
     decayed = query_log_decay is not None
+    if query_decay_mode not in ("cumulative", "query_distance"):
+        raise ValueError(f"Unknown query decay mode: {query_decay_mode}")
+    if query_decay_mode != "cumulative" and not decayed:
+        raise ValueError("A query-distance decay mode requires query_log_decay")
     if decayed and (not query_conditioned or key_conditioned or query_log_decay.shape != (batch, time, heads)):
-        raise ValueError("A forget gate's cumulative log decay [batch,time,heads] requires query coefficients alone")
+        raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -138,7 +146,7 @@ def blocked_dot_product_attention(
         key_factors = key_polynomial_factors.astype(jnp.float32) if key_conditioned else None
         if decayed:
             log_decay = query_log_decay.astype(jnp.float32)
-            # Padded queries repeat the last cumulative decay, keeping every L_t - L_i <= 0.
+            # Repeat the final gate on padded queries; these rows never enter the output or diagnostics.
             padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
@@ -182,10 +190,21 @@ def blocked_dot_product_attention(
                 for order in range(attention_degree - 1, -1, -1):
                     kernel = kernel * safe_scores + pair_coefficient(order)
                 if decayed:
-                    # prod_(j=i+1..t) alpha_j = exp(L_t - L_i), never above one for causal pairs.
                     query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
-                    gap = jnp.swapaxes(query_decay, 1, 2)[..., None] - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :]
-                    kernel = kernel * jnp.exp(jnp.where(causal, gap, 0.0))
+                    query_decay = jnp.swapaxes(query_decay, 1, 2)[..., None]
+                    if query_decay_mode == "cumulative":
+                        # prod_(j=i+1..t) alpha_j = exp(L_t-L_i).
+                        gap = query_decay - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :]
+                        kernel = kernel * jnp.exp(jnp.where(causal, gap, 0.0))
+                    else:
+                        # The current query chooses a single rate for its entire prefix. Never
+                        # exponentiate positive gaps for masked future keys; the diagonal is exp(0).
+                        distance = jnp.maximum(query_positions[:, None] - key_positions[None, :], 0)
+                        valid_decay = jnp.isfinite(query_decay) & (query_decay <= 0)
+                        safe_decay = jnp.where(valid_decay, query_decay, 0.0)
+                        gap = safe_decay * distance.astype(jnp.float32)
+                        kernel = kernel * jnp.exp(gap)
+                        kernel = jnp.where(valid_decay, kernel, jnp.nan)
             else:
                 kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)
