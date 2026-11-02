@@ -1,17 +1,63 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance cpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-11-01T21:47:55.768876+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/.runtime/acceptance/B300-1/failure.json",
+      "sha256": "1d47a2e85a2ebcda3937d210a20337d28c0de39aadf5567dff323ad4906bd450"
+    },
+    "identity": "520711148b4c0fd4343c92389abc4585ea5a23fa4f397517cc90856aad99bd07",
+    "slurm_job_id": "232288",
+    "stage": "cpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r74495b47d226/training.log",
+      "sha256": "1d8fddbd46ba78cb20e1fbd19eed0f0b639a447a8826737d1fd8755f63223883",
+      "size_bytes": 6564
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/.runtime/acceptance/B300-1",
+      "allocation": "JobId=232288 JobName=r74495b47d226 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20077 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:16 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-01T16:25:44 EligibleTime=2026-11-01T16:25:55 AccrueTime=2026-11-01T16:25:55 StartTime=2026-11-01T16:25:55 EndTime=2026-11-02T16:25:55 Deadline=N/A PreemptEligibleTime=2026-11-01T18:25:55 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-01T16:25:55 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3604915 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
+      "config_sha256": "132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f",
+      "exit_code": 1,
+      "finished_utc": "2026-11-01T21:47:56.695611+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
+      "slurm_job_id": "232288",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-01T21:26:11.649539+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
     "sha256": "132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f"
   },
+  "error": "RuntimeError: Acceptance cpu-tests failed with pytest exit code 1",
   "frozen_execution_sha256": "63c7934a68ef40b078ae9766d2c6ca61bf887a940135cfeeedd4befff01a0515",
   "home_cluster": "kennel",
   "label": "query-m4-fox-path-head-scale-w-decay",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/training.log",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r74495b47d226/training.log",
+    "sha256": "1d8fddbd46ba78cb20e1fbd19eed0f0b639a447a8826737d1fd8755f63223883",
+    "size_bytes": 6564
+  },
+  "log_path": "experiments/transformer_pp/runs/r74495b47d226/training.log",
   "name": "query-m4-fox-path-head-scale-w-decay",
   "record_schema_version": 1,
   "run_id": "r74495b47d226",
   "source_commit": "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
-  "status": "submitted",
+  "status": "acceptance_failed",
   "submission": {
     "command": [
       "sbatch",
