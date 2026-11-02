@@ -4,7 +4,11 @@ Results for the [Transformer++ study](../README.md) live here. Selections name e
 run IDs and pin their scientific inputs; measurements, recipes, execution records,
 and retained artifacts remain under `../runs/`.
 
-The current collection is the exploratory
+The [degree scaling](degree_scaling/README.md) collection plots 1× validation
+perplexity against polynomial degree for fixed Taylor, fixed Hermite, learned static,
+and query coefficients with projection weight decay; its new runs are training.
+
+The current exploratory collection is the
 [coefficient oracle](exploratory/coefficient_oracle/README.md): fitting free coefficients, the trained query generator, or coefficient tables shared across sequences and optionally query positions
 with the pretrained backbone frozen. Its fitting
 perplexity is not held-out validation perplexity and enters no canonical

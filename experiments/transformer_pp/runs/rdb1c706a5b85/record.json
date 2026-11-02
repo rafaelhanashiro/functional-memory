@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdb1c706a5b85/config.yaml",
+    "sha256": "c67d42d12f42fbd3ad8970221418ebdd5b41ff9dba1aafeb34c87fa3cc85093a"
+  },
+  "label": "fixed-m2-head-scale",
+  "name": "fixed-m2-head-scale",
+  "record_schema_version": 1,
+  "run_id": "rdb1c706a5b85",
+  "status": "planned"
+}

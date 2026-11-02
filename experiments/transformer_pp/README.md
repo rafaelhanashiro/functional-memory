@@ -125,6 +125,56 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
+## Degree scaling
+
+The [degree scaling collection](results/degree_scaling/README.md) plots 1× validation
+perplexity against polynomial degree `m = 1, 2, 3, 4` for four coefficient families of
+unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
+setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
+monomial form, the attention_scaling study's coefficients), learned static coefficients,
+and tanh query coefficients with weight decay 0.1 on the projection W. Each new recipe
+copies its family's `m = 4` run (Hermite copies fixed Taylor) and changes only the
+degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs.
+
+| Family | m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) |
+
+Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The per-head output RMSNorm
+removes that factor, so the two runs train the same function up to the norm's epsilon
+and floating point.
+
+Home clusters: the four new `m = 1` runs are Kennel's, from branch
+`claude/degree-scaling-1x-kennel`; the other eight are ORCD's, from branch
+`claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. On ORCD, one
+H100 each, from the worktree root:
+
+```bash
+for run in rdb1c706a5b85 r81fad1755b11 rdf6363a4b83c rf378c0e67607 rbd0cd771c676 r99c3ab7d8a77 r1f880c4ee659 r00f1f91a7803; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
+On Kennel, one GPU each on `standard,long`. Taylor and Hermite at `m = 1` request the
+same GPU type (`GPU=b300` or `GPU=h100`, with `GPU_TYPE` B300 or H100):
+
+```bash
+for RUN in ra7f2fda1c792 rddf0b0173f42 r5c691128699f rf9099d70ab3a; do
+  sbatch --parsable --partition=standard,long --gres=gpu:$GPU:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 $GPU_TYPE
+done
+```
+
 ## Query coefficients across key width and degree
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains

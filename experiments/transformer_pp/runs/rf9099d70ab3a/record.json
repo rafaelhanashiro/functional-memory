@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf9099d70ab3a/config.yaml",
+    "sha256": "37526c699106134ef9d092b487e8774cbfb66e30f5acf282f39ff692c4bf6b46"
+  },
+  "label": "query-m1-w-decay",
+  "name": "query-m1-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rf9099d70ab3a",
+  "status": "planned"
+}

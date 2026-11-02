@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf378c0e67607/config.yaml",
+    "sha256": "4026b418c0180d4a8f066f214ae9660172c6a7c8498e99c3d5a3784526dc1ccb"
+  },
+  "label": "hermite-m3-head-scale",
+  "name": "hermite-m3-head-scale",
+  "record_schema_version": 1,
+  "run_id": "rf378c0e67607",
+  "status": "planned"
+}
