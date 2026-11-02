@@ -3,9 +3,34 @@
     "path": "experiments/transformer_pp/runs/r5c691128699f/config.yaml",
     "sha256": "fa38a7352da86a10f5587c7883ac92f6b90b02ce67c751ed0f557381ad4e9a9e"
   },
+  "home_cluster": "kennel",
   "label": "static-m1-head-scale",
   "name": "static-m1-head-scale",
   "record_schema_version": 1,
   "run_id": "r5c691128699f",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:b300:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff",
+      "--job-name=r5c691128699f",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree-scaling-1x-kennel/experiments/transformer_pp/runs/r5c691128699f/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree-scaling-1x-kennel/experiments/transformer_pp/runs/r5c691128699f/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r5c691128699f/config.yaml",
+      "6a690410b030d7a5c16fa215defafe447f60a2ef",
+      "1",
+      "B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "232539",
+    "submitted_utc": "2026-11-02T05:30:14.129778+00:00"
+  }
 }

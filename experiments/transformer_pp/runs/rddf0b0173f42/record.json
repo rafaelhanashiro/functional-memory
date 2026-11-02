@@ -3,9 +3,34 @@
     "path": "experiments/transformer_pp/runs/rddf0b0173f42/config.yaml",
     "sha256": "4bfe14796faf797d2d50afbca7d7fca9c4fd46d0f2da244e7e2fde500cb59974"
   },
+  "home_cluster": "kennel",
   "label": "hermite-m1-head-scale",
   "name": "hermite-m1-head-scale",
   "record_schema_version": 1,
   "run_id": "rddf0b0173f42",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:b300:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff",
+      "--job-name=rddf0b0173f42",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree-scaling-1x-kennel/experiments/transformer_pp/runs/rddf0b0173f42/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/degree-scaling-1x-kennel/experiments/transformer_pp/runs/rddf0b0173f42/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/rddf0b0173f42/config.yaml",
+      "6a690410b030d7a5c16fa215defafe447f60a2ef",
+      "1",
+      "B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "232538",
+    "submitted_utc": "2026-11-02T05:30:14.052133+00:00"
+  }
 }
