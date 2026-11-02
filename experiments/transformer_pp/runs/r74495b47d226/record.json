@@ -1,17 +1,5 @@
 {
-  "acceptance": {
-    "allocation_seconds": 86400,
-    "error": "RuntimeError: Acceptance cpu-tests failed with pytest exit code 1",
-    "failed_utc": "2026-11-01T21:47:55.768876+00:00",
-    "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-path-1x/experiments/transformer_pp/runs/r74495b47d226/.runtime/acceptance/B300-1/failure.json",
-      "sha256": "1d47a2e85a2ebcda3937d210a20337d28c0de39aadf5567dff323ad4906bd450"
-    },
-    "identity": "520711148b4c0fd4343c92389abc4585ea5a23fa4f397517cc90856aad99bd07",
-    "slurm_job_id": "232288",
-    "stage": "cpu-tests",
-    "status": "failed"
-  },
+  "acceptance": null,
   "artifacts": [
     {
       "path": "experiments/transformer_pp/runs/r74495b47d226/training.log",
@@ -43,8 +31,8 @@
     "path": "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
     "sha256": "132bd4266d23734116445f3dcabaf41bed4c120d44378b04278ec917d1e1813f"
   },
-  "error": "RuntimeError: Acceptance cpu-tests failed with pytest exit code 1",
-  "frozen_execution_sha256": "63c7934a68ef40b078ae9766d2c6ca61bf887a940135cfeeedd4befff01a0515",
+  "error": null,
+  "frozen_execution_sha256": "ed4ffe14b42ac3528dee666cc8c5d5010847e1f9762da82ec0ff9195a88dcf38",
   "home_cluster": "kennel",
   "label": "query-m4-fox-path-head-scale-w-decay",
   "log": {
@@ -56,8 +44,8 @@
   "name": "query-m4-fox-path-head-scale-w-decay",
   "record_schema_version": 1,
   "run_id": "r74495b47d226",
-  "source_commit": "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
-  "status": "acceptance_failed",
+  "source_commit": "43dd39f4e01611556b867d67a30a01ffa9ac2c58",
+  "status": "submitted",
   "submission": {
     "command": [
       "sbatch",
@@ -75,12 +63,12 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_pp.acceptance",
       "experiments/transformer_pp/runs/r74495b47d226/config.yaml",
-      "0b781f00d2447532d53e7f85d20cf12c3bc4c95a",
+      "43dd39f4e01611556b867d67a30a01ffa9ac2c58",
       "1",
       "B300,H100"
     ],
     "partition": "standard",
-    "slurm_job_id": "232288",
-    "submitted_utc": "2026-11-01T21:25:44.040989+00:00"
+    "slurm_job_id": "232534",
+    "submitted_utc": "2026-11-02T05:12:50.424050+00:00"
   }
 }
