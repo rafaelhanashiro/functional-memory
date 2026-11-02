@@ -1,12 +1,243 @@
 {
+  "acceptance": {
+    "cpu_tests": {
+      "files": [
+        "experiments/transformer_pp/tests/test_evaluate_per_position.py",
+        "scaffolds/transformer/tests/test_repack.py"
+      ],
+      "passed": 8
+    },
+    "gpu_checks": "passed training-length validation replays and same-input causal-prefix checks for all three checkpoints",
+    "maximum_prefix_mean_nll_error": 0.0001940801739692688,
+    "maximum_replay_nll_error": 7.98197317219973e-06
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r2a45c518f703/completion.json",
+      "sha256": "dc6bd3db748e2434ac0ad8b7cdac159cdd1bbd0a999d8492090f866fa9dedf17",
+      "size_bytes": 5432
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2a45c518f703/metadata.json",
+      "sha256": "428e420ac8d3dbaae84c29c9030b9425dc949c4ebd2ac9ad0668c2db2a099f6c",
+      "size_bytes": 1049
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2a45c518f703/metrics.jsonl",
+      "sha256": "cff0678aa4234845eac8d38af92b4ada82c630328adefde3b5ac0c2fc4cacbaf",
+      "size_bytes": 1075282
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+      "sha256": "ce672c492388b6071ab6916512f64896f87404d840fcc8862ef58b3aa28cd4c8",
+      "size_bytes": 16312
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-02T00:41:02.047454+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "node": "akita.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/scaffolds/transformer/.venv-cuda13/bin/python",
+      "slurm_job_id": "232392",
+      "source_commit": "4d4f84a7ffaa2cac3d0e973888727b5f1c52e0af",
+      "started_utc": "2026-11-02T00:31:35.448784+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
   "checkpoint_retention": "none; evaluates referenced checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r2a45c518f703/completion.json",
+    "sha256": "dc6bd3db748e2434ac0ad8b7cdac159cdd1bbd0a999d8492090f866fa9dedf17",
+    "size_bytes": 5432
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r2a45c518f703/config.yaml",
     "sha256": "0eccb596505252fc95f0f8d604dd68da718bfdd34a03a61a4ac0d5be668a99db"
   },
+  "evaluation_outcome": {
+    "finished_utc": "2026-11-02T00:40:47.033871+00:00",
+    "interpretation": "Validation-best 2,048-token checkpoints scored per position at 2,048 (replaying each model's validation set) and at 16,384 tokens on rows cut from the same held-out token stream; 9,961,472 predictions per model and length. Original attention mathematics, RoPE settings and checkpoints are unchanged. The evaluation raises only the model forward length guard; no gradient or optimizer update.",
+    "measurements": [
+      {
+        "attention_backend": "fused",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 25.541,
+        "length": "training",
+        "nll": 2.657260399312451,
+        "perplexity": 14.25717657604338,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.657260386567367,
+        "replay_absolute_error": 1.274508409920827e-08,
+        "role": "exp",
+        "seconds": 35.9,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r6a76e7fbde45",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 9.852
+      },
+      {
+        "attention_backend": "fused",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 0.0,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 0.0,
+          "mean_nll_absolute_error": 0.0,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 13.226,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 16.957,
+        "length": "evaluation",
+        "nll": 2.778368724787853,
+        "nll_beyond_training_length": 2.794685603670272,
+        "nll_within_training_length": 2.664150572610915,
+        "perplexity": 16.09274782388522,
+        "prediction_tokens": 9961472,
+        "role": "exp",
+        "seconds": 76.4,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "r6a76e7fbde45",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 45.681
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 21.127,
+        "length": "training",
+        "nll": 2.688420201162061,
+        "perplexity": 14.70842120966162,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 7.98197317219973e-06,
+        "role": "query_wdecay_m4",
+        "seconds": 28.4,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 7.067
+      },
+      {
+        "attention_backend": "mosaic",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 0.15613174438476562,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 0.01213166955858469,
+          "mean_nll_absolute_error": 0.0001940801739692688,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 12.817,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 14.727,
+        "length": "evaluation",
+        "nll": 6.491745334102809,
+        "nll_beyond_training_length": 7.034161164549388,
+        "nll_within_training_length": 2.6948345209767517,
+        "perplexity": 659.6737100763255,
+        "prediction_tokens": 9961472,
+        "role": "query_wdecay_m4",
+        "seconds": 41.6,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 13.798
+      },
+      {
+        "attention_backend": "blocked",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 21.788,
+        "length": "training",
+        "nll": 2.62997578706927,
+        "perplexity": 13.87343398156713,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6299757886874047,
+        "replay_absolute_error": 1.618134515268821e-09,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 44.7,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r4a80e28ce0a7",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 22.759
+      },
+      {
+        "attention_backend": "blocked",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 0.11400985717773438,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 0.01109762117266655,
+          "mean_nll_absolute_error": 6.530992686748505e-05,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 14.693,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 16.544,
+        "length": "evaluation",
+        "nll": 2.598850966342118,
+        "nll_beyond_training_length": 2.5933415859272877,
+        "nll_within_training_length": 2.637416629245931,
+        "perplexity": 13.448276631376261,
+        "prediction_tokens": 9961472,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 238.7,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "r4a80e28ce0a7",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 207.118
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
+  "frozen_execution_sha256": "0b2c00e0de82de97d23e6456ae8a4c29914c6138c6791cd9edfec8f71f230eab",
   "home_cluster": "kennel",
   "label": "per-position-extrapolation-2k-to-16k",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+    "sha256": "ce672c492388b6071ab6916512f64896f87404d840fcc8862ef58b3aa28cd4c8",
+    "size_bytes": 16312
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r2a45c518f703/metadata.json",
+    "sha256": "428e420ac8d3dbaae84c29c9030b9425dc949c4ebd2ac9ad0668c2db2a099f6c",
+    "size_bytes": 1049
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r2a45c518f703/metrics.jsonl",
+    "sha256": "cff0678aa4234845eac8d38af92b4ada82c630328adefde3b5ac0c2fc4cacbaf",
+    "size_bytes": 1075282
+  },
   "name": "per-position-extrapolation-2k-to-16k",
   "parent_run_ids": [
     "r6a76e7fbde45",
@@ -15,5 +246,52 @@
   ],
   "record_schema_version": 1,
   "run_id": "r2a45c518f703",
-  "status": "planned"
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B300 SXM6 AC",
+    "node": "akita.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/scaffolds/transformer/.venv-cuda13/bin/python",
+    "slurm_job_id": "232392",
+    "source_commit": "4d4f84a7ffaa2cac3d0e973888727b5f1c52e0af",
+    "started_utc": "2026-11-02T00:31:35.448784+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "source_commit": "4d4f84a7ffaa2cac3d0e973888727b5f1c52e0af",
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=64G",
+      "--time=04:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r2a45c518f703",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/experiments/transformer_pp/runs/r2a45c518f703/training.log",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval/experiments/transformer_pp/evaluate_per_position.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/context-16k-eval",
+      "4d4f84a7ffaa2cac3d0e973888727b5f1c52e0af",
+      "r2a45c518f703"
+    ],
+    "gpu_count": 1,
+    "partition": "standard",
+    "slurm_job_id": "232392",
+    "submitted_utc": "2026-11-02T00:30:45.337025+00:00"
+  }
 }

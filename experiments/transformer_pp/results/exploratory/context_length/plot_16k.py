@@ -107,7 +107,7 @@ def main() -> None:
             centers, means = binned(values)
             top.plot(positions, np.exp(values), color=color, lw=0.4, alpha=0.18)
             top.plot(centers, np.exp(means), color=color, lw=2.4,
-                     label=f"{label} (mean PPL {np.exp(values.mean()):.3f})")
+                     label=f"{label} (overall PPL {np.exp(values.mean()):.3f})")
             if role != "exp":
                 difference = values - reference
                 centers, means = binned(difference)

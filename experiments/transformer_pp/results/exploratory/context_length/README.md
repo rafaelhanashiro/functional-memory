@@ -3,7 +3,7 @@
 Opened 2026-11-01.
 
 **Question.** How do the Transformer++ attention variants use context beyond the 2,048
-tokens they were trained on, and how do they compare when trained at 4,096 tokens?
+tokens they were trained on, up to 16,384 tokens, and how do they compare when trained at 4,096 tokens?
 
 ## Length extrapolation of 2,048-token checkpoints
 
@@ -57,14 +57,38 @@ both passes.
 and FoX no RoPE + W decay (m = 4) checkpoints at 16,384 tokens. It scores 608
 sequences, or 9,961,472 prediction tokens per model, from the same held-out packed
 stream as the earlier evaluation. It first replays the original validation set
-and checks that a longer window preserves the NLL of its identical 2,048-token
-prefix. Checkpoint parameters, RoPE settings, and attention backends are unchanged;
+and checks that its identical 2,048-token prefix agrees within the declared NLL
+tolerances when evaluated in the longer window. Checkpoint parameters, RoPE settings, and attention backends are unchanged;
 only the forward length guard is raised. No gradients or optimizer updates occur.
 
 Home cluster: Kennel. The run's recipe pins the checkpoint files and both dataset
-manifests. Results are pending. Repacking preserves stream order and EOS separators;
+manifests. Repacking preserves stream order and EOS separators;
 row boundaries differ between lengths, so aggregate PPL alone does not establish
 that a model uses distant context.
+
+![Per-position perplexity of the 2,048-token checkpoints at 16,384 tokens](extrapolation_16k_per_position.png)
+
+| Model | PPL, positions 1–2,048 | PPL, positions 2,049–4,096 | PPL, positions 14,337–16,384 | Overall PPL, 16,384 |
+| --- | ---: | ---: | ---: | ---: |
+| exp | 14.36 | 13.94 | 20.07 | 16.09 |
+| query + W decay | 14.80 | 139.60 | 3080.62 | 659.67 |
+| FoX no RoPE + W decay | 13.98 | 13.28 | 13.47 | 13.45 |
+
+[extrapolation_16k_summary.csv](extrapolation_16k_summary.csv) includes all eight
+successive 2,048-position blocks. Each reported PPL is the exponential of mean NLL.
+
+- Exp improves slightly through 4,096 positions, then degrades gradually, reaching
+  PPL 20.07 in the final 2,048-position block. The earlier 4k improvement does not
+  extend throughout this longer range.
+- Query + W decay deteriorates sharply past the 2,048-token training boundary and
+  reaches PPL 3,080.62 in the final block; its polynomial degree remains four.
+- FoX without RoPE + W decay stays near PPL 13 throughout the extrapolated range.
+  This shows stable loss at 16k, but does not establish effective use of 16k of history.
+- All three original validation replays agree within 8.0e-6 nats. The same-input
+  causal-prefix check agrees in mean NLL within 1.95e-4 nats (maximum per-token
+  difference 0.157 nats), within the frozen 0.002/0.2 tolerances. All losses are finite.
+- These profiles average 608 sequences rather than the original 4,864. With fewer
+  examples per position, raw curves are noisier; bold curves aggregate 64 positions.
 
 ## Training at 4,096 tokens
 
