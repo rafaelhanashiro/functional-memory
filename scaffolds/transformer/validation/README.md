@@ -2308,7 +2308,7 @@ recipe checks. These cover an independent float64 forward and all operand/gate
 gradients, padded blocks, query-local dependence, zero and strong decay, invalid
 gates, legacy defaults, identical initialization, factorial coefficients, and
 the actual AdamW decay update. Three existing cumulative-FoX regressions passed;
-the run-record suite passed all 63 checks.
+the run-record suite passed all 63 checks, and 104 existing acceptance tests passed.
 
 The new GPU check uses 2,048 tokens, 64-channel BF16 Q/K/V, and FP32 coefficients
 and attenuation. It compares the output and all five operand gradients to

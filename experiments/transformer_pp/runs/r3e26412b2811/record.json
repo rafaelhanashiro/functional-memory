@@ -1,12 +1,31 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/.runtime/acceptance/H100-1",
+      "allocation": "JobId=232549 JobName=r3e26412b2811 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20093 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:14 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-02T00:59:10 EligibleTime=2026-11-02T00:59:13 AccrueTime=2026-11-02T00:59:13 StartTime=2026-11-02T00:59:24 EndTime=2026-11-03T00:59:24 Deadline=N/A PreemptEligibleTime=2026-11-02T02:59:24 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-02T00:59:24 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:2372557 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/query_distance_decay.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r3e26412b2811/config.yaml",
+      "config_sha256": "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "afb0bcf6486b78bc1a6f3d8ea86e452f14a57229",
+      "slurm_job_id": "232549",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-02T05:59:38.723420+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r3e26412b2811/config.yaml",
     "sha256": "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"
   },
   "control_run_id": "r4a80e28ce0a7",
+  "frozen_execution_sha256": "fa627a1c7809862e2f4749b5c073ea90309fd00866a8e5d666a714743698ec52",
   "home_cluster": "kennel",
   "label": "query-m4-query-distance-no-rope-w-decay",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/training.log",
+  "log_path": "experiments/transformer_pp/runs/r3e26412b2811/training.log",
   "name": "query-m4-query-distance-no-rope-w-decay",
   "recipe_reference": {
     "config_sha256": "cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763",
@@ -20,5 +39,39 @@
   "scientific_change": {
     "model.attention_forget_gate_mode": "query_distance"
   },
-  "status": "planned"
+  "source_commit": "afb0bcf6486b78bc1a6f3d8ea86e452f14a57229",
+  "status": "acceptance",
+  "submission": {
+    "allowed_gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r3e26412b2811",
+      "--output=experiments/transformer_pp/runs/r3e26412b2811/training.log",
+      "--error=experiments/transformer_pp/runs/r3e26412b2811/training.log",
+      "experiments/transformer_pp/query_distance_decay.sbatch",
+      "experiments.transformer_pp.query_distance_decay_acceptance",
+      "experiments/transformer_pp/runs/r3e26412b2811/config.yaml",
+      "afb0bcf6486b78bc1a6f3d8ea86e452f14a57229",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "home_cluster": "kennel",
+    "partition": "standard",
+    "slurm_job_id": "232549",
+    "submitted_utc": "2026-11-02T05:59:11.729602+00:00",
+    "walltime_seconds": 86400,
+    "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x"
+  }
 }

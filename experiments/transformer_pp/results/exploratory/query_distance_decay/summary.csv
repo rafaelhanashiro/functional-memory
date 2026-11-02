@@ -1,3 +1,3 @@
 role,label,run_id,status,best_step,best_nll,best_ppl,terminal_step,terminal_nll,terminal_ppl,delta_best_ppl,percent_best_ppl,delta_terminal_ppl,percent_terminal_ppl
 control,FoX NoPE + W decay,r4a80e28ce0a7,complete,7500,2.629975789,13.873434,7570,2.630122916,13.875475,,,,
-query_distance,Query-dependent distance decay + W decay,r3e26412b2811,planned,,,,,,,,,,
+query_distance,Query-dependent distance decay + W decay,r3e26412b2811,submitted,,,,,,,,,,
