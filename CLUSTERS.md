@@ -14,7 +14,9 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
   run experiments through Slurm, not directly on compute nodes.
 - **Repository:** `/data/cl/u/rafah/home/projects/functional-memory`.
 - **Datasets:** `/data/cl/u/rafah/home/datasets` (alongside `projects`);
-  packed FineWeb is in `fineweb_12b`.
+  packed FineWeb is in `fineweb_12b`, and its documents of at least 16,384 tokens, one per
+  row with each row's stream position, are in `fineweb_12b_long_documents_seq16385` (see
+  its README).
 - **Storage:** keep persistent files on NFS under `/data/cl/u/rafah`.
 - **Artifact root:** the primary checkout; retained checkpoints and logs live in
   `experiments/<study>/runs/<run_id>/` there.

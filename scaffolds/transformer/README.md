@@ -880,6 +880,29 @@ these execution records while preserving `config.yaml`. Metrics stay in
 Shared helpers regenerate the study's `runs.csv` index. Figures and comparisons
 belong under `results/<comparison>/` and select run IDs explicitly.
 
+### Packed-data tools
+
+A packed corpus is one token stream of documents, each followed by an end-of-document
+token, cut into fixed rows. Both tools check every source shard against its manifest
+checksum, write a new packed corpus that `PackedBatchIterator` reads, and record the source
+manifest and its SHA256 in the new manifest's metadata.
+
+```bash
+# The same stream re-cut into rows of another length (metadata.repacked_from).
+python -m scaffolds.transformer.data.repack SOURCE/manifest.json DESTINATION --sequence-length 4097
+# One row per complete document of at least sequence_length - 1 tokens, in stream order:
+# an end-of-document token, then the document's first sequence_length - 1 tokens
+# (metadata.long_documents_from).
+python -m scaffolds.transformer.data.long_documents SOURCE/manifest.json DESTINATION --sequence-length 16385
+```
+
+`long_documents` also writes `documents.npy`, every complete document's `[start, length]`
+in the stream, and `rows.npy`, each row's document; the manifest pins both by SHA256.
+Offsets are stream tokens, which repacking preserves, so a run that trained on rows
+`[0, n)` of a corpus with row length L consumed stream tokens `[0, n * L)`. The rows it never
+saw are the suffix from `first_unseen_row(manifest, n * L)`, and `row_documents(manifest)`
+gives each row's document.
+
 ### Weights & Biases
 
 `training/tracking.py` mirrors committed metrics to the private W&B project
