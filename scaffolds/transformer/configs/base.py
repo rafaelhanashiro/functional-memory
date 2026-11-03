@@ -419,12 +419,19 @@ class ModelConfig:
             raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
         if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
             raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
+        forget_backend_supported = (
+            self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
+            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
+                or not forget_backend_supported):
             raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE or no positional encoding, on the blocked reference backend")
+                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+        if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
+            # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
+            raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
+                             "blocked backend; PaTH supports only cumulative FoX decay")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

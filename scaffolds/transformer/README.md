@@ -470,6 +470,17 @@ convolution with SiLU, and L2 normalization per head, and
 (projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
 so the backbone keeps the softmax control's weights; all but the bias take weight decay.
 
+Set `attention_forget_gate: true` to combine PaTH with FoX for a tanh query
+polynomial. Both the blocked reference and fused kernels multiply the polynomial
+weight by `exp(L_t - L_s)`, where `L` is the cumulative per-token log forget gate.
+The public `path_attention` and `fused_path_attention` APIs accept this optional
+FP32 `[batch, time, heads]` array as `log_decay`; its gradients propagate through
+the cumulative sum into the gate parameters. Causal differences are masked before
+exponentiation, and gate values are never factored into separate global exponentials.
+The fused backward adds O(BTH) gate-gradient buffers. Gated softmax is unsupported.
+Only `attention_forget_gate_mode: cumulative` composes with PaTH; configuration
+rejects `query_distance` with PaTH.
+
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
 query chunk against the key chunk behind it and moves the queries through that chunk's

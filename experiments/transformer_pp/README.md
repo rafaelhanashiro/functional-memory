@@ -665,6 +665,26 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## FoX with PaTH
+
+`r74495b47d226` combines the degree-four query polynomial, PaTH position encoding,
+and FoX forget gate, with 1× training (7,570 updates) and projection weight decay.
+Its question and selection are in the [forget-gate topic](results/exploratory/forget_gate/README.md).
+It uses one GPU on Kennel from `worktrees/fox-path-1x`, branch `codex/fox-path-1x`.
+The shared acceptance procedure runs the new gated-kernel checks, initialization
+and optimizer checks, a full-recipe pilot, and fresh-process resume before training.
+After committing the frozen execution set and checking live scheduler allowances:
+
+```bash
+run=r74495b47d226
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
