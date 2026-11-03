@@ -315,17 +315,22 @@ def key_factor_statistics(key_factors):
 
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
-                               log_decay=None):
+                               log_decay=None, decay_mode="cumulative"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
-    ``log_decay`` [batch,time,heads] is the forget gate's cumulative FP32 sum L_t of
-    log alpha; each weight is multiplied by exp(L_t - L_i). Only the blocked reference has it.
+    ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
+    ``cumulative`` mode, multiplying each weight by exp(L_t-L_i). In ``query_distance``
+    mode it is log alpha_t itself, giving exp((t-i)*log alpha_t). Both use the blocked backend.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
+    if decay_mode not in ("cumulative", "query_distance"):
+        raise ValueError(f"Unknown query decay mode: {decay_mode}")
+    if decay_mode != "cumulative" and log_decay is None:
+        raise ValueError("A query-distance decay mode requires log_decay")
     if log_decay is not None and backend != "blocked":
         raise ValueError("The forget gate runs on the blocked reference backend only")
     degree = coefficients.shape[-1] - 1
@@ -333,6 +338,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         result = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
+            query_decay_mode=decay_mode,
             return_diagnostics=return_diagnostics,
         )
         if not return_diagnostics:

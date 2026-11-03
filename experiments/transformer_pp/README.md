@@ -634,6 +634,37 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## Query-dependent distance decay
+
+`r3e26412b2811` is one from-scratch ablation of FoX NoPE + W decay control
+`r4a80e28ce0a7`: replace the cumulative product of intervening gates by
+`alpha[t,h] ** (t-i)`. All other scientific settings are identical to the control,
+including degree four, factorial coefficient scaling, gate/coefficients initialization,
+seed 42, QK RMSNorm, attention-output RMSNorm, 2,048-token context, 7,570 updates,
+and the AdamW masks. The [query-distance topic](results/exploratory/query_distance_decay/README.md)
+holds the pinned control and ablation, methods, and best/terminal comparison.
+
+Home cluster: Kennel. Run from `worktrees/query-distance-decay-1x`, branch
+`codex/query-distance-decay-1x`, using its own locked CUDA environments. The adapter
+checks the full recipe against the source and requires all 199,585,066 initial
+parameters to match the source initialization hash. Full shared acceptance includes
+CPU/GPU references and gradients, initialization, a full-recipe timing pilot, and
+checkpoint resume. After successful training, the wrapper refreshes the comparison
+selection and generates the validation-best and terminal PPL table.
+
+After committing inputs and checking live scheduler allowances:
+
+```bash
+run=r3e26412b2811
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/query_distance_decay.sbatch \
+  experiments.transformer_pp.query_distance_decay_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

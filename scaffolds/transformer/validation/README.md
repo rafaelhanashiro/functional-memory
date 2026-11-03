@@ -2164,7 +2164,7 @@ head RMSNorm, including analytic Q/K/V and output-gain gradients. Its two CPU
 cross-checks against float64 automatic differentiation passed, including inputs
 small enough for the RMSNorm epsilon to dominate. The tolerance is the existing
 4% composition tolerance. The test is automatically selected for Mosaic
-unnormalized-attention GPU acceptance. [H100 qualification](runs/reference-oracle-recheck/gpu.json)
+unnormalized-attention GPU acceptance. [H100 qualification](runs/reference-oracle-recheck/fixed-linear-gpu.json)
 passed in job 233097 on 2026-11-02 with the original 4% tolerance.
 
 ```bash
@@ -2174,4 +2174,37 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
 # In a supported GPU allocation, with that allocation's environment:
 python -m pytest -q scaffolds/transformer/tests/test_mosaic_unnormalized.py \
   -k fixed_linear_full_context
+```
+
+## Query-dependent distance decay
+
+The blocked backend supports `attention_forget_gate_mode: query_distance`:
+the existing FP32 log gate multiplies the already evaluated polynomial by
+`exp((t-i) * log_alpha_t)`. Cumulative FoX remains the historical default.
+
+CPU qualification on 2026-11-02 passed 15 new scaffold checks and 28 experiment
+recipe checks. These cover an independent float64 forward and all operand/gate
+gradients, padded blocks, query-local dependence, zero and strong decay, invalid
+gates, legacy defaults, identical initialization, factorial coefficients, and
+the actual AdamW decay update. Three existing cumulative-FoX regressions passed;
+the run-record suite passed all 63 checks, and 104 existing acceptance tests passed.
+
+The new GPU check uses 2,048 tokens, 64-channel BF16 Q/K/V, and FP32 coefficients
+and attenuation. It compares the output and all five operand gradients to
+independent host NumPy FP64 algebra and analytic gradients, with relative L2
+error below 0.012 for each. Small-case NumPy outputs and gradients are checked
+against CPU float64 automatic differentiation, including a length-one sequence
+whose gate gradient is exactly zero.
+[H100 qualification](runs/reference-oracle-recheck/query-distance-gpu.json) passed in job
+233097 on 2026-11-02 with the original 0.012 tolerance. Production is gated on
+this test, the complete
+shared acceptance suite, an exact full-parameter initialization hash match to
+the control, and a real-model training/evaluation/checkpoint-resume pilot.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_query_distance_decay.py \
+  experiments/transformer_pp/tests/test_query_distance_decay_acceptance.py -m 'not gpu'
+# Run the GPU test inside the allocated job using its selected CUDA environment:
+python -m pytest -q scaffolds/transformer/tests/test_query_distance_decay.py -m gpu
 ```

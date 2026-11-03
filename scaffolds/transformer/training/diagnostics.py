@@ -152,6 +152,7 @@ def attention_identity(config) -> dict:
     query_sigmoid = query_conditioned and activation in ("sigmoid", "pure_tanh")
     feature = "sigmoid" if activation in ("sigmoid", "affine_sigmoid") else "tanh"
     forget_gate = getattr(config.model, "attention_forget_gate", False)
+    gate_mode = getattr(config.model, "attention_forget_gate_mode", "cumulative")
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -344,6 +345,7 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_kernel_weight_decay": True}
                if config.model.attention_coefficient_kernel_weight_decay else {}),
             **({"attention_forget_gate": True,
+                "attention_forget_gate_mode": gate_mode,
                 "forget_gate_parameter_count": (config.model.hidden_size + 2) * config.model.num_layers
                 * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
@@ -356,8 +358,10 @@ def attention_identity(config) -> dict:
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
                                + " after the block input RMSNorm"
-                               + ("; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = "
-                                  "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                               + (("; each weight is multiplied by exp((t-i) log alpha_t), log alpha_t = "
+                                   if gate_mode == "query_distance" else
+                                   "; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = ")
+                                  + "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
                                   "DeltaNet's initialization" if forget_gate else "")),
         )
     if mode != "fixed":
