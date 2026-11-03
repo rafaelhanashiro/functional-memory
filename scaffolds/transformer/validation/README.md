@@ -2312,7 +2312,8 @@ head RMSNorm, including analytic Q/K/V and output-gain gradients. Its two CPU
 cross-checks against float64 automatic differentiation passed, including inputs
 small enough for the RMSNorm epsilon to dominate. The tolerance is the existing
 4% composition tolerance. The test is automatically selected for Mosaic
-unnormalized-attention GPU acceptance. GPU execution remains pending.
+unnormalized-attention GPU acceptance. [H100 qualification](runs/reference-oracle-recheck/gpu.json)
+passed in job 233097 on 2026-11-02 with the original 4% tolerance.
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
