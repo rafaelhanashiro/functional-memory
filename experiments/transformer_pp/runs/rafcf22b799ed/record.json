@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rafcf22b799ed/config.yaml",
+    "sha256": "84c8fc94c9868e241b251f62824f9de251200eba806c1927b891b54877838a6f"
+  },
+  "label": "exp-path-forget-gate",
+  "name": "exp-path-forget-gate",
+  "record_schema_version": 1,
+  "run_id": "rafcf22b799ed",
+  "status": "planned"
+}

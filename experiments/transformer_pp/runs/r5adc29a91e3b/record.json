@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r5adc29a91e3b/config.yaml",
+    "sha256": "d2c4a2626e9828dbf124a14ab2d0900d394d2e7ac6b75ada83cfcaf34114c08b"
+  },
+  "label": "softmax-forget-gate-no-rope",
+  "name": "softmax-forget-gate-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r5adc29a91e3b",
+  "status": "planned"
+}

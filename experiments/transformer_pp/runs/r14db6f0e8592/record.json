@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r14db6f0e8592/config.yaml",
+    "sha256": "b53843cda2c253a6c443b6337a5ef45fd5670e3561c1c88a380681f39f20d1d9"
+  },
+  "label": "softmax-path-forget-gate",
+  "name": "softmax-path-forget-gate",
+  "record_schema_version": 1,
+  "run_id": "r14db6f0e8592",
+  "status": "planned"
+}
