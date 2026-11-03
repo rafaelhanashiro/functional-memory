@@ -1990,7 +1990,8 @@ On B300 (`akita`, `.venv-cuda13`, job 233303), the 63 GPU tests of `test_forget_
 `test_path_attention.py`, and `test_path_attention_fused.py` pass: outputs and every gradient,
 including the decay's, at the production context, at lengths 128-1,536, causality, and the
 model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (jobs 233303
-and 233367).
+and 233367). On H100 SXM (`dogo`, `.venv`), the acceptance of `rafcf22b799ed` (job 233373)
+runs the same GPU suites: 117 passed.
 
 Relative L2 error against FP32 HIGHEST, BF16 q/k/v, B = 2, T = 2048, 4 heads, width 64,
 scores `2 cos(q, k)`, decay drawn from Gated DeltaNet's initial range (B300, job 233347):
