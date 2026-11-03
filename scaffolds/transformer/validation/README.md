@@ -406,80 +406,23 @@ sbatch scaffolds/transformer/validation/profile_query_key_4b.sbatch \
 
 ### B300 query-key production qualification
 
-The qualification targets the Transformer++ recipe, 200M parameters and 4B prediction tokens:
-one B300, 15 layers, 14 heads, width 64, context 2048, BF16, microbatch 16,
-global batch 256, and query-key polynomial degrees 8 and 12. Forward retains
-64-by-64 tiles; the qualified backward uses 32-by-32. Mathematical definitions,
-precision, initialization, seed, learning-rate horizon and scientific recipes
-are unchanged.
+The fused query-key polynomial kernel is qualified on B300 at the Transformer++ shape:
+BF16, context 2048, Q/K and value width 64, degrees 2, 4, 8 and 12, with the tuned
+32-by-32 backward tiles at degrees 4, 8 and 12. Job `233107` on one B300 (`akita`,
+CUDA 13 environment), source `1d9bc8f8` on main, passed all 19 GPU-marked query-key
+checks in 5.7 minutes ([record](runs/query-key-b300/qualification.json),
+[results](runs/query-key-b300/gpu-tests.xml)):
 
-The [CPU record](runs/query-key-b300-qualification/cpu.json) has 96 passing checks.
-Job `224667`, source `90ff3ab`, passed all 12 focused B300 GPU checks: independent
-FP64 gradients, full-context blocked/original comparisons, output RMSNorm,
-causality, explicit nonfinite behavior, and the actual QK RMSNorm composition.
-Its [assessment](runs/query-key-b300-assessment/summary.json) measures fresh
-training through the production loop on the same physical B300, with three
-warmup updates and three timed updates per geometry:
+- every gradient against FP64 references, for FP32 and BF16 inputs, through the
+  per-head output RMSNorm;
+- full-context agreement with the blocked reference and the original 64-by-64 geometry;
+- causality of outputs and gradients, and isolation of nonfinite future keys and factors;
+- the composition with QK RMSNorm in the attention backend.
 
-| Degree | Original 64-by-64 backward | 32-by-32 backward | Full-update speedup |
-| --- | ---: | ---: | ---: |
-| 8 | 30.973 s | 4.834 s | 6.408x |
-| 12 | 48.462 s | 5.853 s | 8.279x |
-
-These completion intervals include data loading, transfers, gradient accumulation,
-optimizer updates and numerical checks. Compilation, evaluation and checkpoint
-writes are excluded. They are short steady-state measurements, not full-budget
-training times.
-
-The original full-model 5% slice comparison remains recorded as failed. Forward
-logits and loss are identical; every whole-parameter gradient passes the unchanged
-2.5% relative-L2 and 12.5% relative-maximum gates. Some small coefficient slices
-are sensitive to changes in the incoming adjoint across the BF16 model. The
-[oracle protocol](runs/query-key-b300-qualification/roundoff-protocol.json),
-[repeat protocol](runs/query-key-b300-qualification/repeat-protocol.json), and
-[coefficient coverage](runs/query-key-b300-qualification/coefficient-protocol.json)
-specify the additional checks before their measurements.
-
-The [degree-8 replay](runs/query-key-b300-qualification/roundoff-m8.json) covers
-all 26 rejected historical/current slices across eight layer/head cases. Both
-geometries agree with independent FP64 attention and projection derivatives;
-changed incoming adjoints explain at least 99.9903% of each observed slice
-change. All 145 nonembedding gradients, logits and losses repeat exactly and
-are unchanged by capture instrumentation. Only the embedding parameter gradient
-varies (0.467–0.515% relative L2), within the unchanged whole-parameter bound.
-Attribution locates the difference before each replayed attention block; it does
-not identify every upstream operation responsible or promise bitwise training.
-
-The [degree-12 replay](runs/query-key-b300-qualification/roundoff-m12.json)
-covers all 72 rejected projection slices and 20 bias/amplitude slices across 33
-layer/head cases. All 78 coefficient-family/order vectors across the two affected
-layers pass independent all-head contractions. The worst local attention-gradient
-error against FP64 is 0.199%; changed incoming adjoints explain at least 99.9825%
-of each rejected slice's change. All 145 nonembedding gradients repeat exactly;
-embedding variation is 1.520–1.633% relative L2 and 4.185–5.579%
-relative maximum, within the original 2.5%/12.5% bounds.
-
-The [combined decision](runs/query-key-b300-qualification/decision.json) is
-**qualified** for both frozen recipes. It independently checks the numerical
-gates, complete rejected-slice coverage, source equivalence, matched timing,
-and the two 20-step pilots followed by fresh-process step-21 resumes. Both
-resumes restore exact checkpoint state, next batch and RNG. Failed raw slice
-and strict whole-gradient repeat verdicts remain preserved; the additional
-mechanism checks establish qualification separately. This does not establish
-full-budget stability. Each production allocation still runs its own acceptance.
-
-The [main integration record](runs/query-key-b300-qualification/cpu-main.json)
-also has 96 passing CPU checks. Only the generic backend selector, tiling tests
-and acceptance changes are integrated into the primary scaffold. The
-[retained-artifact manifest](runs/query-key-b300-qualification/retained-artifacts.json)
-pins the decision, logs and CPU smoke scripts.
-
-Full-model reproduction uses the complete frozen Transformer++ source at tag
-`validation/query-key-b300-4b-20261023` (`8924c44721df6b661275125d33b498bff49f8b59`).
-Create a detached worktree of that tag, sync its own locked CUDA 13 environment,
-and use fresh diagnostic output paths. Preserve the recipe's QK RMSNorm, FP32
-backbone norms, and truncated reference initialization. The primary scaffold
-evolves independently; the tag preserves the exact qualified execution source.
+This establishes kernel correctness only. It measures neither throughput nor
+full-budget stability, and each production allocation still runs its own acceptance.
+Rerun it from a clean checkout or detached worktree of the source with the command in
+[`qualify_query_key_b300.sbatch`](qualify_query_key_b300.sbatch).
 
 ### Query-key polynomial backward tiles
 
