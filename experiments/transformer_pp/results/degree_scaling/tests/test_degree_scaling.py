@@ -31,7 +31,7 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 17 and set(cells) == set(TERMINAL)
+    assert len(rows) == 18 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
@@ -41,9 +41,12 @@ def test_committed_runs_and_quoted_values():
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
-    (softmax,) = [row for row in rows if row["role"] == "reference"]
-    assert softmax["run_id"] == "r9040f12f3d80"
-    assert softmax["terminal_validation_perplexity"] == pytest.approx(14.546, abs=5e-4)
+    references = {row["family"]: row for row in rows if row["role"] == "reference"}
+    assert references["softmax"]["run_id"] == "r9040f12f3d80"
+    assert references["softmax"]["terminal_validation_perplexity"] == pytest.approx(14.546, abs=5e-4)
+    assert references["exp"]["run_id"] == "r6a76e7fbde45"
+    assert references["exp"]["terminal_validation_perplexity"] == pytest.approx(14.262, abs=5e-4)
+    assert cells["query_w_decay", 4]["percent_above_exp"] == pytest.approx(3.17, abs=5e-3)
 
 
 def test_family_follows_the_recipe():
@@ -61,6 +64,8 @@ def test_family_follows_the_recipe():
     with pytest.raises(ValueError, match="Unlisted coefficient family"):
         family_of(dict(query, attention_coefficient_kernel_weight_decay=False))
     assert family_of({"attention_degree": None, "attention_normalization": True}) == "softmax"
+    assert family_of({"attention_degree": None, "attention_normalization": False,
+                      "attention_coefficients": "fixed"}) == "exp"
 
 
 def test_recipes_differ_only_in_the_compared_settings():
@@ -78,6 +83,7 @@ def test_recipes_differ_only_in_the_compared_settings():
         ("r00f1f91a7803", "optim", "learning_rate", 0.002, "optim.learning_rate"),
         ("r1f880c4ee659", "model", "hidden_size", 1024, "model.hidden_size"),
         ("r9040f12f3d80", "optim", "weight_decay", 0.0, "optim.weight_decay"),
+        ("r6a76e7fbde45", "optim", "learning_rate", 0.002, "optim.learning_rate"),
     ]
     for run, section, key, value, message in mutations:
         changed = copy.deepcopy(configs)

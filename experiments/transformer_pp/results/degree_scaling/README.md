@@ -36,9 +36,10 @@ Four cells reuse completed Kennel runs: Taylor at `m = 4` (B300) and static at `
 `m = 4` (H100) with the current compiled loop. The twelve new runs differ from their family's `m = 4` recipe
 only in degree and, for Hermite, the fixed coefficients. The `m = 1` column trained on
 Kennel B300s and the other new cells on ORCD H100s; the
-[study README](../../README.md#degree-scaling) gives the launch commands. Softmax
-(`r9040f12f3d80`, the same recipe with normalized softmax attention) is the reference
-level in the figure.
+[study README](../../README.md#degree-scaling) gives the launch commands. Two reference
+levels share the recipe: softmax (`r9040f12f3d80`, normalized) and unnormalized exp
+with the same per-head output RMSNorm (`r6a76e7fbde45`, from `codex/qk-head-controls-4b`),
+the kernel every polynomial here truncates.
 
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
@@ -78,6 +79,8 @@ No cell has a second seed.
 
 Softmax reference (`r9040f12f3d80`): terminal 14.546, validation-best 14.543 (update 7,500).
 
+Exp reference (`r6a76e7fbde45`): terminal 14.262, validation-best 14.257 (update 7,500).
+
 <!-- END GENERATED RESULTS -->
 
 - **All sixteen runs finished the 7,570 updates** with no numerical failure. Every run's
@@ -87,7 +90,7 @@ Softmax reference (`r9040f12f3d80`): terminal 14.546, validation-best 14.543 (up
   perplexity, and every family is best at `m = 4`.
 - **At `m = 4`, query (14.714), Taylor (14.724) and static (14.773) lie within 0.4% of
   one another**, inside the resolution below; Hermite (14.987) is 1.5–1.9% higher. All
-  four stay 1.2–3.0% above softmax (14.546).
+  four stay 1.2–3.0% above softmax (14.546) and 3.2–5.1% above exp (14.262).
 - **`m = 3` breaks the trend for the learned families.** Static (+5.2% over `m = 2`) and
   query (+3.9%) end worse at `m = 3` than at `m = 2`; Taylor is flat (+0.4%: its `m = 3`
   run led `m = 2` until update 6,000), and Hermite keeps improving (−2.7%). Both learned
