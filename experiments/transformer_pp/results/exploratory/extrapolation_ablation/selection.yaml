@@ -94,3 +94,19 @@ runs:
     metadata.json:
       path: experiments/transformer_pp/runs/rece89382b690/metadata.json
       sha256: 011a8847cda09f3b9fea932e1ec375a7d5388540fa4217351d5dac635f01d326
+- study: transformer_pp
+  run_id: ra0ad3d431842
+  role: position_weights_batch
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra0ad3d431842/config.yaml
+      sha256: 12b9f9200396a5dfcd60ea41cbff9af6c6dcfb9a3690f68b5a4bccb76b7e8c2c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra0ad3d431842/metrics.jsonl
+      sha256: 6f424976fc37f9b6c3cb334771b8fdfe267403c882bed501b3d43586e8773c7c
+    completion.json:
+      path: experiments/transformer_pp/runs/ra0ad3d431842/completion.json
+      sha256: dbf77e8ce04ca6c1c2e35341d409a81bc20508ba6f04bf2be119a5399cab0c24
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra0ad3d431842/metadata.json
+      sha256: 8841d5a3b3ce8054c8f0e3fbb82a52d8b8bf5f7b759197974d09628a4246d658

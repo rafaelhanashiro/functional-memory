@@ -153,9 +153,52 @@ first key and on each end-of-document token, and the highest 64-key block ≥ 2,
   both models: in layers 11–14 the four within 2,048 keys of the query draw 9–101 times
   uniform in the 2k model and 11–254 in the 4k model, most on the nearest (3,981), and the
   one at 362 draws 1–12 and 2–14.
-- One query in one row cannot tell whether the two stretches draw weight because of their
-  distance (RoPE phases the 2k model never saw) or their content. The same measurement for
-  an earlier query in the row would: positional peaks move with the query. Not run.
+- The average over 128 sequences below shows that the two stretches are positional.
+
+### Averaged over 128 sequences
+
+`ra0ad3d431842` repeats the measurement on the first 128 validation sequences of 4,096 tokens
+(one 4k training batch) and averages each key's share over the 14 heads and the 128
+sequences. The query is at position 4,095 in every sequence, so each key position is the same
+distance back in all of them: the average cancels content and keeps what depends on
+distance. Its first sequence reproduces `rece89382b690`'s share beyond 2,048 to within 0.0005 in
+every layer (H100 here, B300 there).
+
+![Weight of the query at position 4,095 on every key, averaged over 128 sequences](position_weights_batch.png)
+
+| Weight per key ÷ uniform, key distance | 0–15 | 16–63 | 64–255 | 256–1,023 | 1,024–2,047 | 2,048–4,095 | Weight ≥ 2,048 back (10th–90th percentile) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| trained at 2k, layer 1 | 21.8 | 2.95 | 1.97 | 1.35 | 0.81 | 0.66 | 33% (29–36%) |
+| trained at 2k, layer 5 | 16.4 | 3.62 | 1.14 | 0.75 | 0.75 | 1.02 | 51% (48–55%) |
+| trained at 2k, layer 10 | 18.5 | 2.84 | 1.18 | 0.58 | 0.49 | 1.22 | 61% (57–65%) |
+| trained at 2k, layer 15 | 22.7 | 5.71 | 1.78 | 0.71 | 0.43 | 1.04 | 52% (48–56%) |
+| trained at 4k, layer 1 | 4.1 | 1.64 | 1.45 | 1.44 | 1.25 | 0.63 | 32% (28–35%) |
+| trained at 4k, layer 5 | 51.1 | 6.25 | 2.27 | 1.13 | 0.62 | 0.51 | 26% (23–28%) |
+| trained at 4k, layer 10 | 56.8 | 9.01 | 2.51 | 0.85 | 0.57 | 0.51 | 25% (23–29%) |
+| trained at 4k, layer 15 | 38.0 | 10.72 | 3.27 | 1.03 | 0.55 | 0.48 | 24% (20–30%) |
+
+([position_weights_batch.csv](position_weights_batch.csv) has all 15 layers and the highest 64-key
+block in the two stretches.)
+
+- **The two stretches are positional, not content.** In all 15 layers the 2k model's highest
+  far 64-key block lies in them (keys 896–959 or 1,728–1,791; 3,136–3,199 and 2,304–2,367
+  tokens back), at 1.9–7.6 times uniform in layers 2–15 and 2.0–5.2 times the layer's own far
+  average. Content differs from sequence to sequence; positions do not. The 4k model, trained
+  at these distances, has a weak bump at the same keys: in every layer their highest block is
+  1.1–1.5 times its far average and below uniform (at most 0.95). Both models favor these
+  positions, and training at them keeps the bump small. RoPE at these distances is the likely
+  source, consistent with clamping RoPE at 2,047 removing the break between 2,048 and 4,096
+  tokens. With the query at one position, distance cannot be told apart from absolute key
+  position; moving the query would separate them.
+- **The single sequence was typical.** In layers 6–12 the 2k model gives keys 2,048–4,095 back
+  1.09–1.46 times uniform each and 55–73% of the weight, more than half in at least 90% of
+  sequences; the 4k model gives them 0.44–0.56 times uniform and 22–28%, and under 35% in at
+  least 90% of sequences in every layer. Averaged over layers, 1.04 against 0.53, as in the
+  weight profile (1.05 and 0.51).
+- **Recent keys and the first token.** The 4k model's nearest 16 keys get 31–60 times uniform
+  in layers 3–15, against 13–26 in the 2k model, and the row's first token 15–49 times in its
+  layers 11–14, against 2–8. End-of-document sinks fall at different positions in each
+  sequence and average out.
 
 `plot.py`, `plot_profile.py` and `plot_positions.py` in this directory regenerate the
 figures and tables from [selection.yaml](selection.yaml), run from the repository root.
