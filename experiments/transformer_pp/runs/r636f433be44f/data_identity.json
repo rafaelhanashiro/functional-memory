@@ -1,0 +1,8 @@
+{
+  "batch_size": 128,
+  "eval_manifest_sha256": "fed8b3f895244e4275cf813772adca99cdb0312e7ca130ddd97a0828bfe151ef",
+  "format": "ofm-packed-run-data",
+  "sequence_length": 4097,
+  "train_manifest_sha256": "ed22293aaa3fb986cb868cae9c53a13218dbde4c9ce092f9c1ed12fc2e76cae1",
+  "version": 2
+}

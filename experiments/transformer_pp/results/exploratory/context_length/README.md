@@ -93,8 +93,29 @@ successive 2,048-position blocks. Each reported PPL is the exponential of mean N
 ## Training at 4,096 tokens
 
 Five runs repeat the models above at 4,096 tokens with the same tokens per update and
-budget; the [study README](../../../README.md#context-length) gives the recipe and launch
-commands. Findings: pending.
+budget; the [study README](../../../README.md#training-at-4096-tokens) gives the recipe and
+launch commands. Their validation set is the 2,432 rows of 4,097 tokens that the
+extrapolation pass scores (rows 0–2,431 of the same manifest), so a 4,096-token run's
+validation-best perplexity compares directly with its 2,048-token partner's perplexity over
+positions 1–4,096 of those rows. Every run's best is at update 7,500 of 7,570.
+
+| Model | Trained at 4,096 tokens: best PPL | 2,048-token checkpoint, same rows | Change |
+| --- | ---: | ---: | ---: |
+| forget gate, no RoPE + W decay, m = 4 | **13.484** (`r58efc973ff28`) | 13.574 | −0.7% |
+| exp | 14.098 (`r2047d29a0d9f`) | 14.111 | −0.1% |
+| softmax | 14.498 (`r636f433be44f`) | 14.566 | −0.5% |
+| query + W decay, m = 4 | 14.556 (`r738b35a8e314`) | 45.283 | −67.9% |
+| fixed Taylor, m = 4 | 14.581 (`r339a31ad8d4b`) | 40.850 | −64.3% |
+
+- The ranking is unchanged: forget gate, exp, softmax, then query and fixed Taylor. The
+  forget gate's lead over exp grows from 2.7% at 2,048 tokens to 4.4%.
+- Exp and softmax gain little (0.1%, 0.5%): their 2,048-token checkpoints already
+  extrapolate to 4,096 tokens.
+- The polynomial models need the longer training: they reach 14.556 and 14.581 instead of
+  45.3 and 40.8. They still trail softmax (+0.4%, +0.6%; +1.1%, +1.2% at 2,048 tokens) and
+  exp (+3.3%, +3.4%).
+- Validation records only the mean loss; per-position curves of these checkpoints are not
+  measured.
 
 ## Open decision
 
