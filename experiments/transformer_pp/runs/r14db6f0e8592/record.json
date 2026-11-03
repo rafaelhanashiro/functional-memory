@@ -7,5 +7,30 @@
   "name": "softmax-path-forget-gate",
   "record_schema_version": 1,
   "run_id": "r14db6f0e8592",
-  "status": "planned"
+  "status": "planned",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--nice=1000",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r14db6f0e8592",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r14db6f0e8592/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r14db6f0e8592/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r14db6f0e8592/config.yaml",
+      "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "long",
+    "slurm_job_id": "233372",
+    "submitted_utc": "2026-11-03T06:48:17.884782+00:00"
+  }
 }

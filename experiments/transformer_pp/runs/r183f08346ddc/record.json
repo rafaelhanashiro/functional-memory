@@ -7,5 +7,29 @@
   "name": "exp-forget-gate-no-rope",
   "record_schema_version": 1,
   "run_id": "r183f08346ddc",
-  "status": "planned"
+  "status": "planned",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r183f08346ddc",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
+      "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "long",
+    "slurm_job_id": "233371",
+    "submitted_utc": "2026-11-03T06:48:17.869130+00:00"
+  }
 }
