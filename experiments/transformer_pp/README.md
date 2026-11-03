@@ -606,10 +606,10 @@ stream re-cut into 4,097-token rows; its README gives the construction). Tokens 
 | 4,096-token run | Label | 2,048-token partner |
 | --- | --- | --- |
 | `r636f433be44f` | `softmax-head-scale-4k` | `r9040f12f3d80` |
-| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` (on `codex/qk-head-controls-4b`) |
+| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` |
 | `r339a31ad8d4b` | `fixed-m4-head-scale-4k` | `r816ab0fbe119` |
 | `r738b35a8e314` | `query-m4-wdecay-4k` | `rca97cc9db8f2` |
-| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` (on `codex/fox-query-key-wdecay-4b`) |
+| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` |
 
 The forget-gate partner's recipe sets `attention_coefficient_key_kernel_weight_decay: false`,
 a key this scaffold does not define; it only applies to query-key coefficients, so the

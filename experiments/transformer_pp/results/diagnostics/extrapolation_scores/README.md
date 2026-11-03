@@ -11,7 +11,7 @@ does their weight shift onto distant keys?
 
 `r1d87cc903125` loads the validation-best checkpoints of fixed Taylor m = 4
 (`r816ab0fbe119`), query + W decay m = 4 (`rca97cc9db8f2`) and, as a control, exp
-(`r6a76e7fbde45`, on `codex/qk-head-controls-4b`), with the length limit raised to 4,096,
+(`r6a76e7fbde45`), with the length limit raised to 4,096,
 and runs eight 4,097-token validation rows one at a time through each model's own backend.
 It captures what every attention call receives and recomputes, per layer and head:
 

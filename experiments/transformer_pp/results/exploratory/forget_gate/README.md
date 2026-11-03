@@ -42,7 +42,7 @@ Validation perplexity (terminal, update 7,570; best at 7,500 in parentheses):
   largest gain of any m = 4 variant in this study. The lead over both controls holds at
   2.3–2.9% from update 2,500 onward; it is not an early-training effect.
 - It closes most of the gap to unnormalized exp with the same QK setup
-  (`r6a76e7fbde45`, 14.262, on `codex/qk-head-controls-4b`): +0.4% behind at the end,
+  (`r6a76e7fbde45`, 14.262): +0.4% behind at the end,
   down from +1.7% at update 2,500.
 - The learned decays are mostly short-range. Over the 210 heads, the mean half-life of
   $\prod\alpha$ on the diagnostic sample has percentiles
@@ -66,7 +66,7 @@ mask and the gate's decay, as in the Forgetting Transformer's RoPE-free variant.
 | Fixed Taylor `r816ab0fbe119` | 19.16 | 16.01 | 15.07 | 14.722 | 14.724 |
 
 - Removing RoPE improves the gated model by **2.9%** (best 13.906 against 14.318),
-  the lowest perplexity of any 1x run in the study: 2.5% below unnormalized exp
+  2.5% below unnormalized exp
   (`r6a76e7fbde45`, best 14.257) and 4.4% below softmax (`r9040f12f3d80`, best 14.543).
   The gap to the RoPE gate is steady at about 3% from update 2,500 onward.
 - The learned decays are longer than with RoPE: mean half-life percentiles 10/25/50/75/90% =
@@ -106,7 +106,7 @@ run), terminal is update 7,570:
 - Under the gate PaTH beats RoPE but trails no positional encoding: best 14.094 is 1.6%
   below the RoPE gate and 1.4% above the no-RoPE gate, a gap that narrows from 2.8% at
   update 2,500 to 1.4% by 5,000 and then holds. The matched no-RoPE gate with projection
-  decay (`r4a80e28ce0a7`, best 13.873, on `codex/query-distance-decay-1x`), whose recipe
+  decay (`r4a80e28ce0a7`, best 13.873), whose recipe
   differs only in positional encoding and backend, is 1.6% better.
 - Gate and projection decay together improve ungated PaTH without projection decay
   (`r74a50aca921e`, best 14.528) by 3.0%; the combination is 1.1% below unnormalized exp

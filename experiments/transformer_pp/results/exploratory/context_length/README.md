@@ -12,11 +12,11 @@ per position, with no training:
 
 | Role | Run | Best validation PPL (2,048) |
 | --- | --- | ---: |
-| exp | `r6a76e7fbde45` (on `codex/qk-head-controls-4b`) | 14.257 |
+| exp | `r6a76e7fbde45` | 14.257 |
 | softmax | `r9040f12f3d80` | 14.543 |
 | query + W decay, m = 4 | `rca97cc9db8f2` | 14.709 |
 | fixed Taylor, m = 4 | `r816ab0fbe119` | 14.722 |
-| forget gate, no RoPE + W decay, m = 4 | `r4a80e28ce0a7` (on `codex/fox-query-key-wdecay-4b`) | 13.873 |
+| forget gate, no RoPE + W decay, m = 4 | `r4a80e28ce0a7` | 13.873 |
 
 For each model the evaluation first replays its own validation set (4,864 sequences of
 2,048 positions) and must reproduce its recorded validation NLL within 0.002 nats. It then
