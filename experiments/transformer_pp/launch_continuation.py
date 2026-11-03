@@ -1,10 +1,9 @@
 """Allocate and submit matched continuations of one pretrained checkpoint.
 
-A continuation resumes a completed fixed-kernel parent (fixed Taylor, or unnormalized exp)
-at its validation-best checkpoint and trains all parameters on fresh data, optionally
-introducing a mechanism: learned static coefficients, query-dependent coefficients, the
-per-token query scale gate, or the forget gate. Each branch is compared with a fixed-Taylor
-continuation of the same parent and budget, allocated alongside it or reused.
+A continuation resumes a completed parent at its validation-best checkpoint and trains
+all parameters on fresh data. A fixed Taylor or unnormalized exp parent can introduce
+learned coefficients or gates, with a matched fixed-Taylor control. A learned static or
+query parent can instead preserve its complete model and Adam state unchanged.
 """
 from __future__ import annotations
 

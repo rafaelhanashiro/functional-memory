@@ -2148,3 +2148,11 @@ frozen source parameters, and exact checkpoint resume at shape `[15,14,9]`.
 The [256-sequence H100 qualification](runs/static-coefficient-fit/gpu-h100-batch.json)
 also passes with eight-sequence microbatches and one mean-gradient Adam update
 per full batch, using the same static tensor shape.
+
+## Continuing learned models
+
+The [CPU qualification](runs/learned-continuation/cpu.json) checks that static and
+query-coefficient continuations preserve the complete parent model and Adam state,
+match ordinary continued updates, and resume exactly after interruption. Model changes
+and a separate new-parameter learning rate are rejected in this mode. Full recipe GPU
+acceptance remains mandatory before training.
