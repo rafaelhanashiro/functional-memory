@@ -29,14 +29,23 @@ An additional exact-linear Mosaic check covers the full production context.
 The [study README](../../../README.md#fixed-linear-attention) gives launch commands.
 Home cluster: Kennel.
 
-## Results and open decision
+## Findings
 
-The exp control completed with validation-best PPL **14.257176** at update 7,500
-and terminal PPL **14.261729** at update 7,570. The fixed-linear run is submitted as Kennel job `233102`, one H100 on
-`mastiff` in `standard`; full acceptance precedes production training.
-No performance conclusion is available yet. Compare best and terminal PPL
-separately, then decide whether to retain this baseline in a maintained comparison.
-One seed cannot establish seed-to-seed variability.
+| Run | `p(s)` | Best PPL (update) | Terminal PPL (update 7,570) |
+| --- | --- | ---: | ---: |
+| Exp control `r6a76e7fbde45` | `exp(s)` | **14.257** (7,500) | 14.262 |
+| Fixed linear `rd434701f3492` | `s` | 20.717 (7,500) | 20.726 |
+
+- Removing the exponential raises validation-best PPL by 45.3% (+0.374 nats per
+  token); the terminal gap is the same.
+- Both runs complete all 7,570 updates without numerical failure. The fixed-linear
+  run passed full acceptance, including the exact-linear full-context check, on one
+  H100 PCIe.
+- One seed; seed-to-seed variability is not measured.
+
+## Open decision
+
+Retain fixed linear as a baseline in a maintained comparison, or discard the topic.
 
 The [selection](selection.yaml) pins the runs and scientific source files.
 Measurements remain under each run; no copies are stored here. Refresh the pins
