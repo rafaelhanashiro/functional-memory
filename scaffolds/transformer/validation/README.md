@@ -2307,8 +2307,10 @@ constants preserved through training and checkpoint resume.
 `test_mosaic_unnormalized.py::test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64`
 adds an exact `[0,1]` test at 2,048 tokens and key/value width 64. It uses BF16
 operands prepared with canonical QK RMSNorm, per-head scaling and RoPE; an
-independent dense FP64 reference checks signed linear attention followed by head
-RMSNorm, including Q/K/V and output-gain gradients. The tolerance is the existing
+independent host NumPy FP64 reference checks signed linear attention followed by
+head RMSNorm, including analytic Q/K/V and output-gain gradients. Its two CPU
+cross-checks against float64 automatic differentiation passed, including inputs
+small enough for the RMSNorm epsilon to dominate. The tolerance is the existing
 4% composition tolerance. The test is automatically selected for Mosaic
 unnormalized-attention GPU acceptance. GPU execution remains pending.
 

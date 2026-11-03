@@ -1,4 +1,24 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-11-02T19:19:43.296670+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fixed-linear-1x/experiments/transformer_pp/runs/rd434701f3492/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "1a300ec02cfee52af17efcc23f54b6a76b254a62b51075d08a3840f3c542a07c"
+    },
+    "identity": "089c1b973c6105037d2505e5fee72d243ea85ad65ccee6b1345d41290fa4a827",
+    "slurm_job_id": "232857",
+    "stage": "gpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rd434701f3492/training.log",
+      "sha256": "d717a8494740176759081bcbf622e4e369925d3f0751fb5e4b3f2c847f6eb18e",
+      "size_bytes": 8203
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fixed-linear-1x/experiments/transformer_pp/runs/rd434701f3492/.runtime/acceptance/H100-1",
@@ -6,6 +26,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/rd434701f3492/config.yaml",
       "config_sha256": "45492ea5d60200ae80b45bf7326cb617a1d4a7510b368f17c3e6c755f440c31e",
+      "exit_code": 1,
+      "finished_utc": "2026-11-02T19:19:43.975811+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -22,6 +44,7 @@
     "sha256": "45492ea5d60200ae80b45bf7326cb617a1d4a7510b368f17c3e6c755f440c31e"
   },
   "control_run_id": "r6a76e7fbde45",
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
   "frozen_execution_sha256": "f6b91beadb255bdc9b4155d178a669fa1a04b77b4097a87beb47c3139967c886",
   "home_cluster": "kennel",
   "initialization": {
@@ -29,6 +52,11 @@
     "parameter_sha256": "637cb8beb5ce9275aa2b312964a68bc519efdeb4169bc7025ee914b38662f0b4"
   },
   "label": "fixed-linear-head-rms",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rd434701f3492/training.log",
+    "sha256": "d717a8494740176759081bcbf622e4e369925d3f0751fb5e4b3f2c847f6eb18e",
+    "size_bytes": 8203
+  },
   "log_path": "experiments/transformer_pp/runs/rd434701f3492/training.log",
   "name": "fixed-linear-head-rms",
   "preflight": {
@@ -76,7 +104,7 @@
   "record_schema_version": 1,
   "run_id": "rd434701f3492",
   "source_commit": "c37b92feea28de2dd00a740c978e41851ee7c78f",
-  "status": "acceptance",
+  "status": "acceptance_failed",
   "submission": {
     "allowed_gpu_types": [
       "B300",

@@ -34,6 +34,32 @@ HERMITE_COEFFICIENTS = {
 }
 
 
+@pytest.mark.parametrize("input_scale", (1.0, 0.001))
+def test_fixed_linear_numpy_rms_oracle_matches_float64_autodiff(input_scale):
+    """Cross-check the GPU test's analytic oracle, including the RMS epsilon regime."""
+    from scaffolds.transformer.tests.test_mosaic_unnormalized import _fixed_linear_rms_numpy_fp64
+
+    rng = np.random.default_rng(216)
+    q, k = (input_scale * rng.normal(size=(2, 7, 2, 5)) for _ in range(2))
+    v, cotangent = (rng.normal(size=(2, 7, 2, 3)) for _ in range(2))
+    gain = rng.normal(size=(2, 3))
+    operands = (q, k, v, gain)
+
+    def reference(q, k, v, gain):
+        scores = jnp.einsum("bthd,bihd->bhti", q, k) / math.sqrt(q.shape[-1])
+        causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(k.shape[1])[None, :]
+        output = jnp.einsum("bhti,bihd->bthd", jnp.where(causal, scores, 0.), v)
+        return output / jnp.sqrt(jnp.mean(output * output, axis=-1, keepdims=True) + 1e-6) * gain
+
+    actual = _fixed_linear_rms_numpy_fp64(operands, cotangent)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        output, pullback = jax.vjp(reference, *(jnp.asarray(x, jnp.float64) for x in operands))
+        expected = output, pullback(jnp.asarray(cotangent, jnp.float64))
+    for name, observed, wanted in zip(("output", "dq", "dk", "dv", "dgain"),
+                                     (actual[0], *actual[1]), (expected[0], *expected[1]), strict=True):
+        np.testing.assert_allclose(observed, np.asarray(wanted), rtol=2e-11, atol=2e-12, err_msg=name)
+
+
 def _coefficients(degree, prefactor=1.0):
     return tuple(prefactor * value for value in HERMITE_COEFFICIENTS[degree])
 

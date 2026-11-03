@@ -99,11 +99,36 @@ def test_production_context_matches_triton(coefficients, degree):
                 f"production context, degree={degree}, {coefficients}")
 
 
+def _fixed_linear_rms_numpy_fp64(operands, cotangent, eps=1e-6):
+    """Independent dense forward and analytic VJP, without GPU/XLA compilation."""
+    q, k, v, gain = (np.asarray(x, np.float64) for x in operands)
+    q, k, v = (x.transpose(0, 2, 1, 3) for x in (q, k, v))
+    cotangent = np.asarray(cotangent, np.float64).transpose(0, 2, 1, 3)
+    scale = 1 / math.sqrt(q.shape[-1])
+    causal = np.arange(q.shape[-2])[:, None] >= np.arange(k.shape[-2])[None, :]
+    weights = np.where(causal, (q @ k.swapaxes(-1, -2)) * scale, 0.)
+    unscaled = weights @ v
+    inverse_rms = 1 / np.sqrt(np.mean(unscaled * unscaled, axis=-1, keepdims=True) + eps)
+    normalized = unscaled * inverse_rms
+    output = normalized * gain[None, :, None, :]
+
+    dnormalized = cotangent * gain[None, :, None, :]
+    dunscaled = (dnormalized * inverse_rms - unscaled * inverse_rms ** 3
+                 * np.mean(dnormalized * unscaled, axis=-1, keepdims=True))
+    dscore = np.where(causal, dunscaled @ v.swapaxes(-1, -2), 0.) * scale
+    dq = dscore @ k
+    dk = dscore.swapaxes(-1, -2) @ q
+    dv = weights.swapaxes(-1, -2) @ dunscaled
+    dgain = np.sum(cotangent * normalized, axis=(0, 2))
+    return output.transpose(0, 2, 1, 3), (
+        dq.transpose(0, 2, 1, 3), dk.transpose(0, 2, 1, 3), dv.transpose(0, 2, 1, 3), dgain)
+
+
 def test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64():
     """The exact [0,1] kernel, including signed cancellation and output normalization.
 
-    Inputs have the production QK RMSNorm/head-scale/RoPE preparation. The oracle
-    independently differentiates masked dot products and head RMSNorm, without
+    Inputs have the production QK RMSNorm/head-scale/RoPE preparation. The NumPy
+    oracle uses analytic masked-dot-product and head-RMSNorm gradients, without
     any polynomial, attention, or normalization implementation helpers.
     """
     from scaffolds.transformer.attention.output_scaling import scale_attention_output
@@ -124,20 +149,11 @@ def test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64():
                                         polynomial_coefficients=jnp.asarray([0., 1.], jnp.float32))
         return scale_attention_output(output, "head_rms_norm", output_norm_scale=gain)
 
-    def reference(q, k, v, gain):
-        scores = jnp.einsum("bthd,bihd->bhti", q, k) / math.sqrt(q.shape[-1])
-        causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(k.shape[1])[None, :]
-        output = jnp.einsum("bhti,bihd->bthd", jnp.where(causal, scores, 0.), v)
-        return output / jnp.sqrt(jnp.mean(output * output, axis=-1, keepdims=True) + 1e-6) * gain
-
     def evaluate(function, arguments, tangent):
         output, pullback = jax.vjp(function, *arguments)
         return output, pullback(tangent)
 
-    with jax.enable_x64(), jax.default_matmul_precision("highest"):
-        expected = jax.jit(partial(evaluate, reference))(
-            tuple(x.astype(jnp.float64) for x in operands), cotangent.astype(jnp.float64))
-        expected = jax.tree.map(lambda x: np.asarray(x, np.float64), expected)
+    expected = _fixed_linear_rms_numpy_fp64(operands, cotangent)
     actual = jax.jit(partial(evaluate, production))(operands, cotangent)
     assert actual[0].dtype == jnp.bfloat16
     _assert_relative(actual[0], expected[0], rtol=.04, name="fixed linear + head RMSNorm output")
