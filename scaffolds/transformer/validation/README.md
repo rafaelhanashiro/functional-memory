@@ -2229,3 +2229,11 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
 # Run the GPU test inside the allocated job using its selected CUDA environment:
 python -m pytest -q scaffolds/transformer/tests/test_query_distance_decay.py -m gpu
 ```
+
+## Continuing learned models
+
+The [CPU qualification](runs/learned-continuation/cpu.json) checks that static and
+query-coefficient continuations preserve the complete parent model and Adam state,
+match ordinary continued updates, and resume exactly after interruption. Model changes
+and a separate new-parameter learning rate are rejected in this mode. Full recipe GPU
+acceptance remains mandatory before training.

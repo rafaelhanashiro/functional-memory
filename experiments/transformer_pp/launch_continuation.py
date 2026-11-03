@@ -1,10 +1,9 @@
 """Allocate and submit matched continuations of one pretrained checkpoint.
 
-A continuation resumes a completed fixed-kernel parent (fixed Taylor, or unnormalized exp)
-at its validation-best checkpoint and trains all parameters on fresh data, optionally
-introducing a mechanism: learned static coefficients, query-dependent coefficients, the
-per-token query scale gate, or the forget gate. Each branch is compared with a fixed-Taylor
-continuation of the same parent and budget, allocated alongside it or reused.
+A continuation resumes a completed parent at its validation-best checkpoint and trains
+all parameters on fresh data. A fixed Taylor or unnormalized exp parent can introduce
+learned coefficients or gates, with a matched fixed-Taylor control. A learned static or
+query parent can instead preserve its complete model and Adam state unchanged.
 """
 from __future__ import annotations
 
@@ -82,12 +81,30 @@ def control_role(kind: str) -> str:
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static", updates: int = UPDATES,
             new_rate: float | None = NEW_PARAMETER_LEARNING_RATE, kernel_weight_decay: bool = False,
             degree: int | None = None, no_rope: bool = False,
-            token_scale_kernel_weight_decay: bool = False) -> dict[str, dict]:
+            token_scale_kernel_weight_decay: bool = False,
+            preserve_all_parameters: bool = False) -> dict[str, dict]:
     """Match additional training while enabling the requested mechanism.
 
     An exp parent needs ``degree``: both branches switch to the degree-``degree`` polynomial
     kernel on Mosaic, the control as fixed Taylor and the branch with its learned mechanism.
     """
+    if preserve_all_parameters:
+        model = source["model"]
+        if (model.get("attention_coefficients") != "learned" or conditioning not in ("static", "query")
+                or model.get("attention_coefficient_conditioning") != conditioning
+                or any((kernel_weight_decay, no_rope, token_scale_kernel_weight_decay, degree is not None))):
+            raise ValueError("Preserved continuation keeps the learned parent's entire model recipe")
+        role = conditioning + ("_decay" if model.get("attention_coefficient_kernel_weight_decay") else "") + "_self"
+        recipe = deepcopy(source)
+        recipe["optim"].update(learning_rate=LEARNING_RATE, min_learning_rate=LEARNING_RATE,
+                               warmup_steps=0, total_steps=continuation["parent_step"] + updates)
+        recipe["train"].update(source_commit="auto", micro_batch_size=8, log_every=10, eval_every=100,
+                               eval_early_every=None, eval_early_until=0, ckpt_every=100,
+                               wandb_run_name=f"{role}-m{model['attention_degree']}-continuation",
+                               wandb_group=STUDY.name, wandb_dir=None, wandb_mode="online")
+        recipe["continuation"] = {**deepcopy(continuation), "preserve_all_parameters": True,
+                                  "new_parameter_learning_rate": None}
+        return {role: recipe}
     kind = parent_kind(source["model"])
     if kind == "exp":
         if not isinstance(degree, int) or degree < 1:
@@ -169,7 +186,8 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
             updates: int = UPDATES, new_rate: float | None = NEW_PARAMETER_LEARNING_RATE,
             kernel_weight_decay: bool = False, degree: int | None = None,
             control_only: bool = False, no_rope: bool = False,
-            token_scale_kernel_weight_decay: bool = False) -> dict[str, str]:
+            token_scale_kernel_weight_decay: bool = False,
+            preserve_all_parameters: bool = False) -> dict[str, str]:
     """Allocate a branch and, unless a control is reused or declined, its fixed-Taylor control.
 
     ``control_only`` allocates just the fixed-Taylor continuation of the parent, for example
@@ -178,6 +196,10 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
     """
     if control_only and control is not None:
         raise ValueError("A control-only allocation does not reuse a control")
+    if preserve_all_parameters:
+        if control not in (None, "none") or control_only:
+            raise ValueError("Preserved continuation allocates only the unchanged learned model")
+        control, new_rate = "none", None
     parent = parent.resolve()
     topic_directory = topic_path(conditioning, topic)
     record = load_run(parent)
@@ -191,6 +213,9 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
                 "attention_output_scaling": "head_rms_norm", "qk_norm": True, "qk_norm_type": "rms_norm",
                 "qk_norm_head_scale": True, "initialization": "transformer_truncated_reference"}
     kind = parent_kind(model)
+    if preserve_all_parameters:
+        expected.update(attention_coefficients="learned", attention_coefficient_conditioning=conditioning)
+        kind = conditioning
     if kind == "taylor":
         expected["attention_backend"] = "mosaic"
     if (model.get("attention_fixed_coefficients") is not None or model.get("attention_forget_gate", False)
@@ -221,7 +246,8 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
         run_ids[control_role(kind)] = control
     allocated = recipes(source, continuation, conditioning=conditioning, updates=updates, new_rate=new_rate,
                         kernel_weight_decay=kernel_weight_decay, degree=degree, no_rope=no_rope,
-                        token_scale_kernel_weight_decay=token_scale_kernel_weight_decay)
+                        token_scale_kernel_weight_decay=token_scale_kernel_weight_decay,
+                        preserve_all_parameters=preserve_all_parameters)
     for role, recipe in allocated.items():
         if role == control_role(kind) and control is not None:
             continue
@@ -248,6 +274,14 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
                                                            if role != control_role(kind) and new_rate is not None else ""),
                              "data_start_sequence": best["step"] * source["data"]["batch_size"]},
         })
+        if preserve_all_parameters:
+            record = load_run(run)
+            update_record(run, {"continuation": {
+                **record["continuation"],
+                "backbone_optimizer": "preserve all pretrained parameters, moments and clocks, including coefficients",
+                "new_parameter_optimizer": "not applicable; no parameters introduced",
+                "learning_rate": LEARNING_RATE,
+            }})
     selection_path = topic_directory / "selection.yaml"
     if selection_path.exists():
         selection = yaml.safe_load(selection_path.read_text())
@@ -267,6 +301,8 @@ def prepare(parent: Path, *, conditioning: str = "static", control: str | None =
                      for role, run_id in run_ids.items()],
         }
     topic_directory.mkdir(parents=True, exist_ok=True)
+    if preserve_all_parameters:
+        selection["settings"]["preserved_parameter_learning_rate"] = LEARNING_RATE
     selection_path.write_text(yaml.safe_dump(selection, sort_keys=False))
     refresh_selection(topic_directory)
     regenerate_index(STUDY)
@@ -351,6 +387,8 @@ def main(argv=None) -> None:
     prep.add_argument("--degree", type=int, help="polynomial degree when continuing an exp parent")
     prep.add_argument("--control-only", action="store_true",
                       help="allocate only the parent's fixed-Taylor continuation")
+    prep.add_argument("--preserve-all-parameters", action="store_true",
+                      help="continue a learned parent unchanged, retaining all Adam history at the backbone LR")
     launch = sub.add_parser("submit")
     launch.add_argument("run_id")
     launch.add_argument("--partition", default="standard,long")
@@ -363,7 +401,8 @@ def main(argv=None) -> None:
                 updates=args.updates, new_rate=args.new_parameter_learning_rate,
                 kernel_weight_decay=args.kernel_weight_decay, degree=args.degree,
                 control_only=args.control_only, no_rope=args.no_rope,
-                token_scale_kernel_weight_decay=args.token_scale_kernel_weight_decay)
+                token_scale_kernel_weight_decay=args.token_scale_kernel_weight_decay,
+                preserve_all_parameters=args.preserve_all_parameters)
     else:
         submit(args.run_id, partition=args.partition, time_limit=args.time_limit,
                conditioning=args.conditioning, topic=args.topic)

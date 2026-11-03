@@ -406,6 +406,31 @@ On an H100 PCIe the blocked backend trains this recipe at 16.7 s per update (abo
 for the budget), and the pilot's slowest-step projection reached 31 h, beyond `standard`'s
 24 h limit; the `long` allocation only clears that projection.
 
+### Continuing pretrained static and query models
+
+The [learned-coefficient CPT comparison](results/exploratory/learned_coefficient_continuation/README.md#continuation-of-the-pretrained-learned-models)
+also continues static and query + W decay models from their own step-7,500
+checkpoints for 2,000 updates. All existing parameters and Adam history are retained,
+at a constant learning rate of 0.0001. Their coefficients have already been trained,
+so the separate 0.001 rate for newly introduced coefficients does not apply.
+Home cluster: Kennel. Prepare both in an isolated worktree and commit before launching:
+
+```bash
+PARENTS=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENTS/r4339a245820e" --conditioning static --preserve-all-parameters --topic learned_coefficient_continuation
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENTS/rca97cc9db8f2" --conditioning query --preserve-all-parameters --topic learned_coefficient_continuation
+# Existing executions; do not allocate replacements for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  r1522cd56901a --topic learned_coefficient_continuation --partition standard --time-limit 10:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  rdfc42659424f --topic learned_coefficient_continuation --partition long --time-limit 10:00:00
+```
+
+Partitions follow the live standard/long allowances; these independent jobs each
+request one H100 or B300 and complete full acceptance before production training.
+
 ### CPT with projection weight decay
 
 Two additional continuations reuse Taylor parent `r816ab0fbe119` at update 7,500 and

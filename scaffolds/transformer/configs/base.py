@@ -632,6 +632,8 @@ class ContinuationConfig:
     # Constant learning rate of the parameters the continuation introduces, which have their
     # own Adam clock; null gives them the backbone's optim.learning_rate.
     new_parameter_learning_rate: float | None = None
+    # Continue the identical architecture, retaining every parameter and Adam moment.
+    preserve_all_parameters: bool = False
 
 
 @dataclass
@@ -648,6 +650,8 @@ def validate_config(config: Config) -> None:
     config.model.__post_init__()
     data, optim, train = config.data, config.optim, config.train
     continuation = config.continuation
+    if not isinstance(continuation.preserve_all_parameters, bool):
+        raise ValueError("continuation.preserve_all_parameters must be a boolean")
     if continuation.parent_checkpoint:
         if not continuation.parent_config:
             raise ValueError("Continuation requires its parent_config")
@@ -664,13 +668,15 @@ def validate_config(config: Config) -> None:
         if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
             raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
         rate = continuation.new_parameter_learning_rate
+        if continuation.preserve_all_parameters and rate is not None:
+            raise ValueError("Preserving all parameters introduces no new parameter learning rate")
         if rate is not None and (not isinstance(rate, (int, float)) or isinstance(rate, bool)
                                  or not math.isfinite(rate) or rate <= 0):
             raise ValueError("continuation.new_parameter_learning_rate must be null or finite and positive")
         if rate is not None and config.model.attention_coefficients != "learned" and (
                 config.model.qk_norm_token_scale == "none"):
             raise ValueError("continuation.new_parameter_learning_rate applies to introduced parameters only")
-        if config.model.attention_coefficients == "learned":
+        if config.model.attention_coefficients == "learned" and not continuation.preserve_all_parameters:
             model = config.model
             if (model.attention_coefficient_conditioning not in ("static", "query")
                     or model.attention_coefficient_parameterization != "direct"
@@ -687,7 +693,8 @@ def validate_config(config: Config) -> None:
                                  "coefficients with no inner bias and either zero amplitude or zero projection")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
-              continuation.parent_step, continuation.new_parameter_learning_rate is not None)):
+              continuation.parent_step, continuation.new_parameter_learning_rate is not None,
+              continuation.preserve_all_parameters)):
         raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")
