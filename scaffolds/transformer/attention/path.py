@@ -22,10 +22,13 @@ batched matrix product over all chunks, and the derivative comes from automatic
 differentiation of a rematerialized forward pass, so nothing pairwise is stored across
 steps. Transport, scores, kernels, and reductions are FP32; the inputs may be BF16.
 
-Two kernels are applied to the transported scores ``s_ts = S_ts / sqrt(d_K)``: the
+Three kernels are applied to the transported scores ``s_ts = S_ts / sqrt(d_K)``: the
 normalized exponential (softmax, with a running maximum and normalizer across the sweep),
-and the unnormalized polynomial ``sum_r c_r(x_t) s_ts^r`` with per-query coefficients, as
-in ``input_dependent.query_polynomial_attention``.
+the unnormalized exponential ``exp(s_ts)`` (no shift, never divided by), and the
+unnormalized polynomial ``sum_r c_r(x_t) s_ts^r`` with per-query coefficients, as in
+``input_dependent.query_polynomial_attention``. A forget gate's cumulative log decay
+``L_t`` adds ``L_t - L_s`` to every softmax or exponential score, as in the Forgetting
+Transformer and the PaTH paper's PaTH-FoX.
 """
 
 from functools import partial
@@ -35,7 +38,7 @@ import jax
 import jax.numpy as jnp
 
 CHUNK_SIZE = 128  # fastest on B300 among 64, 128 and 256 for T = 2048, d_K = 64
-KERNELS = ("softmax", "query_polynomial")
+KERNELS = ("softmax", "exp", "query_polynomial")
 _HIGHEST = jax.lax.Precision.HIGHEST
 
 
@@ -90,8 +93,8 @@ def _polynomial(scores, coefficients):
     return value
 
 
-@partial(jax.checkpoint, static_argnums=(6, 7, 8))
-def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
+@partial(jax.checkpoint, static_argnums=(7, 8, 9))
+def _path_core(q, k, v, w, beta, coefficients, log_decay, kernel, chunk, precision):
     batch, time, heads, qk_dim = q.shape
     scale = 1.0 / math.sqrt(qk_dim)
     qc, kc, wc = (_chunks(x.astype(jnp.float32), chunk) for x in (q, k, w))
@@ -101,20 +104,34 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
     local, q_state, k_end, hmat = chunk_transforms(qc, kc, wc, bc, precision=precision)
     causal = jnp.tril(jnp.ones((chunk, chunk), bool))
     polynomial = kernel == "query_polynomial"
+    exponential = kernel == "exp"
+    unnormalized = polynomial or exponential
     if polynomial:
         cc = _chunks(coefficients.astype(jnp.float32), chunk)
+    decayed = log_decay is not None
+    if decayed:
+        lc = _chunks(log_decay.astype(jnp.float32), chunk)
 
-    def weights(scores, chunk_slice, mask=None):
+    def gap(query_chunks, key_chunks):
+        """L_t - L_s for query chunks against key chunks, one difference per pair."""
+        return None if not decayed else lc[:, :, query_chunks, :, None] - lc[:, :, key_chunks, None, :]
+
+    def weights(scores, chunk_slice, mask=None, decay=None):
         scores = scores * scale
+        logits = scores if decay is None else scores + decay
         if polynomial:
             values = _polynomial(scores, cc[:, :, chunk_slice])
             return values if mask is None else jnp.where(mask, values, 0.0), scores
-        return scores if mask is None else jnp.where(mask, scores, -jnp.inf), scores
+        if exponential:
+            # Masked entries are evaluated at zero, then dropped; no row shift.
+            values = jnp.exp(logits if mask is None else jnp.where(mask, logits, 0.0))
+            return values if mask is None else jnp.where(mask, values, 0.0), scores
+        return logits if mask is None else jnp.where(mask, logits, -jnp.inf), scores
 
     # The diagonal blocks: chunk-local scores.
-    local_values, local_scores = weights(local, slice(None), causal)
+    local_values, local_scores = weights(local, slice(None), causal, gap(slice(None), slice(None)))
     invalid = jnp.any(causal & ~jnp.isfinite(local_scores), axis=-1)
-    if polynomial:
+    if unnormalized:
         invalid = invalid | jnp.any(causal & ~jnp.isfinite(local_values), axis=-1)
         output = _matmul(local_values, vc, precision)
         # Observed, never divided by: the kernel's extrema and row sums.
@@ -126,7 +143,8 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
         probabilities = jnp.exp(local_values - maximum[..., None])
         normalizer = jnp.sum(probabilities, axis=-1)
         output = _matmul(probabilities, vc, precision)
-        row_min = jnp.min(jnp.where(causal, local_scores, jnp.inf), axis=-1)
+        # The smallest causal logit (the score plus any decay) gives the smallest weight.
+        row_min = jnp.min(jnp.where(causal, local_values, jnp.inf), axis=-1)
     score_min = jnp.min(jnp.where(causal, local_scores, jnp.inf))
     score_max = jnp.max(jnp.where(causal, local_scores, -jnp.inf))
     # Sweep over chunk distance d: query chunks d.. score key chunks ..N-1-d, then move
@@ -134,19 +152,20 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
     for distance in range(1, count):
         queries = q_state[:, :, distance:]
         raw = _matmul(queries, jnp.swapaxes(k_end[:, :, :count - distance], -1, -2), precision)
-        values, scores = weights(raw, slice(distance, None))
+        decay = gap(slice(distance, None), slice(None, count - distance))
+        values, scores = weights(raw, slice(distance, None), decay=decay)
         invalid = invalid.at[:, :, distance:].set(invalid[:, :, distance:] | jnp.any(~jnp.isfinite(scores), axis=-1))
         score_min = jnp.minimum(score_min, jnp.min(scores))
         score_max = jnp.maximum(score_max, jnp.max(scores))
         block_values = vc[:, :, :count - distance]
-        if polynomial:
+        if unnormalized:
             invalid = invalid.at[:, :, distance:].set(invalid[:, :, distance:] | jnp.any(~jnp.isfinite(values), axis=-1))
             output = output.at[:, :, distance:].add(_matmul(values, block_values, precision))
             kernel_min = jnp.minimum(kernel_min, jnp.min(values))
             kernel_max = jnp.maximum(kernel_max, jnp.max(values))
             row_sum = row_sum.at[:, :, distance:].add(jnp.sum(values, axis=-1))
         else:
-            row_min = row_min.at[:, :, distance:].set(jnp.minimum(row_min[:, :, distance:], jnp.min(scores, axis=-1)))
+            row_min = row_min.at[:, :, distance:].set(jnp.minimum(row_min[:, :, distance:], jnp.min(values, axis=-1)))
             previous = maximum[:, :, distance:]
             updated = jnp.maximum(previous, jnp.max(values, axis=-1))
             rescale = jnp.exp(previous - updated)
@@ -159,7 +178,7 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
         if distance < count - 1:
             moved = queries - _matmul(queries, hmat[:, :, :count - distance], precision)
             q_state = q_state.at[:, :, distance:].set(moved)
-    if not polynomial:
+    if not unnormalized:
         output = output / normalizer[..., None]
     output = jnp.where(invalid[..., None], jnp.nan, output)
     output = jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)
@@ -168,7 +187,7 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
         "invalid_row_count": jnp.sum(invalid, dtype=jnp.int32),
         "invalid_output_count": jnp.sum(~jnp.isfinite(output), dtype=jnp.int32),
     }
-    if polynomial:
+    if unnormalized:
         diagnostics.update(kernel_min=kernel_min, kernel_max=kernel_max,
                            weight_sum_min=jnp.min(row_sum), weight_sum_max=jnp.max(row_sum))
     else:
@@ -178,14 +197,16 @@ def _path_core(q, k, v, w, beta, coefficients, kernel, chunk, precision):
     return _unchunk(output).astype(v.dtype), jax.lax.stop_gradient(diagnostics)
 
 
-def path_attention(q, k, v, w, beta, *, kernel, coefficients=None, chunk_size=CHUNK_SIZE,
+def path_attention(q, k, v, w, beta, *, kernel, coefficients=None, log_decay=None, chunk_size=CHUNK_SIZE,
                    precision=None, return_diagnostics=False):
     """Causal attention on PaTH-transported scores.
 
     ``q, k`` [B, T, H, D] (after any QK normalization, before scaling), ``v`` [B, T, H, V],
     ``w`` [B, T, H, D] unit vectors, ``beta`` [B, T, H] in (0, 2), and for the polynomial
-    kernel FP32 ``coefficients`` [B, T, H, m+1]. ``T`` must be a multiple of
-    ``chunk_size``. A nonfinite score, kernel value, or output poisons its row with NaN.
+    kernel FP32 ``coefficients`` [B, T, H, m+1]. A forget gate's FP32 cumulative log decay
+    ``log_decay`` [B, T, H] (nonincreasing in time) adds ``L_t - L_s`` to each softmax or
+    exponential score. ``T`` must be a multiple of ``chunk_size``. A nonfinite score,
+    kernel value, or output poisons its row with NaN.
     """
     if kernel not in KERNELS:
         raise ValueError(f"Unknown PaTH kernel {kernel!r}; expected one of {KERNELS}")
@@ -199,7 +220,9 @@ def path_attention(q, k, v, w, beta, *, kernel, coefficients=None, chunk_size=CH
         raise ValueError("The polynomial PaTH kernel requires coefficients; softmax takes none")
     if coefficients is not None and (coefficients.shape[:3] != q.shape[:3] or coefficients.shape[-1] < 2):
         raise ValueError("PaTH polynomial coefficients must have shape [B, T, H, m+1] with m >= 1")
-    output, diagnostics = _path_core(q, k, v, w, beta, coefficients, kernel, chunk_size, precision)
+    if log_decay is not None and (kernel == "query_polynomial" or log_decay.shape != q.shape[:3]):
+        raise ValueError("A PaTH forget gate's cumulative log decay [B, T, H] applies to the softmax and exp kernels")
+    output, diagnostics = _path_core(q, k, v, w, beta, coefficients, log_decay, kernel, chunk_size, precision)
     return (output, diagnostics) if return_diagnostics else output
 
 

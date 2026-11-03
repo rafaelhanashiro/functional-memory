@@ -3,8 +3,9 @@
 Each wrapper takes its arrays and scalars in the order ``triton_port.launch`` passes them
 (inputs, arrays updated in place, outputs, constexprs) and calls the FLA kernel body as a
 device function, with FLA's heuristic flags fixed for the scaffold's path: equal-length
-sequences (``IS_VARLEN``), no forget gate (``USE_G``/``USE_GATE``), no TMA, and no
-gradient of the key cache. Pointers FLA would receive as ``None`` stay ``None``.
+sequences (``IS_VARLEN``), the forget gate (``USE_G``/``USE_GATE``) only in the ``*_gated``
+wrappers, no TMA, and no gradient of the key cache. Pointers FLA would receive as ``None``
+stay ``None``. FLA adds its cumulative gate to the unscaled scores, ``(S + G_t - G_s) * scale``.
 Importing this module imports flash-linear-attention's Triton kernels.
 """
 
@@ -141,3 +142,61 @@ def intra_bwd(q, k, w, w2, beta, AT, dA_local, dq, dk, dw1, dw2, T, dq_new, dk_n
     # IS_VARLEN
     FLA_INTRA_BWD(q, k, w, w2, beta, AT, dA_local, dq, dq_new, dk, dk_new, dw, dbeta, dw1, dw2, T, None, None, HQ, G,
                   H, K, BT, BK, False)
+
+
+# The forget gate: the same kernels with FLA's cumulative gate g_cumsum [B, T, H] (FP32) and,
+# in the backward, its gradient. Each backward kernel writes its own dg_cumsum part (the
+# preparation kernel stores; the others accumulate atomically into zeros), summed by the caller.
+
+@triton.jit
+def intra_fwd_gated(q, k, v, w, beta, g_cumsum, A, scale, T, o, L, M, w2, q_new, k_new, H: tl.constexpr,
+                    G: tl.constexpr, HQ: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BK: tl.constexpr,
+                    BV: tl.constexpr, BT: tl.constexpr):
+    # IS_VARLEN, USE_G
+    FLA_INTRA_FWD(q, k, v, w, beta, g_cumsum, o, A, L, M, w2, q_new, k_new, scale, None, None, T, H, G, HQ, K, V,
+                  BK, BV, BT, False, True)
+
+
+@triton.jit
+def path_fwd_gated(q, k, v, o, w1, w2, L, M, g_cumsum, scale, T, o_new, L_new, G: tl.constexpr, HQ: tl.constexpr,
+                   H: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr, BS: tl.constexpr,
+                   BK: tl.constexpr, BV: tl.constexpr):
+    # USE_GATE, IS_VARLEN
+    FLA_PATH_FWD(q, k, v, o, o_new, g_cumsum, w1, w2, scale, L, L_new, M, None, None, T, G, HQ, H, K, V, BT, BS,
+                 BK, BV, True, False)
+
+
+@triton.jit
+def bwd_prepare_gated(q, k, v, w, beta, g_cumsum, L, D, AT, do, scale, T, h, q_new, k_new, dA_local, dv, dg_cumsum,
+                      G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
+                      BK: tl.constexpr, BV: tl.constexpr, BT: tl.constexpr):
+    # IS_VARLEN, USE_GATE, RETURN_H
+    FLA_BWD_PREPARE(q, k, v, w, beta, g_cumsum, L, D, h, q_new, k_new, AT, dA_local, dv, do, dg_cumsum, scale, None,
+                    None, None, T, G, HQ, H, K, V, BK, BV, BT, False, True, False)
+
+
+@triton.jit
+def bwd_dkv_gated(q, k, v, hc_whole, L, D, do, g_cumsum, scale, T, dv_in, dk, dv, dg_cumsum, G: tl.constexpr,
+                  HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr,
+                  BS: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr):
+    # dv_in is aliased to dv, which the kernel accumulates into. IS_VARLEN, USE_GATE
+    FLA_BWD_DKV(q, k, v, g_cumsum, hc_whole, scale, L, D, dk, dv, do, dg_cumsum, None, None, None, T, G, HQ, H, K, V,
+                BT, BS, BK, BV, S, False, True, NUM_BLOCKS)
+
+
+@triton.jit
+def bwd_dq_gated(q, k, v, hc_whole, L, D, do, g_cumsum, scale, T, dq, dhc_whole, dg_cumsum, G: tl.constexpr,
+                 HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr,
+                 BS: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr):
+    # IS_VARLEN, USE_GATE
+    FLA_BWD_DQ(q, k, v, g_cumsum, hc_whole, scale, L, D, dq, do, dhc_whole, dg_cumsum, None, None, None, T, G, HQ, H,
+               K, V, BT, BS, BK, BV, S, NUM_BLOCKS, False, True)
+
+
+@triton.jit
+def bwd_intra_gated(q, k, v, w1, w2, L, D, dq, do, g_cumsum, T, scale, dk_in, dv_in, dw1_in, dw2_in, dq_new, dk, dv,
+                    dw1, dw2, dg_cumsum, G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr,
+                    V: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr, BT: tl.constexpr, S: tl.constexpr):
+    # The *_in arrays are aliased to the outputs the kernel accumulates into. IS_VARLEN, USE_GATE
+    FLA_BWD_INTRA(q, k, v, g_cumsum, w1, w2, L, D, dq, dq_new, dk, dv, dw1, dw2, do, dg_cumsum, None, None, T, scale,
+                  G, HQ, H, K, V, BK, BV, BT, S, False, True)

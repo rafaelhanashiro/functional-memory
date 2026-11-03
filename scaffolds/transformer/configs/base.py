@@ -220,8 +220,8 @@ class ModelConfig:
         """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
         if self.positional_encoding != "path":
             return None
-        if self.attention_normalization and self.attention_degree is None:
-            return "softmax"
+        if self.attention_degree is None:
+            return "softmax" if self.attention_normalization else "exp"
         return "query_polynomial"
 
     def __post_init__(self):
@@ -255,13 +255,14 @@ class ModelConfig:
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"model.{name} must be a positive integer")
         if self.positional_encoding == "path":
-            softmax = (self.attention_normalization and self.attention_degree is None
-                       and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
+            # Softmax, or the unnormalized exponential.
+            exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                           and self.quadratic_mode == "fixed")
             query_tanh = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                           and self.attention_coefficient_activation == "tanh")
-            if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
-                raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
-                                 "unnormalized polynomial attention")
+            if self.attention_mechanism != "dot_product" or not (exponential or query_tanh):
+                raise ValueError("PaTH position encoding supports softmax, unnormalized exponential, and tanh "
+                                 "query-conditioned unnormalized polynomial attention")
             if self.attention_backend not in ("auto", "blocked", "fused"):
                 raise ValueError("PaTH attention runs on model.attention_backend blocked (its chunked JAX "
                                  "implementation), fused (FLA's Triton kernels), or auto")
@@ -412,12 +413,21 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
-        if self.attention_forget_gate and (
-                self.attention_mechanism != "dot_product" or self.attention_normalization
-                or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
-            raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE or no positional encoding, on the blocked reference backend")
+        if self.attention_forget_gate:
+            # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
+            # Transformer; with PaTH, PaTH-FoX); query-coefficient polynomials multiply their weights by it.
+            exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                           and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
+            polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                          and activation != "identity")
+            if self.attention_mechanism != "dot_product" or not (
+                    (exponential and (self.positional_encoding == "path" or self.attention_backend == "blocked"))
+                    or (polynomial and self.positional_encoding in ("rope", "none")
+                        and self.attention_backend == "blocked")):
+                raise ValueError("The forget gate applies to softmax and unnormalized exponential attention (on the "
+                                 "blocked reference backend, or with PaTH on its blocked or fused backend), and to "
+                                 "unnormalized nonlinear query-conditioned polynomial attention with RoPE or no "
+                                 "positional encoding, on the blocked reference backend")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

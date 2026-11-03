@@ -37,11 +37,20 @@ def _inputs(*, batch=2, time=48, heads=3, dim=8, value_dim=5, degree=3, seed=0):
     return q, k, v, w, beta, c, cotangent
 
 
-def _dense_reference(q, k, v, w, beta, c=None):
+def _log_decay(shape, seed=0):
+    """A forget gate's cumulative log decay L [B, T, H]: nonincreasing, about -0.2 per token."""
+    return np.cumsum(-0.3 * np.logaddexp(0, np.random.default_rng(seed).normal(size=shape)), axis=1)
+
+
+def _dense_reference(q, k, v, w, beta, c=None, log_decay=None, exponential=False):
     """Independent outputs from the definition (NumPy FP64)."""
     scores = path_scores_reference(q, k, w, beta) / math.sqrt(q.shape[-1])
     causal = np.tril(np.ones(scores.shape[-2:], bool))
-    if c is None:
+    if log_decay is not None:
+        scores = scores + np.moveaxis(log_decay, 1, 2)[..., :, None] - np.moveaxis(log_decay, 1, 2)[..., None, :]
+    if exponential:
+        weights = np.where(causal, np.exp(np.where(causal, scores, 0.0)), 0.0)
+    elif c is None:
         masked = np.where(causal, scores, -np.inf)
         weights = np.exp(masked - masked.max(-1, keepdims=True))
         weights /= weights.sum(-1, keepdims=True)
@@ -51,7 +60,7 @@ def _dense_reference(q, k, v, w, beta, c=None):
     return np.einsum("bhts,bshv->bthv", weights, v)
 
 
-def _jax_definition(q, k, v, w, beta, c=None):
+def _jax_definition(q, k, v, w, beta, c=None, log_decay=None, exponential=False):
     """Differentiable definition (sequential transport per query), for gradient checks."""
     batch, time, heads, dim = q.shape
     scale = 1 / math.sqrt(dim)
@@ -60,11 +69,14 @@ def _jax_definition(q, k, v, w, beta, c=None):
         transport = jnp.broadcast_to(jnp.eye(dim), (batch, heads, dim, dim))
         scores = []
         for s in range(t, -1, -1):
-            scores.append(jnp.einsum("bhd,bhde,bhe->bh", q[:, t], transport, k[:, s]) * scale)
+            score = jnp.einsum("bhd,bhde,bhe->bh", q[:, t], transport, k[:, s]) * scale
+            scores.append(score if log_decay is None else score + log_decay[:, t] - log_decay[:, s])
             householder = jnp.eye(dim) - beta[:, s, :, None, None] * jnp.einsum("bhd,bhe->bhde", w[:, s], w[:, s])
             transport = transport @ householder
         scores = jnp.stack(scores[::-1], axis=-1)  # [B, H, t+1]
-        if c is None:
+        if exponential:
+            weights = jnp.exp(scores)
+        elif c is None:
             weights = jax.nn.softmax(scores, axis=-1)
         else:
             weights = sum(c[:, t, :, r, None] * scores ** r for r in range(c.shape[-1]))
@@ -86,6 +98,36 @@ def test_chunked_outputs_match_the_definition(chunk, kernel):
         actual = path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel=kernel,
                                 coefficients=coefficients, chunk_size=chunk)
     assert _relative(actual, _dense_reference(q, k, v, w, beta, c if coefficients is not None else None)) < 1e-5
+
+
+@pytest.mark.parametrize("chunk", (8, 16, 48))
+@pytest.mark.parametrize("kernel,decayed", [("exp", False), ("softmax", True), ("exp", True)])
+def test_exponential_kernels_and_the_forget_gate_match_the_definition(chunk, kernel, decayed):
+    q, k, v, w, beta, _, _ = _inputs()
+    log_decay = _log_decay(beta.shape) if decayed else None
+    with jax.default_matmul_precision("highest"):
+        actual = path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel=kernel,
+                                log_decay=None if log_decay is None else jnp.asarray(log_decay, jnp.float32),
+                                chunk_size=chunk)
+    expected = _dense_reference(q, k, v, w, beta, log_decay=log_decay, exponential=kernel == "exp")
+    assert _relative(actual, expected) < 1e-5
+
+
+def test_decayed_softmax_matches_the_authors_reference():
+    """FLA adds its gate to the unscaled scores, so its per-token gate is log alpha * sqrt(d_K)."""
+    torch = pytest.importorskip("torch")
+    from fla.ops.path_attn.naive import naive_path_attn
+
+    q, k, v, w, beta, _, _ = _inputs(time=64, heads=2, dim=16, value_dim=16, seed=1)
+    log_decay = _log_decay(beta.shape, seed=2)
+    log_alpha = np.diff(log_decay, axis=1, prepend=0.0)
+    as_torch = lambda x: torch.tensor(x, dtype=torch.float32)
+    expected = naive_path_attn(as_torch(q), as_torch(k), as_torch(v), as_torch(w), as_torch(beta),
+                               as_torch(log_alpha * 4.0), scale=16 ** -0.5, chunk_size=16).numpy()
+    with jax.default_matmul_precision("highest"):
+        actual = path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel="softmax",
+                                log_decay=jnp.asarray(log_decay, jnp.float32), chunk_size=16)
+    assert _relative(actual, expected) < 1e-5
 
 
 def test_softmax_matches_the_authors_reference():
@@ -130,6 +172,29 @@ def test_gradients_match_the_differentiable_definition(kernel):
     for index, (actual, expected) in enumerate(zip(grads, grads_ref, strict=True)):
         assert np.linalg.norm(expected) > 0, index
         assert _relative(actual, expected) < 1e-4, index
+
+
+@pytest.mark.parametrize("kernel", ("softmax", "exp"))
+def test_decayed_gradients_match_the_differentiable_definition(kernel):
+    q, k, v, w, beta, _, cotangent = _inputs(batch=1, time=12, heads=2, dim=4, value_dim=3, seed=5)
+    operands = [jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta, _log_decay(beta.shape, seed=6))]
+    chunked = lambda *x: path_attention(*x[:5], kernel=kernel, log_decay=x[5], chunk_size=4)
+    definition = lambda *x: _jax_definition(*x[:5], log_decay=x[5], exponential=kernel == "exp")
+    with jax.default_matmul_precision("highest"):
+        out, pull = jax.vjp(chunked, *operands)
+        ref, pull_ref = jax.vjp(definition, *operands)
+        grads, grads_ref = pull(jnp.asarray(cotangent, jnp.float32)), pull_ref(jnp.asarray(cotangent, jnp.float32))
+    assert _relative(out, ref) < 1e-5
+    for index, (actual, expected) in enumerate(zip(grads, grads_ref, strict=True)):
+        assert np.linalg.norm(expected) > 0, index
+        assert _relative(actual, expected) < 1e-4, index
+
+
+def test_the_polynomial_kernel_takes_no_forget_gate():
+    q, k, v, w, beta, c, _ = _inputs(batch=1, time=8, heads=1, dim=4, value_dim=3, degree=2)
+    with pytest.raises(ValueError, match="softmax and exp"):
+        path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel="query_polynomial",
+                       coefficients=jnp.asarray(c, jnp.float32), log_decay=jnp.zeros(beta.shape), chunk_size=4)
 
 
 def test_outputs_and_gradients_are_causal():
@@ -181,11 +246,13 @@ def _model(kernel="query_polynomial", **updates):
                         attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                         attention_coefficient_activation="tanh", attention_coefficient_amplitude_initial=0.0,
                         attention_coefficient_projection_initial_std=0.25, attention_output_scaling="head_rms_norm")
+    elif kernel == "exp":
+        settings.update(attention_normalization=False, attention_output_scaling="head_rms_norm")
     return ModelConfig(**{**settings, **updates})
 
 
-def _config(kernel="query_polynomial"):
-    config = Config(model=_model(kernel))
+def _config(kernel="query_polynomial", **updates):
+    config = Config(model=_model(kernel, **updates))
     config.data.synthetic_vocab_size, config.data.sequence_length, config.data.batch_size = 16, 33, 2
     config.train.micro_batch_size = 2
     config.optim.total_steps, config.optim.warmup_steps = 3, 0
@@ -242,9 +309,10 @@ def test_new_fields_keep_legacy_recipes_and_name_themselves_in_the_identity():
     assert acceptance.PATH_ATTENTION_TESTS in paths
 
 
-@pytest.mark.parametrize("kernel", ("softmax", "query_polynomial"))
-def test_diagnostics_are_valid_and_report_the_gates(kernel):
-    config = _config(kernel)
+@pytest.mark.parametrize("kernel,forget_gate", [
+    ("softmax", False), ("query_polynomial", False), ("exp", False), ("softmax", True), ("exp", True)])
+def test_diagnostics_are_valid_and_report_the_gates(kernel, forget_gate):
+    config = _config(kernel, attention_forget_gate=forget_gate)
     state = create_state(config, jax.random.PRNGKey(0))
     sample, provenance = fixed_diagnostic_sample(config)
     report = attention_diagnostics(state, config, sample, provenance)
@@ -253,6 +321,30 @@ def test_diagnostics_are_valid_and_report_the_gates(kernel):
     assert 0 < layer["path_beta_min"] <= layer["path_beta_mean"] <= layer["path_beta_max"] < 2
     if kernel == "query_polynomial":
         assert np.asarray(report["coefficients"]["effective_summary"]["mean"]).shape == (2, 2, 3)
+    if forget_gate:
+        assert report["coefficients"]["forget_gate"]["finite"]
+        assert np.all(np.asarray(layer["forget_gate_log_alpha_max"]) <= 0)
+        identity = attention_identity(config)
+        assert identity["attention_forget_gate"] and "(QK^T / sqrt(d_k) + D) V" in identity["attention_formula"]
+        assert identity["attention_score_position_encoding"].startswith("PaTH")
+
+
+@pytest.mark.parametrize("kernel", ("softmax", "exp"))
+def test_a_forget_gate_that_never_decays_changes_nothing_and_trains(kernel):
+    tokens = jnp.arange(64).reshape(2, 32) % 16
+    plain = build_model(_model(kernel), 5)
+    gated = build_model(_model(kernel, attention_forget_gate=True), 5)
+    assert np.abs(np.asarray(gated(tokens) - plain(tokens))).max() > 1e-4
+    gated.forget_gate_dt_bias[...] = jnp.full_like(gated.forget_gate_dt_bias[...], -200.0)
+    np.testing.assert_allclose(gated(tokens), plain(tokens), rtol=1e-6, atol=1e-6)
+    config = _config(kernel, attention_forget_gate=True)
+    initial = create_state(config, jax.random.PRNGKey(0))
+    batch = jnp.arange(66).reshape(2, 33) % 16
+    step = jax.jit(lambda state, rng: loop.train_step(state, batch, rng, check_all_gradients=True))
+    updated, loss, _ = step(initial, jax.random.PRNGKey(1))
+    assert np.isfinite(loss)
+    for name in ("forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias", *PATH_ARGUMENTS):
+        assert np.linalg.norm(np.asarray(updated.params[name][...] - initial.params[name][...])) > 0, name
 
 
 def test_tiny_training_and_checkpoint_resume_preserve_the_gates(tmp_path):

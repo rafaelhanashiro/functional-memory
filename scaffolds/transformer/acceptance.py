@@ -66,6 +66,7 @@ QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
 TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 QUERY_KEY_TILING_TESTS = "scaffolds/transformer/tests/test_query_key_tiling.py"
@@ -149,6 +150,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # a parametrized case has no node id, so acceptance fails closed.
         degrees = sorted({*QUERY_KEY_HEAD_SCALE_DEGREES, int(model["attention_degree"])})
         paths.extend(f"{QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{degree}-fused]" for degree in degrees)
+    if model.get("attention_forget_gate", False) and model.get("attention_degree") is None:
+        paths.append(FORGET_GATE_ATTENTION_TESTS)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

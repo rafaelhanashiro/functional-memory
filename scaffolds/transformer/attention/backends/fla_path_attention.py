@@ -6,16 +6,22 @@ warps, stages, autotune menus, FP16 copies of the Householder vectors, and buffe
 semantics; outputs FLA updates in place are aliased outputs here
 (``fla_path_attention_kernels`` holds the wrappers). The unnormalized query polynomial
 ``o_t = sum_s p_t(s_ts) v_s`` uses the same launches with FLA's six softmax-dependent
-kernels replaced by ``fla_path_polynomial_kernels``. The forget gate is not used.
+kernels replaced by ``fla_path_polynomial_kernels``. The unnormalized exponential
+``o_t = sum_s exp(s_ts) v_s`` is FLA's softmax output times its row sum ``2^lse`` (FLA's
+base-2 log-sum-exp); its derivative is FLA's softmax backward given ``do * 2^lse`` and a zero
+``delta``. A forget gate's cumulative log decay ``L`` [B, T, H] (FP32) enters FLA's own gate
+path (``USE_G``/``USE_GATE``) for softmax and the exponential, giving ``s_ts + L_t - L_s``; FLA
+adds its gate before the score scale, so the kernels receive ``L sqrt(d_K)``.
 
 Inputs follow ``path.path_attention``: ``q, k, v`` [B, T, H, D] (BF16, D in 16, 32, 64, 128 on
-Hopper and up to 64 on Blackwell, value width equal to D), unit ``w`` [B, T, H, D] and ``beta`` [B, T, H] in FP32,
-and FP32 polynomial coefficients [B, T, H, m+1] (m 1-4). T must be a multiple of 128. As in
-``path_attention``, a row whose output has a nonfinite element becomes NaN; nonfinite
-scores or polynomial values reach the output, while a -inf softmax score gives a zero
-weight, as in FlashAttention. FLA's backward accumulates dk, dv, dw, and the split
-products' gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise
-repeatable; outputs, dq, and dc are.
+Hopper and up to 64 on Blackwell, value width equal to D), unit ``w`` [B, T, H, D] and ``beta``
+[B, T, H] in FP32, FP32 polynomial coefficients [B, T, H, m+1] (m 1-4), and an FP32
+``log_decay`` [B, T, H]. T must be a multiple of 128. As in ``path_attention``, a row whose
+output has a nonfinite element becomes NaN; nonfinite scores or polynomial values reach the
+output, while a -inf softmax score gives a zero weight, as in FlashAttention. FLA's backward
+accumulates dk, dv, dw, the split products' gradient, and the gate's gradient with FP32 atomic
+additions, so dk, dv, dw, dbeta, and the decay's gradient are not bitwise repeatable; outputs,
+dq, and dc are.
 """
 from __future__ import annotations
 
@@ -176,10 +182,11 @@ def _transport_backward(q, k, v, w, beta, a, chunk_outputs, inter, intra, tiles)
 
 
 # ---------------------------------------------------------------------------------------
-# Softmax: FLA's kernels unchanged
+# Softmax and the unnormalized exponential, with or without a forget gate: FLA's kernels unchanged
 # ---------------------------------------------------------------------------------------
 
-def _softmax_forward(q, k, v, w, beta):
+def _exponential_forward(q, k, v, w, beta, g, normalized):
+    """FLA's softmax forward; ``g`` is FLA's cumulative gate (None without a forget gate)."""
     from scaffolds.transformer.attention.backends import fla_path_attention_kernels as fla
 
     setup = _setup(q)
@@ -187,66 +194,97 @@ def _softmax_forward(q, k, v, w, beta):
     batch, length, heads, key_dim, value_dim = _shapes(q, v)
     scale = 1.0 / math.sqrt(key_dim)
     meta = _meta(q, v)
+    gate = () if g is None else (g,)
     a = _ut_transform(w, beta, setup)
     o, lse, maximum, w2, q_new, k_new = _launch(
-        fla.intra_fwd, q, k, v, w, beta, a, scale, length,
+        fla.intra_fwd_gated if gate else fla.intra_fwd, q, k, v, w, beta, *gate, a, scale, length,
         outputs=(empty(v.shape, _F32), empty(beta.shape, _F32), empty(beta.shape, _F32), empty(w.shape, w.dtype),
                  empty(q.shape, _F32), empty(k.shape, k.dtype)),
         grid=(length // tiles.BS, batch * heads), name="fla::path::intra_chunk_preprocess_fwd",
         BT=tiles.BS, num_warps=tiles.intra_fwd_warps, **{key: meta[key] for key in ("H", "G", "HQ", "K", "V", "BK", "BV")})
     o, lse = _launch(
-        fla.path_fwd, q_new, k_new, v, o, w.astype(_F16), w2.astype(_F16), lse, maximum, scale, length,
+        fla.path_fwd_gated if gate else fla.path_fwd, q_new, k_new, v, o, w.astype(_F16), w2.astype(_F16), lse,
+        maximum, *gate, scale, length,
         outputs=(empty(v.shape, v.dtype), empty(beta.shape, _F32)),
         grid=(triton_port.cdiv(length, tiles.BT), batch * heads), name="fla::path::parallel_path_fwd",
         BT=tiles.BT, BS=tiles.BS, num_warps=tiles.inter_warps, **meta)
-    return o, (q, k, v, w, beta, o, lse, a)
+    if normalized:
+        return o, (q, k, v, w, beta, g, o, lse, a)
+    # sum_s exp(s_ts) v_s: the softmax output times the row sum 2^lse.
+    return (o.astype(_F32) * jnp.exp2(lse)[..., None]).astype(v.dtype), (q, k, v, w, beta, g, None, lse, a)
 
 
-def _softmax_backward(residuals, do):
+def _exponential_backward(normalized, residuals, do):
     from scaffolds.transformer.attention.backends import fla_path_attention_kernels as fla
 
-    q, k, v, w, beta, o, lse, a = residuals
+    q, k, v, w, beta, g, o, lse, a = residuals
     _, tiles = _setup(q)
     batch, length, heads, key_dim, value_dim = _shapes(q, v)
     scale = 1.0 / math.sqrt(key_dim)
     meta = _meta(q, v)
-    do = do.astype(v.dtype)
-    delta = _launch(fla.bwd_preprocess, o, do, outputs=empty(beta.shape, _F32), grid=(batch * length * heads,),
-                    name="fla::attn::bwd_preprocess", B=meta["BV"], V=value_dim)
+    if normalized:
+        do = do.astype(v.dtype)
+        delta = _launch(fla.bwd_preprocess, o, do, outputs=empty(beta.shape, _F32), grid=(batch * length * heads,),
+                        name="fla::attn::bwd_preprocess", B=meta["BV"], V=value_dim)
+    else:
+        # With o_t = 2^lse_t softmax_t, d o_t / d s_ts = exp(s_ts) v_s: FLA's softmax backward
+        # P (dP - delta) with do 2^lse and delta = 0, since the lse term cancels delta exactly.
+        do = (do.astype(_F32) * jnp.exp2(lse)[..., None]).astype(v.dtype)
+        delta = jnp.zeros(beta.shape, _F32)
+    gate = () if g is None else (g,)
+    gate_parts = () if g is None else (zeros(g.shape, _F32),)
     prepared = _launch(
-        fla.bwd_prepare, q, k, v, w, beta, lse, delta, a, do, scale, length,
+        fla.bwd_prepare_gated if gate else fla.bwd_prepare, q, k, v, w, beta, *gate, lse, delta, a, do, scale, length,
         outputs=(empty(w.shape, w.dtype), empty(q.shape, q.dtype), empty(k.shape, k.dtype),
-                 empty((batch, length, heads, tiles.BS), q.dtype), empty(v.shape, _F32)),
+                 empty((batch, length, heads, tiles.BS), q.dtype), empty(v.shape, _F32),
+                 *(() if g is None else (empty(g.shape, _F32),))),
         grid=(length // tiles.BS, batch * heads), name="fla::path::intra_chunk_preprocess_bwd_prepare",
         BT=tiles.BS, **meta)
+    prepared, dg_local = prepared[:5], prepared[5:]
     inter_meta = dict(BT=tiles.BT, BS=tiles.BS, S=SPLIT, **meta)
     grid = (triton_port.cdiv(length, tiles.BT), batch * heads)
 
     def inter(q_large, k_large, hc_whole, dv, blocks, splits_total):
-        dk, dv = _launch(fla.bwd_dkv, q_large, k_large, v, hc_whole, lse, delta, do, scale, length,
-                         outputs=(empty(q.shape, _F32), update(dv)), grid=grid, name="fla::path::parallel_path_bwd_dkv",
-                         NUM_BLOCKS=blocks, num_warps=tiles.inter_warps, **inter_meta)
-        dq, dhc_whole = _launch(fla.bwd_dq, q_large, k_large, v, hc_whole, lse, delta, do, scale, length,
-                                outputs=(empty(q.shape, _F32), zeros((splits_total, heads, key_dim, key_dim), _F32)),
-                                grid=grid, name="fla::path::parallel_path_bwd_dq", NUM_BLOCKS=blocks,
-                                num_warps=tiles.inter_warps, num_stages=tiles.dq_stages, **inter_meta)
-        return dk, dv, dq, dhc_whole
+        dk, dv, *dg_dkv = _launch(
+            fla.bwd_dkv_gated if gate else fla.bwd_dkv, q_large, k_large, v, hc_whole, lse, delta, do, *gate, scale,
+            length, outputs=(empty(q.shape, _F32), update(dv), *gate_parts), grid=grid,
+            name="fla::path::parallel_path_bwd_dkv", NUM_BLOCKS=blocks, num_warps=tiles.inter_warps, **inter_meta)
+        dq, dhc_whole, *dg_dq = _launch(
+            fla.bwd_dq_gated if gate else fla.bwd_dq, q_large, k_large, v, hc_whole, lse, delta, do, *gate, scale,
+            length, outputs=(empty(q.shape, _F32), zeros((splits_total, heads, key_dim, key_dim), _F32), *gate_parts),
+            grid=grid, name="fla::path::parallel_path_bwd_dq", NUM_BLOCKS=blocks,
+            num_warps=tiles.inter_warps, num_stages=tiles.dq_stages, **inter_meta)
+        return dk, dv, dq, dhc_whole, *dg_dkv, *dg_dq
 
     def intra(q_new, k_new, w_q, h_q, dq, dk, dv, dw1, dw2):
-        return _launch(fla.bwd_intra, q_new, k_new, v, w_q, h_q, lse, delta, dq, do, length, scale,
-                       outputs=(empty(q.shape, q.dtype), update(dk), update(dv), update(dw1), update(dw2)),
+        return _launch(fla.bwd_intra_gated if gate else fla.bwd_intra, q_new, k_new, v, w_q, h_q, lse, delta, dq, do,
+                       *gate, length, scale,
+                       outputs=(empty(q.shape, q.dtype), update(dk), update(dv), update(dw1), update(dw2),
+                                *gate_parts),
                        grid=(length // tiles.BS, batch * heads), name="fla::path::parallel_path_bwd_intra",
                        BT=tiles.BS, S=SPLIT, **meta)
 
-    return _transport_backward(q, k, v, w, beta, a, prepared, inter, intra, tiles)
+    dq, dk, dv, dw, dbeta, *dg_parts = _transport_backward(q, k, v, w, beta, a, prepared, inter, intra, tiles)
+    if g is None:
+        return dq, dk, dv, dw, dbeta
+    return dq, dk, dv, dw, dbeta, sum(dg_parts, dg_local[0]).astype(g.dtype)
 
 
-@jax.custom_vjp
-def _softmax(q, k, v, w, beta):
-    return _softmax_forward(q, k, v, w, beta)[0]
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def _exponential(q, k, v, w, beta, normalized):
+    return _exponential_forward(q, k, v, w, beta, None, normalized)[0]
 
 
-_softmax.defvjp(_softmax_forward, _softmax_backward)
+_exponential.defvjp(lambda q, k, v, w, beta, normalized: _exponential_forward(q, k, v, w, beta, None, normalized),
+                    _exponential_backward)
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(6,))
+def _gated_exponential(q, k, v, w, beta, g, normalized):
+    return _exponential_forward(q, k, v, w, beta, g, normalized)[0]
+
+
+_gated_exponential.defvjp(_exponential_forward, _exponential_backward)
 
 
 # ---------------------------------------------------------------------------------------
@@ -328,9 +366,9 @@ def _polynomial(q, k, v, w, beta, c):
 _polynomial.defvjp(_polynomial_forward, _polynomial_backward)
 
 
-def validate(q, k, v, w, beta, *, kernel, coefficients=None):
+def validate(q, k, v, w, beta, *, kernel, coefficients=None, log_decay=None):
     """Raise ValueError unless the fused kernels support these operands."""
-    if kernel not in ("softmax", "query_polynomial"):
+    if kernel not in ("softmax", "exp", "query_polynomial"):
         raise ValueError(f"Unknown PaTH kernel {kernel!r}")
     if q.ndim != 4 or q.shape != k.shape or q.shape != w.shape or v.shape[:3] != q.shape[:3]:
         raise ValueError("PaTH requires q, k, w [B, T, H, D] and v [B, T, H, V]")
@@ -343,7 +381,10 @@ def validate(q, k, v, w, beta, *, kernel, coefficients=None):
     if q.shape[1] % SEQUENCE_MULTIPLE:
         raise ValueError(f"Fused PaTH needs a sequence length divisible by {SEQUENCE_MULTIPLE}")
     if (kernel == "query_polynomial") != (coefficients is not None):
-        raise ValueError("The polynomial PaTH kernel requires coefficients; softmax takes none")
+        raise ValueError("The polynomial PaTH kernel requires coefficients; softmax and exp take none")
+    if log_decay is not None and (kernel == "query_polynomial" or log_decay.shape != q.shape[:3]
+                                  or log_decay.dtype != jnp.float32):
+        raise ValueError("A fused PaTH forget gate takes an FP32 cumulative log decay [B, T, H], with softmax or exp")
     if coefficients is not None and (coefficients.shape[:3] != q.shape[:3]
                                      or not 2 <= coefficients.shape[-1] <= MAX_DEGREE + 1):
         raise ValueError(f"PaTH polynomial coefficients must have shape [B, T, H, m+1] with m in 1-{MAX_DEGREE}")
@@ -355,12 +396,15 @@ def validate(q, k, v, w, beta, *, kernel, coefficients=None):
         raise ValueError("Fused PaTH needs BF16 q, k, v on a GPU (FP32 in Triton's interpreter)")
 
 
-def fused_path_attention(q, k, v, w, beta, *, kernel, coefficients=None):
+def fused_path_attention(q, k, v, w, beta, *, kernel, coefficients=None, log_decay=None):
     """Causal PaTH attention (``path.path_attention``'s contract) on the fused kernels."""
-    validate(q, k, v, w, beta, kernel=kernel, coefficients=coefficients)
+    validate(q, k, v, w, beta, kernel=kernel, coefficients=coefficients, log_decay=log_decay)
     w, beta = w.astype(_F32), beta.astype(_F32)
-    if kernel == "softmax":
-        output = _softmax(q, k, v, w, beta)
-    else:
+    if kernel == "query_polynomial":
         output = _polynomial(q, k, v, w, beta, coefficients.astype(_F32))
+    elif log_decay is None:
+        output = _exponential(q, k, v, w, beta, kernel == "softmax")
+    else:
+        # FLA scales its gate with the scores: (S + G_t - G_s) / sqrt(d_K) = s_ts + L_t - L_s.
+        output = _gated_exponential(q, k, v, w, beta, log_decay * math.sqrt(q.shape[-1]), kernel == "softmax")
     return jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)

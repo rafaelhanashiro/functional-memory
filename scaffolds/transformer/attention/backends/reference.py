@@ -52,7 +52,9 @@ def blocked_dot_product_attention(
     polynomial of degree m>=1 for each query and head; key factors of the same shape
     multiply each key's degree-r term, giving the pair coefficient c_r(t) f_r(i).
     A forget gate's cumulative log decay L [batch,time,heads] (FP32, nonincreasing in time)
-    multiplies each query-coefficient weight by exp(L_t - L_i), evaluated as one difference.
+    multiplies each query-coefficient weight by exp(L_t - L_i), evaluated as one difference,
+    and adds L_t - L_i to every softmax or unnormalized exponential score (the Forgetting
+    Transformer); score diagnostics describe the scores before the decay.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -121,8 +123,11 @@ def blocked_dot_product_attention(
                             or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
     decayed = query_log_decay is not None
-    if decayed and (not query_conditioned or key_conditioned or query_log_decay.shape != (batch, time, heads)):
-        raise ValueError("A forget gate's cumulative log decay [batch,time,heads] requires query coefficients alone")
+    exponential = attention_degree is None and quadratic_mode == "fixed"
+    if decayed and (key_conditioned or not (query_conditioned or exponential)
+                    or query_log_decay.shape != (batch, time, heads)):
+        raise ValueError("A forget gate's cumulative log decay [batch,time,heads] requires query coefficients alone, "
+                         "softmax, or the unnormalized exponential")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -136,10 +141,10 @@ def blocked_dot_product_attention(
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
         key_factors = key_polynomial_factors.astype(jnp.float32) if key_conditioned else None
-        if decayed:
-            log_decay = query_log_decay.astype(jnp.float32)
-            # Padded queries repeat the last cumulative decay, keeping every L_t - L_i <= 0.
-            padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
+    if decayed:
+        log_decay = query_log_decay.astype(jnp.float32)
+        # Padded queries repeat the last cumulative decay, keeping every L_t - L_i <= 0.
+        padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -154,15 +159,22 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
+        if decayed:
+            # prod_(j=i+1..t) alpha_j = exp(L_t - L_i), never above one for causal pairs.
+            query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
+            gap = jnp.where(causal, jnp.swapaxes(query_decay, 1, 2)[..., None]
+                            - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :], 0.0)
+        # The exponential kernels see the decayed logits s_ti + L_t - L_i.
+        logits = scores + gap if decayed and attention_degree is None else scores
         if not attention_normalization and attention_degree is None:
             # A row shift changes the unnormalized operator. Underflow to zero
             # is allowed; a nonfinite causal exponential poisons the output.
-            kernel = jnp.exp(jnp.where(causal, scores, 0.0))
+            kernel = jnp.exp(jnp.where(causal, logits, 0.0))
             invalid_kernel = ~jnp.isfinite(kernel)
         elif attention_degree is None:
             # Shifting is an exact identity only for the exponential control.
-            maximum = jnp.max(jnp.where(causal, scores, -jnp.inf), axis=-1, keepdims=True)
-            safe_scores = jnp.where(causal, scores - maximum, 0.0)
+            maximum = jnp.max(jnp.where(causal, logits, -jnp.inf), axis=-1, keepdims=True)
+            safe_scores = jnp.where(causal, logits - maximum, 0.0)
             kernel = jnp.exp(safe_scores)
             invalid_kernel = (~jnp.isfinite(kernel)) | (kernel < 0)
         else:
@@ -182,10 +194,7 @@ def blocked_dot_product_attention(
                 for order in range(attention_degree - 1, -1, -1):
                     kernel = kernel * safe_scores + pair_coefficient(order)
                 if decayed:
-                    # prod_(j=i+1..t) alpha_j = exp(L_t - L_i), never above one for causal pairs.
-                    query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
-                    gap = jnp.swapaxes(query_decay, 1, 2)[..., None] - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :]
-                    kernel = kernel * jnp.exp(jnp.where(causal, gap, 0.0))
+                    kernel = kernel * jnp.exp(gap)
             else:
                 kernel = (_learned_polynomial(safe_scores, polynomial_coefficients) if polynomial_coefficients is not None
                       else square_sum_polynomial(safe_scores, polynomial_square_factors, attention_degree)

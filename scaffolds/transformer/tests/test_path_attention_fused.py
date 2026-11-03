@@ -1,4 +1,5 @@
-"""FLA's fused PaTH kernels (softmax) and their polynomial fork, against the JAX implementation.
+"""FLA's fused PaTH kernels (softmax, the exponential, the forget gate) and their polynomial fork,
+against the JAX implementation.
 
 CPU tests run the bridge's launches in Triton's interpreter (FP32 operands, Hopper tiles
 unless stated), so the orchestration, buffer semantics, and every gradient are checked
@@ -47,9 +48,27 @@ def _inputs(*, batch=1, time=256, heads=2, dim=32, degree=2, seed=0, norm=3.0, d
     return operands, cast(cotangent)
 
 
+def _gated_inputs(*, decayed=True, **options):
+    """Softmax/exp operands, with a cumulative log decay L [B, T, H] in Gated DeltaNet's initial range."""
+    operands, cotangent = _inputs(degree=0, **options)
+    if decayed:
+        rng = np.random.default_rng(options.get("seed", 0) + 1000)
+        batch, time, heads = operands[4].shape
+        log_alpha = -rng.uniform(0, 16, size=heads) * np.exp(rng.uniform(np.log(1e-3), np.log(0.1),
+                                                                         size=(batch, time, heads)))
+        operands.append(jnp.asarray(np.cumsum(log_alpha, axis=1), jnp.float32))
+    return operands, cotangent
+
+
+def _names(kernel, operands):
+    """Output and gradient names; the sixth operand is coefficients (polynomial) or the decay."""
+    return NAMES[:len(operands) + 1] if kernel == "query_polynomial" else (*NAMES[:6], "dL")[:len(operands) + 1]
+
+
 def _attend(implementation, kernel, **options):
     def attend(*x):
-        return implementation(*x[:5], kernel=kernel, coefficients=x[5] if len(x) > 5 else None, **options)
+        extra = {} if len(x) == 5 else {"coefficients": x[5]} if kernel == "query_polynomial" else {"log_decay": x[5]}
+        return implementation(*x[:5], kernel=kernel, **extra, **options)
     return attend
 
 
@@ -105,6 +124,19 @@ def test_interpreted_outputs_and_every_gradient_match_the_jax_implementation(deg
         assert _relative(got, want) < 1e-3, name
 
 
+@pytest.mark.parametrize("kernel,decayed,time,dim", [
+    ("exp", False, 128, 32), ("exp", False, 640, 16), ("softmax", True, 128, 32), ("softmax", True, 640, 16),
+    ("exp", True, 256, 32), ("exp", True, 1152, 16),
+])
+def test_interpreted_exponential_and_forget_gate_match_the_jax_implementation(kernel, decayed, time, dim):
+    """The exponential and the gate, in one query block and in lengths ending inside later splits."""
+    operands, cotangent = _gated_inputs(time=time, dim=dim, seed=time + dim, decayed=decayed)
+    expected = _reference(kernel, operands, cotangent)
+    actual = _interpreted(kernel, operands, cotangent)
+    for name, got, want in zip(_names(kernel, operands), actual, expected, strict=True):
+        assert _relative(got, want) < 1e-3, name
+
+
 @pytest.mark.parametrize("shared_memory,tiles", [(166912, (32, 128)), (101376, (32, 64))])
 def test_interpreted_smaller_shared_memory_tiles_follow_fla(shared_memory, tiles):
     """FLA's A100- and Ada-class branches: 32-token chunks with 128- or 64-token query blocks."""
@@ -118,15 +150,17 @@ def test_interpreted_smaller_shared_memory_tiles_follow_fla(shared_memory, tiles
             assert _relative(got, want) < 1e-3, (degree, name)
 
 
-def test_interpreted_outputs_and_gradients_are_causal():
-    operands, cotangent = _inputs(time=640, dim=16, degree=2, seed=6)
+@pytest.mark.parametrize("kernel", ("query_polynomial", "exp"))
+def test_interpreted_outputs_and_gradients_are_causal(kernel):
+    operands, cotangent = (_inputs(time=640, dim=16, degree=2, seed=6) if kernel == "query_polynomial"
+                           else _gated_inputs(time=640, dim=16, seed=6))
     prefix = 300
     cotangent = cotangent.at[:, prefix:].set(0)
     changed = _change_suffix(operands, prefix)
-    first = _interpreted("query_polynomial", operands, cotangent)
-    second = _interpreted("query_polynomial", changed, cotangent)
+    first = _interpreted(kernel, operands, cotangent)
+    second = _interpreted(kernel, changed, cotangent)
     np.testing.assert_array_equal(first[0][:, :prefix], second[0][:, :prefix])
-    for name, gradient in zip(NAMES[1:], second[1:]):
+    for name, gradient in zip(_names(kernel, operands)[1:], second[1:]):
         np.testing.assert_array_equal(np.asarray(gradient)[:, prefix:], 0, err_msg=name)
 
 
@@ -170,6 +204,16 @@ def test_rejects_unsupported_operands(change, message):
         _attend(fused_path_attention, "query_polynomial")(*operands)
 
 
+def test_rejects_a_forget_gate_on_the_polynomial_kernel_and_a_misshapen_decay():
+    operands, _ = _inputs(time=256, dim=32, degree=2)
+    decay = jnp.zeros(operands[4].shape, jnp.float32)
+    with triton_port.interpreter(), pytest.raises(ValueError, match="forget gate"):
+        fused_path_attention(*operands[:5], kernel="query_polynomial", coefficients=operands[5], log_decay=decay)
+    for wrong in (decay[:, :128], decay.astype(jnp.bfloat16)):
+        with triton_port.interpreter(), pytest.raises(ValueError, match="forget gate"):
+            fused_path_attention(*operands[:5], kernel="exp", log_decay=wrong)
+
+
 def _model_config(kernel, backend, **updates):
     settings = dict(vocab_size=32, max_seq_len=128, num_layers=2, hidden_size=32, num_heads=2, num_kv_heads=2,
                     qk_head_dim=16, value_head_dim=16, intermediate_size=48, attention_backend=backend,
@@ -179,6 +223,10 @@ def _model_config(kernel, backend, **updates):
                         attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                         attention_coefficient_activation="tanh", attention_coefficient_amplitude_initial=0.5,
                         attention_coefficient_projection_initial_std=0.25, attention_output_scaling="head_rms_norm")
+    elif kernel in ("exp", "exp_forget_gate"):
+        settings.update(attention_normalization=False, attention_output_scaling="head_rms_norm")
+    if kernel.endswith("_forget_gate"):
+        settings.update(attention_forget_gate=True)
     return ModelConfig(**{**settings, **updates})
 
 
@@ -204,7 +252,10 @@ def _model_loss_and_gradients(config, tokens, dtype=jnp.float32):
     return value, dict(nnx.to_flat_state(nnx.state(gradients, nnx.Param)))
 
 
-@pytest.mark.parametrize("kernel", ("softmax", "query_polynomial"))
+MODEL_KERNELS = ("softmax", "query_polynomial", "exp", "softmax_forget_gate", "exp_forget_gate")
+
+
+@pytest.mark.parametrize("kernel", MODEL_KERNELS)
 def test_interpreted_fused_model_matches_the_blocked_model(kernel):
     tokens = jnp.asarray(np.random.default_rng(8).integers(0, 32, (2, 129)))
     with jax.default_matmul_precision("highest"):
@@ -217,7 +268,7 @@ def test_interpreted_fused_model_matches_the_blocked_model(kernel):
 
 
 def test_configuration_backend_resolution_identity_and_acceptance():
-    for kernel in ("softmax", "query_polynomial"):
+    for kernel in MODEL_KERNELS:
         fused = _model_config(kernel, "fused")
         assert fused.path_fused_supported()
         assert resolve_attention_backend(replace(fused, attention_backend="auto"), dtype="bfloat16",
@@ -236,8 +287,10 @@ def test_configuration_backend_resolution_identity_and_acceptance():
         with pytest.raises(ValueError, match="sm90"):
             resolve_attention_backend(fused, dtype="bfloat16", platform="gpu", sequence_length=2000)
         identity = attention_identity(_config(fused))
-        assert identity["attention_implementation"] == ("fla_parallel_path_attention_triton" if kernel == "softmax"
-                                                        else "fla_parallel_path_query_polynomial_triton")
+        assert identity["attention_implementation"] == {
+            "softmax": "fla_parallel_path_attention_triton", "exp": "fla_parallel_path_attention_triton_times_row_sum",
+            "query_polynomial": "fla_parallel_path_query_polynomial_triton"}[kernel.removesuffix("_forget_gate")]
+        assert identity.get("attention_forget_gate", False) is kernel.endswith("_forget_gate")
         assert identity["diagnostic_backend"] == "jax_path_chunked_ut_transform"
         blocked = attention_identity(_config(_model_config(kernel, "blocked")))
         assert blocked["attention_implementation"] == "jax_path_chunked_ut_transform"
@@ -272,7 +325,8 @@ def _compiled(kernel, operands, cotangent):
 # Relative L2 error against FP32 HIGHEST on BF16 q/k/v. FLA rounds intermediates to BF16
 # (dw and dbeta are stored in BF16) and keeps FP16 copies of w; the JAX implementation on
 # the same BF16 inputs is roughly 2x more accurate (recorded in the validation README).
-TOLERANCE = {"output": 1e-2, "dq": 2e-2, "dk": 2e-2, "dv": 1e-2, "dw": 2.5e-2, "dbeta": 2.5e-2, "dc": 5e-3}
+TOLERANCE = {"output": 1e-2, "dq": 2e-2, "dk": 2e-2, "dv": 1e-2, "dw": 2.5e-2, "dbeta": 2.5e-2, "dc": 5e-3,
+             "dL": 2e-2}
 
 
 @pytest.mark.gpu
@@ -285,6 +339,32 @@ def test_gpu_production_context_matches_the_jax_implementation(degree):
     actual = _compiled(_kernel(degree), operands, cotangent)
     for name, got, want in zip(NAMES, actual, expected):
         assert bool(jnp.isfinite(got).all()), name
+        assert _relative(got, want) < TOLERANCE[name], (name, _relative(got, want))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("kernel,decayed", [("softmax", True), ("exp", False), ("exp", True)])
+def test_gpu_exponential_and_forget_gate_production_context_match_the_jax_implementation(kernel, decayed):
+    _require_gpu()
+    operands, cotangent = _gated_inputs(batch=2, time=2048, heads=4, dim=64, seed=21, norm=4.0, dtype=jnp.bfloat16,
+                                        decayed=decayed)
+    expected = jax.jit(lambda *x: _reference(kernel, x, cotangent))(*operands)
+    actual = _compiled(kernel, operands, cotangent)
+    for name, got, want in zip(_names(kernel, operands), actual, expected, strict=True):
+        assert bool(jnp.isfinite(got).all()), name
+        assert _relative(got, want) < TOLERANCE[name], (name, _relative(got, want))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("time", (128, 256, 384, 512, 640, 1024, 1152, 1536))
+@pytest.mark.parametrize("kernel", ("softmax", "exp"))
+def test_gpu_forget_gate_tile_boundary_lengths_match_the_jax_implementation(time, kernel):
+    _require_gpu()
+    operands, cotangent = _gated_inputs(batch=2, time=time, heads=3, dim=64, seed=time + 1, norm=4.0,
+                                        dtype=jnp.bfloat16)
+    expected = jax.jit(lambda *x: _reference(kernel, x, cotangent))(*operands)
+    actual = _compiled(kernel, operands, cotangent)
+    for name, got, want in zip(_names(kernel, operands), actual, expected, strict=True):
         assert _relative(got, want) < TOLERANCE[name], (name, _relative(got, want))
 
 
@@ -318,6 +398,22 @@ def test_gpu_other_head_widths_match_the_jax_implementation(dim):
         actual = _compiled(_kernel(degree), operands, cotangent)
         for name, got, want in zip(NAMES, actual, expected):
             assert _relative(got, want) < TOLERANCE[name], (dim, degree, name, _relative(got, want))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("kernel", ("softmax", "exp"))
+def test_gpu_forget_gate_outputs_and_gradients_are_causal(kernel):
+    _require_gpu()
+    operands, cotangent = _gated_inputs(batch=1, time=2048, heads=2, dim=64, seed=22, dtype=jnp.bfloat16)
+    prefix = 1100  # inside the third split
+    cotangent = cotangent.at[:, prefix:].set(0)
+    changed = _change_suffix(operands, prefix)
+    first = _compiled(kernel, operands, cotangent)
+    second = _compiled(kernel, changed, cotangent)
+    np.testing.assert_array_equal(np.asarray(first[0][:, :prefix], np.float32),
+                                  np.asarray(second[0][:, :prefix], np.float32))
+    for name, gradient in zip(_names(kernel, operands)[1:], second[1:]):
+        np.testing.assert_array_equal(np.asarray(gradient, np.float32)[:, prefix:], 0, err_msg=name)
 
 
 @pytest.mark.gpu
@@ -392,7 +488,7 @@ def test_gpu_plan_follows_fla_branches_on_hopper_and_blackwell():
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("kernel", ("softmax", "query_polynomial"))
+@pytest.mark.parametrize("kernel", MODEL_KERNELS)
 def test_gpu_fused_model_matches_the_blocked_model(kernel):
     _require_gpu()
     tokens = jnp.asarray(np.random.default_rng(15).integers(0, 32, (2, 1025)))

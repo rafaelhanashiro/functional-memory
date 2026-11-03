@@ -70,6 +70,15 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
     )
 
 
+def _forget_gate_diagnostics(log_alpha):
+    """Per-head statistics of a forget gate's log alpha [batch, time, heads]."""
+    return jax.lax.stop_gradient({
+        "forget_gate_log_alpha_mean": jnp.mean(log_alpha, axis=(0, 1)),
+        "forget_gate_log_alpha_min": jnp.min(log_alpha, axis=(0, 1)),
+        "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
+    })
+
+
 class MultiHeadAttention(nnx.Module):
     def __init__(
         self, hidden_size: int, num_heads: int, num_kv_heads: int,
@@ -168,11 +177,18 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
-        if attention_forget_gate and (attention_coefficient_conditioning != "query"
-                                      or attention_coefficient_activation == "identity"
-                                      or positional_encoding not in ("rope", "none") or backend != "blocked"):
-            raise ValueError("The forget gate requires nonlinear query coefficients with RoPE or no positional "
-                             "encoding on the blocked backend")
+        # Softmax and the unnormalized exponential add the decay to their scores (blocked, or PaTH on
+        # either PaTH backend); nonlinear query-coefficient polynomials multiply their weights by it.
+        exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
+                            and attention_coefficient_conditioning == "static"
+                            and (positional_encoding == "path" or backend == "blocked"))
+        polynomial_gate = (attention_coefficient_conditioning == "query"
+                           and attention_coefficient_activation != "identity"
+                           and positional_encoding in ("rope", "none") and backend == "blocked")
+        if attention_forget_gate and not (exponential_gate or polynomial_gate):
+            raise ValueError("The forget gate requires softmax or exponential attention (blocked, or with PaTH), "
+                             "or nonlinear query coefficients with RoPE or no positional encoding, on the blocked "
+                             "backend")
         self.attention_forget_gate = attention_forget_gate
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
@@ -397,7 +413,7 @@ class MultiHeadAttention(nnx.Module):
                 q, k = cosine_score_operands(q, k, log_scale, eps=self.qk_norm_eps)
         if self.positional_encoding == "path":
             result = self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
-                                          path_parameters, output_norm_scale, return_diagnostics)
+                                          path_parameters, output_norm_scale, return_diagnostics, log_alpha)
             return (result, effective_coefficients) if return_coefficients else result
         if self.positional_encoding == "rope":
             positions = jnp.arange(seq_len)
@@ -430,11 +446,7 @@ class MultiHeadAttention(nnx.Module):
         )
         y, diagnostics = result if return_diagnostics else (result, None)
         if return_diagnostics and log_alpha is not None:
-            diagnostics.update(jax.lax.stop_gradient({
-                "forget_gate_log_alpha_mean": jnp.mean(log_alpha, axis=(0, 1)),
-                "forget_gate_log_alpha_min": jnp.min(log_alpha, axis=(0, 1)),
-                "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
-            }))
+            diagnostics.update(_forget_gate_diagnostics(log_alpha))
         if return_diagnostics and token_log_scales is not None:
             diagnostics.update(jax.lax.stop_gradient({
                 "token_scale_log_delta_mean": jnp.mean(token_log_scales, axis=(0, 1)),
@@ -451,8 +463,9 @@ class MultiHeadAttention(nnx.Module):
             return output, effective_coefficients
         return (output, diagnostics) if return_diagnostics else output
 
-    def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics):
-        """PaTH-transported scores replace RoPE; the kernel and output path are unchanged."""
+    def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics,
+                        log_alpha=None):
+        """PaTH-transported scores replace RoPE; the kernel, any forget gate, and output path are unchanged."""
         from scaffolds.transformer.attention.input_dependent import coefficient_statistics
         from scaffolds.transformer.attention.path import CHUNK_SIZE, path_attention, path_gates
 
@@ -462,25 +475,27 @@ class MultiHeadAttention(nnx.Module):
         w, beta = path_gates(x, *(path_parameters[name] for name in (
             "path_w_down", "path_w_up", "path_w_conv", "path_beta_kernel", "path_beta_bias")), num_heads=self.num_heads)
         coefficients = parameters.pop("query_polynomial_coefficients", None)
+        log_decay = parameters.pop("query_log_decay", None)
         if parameters:
             raise ValueError(f"PaTH attention does not accept {sorted(parameters)}")
-        if self.attention_normalization and self.attention_degree is None and coefficients is None:
-            kernel = "softmax"
-        elif (not self.attention_normalization and coefficients is not None
+        if self.attention_degree is None and coefficients is None:
+            kernel = "softmax" if self.attention_normalization else "exp"
+        elif (not self.attention_normalization and coefficients is not None and log_decay is None
               and self.attention_coefficient_activation == "tanh"):
             kernel = "query_polynomial"
         else:
-            raise ValueError("PaTH supports softmax and tanh query-conditioned polynomial attention")
+            raise ValueError("PaTH supports softmax and exponential attention, with or without a forget gate, "
+                             "and tanh query-conditioned polynomial attention")
         chunk = CHUNK_SIZE if seq_len % CHUNK_SIZE == 0 else seq_len
         if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
             raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
         reference = partial(path_attention, q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
-                            chunk_size=chunk, return_diagnostics=True)
+                            log_decay=log_decay, chunk_size=chunk, return_diagnostics=True)
         if self.backend == "fused":
             # "auto" is resolved before tracing; an unresolved request runs the JAX reference.
             from scaffolds.transformer.attention.backends.fla_path_attention import fused_path_attention
 
-            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients)
+            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients, log_decay=log_decay)
             # Diagnostics come from the blocked reference, as for the other fused kernels.
             diagnostics = reference()[1] if return_diagnostics else {}
         else:
@@ -490,6 +505,8 @@ class MultiHeadAttention(nnx.Module):
         diagnostics.update(jax.lax.stop_gradient({
             "path_beta_mean": jnp.mean(beta), "path_beta_min": jnp.min(beta), "path_beta_max": jnp.max(beta),
         }))
+        if log_alpha is not None:
+            diagnostics.update(_forget_gate_diagnostics(log_alpha))
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,
