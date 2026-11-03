@@ -79,7 +79,35 @@ evaluation to within 1.5e-5 nats over the first 2,048 positions and 3e-6 nats ov
 4,096 tokens (`r738b35a8e314`), spread late queries' weight over key distance: for queries in
 the last 256 positions before 2,048, 4,096, 8,192 and 16,384 tokens, the share of |w| in
 distance bins beside the share of keys each bin holds, and the effective number of keys, per
-layer ([`weight_profile.py`](weight_profile.py)). Pending.
+layer ([`weight_profile.py`](weight_profile.py)); 8 rows at 2,048 and 4,096 tokens, 4 at 16,384.
+
+![Weight by key distance](weight_profile.png)
+
+| Weight per key ÷ uniform, key distance | 0–16 | 16–64 | 64–256 | 256–512 | 0.5–1k | 1–2k | 2–4k | 4–8k | 8–16k |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| trained at 2k, queries near 2k | 26.0 | 4.6 | 1.7 | 0.86 | 0.60 | 0.49 | | | |
+| trained at 2k, queries near 4k | 17.8 | 4.2 | 1.7 | 0.91 | 0.66 | 0.56 | 1.05 | | |
+| trained at 2k, queries near 16k | 19.1 | 5.4 | 2.1 | 1.21 | 0.92 | 0.80 | 1.25 | 0.84 | 0.95 |
+| trained at 4k, queries near 4k | 39.3 | 7.7 | 2.8 | 1.28 | 0.91 | 0.66 | 0.51 | | |
+
+([weight_profile.csv](weight_profile.csv) has every series with the weight and key shares.)
+
+- **Past its training length the 2k model spreads its weight almost evenly.** Beyond about
+  256 tokens every distance bin gets 0.8–1.25 times the uniform weight per key, out to 16k:
+  queries near 16k put 84% of their weight on keys more than 2,048 tokens back and 6% on
+  their nearest 256 keys (50% within training). Keys at unseen distances get no less per key
+  than keys at trained distances.
+- **Within training it already decays only slowly.** Near 2k, a key 1–2k back still gets half
+  the uniform weight; with 24 times uniform on the nearest 16 keys and about a quarter of all
+  weight on the farther half of the context. The effective number of keys is about a fifth
+  of all keys at every length (0.19–0.27), so it grows linearly with context.
+- **Training at 4k does not produce a window.** Near 4k, the 4k model still puts 25% of its
+  weight on keys 2–4k back (0.51 times uniform per key), the same fraction the 2k model gives
+  its own farther half at 2k; the broken 2k model gives them 51% (1.05 times uniform). The 4k
+  model sharpens the nearest keys (39 times uniform against 18) and gives distant keys half
+  the weight, in every layer (21–31% beyond 2k, against 32–72% for the 2k model, worst in
+  the middle layers). It learned how much weight distant keys should get at 4k, not to
+  remove them.
 
 **Open decision:** keep the result in the context-length discussion, or delete this topic
 with its runs.
