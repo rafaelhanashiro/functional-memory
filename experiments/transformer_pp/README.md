@@ -209,7 +209,7 @@ sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem
 ```
 
 The weight profile (`r9155f2214b4b`) uses `weight_profile.sbatch` in the same topic with the
-same resources.
+same resources, and the per-position weights (`rece89382b690`) use `position_weights.sbatch`.
 
 ## Exploratory diagnostics
 
