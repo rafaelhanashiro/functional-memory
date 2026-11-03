@@ -1,0 +1,14 @@
+{
+  "condition": "context_length/position_weights",
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra0ad3d431842/config.yaml",
+    "sha256": "12b9f9200396a5dfcd60ea41cbff9af6c6dcfb9a3690f68b5a4bccb76b7e8c2c"
+  },
+  "experiment_kind": "attention_position_weights",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-position-weights-4k-batch128",
+  "name": "query-m4-w-decay-position-weights-4k-batch128",
+  "record_schema_version": 1,
+  "run_id": "ra0ad3d431842",
+  "status": "planned"
+}

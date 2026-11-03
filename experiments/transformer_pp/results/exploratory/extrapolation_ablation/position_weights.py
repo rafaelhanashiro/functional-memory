@@ -1,15 +1,17 @@
-"""Attention weights of one query over every key position, per layer, averaged over heads.
+"""Attention weights of one query over every key position, per layer, averaged over heads and sequences.
 
-For each model, one eager forward of one packed row through the model's own backend captures
-what every attention call receives (post-RoPE Q/K and each query's effective monomial
-coefficients). For the chosen query position t, each key's weight is w = sum_r c_r(t) s^r with
-s = q.k/sqrt(d_K); its share of the query's total |w| is averaged over heads and stored per
-layer and key position. Nothing is trained or updated.
+For each model, eager forwards of the first `rows` packed sequences through the model's own
+backend capture what every attention call receives (post-RoPE Q/K and each query's effective
+monomial coefficients). For the chosen query position t, each key's weight is
+w = sum_r c_r(t) s^r with s = q.k/sqrt(d_K); its share of the query's total |w| is averaged over
+heads and sequences and stored per layer and key position, beside each sequence's head-averaged
+share of weight on keys at least 2,048 back. Nothing is trained or updated.
 """
 from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+from functools import partial
 from importlib.metadata import version
 import json
 import math
@@ -33,6 +35,7 @@ from scaffolds.transformer.data.packed import PackedBatchIterator
 from scaffolds.transformer.training.coefficient_fit import restore_parent
 
 ROOT = Path(__file__).resolve().parents[5]
+FAR = 2048
 
 
 def query_shares(q, k, coefficients, *, position: int) -> jax.Array:
@@ -48,6 +51,38 @@ def query_shares(q, k, coefficients, *, position: int) -> jax.Array:
     return magnitude / jnp.sum(magnitude, axis=-1, keepdims=True)
 
 
+def model_weights(model_spec: dict, spec: dict) -> list[dict]:
+    """Per layer: the |w| share of every key averaged over heads and sequences, and each sequence's far share."""
+    position, limit = spec["query_position"], spec["sequence_length"] - 1
+    config = load_model_config(model_spec)
+    graph, params = restore_parent(config, Path(model_spec["checkpoint_path"]))
+    if limit > config.model.max_seq_len:
+        graph, params = extend_forward_length(graph, params, max_seq_len=limit)
+    model = nnx.merge(graph, params)
+    shares_of = jax.jit(jax.vmap(partial(query_shares, position=position)))
+    batches = PackedBatchIterator(spec["manifest"], batch_size=spec["batch_rows"], sequence_length=spec["sequence_length"])
+    totals, far = {}, {}
+    for _ in range(spec["rows"] // spec["batch_rows"]):
+        tokens = jnp.asarray(next(batches))
+        with AttentionRecorder() as recorder:
+            model(tokens[:, :-1], deterministic=True)
+        for layer, (q, k, arguments) in enumerate(recorder.calls):
+            coefficients = arguments.get("query_polynomial_coefficients")
+            if coefficients is None or arguments.get("attention_normalization"):
+                raise ValueError("Expected unnormalized query-coefficient attention")
+            # [batch, heads, keys] -> head mean [batch, keys], accumulated in float64.
+            shares = np.asarray(shares_of(jnp.moveaxis(q, 2, 1), jnp.moveaxis(k, 2, 1),
+                                          jnp.moveaxis(coefficients, 2, 1)), np.float64).mean(axis=1)
+            totals[layer] = totals.get(layer, 0.0) + shares.sum(axis=0)
+            far.setdefault(layer, []).extend(shares[:, :position + 1 - FAR].sum(axis=1).tolist())
+        del recorder
+    del model, graph, params
+    jax.clear_caches()
+    return [{"model": model_spec["name"], "model_run_id": model_spec["run_id"], "layer": layer, "rows": spec["rows"],
+             "query_position": position, "mean_share": np.round(totals[layer] / spec["rows"], 9).tolist(),
+             "share_beyond_2048_by_row": np.round(far[layer], 6).tolist()} for layer in sorted(totals)]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", required=True, type=Path)
@@ -56,6 +91,8 @@ def main():
     if (run / "completion.json").exists():
         raise FileExistsError("Position weights already completed")
     spec = yaml.safe_load((run / "config.yaml").read_text())["position_weights"]
+    if spec["rows"] % spec["batch_rows"]:
+        raise ValueError("rows must be a multiple of batch_rows")
     validate_record(run, checkpoint_hashes=False)
     if len(jax.devices()) != 1 or jax.devices()[0].platform != "gpu":
         raise ValueError("Use one GPU")
@@ -72,37 +109,13 @@ def main():
     update_record(run, {"status": "running", "runtime": runtime, "attempts": [*record.get("attempts", []), runtime]})
     if sha256(spec["manifest"]) != spec["manifest_sha256"]:
         raise ValueError(f"Packed-data manifest changed: {spec['manifest']}")
-    batches = PackedBatchIterator(spec["manifest"], batch_size=1, sequence_length=spec["sequence_length"])
-    for _ in range(spec["row"]):
-        next(batches)
-    tokens = jnp.asarray(next(batches))
-    eos = json.loads(Path(spec["manifest"]).read_text())["metadata"]["eos_token_id"]
-    eos_positions = np.flatnonzero(np.asarray(tokens[0, :-1]) == eos).tolist()
-    position, limit = spec["query_position"], spec["sequence_length"] - 1
     rows = []
     for model_spec in spec["models"]:
         if sha256(model_spec["config_path"]) != model_spec["config_sha256"]:
             raise ValueError(f"Recipe changed: {model_spec['config_path']}")
         verify_checkpoint(model_spec)
-        config = load_model_config(model_spec)
-        graph, params = restore_parent(config, Path(model_spec["checkpoint_path"]))
-        if limit > config.model.max_seq_len:
-            graph, params = extend_forward_length(graph, params, max_seq_len=limit)
-        model = nnx.merge(graph, params)
-        with AttentionRecorder() as recorder:
-            model(tokens[:, :-1], deterministic=True)
-        for layer, (q, k, arguments) in enumerate(recorder.calls):
-            coefficients = arguments.get("query_polynomial_coefficients")
-            if coefficients is None or arguments.get("attention_normalization"):
-                raise ValueError("Expected unnormalized query-coefficient attention")
-            shares = np.asarray(query_shares(jnp.moveaxis(q[0], 1, 0), jnp.moveaxis(k[0], 1, 0),
-                                             jnp.moveaxis(coefficients[0], 1, 0), position=position), np.float64)
-            rows.append({"model": model_spec["name"], "model_run_id": model_spec["run_id"], "layer": layer,
-                         "row": spec["row"], "query_position": position, "eos_positions": eos_positions,
-                         "head_mean_share": np.round(shares.mean(axis=0), 9).tolist(),
-                         "share_beyond_2048_by_head": shares[:, :position + 1 - 2048].sum(axis=1).round(6).tolist()})
-        del model, graph, params, recorder
-        jax.clear_caches()
+        print(f"Weighing {model_spec['name']}", flush=True)
+        rows += model_weights(model_spec, spec)
     with (run / "metrics.jsonl").open("w") as stream:
         for row in rows:
             stream.write(json.dumps(row, sort_keys=True, allow_nan=False) + "\n")
