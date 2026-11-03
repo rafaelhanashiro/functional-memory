@@ -1,0 +1,18 @@
+{
+  "context_length": 2048,
+  "driver_version": "560.35.05",
+  "gpu_type": "NVIDIA H100 PCIe",
+  "home_cluster": "kennel",
+  "junit_sha256": "8d938e167026608a3f8046b5865899b2d42c80a29a4f6e2e0bf874d4ebeb6d40",
+  "node": "mastiff",
+  "production": "unchanged GPU implementation",
+  "pytest_seconds": 4.934,
+  "qk_head_dim": 64,
+  "reference": "host NumPy FP64 forward and analytic VJP; crosschecked against CPU float64 autodiff",
+  "relative_tolerance": 0.04,
+  "slurm_job_id": "233097",
+  "source_commit": "215bb991480d37e94e3ab0d3307675383aeae708",
+  "status": "passed",
+  "test": "scaffolds/transformer/tests/test_mosaic_unnormalized.py::test_fixed_linear_full_context_and_head_rmsnorm_match_independent_fp64",
+  "test_file_sha256": "42c6ae28d4229735993a410f70d73c85bf65c6a3768f5a96058eb1ad779e5454"
+}

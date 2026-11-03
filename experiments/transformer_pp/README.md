@@ -608,6 +608,32 @@ sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=12
   experiments/transformer_pp/runs/r58efc973ff28/config.yaml "$(git rev-parse HEAD)" 1 B300
 ```
 
+## Fixed linear attention
+
+`rd434701f3492` is the raw signed linear attention sanity check: fixed `p(s) = s`,
+using `attention_degree: 1`, `attention_coefficients: fixed`, and
+`attention_fixed_coefficients: [0.0, 1.0]`. It preserves the exp control
+`r6a76e7fbde45`'s RoPE, canonical QK setup, head RMSNorm output, initialization,
+seed, optimizer, data, 2,048-token context, and 7,570-update budget.
+The [fixed-linear topic](results/exploratory/fixed_linear/README.md) records the
+question and explicit control selection. The existing Mosaic polynomial kernel
+runs the model; coefficients are constants and never enter optimizer state.
+
+Home cluster: Kennel. Isolated branch `codex/fixed-linear-1x`, worktree
+`worktrees/fixed-linear-1x`, with its own locked CUDA 12 and CUDA 13 environments.
+Full shared acceptance must pass before training. Submit from that worktree after
+committing inputs and checking the live standard/long allowance:
+
+```bash
+run=rd434701f3492
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
