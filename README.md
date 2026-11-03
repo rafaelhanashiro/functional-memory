@@ -12,6 +12,7 @@ a result collection can combine runs from several studies.
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
 | Transformer++: attention variants in its 200M recipe, token budget per run (1× and 2.5× Chinchilla) | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
+| Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-4` | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
