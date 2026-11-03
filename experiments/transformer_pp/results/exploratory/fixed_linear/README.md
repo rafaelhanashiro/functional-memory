@@ -32,7 +32,7 @@ Home cluster: Kennel.
 ## Results and open decision
 
 The exp control completed with validation-best PPL **14.257176** at update 7,500
-and terminal PPL **14.261729** at update 7,570. The fixed-linear run is submitted as Kennel job `232857`, one H100 on
+and terminal PPL **14.261729** at update 7,570. The fixed-linear run is submitted as Kennel job `233102`, one H100 on
 `mastiff` in `standard`; full acceptance precedes production training.
 No performance conclusion is available yet. Compare best and terminal PPL
 separately, then decide whether to retain this baseline in a maintained comparison.
