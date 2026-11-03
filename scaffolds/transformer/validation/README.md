@@ -2312,7 +2312,10 @@ the run-record suite passed all 63 checks, and 104 existing acceptance tests pas
 
 The new GPU check uses 2,048 tokens, 64-channel BF16 Q/K/V, and FP32 coefficients
 and attenuation. It compares the output and all five operand gradients to
-independent dense FP32 algebra, with relative L2 error below 0.012 for each.
+independent host NumPy FP64 algebra and analytic gradients, with relative L2
+error below 0.012 for each. Small-case NumPy outputs and gradients are checked
+against CPU float64 automatic differentiation, including a length-one sequence
+whose gate gradient is exactly zero.
 GPU qualification is pending. Production is gated on this test, the complete
 shared acceptance suite, an exact full-parameter initialization hash match to
 the control, and a real-model training/evaluation/checkpoint-resume pilot.

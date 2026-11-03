@@ -1,4 +1,24 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-11-02T06:14:03.639869+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "1259065a1a0e4b5944dbbd86c254b4c3b58ca9df08cc0a313701d50efaabbfc0"
+    },
+    "identity": "419d0e966c97bac6e5316c974c2e0106a742cbef9066369d689d8ba301daa921",
+    "slurm_job_id": "232549",
+    "stage": "gpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r3e26412b2811/training.log",
+      "sha256": "0c226362471e1c5f9e1ebb8f7684856e07c68528cdc5cd8c48689ec5d9fabdf5",
+      "size_bytes": 7375
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-distance-decay-1x/experiments/transformer_pp/runs/r3e26412b2811/.runtime/acceptance/H100-1",
@@ -6,6 +26,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/r3e26412b2811/config.yaml",
       "config_sha256": "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26",
+      "exit_code": 1,
+      "finished_utc": "2026-11-02T06:14:04.280042+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -22,9 +44,15 @@
     "sha256": "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"
   },
   "control_run_id": "r4a80e28ce0a7",
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
   "frozen_execution_sha256": "fa627a1c7809862e2f4749b5c073ea90309fd00866a8e5d666a714743698ec52",
   "home_cluster": "kennel",
   "label": "query-m4-query-distance-no-rope-w-decay",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r3e26412b2811/training.log",
+    "sha256": "0c226362471e1c5f9e1ebb8f7684856e07c68528cdc5cd8c48689ec5d9fabdf5",
+    "size_bytes": 7375
+  },
   "log_path": "experiments/transformer_pp/runs/r3e26412b2811/training.log",
   "name": "query-m4-query-distance-no-rope-w-decay",
   "recipe_reference": {
@@ -40,7 +68,7 @@
     "model.attention_forget_gate_mode": "query_distance"
   },
   "source_commit": "afb0bcf6486b78bc1a6f3d8ea86e452f14a57229",
-  "status": "acceptance",
+  "status": "acceptance_failed",
   "submission": {
     "allowed_gpu_types": [
       "B300",

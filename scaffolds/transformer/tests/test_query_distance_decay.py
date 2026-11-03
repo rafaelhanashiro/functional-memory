@@ -30,6 +30,42 @@ def _dense(q, k, v, coefficients, log_alpha):
     return jnp.einsum("bhti,bihd->bthd", weights, v)
 
 
+def _numpy_dense_vjp(operands, cotangent):
+    """Independent FP64 algebra and analytic VJP, with no GPU reference compilation."""
+    q, k, v, coefficients, log_alpha = (np.asarray(x, np.float64) for x in operands)
+    qh, kh, vh = (x.transpose(0, 2, 1, 3) for x in (q, k, v))
+    dh = np.asarray(cotangent, np.float64).transpose(0, 2, 1, 3)
+    ch = coefficients.transpose(0, 2, 1, 3)
+    scale = math.sqrt(q.shape[-1])
+    scores = qh @ kh.swapaxes(-1, -2) / scale
+    positions = np.arange(q.shape[1])
+    distance = np.maximum(positions[:, None] - positions[None, :], 0)
+    causal = positions[:, None] >= positions[None, :]
+    decay = np.where(causal, np.exp(log_alpha.transpose(0, 2, 1)[..., None] * distance), 0.)
+    polynomial, slope = np.zeros_like(scores), np.zeros_like(scores)
+    for order in range(coefficients.shape[-1]):
+        polynomial += ch[..., order, None] * scores ** order
+        if order:
+            slope += order * ch[..., order, None] * scores ** (order - 1)
+    weights = decay * polynomial
+    output = weights @ vh
+    dweight = dh @ vh.swapaxes(-1, -2)
+    dpolynomial = dweight * decay
+    dscore = dpolynomial * slope
+    dcoefficients = np.stack([
+        np.sum(dpolynomial * scores ** order, axis=-1)
+        for order in range(coefficients.shape[-1])
+    ], axis=-1)
+    gradients = (
+        (dscore @ kh / scale).transpose(0, 2, 1, 3),
+        (dscore.swapaxes(-1, -2) @ qh / scale).transpose(0, 2, 1, 3),
+        (weights.swapaxes(-1, -2) @ dh).transpose(0, 2, 1, 3),
+        dcoefficients.transpose(0, 2, 1, 3),
+        np.sum(dweight * weights * distance, axis=-1).transpose(0, 2, 1),
+    )
+    return output.transpose(0, 2, 1, 3), gradients
+
+
 def _operation(q, k, v, coefficients, log_alpha, *, block=8):
     return blocked_dot_product_attention(
         q, k, v, attention_degree=coefficients.shape[-1] - 1, attention_normalization=False,
@@ -62,6 +98,21 @@ def _compare(actual, expected, tolerance):
         assert scale > 0, name
         error = np.linalg.norm(observed - wanted) / scale
         assert error < tolerance, f"{name}: relative L2 error {error} >= {tolerance}"
+
+
+@pytest.mark.parametrize("time", (1, 7, 19))
+def test_numpy_forward_and_analytic_vjp_match_float64_autodiff(time):
+    arrays, cotangent = _inputs(time)
+    actual = _numpy_dense_vjp(arrays, cotangent)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        expected = _vjp(_dense, tuple(jnp.asarray(x, jnp.float64) for x in arrays),
+                        jnp.asarray(cotangent, jnp.float64))
+    for observed, wanted in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+        np.testing.assert_allclose(observed, np.asarray(wanted), rtol=2e-12, atol=2e-12)
+    if time == 1:
+        # Distance zero makes both the attenuation and its gate derivative exact.
+        np.testing.assert_array_equal(actual[1][-1], np.zeros_like(arrays[-1]))
+        np.testing.assert_array_equal(expected[1][-1], np.zeros_like(arrays[-1]))
 
 
 @pytest.mark.parametrize("time", (1, 19, 37))
@@ -279,12 +330,10 @@ def test_full_context_bfloat16_forward_and_gradients_match_dense_reference():
     cotangent = jnp.asarray(cotangent, jnp.bfloat16)
     production = lambda *x: _operation(*x, block=128)
 
-    def reference(q, k, v, c, log_alpha):
-        # BF16 Q/K/V values are fixed before the independent FP32 matrix algebra.
-        return _dense(q.astype(jnp.float32), k.astype(jnp.float32), v.astype(jnp.float32), c, log_alpha).astype(v.dtype)
-
+    # Preserve the BF16 input values, but compute the oracle and all derivatives
+    # in host FP64. This keeps qualification independent of GPU/XLA compilation.
+    expected = _numpy_dense_vjp(operands, cotangent)
     with jax.default_matmul_precision("highest"):
-        expected = jax.jit(lambda *x: _vjp(reference, x, cotangent))(*operands)
         actual = jax.jit(lambda *x: _vjp(production, x, cotangent))(*operands)
     _compare(actual, expected, .012)
     for order in range(5):
