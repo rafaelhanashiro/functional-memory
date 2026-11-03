@@ -14,6 +14,15 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml
       sha256: 20121775265ca3d6edefc116b74fb88dbc51e7fb78448ba561ee32e32bd824f1
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb786bd19c6b1/metrics.jsonl
+      sha256: 064ddede39e7915d86d2fc7e8f57b3828bd6f3bfa0c47847901fea27e3c9e9a6
+    completion.json:
+      path: experiments/transformer_pp/runs/rb786bd19c6b1/completion.json
+      sha256: 4ccc08c7f6eb0f64f45883456f37d8470a84b517b5b4cd80e94673aec8c8dc76
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb786bd19c6b1/metadata.json
+      sha256: 5a1ac4515f16d4af6d4baa20aade2d6869a925ada8da2789912edf3306e8e889
 - study: transformer_pp
   run_id: rca97cc9db8f2
   role: evaluated_model
