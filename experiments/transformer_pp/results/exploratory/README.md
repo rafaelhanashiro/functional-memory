@@ -14,7 +14,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale with direction weight decay improve degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? | 2026-10-28 |
-| [learned_coefficient_continuation](learned_coefficient_continuation/README.md) | Do learned static or query (decayed-W) degree-four coefficients help when introduced after fixed-Taylor or exp pretraining, with the canonical QK norm? | 2026-10-29 |
+| [learned_coefficient_continuation](learned_coefficient_continuation/README.md) | How does introducing learned static/query coefficients after Taylor or exp pretraining compare with continuing models whose coefficients were learned from the start? | 2026-10-29 |
 | [taylor_query_continuation](taylor_query_continuation/README.md) | Does learning query-dependent coefficients after degree-four Taylor pretraining improve matched continuation? | 2026-10-24 |
 | [dense_readout_scale](dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale under the canonical QK setup? | 2026-10-29 |
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |

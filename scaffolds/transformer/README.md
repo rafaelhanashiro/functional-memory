@@ -40,6 +40,14 @@ SHA256 of `data_identity.json` beside the parent recipe. Empty defaults preserve
 ordinary training. Continuations use zero warmup and equal peak/minimum learning
 rates; `optim.total_steps` is the absolute ending step, including the parent steps.
 
+To extend an already learned static or query model without changing its attention,
+set `continuation.preserve_all_parameters: true` and leave
+`continuation.new_parameter_learning_rate: null`. Every learned coefficient and
+projection, along with its Adam moments and clock, is restored. All parameters use
+the continuation's constant `optim.learning_rate`; no coefficient optimizer is
+created or reset. This mode requires an identical model recipe except for the
+execution backend and preserves the parent's weight-decay policy.
+
 The shared trainer restores every pretrained parameter and its Adam moments/count
 without change, continues the parent's batch cursor and RNG clock, and independently
 evaluates and checkpoints the starting state before the first new update. A child

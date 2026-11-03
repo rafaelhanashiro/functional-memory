@@ -47,6 +47,37 @@ tie at 14.686 against 14.689) was deleted with its runs on 2026-10-29.
 
 Launch commands are in the [study README](../../../README.md#matched-taylor-continuations).
 
+## Continuation of the pretrained learned models
+
+Two controls extend models whose coefficients were learned from the start, using
+their step-7,500 checkpoints and the same 2,000-update tail through step 9,500:
+
+| Role | Run | Parent | Parent PPL at 7,500 |
+| --- | --- | --- | ---: |
+| Static → static | `r1522cd56901a` | `r4339a245820e` | 14.7667 |
+| Query + W decay → query + W decay | `rdfc42659424f` | `rca97cc9db8f2` | 14.7085 |
+
+They preserve every trained array and its Adam moments/count, including the
+coefficients and query projection. No parameters are introduced or reinitialized.
+Both use a constant **0.0001 for all parameters**, no warmup, the same seed and
+data order, global batch 256, 2,048-token context, Mosaic, and 19 validation batches
+every 100 updates. Projection decay and its exemptions are inherited unchanged;
+query `W` decays at 0.1 and coefficient amplitudes/biases remain exempt. The input
+cursor is sequence 1,920,000; 2,000 updates consume 1,048,576,000 prediction tokens.
+These runs belong to Kennel and use one GPU each. Results are pending.
+
+This compares equal-budget continuation recipes with different pretraining histories.
+The earlier Taylor/exp branches gave **newly introduced** coefficients a 0.001 LR
+and fresh Adam state; these controls retain their trained coefficients' history and
+use 0.0001. Consequently this is not an isolated test of coefficient-learning onset
+at an identical coefficient LR. It also differs from training with a cosine schedule
+stretched to 9,500 steps.
+
+The [study launch instructions](../../../README.md#continuing-pretrained-static-and-query-models)
+pin preparation and submission commands. Both use
+`continuation.preserve_all_parameters: true`; the shared acceptance checks verify
+exact restoration, data/RNG continuity, finite GPU training, and checkpoint resume.
+
 ## Findings and open decision
 
 All five runs completed their 2,000 updates on one GPU each (static-Taylor 84 min on a

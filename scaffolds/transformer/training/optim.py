@@ -101,6 +101,8 @@ CONTINUATION_PARAMETERS = frozenset({
 
 def continuation_introduces_parameters(config) -> bool:
     """Whether the recipe adds parameter arrays that its parent checkpoint lacks."""
+    if config.continuation.preserve_all_parameters:
+        return False
     return (config.model.attention_coefficients == "learned"
             or getattr(config.model, "qk_norm_token_scale", "none") != "none"
             or getattr(config.model, "attention_forget_gate", False))

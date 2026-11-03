@@ -7,6 +7,25 @@ from experiments.transformer_pp import launch_continuation
 from experiments.transformer_pp.launch_continuation import recipes, submission_command
 
 
+@pytest.mark.parametrize("conditioning,decay,role", [
+    ("static", False, "static_self"), ("query", True, "query_decay_self"),
+])
+def test_preserved_recipe_keeps_learned_model_and_uses_constant_rate(conditioning, decay, role):
+    source = {"model": {"attention_degree": 4, "attention_coefficients": "learned",
+                        "attention_coefficient_conditioning": conditioning,
+                        "attention_coefficient_kernel_weight_decay": decay},
+              "data": {"batch_size": 256}, "train": {}, "optim": {"weight_decay": .1}}
+    result = recipes(source, {"parent_step": 7500}, conditioning=conditioning, preserve_all_parameters=True)
+    assert set(result) == {role}
+    child = result[role]
+    assert child["model"] == source["model"]
+    assert child["data"] == source["data"]
+    assert child["optim"]["learning_rate"] == child["optim"]["min_learning_rate"] == 1e-4
+    assert child["optim"]["warmup_steps"] == 0 and child["optim"]["total_steps"] == 9500
+    assert child["continuation"]["preserve_all_parameters"] is True
+    assert child["continuation"]["new_parameter_learning_rate"] is None
+
+
 def test_matched_pair_preserves_parent_science_except_new_coefficients():
     source = {
         "model": {"attention_degree": 8, "attention_coefficients": "fixed",
