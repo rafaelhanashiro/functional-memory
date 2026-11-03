@@ -125,5 +125,5 @@ exp_fixed_taylor,rddcbe6dfb1eb,complete,1700,9200,2.6827404671593715,14.62511808
 exp_fixed_taylor,rddcbe6dfb1eb,complete,1800,9300,2.682991054497267,14.628783411963132,2.700534534454346,False,False,,,,,,,,
 exp_fixed_taylor,rddcbe6dfb1eb,complete,1900,9400,2.6795654351774014,14.578756504373144,2.7068694114685057,False,False,,,,,,,,
 exp_fixed_taylor,rddcbe6dfb1eb,complete,2000,9500,2.6783222062023064,14.560643033794825,2.702005124092102,True,True,,,,,,,,
-static_self,r1522cd56901a,planned,,,,,,,,,,,,,,,
-query_decay_self,rdfc42659424f,planned,,,,,,,,,,,,,,,
+static_self,r1522cd56901a,submitted,,,,,,,,,,,,,,,
+query_decay_self,rdfc42659424f,submitted,,,,,,,,,,,,,,,

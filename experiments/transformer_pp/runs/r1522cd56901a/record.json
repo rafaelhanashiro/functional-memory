@@ -14,8 +14,10 @@
     "updates": 2000
   },
   "experiment_kind": "matched_checkpoint_continuation",
+  "frozen_execution_sha256": "2973cdcf81809527a0f33c0a398b147a441decf1e57f6df8d2d066d85797abb7",
   "home_cluster": "kennel",
   "label": "static_self-m4-continuation",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/learned-self-continuation/experiments/transformer_pp/runs/r1522cd56901a/training.log",
   "name": "static_self-m4-continuation",
   "parent_kernel": "static",
   "parent_run_id": "r4339a245820e",
@@ -95,6 +97,7 @@
     "step": 7500,
     "validation_nll": 2.692375774446287
   },
+  "source_commit": "fcd7ae3c080b9af9f023d29dced3ce74d9e70c4b",
   "source_configuration": {
     "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4339a245820e/config.yaml",
     "sha256": "231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d"
@@ -103,5 +106,28 @@
     "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4339a245820e/data_identity.json",
     "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
   },
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=10:00:00",
+      "--job-name=taylor-continue-r1522cd56901a",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/learned-self-continuation/experiments/transformer_pp/runs/r1522cd56901a/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/learned-self-continuation/experiments/transformer_pp/runs/r1522cd56901a/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r1522cd56901a/config.yaml",
+      "fcd7ae3c080b9af9f023d29dced3ce74d9e70c4b",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "233298",
+    "submitted_utc": "2026-11-03T05:04:02.957812+00:00"
+  }
 }
