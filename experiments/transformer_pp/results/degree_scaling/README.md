@@ -41,6 +41,11 @@ levels share the recipe: softmax (`r9040f12f3d80`, normalized) and unnormalized 
 with the same per-head output RMSNorm (`r6a76e7fbde45`, from `codex/qk-head-controls-4b`),
 the kernel every polynomial here truncates.
 
+An `m = 5` column runs on ORCD H100s: fixed Taylor `r8a526282ac43`, fixed Hermite
+`rf1993c745e17`, learned static `r3feaf71ff7af`, and query, W decay `r5de86f9f02da`. Each
+copies its family's `m = 3` recipe and changes only the degree and, for Hermite, the
+fixed coefficients. The figure, tables, and selection cover `m = 1-4` until they finish.
+
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
 floating point; their difference measures how far equivalent runs diverge numerically.
