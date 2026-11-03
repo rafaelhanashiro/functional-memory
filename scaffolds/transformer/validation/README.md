@@ -2316,7 +2316,9 @@ independent host NumPy FP64 algebra and analytic gradients, with relative L2
 error below 0.012 for each. Small-case NumPy outputs and gradients are checked
 against CPU float64 automatic differentiation, including a length-one sequence
 whose gate gradient is exactly zero.
-GPU qualification is pending. Production is gated on this test, the complete
+[H100 qualification](runs/reference-oracle-recheck/gpu.json) passed in job
+233097 on 2026-11-02 with the original 0.012 tolerance. Production is gated on
+this test, the complete
 shared acceptance suite, an exact full-parameter initialization hash match to
 the control, and a real-model training/evaluation/checkpoint-resume pilot.
 
