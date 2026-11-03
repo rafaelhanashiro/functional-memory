@@ -77,7 +77,7 @@
       "size_bytes": 198
     },
     {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-query-key-wdecay-4b/experiments/transformer_200m_4b/runs/r4a80e28ce0a7/training.log",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4a80e28ce0a7/training.log",
       "sha256": "53d12b48a902ee1363fe6679a67344127d06b023a7bbd043ded132eae4b8174d",
       "size_bytes": 654150
     }
@@ -333,11 +333,11 @@
   },
   "label": "query-m4-forget-gate-no-rope-w-decay",
   "log": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-query-key-wdecay-4b/experiments/transformer_200m_4b/runs/r4a80e28ce0a7/training.log",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4a80e28ce0a7/training.log",
     "sha256": "53d12b48a902ee1363fe6679a67344127d06b023a7bbd043ded132eae4b8174d",
     "size_bytes": 654150
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-query-key-wdecay-4b/experiments/transformer_200m_4b/runs/r4a80e28ce0a7/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4a80e28ce0a7/training.log",
   "metadata": {
     "path": "experiments/transformer_pp/runs/r4a80e28ce0a7/metadata.json",
     "sha256": "6f6e775bffbad182a5f174a3c1e89e01295921cf3c3970991a76970d65c46ba9",
@@ -446,7 +446,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-query-key-wdecay-4b/experiments/transformer_200m_4b/runs/r4a80e28ce0a7/checkpoints/7500",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4a80e28ce0a7/checkpoints/7500",
     "sha256": "149041584b3f16639991e35af1e892406414d7e50d1fdd12a9fff3a40ea39b76",
     "size_bytes": 2194956636,
     "step": 7500,
