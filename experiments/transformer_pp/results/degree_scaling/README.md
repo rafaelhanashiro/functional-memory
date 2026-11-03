@@ -42,8 +42,8 @@ level in the figure.
 
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
-floating point; their difference measures run-to-run variation, which the study has
-not otherwise measured.
+floating point; their difference measures how far equivalent runs diverge numerically.
+No cell has a second seed.
 
 ## Findings
 
@@ -94,11 +94,12 @@ Softmax reference (`r9040f12f3d80`): terminal 14.546, validation-best 14.543 (up
   `m = 3` runs fall behind fixed Taylor at `m = 3` early, static from update 400 and
   query from the first evaluation at update 100, and from update 2,000 on stay
   0.040–0.045 nats (static) and 0.027–0.033 nats (query) behind it. At `m = 2` and 4 the
-  learned runs end within 0.6% of fixed Taylor. All four `m = 3` runs passed acceptance,
-  including the GPU kernel tests, on the H100s they trained on. The rises are 18–24 times
-  the twin difference below in validation NLL, so they are not rounding; whether they are
-  systematic or one unlucky seed is untested.
-- **Run-to-run variation is about 0.2%.** Taylor and Hermite at `m = 1` end 0.042 apart
+  learned runs end within 0.6% of fixed Taylor. All four `m = 3` runs passed acceptance
+  on H100 80GB HBM3s at the same commit: static and query ran the GPU kernel tests,
+  degree 3 included, on their own nodes, and Taylor and Hermite reused Taylor `m = 2`'s.
+  The rises are 18–24 times the twin difference below in validation NLL, so they are not
+  rounding; whether they are systematic or one unlucky seed is untested.
+- **Equivalent runs diverge by about 0.2%.** Taylor and Hermite at `m = 1` end 0.042 apart
   (19.556 and 19.513). Learned static at `m = 1` adds nothing the per-head score scale
   cannot express while its constant coefficient stays positive, which it does in all 210
   heads, and it ends between them (19.531). Differences of a few tenths of a percent
@@ -116,12 +117,12 @@ Softmax reference (`r9040f12f3d80`): terminal 14.546, validation-best 14.543 (up
   Kennel H100 PCIe. Taylor and static at `m = 4` accumulated gradients with the earlier
   host loop, which computes the same sums with different rounding. Query's step from
   `m = 2` to 3 therefore also changes GPU and source commit; static's does not.
-- The comparison is one 1× budget and schedule. The lower degrees were still closing the
-  gap when training ended (Taylor at `m = 3` led `m = 2` until update 6,000), so the
-  ranking may change with more tokens.
+- The comparison is one 1× budget and schedule. Every `m = 1` run was still closing on
+  its `m = 2` run when training ended, and fixed Taylor at `m = 2` overtook `m = 3` only
+  after update 6,000, so the ranking may change with more tokens.
 - The closest 10B-token analog in [attention_scaling](../../../../results/attention_scaling/README.md),
   learned coefficients with per-head output RMSNorm, improves at every degree (14.630 at
-  `m = 2`, 13.988 at `m = 3`), so a penalty at `m = 3` does not carry across recipes.
+  `m = 2`, 13.988 at `m = 3`), so the penalty at `m = 3` is absent in that recipe.
 
 ## Regenerate
 

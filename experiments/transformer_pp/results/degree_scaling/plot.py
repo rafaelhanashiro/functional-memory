@@ -21,6 +21,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import yaml
+from matplotlib.transforms import offset_copy
 from numpy.polynomial import hermite_e
 
 from scaffolds.records.selections import verify_pinned_runs
@@ -41,8 +42,33 @@ INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 FAMILIES = {"taylor": ("Fixed Taylor", "#2a78d6", "o"), "hermite": ("Fixed Hermite", "#eb6834", "^"),
             "static": ("Learned static", "#1baf7a", "D"), "query_w_decay": ("Query, W decay", "#eda100", "s")}
 REFERENCE = "softmax"
+# Families sit side by side at each degree so that no marker hides another.
+DODGE = {"taylor": -0.09, "hermite": -0.03, "static": 0.03, "query_w_decay": 0.09}
 CANONICAL_QK = {"qk_norm": True, "qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
                 "qk_norm_initial_scale": None, "qk_norm_head_scale": True}
+# Recipes are compared key by key. Run names and locations differ by design (the data
+# manifests' contents are checked by hash), and recipes written before a feature existed
+# lack its key, which then means the value below.
+LOCATIONS = {"data.train_manifest", "data.eval_manifest", "train.checkpoint_dir", "train.workdir",
+             "train.wandb_group", "train.wandb_run_name"}
+ABSENT = {
+    "continuation.new_parameter_learning_rate": None, "continuation.parent_checkpoint": "",
+    "continuation.parent_checkpoint_sha256": "", "continuation.parent_config": "",
+    "continuation.parent_config_sha256": "", "continuation.parent_data_identity_sha256": "",
+    "continuation.parent_step": 0, "model.attention_forget_gate": False,
+    "model.attention_coefficient_kernel_weight_decay": False, "model.qk_norm_token_scale": "none",
+    "model.qk_norm_token_scale_kernel_weight_decay": False, "optim.query_coefficient_learning_rate_scale": 1.0,
+}
+# Within a family only the degree changes, with the Hermite coefficients it determines;
+# between families the coefficient parameterization changes too, and softmax also differs
+# in its kernel, normalization, and output scaling.
+DEGREE_KEYS = {"model.attention_degree", "model.attention_fixed_coefficients"}
+FAMILY_KEYS = DEGREE_KEYS | {f"model.attention_{key}" for key in (
+    "coefficients", "coefficient_activation", "coefficient_amplitude_initial", "coefficient_amplitude_scale",
+    "coefficient_conditioning", "coefficient_kernel_weight_decay", "coefficient_projection_initial_std",
+    "coefficient_scale", "coefficient_sharing")}
+REFERENCE_KEYS = FAMILY_KEYS | {"model.attention_backend", "model.attention_normalization",
+                                "model.attention_output_scaling"}
 
 
 def hermite_coefficients(degree: int) -> list[float]:
@@ -100,14 +126,62 @@ def _check_recipe(entry: dict, config: dict, settings: dict) -> None:
             raise ValueError(f"Polynomial runs are unnormalized with per-head output RMSNorm: {run}")
 
 
+def _flatten(tree: dict, prefix: str = "") -> dict:
+    flat = {}
+    for key, value in tree.items():
+        if isinstance(value, dict) and value:
+            flat.update(_flatten(value, f"{prefix}{key}."))
+        else:
+            flat[f"{prefix}{key}"] = value
+    return flat
+
+
+def _recipe(config: dict) -> dict:
+    """A recipe's settings by dotted key, with absent keys filled and locations dropped."""
+    recipe = {**ABSENT, **_flatten(config)}
+    return {key: value for key, value in recipe.items() if key not in LOCATIONS}
+
+
+def _compare(recipes: dict, base: str, run: str, allowed: set) -> None:
+    missing = object()
+    differing = sorted(key for key in set(recipes[base]) | set(recipes[run])
+                       if key not in allowed and recipes[base].get(key, missing) != recipes[run].get(key, missing))
+    if differing:
+        raise ValueError(f"{run} differs from {base} beyond the comparison: {', '.join(differing)}")
+
+
+def check_recipes(entries: list[dict], configs: dict, settings: dict) -> None:
+    """Each recipe is its declared cell in the shared setup, and recipes differ only where the comparison does."""
+    for entry in entries:
+        _check_recipe(entry, configs[entry["run_id"]], settings)
+    recipes = {run: _recipe(config) for run, config in configs.items()}
+    for key, value in ABSENT.items():
+        if key not in FAMILY_KEYS and any(recipe[key] != value for recipe in recipes.values()):
+            raise ValueError(f"Every run must have {key} = {value!r}")
+    primary = [entry for entry in entries if entry["role"] == "primary"]
+    anchors = {}
+    for entry in primary:
+        anchor = anchors.setdefault(entry["family"], entry["run_id"])
+        _compare(recipes, anchor, entry["run_id"], DEGREE_KEYS)
+    first = primary[0]["run_id"]
+    for anchor in anchors.values():
+        _compare(recipes, first, anchor, FAMILY_KEYS)
+    for entry in entries:
+        if entry["role"] == "reference":
+            _compare(recipes, first, entry["run_id"], REFERENCE_KEYS)
+
+
 def load_runs(selection: dict | None = None) -> list[dict]:
     selection = selection or yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
     settings, identity = selection["settings"], selection["data_identity"]
     verify_pinned_runs(ROOT, selection["runs"])
+    paths = {entry["run_id"]: ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
+             for entry in selection["runs"]}
+    check_recipes(selection["runs"], {run: yaml.safe_load((path / "config.yaml").read_text())
+                                      for run, path in paths.items()}, settings)
     rows = []
     for entry in selection["runs"]:
-        path = ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
-        _check_recipe(entry, yaml.safe_load((path / "config.yaml").read_text()), settings)
+        path = paths[entry["run_id"]]
         record = json.loads((path / "record.json").read_text())
         if record["status"] != "complete":
             raise ValueError(f"Selected run is not complete: {entry['run_id']} ({record['status']})")
@@ -177,36 +251,44 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         figure.subplots_adjust(left=0.1, right=0.84, top=0.8, bottom=0.11)
         level = softmax["terminal_validation_perplexity"]
         axis.axhline(level, color=MUTED, linewidth=1.0, alpha=0.85, zorder=1)
-        by_degree: dict[int, list[float]] = {}
+        by_degree: dict[int, list[tuple[float, str]]] = {}
         handles = []
         for family, (name, color, marker) in FAMILIES.items():
             points = sorted((row["degree"], row["terminal_validation_perplexity"])
                             for row in primary if row["family"] == family)
-            xs, ys = zip(*points)
+            xs = [degree + DODGE[family] for degree, _ in points]
+            ys = [value for _, value in points]
             axis.plot(xs, ys, color=color, linewidth=1.8, zorder=2, solid_capstyle="round")
-            axis.plot(xs, ys, linestyle="none", marker=marker, markersize=7, color=color,
+            axis.plot(xs, ys, linestyle="none", marker=marker, markersize=6.5, color=color,
                       markeredgecolor=SURFACE, markeredgewidth=0.9, zorder=3)
-            handles.append(plt.Line2D([], [], color=color, marker=marker, markersize=7, linewidth=1.8,
+            handles.append(plt.Line2D([], [], color=color, marker=marker, markersize=6.5, linewidth=1.8,
                                       markeredgecolor=SURFACE, markeredgewidth=0.9, label=name))
-            for x, y in points:
-                by_degree.setdefault(x, []).append(y)
+            for degree, value in points:
+                by_degree.setdefault(degree, []).append((value, family))
         values = [row["terminal_validation_perplexity"] for row in primary] + [level]
         lower, upper = min(values), max(values)
         pad = 0.05 * (upper - lower)
-        axis.set_xlim(min(degrees) - 0.3, max(degrees) + 0.45)
+        axis.set_xlim(min(degrees) - 0.35, max(degrees) + 0.6)
         axis.set_ylim(lower - 1.5 * pad, upper + 1.5 * pad)
         height_points = axis.get_window_extent().height * 72 / figure.dpi
         gap = 10.0 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
-        for x, levels in sorted(by_degree.items()):
-            positions = _spread(levels, 0.9 * gap)
+        # Each value is a chip right of the degree's markers: a small swatch in the family's
+        # color and shape, then the number, on an opaque background so it reads as a label.
+        swatch = offset_copy(axis.transData, fig=figure, x=14, y=0, units="points")
+        right = max(DODGE.values())
+        for x, labels in sorted(by_degree.items()):
+            positions = _spread([value for value, _ in labels], 0.95 * gap)
             # Labels that would sit on the softmax level move up together to clear it.
             if level - 0.6 * gap < min(positions) < level + 0.6 * gap:
                 positions = [position + level + 0.6 * gap - min(positions) for position in positions]
-            for value, placed in zip(levels, positions):
-                axis.annotate(f"{value:.2f}", (x, placed), xytext=(8, 0), textcoords="offset points",
+            for (value, family), placed in zip(labels, positions):
+                _, color, marker = FAMILIES[family]
+                axis.annotate(f"    {value:.2f}", (x + right, placed), xytext=(9, 0), textcoords="offset points",
                               ha="left", va="center", fontsize=7.5, color=INK, zorder=4,
-                              bbox={"boxstyle": "round,pad=0.12", "facecolor": SURFACE, "edgecolor": "none",
-                                    "alpha": 0.85})
+                              bbox={"boxstyle": "round,pad=0.15", "facecolor": SURFACE, "edgecolor": GRID,
+                                    "linewidth": 0.6})
+                axis.plot([x + right], [placed], marker=marker, markersize=4, color=color, linestyle="none",
+                          transform=swatch, clip_on=False, zorder=5)
         axis.annotate(f"Softmax {level:.2f}", (1.0, level), xycoords=("axes fraction", "data"), xytext=(6, 0),
                       textcoords="offset points", ha="left", va="center", fontsize=8, color=MUTED,
                       annotation_clip=False)

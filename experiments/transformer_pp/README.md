@@ -127,7 +127,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Degree scaling
 
-The [degree scaling collection](results/degree_scaling/README.md) plots 1× validation
+The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
 perplexity against polynomial degree `m = 1, 2, 3, 4` for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
@@ -588,7 +588,8 @@ execution gets a fresh run ID. The exact submission is recorded with the run.
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
-above, and the coefficient-oracle fit `r043b150cde03` (ORCD). Data manifests live under
+above, the eight degree-scaling runs at `m = 2-4`, and the coefficient-oracle fit
+`r043b150cde03` (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
 Retained checkpoints and logs live under this study in the primary Kennel checkout, or
 for ORCD runs under ORCD's artifact root, at the locations recorded in each run. The frozen recipe and execution record

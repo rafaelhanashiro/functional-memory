@@ -9,7 +9,7 @@ import pytest
 import yaml
 
 from experiments.transformer_pp.results.degree_scaling.plot import (
-    DIRECTORY, family_of, hermite_coefficients, load_runs, main)
+    DIRECTORY, ROOT, check_recipes, family_of, hermite_coefficients, load_runs, main)
 
 
 SELECTION = yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
@@ -61,6 +61,29 @@ def test_family_follows_the_recipe():
     with pytest.raises(ValueError, match="Unlisted coefficient family"):
         family_of(dict(query, attention_coefficient_kernel_weight_decay=False))
     assert family_of({"attention_degree": None, "attention_normalization": True}) == "softmax"
+
+
+def test_recipes_differ_only_in_the_compared_settings():
+    configs = {entry["run_id"]: yaml.safe_load(
+        (ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] / "config.yaml").read_text())
+        for entry in SELECTION["runs"]}
+    check_recipes(SELECTION["runs"], configs, SELECTION["settings"])
+    # (run, section, key, value, expected message): settings outside the comparison.
+    mutations = [
+        ("r81fad1755b11", "model", "attention_forget_gate", True, "attention_forget_gate"),
+        ("r9040f12f3d80", "model", "attention_forget_gate", True, "attention_forget_gate"),
+        ("r816ab0fbe119", "model", "qk_norm_token_scale", "cosine", "qk_norm_token_scale"),
+        ("rdf6363a4b83c", "continuation", "parent_checkpoint", "parent/checkpoints/7500", "parent_checkpoint"),
+        ("ra7f2fda1c792", "model", "attention_mechanism", "path", "attention_mechanism"),
+        ("r00f1f91a7803", "optim", "learning_rate", 0.002, "optim.learning_rate"),
+        ("r1f880c4ee659", "model", "hidden_size", 1024, "model.hidden_size"),
+        ("r9040f12f3d80", "optim", "weight_decay", 0.0, "optim.weight_decay"),
+    ]
+    for run, section, key, value, message in mutations:
+        changed = copy.deepcopy(configs)
+        changed[run].setdefault(section, {})[key] = value
+        with pytest.raises(ValueError, match=message):
+            check_recipes(SELECTION["runs"], changed, SELECTION["settings"])
 
 
 def test_changed_inputs_and_mislabeled_cells_are_rejected():
