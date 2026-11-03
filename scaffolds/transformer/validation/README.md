@@ -1980,6 +1980,32 @@ stores dw and dbeta in BF16. Outputs, dq, and dc repeat bitwise over 10 runs at 
 production batch on both GPUs; dk, dv, dw, and dbeta, summed with FP32 atomics, vary by up
 to 4e-5, 2e-5, and 1e-3 (relative L2).
 
+### Forget gate and the exponential
+
+The unnormalized exponential is FLA's softmax output times its row sum, and the forget gate
+(softmax and exponential, PaTH-FoX) enables FLA's own gate in six kernels with the gate
+`L sqrt(d_K)`. The JAX implementation with the decay matches FLA's PyTorch reference given
+FLA's per-token gate `log alpha sqrt(d_K)` (`test_decayed_softmax_matches_the_authors_reference`).
+On B300 (`akita`, `.venv-cuda13`, job 233303), the 63 GPU tests of `test_forget_gate_attention.py`,
+`test_path_attention.py`, and `test_path_attention_fused.py` pass: outputs and every gradient,
+including the decay's, at the production context, at lengths 128-1,536, causality, and the
+model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (jobs 233303
+and 233367).
+
+Relative L2 error against FP32 HIGHEST, BF16 q/k/v, B = 2, T = 2048, 4 heads, width 64,
+scores `2 cos(q, k)`, decay drawn from Gated DeltaNet's initial range (B300, job 233347):
+
+| Kernel | Implementation | Output | dq, dk | dv | dw, dbeta | dL |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Softmax | fused | 2.2e-3 | 3.6e-3 | 2.3e-3 | 6.9e-3, 7.0e-3 | |
+| | JAX | 1.6e-3 | 1.7e-3, 1.8e-3 | 1.7e-3 | 8.8e-4 | |
+| Softmax, gate | fused | 2.1e-3 | 2.8e-3 | 2.4e-3 | 4.9e-3, 5.2e-3 | 2.0e-3 |
+| | JAX | 1.7e-3 | 1.7e-3 | 1.7e-3 | 5.9e-4, 6.0e-4 | 3.0e-4 |
+| Exp | fused | 3.0e-3 | 5.8e-3, 5.7e-3 | 2.9e-3 | 8.6e-3, 8.8e-3 | |
+| | JAX | 1.7e-3 | 1.8e-3 | 1.7e-3 | 1.1e-3, 1.0e-3 | |
+| Exp, gate | fused | 2.8e-3 | 3.6e-3, 3.5e-3 | 2.9e-3 | 5.6e-3, 5.9e-3 | 1.7e-3 |
+| | JAX | 1.7e-3 | 1.7e-3 | 1.7e-3 | 5.8e-4, 5.9e-4 | 5.5e-5 |
+
 ### Speed
 
 Forward and backward per layer, B = 32, T = 2048, 16 heads, width 64, H100 SXM (job 223344):

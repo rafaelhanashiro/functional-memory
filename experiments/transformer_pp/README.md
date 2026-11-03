@@ -554,11 +554,14 @@ RMSNorm as in its source. Two use no positional encoding; two use PaTH (PaTH-FoX
 
 Home cluster: **Kennel**. They launch from `worktrees/fox-softmax-exp-path` (branch
 `claude/fox-softmax-exp-path`). After committing the inputs, submit each on one B300 or
-H100 SXM, excluding the H100 PCIe node `mastiff` and the B200 node `shiba`:
+H100 SXM, excluding the H100 PCIe node `mastiff` and the B200 node `shiba`, with the PaTH
+runs at `nice` 1,000 so that polynomial-attention runs schedule first, and the partition
+(`standard` or `long`) chosen from the live allowance:
 
 ```bash
 for run in r5adc29a91e3b r183f08346ddc r14db6f0e8592 rafcf22b799ed; do
-  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  case $run in r14db6f0e8592|rafcf22b799ed) nice=1000 ;; *) nice=0 ;; esac
+  sbatch --parsable --partition=<standard|long> --nice=$nice --gres=gpu:1 --cpus-per-task=16 --mem=128G \
     --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \

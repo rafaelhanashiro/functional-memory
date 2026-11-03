@@ -15,7 +15,7 @@ from scaffolds.transformer.attention.backends.reference import blocked_dot_produ
 from scaffolds.transformer.attention.parameters import attention_parameter_count
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 from scaffolds.transformer.models import build_model
-from scaffolds.transformer.training import loop
+from scaffolds.transformer.training import loop, tracking
 from scaffolds.transformer.training.diagnostics import (
     attention_diagnostics, attention_identity, fixed_diagnostic_sample,
 )
@@ -116,15 +116,16 @@ def test_identity_parameters_and_diagnostics(kernel):
     assert identity["attention_formula"].endswith("with a learned gain") is (kernel == "exp")
     assert identity["positional_encoding"] == "none"
     assert identity["forget_gate_parameter_count"] == (8 + 2) * 2
+    assert "forget_gate" in tracking.run_tags(config, {})
     assert attention_parameter_count(config.model) - attention_parameter_count(
         replace(config.model, attention_forget_gate=False)) == (8 + 2) * 2
     state = create_state(config, jax.random.PRNGKey(0))
     sample, provenance = fixed_diagnostic_sample(config)
     report = attention_diagnostics(state, config, sample, provenance)
     assert report["valid"], report["issues"]
-    assert np.all(np.asarray(report["layers"][0]["forget_gate_log_alpha_max"]) <= 0)
     gate = report["coefficients"]["forget_gate"]
     assert gate["finite"] and np.asarray(gate["rate_exp_A_log"]).shape == (1, 2)
+    assert np.all(np.asarray(gate["log_alpha_sample"]["max"]) <= 0)
 
 
 @pytest.mark.parametrize("kernel", KERNELS)

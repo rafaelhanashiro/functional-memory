@@ -322,8 +322,8 @@ def test_diagnostics_are_valid_and_report_the_gates(kernel, forget_gate):
     if kernel == "query_polynomial":
         assert np.asarray(report["coefficients"]["effective_summary"]["mean"]).shape == (2, 2, 3)
     if forget_gate:
-        assert report["coefficients"]["forget_gate"]["finite"]
-        assert np.all(np.asarray(layer["forget_gate_log_alpha_max"]) <= 0)
+        gate = report["coefficients"]["forget_gate"]
+        assert gate["finite"] and np.all(np.asarray(gate["log_alpha_sample"]["max"]) <= 0)
         identity = attention_identity(config)
         assert identity["attention_forget_gate"] and "(QK^T / sqrt(d_k) + D) V" in identity["attention_formula"]
         assert identity["attention_score_position_encoding"].startswith("PaTH")
