@@ -193,6 +193,21 @@ for RUN in r7bede0f75198 r1c80ab3a466b r16b23893884d rc90fb11d4772 rb5fe0aef572a
 done
 ```
 
+## Extrapolation ablation
+
+The [extrapolation_ablation topic](results/exploratory/extrapolation_ablation/README.md)
+rescored the query + W decay checkpoint at 16,384 tokens with a 2,048-key window and with RoPE
+distances clamped at 2,047 (`rb786bd19c6b1`). One GPU, no training:
+
+```bash
+sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem=96G --time=04:00:00 \
+  --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name=rb786bd19c6b1 \
+  --output=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
+  --error=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
+  experiments/transformer_pp/results/exploratory/extrapolation_ablation/evaluate.sbatch \
+  "$PWD" "$(git rev-parse HEAD)" rb786bd19c6b1
+```
+
 ## Exploratory diagnostics
 
 ### Query coefficient optimization

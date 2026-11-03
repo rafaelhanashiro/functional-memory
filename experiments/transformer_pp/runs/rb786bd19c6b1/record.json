@@ -1,0 +1,15 @@
+{
+  "condition": "context_length/extrapolation_ablation_16k",
+  "config": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml",
+    "sha256": "20121775265ca3d6edefc116b74fb88dbc51e7fb78448ba561ee32e32bd824f1"
+  },
+  "experiment_kind": "per_position_evaluation",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-extrapolation-ablation-16k",
+  "name": "query-m4-w-decay-extrapolation-ablation-16k",
+  "record_schema_version": 1,
+  "run_id": "rb786bd19c6b1",
+  "source_run_id": "rca97cc9db8f2",
+  "status": "planned"
+}

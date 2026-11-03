@@ -1,0 +1,51 @@
+schema_version: 1
+opened: '2026-11-02'
+question: Does the query + W decay (m = 4) model break past 2,048 tokens because of
+  keys beyond the training distance, and is the trigger their RoPE phases or their
+  number?
+settings:
+  metric: per-position NLL at 16,384 tokens
+  window: 2048
+runs:
+- study: transformer_pp
+  run_id: rb786bd19c6b1
+  role: ablation_evaluation
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml
+      sha256: 20121775265ca3d6edefc116b74fb88dbc51e7fb78448ba561ee32e32bd824f1
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: evaluated_model
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r2a45c518f703
+  role: original_16k_evaluation
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2a45c518f703/config.yaml
+      sha256: 0eccb596505252fc95f0f8d604dd68da718bfdd34a03a61a4ac0d5be668a99db
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2a45c518f703/metrics.jsonl
+      sha256: cff0678aa4234845eac8d38af92b4ada82c630328adefde3b5ac0c2fc4cacbaf
+    completion.json:
+      path: experiments/transformer_pp/runs/r2a45c518f703/completion.json
+      sha256: dc6bd3db748e2434ac0ad8b7cdac159cdd1bbd0a999d8492090f866fa9dedf17
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2a45c518f703/metadata.json
+      sha256: 428e420ac8d3dbaae84c29c9030b9425dc949c4ebd2ac9ad0668c2db2a099f6c

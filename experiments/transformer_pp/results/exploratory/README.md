@@ -20,3 +20,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [dense_readout_scale](dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale under the canonical QK setup? | 2026-10-29 |
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
+| [extrapolation_ablation](extrapolation_ablation/README.md) | Does query attention break past 2,048 tokens because of keys beyond the training distance, through their RoPE phases or their number? | 2026-11-02 |
