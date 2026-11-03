@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r45831d718944/config.yaml",
+    "sha256": "191e0b17b4056cb975ec825b92e214bfe30097e90f764e50e1859269f20c6034"
+  },
+  "home_cluster": "kennel",
+  "label": "static-even-m8-1x",
+  "name": "static-even-m8-1x",
+  "record_schema_version": 1,
+  "run_id": "r45831d718944",
+  "status": "planned"
+}

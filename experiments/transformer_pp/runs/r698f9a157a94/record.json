@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r698f9a157a94/config.yaml",
+    "sha256": "c9120e9cababc3b9a8c6594bcfd1fccf1d62fbd426a135afc643b77e1a40a51e"
+  },
+  "home_cluster": "kennel",
+  "label": "query-even-m8-w-decay-1x",
+  "name": "query-even-m8-w-decay-1x",
+  "record_schema_version": 1,
+  "run_id": "r698f9a157a94",
+  "status": "planned"
+}

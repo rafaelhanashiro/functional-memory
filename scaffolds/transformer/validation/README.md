@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Selected polynomial orders (2026-11-03)
+
+`model.attention_coefficient_orders` stores only the requested monomial orders
+for learned static/direct or diagonal tanh-query polynomials. Static coefficients
+expand before factorial scaling; query generators project only the retained W
+columns, scale b and a by actual-order factorials, and expand their effective
+coefficients. Thus `[0, 2, 4, 6, 8]` has five static coefficients or five query
+features per head and remains even after optimizer updates. Query projection W
+retains its configured weight decay. Unset recipes retain their prior shapes.
+
+The CPU checks in `tests/test_coefficient_orders.py` compare
+compact and expanded models' logits and every parameter gradient, check an
+independent factorial-scaled derivative and actual Adam updates, and cover
+initialization, counts, diagnostics, acceptance, configuration compatibility,
+and invalid settings. Query-specific checks compare all model gradients, an
+independent coefficient formula and gradients, AdamW updates, and diagnostic
+scaling. Two GPU cases compare static and per-query degree-eight Mosaic outputs
+and Q/K/V/stored-coefficient gradients with FP64 at context 2,048 and width 64.
+The launcher selects these cases for restricted recipes; GPU qualification is
+required along with the full-recipe pilot/resume acceptance before production.
+
+All 22 selected-order CPU checks and 23 existing coefficient-scaling regressions
+passed. GPU outcomes are recorded by each allocation's acceptance report.
+
 ### FoX with PaTH polynomial attention (2026-11-01)
 
 The query-polynomial PaTH reference and its six fused polynomial kernels accept

@@ -78,6 +78,8 @@ whole sweep before any jobs can run or requeue.
   raw metrics, including attention family, coefficient conditioning, home cluster,
   and training budget. Coefficient conditioning distinguishes static learned
   coefficients from coefficients predicted from the incoming query activation.
+  `coefficient_orders` lists explicitly selected polynomial powers as a JSON array;
+  it stays empty when the recipe does not restrict the powers.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 

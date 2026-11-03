@@ -37,6 +37,9 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
 def _initialization_text(model) -> str:
     """How the learned coefficients start, for formula strings."""
     initialization = getattr(model, "attention_coefficient_initialization", "taylor")
+    orders = getattr(model, "attention_coefficient_orders", None)
+    if initialization == "taylor" and orders is not None:
+        return f"1/r! for r in {list(orders)}; omitted orders fixed at zero"
     return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
 
 
@@ -269,6 +272,10 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        elif config.model.attention_coefficient_orders is not None:
+            per_polynomial = len(config.model.attention_coefficient_orders) * (
+                config.model.hidden_size + 2 + int(config.model.attention_coefficient_tanh_bias)
+                if query_conditioned else 1)
         elif query_sigmoid:
             features = config.model.attention_coefficient_feature_count or degree + 1
             per_polynomial = features * config.model.hidden_size + (
@@ -288,6 +295,8 @@ def attention_identity(config) -> dict:
                 1 if sharing == "global" else config.model.num_layers * config.model.num_heads),
             "coefficient_penalty": penalty,
         })
+        if config.model.attention_coefficient_orders is not None:
+            identity["attention_coefficient_orders"] = list(config.model.attention_coefficient_orders)
         if rational:
             identity["coefficient_penalty_denominator"] = penalize_denominator
         if penalty:
@@ -358,6 +367,8 @@ def attention_identity(config) -> dict:
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
                                + " after the block input RMSNorm"
+                               + (f"; retained orders {list(config.model.attention_coefficient_orders)}, "
+                                  "omitted orders fixed at zero" if config.model.attention_coefficient_orders is not None else "")
                                + (("; each weight is multiplied by exp((t-i) log alpha_t), log alpha_t = "
                                    if gate_mode == "query_distance" else
                                    "; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = ")
@@ -576,10 +587,14 @@ def polynomial_coefficient_report(params, config) -> dict:
         effective = np.concatenate([numerator, expanded if constant == "learned" else expanded[..., 1:]], axis=-1)
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
-        raw_names = [f"c{order}" for order in range(raw.shape[-1])]
+        orders = config.model.attention_coefficient_orders
+        raw_names = [f"c{order}" for order in (range(raw.shape[-1]) if orders is None else orders)]
         effective = raw
+        if orders is not None:
+            effective = np.zeros((*raw.shape[:-1], config.model.attention_degree + 1), dtype=np.float64)
+            effective[..., list(orders)] = raw
         if getattr(config.model, "attention_coefficient_scale", "none") == "factorial":
-            effective = raw / np.asarray([math.factorial(order) for order in range(raw.shape[-1])], np.float64)
+            effective = effective / np.asarray([math.factorial(order) for order in range(effective.shape[-1])], np.float64)
     if has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
@@ -600,7 +615,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
-                             readout_scale=1.0, activation="tanh") -> dict:
+                             readout_scale=1.0, activation="tanh", orders=None) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -637,7 +652,8 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
     if amplitude is not None:
         report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
-            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            factorials = np.asarray([math.factorial(r) for r in
+                                     (range(amplitude.shape[-1]) if orders is None else orders)], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
     if activation in ("sigmoid", "pure_tanh"):
@@ -657,8 +673,11 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         if readout_scale != 1.0:
             report["readout_scale"] = readout_scale
     if coefficient_scale == "factorial":
-        factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
+        factorials = np.asarray([math.factorial(r) for r in
+                                 (range(bias.shape[-1]) if orders is None else orders)], dtype=np.float64)
         report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
+    if orders is not None:
+        report["stored_parameter_orders"] = list(orders)
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -864,7 +883,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
             coefficient_scale=config.model.attention_coefficient_scale,
             readout_scale=config.model.attention_coefficient_readout_scale,
-            activation=config.model.attention_coefficient_activation)
+            activation=config.model.attention_coefficient_activation,
+            orders=config.model.attention_coefficient_orders)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
         if getattr(config.model, "attention_forget_gate", False):

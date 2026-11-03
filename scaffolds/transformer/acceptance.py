@@ -197,6 +197,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
                 paths.append(QUERY_KEY_TILING_TESTS)
+    if model.get("attention_coefficient_orders") is not None:
+        paths.append("scaffolds/transformer/tests/test_coefficient_orders.py")
     if model.get("attention_coefficient_scale", "none") != "none":
         paths.append(COEFFICIENT_SCALE_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
@@ -646,7 +648,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_forget_gate_mode="cumulative",
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
-                                           attention_coefficient_scale="none",
+                                           attention_coefficient_scale="none", attention_coefficient_orders=None,
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
@@ -696,6 +698,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_mode="cumulative", positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
+        attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
         qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False))

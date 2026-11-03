@@ -104,11 +104,12 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     return specs
 
 
-def _diagonal_readout(features, amplitude, bias, amplitude_scale):
+def _diagonal_readout(features, amplitude, bias, amplitude_scale, orders=None):
     """The same rounded FP32 diagonal computation in both readout families."""
     amplitude = amplitude.astype(jnp.float32)
     if amplitude_scale == "factorial":
-        amplitude = amplitude / jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+        amplitude = amplitude / jnp.asarray([math.factorial(r) for r in
+                                             (range(bias.shape[-1]) if orders is None else orders)], jnp.float32)
     # The incoming bias may itself have been factorial-scaled by the caller.
     # Preserve each rounded operand before multiplying/adding so the compiler
     # cannot reassociate scaling or contract a different expression in one arm.
@@ -145,7 +146,7 @@ def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, featur
 
 
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
-                         amplitude_scale="none", readout_scale=1.0):
+                         amplitude_scale="none", readout_scale=1.0, orders=None):
     """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
     otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
@@ -153,7 +154,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
     amplitude_scale="factorial" divides output order r's amplitude or mixing row by r!.
     readout_scale multiplies only the dense modulation; it never rescales the bias.
+    orders selects the actual monomial orders for compact diagonal tanh features;
+    omitted outputs are zero, and factorial scaling uses those actual orders.
     """
+    if orders is not None and (activation != "tanh" or mixing is not None or bias is None
+                                or len(orders) != kernel.shape[-1]):
+        raise ValueError("Selected orders require matching compact diagonal tanh features")
     if (isinstance(readout_scale, bool) or not isinstance(readout_scale, (int, float))
             or not math.isfinite(readout_scale) or readout_scale <= 0):
         raise ValueError("Dense readout scale must be finite and positive")
@@ -190,7 +196,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
         # arm introduced one-ulp differences amplified by later BF16 residuals.
         features = jax.lax.optimization_barrier(AFFINE_FEATURES[activation](projected))
         if mixing is None:
-            return _diagonal_readout(features, amplitude, bias, amplitude_scale)
+            coefficients = _diagonal_readout(features, amplitude, bias, amplitude_scale, orders)
+            if orders is not None:
+                from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+
+                coefficients = expand_polynomial_coefficients(coefficients, orders[-1], orders)
+            return coefficients
         mixing = mixing.astype(jnp.float32)
         if readout_scale != 1.0:
             # Preserve the historical square/rectangular arithmetic at scale 1.
