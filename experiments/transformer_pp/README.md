@@ -343,32 +343,13 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coef
 
 ## Matched Taylor continuations
 
-The [delayed coefficient-learning topic](results/exploratory/taylor_static_continuation/README.md)
-compares 500 updates with fixed Taylor against learning static coefficients from
-the same pretrained Taylor checkpoint. It preserves the backbone optimizer and
-next training-data position, with a fresh Adam clock for newly introduced
-coefficients. Both continuations use the shared trainer and acceptance procedure.
-
-Allocate the pair once in its isolated worktree, then commit all frozen inputs
-before either independent submission:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r019ca96d6533
-# The allocated IDs below identify this pair; do not allocate it again for a requeue.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r28fb40a1d0e9 --partition standard,long --time-limit 06:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r0332cff0b0c0 --partition standard,long --time-limit 06:00:00
-```
-
-The two recorded continuations are complete; findings and the open research
-decision are in the topic. Fresh reproductions receive new run IDs. The launcher
-defaults to six hours, including the shared acceptance procedure's two-hour reserve.
-Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
-shared runtime qualification run on every allocation; the scientific global batch
-stays fixed through gradient accumulation. See the topic for comparison settings,
-findings, and regeneration.
+Continuations start from a pretrained checkpoint and train a fixed number of further
+updates with the shared trainer and acceptance procedure. They preserve the backbone
+optimizer and the next training-data position, with a fresh Adam clock for newly
+introduced coefficients. The launcher defaults to six hours, including the shared
+acceptance procedure's two-hour reserve. Each job requests one B300 or H100 GPU; the
+launcher's frozen-source check and shared runtime qualification run on every allocation,
+and the scientific global batch stays fixed through gradient accumulation.
 
 The [learned-coefficient topic](results/exploratory/learned_coefficient_continuation/README.md)
 introduces degree-four static or query coefficients (the latter with a decayed projection
