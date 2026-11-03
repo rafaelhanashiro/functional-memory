@@ -208,6 +208,9 @@ sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem
   "$PWD" "$(git rev-parse HEAD)" rb786bd19c6b1
 ```
 
+The weight profile (`r9155f2214b4b`) uses `weight_profile.sbatch` in the same topic with the
+same resources.
+
 ## Exploratory diagnostics
 
 ### Query coefficient optimization

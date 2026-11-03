@@ -73,5 +73,13 @@ evaluation to within 1.5e-5 nats over the first 2,048 positions and 3e-6 nats ov
 - FoX without RoPE avoids both mechanisms: it has no positional phases and its gate decays
   distant keys exponentially.
 
+## Weight profile by key distance
+
+`r9155f2214b4b` measures how the same checkpoint, and the query + W decay model trained at
+4,096 tokens (`r738b35a8e314`), spread late queries' weight over key distance: for queries in
+the last 256 positions before 2,048, 4,096, 8,192 and 16,384 tokens, the share of |w| in
+distance bins beside the share of keys each bin holds, and the effective number of keys, per
+layer ([`weight_profile.py`](weight_profile.py)). Pending.
+
 **Open decision:** keep the result in the context-length discussion, or delete this topic
-with its run.
+with its runs.

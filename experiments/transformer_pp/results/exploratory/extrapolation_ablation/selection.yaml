@@ -58,3 +58,11 @@ runs:
     metadata.json:
       path: experiments/transformer_pp/runs/r2a45c518f703/metadata.json
       sha256: 428e420ac8d3dbaae84c29c9030b9425dc949c4ebd2ac9ad0668c2db2a099f6c
+- study: transformer_pp
+  run_id: r9155f2214b4b
+  role: weight_profile
+  sources: {}
+- study: transformer_pp
+  run_id: r738b35a8e314
+  role: model_trained_4096
+  sources: {}

@@ -1,0 +1,14 @@
+{
+  "condition": "context_length/weight_profile",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r9155f2214b4b/config.yaml",
+    "sha256": "8b33b70a93cce8b59ba5506f9bf84591255313a1f8cde8d4fc3b9a577b1e80db"
+  },
+  "experiment_kind": "attention_weight_profile",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-weight-profile",
+  "name": "query-m4-w-decay-weight-profile",
+  "record_schema_version": 1,
+  "run_id": "r9155f2214b4b",
+  "status": "planned"
+}
