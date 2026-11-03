@@ -133,6 +133,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r1522cd56901a/config.yaml
       sha256: 025946e7d7426630d7027ba6f64ce90beaca17cdeceaab2c87cc2e1ff196e047
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1522cd56901a/metrics.jsonl
+      sha256: 6456e975dc862fdb1ed7c73c8b46bfe52ea7a066c2e75eb2432d79f2ae7e9ecc
+    completion.json:
+      path: experiments/transformer_pp/runs/r1522cd56901a/completion.json
+      sha256: 2b0568d4bf4b6c81a51bc448709a057bbe9fc93661da3cf7c17b8b2ce8133275
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1522cd56901a/metadata.json
+      sha256: d48cac5408836184a14659860084dd7a3ca28e4bda6d2b634bdfe24abd2e5a46
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1522cd56901a/best_validation.json
+      sha256: 4990a181d6c3878be615192437c70124f0d9119f640b836d0376d6dbf720fc2d
 - study: transformer_pp
   run_id: rdfc42659424f
   role: query_decay_self
@@ -140,3 +152,15 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/rdfc42659424f/config.yaml
       sha256: 3f9f27b386b0e7aeba359c708582ef9dbd83b0f23d7f7a91a7c2f53c2ae77fe2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rdfc42659424f/metrics.jsonl
+      sha256: dcae2f449ba9e914f29560ee7290282b8f430fff27ea45496a41719099b3ff32
+    completion.json:
+      path: experiments/transformer_pp/runs/rdfc42659424f/completion.json
+      sha256: 41c3dee06c0a30757c1ab1d7f6631e12a9594ddb95b8c6fab4705c9d463285b5
+    metadata.json:
+      path: experiments/transformer_pp/runs/rdfc42659424f/metadata.json
+      sha256: ea470c9d882bfe64260cf3fbf8f1ab2bad04486408e5cf4119720336ec3ae2d3
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rdfc42659424f/best_validation.json
+      sha256: e59e5dd934c886f890960b65397979bf67a7c0e64c34f4be7c69fb2d8996014d

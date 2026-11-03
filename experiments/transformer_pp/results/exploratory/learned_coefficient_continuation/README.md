@@ -64,7 +64,7 @@ data order, global batch 256, 2,048-token context, Mosaic, and 19 validation bat
 every 100 updates. Projection decay and its exemptions are inherited unchanged;
 query `W` decays at 0.1 and coefficient amplitudes/biases remain exempt. The input
 cursor is sequence 1,920,000; 2,000 updates consume 1,048,576,000 prediction tokens.
-These runs belong to Kennel and use one GPU each. Results are pending.
+These runs belong to Kennel and use one GPU each.
 
 This compares equal-budget continuation recipes with different pretraining histories.
 The earlier Taylor/exp branches gave **newly introduced** coefficients a 0.001 LR
@@ -80,11 +80,11 @@ exact restoration, data/RNG continuity, finite GPU training, and checkpoint resu
 
 ## Findings and open decision
 
-All five runs completed their 2,000 updates on one GPU each (static-Taylor 84 min on a
-`dogo` H100, query-Taylor 57 min on an `akita` B300, the exp branches 124 and 147 min on the
-`mastiff` H100 PCIe, the exp control 83 min on `dogo`; the acceptance pilot's slowest-step
-projection needed 20–48 h limits, as in the earlier continuations). Every validation-best is
-the terminal checkpoint.
+The five branches of the first table completed their 2,000 updates on one GPU each
+(static-Taylor 84 min on a `dogo` H100, query-Taylor 57 min on an `akita` B300, the exp
+branches 124 and 147 min on the `mastiff` H100 PCIe, the exp control 83 min on `dogo`; the
+acceptance pilot's slowest-step projection needed 20–48 h limits, as in the earlier
+continuations). Every validation-best is the terminal checkpoint.
 
 | Continuation | Restored PPL | Terminal PPL @ 9,500 | Δ vs control (nats/token) |
 | --- | ---: | ---: | ---: |
@@ -136,6 +136,28 @@ roughly constant: on a backbone whose Q/K statistics were shaped by exp, the fix
 quartic is the wrong kernel, and learned coefficients repair that mismatch at once rather than
 accumulating a slow gain. Query dependence with decayed `W` adds −0.0032 nats over static
 coefficients in that regime.
+
+**Coefficients learned from the start.** The static and decayed-W query continuations (59 min
+on an `akita` B300, 152 min on the `mastiff` H100 PCIe) match their parents' step-7,500
+validation to within 3e-6 nats at update 0, and each validation-best is its terminal checkpoint.
+
+| Best PPL @ 9,500 | Static | Query, decayed W |
+| --- | ---: | ---: |
+| Learned from the start, continued | 14.5559 (`r1522cd56901a`) | 14.4986 (`rdfc42659424f`) |
+| Introduced at 7,500 on Taylor | 14.4964 (`r2e081e09c19a`) | 14.4869 (`rae91f24b06b4`) |
+| Introduced at 7,500 on exp | 14.4483 (`r7e6a68545d4f`) | **14.4026** (`r673e14eab803`) |
+| Fixed Taylor control (`r82203a85ef8e`) | 14.5064 | 14.5064 |
+
+- Against the fixed-Taylor control, the from-start static model stays 0.0031–0.0036 nats behind
+  through the tail (+0.0034 at the end); the from-start query model stays 0.0003–0.0010 nats
+  ahead (−0.0005 at the end), a constant 0.0040 nats below static.
+- At the same budget, coefficients introduced at 7,500 end below the from-start ones: by 0.0041
+  (static) and 0.0008 nats (query, overtaking at update 1,200) from the Taylor start, and by
+  0.0074 and 0.0066 nats from the exp start.
+- At 0.0001 the trained coefficients barely move (mean `u_r` within 0.025, query `||W||`
+  1.34 → 1.32), and both models gain 1.43% PPL over the tail, no more than the fixed control
+  (1.46%). Their learning rate and Adam state differ from the introduced branches' (above), so
+  this does not isolate when coefficients start learning.
 
 **Open decision:** discard the topic, or promote it with the forget-gate and query-scale
 continuations into a collection on what continued pretraining can and cannot add.
