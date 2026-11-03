@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 
+from scaffolds.records.selections import verify_pinned_runs
+
 TOPIC = Path(__file__).resolve().parent
 ROOT = TOPIC.parents[4]
 INK, MUTED, GRID = "#172334", "#5b6573", "#e4e7eb"
@@ -26,6 +28,7 @@ SERIES = (("2k_model_at_2k", 2048, "trained at 2k, queries near 2k", "#2a78d6"),
 def profiles() -> tuple[list[int], dict[str, tuple[np.ndarray, np.ndarray]]]:
     selection = yaml.safe_load((TOPIC / "selection.yaml").read_text())
     entry = next(entry for entry in selection["runs"] if entry["role"] == "weight_profile")
+    verify_pinned_runs(ROOT, [entry])
     path = ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] / "metrics.jsonl"
     rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
     edges, result = rows[0]["bin_edges"], {}

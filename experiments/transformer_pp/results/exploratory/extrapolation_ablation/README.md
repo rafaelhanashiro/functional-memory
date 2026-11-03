@@ -109,5 +109,56 @@ layer ([`weight_profile.py`](weight_profile.py)); 8 rows at 2,048 and 4,096 toke
   the middle layers). It learned how much weight distant keys should get at 4k, not to
   remove them.
 
+## Weights of one query over every key
+
+`rece89382b690` runs the first 4,096-token validation row through both models (the 2k
+checkpoint with only its forward-length limit raised; RoPE uses the true positions) and
+records, for the query at position 4,095, each
+key's share of |w| per layer, averaged over the 14 heads
+([`position_weights.py`](position_weights.py)). It keeps the per-key structure the weight
+profile averages away. The figure shows layers 1, 5, 10 and 15 on a linear axis.
+
+![Weight of the query at position 4,095 on every key](position_weights.png)
+
+| Weight per key ÷ uniform, key distance | 0–15 | 16–63 | 64–255 | 256–1,023 | 1,024–2,047 | 2,048–4,095 | Weight ≥ 2,048 back |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| trained at 2k, layer 1 | 36.0 | 2.49 | 1.53 | 1.21 | 0.80 | 0.67 | 33% |
+| trained at 2k, layer 5 | 16.7 | 3.20 | 1.30 | 0.80 | 0.84 | 0.95 | 48% |
+| trained at 2k, layer 10 | 18.3 | 3.82 | 1.09 | 0.44 | 0.50 | 1.25 | 62% |
+| trained at 2k, layer 15 | 24.3 | 6.38 | 2.13 | 0.70 | 0.44 | 0.98 | 49% |
+| trained at 4k, layer 1 | 4.8 | 1.79 | 1.52 | 1.34 | 1.24 | 0.65 | 33% |
+| trained at 4k, layer 5 | 41.8 | 6.06 | 2.71 | 1.11 | 0.64 | 0.54 | 27% |
+| trained at 4k, layer 10 | 53.0 | 12.50 | 3.04 | 0.66 | 0.52 | 0.50 | 25% |
+| trained at 4k, layer 15 | 29.1 | 11.59 | 4.43 | 0.73 | 0.58 | 0.52 | 26% |
+
+([position_weights.csv](position_weights.csv) has all 15 layers, the weight on the row's
+first key and on each end-of-document token, and the highest 64-key block ≥ 2,048 back.)
+
+- **Past 2,048 tokens the 2k model's weight per key rises again.** In layers 6–12, keys
+  2,048–4,095 back get 1.13–1.45 times the uniform weight each, more than keys 256–1,023
+  and 1,024–2,047 back (0.34–0.74), and hold 57–73% of the query's weight. Layers 1–4 keep
+  them below uniform (0.53–0.79). Averaged over layers they get 1.03 times uniform, against
+  0.54 in the 4k model, close to the weight profile's 1.05 and 0.51.
+- **Much of it lands on two stretches of one earlier document.** Keys 896–1,023 and
+  1,664–1,791 (3,072–3,199 and 2,304–2,431 tokens back) hold the far region's highest 64-key
+  block in every layer but 13: 1.8–7.5 times uniform in layers 2–12, 14 and 15, and 0.83 in
+  layer 1, whose far weight is flat. The 4k model gives the same keys about uniform weight
+  or less: its far blocks peak at 0.67–2.12 times uniform, and every peak above 1.4 is the
+  row's first 64 keys (layers 11–14).
+- **The 4k model decays with distance in every layer and keeps no window.** Keys
+  2,048–4,095 back get 0.44–0.65 times uniform (22–33% of the weight), and its nearest 16
+  keys get 20–53 times uniform in layers 3–15 against 9–24 in the 2k model.
+- **Sinks.** The row's first token draws 30–60 times uniform in the 4k model's layers
+  11–14 against 4–12 in the 2k model. End-of-document tokens (▲) are sinks in late layers of
+  both models: in layers 11–14 the four within 2,048 keys of the query draw 9–101 times
+  uniform in the 2k model and 11–254 in the 4k model, most on the nearest (3,981), and the
+  one at 362 draws 1–12 and 2–14.
+- One query in one row cannot tell whether the two stretches draw weight because of their
+  distance (RoPE phases the 2k model never saw) or their content. The same measurement for
+  an earlier query in the row would: positional peaks move with the query. Not run.
+
+`plot.py`, `plot_profile.py` and `plot_positions.py` in this directory regenerate the
+figures and tables from [selection.yaml](selection.yaml), run from the repository root.
+
 **Open decision:** keep the result in the context-length discussion, or delete this topic
 with its runs.

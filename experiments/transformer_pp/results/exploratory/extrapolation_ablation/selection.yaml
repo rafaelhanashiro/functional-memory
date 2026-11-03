@@ -61,8 +61,36 @@ runs:
 - study: transformer_pp
   run_id: r9155f2214b4b
   role: weight_profile
-  sources: {}
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9155f2214b4b/config.yaml
+      sha256: 8b33b70a93cce8b59ba5506f9bf84591255313a1f8cde8d4fc3b9a577b1e80db
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9155f2214b4b/metrics.jsonl
+      sha256: cb3b859a4d30b323fb8281b660b46f6d668d9708efe89a3ce19392c4da62f6a1
+    completion.json:
+      path: experiments/transformer_pp/runs/r9155f2214b4b/completion.json
+      sha256: 527cef815ee9c38d9d3ebd4f9d4cf076b9fee109a48ccb2fe827282b8af2c2fb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9155f2214b4b/metadata.json
+      sha256: 4cff10770f7eea8fcd21623faeee8b5fff9e37a775fba9a2c480b4dc99f52132
 - study: transformer_pp
   run_id: r738b35a8e314
   role: model_trained_4096
   sources: {}
+- study: transformer_pp
+  run_id: rece89382b690
+  role: position_weights
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rece89382b690/config.yaml
+      sha256: 1b7a025db526d25f47e71a515bd6b2332957579dd731923ba0617fb0620d87e8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rece89382b690/metrics.jsonl
+      sha256: d8eb0f80b3baaed2f93d102bef6d21b3bc9aa33d28bde3b40d51f66946abe321
+    completion.json:
+      path: experiments/transformer_pp/runs/rece89382b690/completion.json
+      sha256: 03bf3cd1abbdb0ee906be592e077b9e066c58a35242a4a6a43e0759a6bd183b5
+    metadata.json:
+      path: experiments/transformer_pp/runs/rece89382b690/metadata.json
+      sha256: 011a8847cda09f3b9fea932e1ec375a7d5388540fa4217351d5dac635f01d326

@@ -27,8 +27,9 @@ SERIES = (("query, original attention", "#2a78d6", "-"), ("query, 2,048-key wind
 
 def curves() -> dict[str, np.ndarray]:
     selection = yaml.safe_load((TOPIC / "selection.yaml").read_text())
-    verify_pinned_runs(ROOT, selection["runs"])
-    runs = {entry["role"]: ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] for entry in selection["runs"]}
+    entries = [entry for entry in selection["runs"] if entry["role"] in ("ablation_evaluation", "original_16k_evaluation")]
+    verify_pinned_runs(ROOT, entries)
+    runs = {entry["role"]: ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] for entry in entries}
     ablation = {(row["mode"], row["length"]): np.asarray(row["per_position_nll"], dtype=np.float64)
                 for row in map(json.loads, (runs["ablation_evaluation"] / "metrics.jsonl").read_text().splitlines())}
     original = {row["role"]: np.asarray(row["per_position_nll"], dtype=np.float64)
