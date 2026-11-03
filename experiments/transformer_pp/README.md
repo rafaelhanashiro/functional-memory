@@ -125,55 +125,62 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
-### Context length
+## Degree scaling
 
-A 4,096-token run copies its 2,048-token reference recipe and changes only the context:
-`model.max_seq_len` 4,096, `data.sequence_length` 4,097, `data.batch_size` 128 and global
-microbatch 8, reading `/data/cl/u/rafah/home/datasets/fineweb_12b_seq4097` (the same token
-stream re-cut into 4,097-token rows; its README gives the construction). Tokens per update
-(524,288), the update count, warmup, learning rates, validation cadence and validation tokens
-(19 × 128 sequences, 9,961,472 tokens) stay the same, so a 1× run is still 7,570 updates.
-`runs.csv` records each run's `context_length`.
+The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
+perplexity against polynomial degree `m = 1, 2, 3, 4` for four coefficient families of
+unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
+setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
+monomial form, the attention_scaling study's coefficients), learned static coefficients,
+and tanh query coefficients with weight decay 0.1 on the projection W. Each new recipe
+copies its family's `m = 4` run (Hermite copies fixed Taylor) and changes only the
+degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs.
 
-| 4,096-token run | Label | 2,048-token partner |
-| --- | --- | --- |
-| `r636f433be44f` | `softmax-head-scale-4k` | `r9040f12f3d80` |
-| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` (on `codex/qk-head-controls-4b`) |
-| `r339a31ad8d4b` | `fixed-m4-head-scale-4k` | `r816ab0fbe119` |
-| `r738b35a8e314` | `query-m4-wdecay-4k` | `rca97cc9db8f2` |
-| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` (on `codex/fox-query-key-wdecay-4b`) |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 |
+| --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) |
 
-The forget-gate partner's recipe sets `attention_coefficient_key_kernel_weight_decay: false`,
-a key this scaffold does not define; it only applies to query-key coefficients, so the
-4,096-token recipe omits it. Each run uses one GPU. The forget gate runs on the blocked
-reference backend, whose cost grows with the context, so it requests 48 hours on `long`
-and a B300:
+Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The per-head output RMSNorm
+removes that factor, so the two runs train the same function up to the norm's epsilon
+and floating point.
+
+Home clusters: the four new `m = 1` runs are Kennel's, from branch
+`claude/degree-scaling-1x-kennel`; the other eight are ORCD's, from branch
+`claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. On ORCD, one
+H100 each, from the worktree root:
 
 ```bash
-for run in r636f433be44f r2047d29a0d9f r339a31ad8d4b r738b35a8e314; do
-  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
-    --output="experiments/transformer_pp/runs/$run/training.log" \
-    --error="experiments/transformer_pp/runs/$run/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
-    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+for run in rdb1c706a5b85 r81fad1755b11 rdf6363a4b83c rf378c0e67607 rbd0cd771c676 r99c3ab7d8a77 r1f880c4ee659 r00f1f91a7803; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 done
-sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=48:00:00 \
-  --job-name=r58efc973ff28 --output=experiments/transformer_pp/runs/r58efc973ff28/training.log \
-  --error=experiments/transformer_pp/runs/r58efc973ff28/training.log \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
-  experiments/transformer_pp/runs/r58efc973ff28/config.yaml "$(git rev-parse HEAD)" 1 B300
 ```
 
-The [context_length topic](results/exploratory/context_length/README.md) compares these runs
-with their 2,048-token partners and scores the 2,048-token checkpoints at 4,096 tokens.
+On Kennel, one GPU each on `standard,long`. Taylor and Hermite at `m = 1` request the
+same GPU type (`GPU=b300` or `GPU=h100`, with `GPU_TYPE` B300 or H100):
+
+```bash
+for RUN in ra7f2fda1c792 rddf0b0173f42 r5c691128699f rf9099d70ab3a; do
+  sbatch --parsable --partition=standard,long --gres=gpu:$GPU:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 $GPU_TYPE
+done
+```
 
 ## Query coefficients across key width and degree
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
 `query-m4-w-decay`'s recipe at `d_K = 8, 16, 32, 64` and `m = 2, 4, 8`, reusing
-`rca97cc9db8f2` for `d_K = 64`, `m = 4`. Each new run takes one B300 or H100 on
-`standard,long`:
+`rca97cc9db8f2` for `d_K = 64`, `m = 4`; the `m = 12` column (`r1b1123bf96e0`, `rcdfee1e67fd4`, `r4f3aa6be7108`, `r0fceea0627c8`) uses
+the same command. Each new run takes one B300 or H100 on `standard,long`:
 
 ```bash
 for RUN in r7bede0f75198 r1c80ab3a466b r16b23893884d rc90fb11d4772 rb5fe0aef572a rd10c2ebe1181 r18d67098c780 rcb1f56f31981 rf5b51bd384bc rd6b4d16d81bb r25fffc16c2f3; do
@@ -336,32 +343,13 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coef
 
 ## Matched Taylor continuations
 
-The [delayed coefficient-learning topic](results/exploratory/taylor_static_continuation/README.md)
-compares 500 updates with fixed Taylor against learning static coefficients from
-the same pretrained Taylor checkpoint. It preserves the backbone optimizer and
-next training-data position, with a fresh Adam clock for newly introduced
-coefficients. Both continuations use the shared trainer and acceptance procedure.
-
-Allocate the pair once in its isolated worktree, then commit all frozen inputs
-before either independent submission:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r019ca96d6533
-# The allocated IDs below identify this pair; do not allocate it again for a requeue.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r28fb40a1d0e9 --partition standard,long --time-limit 06:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r0332cff0b0c0 --partition standard,long --time-limit 06:00:00
-```
-
-The two recorded continuations are complete; findings and the open research
-decision are in the topic. Fresh reproductions receive new run IDs. The launcher
-defaults to six hours, including the shared acceptance procedure's two-hour reserve.
-Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
-shared runtime qualification run on every allocation; the scientific global batch
-stays fixed through gradient accumulation. See the topic for comparison settings,
-findings, and regeneration.
+Continuations start from a pretrained checkpoint and train a fixed number of further
+updates with the shared trainer and acceptance procedure. They preserve the backbone
+optimizer and the next training-data position, with a fresh Adam clock for newly
+introduced coefficients. The launcher defaults to six hours, including the shared
+acceptance procedure's two-hour reserve. Each job requests one B300 or H100 GPU; the
+launcher's frozen-source check and shared runtime qualification run on every allocation,
+and the scientific global batch stays fixed through gradient accumulation.
 
 The [learned-coefficient topic](results/exploratory/learned_coefficient_continuation/README.md)
 introduces degree-four static or query coefficients (the latter with a decayed projection
@@ -548,10 +536,81 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
 
 Each record's `submission` holds its exact command and partition.
 
+## Context length
+
+The [context-length topic](results/exploratory/context_length/README.md) compares
+held-out per-position loss at and beyond the checkpoints' training length.
+`r2a45c518f703` evaluates the validation-best 2,048-token exp, query + W decay,
+and FoX no RoPE + W decay checkpoints at 16,384 tokens on Kennel. It makes no
+optimizer updates and preserves the source models' parameters and attention backends.
+The recipe pins the source checkpoints and the held-out manifests. The long pass
+scores 608 sequences (9,961,472 predictions), following the original validation replay
+and a causal-prefix consistency check.
+
+Prepare the evaluation data outside the repository, then launch from a committed,
+isolated worktree with both locked CUDA environments installed:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.data.repack \
+  /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json \
+  /data/cl/u/rafah/home/datasets/fineweb_12b_seq16385/eval --sequence-length 16385
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=8 --mem=64G \
+  --time=04:00:00 --exclude=collie,samoyed,doodle,terrier,shiba \
+  --job-name=r2a45c518f703 \
+  --output=experiments/transformer_pp/runs/r2a45c518f703/training.log \
+  --error=experiments/transformer_pp/runs/r2a45c518f703/training.log \
+  experiments/transformer_pp/evaluate_per_position.sbatch "$PWD" "$(git rev-parse HEAD)" r2a45c518f703
+```
+
+Repacking refuses to overwrite an existing manifest; reuse the existing data only
+when its manifest and shard checksums match the frozen recipe. A new scientific
+execution gets a fresh run ID. The exact submission is recorded with the run.
+
+### Training at 4,096 tokens
+
+A 4,096-token run copies its 2,048-token reference recipe and changes only the context:
+`model.max_seq_len` 4,096, `data.sequence_length` 4,097, `data.batch_size` 128 and global
+microbatch 8, reading `/data/cl/u/rafah/home/datasets/fineweb_12b_seq4097` (the same token
+stream re-cut into 4,097-token rows; its README gives the construction). Tokens per update
+(524,288), the update count, warmup, learning rates, validation cadence and validation tokens
+(19 × 128 sequences, 9,961,472 tokens) stay the same, so a 1× run is still 7,570 updates.
+`runs.csv` records each run's `context_length`.
+
+| 4,096-token run | Label | 2,048-token partner |
+| --- | --- | --- |
+| `r636f433be44f` | `softmax-head-scale-4k` | `r9040f12f3d80` |
+| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` (on `codex/qk-head-controls-4b`) |
+| `r339a31ad8d4b` | `fixed-m4-head-scale-4k` | `r816ab0fbe119` |
+| `r738b35a8e314` | `query-m4-wdecay-4k` | `rca97cc9db8f2` |
+| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` (on `codex/fox-query-key-wdecay-4b`) |
+
+The forget-gate partner's recipe sets `attention_coefficient_key_kernel_weight_decay: false`,
+a key this scaffold does not define; it only applies to query-key coefficients, so the
+4,096-token recipe omits it. Each run uses one GPU. The forget gate runs on the blocked
+reference backend, whose cost grows with the context, so it requests 48 hours on `long`
+and a B300:
+
+```bash
+for run in r636f433be44f r2047d29a0d9f r339a31ad8d4b r738b35a8e314; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=48:00:00 \
+  --job-name=r58efc973ff28 --output=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  --error=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/r58efc973ff28/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
-above, and the coefficient-oracle fit `r043b150cde03` (ORCD). Data manifests live under
+above, the eight degree-scaling runs at `m = 2-4`, and the coefficient-oracle fit
+`r043b150cde03` (ORCD). Data manifests live under
 `/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
 Retained checkpoints and logs live under this study in the primary Kennel checkout, or
 for ORCD runs under ORCD's artifact root, at the locations recorded in each run. The frozen recipe and execution record

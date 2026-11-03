@@ -1,0 +1,4 @@
+role,score_std_seen,score_std_unseen,max_abs_score_seen,max_abs_score_unseen,mean_far_weight_share,max_head_far_weight_share
+exp,3.038,2.409,23.60,21.36,0.0882,0.3829
+fixed_taylor_m4,7.347,9.502,230.98,209.65,0.3074,0.8412
+query_wdecay_m4,2.682,2.602,26.59,21.76,0.3656,0.9281

@@ -313,173 +313,25 @@ This is CPU correctness evidence. Full-context GPU kernels, production memory an
 throughput, and checkpoint continuation are qualified separately in each run's
 acceptance record before production begins.
 
-### B300 query-key performance at the Transformer++ shape
-
-On 2026-10-23, job `224602`, source `ba403d0`, compared resident attention
-operands on one B300 using the new setup's local shape `[16, 2048, 14, 64]`.
-The [kernel report](runs/query-key-4b-b300/kernel.json) contains three warmups
-and ten synchronized samples per configuration, excluding compilation and
-profiling. At this source, B300 used 64-by-64 backward tiles; the 32-by-32
-selector was restricted to H100. Changing only the backward tiles gave:
-
-| Mechanism | Original forward + backward | With 32-by-32 backward | Speedup |
-| --- | ---: | ---: | ---: |
-| cuDNN softmax | 1.443 ms | — | — |
-| Query-key degree 8 | 121.782 ms | 12.860 ms | 9.47x |
-| Query-key degree 12 | 195.048 ms | 18.113 ms | 10.77x |
-
-The [GPU profiles](runs/query-key-4b-b300/profile-summary.json) identify the
-key/value/key-factor-gradient kernel as the dominant cost: 113.666 ms of
-120.968 ms recorded GPU kernel time at degree 8, and 182.771 ms at degree 12.
-With smaller tiles that kernel takes 5.901 and 9.453 ms, respectively.
-The [compiler evidence](runs/query-key-4b-b300/compiler-evidence.json) shows
-that 64-by-64 tiles trigger Blackwell `tcgen05` lowering with heavy register
-spilling, whereas 32-by-32 tiles use `mma.sync` and much smaller machine code.
-Reassembling the extracted PTX with the locked CUDA 13.2 compiler reproduces
-the cached dKV machine code byte for byte for all four configurations.
-
-| Degree | Tile | Compiler spill stores | Compiler spill loads | Machine-code bytes |
-| --- | --- | ---: | ---: | ---: |
-| 8 | 64-by-64 | 31,652 | 39,740 | 574,976 |
-| 8 | 32-by-32 | 544 | 420 | 30,720 |
-| 12 | 64-by-64 | 43,108 | 53,612 | 781,696 |
-| 12 | 32-by-32 | 752 | 684 | 40,704 |
-
-Spill counts are static compiler statistics, not measured memory traffic.
-The tile change also changes instruction lowering and synchronization; these
-measurements do not attribute every saved cycle exclusively to spilling.
-Raw PTX, cubins, and assembler logs are retained under
-`validation/logs/query-key-4b-b300/compiler/` (ignored).
-
-Forward outputs are byte-identical. All five input gradients pass global,
-batch/head, and coefficient/factor degree/head parity checks; the largest global
-relative L2 error is 3.66e-5. This is synthetic-input parity with the production
-kernel, not independent correctness or trained-checkpoint qualification. This
-isolated diagnostic did not change production selection. Query-only Mosaic measures 3.472/4.681 ms
-at degrees 8/12, but uses its production BF16 weight arithmetic; it is not a
-matched-precision comparison with the query-key BF16x3 products.
-
-The [training context](runs/query-key-4b-b300/training-context.json) pins the
-existing Transformer++ runs and their input hashes: softmax measures 0.501 s/update on two
-B300s, and query-only degree 8 measures 0.801 s/update on two B300s. The selected
-query-key runs request one B300 and had not started when inspected. Single-GPU
-training also uses Python gradient accumulation, unlike the compiled scan on
-multiple GPUs.
-
-Job `224603`, source `109dbd3`, measured fresh production-loop training with each
-exact frozen recipe on the same single B300. Three warmup updates precede three
-timed updates; the table reports mean completion intervals. The full scientific
-learning-rate horizon, data, seed, global batch 256, microbatch 16, and 15-layer
-model are preserved. All losses and update numerics are finite. Compilation,
-evaluation, checkpoint writes, and W&B are excluded; data loading, transfer,
-gradient accumulation, optimization, and numerical checks are included.
-
-| Recipe | Seconds/update | Slowdown vs softmax | Prediction tokens/s |
-| --- | ---: | ---: | ---: |
-| [Softmax](runs/query-key-4b-b300/training-ra2b851b0dd7e.json) | 1.656 | 1.00x | 316,573 |
-| [Query-key degree 8](runs/query-key-4b-b300/training-r833fbb6eedcb.json) | 30.786 | 18.59x | 17,030 |
-| [Query-key degree 12](runs/query-key-4b-b300/training-rfd48f7bbe9f4.json) | 48.487 | 29.28x | 10,813 |
-
-For scale, 15 layers times 16 microbatches times the isolated original attention
-timing predicts 29.23/46.81 seconds per update at degrees 8/12, close to the
-measured 30.79/48.49 seconds. This is a component-cost estimate, not a full-model
-trace decomposition. The mean interval outside the measured update is about
-6 ms. This confirms that attention dominated the original slowdown; the
-single-GPU accumulation path is secondary. These are short fresh-training
-diagnostics, not full-budget runs. The qualification below measures the full-update
-benefit of smaller backward tiles and checks the full model and checkpoint runtime.
-Disposable pilot checkpoints were removed after successful runs.
-
-Reproduce from a checkout of source `109dbd3`, with its own locked CUDA 13
-environment, choosing unused output/profile paths:
-
-```bash
-# Within a one-B300 allocation configured by launchers/kennel_runtime.sh:
-python -m scaffolds.transformer.benchmarks.benchmark_query_key_profile \
-  --output NEW_OUTPUT/kernel.json --profile-dir NEW_PROFILES --include-query-mosaic
-python -m scaffolds.transformer.benchmarks.analyze_profile NEW_PROFILES \
-  --step-name attention_forward_backward --output NEW_OUTPUT/profile-summary.json
-# The retained launcher also runs the exact softmax and query-key recipes:
-sbatch scaffolds/transformer/validation/profile_query_key_4b.sbatch \
-  "$(git rev-parse HEAD)" training 3
-```
-
 ### B300 query-key production qualification
 
-The qualification targets the Transformer++ recipe, 200M parameters and 4B prediction tokens:
-one B300, 15 layers, 14 heads, width 64, context 2048, BF16, microbatch 16,
-global batch 256, and query-key polynomial degrees 8 and 12. Forward retains
-64-by-64 tiles; the qualified backward uses 32-by-32. Mathematical definitions,
-precision, initialization, seed, learning-rate horizon and scientific recipes
-are unchanged.
+The fused query-key polynomial kernel is qualified on B300 at the Transformer++ shape:
+BF16, context 2048, Q/K and value width 64, degrees 2, 4, 8 and 12, with the tuned
+32-by-32 backward tiles at degrees 4, 8 and 12. Job `233107` on one B300 (`akita`,
+CUDA 13 environment), source `1d9bc8f8` on main, passed all 19 GPU-marked query-key
+checks in 5.7 minutes ([record](runs/query-key-b300/qualification.json),
+[results](runs/query-key-b300/gpu-tests.xml)):
 
-The [CPU record](runs/query-key-b300-qualification/cpu.json) has 96 passing checks.
-Job `224667`, source `90ff3ab`, passed all 12 focused B300 GPU checks: independent
-FP64 gradients, full-context blocked/original comparisons, output RMSNorm,
-causality, explicit nonfinite behavior, and the actual QK RMSNorm composition.
-Its [assessment](runs/query-key-b300-assessment/summary.json) measures fresh
-training through the production loop on the same physical B300, with three
-warmup updates and three timed updates per geometry:
+- every gradient against FP64 references, for FP32 and BF16 inputs, through the
+  per-head output RMSNorm;
+- full-context agreement with the blocked reference and the original 64-by-64 geometry;
+- causality of outputs and gradients, and isolation of nonfinite future keys and factors;
+- the composition with QK RMSNorm in the attention backend.
 
-| Degree | Original 64-by-64 backward | 32-by-32 backward | Full-update speedup |
-| --- | ---: | ---: | ---: |
-| 8 | 30.973 s | 4.834 s | 6.408x |
-| 12 | 48.462 s | 5.853 s | 8.279x |
-
-These completion intervals include data loading, transfers, gradient accumulation,
-optimizer updates and numerical checks. Compilation, evaluation and checkpoint
-writes are excluded. They are short steady-state measurements, not full-budget
-training times.
-
-The original full-model 5% slice comparison remains recorded as failed. Forward
-logits and loss are identical; every whole-parameter gradient passes the unchanged
-2.5% relative-L2 and 12.5% relative-maximum gates. Some small coefficient slices
-are sensitive to changes in the incoming adjoint across the BF16 model. The
-[oracle protocol](runs/query-key-b300-qualification/roundoff-protocol.json),
-[repeat protocol](runs/query-key-b300-qualification/repeat-protocol.json), and
-[coefficient coverage](runs/query-key-b300-qualification/coefficient-protocol.json)
-specify the additional checks before their measurements.
-
-The [degree-8 replay](runs/query-key-b300-qualification/roundoff-m8.json) covers
-all 26 rejected historical/current slices across eight layer/head cases. Both
-geometries agree with independent FP64 attention and projection derivatives;
-changed incoming adjoints explain at least 99.9903% of each observed slice
-change. All 145 nonembedding gradients, logits and losses repeat exactly and
-are unchanged by capture instrumentation. Only the embedding parameter gradient
-varies (0.467–0.515% relative L2), within the unchanged whole-parameter bound.
-Attribution locates the difference before each replayed attention block; it does
-not identify every upstream operation responsible or promise bitwise training.
-
-The [degree-12 replay](runs/query-key-b300-qualification/roundoff-m12.json)
-covers all 72 rejected projection slices and 20 bias/amplitude slices across 33
-layer/head cases. All 78 coefficient-family/order vectors across the two affected
-layers pass independent all-head contractions. The worst local attention-gradient
-error against FP64 is 0.199%; changed incoming adjoints explain at least 99.9825%
-of each rejected slice's change. All 145 nonembedding gradients repeat exactly;
-embedding variation is 1.520–1.633% relative L2 and 4.185–5.579%
-relative maximum, within the original 2.5%/12.5% bounds.
-
-The [combined decision](runs/query-key-b300-qualification/decision.json) is
-**qualified** for both frozen recipes. It independently checks the numerical
-gates, complete rejected-slice coverage, source equivalence, matched timing,
-and the two 20-step pilots followed by fresh-process step-21 resumes. Both
-resumes restore exact checkpoint state, next batch and RNG. Failed raw slice
-and strict whole-gradient repeat verdicts remain preserved; the additional
-mechanism checks establish qualification separately. This does not establish
-full-budget stability. Each production allocation still runs its own acceptance.
-
-The [main integration record](runs/query-key-b300-qualification/cpu-main.json)
-also has 96 passing CPU checks. Only the generic backend selector, tiling tests
-and acceptance changes are integrated into the primary scaffold. The
-[retained-artifact manifest](runs/query-key-b300-qualification/retained-artifacts.json)
-pins the decision, logs and CPU smoke scripts.
-
-Full-model reproduction uses the complete frozen Transformer++ source at tag
-`validation/query-key-b300-4b-20261023` (`8924c44721df6b661275125d33b498bff49f8b59`).
-Create a detached worktree of that tag, sync its own locked CUDA 13 environment,
-and use fresh diagnostic output paths. Preserve the recipe's QK RMSNorm, FP32
-backbone norms, and truncated reference initialization. The primary scaffold
-evolves independently; the tag preserves the exact qualified execution source.
+This establishes kernel correctness only. It measures neither throughput nor
+full-budget stability, and each production allocation still runs its own acceptance.
+Rerun it from a clean checkout or detached worktree of the source with the command in
+[`qualify_query_key_b300.sbatch`](qualify_query_key_b300.sbatch).
 
 ### Query-key polynomial backward tiles
 

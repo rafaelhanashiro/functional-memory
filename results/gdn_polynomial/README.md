@@ -34,10 +34,94 @@ Every gate is a scalar per token, layer, and head.
 - **Tanh write:** degree one with `beta_t = tanh(W_beta x_t)` (signed writes from the
   first update) and the sigmoid independent erase gate.
 
-Shared recipe: 10 layers, width 1024, 16 heads, `d_V = 64`, MLP width 3008, sequence
-length 2,048, BF16, batch 256 sequences, AdamW 3e-4 to 3e-5 with 400 warmup updates,
-selective weight decay 0.1, gradient clipping at 1, and each mechanism's reference
-initialization. Softmax references use QK-norm.
+## Explicit configurations
+
+This collection uses GDN inside the shared JAX Transformer backbone. The native
+FLA GDN baselines in the Transformer++ study use a different full model and recipe;
+they are not a PyTorch translation of this collection's model. The table below
+specifies the tied, `d_K = 64` reference selected here and the native baselines.
+The other widths and polynomial variants retain their frozen per-run settings.
+Softmax references in this collection use QK-norm; GDN has its own Q/K normalization.
+
+| Setting | Shared-scaffold GDN reference | Native FLA GDN in Transformer++ |
+| --- | --- | --- |
+| Implementation | Shared JAX/Flax Transformer with FLA's fused GDN recurrence | Upstream PyTorch `GatedDeltaNetForCausalLM` |
+| Parameters | 210,843,584 | 200,205,878 |
+| Layers / hidden width | 10 / 1,024 | 9 / 1,024 |
+| Heads / key width / value width | 16 / 64 / 64 | 3 / 256 / 512 |
+| SwiGLU intermediate width | 3,008 | 2,816 |
+| Vocabulary / embeddings | 32,000 / untied input and output | 32,000 / untied input and output |
+| Q/K processing | Width-4 causal convolution, SiLU, then per-head L2 normalization | Same operations; native FLA implementation |
+| GDN gates and readout | Sigmoid write/erase gate, Mamba-2 decay, gated output RMSNorm | Same gate families; native FLA implementation |
+| Position encoding | None; no RoPE | None; no RoPE |
+| Normalization epsilon | `1e-6` | `1e-6` |
+| Initialization | `gated_deltanet_reference`; detailed below | Native FLA constructor; detailed below |
+| Data / tokenizer | EOS-packed FineWeb-Edu / Llama-2 | Same packed train and evaluation manifests / tokenizer |
+| Context / global batch | 2,048 prediction tokens / 256 sequences | 2,048 prediction tokens / 256 sequences |
+| Tokens per optimizer update | 524,288 | 524,288 |
+| Training updates | 19,074 | 7,570 (1×) or 18,925 (2.5×) |
+| Training tokens | 10,000,269,312 | 3,968,860,160 or 9,922,150,400 |
+| Optimizer / peak and minimum LR | AdamW / `3e-4`, `3e-5` | AdamW / `3e-4`, `3e-5` |
+| Adam betas / epsilon | `(0.9, 0.95)` / `1e-8` | `(0.9, 0.95)` / `1e-15` |
+| Schedule / warmup | Linear warmup then cosine / 400 updates | Linear warmup then cosine / 379 or 946 updates (5%, rounded) |
+| Weight decay / clipping | Selective `0.1` / global gradient norm 1 | Selective `0.1` / global gradient norm 1 |
+| Precision | BF16 computation, FP32 parameters and optimizer state | BF16 autocast, FP32 parameters and optimizer state |
+| Model seed / data shuffle seed | 0 / 0 | 42 / 0 |
+| Validation sample | 7 batches: 1,792 sequences, 3,670,016 tokens | 19 batches: 4,864 sequences, 9,961,472 tokens |
+| Validation cadence | Every 1,000 updates and at the end | 1×: every 100 through 1,500, then 500; 2.5×: every 250 through 3,750, then 1,250; both evaluate at the end |
+
+Sources: the selected [shared-scaffold recipe](../../experiments/attention_scaling/runs/rdf74e4289926/config.yaml)
+and [initialization implementation](../../scaffolds/transformer/models/initialization.py),
+and the frozen native [1× recipe](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/runs/r6b38709ed8d3/config.yaml),
+[2.5× recipe](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/runs/r2ebc05346f44/config.yaml),
+and [native study documentation](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/README.md#native-gated-deltanet-baseline).
+These native recipes are separate from Transformer++'s default dot-product recipe:
+they do not inherit its truncated initialization, QK RMSNorm, tuned LR, or 6% warmup.
+
+**Initialization.** The shared-scaffold GDN reference initializes embeddings and the
+LM head with untruncated normal standard deviation 0.02, linear weights with
+`Uniform(-1/sqrt(fan_in), 1/sqrt(fan_in))`, and divides the FFN down projection by
+`sqrt(2 * layers)`. Its GDN output projection is not residual-scaled; short convolutions
+keep PyTorch's default initialization. Native FLA initializes linear, embedding and
+convolution weights with untruncated normal standard deviation 0.02, without residual
+projection rescaling. Both use unit normalization gains and Mamba-2 initialization
+for the decay/time-step parameters.
+
+**Weight decay.** In both current recipes, projection matrices (including gate
+projections), FFN matrices, the untied LM head and convolution kernels receive
+decay 0.1. Token embeddings, normalization gains, biases, `A_log` and `dt_bias` do
+not. In the native runtime this also honors upstream `_no_weight_decay` markers;
+the instantiated optimizer groups are checked during acceptance.
+
+### Adaptations of the native reference
+
+The upstream sources are FLA `516143e`, Flame `24dea91` and TorchTitan `0b44d4c`,
+pinned in each native recipe. Flame's `flame/models/fla.toml` is a **generic FLA
+training example**, not a GDN-specific recipe tuned for this model size.
+
+- **Model size and data:** scale the native architecture to 200.2M parameters while
+  retaining its per-head dimensions, value expansion, FFN sizing rule, convolutions,
+  gates and initialization. Use the project's packed corpus, tokenizer and validation
+  split. The global batch stays 256; one GPU accumulates 32 microbatches of eight.
+- **Token budget:** use the study's explicit 7,570/18,925-update horizons instead
+  of carrying over the generic 20,480-update horizon. At this batch size, 20,480
+  updates would consume 10,737,418,240 tokens (about 2.705×, not 2.5×). The cosine
+  schedule follows the chosen horizon; warmup remains 5%, giving 379/946 updates
+  instead of the generic horizon's 1,024.
+- **Decay exclusions:** replace the initial native run's all-parameter AdamW decay
+  with the explicit selective policy above. The decay strength remains 0.1.
+- **Evaluation:** use the project's early/regular validation cadence, the same
+  fixed 19-batch held-out sample, and a final evaluation. Validation does not consume
+  training tokens or advance the training data cursor.
+- **Preserved optimizer choices:** keep peak/minimum LR `3e-4`/`3e-5`, betas
+  `(0.9, 0.95)`, epsilon `1e-15`, clipping at 1, and the reference's scheduler indexing.
+  No native GDN LR sweep established these values as optimal.
+
+The budget and decay changes were made together, so their effects are not isolated
+by comparing native runs. Comparisons with this collection additionally change
+architecture, parameter count, initialization, warmup, Adam epsilon, seed and the
+number of validation batches. Even with the same dataset, these are comparisons
+of complete recipes, not controlled tests of the scaffold or decay policy.
 
 <!-- BEGIN GENERATED RESULTS -->
 ### Terminal perplexity
