@@ -54,7 +54,7 @@ PPL, but no final comparison or terminal value is inferred from it.
 | Variant | Run | Status | Best validation PPL | Best update | Terminal PPL |
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
-| Query-dependent distance decay + W decay | `r3e26412b2811` | submitted | — | — | — |
+| Query-dependent distance decay + W decay | `r3e26412b2811` | acceptance | — | — | — |
 
 The query-dependent run is not complete; a final PPL comparison is pending.
 <!-- END GENERATED RESULTS -->
