@@ -45,19 +45,27 @@ masks, and the shared acceptance sequence before production training.
 
 ## Results
 
-The selection pins both runs explicitly. Validation-best and terminal metrics
-are separate: terminal PPL is reported only from a completed run's completion
-record at update 7,570. An incomplete run may show its best observed validation
-PPL, but no final comparison or terminal value is inferred from it.
+The selection pins both runs explicitly. Best PPL is the lowest validation PPL
+over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
 | Variant | Run | Status | Best validation PPL | Best update | Terminal PPL |
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
-| Query-dependent distance decay + W decay | `r3e26412b2811` | acceptance | — | — | — |
+| Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 
-The query-dependent run is not complete; a final PPL comparison is pending.
+Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
+validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 <!-- END GENERATED RESULTS -->
+
+- Query-dependent distance decay trails cumulative FoX at all 28 evaluations:
+  by 2.34% at the best update (7,500) and 2.36% at update 7,570. The relative
+  gap peaks at 5.9% (update 600) and stays between 2.3% and 2.6% from update
+  3,000 on.
+- Learned ranges are not shorter. At update 7,500 the gate half-life
+  (`mean_half_life_tokens`: \(\ln 0.5\) over the mean \(\log\alpha\) on the
+  diagnostic sample) has the same median over the 210 layer-heads, 2.9 tokens;
+  42 heads exceed 100 tokens with query-dependent decay against 31 with FoX.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
 The methods differ only in how the same gate values attenuate distance; it is not
@@ -65,8 +73,9 @@ a comparison of additional gate capacity or separately tuned optimization.
 
 ## Open decision
 
-Retain query-dependent distance decay as a useful FoX variant, or discard this
-exploratory topic after comparing completed validation-best and terminal PPL.
+Retain query-dependent distance decay as a FoX variant, or discard this
+exploratory topic and its run; on the one tested seed it trails cumulative FoX
+throughout training.
 
 ## Regeneration
 
