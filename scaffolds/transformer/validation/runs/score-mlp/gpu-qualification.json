@@ -1,0 +1,65 @@
+{
+  "context_length": 2048,
+  "qk_head_dim": 64,
+  "heads": 4,
+  "batch": 1,
+  "gpu_type": "NVIDIA H100 PCIe",
+  "node": "mastiff",
+  "home_cluster": "kennel",
+  "slurm_job_id": "234802",
+  "source_commit": "36b35257",
+  "production": "unchanged blocked implementation (BF16 q/k/v, FP32 units, trainer default matmul precision)",
+  "reference": "host NumPy FP64 forward and analytic VJP on the same BF16 values; crosschecked against CPU float64 autodiff",
+  "relative_tolerance": 0.012,
+  "pytest_seconds": 24.28,
+  "status": "passed",
+  "test": "scaffolds/transformer/tests/test_score_mlp_attention.py::test_gpu_production_shape_bfloat16_matches_float64_oracle",
+  "relative_l2_errors": {
+    "kernel-4": {
+      "output": 0.00167,
+      "q": 0.00167,
+      "k": 0.00462,
+      "v": 0.00459,
+      "a": 1.39e-07,
+      "b": 1.71e-07,
+      "w": 1.81e-07
+    },
+    "kernel-8": {
+      "output": 0.00167,
+      "q": 0.00168,
+      "k": 0.00462,
+      "v": 0.00463,
+      "a": 1.25e-07,
+      "b": 1.62e-07,
+      "w": 3.08e-07
+    },
+    "exp_residual-4": {
+      "output": 0.00166,
+      "q": 0.00168,
+      "k": 0.00457,
+      "v": 0.0046,
+      "a": 3.29e-07,
+      "b": 2.87e-07,
+      "w": 4.79e-07
+    },
+    "exp_residual-8": {
+      "output": 0.00168,
+      "q": 0.00167,
+      "k": 0.00459,
+      "v": 0.00459,
+      "a": 3.36e-07,
+      "b": 2.81e-07,
+      "w": 3.23e-07
+    },
+    "exp_residual-8-gated": {
+      "output": 0.00168,
+      "q": 0.00161,
+      "k": 0.00234,
+      "v": 0.00242,
+      "a": 3.24e-07,
+      "b": 2.64e-07,
+      "w": 4.04e-07,
+      "L": 2.96e-07
+    }
+  }
+}

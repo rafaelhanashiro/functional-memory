@@ -1,0 +1,25 @@
+{
+  "gpu_type": "NVIDIA H100 PCIe",
+  "node": "mastiff",
+  "slurm_job_id": "234788",
+  "source_commit": "2eb034cd",
+  "shape": {
+    "batch": 16,
+    "time": 2048,
+    "heads": 14,
+    "qk_head_dim": 64,
+    "value_head_dim": 64
+  },
+  "measure": "jit forward + VJP of blocked_dot_product_attention, mean of 3 calls after compilation, milliseconds",
+  "milliseconds": {
+    "exp_residual-4": 160.2,
+    "exp_residual-8": 187.3,
+    "plain_blocked_exp": 40.8
+  },
+  "attention_seconds_per_update": {
+    "exp_residual-4": 38.4,
+    "exp_residual-8": 45.0,
+    "plain_blocked_exp": 9.8
+  },
+  "note": "15 layers x 16 micro-batches per update; excludes remat recomputation and the rest of the model"
+}

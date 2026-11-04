@@ -2257,6 +2257,46 @@ JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
 python -m pytest -q scaffolds/transformer/tests/test_query_distance_decay.py -m gpu
 ```
 
+## Score MLP on the blocked backend
+
+`attention_score_mlp_width` replaces exp in unnormalized attention with
+`J` SiLU units per layer and head (`attention/score_mlp.py`); it runs on the
+blocked backend only. XLA cannot compile the dense FP32 HIGHEST definition at
+2,048 tokens on H100 (an internal `layout_normalization.cc` `ReshapeIsBitcast`
+RET_CHECK), so the GPU check compares the unchanged blocked implementation with
+host NumPy FP64 algebra and analytic gradients on the same BF16 values. CPU tests
+check that oracle against float64 autodiff of the dense definition (both forms,
+`J` = 1, 4, 8, with and without the gate, lengths 1 and 19).
+
+[H100 qualification](runs/score-mlp/gpu-qualification.json) passed in job 234802
+on 2026-11-04 (2,048 tokens, 4 heads, 64-channel BF16 Q/K/V, FP32 units; relative
+L2 error below 0.012 for the output and every gradient):
+
+| Case | Output | dQ | dK | dV | da, db, dw (dL) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| kernel, `J` = 4 | 1.7e-3 | 1.7e-3 | 4.6e-3 | 4.6e-3 | ≤ 2e-7 |
+| kernel, `J` = 8 | 1.7e-3 | 1.7e-3 | 4.6e-3 | 4.6e-3 | ≤ 3e-7 |
+| exp residual, `J` = 4 | 1.7e-3 | 1.7e-3 | 4.6e-3 | 4.6e-3 | ≤ 5e-7 |
+| exp residual, `J` = 8 | 1.7e-3 | 1.7e-3 | 4.6e-3 | 4.6e-3 | ≤ 4e-7 |
+| exp residual, `J` = 8, gated | 1.7e-3 | 1.6e-3 | 2.3e-3 | 2.4e-3 | ≤ 4e-7 |
+
+[Throughput](runs/score-mlp/throughput.json) at the Transformer++ attention shape
+(micro-batch 16, 14 heads, 2,048 tokens), forward and backward of one layer on an
+H100 PCIe (job 234788):
+
+| Kernel | ms | Attention s/update |
+| --- | ---: | ---: |
+| Plain blocked exp | 40.8 | 9.8 |
+| Exp residual, `J` = 4 | 160.2 | 38.5 |
+| Exp residual, `J` = 8 | 187.3 | 45.0 |
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_score_mlp_attention.py -m 'not gpu'
+# Inside a GPU allocation:
+python -m pytest -q scaffolds/transformer/tests/test_score_mlp_attention.py -m gpu
+```
+
 ## Continuing learned models
 
 The [CPU qualification](runs/learned-continuation/cpu.json) checks that static and
