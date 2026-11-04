@@ -41,7 +41,7 @@ import jax.numpy as jnp
 import numpy as np
 
 WEIGHTS = ("float32", "input")
-BACKWARDS = ("columns", "rows")
+BACKWARDS = ("columns", "rows", "saved")
 ROOT = Path(__file__).resolve().parents[3]
 RECIPE = ROOT / "experiments/transformer_pp/runs/r9040f12f3d80/config.yaml"
 UPDATE_LAYER_MICRO_BATCHES = 15 * 16  # layers x micro-batches of 16 sequences in one 256-sequence update
@@ -73,12 +73,14 @@ def _strips(length: int, block_size: int) -> list[tuple[int, int]]:
     return [(start, min(start + block_size, length)) for start in range(0, length, block_size)]
 
 
-def _row_strip(q, k, v, start, weights):
+def _row_strip(q, k, v, start, weights, normalize_first=False):
     """Queries q [B,H,n,D] at positions start..start+n-1 against keys/values [B,H,end,D] at 0..end-1.
 
     Returns the strip output in the compute dtype and its log-sum-exp [B,H,n,1]. The output is
     (P V) / l with P = exp(S - max) and l = sum(P) over causal keys; rows with a nonfinite
     causal score are NaN in both. ``start`` may be traced (scan) or static (unrolled).
+    ``normalize_first`` multiplies the normalized weights P / l instead and also returns them,
+    in the dtype that entered the product (NaN rows where the output is NaN).
     """
     compute = _compute_dtype(q.dtype)
     scores = jnp.einsum("bhqd,bhkd->bhqk", q, k, preferred_element_type=compute) * (1.0 / math.sqrt(q.shape[-1]))
@@ -89,12 +91,15 @@ def _row_strip(q, k, v, start, weights):
     # Masked entries are -inf before exp, never exponentiated sentinels.
     weights_ = jnp.exp(jnp.where(causal, scores - maximum, -jnp.inf))
     total = jnp.sum(weights_, axis=-1, keepdims=True)
-    if weights == "float32":
-        unnormalized = jnp.einsum("bhqk,bhkd->bhqd", weights_, v.astype(compute), preferred_element_type=compute)
-    else:
-        unnormalized = jnp.einsum("bhqk,bhkd->bhqd", weights_.astype(v.dtype), v, preferred_element_type=compute)
-    output = jnp.where(invalid, jnp.nan, unnormalized / total)
+    if normalize_first:
+        weights_ = weights_ / total
+    used = weights_ if weights == "float32" else weights_.astype(v.dtype)
+    product = jnp.einsum("bhqk,bhkd->bhqd", used, v.astype(compute) if weights == "float32" else v,
+                         preferred_element_type=compute)
+    output = jnp.where(invalid, jnp.nan, product if normalize_first else product / total)
     log_sum_exp = jnp.where(invalid, jnp.nan, maximum + jnp.log(total))
+    if normalize_first:
+        return output, log_sum_exp, jnp.where(invalid, jnp.nan, used).astype(used.dtype)
     return output, log_sum_exp
 
 
@@ -153,32 +158,36 @@ def lean_blocked_attention(q, k, v, *, block_size: int = 128, checkpoint: bool =
     return jnp.swapaxes(output, 1, 2).astype(dtype)
 
 
-def _flash_forward(q, k, v, block_size, weights):
+def _flash_forward(q, k, v, block_size, weights, backward):
+    """Strip outputs [B,H,T,D] (compute dtype), log-sum-exp [B,H,T], and, for the "saved"
+    backward, each strip's normalized weights [B,H,n,end] as they entered P x V."""
     qt, kt, vt = (jnp.swapaxes(x, 1, 2) for x in (q, k, v))
     if weights == "float32":
         vt = vt.astype(_compute_dtype(v.dtype))  # once, not per strip
-    outputs, log_sum_exps = [], []
+    outputs, log_sum_exps, kept = [], [], []
     for start, end in _strips(q.shape[1], block_size):
-        output, log_sum_exp = _row_strip(qt[:, :, start:end], kt[:, :, :end], vt[:, :, :end], start, weights)
-        outputs.append(output)
-        log_sum_exps.append(log_sum_exp)
-    return jnp.concatenate(outputs, axis=2), jnp.concatenate(log_sum_exps, axis=2)[..., 0]
+        result = _row_strip(qt[:, :, start:end], kt[:, :, :end], vt[:, :, :end], start, weights,
+                            normalize_first=backward == "saved")
+        outputs.append(result[0])
+        log_sum_exps.append(result[1])
+        kept.extend(result[2:])
+    return jnp.concatenate(outputs, axis=2), jnp.concatenate(log_sum_exps, axis=2)[..., 0], tuple(kept)
 
 
 def _flash(q, k, v, block_size, weights, backward):
-    return jnp.swapaxes(_flash_forward(q, k, v, block_size, weights)[0], 1, 2).astype(v.dtype)
+    return jnp.swapaxes(_flash_forward(q, k, v, block_size, weights, backward)[0], 1, 2).astype(v.dtype)
 
 
 def _flash_fwd(q, k, v, block_size, weights, backward):
-    output, log_sum_exp = _flash_forward(q, k, v, block_size, weights)
+    output, log_sum_exp, kept = _flash_forward(q, k, v, block_size, weights, backward)
     # delta = rowsum(dO * O) uses the FP32 output with FP32 weights, and the rounded
     # output with input-dtype weights (as FlashAttention and cuDNN).
     saved = output if weights == "float32" else output.astype(v.dtype)
-    return jnp.swapaxes(output, 1, 2).astype(v.dtype), (q, k, v, saved, log_sum_exp)
+    return jnp.swapaxes(output, 1, 2).astype(v.dtype), (q, k, v, saved, log_sum_exp, kept)
 
 
 def _flash_bwd(block_size, weights, backward, residuals, cotangent):
-    q, k, v, saved, log_sum_exp = residuals
+    q, k, v, saved, log_sum_exp, kept = residuals
     compute = _compute_dtype(q.dtype)
     scale = 1.0 / math.sqrt(q.shape[-1])
     length = q.shape[1]
@@ -215,17 +224,21 @@ def _flash_bwd(block_size, weights, backward, residuals, cotangent):
         dk, dv = jnp.concatenate(dk_blocks, axis=2), jnp.concatenate(dv_blocks, axis=2)
     else:
         # Query blocks i against keys [0, end_i): dQ_i is complete per block; dK and dV
-        # sum one back-padded part per query block.
+        # sum one back-padded part per query block. "saved" reuses the forward's weights.
         dq_blocks, dk_parts, dv_parts = [], [], []
-        for start, end in _strips(length, block_size):
+        for index, (start, end) in enumerate(_strips(length, block_size)):
             query, grad = qt[:, :, start:end], gt[:, :, start:end]
             key, value = kt[:, :, :end], vt[:, :, :end]
-            scores = contract("bhqd,bhkd->bhqk", query, key) * scale
             causal = jnp.arange(end)[None, :] <= jnp.arange(start, end)[:, None]
-            weights_ = jnp.exp(jnp.where(causal, scores - log_sum_exp[:, :, start:end, None], -jnp.inf))
+            if backward == "saved":
+                weights_ = kept[index].astype(compute)
+            else:
+                scores = contract("bhqd,bhkd->bhqk", query, key) * scale
+                weights_ = jnp.exp(jnp.where(causal, scores - log_sum_exp[:, :, start:end, None], -jnp.inf))
             grad_weights = contract("bhqd,bhkd->bhqk", grad, value)
             grad_scores = jnp.where(causal, weights_ * (grad_weights - delta[:, :, start:end, None]), 0.0)
-            used_weights, used_scores = rounded(weights_, v), rounded(grad_scores, q)
+            used_weights = kept[index] if backward == "saved" else rounded(weights_, v)
+            used_scores = rounded(grad_scores, q)
             tail = ((0, 0), (0, 0), (0, length - end), (0, 0))
             dq_blocks.append(contract("bhqk,bhkd->bhqd", used_scores, ko[:, :, :end]) * scale)
             dk_parts.append(jnp.pad(contract("bhqk,bhqd->bhkd", used_scores, qo[:, :, start:end]) * scale, tail))
@@ -246,8 +259,10 @@ def flash_blocked_attention(q, k, v, *, block_size: int = 128, weights: str = "f
     Query blocks are unrolled with causal key prefixes. The backward recomputes
     S = QK^T/sqrt(d) and P = exp(S - lse) per block and uses dS = P * (dO V^T - rowsum(dO * O)),
     over key blocks ("columns", accumulating dQ) or query blocks ("rows", accumulating dK, dV).
-    Rows with a nonfinite causal score have NaN output and log-sum-exp, so their gradients
-    are NaN too.
+    "saved" instead keeps every strip's normalized weights from the forward, in the weights
+    dtype, and runs the rows backward without recomputing them (memory O(T^2) per layer; the
+    forward multiplies P / l rather than dividing P V by l). Rows with a nonfinite causal score
+    have NaN output and log-sum-exp (and saved weights), so their gradients are NaN too.
     """
     _validate(q, k, v, block_size, weights)
     if backward not in BACKWARDS:
@@ -292,49 +307,53 @@ class Variant:
 
 
 def variants(length: int = 2048) -> dict[str, Variant]:
-    """Benchmark variants, most important first. Block size ``length`` is a single dense block."""
-    table = [Variant("cudnn", "cudnn", "cuDNN fused softmax (production softmax path); speed reference",
-                     failure="natural")]
+    """Benchmark variants: references first, then candidates by priority. Block ``length`` is dense."""
+    precision = {"float32": ("f32", "FP32"), "input": ("bf16", "BF16")}
+    table = [
+        Variant("cudnn", "cudnn", "cuDNN fused softmax (the production softmax path); speed reference",
+                failure="natural"),
+        Variant("dense-manual", "dense-manual", "dense textbook softmax_attention(backend='manual'): BF16 scores "
+                "and weights, no blocks, no checkpoint", failure="natural"),
+        Variant("dense-f32scores-bf16w", "lean", "dense reference: FP32 scores and softmax, BF16 weights x V, "
+                "one block, no checkpoint", {"block_size": length, "checkpoint": False, "causal_skip": True,
+                                             "weights": "input"}),
+    ]
     for size in (128, 256, 512, 1024, 2048):
-        table.append(Variant(f"production-b{size}", "production",
-                             f"production blocked_dot_product_attention, {size}-query scan blocks x all keys, "
-                             "checkpointed", {"block_size": size}))
-    for weights, label in (("float32", "f32"), ("input", "bf16")):
-        for backward in ("columns", "rows"):
-            sizes = (128, 256, 512, 1024, 2048) if backward == "columns" else (128, 256)
-            for size in sizes:
-                table.append(Variant(
-                    f"flash-{label}-{'cols' if backward == 'columns' else 'rows'}-b{size}", "flash",
-                    f"custom VJP, {size}-query strips x causal key prefix, saves O+lse, "
-                    f"{backward} backward, {'FP32' if weights == 'float32' else 'BF16'} weights",
-                    {"block_size": size, "weights": weights, "backward": backward}))
-    for weights, label in (("float32", "f32"), ("input", "bf16")):
-        sizes = (128, 256, 512, 1024, 2048) if weights == "float32" else (128, 256, 512)
-        for checkpoint in (True, False):
-            for size in sizes:
-                table.append(Variant(
-                    f"lean-{label}-skip-{'ckpt' if checkpoint else 'nockpt'}-b{size}", "lean",
-                    f"lean autodiff, {size}-query strips x causal key prefix, "
-                    f"{'checkpointed' if checkpoint else 'no checkpoint'}, "
-                    f"{'FP32' if weights == 'float32' else 'BF16'} weights",
-                    {"block_size": size, "checkpoint": checkpoint, "causal_skip": True, "weights": weights}))
+        table.append(Variant(f"production-b{size}", "production", f"production blocked_dot_product_attention: "
+                             f"checkpointed scan of {size}-query blocks x all keys", {"block_size": size}))
     for checkpoint in (True, False):
-        table.append(Variant(
-            f"lean-f32-scan-{'ckpt' if checkpoint else 'nockpt'}-b128", "lean",
-            f"lean autodiff, scan of 128-query blocks x all keys, {'checkpointed' if checkpoint else 'no checkpoint'}, "
-            "FP32 weights", {"block_size": 128, "checkpoint": checkpoint, "causal_skip": False, "weights": "float32"}))
-    for checkpoint, size in ((True, 128), (True, 256), (False, 128)):
-        table.append(Variant(
-            f"lean-f32up-skip-{'ckpt' if checkpoint else 'nockpt'}-b{size}", "lean",
-            f"lean autodiff on FP32-upcast Q/K/V (FP32 dK/dV sums), {size}-query strips x causal key prefix, "
-            f"{'checkpointed' if checkpoint else 'no checkpoint'}, FP32 weights",
-            {"block_size": size, "checkpoint": checkpoint, "causal_skip": True, "weights": "float32", "upcast": True}))
-    table.append(Variant("dense-f32scores-bf16w", "lean",
-                         "dense reference: FP32 scores/softmax, BF16 weights x V, one block, no checkpoint",
-                         {"block_size": length, "checkpoint": False, "causal_skip": True, "weights": "input"}))
-    table.append(Variant("dense-manual", "dense-manual",
-                         "dense textbook softmax_attention(backend='manual'): BF16 scores, BF16 weights, no checkpoint",
-                         failure="natural"))
+        table.append(Variant(f"lean-f32-scan-{'ckpt' if checkpoint else 'nockpt'}-b128", "lean",
+                             f"lean autodiff, scan of 128-query blocks x all keys, "
+                             f"{'checkpointed' if checkpoint else 'no checkpoint'}, FP32 weights",
+                             {"block_size": 128, "checkpoint": checkpoint, "causal_skip": False, "weights": "float32"}))
+
+    def flash(weights, backward, size):
+        label, name = precision[weights]
+        short = {"columns": "cols", "rows": "rows", "saved": "saved"}[backward]
+        how = {"columns": "recomputes S and P over key blocks (accumulates dQ)",
+               "rows": "recomputes S and P over query blocks (accumulates dK, dV)",
+               "saved": "keeps the normalized weights from the forward (rows backward, no recompute)"}[backward]
+        return Variant(f"flash-{label}-{short}-b{size}", "flash",
+                       f"custom VJP, {size}-query strips x causal key prefix; backward {how}; {name} weights",
+                       {"block_size": size, "weights": weights, "backward": backward})
+
+    def lean(weights, checkpoint, size, upcast=False):
+        label, name = precision[weights]
+        return Variant(f"lean-{label}{'up' if upcast else ''}-skip-{'ckpt' if checkpoint else 'nockpt'}-b{size}",
+                       "lean", f"lean autodiff{' on FP32-upcast Q/K/V (FP32 dK/dV sums)' if upcast else ''}, "
+                       f"{size}-query strips x causal key prefix, {'checkpointed' if checkpoint else 'no checkpoint'}, "
+                       f"{name} weights", {"block_size": size, "checkpoint": checkpoint, "causal_skip": True,
+                                            "weights": weights, **({"upcast": True} if upcast else {})})
+
+    for weights in ("float32", "input"):
+        table += [flash(weights, "columns", size) for size in (128, 256, 512, 1024, 2048)]
+    for backward in ("saved", "rows"):
+        table += [flash(weights, backward, size) for weights in ("float32", "input") for size in (256, 512)]
+    table += [lean("float32", True, 256, upcast=True), lean("float32", True, 512, upcast=True),
+              lean("float32", False, 256, upcast=True)]
+    table += [lean("float32", True, size) for size in (128, 256, 512, 1024, 2048)]
+    table += [lean("float32", False, size) for size in (256, 512, 2048)]
+    table += [lean("input", checkpoint, size) for checkpoint in (True, False) for size in (256, 512)]
     return {variant.name: variant for variant in table}
 
 
@@ -455,6 +474,38 @@ def measure(program, arguments, *, warmup: int, iterations: int):
         "warmup": warmup, "iterations": iterations, "compile_seconds": compile_seconds,
         "compiled_memory": compiled_memory(compiled), "kernels": kernel_count(compiled),
     }, result, compiled
+
+
+GEMM_KERNEL = re.compile(r"gemm|nvjet|cutlass|xmma|matmul|cublas|sm90_", re.IGNORECASE)
+
+
+def profile(compiled, arguments, trace_dir: Path, *, calls: int = 3) -> dict:
+    """GPU stream time of ``calls`` synchronized calls of an already compiled program."""
+    from scaffolds.transformer.benchmarks.analyze_profile import analyze_file, discover_traces
+
+    jax.block_until_ready(compiled(*arguments))
+    with jax.profiler.trace(str(trace_dir), create_perfetto_trace=True):
+        for index in range(calls):
+            with jax.profiler.StepTraceAnnotation("attention", step_num=index + 1):
+                jax.block_until_ready(compiled(*arguments))
+    summary = analyze_file(discover_traces([trace_dir])[-1], step_name="attention", top_kernels=12,
+                           max_bytes=400 * 1024 * 1024)
+    device = summary["devices"][0]
+    mean = device["mean_per_update"]
+    names = {}
+    for update in device["updates"]:
+        for kernel in update["top_kernels"]:
+            names[kernel["name"]] = names.get(kernel["name"], 0.0) + kernel["kernel_sum_ms"] / len(device["updates"])
+    gemm_ms = sum(duration for name, duration in names.items() if GEMM_KERNEL.search(name))
+    return {
+        "calls": calls, "wall_ms": mean["wall_ms"], "kernel_count": mean["kernel_count"],
+        "kernel_sum_ms": mean["kernel_sum_ms"], "gpu_activity_union_ms": mean["gpu_activity_union_ms"],
+        "no_recorded_gpu_activity_ms": mean["no_recorded_gpu_activity_ms"],
+        "top_kernels_gemm_ms": gemm_ms, "top_kernels_other_ms": sum(names.values()) - gemm_ms,
+        "top_kernels": sorted(({"name": name[:120], "ms": duration} for name, duration in names.items()),
+                              key=lambda item: -item["ms"])[:12],
+        "note": "profiled calls; top-kernel split is by kernel name (GEMM: cuBLAS/nvjet/cutlass/Triton gemm)",
+    }
 
 
 def row_ranges(mask) -> list[list[int]]:
@@ -605,7 +656,8 @@ def kernel_stage(args) -> dict:
                                 "update_layer_micro_batches": UPDATE_LAYER_MICRO_BATCHES,
                                 "timing": "median of synchronized compiled calls after warmup; compile excluded",
                                 "memory": "compiled.memory_analysis temp bytes (estimate, one call)",
-                                "backward": "jax.vjp of the attention; outputs, dq, dk, dv"},
+                                "backward": "jax.vjp of the attention; outputs, dq, dk, dv",
+                                "accuracy_compile": "xla_gpu_autotune_level=0 (timed programs use defaults)"},
               "matmul_precision": matmul_precision_probe(), "variants": {}}
     write_json(args.output, report)
     deadline = time.monotonic() + 60 * args.budget_minutes
@@ -635,7 +687,9 @@ def kernel_stage(args) -> dict:
         program = forward_backward(attend)
         print(f"START {name}", flush=True)
         try:
-            compiled = jax.jit(program).lower(*accuracy_inputs["normal"]).compile()
+            # Accuracy does not need tuned GEMM tiles; autotuning dominates compile time.
+            untuned = {"xla_gpu_autotune_level": "0"}
+            compiled = jax.jit(program).lower(*accuracy_inputs["normal"]).compile(untuned)
             entry["accuracy"] = {}
             for distribution, inputs in accuracy_inputs.items():
                 output, grads = compiled(*inputs)
@@ -646,19 +700,26 @@ def kernel_stage(args) -> dict:
             entry["failure"] = failure_report(compiled, cases, accuracy_inputs["normal"][3])
             del compiled
             if name in (args.float32_input_variants or ()):
-                output, grads = jax.jit(program)(*float32_inputs)
+                output, grads = jax.jit(program).lower(*float32_inputs).compile(untuned)(*float32_inputs)
                 entry["accuracy"]["float32_inputs"] = {
                     label: relative_l2(np.asarray(x), reference)
                     for label, x, reference in zip(("output", "dq", "dk", "dv"), (output, *grads),
                                                    float32_oracle, strict=True)}
             forward, result, _ = measure(attend, time_inputs[:3], warmup=args.warmup, iterations=args.iterations)
             del result
-            both, result, _ = measure(program, time_inputs, warmup=args.warmup, iterations=args.iterations)
+            both, result, compiled = measure(program, time_inputs, warmup=args.warmup, iterations=args.iterations)
             finite = bool(jax.device_get(jnp.all(jnp.stack(
                 [jnp.all(jnp.isfinite(x.astype(jnp.float32))) for x in jax.tree.leaves(result)]))))
             del result
             entry["timing"] = {"forward": forward, "forward_backward": both, "outputs_finite": finite,
                                "attention_seconds_per_update": both["median_ms"] * UPDATE_LAYER_MICRO_BATCHES / 1e3}
+            if name in (args.profile_variants or ()):
+                try:
+                    trace_dir = args.output.parent / f"traces-{os.environ.get('SLURM_JOB_ID', os.getpid())}" / name
+                    entry["profile"] = profile(compiled, time_inputs, trace_dir)
+                except Exception as error:  # noqa: BLE001
+                    entry["profile"] = {"error": f"{type(error).__name__}: {str(error)[:500]}"}
+            del compiled
             print(f"DONE {name} forward={forward['median_ms']:.2f}ms forward_backward={both['median_ms']:.2f}ms "
                   f"temp={both['compiled_memory'].get('temp_size_in_bytes', 0) / 1e9:.2f}GB "
                   f"accuracy={json.dumps(entry['accuracy']['normal'])}", flush=True)
@@ -786,13 +847,18 @@ def model_stage(args) -> dict:
                        "--recipe", str(args.recipe), "--output", str(path),
                        "--warmup", str(args.warmup), "--iterations", str(args.iterations)]
             print(f"START model {variant} micro_batch={micro_batch}", flush=True)
-            completed = subprocess.run(command, capture_output=True, text=True, timeout=args.case_timeout)
+            try:
+                completed = subprocess.run(command, capture_output=True, text=True, timeout=args.case_timeout)
+                returncode, stderr = completed.returncode, completed.stderr
+            except subprocess.TimeoutExpired as error:
+                returncode, stderr = "timeout", (error.stderr or b"").decode(errors="replace") \
+                    if isinstance(error.stderr, bytes) else (error.stderr or "")
             if path.exists():
                 case = json.loads(path.read_text())
                 path.unlink()
             else:
                 case = {"variant": variant, "micro_batch": micro_batch, "status": "crashed",
-                        "returncode": completed.returncode, "stderr_tail": completed.stderr[-3000:]}
+                        "returncode": returncode, "stderr_tail": stderr[-3000:]}
             if "provenance" in case:
                 # Every case runs the same commit on the same GPU; keep one copy.
                 report.setdefault("provenance", case["provenance"])
@@ -810,15 +876,116 @@ def model_stage(args) -> dict:
     return report
 
 
+def _rows_text(ranges, length):
+    if not ranges:
+        return "none"
+    parts = []
+    for start, end in ranges:
+        parts.append(str(start) if end - start == 1 else "all" if (start, end) == (0, length)
+                     else f">= {start}" if end == length else f"{start}-{end - 1}")
+    return ", ".join(parts)
+
+
+def summarize(kernel_path: Path | None, model_path: Path | None) -> str:
+    """Markdown tables of the kernel and model records, in their variant order."""
+    lines = []
+    if kernel_path is not None:
+        kernel = json.loads(kernel_path.read_text())
+        entries = kernel["variants"]
+        length = kernel["configuration"]["accuracy_shape"][1]
+        lines += ["| Variant | Forward ms | Fwd+bwd ms | Temp GB | Attention s/update | Kernels |",
+                  "| --- | ---: | ---: | ---: | ---: | ---: |"]
+        for name, entry in entries.items():
+            timing = entry.get("timing")
+            if timing is None:
+                lines.append(f"| {name} | {entry.get('skipped') or entry.get('error', '')[:60]} | | | | |")
+                continue
+            both = timing["forward_backward"]
+            lines.append(f"| {name} | {timing['forward']['median_ms']:.2f} | {both['median_ms']:.2f} | "
+                         f"{both['compiled_memory'].get('temp_size_in_bytes', 0) / 1e9:.2f} | "
+                         f"{timing['attention_seconds_per_update']:.2f} | {both['kernels']} |")
+        lines += ["", "Relative L2 error x 1e3 against the FP64 oracle (normal; sharp; FP32 inputs where measured):", "",
+                  "| Variant | Output | dQ | dK | dV | Sharp output | Sharp dQ | Sharp dK | Sharp dV |",
+                  "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+
+        def errors(record):
+            return [f"{1e3 * record[label]:.2f}" for label in ("output", "dq", "dk", "dv")]
+
+        floor = kernel["bf16_rounding_floor"]
+        lines.append("| BF16 rounding of the oracle | " + " | ".join(errors(floor["normal"]) + errors(floor["sharp"])) + " |")
+        float32_rows = []
+        for name, entry in entries.items():
+            accuracy = entry.get("accuracy")
+            if accuracy:
+                lines.append(f"| {name} | " + " | ".join(errors(accuracy["normal"]) + errors(accuracy["sharp"])) + " |")
+                if "float32_inputs" in accuracy:
+                    float32_rows.append(f"| {name} | " + " | ".join(
+                        f"{1e6 * accuracy['float32_inputs'][label]:.2f}" for label in ("output", "dq", "dk", "dv")) + " |")
+        if float32_rows:
+            lines += ["", "FP32 inputs, relative L2 error x 1e6:", "", "| Variant | Output | dQ | dK | dV |",
+                      "| --- | ---: | ---: | ---: | ---: |", *float32_rows]
+        cases = ("q_nan", "k_nan", "v_nan", "v_inf", "score_neg_inf", "score_overflow", "score_huge")
+        lines += ["", f"Nonfinite output rows (batch 0, head 1; injected at token "
+                      f"{kernel['configuration']['failure_position']}); gradients finite in brackets:", "",
+                  "| Variants | " + " | ".join(cases) + " |", "| --- |" + " --- |" * len(cases)]
+        groups = {}
+        for name, entry in entries.items():
+            failure = entry.get("failure")
+            if failure:
+                key = tuple(_rows_text(failure[case]["nonfinite_rows"], length)
+                            + ("" if failure[case]["other_heads_finite"] else " (other heads!)")
+                            + (" [finite]" if failure[case]["gradients_finite"] else "") for case in cases)
+                groups.setdefault(key, []).append(name)
+        expected = next(iter(entries.values()), {}).get("failure")
+        if expected:
+            lines.append("| production rule (causal) | " + " | ".join(
+                _rows_text(expected[case]["expected_rows"], length) for case in cases) + " |")
+        for key, names in groups.items():
+            lines.append(f"| {', '.join(names)} | " + " | ".join(key) + " |")
+        profiled = [(name, entry["profile"]) for name, entry in entries.items()
+                    if "profile" in entry and "error" not in entry["profile"]]
+        if profiled:
+            lines += ["", "Profiled forward+backward calls (GPU stream time per call; GEMM/other among the top kernels):", "",
+                      "| Variant | Wall ms | GPU busy ms | Idle ms | Kernels | Top GEMM ms | Top other ms |",
+                      "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+            for name, record in profiled:
+                lines.append(f"| {name} | {record['wall_ms']:.2f} | {record['gpu_activity_union_ms']:.2f} | "
+                             f"{record['no_recorded_gpu_activity_ms']:.2f} | {record['kernel_count']:.0f} | "
+                             f"{record['top_kernels_gemm_ms']:.2f} | {record['top_kernels_other_ms']:.2f} |")
+        repeats = kernel.get("repeats", {})
+        if repeats:
+            lines += ["", "Repeated at the end of the job (fwd+bwd ms): " + ", ".join(
+                f"{name} {value['forward_backward_median_ms']:.2f} (first {entries[name]['timing']['forward_backward']['median_ms']:.2f})"
+                for name, value in repeats.items())]
+    if model_path is not None:
+        model = json.loads(model_path.read_text())
+        lines += ["", "| Variant | Micro-batch | Micro-step ms | s/update | Peak GB | Compile s | NLL |",
+                  "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+        for case in model["cases"]:
+            if case.get("status") != "complete":
+                reason = "out of memory" if case.get("out_of_memory") else case.get("status")
+                lines.append(f"| {case['variant']} | {case['micro_batch']} | {reason} | | | | |")
+                continue
+            peak = case.get("peak_bytes_in_use")
+            lines.append(f"| {case['variant']} | {case['micro_batch']} | {case['timing']['median_ms']:.1f} | "
+                         f"{case['seconds_per_update']:.2f} | {'' if peak is None else f'{peak / 1e9:.1f}'} | "
+                         f"{case['timing']['compile_seconds']:.0f} | {case['nll']:.4f} |")
+    return "\n".join(lines) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("stage", choices=("oracle-check", "kernel", "model", "model-case"))
+    parser.add_argument("stage", choices=("oracle-check", "kernel", "model", "model-case", "summarize"))
+    parser.add_argument("--kernel-record", type=Path, help="summarize: a kernel-stage JSON record")
+    parser.add_argument("--model-record", type=Path, help="summarize: a model-stage JSON record")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--variants", nargs="+")
     parser.add_argument("--variant")
     parser.add_argument("--accuracy-shape", type=int, nargs=4, default=[2, 2048, 4, 64])
     parser.add_argument("--time-shape", type=int, nargs=4, default=[16, 2048, 14, 64])
     parser.add_argument("--failure-position", type=int, default=1000)
+    parser.add_argument("--profile-variants", nargs="+",
+                        help="Trace three forward+backward calls of these variants (GPU stream time breakdown)")
     parser.add_argument("--float32-input-variants", nargs="+",
                         help="Also measure these variants' accuracy with FP32 inputs (precision of the products)")
     parser.add_argument("--micro-batches", type=int, nargs="+", default=[16, 8, 4])
@@ -846,6 +1013,8 @@ def main():
         if not args.variants:
             parser.error("The model stage requires --variants")
         model_stage(args)
+    elif args.stage == "summarize":
+        args.output.write_text(summarize(args.kernel_record, args.model_record))
     else:
         if args.variant is None or args.micro_batch is None:
             parser.error("model-case requires --variant and --micro-batch")

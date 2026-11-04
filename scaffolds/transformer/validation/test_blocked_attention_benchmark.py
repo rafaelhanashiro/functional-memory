@@ -32,6 +32,7 @@ CANDIDATES = {
     "lean-scan-nockpt": functools.partial(lean, checkpoint=False, causal_skip=False),
     "flash-columns": flash,
     "flash-rows": functools.partial(flash, backward="rows"),
+    "flash-saved": functools.partial(flash, backward="saved"),
 }
 
 
@@ -108,7 +109,7 @@ def test_gradient_sums_over_blocks_round_once_with_fp32_accumulation():
 
     single = errors(functools.partial(blocked_dot_product_attention, query_block_size=512))
     blocked = errors(functools.partial(blocked_dot_product_attention, query_block_size=64))
-    for attend in (flash(64, "float32"), flash(64, "float32", backward="rows"),
+    for attend in (flash(64, "float32"), flash(64, "float32", backward="rows"), flash(64, "float32", backward="saved"),
                    functools.partial(bench.lean_blocked_attention, block_size=64, upcast=True)):
         for observed, best in zip(errors(attend), floor, strict=True):
             assert observed < 1.05 * best
@@ -239,7 +240,8 @@ def test_routed_model_matches_production_blocked(monkeypatch):
     rng = jax.random.PRNGKey(1)
     state, program = bench.micro_step_program(tiny("blocked"), variant=None)
     expected_nll, expected_grads = jax.jit(program)(state.params, batch, rng)
-    for attend in (flash(8, "float32"), flash(8, "input", backward="rows"), lean(8, "float32")):
+    for attend in (flash(8, "float32"), flash(8, "input", backward="rows"), flash(8, "float32", backward="saved"),
+                   lean(8, "float32")):
         monkeypatch.setattr(softmax_module, "softmax_attention", bench._routed_softmax(attend))
         state, program = bench.micro_step_program(tiny("blocked"), variant=None)
         nll, grads = jax.jit(program)(state.params, batch, rng)
