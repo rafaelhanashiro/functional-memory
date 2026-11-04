@@ -190,11 +190,14 @@ def test_decayed_gradients_match_the_differentiable_definition(kernel):
         assert _relative(actual, expected) < 1e-4, index
 
 
-def test_the_polynomial_kernel_takes_no_forget_gate():
+@pytest.mark.parametrize("kernel", ("softmax", "exp", "query_polynomial"))
+def test_every_kernel_rejects_a_misshapen_forget_gate(kernel):
+    """The polynomial's gate is qualified in test_fox_path_attention.py; every kernel takes L [B, T, H]."""
     q, k, v, w, beta, c, _ = _inputs(batch=1, time=8, heads=1, dim=4, value_dim=3, degree=2)
-    with pytest.raises(ValueError, match="softmax and exp"):
-        path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel="query_polynomial",
-                       coefficients=jnp.asarray(c, jnp.float32), log_decay=jnp.zeros(beta.shape), chunk_size=4)
+    coefficients = jnp.asarray(c, jnp.float32) if kernel == "query_polynomial" else None
+    with pytest.raises(ValueError, match="cumulative log decay"):
+        path_attention(*(jnp.asarray(x, jnp.float32) for x in (q, k, v, w, beta)), kernel=kernel,
+                       coefficients=coefficients, log_decay=jnp.zeros(beta.shape[:2]), chunk_size=4)
 
 
 def test_outputs_and_gradients_are_causal():

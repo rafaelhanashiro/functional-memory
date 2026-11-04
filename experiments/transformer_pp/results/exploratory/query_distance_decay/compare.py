@@ -1,0 +1,164 @@
+"""Regenerate the selected FoX/query-distance comparison from pinned run files."""
+from __future__ import annotations
+
+import csv
+from copy import deepcopy
+import json
+import math
+from pathlib import Path
+
+import yaml
+
+from scaffolds.records.selections import verify_pinned_runs
+
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[4]
+BEGIN = "<!-- BEGIN GENERATED RESULTS -->"
+END = "<!-- END GENERATED RESULTS -->"
+ROLES = ("control", "query_distance")
+STEPS = 7570
+
+
+def read_json(path: Path) -> dict:
+    return json.loads(path.read_text())
+
+
+def scientific_recipe(recipe: dict) -> dict:
+    """Ignore execution names/paths and explicit inactive historical defaults only."""
+    recipe = deepcopy(recipe)
+    model = recipe["model"]
+    if "attention_coefficient_key_kernel_weight_decay" in model:
+        if model["attention_coefficient_key_kernel_weight_decay"] is not False:
+            raise ValueError("This query-only control must have no key-projection decay")
+        model.pop("attention_coefficient_key_kernel_weight_decay")
+    model.setdefault("attention_forget_gate_mode", "cumulative")
+    model.setdefault("qk_norm_token_scale_kernel_weight_decay", False)
+    for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir"):
+        recipe["train"].pop(key, None)
+    return recipe
+
+
+def check_recipes(runs: dict) -> None:
+    control = scientific_recipe(runs["control"]["config"])
+    variant = scientific_recipe(runs["query_distance"]["config"])
+    if control["model"]["attention_forget_gate_mode"] != "cumulative":
+        raise ValueError("The control must use cumulative FoX decay")
+    if variant["model"]["attention_forget_gate_mode"] != "query_distance":
+        raise ValueError("The variant must use query-dependent distance decay")
+    variant["model"]["attention_forget_gate_mode"] = "cumulative"
+    if control != variant:
+        raise ValueError("The selected runs differ beyond their declared decay rule and execution names/paths")
+    if (control["optim"]["total_steps"] != STEPS or control["train"]["seed"] != 42
+            or control["model"]["max_seq_len"] != 2048 or control["model"]["attention_degree"] != 4
+            or control["model"]["positional_encoding"] != "none"):
+        raise ValueError("The selected control does not match this comparison's declared recipe")
+
+
+def measurement(row: dict) -> tuple[float, float]:
+    nll = float(row["validation_nll"])
+    ppl = float(row.get("validation_perplexity", math.exp(nll)))
+    if not math.isfinite(nll) or not math.isfinite(ppl) or not math.isclose(ppl, math.exp(nll), rel_tol=1e-9):
+        raise ValueError("Invalid or inconsistent validation NLL/PPL")
+    return nll, ppl
+
+
+def collect(entry: dict) -> dict:
+    directory = ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
+    record = read_json(directory / "record.json")
+    config = yaml.safe_load((directory / "config.yaml").read_text())
+    row = {"role": entry["role"], "label": entry["label"], "run_id": entry["run_id"],
+           "status": record["status"], "config": config}
+    metrics_path = directory / "metrics.jsonl"
+    metrics = ([json.loads(line) for line in metrics_path.read_text().splitlines() if line.strip()]
+               if metrics_path.exists() else [])
+    validation = [item for item in metrics if item.get("validation_nll") is not None
+                  and math.isfinite(float(item["validation_nll"]))]
+    best_path = directory / "best_validation.json"
+    best = read_json(best_path) if best_path.exists() else (
+        min(validation, key=lambda item: (float(item["validation_nll"]), -int(item["step"]))) if validation else None)
+    if best is not None:
+        best_nll, best_ppl = measurement(best)
+        best_step = int(best["step"])
+        if not 0 <= best_step <= STEPS:
+            raise ValueError("Best validation step is outside the declared training budget")
+        if validation:
+            expected = min(validation, key=lambda item: (float(item["validation_nll"]), -int(item["step"])))
+            if (int(expected["step"]) != best_step
+                    or not math.isclose(float(expected["validation_nll"]), best_nll, rel_tol=0, abs_tol=1e-12)):
+                raise ValueError("The best-validation record disagrees with the canonical measurements")
+        row.update(best_step=best_step, best_nll=best_nll, best_ppl=best_ppl)
+    completion_path = directory / "completion.json"
+    if record["status"] == "complete":
+        if not completion_path.exists() or best is None:
+            raise ValueError("A completed run must have completion and validation-best measurements")
+        completion = read_json(completion_path)
+        if int(completion["final_step"]) != STEPS or record.get("step", STEPS) != STEPS:
+            raise ValueError("A completed comparison run must reach all 7,570 updates")
+        terminal_nll, terminal_ppl = measurement(completion)
+        terminal = [item for item in validation if int(item["step"]) == STEPS]
+        if terminal and any(not math.isclose(float(item["validation_nll"]), terminal_nll,
+                                             rel_tol=0, abs_tol=1e-12) for item in terminal):
+            raise ValueError("Terminal completion NLL disagrees with the canonical measurements")
+        row.update(terminal_step=STEPS, terminal_nll=terminal_nll, terminal_ppl=terminal_ppl)
+    elif completion_path.exists():
+        raise ValueError("A completion record exists for a run whose authoritative status is not complete")
+    return row
+
+
+def format_value(value, digits=6) -> str:
+    if value is None:
+        return ""
+    return str(value) if isinstance(value, (str, int)) else f"{value:.{digits}f}"
+
+
+def main() -> None:
+    selection = yaml.safe_load((HERE / "selection.yaml").read_text())
+    entries = selection["runs"]
+    if len(entries) != 2 or {entry["role"] for entry in entries} != set(ROLES):
+        raise ValueError("Select exactly one control and one query_distance run")
+    verify_pinned_runs(ROOT, entries)
+    runs = {entry["role"]: collect(entry) for entry in entries}
+    check_recipes(runs)
+    complete = all(runs[role]["status"] == "complete" for role in ROLES)
+    if complete:
+        control, variant = runs["control"], runs["query_distance"]
+        for metric in ("best_ppl", "terminal_ppl"):
+            variant[f"delta_{metric}"] = variant[metric] - control[metric]
+            variant[f"percent_{metric}"] = 100.0 * (variant[metric] / control[metric] - 1.0)
+    columns = ["role", "label", "run_id", "status", "best_step", "best_nll", "best_ppl",
+               "terminal_step", "terminal_nll", "terminal_ppl", "delta_best_ppl", "percent_best_ppl",
+               "delta_terminal_ppl", "percent_terminal_ppl"]
+    with (HERE / "summary.csv").open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
+        writer.writeheader()
+        for role in ROLES:
+            writer.writerow({key: format_value(runs[role].get(key), 9 if key.endswith("nll") else 6)
+                             for key in columns})
+    lines = ["| Variant | Run | Status | Best validation PPL | Best update | Terminal PPL |",
+             "| --- | --- | --- | ---: | ---: | ---: |"]
+    for role in ROLES:
+        row = runs[role]
+        lines.append(f"| {row['label']} | `{row['run_id']}` | {row['status']} | "
+                     f"{format_value(row.get('best_ppl'), 4) or '—'} | {row.get('best_step', '—')} | "
+                     f"{format_value(row.get('terminal_ppl'), 4) or '—'} |")
+    if complete:
+        variant = runs["query_distance"]
+        lines.extend(["", "Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):",
+                      f"validation-best **{variant['delta_best_ppl']:+.4f}** "
+                      f"(**{variant['percent_best_ppl']:+.3f}%**); "
+                      f"terminal **{variant['delta_terminal_ppl']:+.4f}** "
+                      f"(**{variant['percent_terminal_ppl']:+.3f}%**)."])
+    else:
+        lines.extend(["", "The query-dependent run is not complete; a final PPL comparison is pending."])
+    path = HERE / "README.md"
+    text = path.read_text()
+    if text.count(BEGIN) != 1 or text.count(END) != 1:
+        raise ValueError("The README must contain exactly one generated-results region")
+    before, remainder = text.split(BEGIN)
+    _, after = remainder.split(END)
+    path.write_text(before + BEGIN + "\n" + "\n".join(lines) + "\n" + END + after)
+
+
+if __name__ == "__main__":
+    main()

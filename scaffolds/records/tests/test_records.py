@@ -194,6 +194,23 @@ def test_index_distinguishes_query_conditioning_and_keeps_recipe_identity(tmp_pa
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_exposes_selected_coefficient_orders_without_inventing_legacy_settings(tmp_path):
+    study = tmp_path / "study"
+    model = {"attention_degree": 8, "attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "static"}
+    legacy = create_run(study, {"model": model})
+    unrestricted = create_run(study, {"model": {**model, "attention_coefficient_orders": None}})
+    even = create_run(study, {"model": {**model, "attention_coefficient_orders": [0, 2, 4, 6, 8]}})
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert rows[legacy.name]["coefficient_orders"] == ""
+    assert rows[unrestricted.name]["coefficient_orders"] == ""
+    assert rows[even.name]["coefficient_orders"] == "[0,2,4,6,8]"
+    assert rows[even.name]["attention_degree"] == "8"
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 @pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients"])
 def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_path, parameterization):
     study = tmp_path / "study"

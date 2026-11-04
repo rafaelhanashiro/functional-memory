@@ -104,11 +104,12 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     return specs
 
 
-def _diagonal_readout(features, amplitude, bias, amplitude_scale):
+def _diagonal_readout(features, amplitude, bias, amplitude_scale, orders=None):
     """The same rounded FP32 diagonal computation in both readout families."""
     amplitude = amplitude.astype(jnp.float32)
     if amplitude_scale == "factorial":
-        amplitude = amplitude / jnp.asarray([math.factorial(r) for r in range(bias.shape[-1])], jnp.float32)
+        amplitude = amplitude / jnp.asarray([math.factorial(r) for r in
+                                             (range(bias.shape[-1]) if orders is None else orders)], jnp.float32)
     # The incoming bias may itself have been factorial-scaled by the caller.
     # Preserve each rounded operand before multiplying/adding so the compiler
     # cannot reassociate scaling or contract a different expression in one arm.
@@ -145,7 +146,7 @@ def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, featur
 
 
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
-                         amplitude_scale="none", readout_scale=1.0):
+                         amplitude_scale="none", readout_scale=1.0, orders=None):
     """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
     otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
@@ -153,7 +154,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     features (kernel [H,D,K]) may differ in number from the R = degree+1 coefficients.
     amplitude_scale="factorial" divides output order r's amplitude or mixing row by r!.
     readout_scale multiplies only the dense modulation; it never rescales the bias.
+    orders selects the actual monomial orders for compact diagonal tanh features;
+    omitted outputs are zero, and factorial scaling uses those actual orders.
     """
+    if orders is not None and (activation != "tanh" or mixing is not None or bias is None
+                                or len(orders) != kernel.shape[-1]):
+        raise ValueError("Selected orders require matching compact diagonal tanh features")
     if (isinstance(readout_scale, bool) or not isinstance(readout_scale, (int, float))
             or not math.isfinite(readout_scale) or readout_scale <= 0):
         raise ValueError("Dense readout scale must be finite and positive")
@@ -190,7 +196,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
         # arm introduced one-ulp differences amplified by later BF16 residuals.
         features = jax.lax.optimization_barrier(AFFINE_FEATURES[activation](projected))
         if mixing is None:
-            return _diagonal_readout(features, amplitude, bias, amplitude_scale)
+            coefficients = _diagonal_readout(features, amplitude, bias, amplitude_scale, orders)
+            if orders is not None:
+                from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+
+                coefficients = expand_polynomial_coefficients(coefficients, orders[-1], orders)
+            return coefficients
         mixing = mixing.astype(jnp.float32)
         if readout_scale != 1.0:
             # Preserve the historical square/rectangular arithmetic at scale 1.
@@ -315,17 +326,22 @@ def key_factor_statistics(key_factors):
 
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
-                               log_decay=None):
+                               log_decay=None, decay_mode="cumulative"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
-    ``log_decay`` [batch,time,heads] is the forget gate's cumulative FP32 sum L_t of
-    log alpha; each weight is multiplied by exp(L_t - L_i). Only the blocked reference has it.
+    ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
+    ``cumulative`` mode, multiplying each weight by exp(L_t-L_i). In ``query_distance``
+    mode it is log alpha_t itself, giving exp((t-i)*log alpha_t). Both use the blocked backend.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
+    if decay_mode not in ("cumulative", "query_distance"):
+        raise ValueError(f"Unknown query decay mode: {decay_mode}")
+    if decay_mode != "cumulative" and log_decay is None:
+        raise ValueError("A query-distance decay mode requires log_decay")
     if log_decay is not None and backend != "blocked":
         raise ValueError("The forget gate runs on the blocked reference backend only")
     degree = coefficients.shape[-1] - 1
@@ -333,6 +349,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         result = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
+            query_decay_mode=decay_mode,
             return_diagnostics=return_diagnostics,
         )
         if not return_diagnostics:

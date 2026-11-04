@@ -5,6 +5,7 @@ the blocked reference backend; PaTH-FoX is qualified with the PaTH tests.
 """
 from dataclasses import replace
 
+from flax import nnx
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -12,6 +13,8 @@ import pytest
 
 from scaffolds.transformer import acceptance
 from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+from scaffolds.transformer.attention.core import attention_core
+from scaffolds.transformer.attention.multihead import attention_from_config
 from scaffolds.transformer.attention.parameters import attention_parameter_count
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 from scaffolds.transformer.models import build_model
@@ -106,10 +109,33 @@ def test_configurations(kernel):
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
+@pytest.mark.parametrize("change,message", [
+    ({"attention_forget_gate_mode": "query_distance"}, "query-distance decay mode"),
+    ({"attention_forget_gate_form": "constant"}, "constant forget gate form"),
+])
+def test_query_distance_and_constant_gates_stay_with_query_polynomials(kernel, change, message):
+    """Only the cumulative input-dependent gate is qualified on softmax and the exponential."""
+    with pytest.raises(ValueError, match=message):
+        _config(kernel, **change)
+    model = _config(kernel).model
+    for name, value in change.items():
+        setattr(model, name, value)  # bypass config validation: the module rejects it too
+    with pytest.raises(ValueError, match=message):
+        attention_from_config(model, rngs=nnx.Rngs(0))
+    q = k = v = jnp.zeros((1, 4, 2, 4))
+    with pytest.raises(ValueError, match="cumulative"):
+        attention_core(q, k, v, attention_normalization=kernel == "softmax", query_log_decay=jnp.zeros((1, 4, 2)),
+                       query_decay_mode="query_distance")
+    with pytest.raises(ValueError, match="cumulative"):
+        blocked_dot_product_attention(q, k, v, attention_normalization=kernel == "softmax",
+                                      query_log_decay=jnp.zeros((1, 4, 2)), query_decay_mode="query_distance")
+
+
+@pytest.mark.parametrize("kernel", KERNELS)
 def test_identity_parameters_and_diagnostics(kernel):
     config = _config(kernel)
     identity = attention_identity(config)
-    assert identity["attention_forget_gate"] is True
+    assert identity["attention_forget_gate"] is True and identity["attention_forget_gate_mode"] == "cumulative"
     assert identity["attention_kernel"] == ("softmax" if kernel == "softmax" else "exp_unnormalized")
     assert identity["attention_formula"].startswith(
         ("causal_softmax" if kernel == "softmax" else "causal_exp") + "(QK^T / sqrt(d_k) + D) V, D_ti = ")

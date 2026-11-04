@@ -40,6 +40,14 @@ SHA256 of `data_identity.json` beside the parent recipe. Empty defaults preserve
 ordinary training. Continuations use zero warmup and equal peak/minimum learning
 rates; `optim.total_steps` is the absolute ending step, including the parent steps.
 
+To extend an already learned static or query model without changing its attention,
+set `continuation.preserve_all_parameters: true` and leave
+`continuation.new_parameter_learning_rate: null`. Every learned coefficient and
+projection, along with its Adam moments and clock, is restored. All parameters use
+the continuation's constant `optim.learning_rate`; no coefficient optimizer is
+created or reset. This mode requires an identical model recipe except for the
+execution backend and preserves the parent's weight-decay policy.
+
 The shared trainer restores every pretrained parameter and its Adam moments/count
 without change, continues the parent's batch cursor and RNG clock, and independently
 evaluates and checkpoints the starting state before the first new update. A child
@@ -88,6 +96,30 @@ overrides automatic selection. This transport policy does not replace kernel and
 full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
+
+`model.attention_forget_gate: true` adds the existing per-layer/head gate
+`log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
+the pre-attention RMSNorm activation, to softmax, unnormalized exponential, and
+unnormalized nonlinear query-polynomial attention ([Forget gate](#forget-gate) lists
+positions and backends). `attention_forget_gate_mode: cumulative` (the historical
+default) multiplies weights by `exp(L_t - L_i)`, where `L_t = sum_{j<=t} log(alpha_j)`.
+For query polynomials on the blocked backend, the `query_distance` mode instead
+multiplies by `exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+Both modes apply attenuation after the polynomial, keep diagonal attenuation one,
+and preserve the coefficient generator and attention-output normalization.
+They share identical parameters and initialization: the gate projection decays,
+while `A_log` and `b_dt` do not. The separate coefficient-projection decay switch
+retains its existing behavior. New-mode GPU acceptance compares outputs and all
+operand gradients against an explicit dense reference at 2,048 tokens.
+
+`attention_forget_gate_form: input` (the default) is that gate. The `constant` form
+drops its token dependence: one learned log rate per layer and head,
+`log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
+ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for heads
+`h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
+form is qualified only for query polynomials with the cumulative mode under RoPE or no
+positional encoding on the blocked backend; configuration rejects it with `query_distance`,
+PaTH, softmax, or the exponential.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -185,7 +217,17 @@ coefficients, so the penalty is the only shrinkage they receive.
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
 Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
 with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
-`per_head`, FP32, without weight decay. The blocked reference evaluates them by
+`per_head`, FP32, without weight decay. For learned static/direct or diagonal tanh-query polynomials,
+`attention_coefficient_orders: [0, 2, 4, 6, 8]` stores only five entries and fixes
+all omitted orders at zero. Orders must be strictly increasing and include the
+configured highest degree. Taylor initialization retains `1/r!` on these orders;
+with `attention_coefficient_scale: factorial`, the stored entries start at one
+and divide by the factorial of their actual order, not their compact array index.
+The existing attention kernels receive the expanded monomial vector, with exactly
+zero omitted coefficients. Query generators store and project only the selected
+columns of W and entries of a,b (and an optional inner bias); projection weight
+decay still applies to W only. Both bias and amplitude scaling use the selected
+orders' factorials before expanding the effective coefficients. The blocked reference evaluates them by
 Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
@@ -455,8 +497,9 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | --- | --- | --- | --- |
 | softmax | `softmax_i(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
-| nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE or none | `blocked` |
+| nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
 
+Softmax and the exponential take the cumulative mode with the input gate form only.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
 parameters.
@@ -475,14 +518,24 @@ convolution with SiLU, and L2 normalization per head, and
 (projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
 so the backbone keeps the softmax control's weights; all but the bias take weight decay.
 
+Set `attention_forget_gate: true` to combine PaTH with FoX (PaTH-FoX). With `L` the
+cumulative per-token log forget gate, softmax and the exponential add `L_t - L_s` to each
+transported score, and the tanh query polynomial multiplies its weight by `exp(L_t - L_s)`,
+on the blocked reference and the fused kernels alike. The public `path_attention` and
+`fused_path_attention` APIs accept this optional FP32 `[batch, time, heads]` array as
+`log_decay` for every kernel; its gradients propagate through the cumulative sum into the
+gate parameters. Causal differences are masked before exponentiation, and gate values are
+never factored into separate global exponentials. The fused backward adds O(BTH)
+gate-gradient buffers. Only `attention_forget_gate_mode: cumulative` with the input gate
+form composes with PaTH; configuration rejects `query_distance` and the constant form with PaTH.
+
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
 query chunk against the key chunk behind it and moves the queries through that chunk's
 Householder product. Automatic differentiation of a rematerialized forward pass gives the
 derivative. It supports softmax (normalized, with a running maximum), the unnormalized
-exponential, and tanh query-conditioned unnormalized polynomials; softmax and the
-exponential also take the forget gate (PaTH-FoX), adding `L_t - L_s` to each transported
-score. It is tested against the definition and the authors' PyTorch reference (with and
+exponential, and tanh query-conditioned unnormalized polynomials, each with the forget
+gate above. It is tested against the definition and the authors' PyTorch reference (with and
 without their gate), and is the reference for the fused kernels and their diagnostics.
 
 `attention_backend: fused` runs FLA's fused Triton kernels
@@ -498,15 +551,16 @@ derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that 
 (query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. The unnormalized
 exponential is FLA's softmax output times its row sum `2^lse` (FLA's base-2 log-sum-exp);
 its derivative is FLA's softmax backward given `do 2^lse` and `delta = 0`, which is exact
-because the row sum's own derivative cancels `delta`. The forget gate enables FLA's own
-gate path in six of the kernels (`USE_G`, `USE_GATE`); FLA adds its gate to the unscaled
-scores, so the kernels receive `L sqrt(d_K)`, and the four kernels that form its gradient
-each write a separate FP32 part that the wrapper sums. Transport, Householder, and
-UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
-FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
-by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
-kernel fails to launch at width 128), and degree 1-4; `auto` selects
-it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
+because the row sum's own derivative cancels `delta`. For softmax and the exponential,
+the forget gate enables FLA's own gate path in six of the kernels (`USE_G`, `USE_GATE`);
+FLA adds its gate to the unscaled scores, so the kernels receive `L sqrt(d_K)`, and the
+four kernels that form its gradient each write a separate FP32 part that the wrapper sums.
+The polynomial fork multiplies each weight by `exp(L_t - L_s)` itself and receives `L`.
+Transport, Householder, and UT-transform arithmetic are FLA's. It needs an sm90+ GPU,
+`train.dtype: bfloat16` (with FP32 tiles one of FLA's kernels exceeds the shared memory), a
+prediction length divisible by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to
+64 on B300, where FLA's dq kernel fails to launch at width 128), and degree 1-4; `auto`
+selects it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
 as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
 rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
 errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
@@ -514,8 +568,8 @@ and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at
 production shape). Its backward accumulates dk, dv, dw, and the split products'
 gradient (and the gate's) with FP32 atomic additions, so dk, dv, dw, dbeta, and the decay
 gradient are not bitwise repeatable; outputs, dq, and the coefficient gradients are.
-Accuracy, speed, and training pilots are
-in [validation](validation/README.md#fused-path-attention-kernels).
+Accuracy, speed, and training pilots are in
+[validation](validation/README.md#fused-path-attention-kernels).
 
 ### Unnormalized output scaling
 
@@ -873,6 +927,32 @@ these execution records while preserving `config.yaml`. Metrics stay in
 `metrics.jsonl`; logs, checkpoints and W&B files are colocated ignored artifacts.
 Shared helpers regenerate the study's `runs.csv` index. Figures and comparisons
 belong under `results/<comparison>/` and select run IDs explicitly.
+
+### Packed-data tools
+
+A packed corpus is one token stream of documents, each followed by an end-of-document
+token, cut into fixed rows. Both tools check every source shard against its manifest
+checksum, write a new packed corpus that `PackedBatchIterator` reads, and record the source
+manifest and its SHA256 in the new manifest's metadata.
+
+```bash
+# The same stream re-cut into rows of another length (metadata.repacked_from).
+python -m scaffolds.transformer.data.repack SOURCE/manifest.json DESTINATION --sequence-length 4097
+# One row per complete document of at least sequence_length - 1 tokens whose first
+# --opening-tokens tokens (default 1,024) no earlier document begins with, in stream order:
+# an end-of-document token, then the document's first sequence_length - 1 tokens
+# (metadata.long_documents_from).
+python -m scaffolds.transformer.data.long_documents SOURCE/manifest.json DESTINATION --sequence-length 16385
+```
+
+`long_documents` also writes `documents.npy`, every complete document's
+`[start, length, first_start]` in the stream (where its opening first appears), and
+`rows.npy`, each row's document; the manifest pins both by SHA256. Every row is the first
+appearance of its document.
+Offsets are stream tokens, which repacking preserves, so a run that trained on rows
+`[0, n)` of a corpus with row length L consumed stream tokens `[0, n * L)`. The rows it never
+saw, in content as well as in position, are the suffix from `first_unseen_row(manifest,
+n * L)`, and `row_documents(manifest)` gives each row's document.
 
 ### Weights & Biases
 

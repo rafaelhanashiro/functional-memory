@@ -9,9 +9,11 @@ semantics; outputs FLA updates in place are aliased outputs here
 kernels replaced by ``fla_path_polynomial_kernels``. The unnormalized exponential
 ``o_t = sum_s exp(s_ts) v_s`` is FLA's softmax output times its row sum ``2^lse`` (FLA's
 base-2 log-sum-exp); its derivative is FLA's softmax backward given ``do * 2^lse`` and a zero
-``delta``. A forget gate's cumulative log decay ``L`` [B, T, H] (FP32) enters FLA's own gate
-path (``USE_G``/``USE_GATE``) for softmax and the exponential, giving ``s_ts + L_t - L_s``; FLA
-adds its gate before the score scale, so the kernels receive ``L sqrt(d_K)``.
+``delta``. A forget gate's cumulative log decay ``L`` [B, T, H] (FP32) gives every kernel
+the convention of ``path.path_attention``: softmax and the exponential use FLA's own gate path
+(``USE_G``/``USE_GATE``) for ``s_ts + L_t - L_s``, and since FLA adds its gate before the score
+scale those kernels receive ``L sqrt(d_K)``; the polynomial fork multiplies each weight by
+``exp(L_t - L_s)`` and receives ``L``. Every kernel returns the gradient through ``L``.
 
 Inputs follow ``path.path_attention``: ``q, k, v`` [B, T, H, D] (BF16, D in 16, 32, 64, 128 on
 Hopper and up to 64 on Blackwell, value width equal to D), unit ``w`` [B, T, H, D] and ``beta``
@@ -288,10 +290,10 @@ _gated_exponential.defvjp(_exponential_forward, _exponential_backward)
 
 
 # ---------------------------------------------------------------------------------------
-# Unnormalized query polynomial: the six forked kernels
+# Unnormalized query polynomial, with or without a forget gate: the six forked kernels
 # ---------------------------------------------------------------------------------------
 
-def _polynomial_forward(q, k, v, w, beta, c):
+def _polynomial_forward(q, k, v, w, beta, c, log_decay):
     from scaffolds.transformer.attention.backends import fla_path_polynomial_kernels as poly
 
     setup = _setup(q)
@@ -300,67 +302,77 @@ def _polynomial_forward(q, k, v, w, beta, c):
     scale = 1.0 / math.sqrt(key_dim)
     meta = _meta(q, v)
     degree = c.shape[-1] - 1
+    has_decay = log_decay is not None
+    decay_input = log_decay if has_decay else beta
     a = _ut_transform(w, beta, setup)
     o, w2, q_new, k_new = _launch(
-        poly.intra_fwd, q, k, v, w, beta, c, a, scale, length,
+        poly.intra_fwd, q, k, v, w, beta, c, decay_input, a, scale, length,
         outputs=(empty(v.shape, _F32), empty(w.shape, w.dtype), empty(q.shape, _F32), empty(k.shape, k.dtype)),
         grid=(length // tiles.BS, batch * heads), name="fla::path::polynomial_intra_chunk_fwd",
-        BT=tiles.BS, DEGREE=degree, num_warps=tiles.intra_fwd_warps,
+        BT=tiles.BS, DEGREE=degree, HAS_DECAY=has_decay, num_warps=tiles.intra_fwd_warps,
         **{key: meta[key] for key in ("H", "G", "HQ", "K", "V", "BK", "BV")})
     o = _launch(
-        poly.path_fwd, q_new, k_new, v, o, w.astype(_F16), w2.astype(_F16), c, scale, length,
+        poly.path_fwd, q_new, k_new, v, o, w.astype(_F16), w2.astype(_F16), c, decay_input, scale, length,
         outputs=empty(v.shape, v.dtype), grid=(triton_port.cdiv(length, tiles.BT), batch * heads),
-        name="fla::path::polynomial_parallel_fwd", BT=tiles.BT, BS=tiles.BS, DEGREE=degree,
+        name="fla::path::polynomial_parallel_fwd", BT=tiles.BT, BS=tiles.BS, DEGREE=degree, HAS_DECAY=has_decay,
         num_warps=tiles.inter_warps, **meta)
-    return o, (q, k, v, w, beta, c, a)
+    return o, (q, k, v, w, beta, c, log_decay, a)
 
 
 def _polynomial_backward(residuals, do):
     from scaffolds.transformer.attention.backends import fla_path_polynomial_kernels as poly
 
-    q, k, v, w, beta, c, a = residuals
+    q, k, v, w, beta, c, log_decay, a = residuals
     _, tiles = _setup(q)
     batch, length, heads, key_dim, value_dim = _shapes(q, v)
     scale = 1.0 / math.sqrt(key_dim)
     meta = _meta(q, v)
     degree = c.shape[-1] - 1
+    has_decay = log_decay is not None
+    decay_input = log_decay if has_decay else beta
     do = do.astype(v.dtype)
-    *prepared, dc_local = _launch(
-        poly.bwd_prepare, q, k, v, w, beta, c, a, do, scale, length,
+    # Ungated specializations never access their scalar dummy gate outputs.
+    decay_shape = beta.shape if has_decay else ()
+    *prepared, dc_local, dl_local = _launch(
+        poly.bwd_prepare, q, k, v, w, beta, c, decay_input, a, do, scale, length,
         outputs=(empty(w.shape, w.dtype), empty(q.shape, q.dtype), empty(k.shape, k.dtype),
-                 empty((batch, length, heads, tiles.BS), q.dtype), empty(v.shape, _F32), empty(c.shape, _F32)),
+                 empty((batch, length, heads, tiles.BS), q.dtype), empty(v.shape, _F32), empty(c.shape, _F32),
+                 empty(decay_shape, _F32)),
         grid=(length // tiles.BS, batch * heads), name="fla::path::polynomial_bwd_prepare",
-        BT=tiles.BS, DEGREE=degree, **meta)
-    inter_meta = dict(BT=tiles.BT, BS=tiles.BS, S=SPLIT, DEGREE=degree, **meta)
+        BT=tiles.BS, DEGREE=degree, HAS_DECAY=has_decay, **meta)
+    inter_meta = dict(BT=tiles.BT, BS=tiles.BS, S=SPLIT, DEGREE=degree, HAS_DECAY=has_decay, **meta)
     grid = (triton_port.cdiv(length, tiles.BT), batch * heads)
 
     def inter(q_large, k_large, hc_whole, dv, blocks, splits_total):
-        dk, dv = _launch(poly.bwd_dkv, q_large, k_large, v, c, do, scale, length,
-                         outputs=(empty(q.shape, _F32), update(dv)), grid=grid,
-                         name="fla::path::polynomial_bwd_dkv", NUM_BLOCKS=blocks, num_warps=tiles.inter_warps,
-                         **inter_meta)
-        dq, dhc_whole, dc_splits = _launch(
-            poly.bwd_dq, q_large, k_large, v, hc_whole, c, do, scale, length,
-            outputs=(empty(q.shape, _F32), zeros((splits_total, heads, key_dim, key_dim), _F32), empty(c.shape, _F32)),
+        dk, dv, dl_keys = _launch(
+            poly.bwd_dkv, q_large, k_large, v, c, decay_input, do, scale, length,
+            outputs=(empty(q.shape, _F32), update(dv), empty(decay_shape, _F32)), grid=grid,
+            name="fla::path::polynomial_bwd_dkv", NUM_BLOCKS=blocks, num_warps=tiles.inter_warps,
+            **inter_meta)
+        dq, dhc_whole, dc_splits, dl_queries = _launch(
+            poly.bwd_dq, q_large, k_large, v, hc_whole, c, decay_input, do, scale, length,
+            outputs=(empty(q.shape, _F32), zeros((splits_total, heads, key_dim, key_dim), _F32),
+                     empty(c.shape, _F32), empty(decay_shape, _F32)),
             grid=grid, name="fla::path::polynomial_bwd_dq", NUM_BLOCKS=blocks, num_warps=tiles.inter_warps,
             num_stages=tiles.dq_stages, **inter_meta)
-        return dk, dv, dq, dhc_whole, dc_splits
+        return dk, dv, dq, dhc_whole, dc_splits, dl_keys, dl_queries
 
     def intra(q_new, k_new, w_q, h_q, dq, dk, dv, dw1, dw2):
-        return _launch(poly.bwd_intra, q_new, k_new, v, w_q, h_q, c, dq, do, length, scale,
+        return _launch(poly.bwd_intra, q_new, k_new, v, w_q, h_q, c, decay_input, dq, do, length, scale,
                        outputs=(empty(q.shape, q.dtype), update(dk), update(dv), update(dw1), update(dw2),
-                                empty(c.shape, _F32)),
+                                empty(c.shape, _F32), zeros(decay_shape, _F32)),
                        grid=(length // tiles.BS, batch * heads), name="fla::path::polynomial_bwd_intra",
-                       BT=tiles.BS, S=SPLIT, DEGREE=degree, **meta)
+                       BT=tiles.BS, S=SPLIT, DEGREE=degree, HAS_DECAY=has_decay, **meta)
 
-    dq, dk, dv, dw, dbeta, dc_splits, dc_chunks = _transport_backward(
+    dq, dk, dv, dw, dbeta, dc_splits, dl_keys, dl_queries, dc_chunks, dl_chunks = _transport_backward(
         q, k, v, w, beta, a, prepared, inter, intra, tiles)
-    return dq, dk, dv, dw, dbeta, (dc_local + dc_chunks + dc_splits).astype(c.dtype)
+    dl = dl_local + dl_keys + dl_queries + dl_chunks if has_decay else None
+    return dq, dk, dv, dw, dbeta, (dc_local + dc_chunks + dc_splits).astype(c.dtype), dl
 
 
 @jax.custom_vjp
-def _polynomial(q, k, v, w, beta, c):
-    return _polynomial_forward(q, k, v, w, beta, c)[0]
+def _polynomial(q, k, v, w, beta, c, log_decay):
+    return _polynomial_forward(q, k, v, w, beta, c, log_decay)[0]
 
 
 _polynomial.defvjp(_polynomial_forward, _polynomial_backward)
@@ -382,9 +394,8 @@ def validate(q, k, v, w, beta, *, kernel, coefficients=None, log_decay=None):
         raise ValueError(f"Fused PaTH needs a sequence length divisible by {SEQUENCE_MULTIPLE}")
     if (kernel == "query_polynomial") != (coefficients is not None):
         raise ValueError("The polynomial PaTH kernel requires coefficients; softmax and exp take none")
-    if log_decay is not None and (kernel == "query_polynomial" or log_decay.shape != q.shape[:3]
-                                  or log_decay.dtype != jnp.float32):
-        raise ValueError("A fused PaTH forget gate takes an FP32 cumulative log decay [B, T, H], with softmax or exp")
+    if log_decay is not None and (log_decay.shape != q.shape[:3] or log_decay.dtype != _F32):
+        raise ValueError("A fused PaTH forget gate takes an FP32 cumulative log decay [B, T, H]")
     if coefficients is not None and (coefficients.shape[:3] != q.shape[:3]
                                      or not 2 <= coefficients.shape[-1] <= MAX_DEGREE + 1):
         raise ValueError(f"PaTH polynomial coefficients must have shape [B, T, H, m+1] with m in 1-{MAX_DEGREE}")
@@ -401,7 +412,8 @@ def fused_path_attention(q, k, v, w, beta, *, kernel, coefficients=None, log_dec
     validate(q, k, v, w, beta, kernel=kernel, coefficients=coefficients, log_decay=log_decay)
     w, beta = w.astype(_F32), beta.astype(_F32)
     if kernel == "query_polynomial":
-        output = _polynomial(q, k, v, w, beta, coefficients.astype(_F32))
+        # The fork multiplies each polynomial weight by exp(L_t - L_s).
+        output = _polynomial(q, k, v, w, beta, coefficients.astype(_F32), log_decay)
     elif log_decay is None:
         output = _exponential(q, k, v, w, beta, kernel == "softmax")
     else:

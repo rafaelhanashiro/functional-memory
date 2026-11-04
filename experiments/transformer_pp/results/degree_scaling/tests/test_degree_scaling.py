@@ -17,10 +17,13 @@ DERIVED = ("degree_scaling.png", "degree_scaling.pdf", "summary.csv", "README.md
 # Terminal validation perplexity at update 7,570, as quoted in the README.
 TERMINAL = {
     ("taylor", 1): 19.556, ("taylor", 2): 15.912, ("taylor", 3): 15.974, ("taylor", 4): 14.724,
+    ("taylor", 5): 14.843,
     ("hermite", 1): 19.513, ("hermite", 2): 16.168, ("hermite", 3): 15.732, ("hermite", 4): 14.987,
+    ("hermite", 5): 14.609,
     ("static", 1): 19.531, ("static", 2): 15.822, ("static", 3): 16.649, ("static", 4): 14.773,
+    ("static", 5): 14.871,
     ("query_w_decay", 1): 19.219, ("query_w_decay", 2): 15.832, ("query_w_decay", 3): 16.443,
-    ("query_w_decay", 4): 14.714,
+    ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080,
 }
 
 
@@ -31,13 +34,19 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 18 and set(cells) == set(TERMINAL)
+    assert len(rows) == 22 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
         assert cells[cell]["terminal_validation_perplexity"] == pytest.approx(value, abs=5e-4), cell
     assert cells["static", 3]["change_from_previous_degree_percent"] == pytest.approx(5.22, abs=5e-3)
     assert cells["query_w_decay", 3]["change_from_previous_degree_percent"] == pytest.approx(3.86, abs=5e-3)
+    # m = 5: the Taylor-shaped families end above m = 4 and Hermite below it.
+    assert cells["taylor", 5]["change_from_previous_degree_percent"] == pytest.approx(0.81, abs=5e-3)
+    assert cells["static", 5]["change_from_previous_degree_percent"] == pytest.approx(0.67, abs=5e-3)
+    assert cells["query_w_decay", 5]["change_from_previous_degree_percent"] == pytest.approx(2.49, abs=5e-3)
+    assert cells["hermite", 5]["change_from_previous_degree_percent"] == pytest.approx(-2.53, abs=5e-3)
+    assert cells["hermite", 5]["percent_above_softmax"] == pytest.approx(0.43, abs=5e-3)
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
@@ -102,7 +111,7 @@ def test_changed_inputs_and_mislabeled_cells_are_rejected():
     with pytest.raises(ValueError, match="selection says 2"):
         load_runs(wrong_degree)
     wrong_family = copy.deepcopy(SELECTION)
-    wrong_family["runs"][4]["family"] = "taylor"
+    next(entry for entry in wrong_family["runs"] if entry["run_id"] == "rddf0b0173f42")["family"] = "taylor"
     with pytest.raises(ValueError, match="trains hermite"):
         load_runs(wrong_family)
     missing = copy.deepcopy(SELECTION)

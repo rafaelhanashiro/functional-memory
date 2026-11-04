@@ -1,0 +1,54 @@
+question: How much does the nonlinear exponential score kernel contribute beyond QK
+  and attention-output RMSNorm?
+settings:
+  metric: validation perplexity
+  report:
+  - validation-best
+  - terminal
+  context_length: 2048
+  training_updates: 7570
+  seed: 42
+  fixed_polynomial_coefficients:
+  - 0.0
+  - 1.0
+runs:
+- study: transformer_pp
+  run_id: r6a76e7fbde45
+  role: exp_control
+  label: Exp + head RMSNorm
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metrics.jsonl
+      sha256: adcc711574d95b506246b762fef2fdb724ab1aa00f618c0546cb3f47c4ce165d
+    completion.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/completion.json
+      sha256: 8b7e7bf2d3124fe5dff032355b96a42f3982166f58978f998b47b3415ae4298e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metadata.json
+      sha256: 7fa4b1ed64bf0e895b67d2db757a580599e831500a0757ad7787ed7d7a4c92ae
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
+      sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: rd434701f3492
+  role: fixed_linear
+  label: Fixed linear + head RMSNorm
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd434701f3492/config.yaml
+      sha256: 45492ea5d60200ae80b45bf7326cb617a1d4a7510b368f17c3e6c755f440c31e
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rd434701f3492/metrics.jsonl
+      sha256: f178ad2f98bdc3777ce1805736ba298654a4fbd656e2969fc8d70e9e2af01a86
+    completion.json:
+      path: experiments/transformer_pp/runs/rd434701f3492/completion.json
+      sha256: 8f3f0ae05282990b62d970b58f9d8041f9f8076977971097d771f7c182c32495
+    metadata.json:
+      path: experiments/transformer_pp/runs/rd434701f3492/metadata.json
+      sha256: def477fd8c64ffe6a04bec20758a893be31f8ca209a94a0634a004cc951a420d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rd434701f3492/best_validation.json
+      sha256: c417d5189b017a464d2859a9b45667cf3ca25a30ca83f7ed64f988742669520b

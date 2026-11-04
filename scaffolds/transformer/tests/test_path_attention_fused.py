@@ -204,21 +204,22 @@ def test_rejects_unsupported_operands(change, message):
         _attend(fused_path_attention, "query_polynomial")(*operands)
 
 
-def test_rejects_a_forget_gate_on_the_polynomial_kernel_and_a_misshapen_decay():
+@pytest.mark.parametrize("kernel", ("softmax", "exp", "query_polynomial"))
+def test_rejects_a_misshapen_or_non_fp32_decay(kernel):
+    """The polynomial's gate is qualified in test_fox_path_attention_fused.py."""
     operands, _ = _inputs(time=256, dim=32, degree=2)
+    coefficients = {"coefficients": operands[5]} if kernel == "query_polynomial" else {}
     decay = jnp.zeros(operands[4].shape, jnp.float32)
-    with triton_port.interpreter(), pytest.raises(ValueError, match="forget gate"):
-        fused_path_attention(*operands[:5], kernel="query_polynomial", coefficients=operands[5], log_decay=decay)
     for wrong in (decay[:, :128], decay.astype(jnp.bfloat16)):
         with triton_port.interpreter(), pytest.raises(ValueError, match="forget gate"):
-            fused_path_attention(*operands[:5], kernel="exp", log_decay=wrong)
+            fused_path_attention(*operands[:5], kernel=kernel, log_decay=wrong, **coefficients)
 
 
 def _model_config(kernel, backend, **updates):
     settings = dict(vocab_size=32, max_seq_len=128, num_layers=2, hidden_size=32, num_heads=2, num_kv_heads=2,
                     qk_head_dim=16, value_head_dim=16, intermediate_size=48, attention_backend=backend,
                     initialization="transformer_reference", qk_norm=True, positional_encoding="path")
-    if kernel == "query_polynomial":
+    if kernel.removesuffix("_forget_gate") == "query_polynomial":
         settings.update(attention_degree=2, attention_normalization=False, attention_coefficients="learned",
                         attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                         attention_coefficient_activation="tanh", attention_coefficient_amplitude_initial=0.5,
@@ -252,7 +253,8 @@ def _model_loss_and_gradients(config, tokens, dtype=jnp.float32):
     return value, dict(nnx.to_flat_state(nnx.state(gradients, nnx.Param)))
 
 
-MODEL_KERNELS = ("softmax", "query_polynomial", "exp", "softmax_forget_gate", "exp_forget_gate")
+MODEL_KERNELS = ("softmax", "query_polynomial", "exp", "softmax_forget_gate", "exp_forget_gate",
+                 "query_polynomial_forget_gate")
 
 
 @pytest.mark.parametrize("kernel", MODEL_KERNELS)
@@ -287,13 +289,14 @@ def test_configuration_backend_resolution_identity_and_acceptance():
         with pytest.raises(ValueError, match="sm90"):
             resolve_attention_backend(fused, dtype="bfloat16", platform="gpu", sequence_length=2000)
         identity = attention_identity(_config(fused))
+        gated = "_forget_gate" if kernel.endswith("_forget_gate") else ""
         assert identity["attention_implementation"] == {
             "softmax": "fla_parallel_path_attention_triton", "exp": "fla_parallel_path_attention_triton_times_row_sum",
-            "query_polynomial": "fla_parallel_path_query_polynomial_triton"}[kernel.removesuffix("_forget_gate")]
-        assert identity.get("attention_forget_gate", False) is kernel.endswith("_forget_gate")
+            "query_polynomial": "fla_parallel_path_query_polynomial_triton"}[kernel.removesuffix("_forget_gate")] + gated
+        assert identity.get("attention_forget_gate", False) is bool(gated)
         assert identity["diagnostic_backend"] == "jax_path_chunked_ut_transform"
         blocked = attention_identity(_config(_model_config(kernel, "blocked")))
-        assert blocked["attention_implementation"] == "jax_path_chunked_ut_transform"
+        assert blocked["attention_implementation"] == "jax_path_chunked_ut_transform" + gated
         recipe = config_to_dict(_config(fused))
         spec = acceptance.AcceptanceSpec(entry_module="tests", cpu_tests=(), gpu_tests=())
         for cpu in (True, False):

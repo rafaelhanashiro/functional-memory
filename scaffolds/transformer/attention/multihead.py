@@ -58,6 +58,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
+        attention_coefficient_orders=config.attention_coefficient_orders,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         qk_norm_type=config.qk_norm_type,
@@ -66,6 +67,8 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
+        attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
+        attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
         rngs=rngs,
     )
 
@@ -96,10 +99,13 @@ class MultiHeadAttention(nnx.Module):
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
+        attention_coefficient_orders: tuple[int, ...] | None = None,
         qk_norm_type: str = "cosine_log_scale",
         qk_norm_head_scale: bool = False,
         qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
+        attention_forget_gate_mode: str = "cumulative",
+        attention_forget_gate_form: str = "input",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -177,19 +183,39 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
-        # Softmax and the unnormalized exponential add the decay to their scores (blocked, or PaTH on
-        # either PaTH backend); nonlinear query-coefficient polynomials multiply their weights by it.
+        if attention_forget_gate_mode not in ("cumulative", "query_distance"):
+            raise ValueError(f"Unknown attention forget gate mode: {attention_forget_gate_mode}")
+        if attention_forget_gate_mode != "cumulative" and not attention_forget_gate:
+            raise ValueError("A query-distance decay mode requires attention_forget_gate")
+        # Softmax and the unnormalized exponential add the decay to their scores; nonlinear
+        # query-coefficient polynomials multiply their weights by it. Each runs with RoPE or no
+        # positional encoding on the blocked backend, or with PaTH on either PaTH backend.
         exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
-                            and attention_coefficient_conditioning == "static"
-                            and (positional_encoding == "path" or backend == "blocked"))
+                            and attention_coefficient_conditioning == "static")
         polynomial_gate = (attention_coefficient_conditioning == "query"
-                           and attention_coefficient_activation != "identity"
-                           and positional_encoding in ("rope", "none") and backend == "blocked")
-        if attention_forget_gate and not (exponential_gate or polynomial_gate):
-            raise ValueError("The forget gate requires softmax or exponential attention (blocked, or with PaTH), "
-                             "or nonlinear query coefficients with RoPE or no positional encoding, on the blocked "
-                             "backend")
+                           and attention_coefficient_activation != "identity")
+        forget_backend_supported = (
+            positional_encoding == "path" and backend in ("auto", "blocked", "fused")
+            or positional_encoding in ("rope", "none") and backend == "blocked")
+        if attention_forget_gate and not ((exponential_gate or polynomial_gate) and forget_backend_supported):
+            raise ValueError("The forget gate requires softmax, the unnormalized exponential, or nonlinear query "
+                             "coefficients: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+        if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
+            # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
+            raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
+                             "blocked backend; PaTH supports only cumulative FoX decay")
+        if attention_forget_gate_mode == "query_distance" and not polynomial_gate:
+            raise ValueError("The query-distance decay mode requires nonlinear query coefficients")
         self.attention_forget_gate = attention_forget_gate
+        self.attention_forget_gate_mode = attention_forget_gate_mode
+        if attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {attention_forget_gate_form}")
+        if attention_forget_gate_form != "input" and (
+                not attention_forget_gate or attention_forget_gate_mode != "cumulative"
+                or positional_encoding not in ("rope", "none") or not polynomial_gate):
+            raise ValueError("The constant forget gate form requires the cumulative gate on nonlinear query "
+                             "coefficients, with RoPE or no positional encoding on the blocked backend")
+        self.attention_forget_gate_form = attention_forget_gate_form
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -214,6 +240,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("A non-unit readout scale requires dense coefficient readout")
         self.attention_coefficient_readout = attention_coefficient_readout
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
+        self.attention_coefficient_orders = attention_coefficient_orders
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
@@ -311,13 +338,18 @@ class MultiHeadAttention(nnx.Module):
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        if self.attention_coefficient_orders is not None and self.attention_coefficient_conditioning == "static":
+            from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+
+            parameters["polynomial_coefficients"] = expand_polynomial_coefficients(
+                parameters["polynomial_coefficients"], self.attention_degree, self.attention_coefficient_orders)
         if self.attention_coefficient_scale == "factorial":
             from scaffolds.transformer.attention.parameters import factorial_scale
 
             if (query_bias is None) == ("polynomial_coefficients" not in parameters):
                 raise ValueError("A coefficient scale needs exactly one learned coefficient array")
             if query_bias is not None:
-                query_bias = factorial_scale(query_bias)
+                query_bias = factorial_scale(query_bias, self.attention_coefficient_orders)
             else:
                 parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
         if self.attention_coefficient_conditioning in ("query", "query_key"):
@@ -337,7 +369,8 @@ class MultiHeadAttention(nnx.Module):
                     x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
                     amplitude_scale=self.attention_coefficient_amplitude_scale,
-                    readout_scale=self.attention_coefficient_readout_scale)
+                    readout_scale=self.attention_coefficient_readout_scale,
+                    orders=self.attention_coefficient_orders)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
@@ -348,17 +381,27 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
-        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS, log_decay
+        from scaffolds.transformer.attention.forget_gate import (
+            PARAMETERS as FORGET_GATE_PARAMETERS, constant_log_decay, log_decay, parameter_names,
+        )
 
-        forget_gate = [parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS]
-        if any(value is None for value in forget_gate) if self.attention_forget_gate else any(
-                value is not None for value in forget_gate):
-            raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
+        gate_names = parameter_names(self.attention_forget_gate_form) if self.attention_forget_gate else ()
+        forget_gate = {name: parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS}
+        if any(forget_gate[name] is None for name in gate_names) or any(
+                value is not None for name, value in forget_gate.items() if name not in gate_names):
+            raise ValueError("The forget gate requires exactly its model-owned parameters for its form")
         log_alpha = None
         if self.attention_forget_gate:
-            # Cumulative FP32 log decay L_t; the kernel multiplies each weight by exp(L_t - L_i).
-            log_alpha = log_decay(x, *forget_gate)
-            parameters["query_log_decay"] = jnp.cumsum(log_alpha, axis=1)
+            # The constant form's log alpha is -exp(A_log) at every token; the input form reads x_t.
+            if self.attention_forget_gate_form == "constant":
+                log_alpha = constant_log_decay(x, forget_gate["forget_gate_log_rate"])
+            else:
+                log_alpha = log_decay(x, *(forget_gate[name] for name in FORGET_GATE_PARAMETERS))
+            # The gate and its parameters are identical in both modes. Only the attenuation
+            # changes: exp(L_t-L_i) for FoX, exp((t-i)*log_alpha_t) for query distance.
+            parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
+                                               if self.attention_forget_gate_mode == "cumulative" else log_alpha)
+            parameters["query_decay_mode"] = self.attention_forget_gate_mode
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
@@ -476,16 +519,18 @@ class MultiHeadAttention(nnx.Module):
             "path_w_down", "path_w_up", "path_w_conv", "path_beta_kernel", "path_beta_bias")), num_heads=self.num_heads)
         coefficients = parameters.pop("query_polynomial_coefficients", None)
         log_decay = parameters.pop("query_log_decay", None)
+        if parameters.pop("query_decay_mode", "cumulative") != "cumulative":
+            raise ValueError("PaTH attention supports only the cumulative forget-gate decay")
         if parameters:
             raise ValueError(f"PaTH attention does not accept {sorted(parameters)}")
         if self.attention_degree is None and coefficients is None:
             kernel = "softmax" if self.attention_normalization else "exp"
-        elif (not self.attention_normalization and coefficients is not None and log_decay is None
+        elif (not self.attention_normalization and coefficients is not None
               and self.attention_coefficient_activation == "tanh"):
             kernel = "query_polynomial"
         else:
-            raise ValueError("PaTH supports softmax and exponential attention, with or without a forget gate, "
-                             "and tanh query-conditioned polynomial attention")
+            raise ValueError("PaTH supports softmax, the unnormalized exponential, and tanh query-conditioned "
+                             "polynomial attention, each with or without a forget gate")
         chunk = CHUNK_SIZE if seq_len % CHUNK_SIZE == 0 else seq_len
         if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
             raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
