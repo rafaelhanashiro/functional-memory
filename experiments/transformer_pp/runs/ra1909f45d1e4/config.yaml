@@ -1,0 +1,123 @@
+schema_version: 1
+experiment_kind: attention_position_weights
+condition: context_length/position_weights_long_documents
+output_directory: experiments/transformer_pp/runs/ra1909f45d1e4
+position_weights:
+  models:
+  - run_id: rca97cc9db8f2
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+    config_sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rca97cc9db8f2/checkpoints/7500
+    checkpoint_sha256: e13faa440ae0268d84d0d32c95351c567f079d5f65445ce94f449f7861b2cac9
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 46c71979d46b6b9bfcc1845bec5faa92d8e007e873817dbdd1cd906980d5297f
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: 668adf79cbb1dbbc8606537da3576916b8e41496c2992c216ad75c8a947c90d1
+      size_bytes: 218972
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: d6a48c3f58a87af06d80b3db720e651d0c7365200aaa1247e524720604df387a
+      size_bytes: 75263
+    - path: default/d/baceee5aa246df37519361bddb6afd06
+      sha256: 1237bb403f135c6330f7fee4178f4f8a7f0e21fe63bae2b87b068c920ca8b471
+      size_bytes: 7248
+    - path: default/manifest.ocdbt
+      sha256: 679a43f06de3853bd7fb1d7952c730db22a11155f7841ffdb6887a741888ac23
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/0a35c0ea758889446fe0ee8811c018e1
+      sha256: fc58ea827567ab1b78b2f972980b5d68f6b92b942940896d2f81db67edd21f49
+      size_bytes: 715808768
+    - path: default/ocdbt.process_0/d/6fee4ba382874fb6b9d316ece9f69eb4
+      sha256: 24b22b5ff929e7b6c961d1c971bd293e58ea9238d416771118aa85819dd30f4c
+      size_bytes: 813
+    - path: default/ocdbt.process_0/d/9faa17b090cb49d04f8826b09b79f549
+      sha256: c53898b8a3ce20bd2b8c1d8199eaad25436ec104546e320638149a9fb4d17722
+      size_bytes: 1353166848
+    - path: default/ocdbt.process_0/d/dce10a699f9a406681f5a67b9b9fa7f4
+      sha256: 535faf8a57deb1265c567cd85a7593ccdc5048c5a77730782be2f9b7eab76909
+      size_bytes: 777
+    - path: default/ocdbt.process_0/d/ebaef6f381545fc0e3eab97f8a8cfda4
+      sha256: 22640e400377384e9639b2814b7531570a11ac06ab96e8781d0723e29ce47b2a
+      size_bytes: 125968384
+    - path: default/ocdbt.process_0/d/f3770b509c45aaf47e60fd44a93a119e
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 1bf56f1371a6a70dbf4c6038ee4f486b7d7dde73bbaa352b3885491ac5b3ff43
+      size_bytes: 357
+    - path: metrics/metrics
+      sha256: 28f03c1d4c16b4226f44547c2289b4376a0c6903a0d771124af5df5c891bea87
+      size_bytes: 138
+    step: 7500
+    recorded_validation_nll: 2.6884281831352332
+    training_sequence_length: 2049
+    ignored_config_keys: {}
+    name: query_2k
+  - name: query_4k
+    run_id: r738b35a8e314
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r738b35a8e314/config.yaml
+    config_sha256: 797dc8ab65a5ba346f1b8dfaaa3ffb8d1fc4bc9a3891598197b6535d120ef820
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r738b35a8e314/checkpoints/7500
+    checkpoint_sha256: 9c0ebe2cf034bfd98ed0c179d5b5b484be8d2f94d8ae68917d86207dd5360618
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: b2cc555a2d4d435bf62ad19fc81ba645848dc091caca8b3d293954b40c30094b
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: 668adf79cbb1dbbc8606537da3576916b8e41496c2992c216ad75c8a947c90d1
+      size_bytes: 218972
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: d6a48c3f58a87af06d80b3db720e651d0c7365200aaa1247e524720604df387a
+      size_bytes: 75263
+    - path: default/d/13ac139265f9c7fc7aaaf47c3366e67a
+      sha256: ebe0a020f25a657b9a9548ce6a7dfef6399dc4601fb60af928f6fd4a03d87649
+      size_bytes: 7360
+    - path: default/manifest.ocdbt
+      sha256: 8a830d7627ee3dfd1ebecaa4b392d0b75a6c6c3e0933fc5d1946d03327dd6aff
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/00637bf21c874a98329ec0fe2623a8bf
+      sha256: 5d9b4c9a7dafd6717803c676edec39ee69b831a2be8191b93332b50d71a4743b
+      size_bytes: 700
+    - path: default/ocdbt.process_0/d/16c5e302ab361006411239dbd05b2e97
+      sha256: 82de948bedd523ddbfb3238a0c128898260c0f4d9c3e0c49cc1ed0ea6768f263
+      size_bytes: 1268973568
+    - path: default/ocdbt.process_0/d/45925dbc257b37b0d3bd5a586c4a2f28
+      sha256: c0018d8c9bd9de36cd3aa9531aa8989e33ffdae85381536e6ee1bd018c792848
+      size_bytes: 814
+    - path: default/ocdbt.process_0/d/5c7a1a10419c39ec8969bb39a6f05f29
+      sha256: c949c743744d3b382438e4045807893740cf59ceb055a982a89eba6d5b62cddd
+      size_bytes: 68222976
+    - path: default/ocdbt.process_0/d/d0b9595c0c4cb16a5fd9a53f6d500914
+      sha256: 257153f0ee93f064a8ffa3a7d3ed7f8291471953ff06eb56cd42e8993a4c1c0d
+      size_bytes: 858914816
+    - path: default/ocdbt.process_0/d/eb4ab7852fec785f08a97246505dfcb0
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 846c8241ff70c7ac9ccf0cb1542859751a5201564d6d623005ab2643d4d38ee6
+      size_bytes: 357
+    - path: metrics/metrics
+      sha256: c94f599cf2da7c56c6d2f9a1fe6797a1bd5dabe37752aa7111e5ec8268712a0a
+      size_bytes: 137
+    step: 7500
+    ignored_config_keys: {}
+  manifest: /data/cl/u/rafah/home/datasets/fineweb_12b_long_documents_seq16385/train/manifest.json
+  manifest_sha256: 58fb45b9032288680fca8a9ae44715a9c8516e77c636eaa37ed7498a39ba8d9d
+  sequence_length: 4097
+  rows: 128
+  batch_rows: 8
+  start_row: 9827
+  query_position: 4095
+  interpretation: '|w| share of the last query (position 4,096) over every key position,
+    per layer, averaged over the 14 heads and 128 single long documents neither model
+    trained on (the first 4,097 tokens of rows 9,827-9,954 of fineweb_12b_long_documents_seq16385/train:
+    an end-of-document token and the document''s first 4,096 tokens), for query +
+    W decay (m = 4) trained at 2,048 and at 4,096 tokens. No gradient or optimizer
+    update.'

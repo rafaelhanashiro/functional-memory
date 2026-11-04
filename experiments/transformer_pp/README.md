@@ -212,7 +212,10 @@ sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem
 
 The weight profile (`r9155f2214b4b`) uses `weight_profile.sbatch` in the same topic with the
 same resources, and the per-position weights (`rece89382b690` for one sequence, `ra0ad3d431842`
-averaged over 128 sequences) use `position_weights.sbatch`.
+averaged over 128 sequences, `ra1909f45d1e4` on 128 long documents) use `position_weights.sbatch`.
+On long documents, `r2a655e742cb7` scores exp, query + W decay and FoX with
+`experiments/transformer_pp/evaluate_per_position.sbatch`, and the ablation reruns with
+`evaluate.sbatch`; both use the same resources and arguments.
 
 ## Exploratory diagnostics
 

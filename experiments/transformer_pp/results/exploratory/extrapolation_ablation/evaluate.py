@@ -1,7 +1,8 @@
 """Locate why query polynomial attention breaks past its 2,048-token training length.
 
 Two inference-time edits of the validation-best query + W decay (m = 4) checkpoint, scored
-per position at 16,384 tokens on the same held-out rows as the original 16k evaluation:
+per position at 16,384 tokens on the rows its recipe selects (the original 16k evaluation's
+held-out rows, or long documents the model never trained on):
 
 - ``window``: each query attends only to its most recent 2,048 keys (distance t - i < 2,048),
   so no key lies beyond the training distance and no query sees more keys than in training.
@@ -11,7 +12,7 @@ per position at 16,384 tokens on the same held-out rows as the original 16k eval
 
 A ``full`` pass with the same implementation and the original causal mask and RoPE is the
 control: at 2,048 tokens it must replay the recorded validation NLL, and at 16,384 tokens its
-first 2,048 positions must match the original Mosaic evaluation. At 2,048 tokens ``window``
+first 2,048 positions must match the reference Mosaic evaluation of the same rows. At 2,048 tokens ``window``
 and ``clamp`` are mathematically identical to ``full``; ``clamp`` is replayed there too, since
 its implementation differs. Nothing is trained or updated; only the attention call is replaced.
 """
@@ -36,7 +37,8 @@ import numpy as np
 import yaml
 
 from experiments.transformer_pp.evaluate_per_position import (
-    extend_forward_length, load_model_config, per_position_nll, sha256, verify_checkpoint,
+    extend_forward_length, load_model_config, manifest_metadata, per_position_nll, require_unseen, sha256,
+    verify_checkpoint,
 )
 from scaffolds.records import capture_artifacts, load_run, update_record, validate_record
 from scaffolds.transformer.attention import multihead
@@ -173,14 +175,18 @@ def main():
             print(f"Reusing completed {mode} pass at {limit} tokens", flush=True)
             continue
         config = load_model_config(model)
+        start = spec.get("start_sequence", 0)
+        details = {"start_sequence": start} if start else {}
+        if "long_documents_from" in manifest_metadata(spec["manifest"]):
+            details.update(require_unseen(config, spec["manifest"], start))
         graph, params = restore_parent(config, Path(model["checkpoint_path"]))
         if name != "training":
             graph, params = extend_forward_length(graph, params, max_seq_len=limit)
         started = time.perf_counter()
-        details = {}
         with ablated_attention(mode, window=window, rope_theta=config.model.rope_theta, block=evaluation["block_size"]):
             curve = per_position_nll(graph, params, spec["manifest"], sequence_length=spec["sequence_length"],
-                                     sequences=spec["sequences"], microbatch=spec["microbatch_size"], details=details)
+                                     sequences=spec["sequences"], microbatch=spec["microbatch_size"], details=details,
+                                     start_sequence=start)
         nll = float(curve.mean())
         row = {"mode": mode, "length": name, "source_run_id": model["run_id"], "checkpoint_step": model["step"],
                "window": window, "sequence_length": spec["sequence_length"], "sequences": spec["sequences"],
