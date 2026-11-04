@@ -1,18 +1,382 @@
 {
+  "acceptance": {
+    "sha256": "acebb8bb1a5e9533e544abc386a062d7461158429042a0314942a9c681279eba",
+    "summary": {
+      "allocation_seconds": 86400,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-03T08:15:42.791946+00:00",
+      "hardware": {
+        "attention_backend": "blocked",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "ab646c8991653c0e36c3b818eddf119601acf33f3c7a1ce233b9a7b7f56b9d05",
+      "slurm_job_id": "233371",
+      "slurm_restart_count": "1",
+      "source_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/best_validation.json",
+      "sha256": "f225bc83a5eb8736c59913d3d3e827556ff7a75d70ef0732c6bcb9d3147727e6",
+      "size_bytes": 184
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/config.json",
+      "sha256": "3fc8c9a8ff735953a7f5af9a9e66d1289f48fce789713a006a93562c75bebadf",
+      "size_bytes": 4391
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/metadata.json",
+      "sha256": "0c69b86112ab367e961cf00c920ca3a15b05ad81265b5e802ef46b4c7712f188",
+      "size_bytes": 259315
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/metrics.jsonl",
+      "sha256": "d96fd641ee853e965beb0979e7fb9a496e4e03d255b8a8087b115842bac6615c",
+      "size_bytes": 3100443
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/wandb_run.json",
+      "sha256": "bf794c0e16b1493ec49dce915f7587cfeec7664e021a9e4238d50ed5923993cb",
+      "size_bytes": 185
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
+      "sha256": "77cd1e0baa0c6a55f155bc11ded89cbfff42443b458572d3de66def09893ad75",
+      "size_bytes": 582321
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=233371 JobName=r183f08346ddc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20078 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:06:35 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-03T01:48:17 EligibleTime=2026-11-03T01:48:17 AccrueTime=2026-11-03T01:48:17 StartTime=2026-11-03T02:30:48 EndTime=2026-11-04T02:30:48 Deadline=N/A PreemptEligibleTime=2026-11-03T04:30:48 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-03T02:30:48 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1385573 ReqNodeList=(null) ExcNodeList=mastiff,collie,samoyed,doodle,terrier,shiba,mastiff NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
+      "config_sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e",
+      "exit_code": 124,
+      "finished_utc": "2026-11-03T07:53:27.583143+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "slurm_job_id": "233371",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-03T07:37:23.053253+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=233371 JobName=r183f08346ddc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20093 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:04:19 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-03T02:53:29 EligibleTime=2026-11-03T02:55:30 AccrueTime=2026-11-03T02:55:30 StartTime=2026-11-03T02:55:50 EndTime=2026-11-04T02:55:50 Deadline=N/A PreemptEligibleTime=2026-11-03T04:55:50 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-03T02:55:50 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1385573 ReqNodeList=(null) ExcNodeList=mastiff,collie,samoyed,doodle,terrier,shiba,mastiff NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
+      "config_sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e",
+      "exit_code": 0,
+      "finished_utc": "2026-11-03T23:22:47.265881+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "slurm_job_id": "233371",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-11-03T08:00:09.212907+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=233371 JobName=r183f08346ddc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20078 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=2 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-03T18:22:48 EligibleTime=2026-11-03T18:24:49 AccrueTime=2026-11-03T18:24:49 StartTime=2026-11-03T18:50:36 EndTime=2026-11-04T18:50:36 Deadline=N/A PreemptEligibleTime=2026-11-03T20:50:36 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-03T18:50:36 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1385573 ReqNodeList=(null) ExcNodeList=mastiff,collie,samoyed,doodle,terrier,shiba,mastiff NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
+      "config_sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e",
+      "exit_code": 1,
+      "finished_utc": "2026-11-04T00:08:51.153277+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "slurm_job_id": "233371",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "2",
+      "started_utc": "2026-11-03T23:50:40.467176+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1",
+      "allocation": "JobId=233846 JobName=r183f08346ddc UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20077 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-03T20:54:32 EligibleTime=2026-11-03T20:54:32 AccrueTime=2026-11-03T20:54:32 StartTime=2026-11-03T20:55:35 EndTime=2026-11-04T20:55:35 Deadline=N/A PreemptEligibleTime=2026-11-03T22:55:35 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-03T20:55:35 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1419975 ReqNodeList=(null) ExcNodeList=collie,samoyed,doodle,terrier,shiba NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
+      "config_sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+      "slurm_job_id": "233846",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-04T01:55:40.861897+00:00",
+      "stop_after_step": null
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/best_validation.json",
+    "sha256": "f225bc83a5eb8736c59913d3d3e827556ff7a75d70ef0732c6bcb9d3147727e6",
+    "size_bytes": 184
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
     "sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e"
   },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": "JaxRuntimeError: INTERNAL: CUDA error: Failed to end stream capture: CUDA_ERROR_STREAM_CAPTURE_INVALIDATED: operation failed due to a previous error during capture",
+  "execution": {
+    "attention_backend": "blocked",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "3fc8c9a8ff735953a7f5af9a9e66d1289f48fce789713a006a93562c75bebadf"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "0c69b86112ab367e961cf00c920ca3a15b05ad81265b5e802ef46b4c7712f188"
+    },
+    "resolved_config": {
+      "continuation": {
+        "new_parameter_learning_rate": null,
+        "parent_checkpoint": "",
+        "parent_checkpoint_sha256": "",
+        "parent_config": "",
+        "parent_config_sha256": "",
+        "parent_data_identity_sha256": "",
+        "parent_step": 0
+      },
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "blocked",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_amplitude_scale": "none",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_feature_count": null,
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_kernel_weight_decay": false,
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_readout": "diagonal",
+        "attention_coefficient_readout_scale": 1.0,
+        "attention_coefficient_scale": "none",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficient_tanh_bias": false,
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_forget_gate": true,
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 896,
+        "initialization": "transformer_truncated_reference",
+        "intermediate_size": 2304,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 14,
+        "num_kv_heads": 14,
+        "num_layers": 15,
+        "path_conv_size": 3,
+        "path_w_rank": 32,
+        "positional_encoding": "none",
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_head_scale": true,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_layer",
+        "qk_norm_token_scale": "none",
+        "qk_norm_token_scale_kernel_weight_decay": false,
+        "qk_norm_type": "rms_norm",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rms_norm_fp32": true,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.001,
+        "min_learning_rate": 0.0001,
+        "query_coefficient_learning_rate_scale": 1.0,
+        "total_steps": 7570,
+        "warmup_steps": 455,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 19,
+        "eval_early_every": 100,
+        "eval_early_until": 1500,
+        "eval_every": 500,
+        "log_every": 10,
+        "micro_batch_size": 16,
+        "seed": 42,
+        "source_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "transformer_pp",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "exp-forget-gate-no-rope",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc"
+      }
+    },
+    "resolved_config_sha256": "a0d178df8a526d2b7fbbdf96178fab752270747ea6b7fe194371d290fa553e36",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "233371",
+        "timestamp_utc": "2026-11-03T08:16:06.680648+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "f58b1678c1d92940089719137a3d8bd243b71fe3a153c05752be0254f30bd271",
+  "home_cluster": "kennel",
   "label": "exp-forget-gate-no-rope",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
+    "sha256": "77cd1e0baa0c6a55f155bc11ded89cbfff42443b458572d3de66def09893ad75",
+    "size_bytes": 582321
+  },
+  "log_path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/metadata.json",
+    "sha256": "0c69b86112ab367e961cf00c920ca3a15b05ad81265b5e802ef46b4c7712f188",
+    "size_bytes": 259315
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/metrics.jsonl",
+    "sha256": "d96fd641ee853e965beb0979e7fb9a496e4e03d255b8a8087b115842bac6615c",
+    "size_bytes": 3100443
+  },
   "name": "exp-forget-gate-no-rope",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "r183f08346ddc",
-  "status": "planned",
+  "seed": 42,
+  "source_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
+  "status": "acceptance",
+  "step": 6500,
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
+      "--partition=standard",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
@@ -28,8 +392,15 @@
       "1",
       "B300,H100"
     ],
-    "partition": "long",
-    "slurm_job_id": "233371",
-    "submitted_utc": "2026-11-03T06:48:17.869130+00:00"
+    "partition": "standard",
+    "slurm_job_id": "233846",
+    "submitted_utc": "2026-11-04T01:54:32.323494+00:00"
+  },
+  "training_tokens": 3407872000,
+  "updated_utc": "2026-11-04T00:08:49.246908+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_pp/runs/r183f08346ddc/wandb_run.json",
+    "sha256": "bf794c0e16b1493ec49dce915f7587cfeec7664e021a9e4238d50ed5923993cb",
+    "size_bytes": 185
   }
 }
