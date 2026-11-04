@@ -64,7 +64,7 @@ def exp_residual_initialization(width: int) -> dict[str, tuple[float, ...]]:
 
 @dataclass(frozen=True)
 class ExpFit:
-    """Shared constants with sum_j alpha_j SiLU(w_j s + beta_j) ~ exp(s), ordered by transition."""
+    """Shared constants with sum_j alpha_j SiLU(w_j s + beta_j) ~ exp(s), ordered by transition, then slope."""
 
     amplitude: tuple[float, ...]
     slope: tuple[float, ...]
@@ -119,7 +119,9 @@ def fit_exp_initialization(width: int, *, restarts: int = 16, seed: int = 0, ite
     beyond it. Variable projection (alpha by nonnegative least squares for given w, t) with a
     projected Levenberg-Marquardt step and Kaufman's Jacobian, from one spread start (w = 1,
     transitions evenly spaced) and ``restarts - 1`` starts drawn from ``numpy.random.default_rng(seed)``,
-    keeps the lowest objective. Deterministic for fixed arguments on a given numerical library.
+    keeps the lowest objective. Deterministic for fixed arguments on a given numerical library
+    (other BLAS kernels move the parameters by about 1e-5 relative). Units are returned by
+    transition, then slope, so their order does not depend on the solver's internal unit order.
     """
     width = _validate_width(width)
     if isinstance(restarts, bool) or not isinstance(restarts, int) or restarts < 1:
@@ -195,7 +197,8 @@ def fit_exp_initialization(width: int, *, restarts: int = 16, seed: int = 0, ite
             best = (objective, theta.copy(), amplitude.copy())
     objective, theta, amplitude = best
     slope, transition = theta[:width], theta[width:]
-    order = np.argsort(transition, kind="stable")
+    # Units held at a transition bound tie exactly; their slopes order them, whatever the solver's unit order.
+    order = np.lexsort((slope, transition))
     amplitude, slope, transition = amplitude[order], slope[order], transition[order]
     fine = np.linspace(low, high, ERROR_POINTS)
     error = np.max(np.abs(_silu_sum(fine, amplitude, slope, transition) / np.exp(fine) - 1.0))
@@ -213,11 +216,11 @@ EXP_FITS = {
         objective=0.0004769143149365164, max_relative_error=0.034655098841087195),
     8: ExpFit(
         amplitude=(0.21362532106199963, 0.2584342997204461, 1.3814369279804064, 4.774756710707291,
-                   14.012385683197275, 10.553476440221052, 68.4636106926777, 1.2381941152837954),
+                   14.012385683197275, 68.4636106926777, 10.553476440221052, 1.2381941152837954),
         slope=(4.0, 1.0977649319133609, 0.7256759885928358, 0.6273367560330935, 0.6512751016700491,
-               1.7363730396150405, 0.7995070609263598, 4.0),
+               0.7995070609263598, 1.7363730396150405, 4.0),
         offset=(32.0, 5.415365208960629, 2.42904424673612, 0.6429831689026846, -0.91263929192096,
-                -6.945492158460162, -3.1980282437054393, -16.0),
+                -3.1980282437054393, -6.945492158460162, -16.0),
         objective=5.042488745579497e-09, max_relative_error=0.00030460056886949527),
 }
 

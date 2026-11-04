@@ -250,7 +250,10 @@ def test_pinned_exp_fits_are_feasible_ordered_and_reproduced():
         amplitude, slope, offset = (np.asarray(values) for values in (fit.amplitude, fit.slope, fit.offset))
         transition = -offset / slope
         assert len(amplitude) == len(slope) == len(offset) == width
-        assert (amplitude >= 0).all() and np.all(np.diff(transition) >= 0)
+        # By transition, then slope: units held at a transition bound tie up to the rounding of -beta / w.
+        step = np.diff(transition)
+        assert (amplitude >= 0).all() and np.all(step >= -1e-12)
+        assert np.all(np.diff(slope)[np.abs(step) <= 1e-12] > 0)
         assert (slope >= score_mlp.FIT_SLOPES[0]).all() and (slope <= score_mlp.FIT_SLOPES[1]).all()
         assert (transition >= score_mlp.FIT_TRANSITIONS[0] - 1e-12).all()
         assert (transition <= score_mlp.FIT_TRANSITIONS[1] + 1e-12).all()
