@@ -249,6 +249,31 @@ def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path
     assert row["attention_family"] == "polynomial"
 
 
+def test_index_names_the_score_mlp_family_form_and_projection_decay(tmp_path):
+    study = tmp_path / "study"
+    exp = {"attention_mechanism": "dot_product", "attention_coefficients": "fixed", "attention_degree": None,
+           "attention_normalization": False}
+    runs = {
+        "exp": create_run(study, {"model": exp}),
+        # A width alone implies the default kernel form and undecayed projections.
+        "kernel": create_run(study, {"model": {**exp, "attention_score_mlp_width": 4}}),
+        "residual": create_run(study, {"model": {**exp, "attention_score_mlp_width": 8,
+                                                 "attention_score_mlp_form": "exp_residual",
+                                                 "attention_score_mlp_kernel_weight_decay": True}}),
+    }
+    (runs["residual"] / "metadata.json").write_text(json.dumps({"attention_kernel": "exp_score_mlp_residual_unnormalized"}))
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    fields = ("attention_family", "attention_kernel", "score_mlp_width", "score_mlp_form",
+              "score_mlp_kernel_weight_decay")
+    assert {name: tuple(rows[run.name][field] for field in fields) for name, run in runs.items()} == {
+        "exp": ("exponential", "", "", "", ""),
+        "kernel": ("score_mlp", "", "4", "kernel", "False"),
+        "residual": ("score_mlp", "exp_score_mlp_residual_unnormalized", "8", "exp_residual", "True"),
+    }
+
+
 def test_index_distinguishes_gdn_erase_modes_without_inventing_legacy_settings(tmp_path):
     study = tmp_path / "study"
     runs = {}

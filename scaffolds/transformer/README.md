@@ -533,7 +533,8 @@ unnormalized blocked kernels. Diagnostics name the kernel `score_mlp_unnormalize
 `exp_score_mlp_residual_unnormalized`, keep the signed-kernel statistics (kernel and
 weight-sum extrema, negative-weight fractions), and report the learned `alpha`, `beta`,
 `w` and per-head statistics of `a` and `b` on the diagnostic sample under
-`coefficients`. `runs.csv` lists `score_mlp_width` and `score_mlp_form`.
+`coefficients`. `runs.csv` gives these runs the `score_mlp` family and lists
+`score_mlp_width`, `score_mlp_form`, and `score_mlp_kernel_weight_decay`.
 
 Cost: `J` SiLU evaluations per score pair in the forward, recomputed in the backward,
 plus the per-unit gradient reductions. The custom derivative of the unit sum keeps

@@ -581,13 +581,18 @@ def test_run_index_exposes_width_and_form(tmp_path):
     study.mkdir(parents=True)
     (study / "sweep.yaml").write_text(json.dumps({"study_id": "demo", "run_ids": []}))
     create_run(study, config_to_dict(_config("exp_residual", 8)), label="score-mlp")
+    create_run(study, config_to_dict(_config("kernel", 4, attention_score_mlp_kernel_weight_decay=True)),
+               label="score-mlp-kernel")
     create_run(study, config_to_dict(_control()), label="exp")
     regenerate_index(study)
     with (study / "runs.csv").open() as stream:
         rows = {row["label"]: row for row in csv.DictReader(stream)}
-    assert (rows["score-mlp"]["score_mlp_width"], rows["score-mlp"]["score_mlp_form"]) == ("8", "exp_residual")
-    assert (rows["exp"]["score_mlp_width"], rows["exp"]["score_mlp_form"]) == ("", "")
-    assert rows["exp"]["attention_family"] == "exponential"
+    fields = ("attention_family", "score_mlp_width", "score_mlp_form", "score_mlp_kernel_weight_decay")
+    assert {label: tuple(row[field] for field in fields) for label, row in rows.items()} == {
+        "score-mlp": ("score_mlp", "8", "exp_residual", "False"),
+        "score-mlp-kernel": ("score_mlp", "4", "kernel", "True"),
+        "exp": ("exponential", "", "", ""),
+    }
 
 
 @pytest.mark.parametrize("form", score_mlp.FORMS)
