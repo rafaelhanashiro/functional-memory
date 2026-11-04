@@ -285,6 +285,97 @@ def test_interpreted_masked_future_overflow_is_never_evaluated(monkeypatch, form
     np.testing.assert_allclose(np.asarray(output).reshape(-1), [3 * at_zero, 10 * at_zero], rtol=1e-6)
 
 
+def _masked_score_overflow(form):
+    """Only the masked pair (query 3, key 9) of batch 0, head 1, inside one 32-token tile, has a huge score.
+
+    Channel 0 is zero elsewhere, so every causal score stays moderate. exp_residual: s = 100,
+    whose exp overflows FP32 but not FP64; kernel: the FP32 score itself is infinite (4.5e38 in
+    FP64), with positive slopes so that the oracles' pre-activations stay finite.
+    """
+    (q, k, v, a, b, w), cotangent = _inputs(4, time=40, batch=2, heads=2, qk=4, value=3)
+    query, key = (10.0, 20.0) if form == "exp_residual" else (3e19, 3e19)
+    q, k = q.at[..., 0].set(0.0).at[0, 3, 1, 0].set(query), k.at[..., 0].set(0.0).at[0, 9, 1, 0].set(key)
+    return (q, k, v, a, b, w if form == "exp_residual" else jnp.abs(w)), cotangent
+
+
+def _masked_value_overflow(time):
+    """exp_residual where f(0) = 1 + a SiLU(b) = 1 + 1e33 * 2e6 overflows FP32 for query 0.
+
+    Masked (two tokens) or padded (one token) entries are evaluated at score zero, so only their
+    values overflow: every causal pre-activation is at most -2.5e5, so each unit is -0 and each
+    causal value exp(s) is finite.
+    """
+    q = jnp.array([2.0, .5][:time]).reshape(1, time, 1, 1)
+    a, b, v = (jnp.array(x[:time]).reshape(1, time, 1, 1) for x in ([1e33, 0.0], [2e6, 0.0], [1.0, 2.0]))
+    return (q, q, v, a, b, jnp.full((1, 1), -1e6)), jnp.ones_like(v)
+
+
+def _assert_value_overflow_vjp(actual, operands, cotangent, *, rtol):
+    """Finite, and the host FP64 definition's and the blocked path's (float64 autodiff overflows here)."""
+    blocked = _vjp(_attend("exp_residual", "blocked"), operands, cotangent)
+    with np.errstate(over="ignore"):   # its causal sigmoid(-2e6) underflows to exactly zero
+        oracle = _numpy_dense_vjp(operands, cotangent, form="exp_residual")
+    for name, observed, *references in zip(NAMES, (actual[0], *actual[1]), (blocked[0], *blocked[1]),
+                                           (oracle[0], *oracle[1]), strict=True):
+        observed = np.asarray(observed, np.float64)
+        assert np.isfinite(observed).all(), name
+        for expected in references:
+            np.testing.assert_allclose(observed, np.asarray(expected, np.float64), rtol=rtol, atol=0, err_msg=name)
+
+
+def _poisoned_row():
+    """A NaN a of query 5, head 1 (of 40 tokens, J = 3), and masks of what it cannot reach, per array.
+
+    In the definition's VJP the row reaches only its output, dQ, da, and db, the dK and dV of
+    keys 0-5, and head 1's dw.
+    """
+    (q, k, v, a, b, w), cotangent = _inputs(3, time=40, batch=1, heads=2, qk=4, value=3)
+    rows, keys, slopes = np.ones((1, 40, 2), bool), np.ones((1, 40, 2), bool), np.ones((2, 3), bool)
+    rows[0, 5, 1] = keys[0, :6, 1] = slopes[1] = False
+    return (q, k, v, a.at[0, 5, 1, 1].set(jnp.nan), b, w), cotangent, (rows, rows, keys, keys, rows, rows, slopes)
+
+
+def _assert_poison_reaches_only_its_row(actual, blocked, unreached, tolerance):
+    """NaN exactly where the blocked path has NaN; every unreached entry finite and the blocked path's.
+
+    The blocked path zeroes a poisoned row's output cotangent, so reached entries that stay
+    finite (that row's da and db, head 1's dw) may differ.
+    """
+    for name, observed, expected, mask in zip(NAMES, (actual[0], *actual[1]), (blocked[0], *blocked[1]), unreached,
+                                              strict=True):
+        observed, expected = np.asarray(observed, np.float64), np.asarray(expected, np.float64)
+        np.testing.assert_array_equal(np.isnan(observed), np.isnan(expected), err_msg=name)
+        assert _relative(observed[mask], expected[mask], name) < tolerance, name
+
+
+@pytest.mark.parametrize("form", score_mlp.FORMS)
+def test_interpreted_masked_future_scores_never_reach_the_gradients(monkeypatch, form):
+    """The VJP of a masked in-tile score overflow: every gradient matches float64 and the blocked path."""
+    _interpret(monkeypatch)
+    operands, cotangent = _masked_score_overflow(form)
+    actual = _vjp(_attend(form), operands, cotangent)
+    magnitude = _slope_magnitude(form, operands, cotangent)
+    _compare(actual, _oracle(form, operands, cotangent), _tolerances(jnp.float32), magnitude)
+    _compare(actual, _vjp(_attend(form, "blocked"), operands, cotangent), _tolerances(jnp.float32), magnitude)
+
+
+@pytest.mark.parametrize("time", (1, 2))
+def test_interpreted_overflowing_masked_values_never_reach_the_gradients(monkeypatch, time):
+    """The backward drops masked and padded entries' dS, as the VJP of the causal mask does."""
+    _interpret(monkeypatch)
+    operands, cotangent = _masked_value_overflow(time)
+    _assert_value_overflow_vjp(_vjp(_attend("exp_residual"), operands, cotangent), operands, cotangent, rtol=1e-6)
+
+
+@pytest.mark.parametrize("form", score_mlp.FORMS)
+def test_interpreted_a_nonfinite_unit_reaches_only_its_rows_gradients(monkeypatch, form):
+    """A NaN unit poisons only what its row reaches in the definition's VJP, not later keys' dK in its tile."""
+    _interpret(monkeypatch)
+    operands, cotangent, unreached = _poisoned_row()
+    _assert_poison_reaches_only_its_row(*(_vjp(_attend(form, backend), operands, cotangent)
+                                          for backend in ("fused", "blocked")), unreached, 1e-5)
+
+
 def _valid_operands():
     (q, k, v, a, b, w), _ = _inputs(2, time=5, batch=1, heads=2, qk=4, value=3)
     return {"q": q, "k": k, "v": v, "amplitude": a, "offset": b, "slope": w, "form": "kernel"}
@@ -504,11 +595,13 @@ def test_gpu_production_shape_bfloat16_matches_float64_oracle(form, width):
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16))
+@pytest.mark.parametrize(("width", "qk", "value"), ((3, 33, 17), (3, 72, 40), (3, 128, 128), (8, 128, 128)),
+                         ids=("J3-33-17", "J3-72-40", "J3-128-128", "J8-128-128"))
 @pytest.mark.parametrize("form", score_mlp.FORMS)
-def test_gpu_odd_shapes_match_float64_oracle(form, dtype):
-    """131 tokens, Q/K width 33, value width 17, J = 3: partial tiles and padded channels on the device."""
+def test_gpu_odd_shapes_and_wide_heads_match_float64_oracle(form, width, qk, value, dtype):
+    """131 tokens: partial tiles, padded channels, and head widths up to the maximum 128 (J = 8 there) on the device."""
     _requires_gpu()
-    operands, cotangent = _inputs(3, time=131, batch=2, heads=3, qk=33, value=17, dtype=dtype)
+    operands, cotangent = _inputs(width, time=131, batch=2, heads=3, qk=qk, value=value, dtype=dtype)
     actual = jax.jit(lambda *x: _vjp(_attend(form), x, cotangent))(*operands)
     _compare(actual, _numpy_dense_vjp(operands, cotangent, form=form),
              _tolerances(dtype, rounded_bf16=.012, fp32=1e-4), _slope_magnitude(form, operands, cotangent))
@@ -591,6 +684,26 @@ def test_gpu_nonfinite_scores_and_weights_poison_only_their_rows(form):
                     jnp.ones((1, 2, 1, 2)), jnp.ones((1, 2)))
     at_zero = 2e10 / (1.0 + np.exp(-1.0)) + (1.0 if form == "exp_residual" else 0.0)
     np.testing.assert_allclose(np.asarray(output).reshape(-1), [3 * at_zero, 10 * at_zero], rtol=1e-6)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("form", score_mlp.FORMS)
+def test_gpu_masked_overflow_and_nonfinite_units_reach_only_their_gradients(form):
+    """The interpreted masked score and value overflows and the poisoned row, compiled (FP32, blocked at HIGHEST)."""
+    _requires_gpu()
+    operands, cotangent = _masked_score_overflow(form)
+    actual = jax.jit(lambda *x: _vjp(_attend(form), x, cotangent))(*operands)
+    _compare(actual, _numpy_dense_vjp(operands, cotangent, form=form), _tolerances(jnp.float32, fp32=1e-4),
+             _slope_magnitude(form, operands, cotangent))
+    with jax.default_matmul_precision("highest"):
+        if form == "exp_residual":
+            for time in (1, 2):
+                operands, cotangent = _masked_value_overflow(time)
+                actual = jax.jit(lambda *x: _vjp(_attend(form), x, cotangent))(*operands)
+                _assert_value_overflow_vjp(actual, operands, cotangent, rtol=1e-4)
+        operands, cotangent, unreached = _poisoned_row()
+        _assert_poison_reaches_only_its_row(*(jax.jit(lambda *x, backend=backend: _vjp(
+            _attend(form, backend), x, cotangent))(*operands) for backend in ("fused", "blocked")), unreached, 1e-4)
 
 
 @pytest.mark.gpu

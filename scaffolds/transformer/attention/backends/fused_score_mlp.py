@@ -140,7 +140,9 @@ def _dq_unit_kernel(q_ref, k_ref, v_ref, *refs, form, width, time, dq, dv, block
                             grad_w + jnp.sum(dpre * safe_scores, axis=1)))
         if growth is not None:
             dscores += dp * (growth * (1.0 + total))
-        grad_q += _dot(dscores, k) * (1.0 / math.sqrt(dq))
+        # Masked and padded entries are evaluated at score zero, where f(0) may overflow (0 * inf
+        # is NaN) or a nonfinite unit enters; as in the VJP of the causal mask, their dS is zero.
+        grad_q += _dot(jnp.where(causal, dscores, 0.0), k) * (1.0 / math.sqrt(dq))
         return grad_q, tuple(updated)
 
     end = lax.div((pl.program_id(0) + 1) * block_q + block_k - 1, block_k)
@@ -183,7 +185,7 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, form, width, time, dq, dv, block_q, 
         if growth is not None:
             dscores += dp * values
         grad_v += _dot(jnp.where(causal, values, 0.0).T, do)
-        grad_k += _dot(dscores.T, q) * (1.0 / math.sqrt(dq))
+        grad_k += _dot(jnp.where(causal, dscores, 0.0).T, q) * (1.0 / math.sqrt(dq))
         return grad_k, grad_v
 
     start = lax.div(pl.program_id(0) * block_k, block_q)
