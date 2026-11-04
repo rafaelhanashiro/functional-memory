@@ -44,6 +44,48 @@ def _dense_units(q, k, v, a, b, w, log_decay=None, *, form):
     return jnp.einsum("bhts,bshd->bthd", jnp.where(causal, kernel, 0.0), v)
 
 
+def _numpy_dense_vjp(operands, cotangent, *, form):
+    """_dense_units and its analytic VJP in host FP64 NumPy, so qualification compiles no GPU reference."""
+    q, k, v, a, b, w, *gate = (np.asarray(x, np.float64) for x in operands)
+    qh, kh, vh, gh = (np.asarray(x, np.float64).transpose(0, 2, 1, 3) for x in (q, k, v, cotangent))
+    ah, bh = a.transpose(0, 2, 1, 3), b.transpose(0, 2, 1, 3)              # [B,H,T,J]
+    scale = math.sqrt(q.shape[-1])
+    scores = qh @ kh.swapaxes(-1, -2) / scale
+    causal = np.tril(np.ones(scores.shape[-2:], dtype=bool))
+    units, slope_terms = np.zeros_like(scores), []
+    for j in range(a.shape[-1]):
+        pre = w[None, :, None, None, j] * scores + bh[..., j, None]
+        gate_j = 1.0 / (1.0 + np.exp(-pre))
+        units += ah[..., j, None] * pre * gate_j
+        slope_terms.append((pre * gate_j, gate_j * (1.0 + pre * (1.0 - gate_j))))   # SiLU, SiLU'
+    growth = np.exp(scores) if form == "exp_residual" else np.ones_like(scores)
+    kernel = growth * (1.0 + units) if form == "exp_residual" else units
+    decay = np.ones_like(scores)
+    if gate:
+        cumulative = gate[0].transpose(0, 2, 1)
+        decay = np.exp(np.where(causal, cumulative[..., :, None] - cumulative[..., None, :], 0.0))
+    weights = np.where(causal, kernel * decay, 0.0)
+    output = weights @ vh
+    dweight = gh @ vh.swapaxes(-1, -2)
+    dkernel = np.where(causal, dweight * decay, 0.0)
+    dunits = dkernel * growth
+    dscores = dkernel * kernel if form == "exp_residual" else np.zeros_like(scores)
+    da, db, dw = [], [], []
+    for j, (silu, derivative) in enumerate(slope_terms):
+        dpre = dunits * ah[..., j, None] * derivative
+        dscores += dpre * w[None, :, None, None, j]
+        da.append(np.sum(dunits * silu, axis=-1))
+        db.append(np.sum(dpre, axis=-1))
+        dw.append(np.sum(dpre * scores, axis=(0, 2, 3)))
+    gradients = [(dscores @ kh / scale).transpose(0, 2, 1, 3), (dscores.swapaxes(-1, -2) @ qh / scale).transpose(0, 2, 1, 3),
+                 (weights.swapaxes(-1, -2) @ gh).transpose(0, 2, 1, 3), np.stack(da, -1).transpose(0, 2, 1, 3),
+                 np.stack(db, -1).transpose(0, 2, 1, 3), np.stack(dw, -1)]
+    if gate:
+        flow = dweight * weights   # d/dL_t of exp(L_t - L_i) is +1 along row t and -1 along column t
+        gradients.append((np.sum(flow, axis=-1) - np.sum(flow, axis=-2)).transpose(0, 2, 1))
+    return output.transpose(0, 2, 1, 3), tuple(gradients)
+
+
 def _dense(q, k, v, x, amplitude_kernel, amplitude_bias, offset_kernel, offset_bias, slope, log_decay=None, *, form):
     """The definition from the attention input: a = alpha + x A and b = beta + x B per head and unit."""
     a = jnp.einsum("btd,hdj->bthj", x, amplitude_kernel) + amplitude_bias
@@ -629,7 +671,11 @@ def test_backward_memory_does_not_grow_with_width(form):
 
 
 def _production_shape_errors(form, width, *, gate=False, time=2048, heads=4, channels=64, seed=91):
-    """Relative L2 errors of BF16 Q/K/V through the blocked kernel against the dense FP32 HIGHEST definition."""
+    """Relative L2 errors of BF16 Q/K/V through the blocked kernel against the host FP64 definition.
+
+    The oracle sees the same BF16 values. XLA fails to compile the dense FP32 definition at this
+    shape on H100 (an internal layout-normalization RET_CHECK), so the oracle stays on the host.
+    """
     rng = np.random.default_rng(seed + width)
     q, k, v = (rng.normal(size=(1, time, heads, channels)) for _ in range(3))
     constants = score_mlp.initial_constants(width, form)
@@ -642,23 +688,39 @@ def _production_shape_errors(form, width, *, gate=False, time=2048, heads=4, cha
                                        if gate else [])
     cotangent = jnp.asarray(rng.normal(size=v.shape), jnp.bfloat16)
     bf16 = tuple(jnp.asarray(x, jnp.bfloat16 if index < 3 else jnp.float32) for index, x in enumerate(arrays))
-    reference_inputs = tuple(jnp.asarray(x, jnp.float32) for x in bf16)   # the same BF16 values, upcast
 
     def production(q, k, v, a, b, w, log_decay=None):
         return blocked_dot_product_attention(q, k, v, attention_normalization=False, score_mlp_amplitude=a,
                                              score_mlp_offset=b, score_mlp_slope=w, score_mlp_form=form,
                                              query_log_decay=log_decay)
 
-    def dense(q, k, v, a, b, w, log_decay=None):
-        return _dense_units(q, k, v, a, b, w, log_decay, form=form)
-
-    with jax.default_matmul_precision("highest"):
-        expected = jax.jit(lambda *x: _vjp(dense, x, cotangent.astype(jnp.float32)))(*reference_inputs)
+    expected = _numpy_dense_vjp(bf16, cotangent, form=form)
     # The trainer's default matmul precision (TF32 for the FP32 weight-value products on GPUs).
     actual = jax.jit(lambda *x: _vjp(production, x, cotangent))(*bf16)
     names = ["output", "q", "k", "v", "a", "b", "w", "L"]
     return {name: _relative_error(observed, wanted)
             for name, observed, wanted in zip(names, [actual[0], *actual[1]], [expected[0], *expected[1]])}
+
+
+@pytest.mark.parametrize("time", (1, 19))
+@pytest.mark.parametrize("gate", (False, True))
+@pytest.mark.parametrize("width", (1, 4, 8))
+@pytest.mark.parametrize("form", score_mlp.FORMS)
+def test_numpy_oracle_and_analytic_vjp_match_float64_autodiff(form, width, gate, time):
+    """The GPU qualification's host oracle against autodiff of the dense definition."""
+    rng = np.random.default_rng(width * 7 + time)
+    q, k, v = (rng.normal(size=(2, time, 2, 6)) for _ in range(3))
+    arrays = [q, k, v, rng.normal(size=(2, time, 2, width)), rng.normal(size=(2, time, 2, width)) * 2,
+              rng.uniform(-2, 2, size=(2, width))]
+    if gate:
+        arrays.append(np.cumsum(-np.exp(rng.uniform(-3, 0, size=(2, time, 2))), axis=1))
+    cotangent = rng.normal(size=v.shape)
+    actual = _numpy_dense_vjp(arrays, cotangent, form=form)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        expected = _vjp(lambda *x: _dense_units(*x, form=form), tuple(jnp.asarray(x, jnp.float64) for x in arrays),
+                        jnp.asarray(cotangent, jnp.float64))
+    for observed, wanted in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+        np.testing.assert_allclose(observed, np.asarray(wanted), rtol=1e-10, atol=1e-11)
 
 
 def test_bfloat16_qualification_runs_at_a_small_shape():
@@ -672,7 +734,7 @@ def test_bfloat16_qualification_runs_at_a_small_shape():
     ("kernel", 4, False), ("kernel", 8, False), ("exp_residual", 4, False), ("exp_residual", 8, False),
     ("exp_residual", 8, True),
 ))
-def test_gpu_production_shape_bfloat16_matches_float32_highest(form, width, gate):
+def test_gpu_production_shape_bfloat16_matches_float64_oracle(form, width, gate):
     """Qualify the production 2,048-token, 64-channel blocked score MLP on its allocated GPU."""
     if jax.default_backend() != "gpu":
         pytest.skip("Requires the experiment's GPU allocation")
