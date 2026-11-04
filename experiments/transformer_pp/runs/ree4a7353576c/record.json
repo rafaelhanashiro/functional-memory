@@ -3,9 +3,35 @@
     "path": "experiments/transformer_pp/runs/ree4a7353576c/config.yaml",
     "sha256": "447c5d8e46a5eab503a702ae474b4bfa67bdcdd69665da83f720d1ad894ea6d8"
   },
+  "home_cluster": "kennel",
   "label": "score-mlp-exp-residual-j8",
   "name": "score-mlp-exp-residual-j8",
   "record_schema_version": 1,
   "run_id": "ree4a7353576c",
-  "status": "planned"
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=ree4a7353576c",
+      "--output=experiments/transformer_pp/runs/ree4a7353576c/training.log",
+      "--error=experiments/transformer_pp/runs/ree4a7353576c/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/ree4a7353576c/config.yaml",
+      "8ee1151899c9827eee850ec00f202bd147394a09",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "8ee1151899c9827eee850ec00f202bd147394a09",
+    "partition": "standard,long",
+    "slurm_job_id": "234781"
+  }
 }
