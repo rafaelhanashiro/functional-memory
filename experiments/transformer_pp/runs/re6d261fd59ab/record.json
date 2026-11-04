@@ -1,12 +1,47 @@
 {
+  "acceptance": null,
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/re6d261fd59ab/training.log",
+      "sha256": "eee47feef9e2ab6703758f31cc11403d621fc2ee3d1d8f05bb64cc68ce1896f9",
+      "size_bytes": 6713
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations/experiments/transformer_pp/runs/re6d261fd59ab/.runtime/acceptance/H100-1",
+      "allocation": "JobId=234401 JobName=re6d261fd59ab UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20077 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:01:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-04T01:15:12 EligibleTime=2026-11-04T01:15:12 AccrueTime=2026-11-04T01:15:12 StartTime=2026-11-04T01:16:30 EndTime=2026-11-05T01:16:30 Deadline=N/A PreemptEligibleTime=2026-11-04T03:16:30 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-04T01:16:30 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3054548 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations/experiments/transformer_pp/runs/re6d261fd59ab/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations/experiments/transformer_pp/runs/re6d261fd59ab/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/re6d261fd59ab/config.yaml",
+      "config_sha256": "98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23",
+      "exit_code": 1,
+      "finished_utc": "2026-11-04T07:00:51.828861+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "553cd6ef749e3fb5901ea61de6df1f260f97aa18",
+      "slurm_job_id": "234401",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-04T06:17:35.509585+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/re6d261fd59ab/config.yaml",
     "sha256": "98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23"
   },
   "control_run_id": "r3e26412b2811",
+  "error": null,
   "frozen_execution_sha256": "09b429e5e9232992e2048ef9fec218747d2af8eb2620847017f24f0fa6dc17dc",
   "home_cluster": "kennel",
   "label": "query-m4-bounded-query-rate-no-rope-w-decay",
+  "log": {
+    "path": "experiments/transformer_pp/runs/re6d261fd59ab/training.log",
+    "sha256": "eee47feef9e2ab6703758f31cc11403d621fc2ee3d1d8f05bb64cc68ce1896f9",
+    "size_bytes": 6713
+  },
+  "log_path": "experiments/transformer_pp/runs/re6d261fd59ab/training.log",
   "name": "query-m4-bounded-query-rate-no-rope-w-decay",
   "recipe_reference": "experiments/transformer_pp/recipe.yaml",
   "record_schema_version": 1,
@@ -24,11 +59,11 @@
       "sbatch",
       "--parsable",
       "--hold",
-      "--partition=standard,long",
+      "--partition=long",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--time=24:00:00",
+      "--time=72:00:00",
       "--exclude=collie,samoyed,doodle,terrier,shiba",
       "--job-name=re6d261fd59ab",
       "--output=experiments/transformer_pp/runs/re6d261fd59ab/training.log",
@@ -42,10 +77,10 @@
     ],
     "gpu_count": 1,
     "home_cluster": "kennel",
-    "partition": "standard,long",
-    "slurm_job_id": "234401",
-    "submitted_utc": "2026-11-04T06:15:12.918977+00:00",
-    "walltime_seconds": 86400,
+    "partition": "long",
+    "slurm_job_id": "234778",
+    "submitted_utc": "2026-11-04T14:57:39.900874+00:00",
+    "walltime_seconds": 259200,
     "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations"
   },
   "training_tokens": 3968860160
