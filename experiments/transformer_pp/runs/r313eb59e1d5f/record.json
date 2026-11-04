@@ -1,0 +1,14 @@
+{
+  "condition": "context_length/long_documents_2k_to_16k",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r313eb59e1d5f/config.yaml",
+    "sha256": "eeb4c7fa107112375d7db0887197480b9fe57e230e23cc0813444cb9e0fabdf1"
+  },
+  "experiment_kind": "per_position_evaluation",
+  "home_cluster": "kennel",
+  "label": "long-documents-16k-evaluation",
+  "name": "long-documents-16k-evaluation",
+  "record_schema_version": 1,
+  "run_id": "r313eb59e1d5f",
+  "status": "planned"
+}
