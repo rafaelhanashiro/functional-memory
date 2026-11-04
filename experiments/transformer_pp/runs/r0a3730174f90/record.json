@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0a3730174f90/config.yaml",
+    "sha256": "114cf92c75a2e77c50a3cdc153c37a15ad7ad5cd217dbf61f925d4eb2e8aa087"
+  },
+  "label": "score-mlp-exp-residual-j4",
+  "name": "score-mlp-exp-residual-j4",
+  "record_schema_version": 1,
+  "run_id": "r0a3730174f90",
+  "status": "planned"
+}

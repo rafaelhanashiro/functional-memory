@@ -736,6 +736,34 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## Score MLP
+
+Can a learned, input-dependent score function replace exp? Unnormalized attention
+`o_t = sum_{i<=t} f(x_t, s_ti) v_i` with attention-output RMSNorm, where `J` SiLU units
+have amplitudes `a_tj = alpha_j + x_t A_j` and offsets `b_tj = beta_j + x_t B_j` read from
+the attention input (`A`, `B` start at zero; slopes `w_j` are learned per layer and head).
+The exp-residual form `f = exp(s) (1 + sum_j a_tj SiLU(w_j s + b_tj))` starts exactly at
+exp (`alpha = 0`, `w = 1`, `beta` evenly spaced on [-3, 3]). Each run copies
+`query-m4-head-scale` (`r2b22f2ff6461`) and changes only `f`: `attention_degree: null` with
+the fixed exponential coefficients of `exp-head-scale` (`r6a76e7fbde45`), the blocked
+backend, and no weight decay on `A` and `B` (the control's projection had none). The
+[score-MLP topic](results/exploratory/score_mlp/README.md) lists the runs and controls.
+
+Home cluster: Kennel. `r0a3730174f90` (`J = 4`) and `ree4a7353576c` (`J = 8`) run from
+`worktrees/score-mlp-attention`, branch `claude/score-mlp-attention`, one GPU each. A pilot
+that projects past the 24-hour allocation is resubmitted on `long` with a longer limit:
+
+```bash
+for run in r0a3730174f90 ree4a7353576c; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
