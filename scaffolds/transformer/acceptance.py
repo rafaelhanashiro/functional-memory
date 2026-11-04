@@ -59,6 +59,7 @@ DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readou
 SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
+CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
@@ -125,6 +126,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and config.get("continuation", {}).get("parent_checkpoint")):
         paths.append("scaffolds/transformer/tests/test_forget_gate_continuation.py")
+    if (cpu and model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "constant"):
+        paths.append(CONSTANT_DECAY_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):
@@ -646,6 +650,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_mode="cumulative",
+                                           attention_forget_gate_form="input",
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_scale="none", attention_coefficient_orders=None,
@@ -696,7 +701,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
-        attention_forget_gate_mode="cumulative", positional_encoding="rope",
+        attention_forget_gate_mode="cumulative", attention_forget_gate_form="input", positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",

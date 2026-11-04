@@ -111,6 +111,14 @@ while `A_log` and `b_dt` do not. The separate coefficient-projection decay switc
 retains its existing behavior. New-mode GPU acceptance compares outputs and all
 operand gradients against an explicit dense reference at 2,048 tokens.
 
+`attention_forget_gate_form: input` (the default) is that gate. The `constant` form
+drops its token dependence: one learned log rate per layer and head,
+`log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
+ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for heads
+`h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
+form is qualified only with the cumulative mode under RoPE or no positional encoding
+on the blocked backend; configuration rejects it with `query_distance` or PaTH.
+
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
@@ -496,8 +504,8 @@ FP32 `[batch, time, heads]` array as `log_decay`; its gradients propagate throug
 the cumulative sum into the gate parameters. Causal differences are masked before
 exponentiation, and gate values are never factored into separate global exponentials.
 The fused backward adds O(BTH) gate-gradient buffers. Gated softmax is unsupported.
-Only `attention_forget_gate_mode: cumulative` composes with PaTH; configuration
-rejects `query_distance` with PaTH.
+Only `attention_forget_gate_mode: cumulative` with the input gate form composes with
+PaTH; configuration rejects `query_distance` and the constant form with PaTH.
 
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
@@ -900,18 +908,21 @@ manifest and its SHA256 in the new manifest's metadata.
 ```bash
 # The same stream re-cut into rows of another length (metadata.repacked_from).
 python -m scaffolds.transformer.data.repack SOURCE/manifest.json DESTINATION --sequence-length 4097
-# One row per complete document of at least sequence_length - 1 tokens, in stream order:
+# One row per complete document of at least sequence_length - 1 tokens whose first
+# --opening-tokens tokens (default 1,024) no earlier document begins with, in stream order:
 # an end-of-document token, then the document's first sequence_length - 1 tokens
 # (metadata.long_documents_from).
 python -m scaffolds.transformer.data.long_documents SOURCE/manifest.json DESTINATION --sequence-length 16385
 ```
 
-`long_documents` also writes `documents.npy`, every complete document's `[start, length]`
-in the stream, and `rows.npy`, each row's document; the manifest pins both by SHA256.
+`long_documents` also writes `documents.npy`, every complete document's
+`[start, length, first_start]` in the stream (where its opening first appears), and
+`rows.npy`, each row's document; the manifest pins both by SHA256. Every row is the first
+appearance of its document.
 Offsets are stream tokens, which repacking preserves, so a run that trained on rows
 `[0, n)` of a corpus with row length L consumed stream tokens `[0, n * L)`. The rows it never
-saw are the suffix from `first_unseen_row(manifest, n * L)`, and `row_documents(manifest)`
-gives each row's document.
+saw, in content as well as in position, are the suffix from `first_unseen_row(manifest,
+n * L)`, and `row_documents(manifest)` gives each row's document.
 
 ### Weights & Biases
 

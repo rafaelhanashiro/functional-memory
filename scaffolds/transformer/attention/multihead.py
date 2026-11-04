@@ -68,6 +68,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
         attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
+        attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
         rngs=rngs,
     )
 
@@ -95,6 +96,7 @@ class MultiHeadAttention(nnx.Module):
         qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
         attention_forget_gate_mode: str = "cumulative",
+        attention_forget_gate_form: str = "input",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -190,6 +192,14 @@ class MultiHeadAttention(nnx.Module):
                              "blocked backend; PaTH supports only cumulative FoX decay")
         self.attention_forget_gate = attention_forget_gate
         self.attention_forget_gate_mode = attention_forget_gate_mode
+        if attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {attention_forget_gate_form}")
+        if attention_forget_gate_form != "input" and (
+                not attention_forget_gate or attention_forget_gate_mode != "cumulative"
+                or positional_encoding not in ("rope", "none")):
+            raise ValueError("The constant forget gate form requires the cumulative gate with RoPE or no "
+                             "positional encoding on the blocked backend")
+        self.attention_forget_gate_form = attention_forget_gate_form
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -355,17 +365,24 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
-        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS, log_decay
+        from scaffolds.transformer.attention.forget_gate import (
+            PARAMETERS as FORGET_GATE_PARAMETERS, constant_log_decay, log_decay, parameter_names,
+        )
 
-        forget_gate = [parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS]
-        if any(value is None for value in forget_gate) if self.attention_forget_gate else any(
-                value is not None for value in forget_gate):
-            raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
+        gate_names = parameter_names(self.attention_forget_gate_form) if self.attention_forget_gate else ()
+        forget_gate = {name: parameters.pop(name, None) for name in FORGET_GATE_PARAMETERS}
+        if any(forget_gate[name] is None for name in gate_names) or any(
+                value is not None for name, value in forget_gate.items() if name not in gate_names):
+            raise ValueError("The forget gate requires exactly its model-owned parameters for its form")
         log_alpha = None
         if self.attention_forget_gate:
+            # The constant form's log alpha is -exp(A_log) at every token; the input form reads x_t.
+            if self.attention_forget_gate_form == "constant":
+                log_alpha = constant_log_decay(x, forget_gate["forget_gate_log_rate"])
+            else:
+                log_alpha = log_decay(x, *(forget_gate[name] for name in FORGET_GATE_PARAMETERS))
             # The gate and its parameters are identical in both modes. Only the attenuation
             # changes: exp(L_t-L_i) for FoX, exp((t-i)*log_alpha_t) for query distance.
-            log_alpha = log_decay(x, *forget_gate)
             parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
                                                if self.attention_forget_gate_mode == "cumulative" else log_alpha)
             parameters["query_decay_mode"] = self.attention_forget_gate_mode
