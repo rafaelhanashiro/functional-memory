@@ -46,6 +46,11 @@ for Hermite, the fixed coefficients. They trained on ORCD H100 80GB HBM3s with t
 scaffold code as the other ORCD cells; static resumed once from update 4,500 after a
 preemption.
 
+An `m = 6` column runs on ORCD H100s with the same code: fixed Taylor `r167091e2aeac`,
+fixed Hermite `r3a332ae60437`, learned static `r5e6f23bd0533`, and query, W decay
+`r688344e6dcc6`, each its family's `m = 5` recipe with degree 6. The figure, tables, and
+selection cover `m = 1-5` until they finish.
+
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
 floating point; their difference measures how far equivalent runs diverge numerically.

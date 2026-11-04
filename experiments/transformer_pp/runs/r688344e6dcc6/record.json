@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r688344e6dcc6/config.yaml",
+    "sha256": "15a218dc309863cf24385e1a0a68c041fb9d778d90f33f5c51613e153f9beea9"
+  },
+  "label": "query-m6-w-decay",
+  "name": "query-m6-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r688344e6dcc6",
+  "status": "planned"
+}

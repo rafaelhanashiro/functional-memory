@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r5e6f23bd0533/config.yaml",
+    "sha256": "8057588328986726d7af9602ec0974d6500eb678dfa627b07d465a2c24b2499b"
+  },
+  "label": "static-m6-head-scale",
+  "name": "static-m6-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r5e6f23bd0533",
+  "status": "planned"
+}
