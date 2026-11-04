@@ -54,8 +54,8 @@ Their attention weight is still `exp(-(t-i)*lambda) * p_t(score)`.
 
 | Variant | Run | Rate |
 | --- | --- | --- |
-| Endpoint query–key | `r20c185733426` | `lambda[t,i,h] = a[h] * softplus(wq[h]·x[t] + wk[h]·x[i] + b[h])` |
-| Bounded query-only | `re6d261fd59ab` | `lambda[t,h] = a[h] * sigmoid(wq[h]·x[t] + b[h])` |
+| Endpoint query–key | `r02f984133092` | `lambda[t,i,h] = a[h] * softplus(wq[h]·x[t] + wk[h]·x[i] + b[h])` |
+| Bounded query-only | `r4f169e5370da` | `lambda[t,h] = a[h] * sigmoid(wq[h]·x[t] + b[h])` |
 
 Here `a[h] = exp(A_log[h])`; all parameters are per layer and head, and `x` is
 the pre-attention RMSNorm activation. The sigmoid-rate form can equivalently be
@@ -76,10 +76,12 @@ nonlinearity ablation, and qualification records a deterministic synthetic-input
 comparison. The learned positive `a` bounds the rate across inputs for each head;
 it is itself trainable.
 
-Both use the shared blocked attention backend. Endpoint pair rates are evaluated
-inside query blocks, without materializing a separate full attention matrix.
-Qualification checks explicit attention and gradients, zero-key recovery,
-initialization, optimizer masks, a full-recipe GPU pilot, and checkpoint resume.
+Both run on the shared Mosaic decay kernels (see [Attention kernels](#attention-kernels)),
+which compute the same weights as the control's blocked reference: decay is evaluated
+inside the causal tiles, and pair rates and gate gradients never leave the chip.
+Qualification checks explicit attention and gradients against FP64, zero-key recovery,
+invalid-gate and saturation behavior, initialization, optimizer masks, a full-recipe GPU
+pilot, and checkpoint resume.
 The [study launch section](../../../README.md#endpoint-gate-ablations) identifies
 the adapter and exact launch command. These are exploratory pretraining runs,
 not fixed-batch overfits or checkpoint continuations.
@@ -94,8 +96,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
-| Endpoint query-key distance decay + W decay | `r20c185733426` | queued | — | — | — |
-| Bounded query rate + W decay | `re6d261fd59ab` | queued | — | — | — |
+| Endpoint query-key distance decay + W decay | `r02f984133092` | planned | — | — | — |
+| Bounded query rate + W decay | `r4f169e5370da` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).

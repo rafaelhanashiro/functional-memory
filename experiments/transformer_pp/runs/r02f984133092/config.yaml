@@ -28,7 +28,7 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: blocked
+  attention_backend: mosaic
   attention_degree: 4
   attention_normalization: false
   attention_output_scaling: head_rms_norm
@@ -99,8 +99,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_pp/runs/r20c185733426
-  checkpoint_dir: experiments/transformer_pp/runs/r20c185733426/checkpoints
+  workdir: experiments/transformer_pp/runs/r02f984133092
+  checkpoint_dir: experiments/transformer_pp/runs/r02f984133092/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500

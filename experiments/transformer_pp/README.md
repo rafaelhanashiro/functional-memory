@@ -718,28 +718,32 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
 
 ## Endpoint gate ablations
 
-`r20c185733426` adds a zero-initialized key projection to the query-distance gate;
-`re6d261fd59ab` replaces its softplus rate by a sigmoid rate, matching zero-input
+`r02f984133092` adds a zero-initialized key projection to the query-distance gate;
+`r4f169e5370da` replaces its softplus rate by a sigmoid rate, matching zero-input
 rates at initialization. Both use the full m = 4, NoPE + W decay recipe of
-`r3e26412b2811` with 7,570 updates and query-only polynomial coefficients.
-Methods, initialization details, pinned controls, and results live in the
+`r3e26412b2811` with 7,570 updates and query-only polynomial coefficients, on the
+Mosaic decay kernels (`model.attention_backend: mosaic`), which compute the same
+weights as the control's blocked reference. Methods, initialization details, pinned
+controls, kernel throughput, and results live in the
 [query-distance topic](results/exploratory/query_distance_decay/README.md).
 
 Home cluster: Kennel. Branch `codex/endpoint-decay-ablations`, worktree
 `worktrees/endpoint-decay-ablations`. Sync both locked CUDA environments as in
 [CLUSTERS.md](../../CLUSTERS.md). The adapter verifies the pinned control recipe
-and full initialization identity apart from the declared gate change. Shared
-acceptance checks CPU/GPU attention and gradients, initialization, full-recipe
-throughput, and fresh-process checkpoint resume before production training.
+(apart from the attention backend) and full initialization identity apart from the
+declared gate change. Shared acceptance runs the Mosaic decay-kernel GPU tests on the
+allocated GPU, initialization, full-recipe throughput, and fresh-process checkpoint
+resume before production training.
 
 After committing inputs and checking scheduler allowances, submit each run
-independently from that worktree. Request 72 hours on `long`; measured H100
-pilots project about 46 hours for endpoint query–key and 32 hours for bounded rate:
+independently from that worktree. Measured H100 updates project 5-8 hours, so the
+runs use `standard`. `akita` is excluded while its NVSwitch fabric manager is down
+(CUDA initialization fails there), which also leaves the B300 kernels unqualified:
 
 ```bash
-for run in r20c185733426 re6d261fd59ab; do
-  sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=72:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+for run in r02f984133092 r4f169e5370da; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch \

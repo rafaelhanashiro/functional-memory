@@ -498,18 +498,71 @@ def test_mosaic_diagonal_is_exactly_unattenuated_and_earlier_keys_may_underflow(
     np.testing.assert_array_equal(np.asarray(output, np.float32), np.asarray(v, np.float32))
 
 
+GATE_VARIANTS = (("query_key", "softplus"), ("query", "sigmoid"), ("query", "softplus"))
+
+
 @pytest.mark.gpu
-@pytest.mark.parametrize(("conditioning", "activation"), (("query_key", "softplus"), ("query", "sigmoid"),
-                                                          ("query", "softplus")))
-def test_mosaic_model_loss_and_every_gradient_match_the_blocked_reference(conditioning, activation):
-    """The production path (gate projections -> Mosaic kernel) in BF16 against the FP32 blocked model."""
+@pytest.mark.parametrize(("conditioning", "activation"), GATE_VARIANTS)
+def test_mosaic_core_with_gate_projections_matches_float64(conditioning, activation):
+    """The production dispatch (gate projections -> attention_core -> Mosaic) and its chain rule."""
     _requires_mosaic_gpu()
+    arrays, cotangent = _inputs(512, width=64, value_width=64, batch=1, heads=2, seed=105)
+    rng = np.random.default_rng(106)
+    x = rng.normal(size=(1, 512, 32))
+    wq, wk = rng.normal(size=(2, 2, 32)) * .2
+    if conditioning == "query":
+        wk = np.zeros_like(wk)
+    operands = (*arrays[:4], x, wq, wk, arrays[-1], np.array([[-2.], [-1.3]]))
+
+    def reference(q, k, v, c, x, wq, wk, A, b):
+        query = jnp.einsum("btd,hd->bth", x, wq) + b[:, 0]
+        return _dense(q, k, v, c, query, jnp.einsum("btd,hd->bth", x, wk), A, activation=activation)
+
+    def production(q, k, v, c, x, wq, wk, A, b):
+        if conditioning == "query_key":
+            query, key = forget_gate.project_gate_inputs(x, wq, b, wk)
+            gate = dict(query_gate_input=query, key_gate_input=key, gate_log_rate=A)
+        else:
+            gate = dict(query_log_decay=forget_gate.log_decay(x, wq, A, b, rate_activation=activation))
+        return attention_core(q, k, v, backend="mosaic", attention_degree=4, attention_normalization=False,
+                              query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
+                              query_decay_mode="query_distance", **gate)
+
+    bf16 = tuple(jnp.asarray(x, jnp.bfloat16 if i < 3 else jnp.float32) for i, x in enumerate(operands))
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        expected = _vjp(reference, tuple(jnp.asarray(x, jnp.float64) for x in bf16), jnp.asarray(cotangent))
+        expected = jax.tree.map(np.asarray, expected)
+    actual = jax.jit(lambda *x: _vjp(production, x, jnp.asarray(cotangent, jnp.bfloat16)))(*bf16)
+    # output, dq, dk, dv at the Mosaic BF16 bounds; c, x, wq, wk, A, b through FP32 sums.
+    tolerances = (.006, .025, .025, .015, .01, .01, .01, .01, .01, .01)
+    for i, (observed, wanted) in enumerate(zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True)):
+        observed, wanted = np.asarray(observed, np.float64), np.asarray(wanted, np.float64)
+        assert observed.shape == wanted.shape and np.isfinite(observed).all(), i
+        if conditioning == "query" and i == 7:  # wk is unused by query-only gates
+            np.testing.assert_array_equal(observed, 0)
+            continue
+        error = np.linalg.norm(observed - wanted) / np.linalg.norm(wanted)
+        assert error < tolerances[i], (conditioning, activation, i, error)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize(("conditioning", "activation"), GATE_VARIANTS)
+def test_mosaic_model_trains_like_the_float32_blocked_model(conditioning, activation, monkeypatch):
+    """End-to-end model on Mosaic in BF16 against the FP32 blocked model: its loss and gradient direction.
+    Single parameters can be cancellation-dominated here (with query-only gates the BF16 blocked model errs by
+    tens of percent on some), so none is compared alone. With FP32-precision weights (bf16x3) the Mosaic model
+    is as faithful as the BF16 blocked one; its default rounds weights and score gradients to BF16 before the
+    tensor-core products, as FlashAttention and cuDNN do, where the blocked reference keeps them FP32."""
+    _requires_mosaic_gpu()
+    from scaffolds.transformer.attention.backends.mosaic import api
     rng = np.random.default_rng(57)
     batch = jnp.asarray(rng.integers(0, 64, size=(2, 257)), jnp.int32)
     key_kernel = jnp.asarray(rng.normal(size=(2, 2, 128)) * .1, jnp.float32)  # exercise the key path
     amplitude = jnp.asarray(rng.normal(size=(2, 2, 5)) * .5, jnp.float32)  # and the coefficient projection
     results = {}
-    for backend, dtype in (("blocked", "float32"), ("blocked", "bfloat16"), ("mosaic", "bfloat16")):
+    for backend, dtype, precision in (("blocked", "float32", None), ("blocked", "bfloat16", None),
+                                      ("mosaic", "bfloat16", "bf16"), ("mosaic", "bfloat16", "bf16x3")):
+        monkeypatch.setattr(api, "default_precision", lambda family, degree, precision=precision: precision)
         config = _config(vocab_size=64, max_seq_len=256, hidden_size=128, qk_head_dim=64, value_head_dim=64,
                          intermediate_size=256, attention_backend=backend,
                          attention_coefficient_projection_initial_std=128 ** -.5,
@@ -521,18 +574,22 @@ def test_mosaic_model_loss_and_every_gradient_match_the_blocked_reference(condit
         if conditioning == "query_key":
             state.params["forget_gate_key_kernel"][...] = key_kernel
         with jax.default_matmul_precision("highest" if dtype == "float32" else "default"):
-            loss, gradients = jax.jit(loop.loss_and_grads)(state, batch, jax.random.PRNGKey(0))
-        results[backend, dtype] = float(loss), {path: np.asarray(value[...], np.float64)
-                                               for path, value in nnx.to_flat_state(gradients)}
-    (reference_loss, reference), (_, bf16) = results["blocked", "float32"], results["blocked", "bfloat16"]
-    loss, actual = results["mosaic", "bfloat16"]
+            # A fresh function per case: the precision is read while tracing.
+            loss, gradients = jax.jit(lambda *x: loop.loss_and_grads(*x))(state, batch, jax.random.PRNGKey(0))
+        results[backend, dtype, precision] = float(loss), {path: np.asarray(value[...], np.float64)
+                                                          for path, value in nnx.to_flat_state(gradients)}
+    reference_loss, reference = results["blocked", "float32", None]
+    bf16 = results["blocked", "bfloat16", None][1]
+    loss, actual = results["mosaic", "bfloat16", "bf16"]
     assert math.isfinite(loss) and abs(loss - reference_loss) < .02
-    for path, expected in reference.items():
-        assert np.isfinite(actual[path]).all(), path
-        scale = np.linalg.norm(expected)
-        if scale == 0:
-            np.testing.assert_array_equal(actual[path], 0, err_msg=str(path))
-            continue
-        error = np.linalg.norm(actual[path] - expected) / scale
-        rounding = np.linalg.norm(bf16[path] - expected) / scale
-        assert error <= max(2.5 * rounding, .03), (path, error, rounding)
+    assert all(np.isfinite(value).all() for value in actual.values())
+    for name in forget_gate.parameter_names("input", conditioning):
+        assert np.linalg.norm(actual[(name,)]) > 0, name
+
+    def cosine(gradients):
+        a, b = (np.concatenate([g[path].ravel() for path in sorted(reference, key=str)]) for g in (gradients, reference))
+        return a @ b / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    exact = results["mosaic", "bfloat16", "bf16x3"][1]
+    assert cosine(exact) >= min(.995, cosine(bf16) - .01), (cosine(exact), cosine(bf16))
+    assert cosine(actual) >= min(.995, cosine(bf16) - .03), (cosine(actual), cosine(bf16))

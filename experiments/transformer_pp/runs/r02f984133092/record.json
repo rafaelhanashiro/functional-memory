@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r02f984133092/config.yaml",
+    "sha256": "3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131"
+  },
+  "label": "query-m4-endpoint-query-key-no-rope-w-decay",
+  "name": "query-m4-endpoint-query-key-no-rope-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r02f984133092",
+  "status": "planned"
+}

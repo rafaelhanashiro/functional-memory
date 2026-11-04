@@ -59,18 +59,18 @@ runs:
       path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
       sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
 - study: transformer_pp
-  run_id: r20c185733426
+  run_id: r02f984133092
   role: query_key_distance
   label: Endpoint query-key distance decay + W decay
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/r20c185733426/config.yaml
-      sha256: 722f6fca190e50d4a3e8f8b4f6bfdd0b1e20f21bdf844437dec8b5b173a26104
+      path: experiments/transformer_pp/runs/r02f984133092/config.yaml
+      sha256: 3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131
 - study: transformer_pp
-  run_id: re6d261fd59ab
+  run_id: r4f169e5370da
   role: bounded_query_distance
   label: Bounded query rate + W decay
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/re6d261fd59ab/config.yaml
-      sha256: 98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23
+      path: experiments/transformer_pp/runs/r4f169e5370da/config.yaml
+      sha256: cc18f6be43afb7d7e1fefb74ba18cdff680b79c59d5109307d7d3fa62aa60758
