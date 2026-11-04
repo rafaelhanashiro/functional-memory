@@ -536,18 +536,18 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
 
 Each record's `submission` holds its exact command and partition.
 
-The degree-eight gate without RoPE, `r27d11cca2968` (`query-m8-forget-gate-no-rope-wdecay`),
+The degree-eight gate without RoPE, `r9353f554b917` (`query-m8-forget-gate-no-rope-wdecay`),
 copies `query-m8-dk64-w-decay` (`r25fffc16c2f3`) and changes only
 `attention_forget_gate: true`, `positional_encoding: none`, and
 `attention_backend: blocked`. Its home cluster is ORCD (branch
-`claude/forget-gate-m8-orcd`); from the worktree root, on one H200:
+`claude/forget-gate-m8-orcd`); from the worktree root, on one H100:
 
 ```bash
-run=r27d11cca2968
+run=r9353f554b917
 sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
-  --gres=gpu:h200:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+  --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
   scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
-  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H200
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
 
 ## Context length

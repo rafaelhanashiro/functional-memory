@@ -77,12 +77,12 @@ mask and the gate's decay, as in the Forgetting Transformer's RoPE-free variant.
 
 ### At m = 8 with W decay
 
-`r27d11cca2968` (`query-m8-forget-gate-no-rope-wdecay`) asks whether the no-RoPE gate
+`r9353f554b917` (`query-m8-forget-gate-no-rope-wdecay`) asks whether the no-RoPE gate
 still helps at degree eight with projection weight decay. It copies
 `query-m8-dk64-w-decay` (`r25fffc16c2f3`, 14.328 terminal, from the
 [query width-by-degree topic](../query_width_degree/README.md)) and changes only
 `attention_forget_gate: true`, `positional_encoding: none`, and the blocked backend
-that the gate requires; that run is its control. It runs on one ORCD H200
+that the gate requires; that run is its control. It runs on one ORCD H100
 (home cluster ORCD); the control ran on Kennel on Mosaic at an earlier commit.
 
 ## Open decision

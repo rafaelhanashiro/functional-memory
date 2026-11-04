@@ -5,8 +5,8 @@ data:
   split: train
   tokenizer_name: NousResearch/Llama-2-7b-hf
   text_field: text
-  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
-  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  train_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /home/rafah/projects/ofm/datasets/fineweb_12b/eval/manifest.json
   batch_size: 256
   sequence_length: 2049
   shuffle_seed: 0
@@ -94,8 +94,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_pp/runs/r27d11cca2968
-  checkpoint_dir: experiments/transformer_pp/runs/r27d11cca2968/checkpoints
+  workdir: experiments/transformer_pp/runs/r9353f554b917
+  checkpoint_dir: experiments/transformer_pp/runs/r9353f554b917/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
