@@ -14,7 +14,9 @@ from scaffolds.transformer.attention.parameters import attention_parameter_specs
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 from scaffolds.transformer.configs.loader import config_dicts_equal
 from scaffolds.transformer.models import build_model
+from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.optim import attention_weight_decay_mask, make_optimizer
+from scaffolds.transformer.training.state import create_state
 
 
 def _inputs(time=19, *, width=5, value_width=3, batch=2, heads=2, seed=91):
@@ -332,7 +334,7 @@ def test_bounded_saturation_does_not_hide_nonfinite_gate_inputs(bad):
     {"attention_forget_gate_rate_activation": "tanh"},
     {"attention_forget_gate_conditioning": "query_key", "attention_forget_gate": False},
     {"attention_forget_gate_conditioning": "query_key", "attention_forget_gate_mode": "cumulative"},
-    {"attention_forget_gate_conditioning": "query_key", "attention_backend": "mosaic"},
+    {"attention_forget_gate_conditioning": "query_key", "attention_backend": "fused"},
     {"attention_forget_gate_conditioning": "query_key", "attention_forget_gate_form": "constant"},
     {"attention_forget_gate_rate_activation": "sigmoid", "attention_forget_gate_mode": "cumulative"},
     {"attention_forget_gate_rate_activation": "sigmoid", "attention_forget_gate_form": "constant"},
@@ -379,3 +381,158 @@ def test_full_context_bfloat16_output_and_gradients_match_host_fp64(activation):
         actual = jax.jit(lambda *x: _vjp(lambda *a: _operation(*a, activation=activation, block=128),
                                         x, cotangent))(*operands)
     _compare(actual, expected, .015)
+
+
+# Mosaic GPU kernels: the same gates fused into the causal attention tiles.
+MOSAIC_VARIANTS = ("query_key", "query_softplus", "query_sigmoid")
+
+
+def _requires_mosaic_gpu():
+    if jax.default_backend() != "gpu" or jax.devices()[0].compute_capability not in ("9.0", "10.0", "10.3"):
+        pytest.skip("Requires an H100 or B300 allocation")
+
+
+def _mosaic(variant):
+    """The production Mosaic operation of a gate variant over (q, k, v, c, query input[, key input], log rate)."""
+    from scaffolds.transformer.attention.backends.mosaic.api import endpoint_decay_attention, query_decay_attention
+
+    if variant == "query_key":
+        return endpoint_decay_attention
+    activation = jax.nn.softplus if variant == "query_softplus" else jax.nn.sigmoid
+    return lambda q, k, v, c, query, rate: query_decay_attention(q, k, v, c, -jnp.exp(rate[:, 0]) * activation(query))
+
+
+def _mosaic_operands(variant, time, *, seed=103, batch=1):
+    operands, cotangent = _inputs(time, width=64, value_width=64, batch=batch, heads=2, seed=seed)
+    if variant != "query_key":
+        operands = (*operands[:5], np.zeros_like(operands[5]), operands[6])  # the oracle's query-only rate
+    operands = tuple(jnp.asarray(x, jnp.bfloat16 if i < 3 else jnp.float32) for i, x in enumerate(operands))
+    return operands, jnp.asarray(cotangent, jnp.bfloat16)
+
+
+def _drop_key(variant, values):
+    return tuple(values) if variant == "query_key" else (*values[:5], values[6])
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("variant", MOSAIC_VARIANTS)
+def test_mosaic_full_context_output_and_gradients_match_host_fp64(variant):
+    _requires_mosaic_gpu()
+    operands, cotangent = _mosaic_operands(variant, 2048)
+    output, gradients = _numpy_vjp(operands, cotangent, activation="sigmoid" if variant == "query_sigmoid" else "softplus")
+    actual = jax.jit(lambda *x: _vjp(_mosaic(variant), x, cotangent))(*_drop_key(variant, operands))
+    # BF16 bounds of the Mosaic query-polynomial gates for output, dq, dk, dv; FP32 sums elsewhere.
+    tolerances = (.006, .025, .025, .015, .01, .01, .01, .01)
+    expected = (output, *_drop_key(variant, gradients))
+    for i, (observed, wanted) in enumerate(zip(jax.tree.leaves(actual), expected, strict=True)):
+        observed, wanted = np.asarray(observed, np.float64), np.asarray(wanted, np.float64)
+        assert observed.shape == wanted.shape and np.isfinite(observed).all(), i
+        error = np.linalg.norm(observed - wanted) / np.linalg.norm(wanted)
+        assert error < tolerances[i], (variant, i, error)
+
+
+@pytest.mark.gpu
+def test_mosaic_zero_key_endpoint_recovers_the_query_only_control():
+    _requires_mosaic_gpu()
+    operands, cotangent = _mosaic_operands("query_softplus", 2048, seed=104)
+    endpoint = jax.jit(lambda *x: _vjp(_mosaic("query_key"), x, cotangent))(*operands)
+    control = jax.jit(lambda *x: _vjp(_mosaic("query_softplus"), x, cotangent))(*_drop_key("query_softplus", operands))
+    observed = (endpoint[0], *_drop_key("query_key", endpoint[1])[:5], endpoint[1][6])
+    _compare(observed, (control[0], *control[1]), 2e-4)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("bad", (float("nan"), float("inf")))
+@pytest.mark.parametrize("operand", ("query", "key", "rate"))
+def test_mosaic_invalid_endpoint_gates_poison_only_affected_causal_rows(bad, operand):
+    _requires_mosaic_gpu()
+    operands, _ = _mosaic_operands("query_key", 512)
+    operands = list(operands)
+    if operand == "rate":
+        operands[6] = operands[6].at[0, 0].set(bad)
+    else:
+        index = 4 if operand == "query" else 5
+        operands[index] = operands[index].at[0, 300, 0].set(bad)
+    actual = ~np.isfinite(np.asarray(_mosaic("query_key")(*operands), np.float32)).all(axis=-1)
+    expected = np.zeros(actual.shape, dtype=bool)
+    expected[0, {"query": slice(300, 301), "key": slice(300, None), "rate": slice(None)}[operand], 0] = True
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("bad", (float("nan"), 0.25))
+def test_mosaic_invalid_query_rate_poisons_only_its_query(bad):
+    _requires_mosaic_gpu()
+    from scaffolds.transformer.attention.backends.mosaic.api import query_decay_attention
+
+    (q, k, v, c, query, _, rate), _ = _mosaic_operands("query_sigmoid", 512)
+    log_decay = (-jnp.exp(rate[:, 0]) * jax.nn.sigmoid(query)).at[0, 300, 1].set(bad)
+    actual = ~np.isfinite(np.asarray(query_decay_attention(q, k, v, c, log_decay), np.float32)).all(axis=-1)
+    expected = np.zeros(actual.shape, dtype=bool)
+    expected[0, 300, 1] = True
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("variant", ("query_key", "query_sigmoid"))
+@pytest.mark.parametrize("input_value", (-1000., 1e20))
+def test_mosaic_saturated_rates_stay_finite_and_keep_the_unit_diagonal(variant, input_value):
+    _requires_mosaic_gpu()
+    operands, cotangent = _mosaic_operands(variant, 512)
+    operands = list(operands)
+    operands[4] = jnp.full_like(operands[4], input_value)
+    operands[5] = jnp.zeros_like(operands[5])
+    result = jax.jit(lambda *x: _vjp(_mosaic(variant), x, cotangent))(*_drop_key(variant, operands))
+    assert all(np.isfinite(np.asarray(x, np.float32)).all() for x in jax.tree.leaves(result))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("variant", MOSAIC_VARIANTS)
+def test_mosaic_diagonal_is_exactly_unattenuated_and_earlier_keys_may_underflow(variant):
+    _requires_mosaic_gpu()
+    operands, _ = _mosaic_operands(variant, 512)
+    q, k, v, _, query, key, _ = operands
+    c = jnp.zeros((*q.shape[:3], 5), jnp.float32).at[..., 0].set(1.)  # p = 1
+    rate = jnp.full((2, 1), 80., jnp.float32)  # exp(80) (t-i) underflows for every earlier key
+    output = _mosaic(variant)(*_drop_key(variant, (q, k, v, c, query, key, rate)))
+    np.testing.assert_array_equal(np.asarray(output, np.float32), np.asarray(v, np.float32))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize(("conditioning", "activation"), (("query_key", "softplus"), ("query", "sigmoid"),
+                                                          ("query", "softplus")))
+def test_mosaic_model_loss_and_every_gradient_match_the_blocked_reference(conditioning, activation):
+    """The production path (gate projections -> Mosaic kernel) in BF16 against the FP32 blocked model."""
+    _requires_mosaic_gpu()
+    rng = np.random.default_rng(57)
+    batch = jnp.asarray(rng.integers(0, 64, size=(2, 257)), jnp.int32)
+    key_kernel = jnp.asarray(rng.normal(size=(2, 2, 128)) * .1, jnp.float32)  # exercise the key path
+    amplitude = jnp.asarray(rng.normal(size=(2, 2, 5)) * .5, jnp.float32)  # and the coefficient projection
+    results = {}
+    for backend, dtype in (("blocked", "float32"), ("blocked", "bfloat16"), ("mosaic", "bfloat16")):
+        config = _config(vocab_size=64, max_seq_len=256, hidden_size=128, qk_head_dim=64, value_head_dim=64,
+                         intermediate_size=256, attention_backend=backend,
+                         attention_coefficient_projection_initial_std=128 ** -.5,
+                         attention_forget_gate_conditioning=conditioning,
+                         attention_forget_gate_rate_activation=activation)
+        config.train.dtype, config.data.sequence_length = dtype, batch.shape[1]
+        state = create_state(config, jax.random.PRNGKey(3))
+        state.params["query_polynomial_amplitude"][...] = amplitude
+        if conditioning == "query_key":
+            state.params["forget_gate_key_kernel"][...] = key_kernel
+        with jax.default_matmul_precision("highest" if dtype == "float32" else "default"):
+            loss, gradients = jax.jit(loop.loss_and_grads)(state, batch, jax.random.PRNGKey(0))
+        results[backend, dtype] = float(loss), {path: np.asarray(value[...], np.float64)
+                                               for path, value in nnx.to_flat_state(gradients)}
+    (reference_loss, reference), (_, bf16) = results["blocked", "float32"], results["blocked", "bfloat16"]
+    loss, actual = results["mosaic", "bfloat16"]
+    assert math.isfinite(loss) and abs(loss - reference_loss) < .02
+    for path, expected in reference.items():
+        assert np.isfinite(actual[path]).all(), path
+        scale = np.linalg.norm(expected)
+        if scale == 0:
+            np.testing.assert_array_equal(actual[path], 0, err_msg=str(path))
+            continue
+        error = np.linalg.norm(actual[path] - expected) / scale
+        rounding = np.linalg.norm(bf16[path] - expected) / scale
+        assert error <= max(2.5 * rounding, .03), (path, error, rounding)

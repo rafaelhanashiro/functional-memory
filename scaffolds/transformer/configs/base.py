@@ -220,6 +220,25 @@ class ModelConfig:
                 and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
+    def mosaic_decay_supported(self) -> bool:
+        """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
+        query-conditioned unnormalized polynomial attention with an input-form query-distance
+        forget gate (query or endpoint query-key rates), with RoPE or no positional encoding.
+        Only an explicit ``mosaic`` backend selects them; ``auto`` keeps its historical choice."""
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+        degree = self.attention_degree
+        integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        return (self.attention_mechanism == "dot_product" and not self.attention_normalization
+                and self.attention_coefficient_conditioning == "query"
+                and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
+                and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
+                and self.attention_forget_gate_form == "input" and integer_degree
+                and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
+                                           gate=self.attention_forget_gate_conditioning)
+                and self.positional_encoding in ("rope", "none")
+                and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
     def path_fused_supported(self) -> bool:
         """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
         from scaffolds.transformer.attention.backends.fla_path_attention import HEAD_DIMS, MAX_DEGREE
@@ -281,10 +300,11 @@ class ModelConfig:
             if self.attention_backend == "fused" and not self.path_fused_supported():
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
-        if self.attention_backend == "mosaic" and not self.mosaic_supported():
+        if self.attention_backend == "mosaic" and not (self.mosaic_supported() or self.mosaic_decay_supported()):
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
-                             "degree 1-8, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64")
+                             "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
+                             "query-conditioned attention may add a query-distance forget gate")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -443,13 +463,16 @@ class ModelConfig:
             raise ValueError("Unknown forget gate rate activation")
         if (self.attention_forget_gate_conditioning != "query" or self.attention_forget_gate_rate_activation != "softplus") and (
                 not self.attention_forget_gate or self.attention_forget_gate_form != "input"
-                or self.attention_forget_gate_mode != "query_distance" or self.attention_backend != "blocked"):
-            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked backend")
+                or self.attention_forget_gate_mode != "query_distance"
+                or self.attention_backend not in ("blocked", "mosaic")):
+            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked or "
+                             "mosaic backend")
         if self.attention_forget_gate_conditioning == "query_key" and self.attention_forget_gate_rate_activation != "softplus":
             raise ValueError("Query-key decay is qualified only with softplus rates")
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
-            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
+            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
+            or self.attention_backend == "mosaic" and self.mosaic_decay_supported())
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"

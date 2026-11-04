@@ -61,6 +61,19 @@ def test_unrelated_scientific_changes_are_rejected(section, field, value):
         adapter.check_recipe(config)
 
 
+@pytest.mark.parametrize("settings", adapter.VARIANTS)
+def test_mosaic_kernels_are_an_execution_choice_but_other_backends_are_rejected(settings):
+    config = variant(*settings)
+    config.model.attention_backend = "mosaic"
+    adapter.check_recipe(config)
+    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
+    gpu = selected_test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=False)
+    assert "scaffolds/transformer/tests/test_endpoint_decay.py" in gpu
+    config.model.attention_backend = "fused"
+    with pytest.raises(ValueError):
+        adapter.check_recipe(config)
+
+
 def test_execution_names_may_change():
     config = variant()
     config.train.workdir = "/new/run"

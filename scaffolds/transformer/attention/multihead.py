@@ -182,14 +182,17 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError(f"Unknown attention forget gate mode: {attention_forget_gate_mode}")
         if attention_forget_gate_mode != "cumulative" and not attention_forget_gate:
             raise ValueError("A query-distance decay mode requires attention_forget_gate")
+        # Query-distance decay (and its endpoint variants) also runs on the Mosaic kernels.
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
-            or positional_encoding in ("rope", "none") and backend == "blocked")
+            or positional_encoding in ("rope", "none") and (
+                backend == "blocked" or backend == "mosaic" and attention_forget_gate_mode == "query_distance"
+                and attention_forget_gate_form == "input"))
         if attention_forget_gate and (attention_coefficient_conditioning != "query"
                                       or attention_coefficient_activation == "identity"
                                       or not forget_backend_supported):
             raise ValueError("The forget gate requires nonlinear query coefficients: RoPE/none on the "
-                             "blocked backend, or PaTH on blocked/fused/auto")
+                             "blocked backend (query-distance decay also on mosaic), or PaTH on blocked/fused/auto")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
@@ -210,8 +213,9 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unknown forget gate rate activation")
         if (attention_forget_gate_conditioning != "query" or attention_forget_gate_rate_activation != "softplus") and (
                 not attention_forget_gate or attention_forget_gate_form != "input"
-                or attention_forget_gate_mode != "query_distance" or backend != "blocked"):
-            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked backend")
+                or attention_forget_gate_mode != "query_distance" or backend not in ("blocked", "mosaic")):
+            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked or "
+                             "mosaic backend")
         if attention_forget_gate_conditioning == "query_key" and attention_forget_gate_rate_activation != "softplus":
             raise ValueError("Query-key decay is qualified only with softplus rates")
         self.attention_forget_gate_conditioning = attention_forget_gate_conditioning

@@ -421,8 +421,12 @@ def attention_identity(config) -> dict:
         from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
+        gate = config.model.attention_forget_gate
+        endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
+                                         else "pallas_mosaic_gpu_query_polynomial_query_decay" if gate
+                                         else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
                                          if not normalized else "pallas_mosaic_gpu"),

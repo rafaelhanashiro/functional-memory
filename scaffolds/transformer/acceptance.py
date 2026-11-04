@@ -130,7 +130,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             and model.get("attention_forget_gate_form", "input") == "constant"):
         paths.append(CONSTANT_DECAY_TESTS)
     if (model.get("attention_forget_gate_conditioning", "query") != "query"
-            or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"):
+            or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
+            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
+        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate.
         paths.append("scaffolds/transformer/tests/test_endpoint_decay.py")
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)

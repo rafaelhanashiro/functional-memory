@@ -332,7 +332,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
 
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
     ``cumulative`` mode, multiplying each weight by exp(L_t-L_i). In ``query_distance``
-    mode it is log alpha_t itself, giving exp((t-i)*log alpha_t). Both use the blocked backend.
+    mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
+    exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
+    query-distance and endpoint decay also run on the Mosaic kernels.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
@@ -347,8 +349,10 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
     if decay_mode != "cumulative" and log_decay is None and not endpoint:
         raise ValueError("A query-distance decay mode requires log_decay")
-    if (log_decay is not None or endpoint) and backend != "blocked":
-        raise ValueError("The forget gate runs on the blocked reference backend only")
+    if (log_decay is not None or endpoint) and not (
+            backend == "blocked" or backend == "mosaic" and decay_mode == "query_distance"):
+        raise ValueError("The forget gate runs on the blocked reference backend; query-distance and endpoint "
+                         "decay also run on mosaic")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_dot_product_attention(
@@ -367,14 +371,24 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
                 fused_query_polynomial_attention as attend,
             )
         else:
-            from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention as attend
+            from scaffolds.transformer.attention.backends.mosaic import api as mosaic
+
+            attend = mosaic.query_polynomial_attention
+            if endpoint:
+                attend = partial(mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
+                                 key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
+            elif log_decay is not None:
+                attend = partial(mosaic.query_decay_attention, log_decay=log_decay)
 
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:
             return output
+        # Diagnostics, including the forget gate's, come from the blocked reference.
         _, diagnostics = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
-            query_polynomial_coefficients=coefficients, return_diagnostics=True,
+            query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
+            query_decay_mode=decay_mode, query_gate_input=query_gate_input,
+            key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, return_diagnostics=True,
         )
     else:
         raise ValueError("Query-conditioned polynomial attention requires a blocked, fused or mosaic backend")

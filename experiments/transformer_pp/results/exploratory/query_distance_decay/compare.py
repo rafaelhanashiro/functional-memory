@@ -25,9 +25,13 @@ def read_json(path: Path) -> dict:
 
 
 def scientific_recipe(recipe: dict) -> dict:
-    """Ignore execution names/paths and explicit inactive historical defaults only."""
+    """Ignore execution names/paths, the attention implementation (blocked reference or Mosaic
+    kernels, which compute the same weights), and explicit inactive historical defaults only."""
     recipe = deepcopy(recipe)
     model = recipe["model"]
+    if model.get("attention_backend") not in ("blocked", "mosaic"):
+        raise ValueError("Selected runs use the blocked reference or the Mosaic kernels")
+    model.pop("attention_backend")
     if "attention_coefficient_key_kernel_weight_decay" in model:
         if model["attention_coefficient_key_kernel_weight_decay"] is not False:
             raise ValueError("This query-only control must have no key-projection decay")

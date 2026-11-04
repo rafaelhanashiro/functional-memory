@@ -29,9 +29,13 @@ def check_recipe(config: Config) -> None:
                config.model.attention_forget_gate_rate_activation)
     if variant not in VARIANTS:
         raise ValueError("Select exactly one endpoint ablation: query-key/softplus or query/sigmoid")
+    if config.model.attention_backend not in ("blocked", "mosaic"):
+        raise ValueError("Endpoint ablations run on the blocked reference or the Mosaic decay kernels")
     actual, expected = config_to_dict(config), config_to_dict(control_config())
     actual["model"]["attention_forget_gate_conditioning"] = "query"
     actual["model"]["attention_forget_gate_rate_activation"] = "softplus"
+    # The attention implementation is an execution choice: both backends compute the same weights.
+    actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
     for recipe in (actual, expected):
         for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode"):
             recipe["train"].pop(key, None)
