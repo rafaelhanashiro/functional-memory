@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r20c185733426/config.yaml",
+    "sha256": "722f6fca190e50d4a3e8f8b4f6bfdd0b1e20f21bdf844437dec8b5b173a26104"
+  },
+  "control_run_id": "r3e26412b2811",
+  "home_cluster": "kennel",
+  "label": "query-m4-endpoint-query-key-no-rope-w-decay",
+  "name": "query-m4-endpoint-query-key-no-rope-w-decay",
+  "recipe_reference": "experiments/transformer_pp/recipe.yaml",
+  "record_schema_version": 1,
+  "run_id": "r20c185733426",
+  "scientific_change": "Endpoint query-key rate with zero-initialized key projection",
+  "seed": 42,
+  "status": "planned",
+  "training_tokens": 3968860160
+}

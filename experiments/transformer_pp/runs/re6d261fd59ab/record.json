@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/re6d261fd59ab/config.yaml",
+    "sha256": "98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23"
+  },
+  "control_run_id": "r3e26412b2811",
+  "home_cluster": "kennel",
+  "label": "query-m4-bounded-query-rate-no-rope-w-decay",
+  "name": "query-m4-bounded-query-rate-no-rope-w-decay",
+  "recipe_reference": "experiments/transformer_pp/recipe.yaml",
+  "record_schema_version": 1,
+  "run_id": "re6d261fd59ab",
+  "scientific_change": "Bounded sigmoid query rate with zero-input rate matched at initialization",
+  "seed": 42,
+  "status": "planned",
+  "training_tokens": 3968860160
+}

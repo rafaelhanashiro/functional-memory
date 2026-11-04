@@ -326,7 +326,8 @@ def key_factor_statistics(key_factors):
 
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
-                               log_decay=None, decay_mode="cumulative"):
+                               log_decay=None, decay_mode="cumulative",
+                               query_gate_input=None, key_gate_input=None, gate_log_rate=None):
     """Apply a per-query polynomial directly in one fused attention operation.
 
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
@@ -340,16 +341,21 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
     if decay_mode not in ("cumulative", "query_distance"):
         raise ValueError(f"Unknown query decay mode: {decay_mode}")
-    if decay_mode != "cumulative" and log_decay is None:
+    endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
+                     or log_decay is not None or decay_mode != "query_distance"):
+        raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
+    if decay_mode != "cumulative" and log_decay is None and not endpoint:
         raise ValueError("A query-distance decay mode requires log_decay")
-    if log_decay is not None and backend != "blocked":
+    if (log_decay is not None or endpoint) and backend != "blocked":
         raise ValueError("The forget gate runs on the blocked reference backend only")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
-            query_decay_mode=decay_mode,
+            query_decay_mode=decay_mode, query_gate_input=query_gate_input,
+            key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
             return_diagnostics=return_diagnostics,
         )
         if not return_diagnostics:

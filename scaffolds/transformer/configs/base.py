@@ -108,6 +108,9 @@ class ModelConfig:
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
     # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
     attention_forget_gate_form: Literal["input", "constant"] = "input"
+    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
+    attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
+    attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -434,6 +437,16 @@ class ModelConfig:
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
             raise ValueError("The constant forget gate form is qualified only as cumulative decay with RoPE or "
                              "no positional encoding on the blocked backend")
+        if self.attention_forget_gate_conditioning not in ("query", "query_key"):
+            raise ValueError("Unknown forget gate conditioning")
+        if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
+            raise ValueError("Unknown forget gate rate activation")
+        if (self.attention_forget_gate_conditioning != "query" or self.attention_forget_gate_rate_activation != "softplus") and (
+                not self.attention_forget_gate or self.attention_forget_gate_form != "input"
+                or self.attention_forget_gate_mode != "query_distance" or self.attention_backend != "blocked"):
+            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked backend")
+        if self.attention_forget_gate_conditioning == "query_key" and self.attention_forget_gate_rate_activation != "softplus":
+            raise ValueError("Query-key decay is qualified only with softplus rates")
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")

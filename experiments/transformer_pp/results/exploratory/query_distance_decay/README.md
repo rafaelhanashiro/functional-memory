@@ -2,8 +2,9 @@
 
 Opened 2026-11-02.
 
-**Question.** Can each query select its own context range more effectively than
-the cumulative FoX gate, without accumulating gates from intervening positions?
+**Question.** Can endpoint-dependent distance decay match cumulative FoX without
+accumulating gates from intervening positions? Does key dependence or a bounded
+positive decay rate improve the query-only version?
 
 ## Matched comparison
 
@@ -43,9 +44,49 @@ Home cluster: Kennel. Each run uses one GPU. Qualification covers independent
 explicit attention and gate-gradient references, initialization identity, decay
 masks, and the shared acceptance sequence before production training.
 
+## Endpoint gate ablations
+
+Added 2026-11-04. Both runs start from scratch with the complete recipe of
+`r3e26412b2811`: degree four, query-only polynomial coefficients, no positional
+encoding, projection weight decay, canonical QK RMSNorm with per-head scaling,
+2,048-token context, batch 256, seed 42, and the 1× budget of 7,570 updates.
+Their attention weight is still `exp(-(t-i)*lambda) * p_t(score)`.
+
+| Variant | Run | Rate |
+| --- | --- | --- |
+| Endpoint query–key | `r20c185733426` | `lambda[t,i,h] = a[h] * softplus(wq[h]·x[t] + wk[h]·x[i] + b[h])` |
+| Bounded query-only | `re6d261fd59ab` | `lambda[t,h] = a[h] * sigmoid(wq[h]·x[t] + b[h])` |
+
+Here `a[h] = exp(A_log[h])`; all parameters are per layer and head, and `x` is
+the pre-attention RMSNorm activation. The sigmoid-rate form can equivalently be
+written `a * (1 + tanh(u/2))/2`. This changes the positive rate from softplus to
+sigmoid; it does not replace the attenuation itself with a signed tanh.
+Neither variant uses gates at positions between query and key.
+
+The endpoint key projection starts at zero, reproducing the query-only control
+exactly at initialization. It adds 188,160 trainable parameters. Both gate
+projections receive weight decay 0.1; `A_log` and the bias remain exempt.
+
+The bounded-rate variant has the same parameter count as the control. It uses
+the same random rate and projection draws. If the control's initial zero-input
+rate factor is `dt = softplus(b_old)`, its bias becomes `logit(dt)` so that
+`sigmoid(b_new) = dt`. Thus zero-input rates and half-lives match per head.
+Rates on nonzero inputs are not exactly matched: this difference is part of the
+nonlinearity ablation, and qualification records a deterministic synthetic-input
+comparison. The learned positive `a` bounds the rate across inputs for each head;
+it is itself trainable.
+
+Both use the shared blocked attention backend. Endpoint pair rates are evaluated
+inside query blocks, without materializing a separate full attention matrix.
+Qualification checks explicit attention and gradients, zero-key recovery,
+initialization, optimizer masks, a full-recipe GPU pilot, and checkpoint resume.
+The [study launch section](../../../README.md#endpoint-gate-ablations) identifies
+the adapter and exact launch command. These are exploratory pretraining runs,
+not fixed-batch overfits or checkpoint continuations.
+
 ## Results
 
-The selection pins both runs explicitly. Best PPL is the lowest validation PPL
+The selection pins all four runs explicitly. Best PPL is the lowest validation PPL
 over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
@@ -53,9 +94,14 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
+| Endpoint query-key distance decay + W decay | `r20c185733426` | planned | — | — | — |
+| Bounded query rate + W decay | `re6d261fd59ab` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
+
+Endpoint query–key and bounded-rate variants compare against the query-dependent control.
+Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
 <!-- END GENERATED RESULTS -->
 
 - Query-dependent distance decay trails cumulative FoX at all 28 evaluations:
@@ -73,9 +119,9 @@ a comparison of additional gate capacity or separately tuned optimization.
 
 ## Open decision
 
-Retain query-dependent distance decay as a FoX variant, or discard this
-exploratory topic and its run; on the one tested seed it trails cumulative FoX
-throughout training.
+Determine whether endpoint key dependence or the bounded-rate nonlinearity
+closes the gap with cumulative FoX. The completed query-only softplus-rate run
+trails cumulative FoX throughout training; the two new ablations are pending.
 
 ## Regeneration
 

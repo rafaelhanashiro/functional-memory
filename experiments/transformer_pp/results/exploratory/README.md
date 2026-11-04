@@ -21,4 +21,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
-| [query_distance_decay](query_distance_decay/README.md) | Can the current query select its context range using alpha_t^(t-i), versus cumulative FoX gates under the identical NoPE + W decay recipe? | 2026-11-02 |
+| [query_distance_decay](query_distance_decay/README.md) | Can query–key endpoints or a bounded positive rate improve query-distance decay without intervening gates? Two matched ablations added 2026-11-04. | 2026-11-02 |

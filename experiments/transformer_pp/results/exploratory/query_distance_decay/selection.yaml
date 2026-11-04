@@ -1,5 +1,5 @@
-question: Does query-dependent distance decay improve on cumulative FoX with the same
-  gate and training recipe?
+question: Can endpoint query-key dependence or a bounded positive rate improve query-dependent
+  distance decay without intervening gates?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -8,10 +8,15 @@ settings:
   - terminal at update 7570
   control_decay: product of alpha_j for j from i+1 through t
   query_decay: exp(-(t-i) * lambda_t)
-  allowed_mathematical_change: model.attention_forget_gate_mode
   training_steps: 7570
   training_context: 2048
   seed: 42
+  query_key_decay: exp(-(t-i)*a_h*softplus(w_q,h*x_t+w_k,h*x_i+b_h))
+  bounded_query_decay: exp(-(t-i)*a_h*sigmoid(w_q,h*x_t+b_h))
+  allowed_mathematical_changes:
+  - model.attention_forget_gate_mode
+  - model.attention_forget_gate_conditioning
+  - model.attention_forget_gate_rate_activation
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -53,3 +58,19 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
       sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r20c185733426
+  role: query_key_distance
+  label: Endpoint query-key distance decay + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r20c185733426/config.yaml
+      sha256: 722f6fca190e50d4a3e8f8b4f6bfdd0b1e20f21bdf844437dec8b5b173a26104
+- study: transformer_pp
+  run_id: re6d261fd59ab
+  role: bounded_query_distance
+  label: Bounded query rate + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/re6d261fd59ab/config.yaml
+      sha256: 98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23
