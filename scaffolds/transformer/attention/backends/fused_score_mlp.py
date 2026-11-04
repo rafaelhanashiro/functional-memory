@@ -50,8 +50,8 @@ from scaffolds.transformer.attention.backends.fused_unnormalized import (
 )
 from scaffolds.transformer.attention.score_mlp import FORMS
 
-# Each unit keeps several FP32 score tiles live. At 64x64 the J = 8 backward spills registers and
-# runs about 4x slower on H100 than at 32x32, so all three programs use 32x32 tiles at every width.
+# Each unit keeps several FP32 score tiles live: at 64x64 the J = 8 backward ran about 4x slower on
+# H100 than at 32x32 (validation/README.md), so all three programs use 32x32 tiles at every width.
 BLOCK_Q = 32
 BLOCK_K = 32
 

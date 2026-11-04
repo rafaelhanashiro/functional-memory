@@ -1,0 +1,184 @@
+{
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "node": "dogo",
+  "slurm_job_id": "235098",
+  "source_commit": "b47715f3",
+  "shape": {
+    "batch": 16,
+    "time": 2048,
+    "heads": 14,
+    "qk_head_dim": 64,
+    "value_head_dim": 64
+  },
+  "measure": "jit forward + VJP, mean of 10 calls after 3 warm calls, milliseconds",
+  "milliseconds": {
+    "fused_kernel-4": 14.9,
+    "blocked_kernel-4": 97.0,
+    "fused_kernel-8": 32.3,
+    "blocked_kernel-8": 119.0,
+    "fused_exp_residual-4": 15.9,
+    "blocked_exp_residual-4": 104.3,
+    "fused_exp_residual-8": 35.0,
+    "blocked_exp_residual-8": 126.2,
+    "fused_exp": 3.2,
+    "blocked_exp": 25.7
+  },
+  "attention_seconds_per_update": {
+    "fused_kernel-4": 3.58,
+    "blocked_kernel-4": 23.28,
+    "fused_kernel-8": 7.75,
+    "blocked_kernel-8": 28.56,
+    "fused_exp_residual-4": 3.81,
+    "blocked_exp_residual-4": 25.02,
+    "fused_exp_residual-8": 8.39,
+    "blocked_exp_residual-8": 30.3,
+    "fused_exp": 0.77,
+    "blocked_exp": 6.17
+  },
+  "note": "15 layers x 16 micro-batches per update; excludes remat recomputation and the rest of the model",
+  "tile_sweep": {
+    "measure": "fused kernels with BLOCK_Q, BLOCK_K, NUM_WARPS, NUM_STAGES patched at trace time; forward alone and forward + VJP, ms; backward is their difference",
+    "milliseconds": {
+      "exp_residual-8 tiles=32x32 warps=4 stages=2": {
+        "forward": 6.28,
+        "forward_and_vjp": 34.95,
+        "backward": 28.67
+      },
+      "exp_residual-8 tiles=32x32 warps=8 stages=2": {
+        "forward": 16.89,
+        "forward_and_vjp": 72.12,
+        "backward": 55.23
+      },
+      "exp_residual-8 tiles=32x32 warps=4 stages=1": {
+        "forward": 7.51,
+        "forward_and_vjp": 42.75,
+        "backward": 35.23
+      },
+      "exp_residual-8 tiles=32x32 warps=4 stages=3": {
+        "forward": 6.15,
+        "forward_and_vjp": 35.28,
+        "backward": 29.13
+      },
+      "exp_residual-8 tiles=64x32 warps=4 stages=2": {
+        "forward": 7.04,
+        "forward_and_vjp": 49.01,
+        "backward": 41.96
+      },
+      "exp_residual-8 tiles=32x64 warps=4 stages=2": {
+        "forward": 7.76,
+        "forward_and_vjp": 46.58,
+        "backward": 38.82
+      },
+      "exp_residual-8 tiles=64x64 warps=4 stages=2": {
+        "forward": 10.61,
+        "forward_and_vjp": 132.73,
+        "backward": 122.13
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=2": {
+        "forward": 6.19,
+        "forward_and_vjp": 32.42,
+        "backward": 26.22
+      },
+      "kernel-8 tiles=32x32 warps=8 stages=2": {
+        "forward": 16.26,
+        "forward_and_vjp": 65.76,
+        "backward": 49.5
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=1": {
+        "forward": 7.33,
+        "forward_and_vjp": 39.64,
+        "backward": 32.31
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=3": {
+        "forward": 6.08,
+        "forward_and_vjp": 32.32,
+        "backward": 26.24
+      },
+      "kernel-8 tiles=64x32 warps=4 stages=2": {
+        "forward": 6.39,
+        "forward_and_vjp": 47.32,
+        "backward": 40.93
+      },
+      "kernel-8 tiles=32x64 warps=4 stages=2": {
+        "forward": 7.08,
+        "forward_and_vjp": 39.61,
+        "backward": 32.53
+      },
+      "kernel-8 tiles=64x64 warps=4 stages=2": {
+        "forward": 10.2,
+        "forward_and_vjp": 106.29,
+        "backward": 96.09
+      },
+      "exp_residual-4 tiles=32x32 warps=4 stages=2": {
+        "forward": 3.62,
+        "forward_and_vjp": 15.88,
+        "backward": 12.26
+      },
+      "exp_residual-4 tiles=32x32 warps=8 stages=2": {
+        "forward": 6.65,
+        "forward_and_vjp": 31.35,
+        "backward": 24.71
+      },
+      "exp_residual-4 tiles=32x32 warps=4 stages=1": {
+        "forward": 4.02,
+        "forward_and_vjp": 17.23,
+        "backward": 13.21
+      },
+      "exp_residual-4 tiles=32x32 warps=4 stages=3": {
+        "forward": 3.48,
+        "forward_and_vjp": 15.22,
+        "backward": 11.74
+      },
+      "exp_residual-4 tiles=64x32 warps=4 stages=2": {
+        "forward": 2.97,
+        "forward_and_vjp": 15.49,
+        "backward": 12.52
+      },
+      "exp_residual-4 tiles=32x64 warps=4 stages=2": {
+        "forward": 3.23,
+        "forward_and_vjp": 16.56,
+        "backward": 13.33
+      },
+      "exp_residual-4 tiles=64x64 warps=4 stages=2": {
+        "forward": 4.37,
+        "forward_and_vjp": 36.7,
+        "backward": 32.33
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=2": {
+        "forward": 3.44,
+        "forward_and_vjp": 14.88,
+        "backward": 11.44
+      },
+      "kernel-4 tiles=32x32 warps=8 stages=2": {
+        "forward": 6.16,
+        "forward_and_vjp": 29.98,
+        "backward": 23.82
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=1": {
+        "forward": 3.69,
+        "forward_and_vjp": 16.37,
+        "backward": 12.69
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=3": {
+        "forward": 3.37,
+        "forward_and_vjp": 14.86,
+        "backward": 11.49
+      },
+      "kernel-4 tiles=64x32 warps=4 stages=2": {
+        "forward": 2.81,
+        "forward_and_vjp": 13.46,
+        "backward": 10.64
+      },
+      "kernel-4 tiles=32x64 warps=4 stages=2": {
+        "forward": 3.03,
+        "forward_and_vjp": 14.49,
+        "backward": 11.46
+      },
+      "kernel-4 tiles=64x64 warps=4 stages=2": {
+        "forward": 4.05,
+        "forward_and_vjp": 26.23,
+        "backward": 22.18
+      }
+    }
+  }
+}

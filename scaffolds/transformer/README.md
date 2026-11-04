@@ -524,23 +524,34 @@ only activation is `silu`.
   `-5.1` (`J = 8`), reaching about -1.0 and -0.7 near `s = -8`.
 
 A score MLP requires `attention_normalization: false`, `attention_degree: null`,
-fixed static coefficients, `quadratic_mode: fixed`, `attention_backend: blocked`, and
-`positional_encoding: rope` or `none`; configuration and the module reject PaTH. With
-`attention_forget_gate: true` (cumulative mode, input form only) each weight is also
-multiplied by `exp(L_t - L_i)`. Weights may be signed; exp is not row-shifted; a
-nonfinite score, kernel value, or output poisons its row with NaN, as in the other
-unnormalized blocked kernels. Diagnostics name the kernel `score_mlp_unnormalized` or
-`exp_score_mlp_residual_unnormalized`, keep the signed-kernel statistics (kernel and
-weight-sum extrema, negative-weight fractions), and report the learned `alpha`, `beta`,
-`w` and per-head statistics of `a` and `b` on the diagnostic sample under
-`coefficients`. `runs.csv` gives these runs the `score_mlp` family and lists
-`score_mlp_width`, `score_mlp_form`, and `score_mlp_kernel_weight_decay`.
+fixed static coefficients, `quadratic_mode: fixed`, `attention_backend: blocked`,
+`fused`, or `auto`, and `positional_encoding: rope` or `none`; configuration and the
+module reject PaTH. With `attention_forget_gate: true` (cumulative mode, input form only)
+each weight is also multiplied by `exp(L_t - L_i)`; the gate exists on the blocked backend
+only, so a gated score MLP requires `blocked`. Weights may be signed; exp is not
+row-shifted; a nonfinite score, kernel value, or output poisons its row with NaN, as in
+the other unnormalized kernels.
+
+`fused` runs `attention/backends/fused_score_mlp.py` (Pallas Triton, Ampere or newer,
+head widths up to 128, BF16 or FP32 Q/K/V): units are evaluated in FP32 on 32x32 score
+tiles that never leave the chip, in a forward query-tile kernel, a query-tile backward for
+dQ, da, db and per-query dw partials (summed over batch and time), and a key-tile backward
+for dK and dV. Its module docstring derives each gradient. `auto` resolves to `fused` on
+such a GPU for an ungated score MLP and to `blocked` otherwise. Diagnostics come from the
+blocked path on either backend; they name the
+kernel `score_mlp_unnormalized` or `exp_score_mlp_residual_unnormalized`, keep the
+signed-kernel statistics (kernel and weight-sum extrema, negative-weight fractions), and
+report the learned `alpha`, `beta`, `w` and per-head statistics of `a` and `b` on the
+diagnostic sample under `coefficients`. `runs.csv` gives these runs the `score_mlp`
+family and lists `score_mlp_width`, `score_mlp_form`, and `score_mlp_kernel_weight_decay`.
 
 Cost: `J` SiLU evaluations per score pair in the forward, recomputed in the backward,
-plus the per-unit gradient reductions. The custom derivative of the unit sum keeps
-only the scores and units; forward and backward loop over `min(J, T)` key chunks inside
-the checkpointed scan and evaluate every unit per chunk, so their intermediates stay
-about one `[batch, heads, 128, T]` score tile for any `J`.
+plus the per-unit gradient reductions. On the blocked backend, the custom derivative of
+the unit sum keeps only the scores and units; forward and backward loop over `min(J, T)`
+key chunks inside the checkpointed scan and evaluate every unit per chunk, so their
+intermediates stay about one `[batch, heads, 128, T]` score tile for any `J`. The fused
+kernel recomputes the units in both backward programs and stores no score tile; measured
+costs of both backends are in `validation/README.md`.
 
 ### PaTH position encoding
 
