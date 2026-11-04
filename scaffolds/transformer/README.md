@@ -111,6 +111,14 @@ while `A_log` and `b_dt` do not. The separate coefficient-projection decay switc
 retains its existing behavior. New-mode GPU acceptance compares outputs and all
 operand gradients against an explicit dense reference at 2,048 tokens.
 
+`attention_forget_gate_form: input` (the default) is that gate. The `constant` form
+drops its token dependence: one learned log rate per layer and head,
+`log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
+ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for heads
+`h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
+form is qualified only with the cumulative mode under RoPE or no positional encoding
+on the blocked backend; configuration rejects it with `query_distance` or PaTH.
+
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
@@ -486,8 +494,8 @@ FP32 `[batch, time, heads]` array as `log_decay`; its gradients propagate throug
 the cumulative sum into the gate parameters. Causal differences are masked before
 exponentiation, and gate values are never factored into separate global exponentials.
 The fused backward adds O(BTH) gate-gradient buffers. Gated softmax is unsupported.
-Only `attention_forget_gate_mode: cumulative` composes with PaTH; configuration
-rejects `query_distance` with PaTH.
+Only `attention_forget_gate_mode: cumulative` with the input gate form composes with
+PaTH; configuration rejects `query_distance` and the constant form with PaTH.
 
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each

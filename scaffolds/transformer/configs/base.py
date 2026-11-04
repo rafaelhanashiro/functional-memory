@@ -101,6 +101,10 @@ class ModelConfig:
     # Cumulative FoX uses intervening gates; query_distance uses only the current query's
     # alpha_t raised to the key distance t-i, with the identical gate parameters.
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
+    # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
+    # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
+    attention_forget_gate_form: Literal["input", "constant"] = "input"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -419,6 +423,14 @@ class ModelConfig:
             raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
         if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
             raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
+        if self.attention_forget_gate_form not in ("input", "constant"):
+            raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
+        if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
+            raise ValueError("A forget gate form requires the forget gate")
+        if self.attention_forget_gate_form != "input" and (
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
+            raise ValueError("The constant forget gate form is qualified only as cumulative decay with RoPE or "
+                             "no positional encoding on the blocked backend")
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
