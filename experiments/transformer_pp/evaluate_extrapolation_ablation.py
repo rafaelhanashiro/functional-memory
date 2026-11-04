@@ -45,7 +45,7 @@ from scaffolds.transformer.attention import multihead
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.training.coefficient_fit import restore_parent
 
-ROOT = Path(__file__).resolve().parents[5]
+ROOT = Path(__file__).resolve().parents[2]
 MODES = ("full", "window", "clamp")
 
 

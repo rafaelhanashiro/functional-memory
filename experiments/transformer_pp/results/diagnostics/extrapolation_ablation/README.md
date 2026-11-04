@@ -2,10 +2,10 @@
 
 Opened 2026-11-02.
 
-**Question.** In [context_length](../context_length/README.md), the 2,048-token query + W decay
+**Question.** In [context_length](../../exploratory/context_length/README.md), the 2,048-token query + W decay
 (m = 4) checkpoint reaches perplexity 3,081 by 16,384 tokens while FoX without RoPE stays near
 13. Its scores at unseen distances are not larger
-([extrapolation_scores](../../diagnostics/extrapolation_scores/README.md)). Does the break come
+([extrapolation_scores](../extrapolation_scores/README.md)). Does the break come
 from keys beyond the training distance at all, and if so, is the trigger their RoPE phases or
 how many of them there are?
 
@@ -27,7 +27,7 @@ farther ones than in training. `clamp` keeps every key but gives each one farthe
 at position 0), so every relative phase was seen in training while the number of keys grows.
 The replacement computes the model's own unnormalized polynomial with its query
 coefficients in FP32, in 256-query blocks, before the unchanged per-head output RMSNorm.
-[`evaluate.py`](evaluate.py) implements it; on CPU it matches the scaffold's blocked
+[`evaluate_extrapolation_ablation.py`](../../../evaluate_extrapolation_ablation.py) implements it; on CPU it matches the scaffold's blocked
 reference kernel, and `window` and `clamp` match a brute-force pairwise computation.
 
 Qualification: `full` and `clamp` replay the model's 4,864-row validation set at 2,048
@@ -36,7 +36,7 @@ and `full` at 16,384 tokens must match the original Mosaic evaluation's first 2,
 positions within 0.002 nats. Nothing is trained. Launch commands are in the
 [study README](../../../README.md#extrapolation-ablation).
 
-## Findings and open decision
+## Findings
 
 The evaluation ran on one H100 in about 40 minutes. Both 2,048-token replays reproduce the
 recorded validation NLL within 3.6e-6 nats, and the 16k control reproduces the original Mosaic
@@ -61,7 +61,7 @@ evaluation to within 1.5e-5 nats over the first 2,048 positions and 3e-6 nats ov
   same as the window), so unseen RoPE phases trigger the first failure. Beyond about 4,000
   tokens the clamped model collapses anyway (241 at 4k–8k, 3,656 at 8k–12k): once distant
   keys outnumber the window, their accumulated weight breaks it whatever their phase. This
-  is the heavy tail the [score diagnostic](../../diagnostics/extrapolation_scores/README.md)
+  is the heavy tail the [score diagnostic](../extrapolation_scores/README.md)
   measured, now shown to be sufficient on its own.
 - **The window does not fully restore the model.** Its perplexity rises from 14.3 to about 29
   between positions 2,048 and 4,096 and then stays flat. Every query still sees 2,048 keys at
@@ -79,7 +79,7 @@ evaluation to within 1.5e-5 nats over the first 2,048 positions and 3e-6 nats ov
 4,096 tokens (`r738b35a8e314`), spread late queries' weight over key distance: for queries in
 the last 256 positions before 2,048, 4,096, 8,192 and 16,384 tokens, the share of |w| in
 distance bins beside the share of keys each bin holds, and the effective number of keys, per
-layer ([`weight_profile.py`](weight_profile.py)); 8 rows at 2,048 and 4,096 tokens, 4 at 16,384.
+layer ([`attention_weight_profile.py`](../../../attention_weight_profile.py)); 8 rows at 2,048 and 4,096 tokens, 4 at 16,384.
 
 ![Weight by key distance](weight_profile.png)
 
@@ -115,7 +115,7 @@ layer ([`weight_profile.py`](weight_profile.py)); 8 rows at 2,048 and 4,096 toke
 checkpoint with only its forward-length limit raised; RoPE uses the true positions) and
 records, for the query at position 4,095, each
 key's share of |w| per layer, averaged over the 14 heads
-([`position_weights.py`](position_weights.py)). It keeps the per-key structure the weight
+([`attention_position_weights.py`](../../../attention_position_weights.py)). It keeps the per-key structure the weight
 profile averages away. The figure shows layers 1, 5, 10 and 15 on a linear axis.
 
 ![Weight of the query at position 4,095 on every key](position_weights.png)
@@ -256,12 +256,21 @@ it over the first 2,048 positions.
   [table](position_weights_long_documents.csv)) match those on packed rows: 55–73% of the
   weight 2,048 or more back in layers 6–12, peaks of up to 7.6 times uniform (1.9–7.6 in
   layers 2–15) at the same two stretches, against 23–32% in every layer of the 4k-trained
-  model. The failure follows
-  positions, not the text.
+  model. The failure follows positions, not the text.
+
+## Limits
+
+- One checkpoint per training length (query + W decay, m = 4, seed 42), with exp and FoX no
+  RoPE + W decay as references. The window and clamp are inference-time edits of the 2k
+  checkpoint; neither was trained.
+- The per-key weights fix the query at position 4,095, so distance and absolute key position
+  cannot be told apart.
+- Whether any model uses text more than 2,048 tokens back is not measured: no same-position
+  control without the distant text was run for exp or FoX.
+- The window's residual loss (about 29 on packed rows) is not explained; keeping the first
+  tokens in every window, as in streaming attention, was not run.
+- 5% of the long documents are revised copies of documents the models trained on.
 
 `plot.py`, `plot_profile.py`, `plot_positions.py` and `plot_long_documents.py` in this
 directory regenerate the figures and tables from [selection.yaml](selection.yaml), run from
 the repository root.
-
-**Open decision:** keep the result in the context-length discussion, or delete this topic
-with its runs.

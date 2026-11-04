@@ -34,7 +34,7 @@ from scaffolds.records import capture_artifacts, load_run, update_record, valida
 from scaffolds.transformer.data.packed import PackedBatchIterator
 from scaffolds.transformer.training.coefficient_fit import restore_parent
 
-ROOT = Path(__file__).resolve().parents[5]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def window_profile(q, k, coefficients, *, start: int, end: int, edges: tuple[int, ...]):

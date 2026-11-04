@@ -20,6 +20,6 @@ export TMPDIR="$EVALUATION_TMPDIR"
 trap 'rm -rf -- "$EVALUATION_TMPDIR"' EXIT
 RUN_ROOT="$EXECUTION_ROOT/experiments/transformer_pp/runs/$RUN_ID"
 RESULT=0
-"$PYTHON" -m experiments.transformer_pp.results.exploratory.extrapolation_ablation.weight_profile --run "$RUN_ROOT" || RESULT=$?
+"$PYTHON" -m experiments.transformer_pp.attention_weight_profile --run "$RUN_ROOT" || RESULT=$?
 "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$RESULT"
 exit "$RESULT"

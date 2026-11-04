@@ -19,6 +19,5 @@ promotion into a maintained collection or by discarding its results and runs.
 | [alibi_decay](alibi_decay/README.md) | Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent forget gate without RoPE in pretraining? | 2026-10-29 |
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
-| [extrapolation_ablation](extrapolation_ablation/README.md) | Does query attention break past 2,048 tokens because of keys beyond the training distance, through their RoPE phases or their number? | 2026-11-02 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
 | [query_distance_decay](query_distance_decay/README.md) | Can the current query select its context range using alpha_t^(t-i), versus cumulative FoX gates under the identical NoPE + W decay recipe? | 2026-11-02 |

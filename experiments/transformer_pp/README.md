@@ -197,25 +197,25 @@ done
 
 ## Extrapolation ablation
 
-The [extrapolation_ablation topic](results/exploratory/extrapolation_ablation/README.md)
+The [extrapolation_ablation diagnostic](results/diagnostics/extrapolation_ablation/README.md)
 rescored the query + W decay checkpoint at 16,384 tokens with a 2,048-key window and with RoPE
 distances clamped at 2,047 (`rb786bd19c6b1`). One GPU, no training:
 
 ```bash
 sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem=96G --time=04:00:00 \
-  --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name=rb786bd19c6b1 \
+  --exclude=collie,samoyed,doodle,terrier,shiba --job-name=rb786bd19c6b1 \
   --output=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
   --error=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
-  experiments/transformer_pp/results/exploratory/extrapolation_ablation/evaluate.sbatch \
+  experiments/transformer_pp/evaluate_extrapolation_ablation.sbatch \
   "$PWD" "$(git rev-parse HEAD)" rb786bd19c6b1
 ```
 
-The weight profile (`r9155f2214b4b`) uses `weight_profile.sbatch` in the same topic with the
-same resources, and the per-position weights (`rece89382b690` for one sequence, `ra0ad3d431842`
-averaged over 128 sequences, `r6122f26085ec` on 128 long documents) use `position_weights.sbatch`.
-On long documents, `r313eb59e1d5f` scores exp, query + W decay and FoX with
-`experiments/transformer_pp/evaluate_per_position.sbatch`, and `ra9834409e40a` reruns the ablation
-with `evaluate.sbatch`; both use the same resources and arguments.
+The weight profile (`r9155f2214b4b`) uses `attention_weight_profile.sbatch` with the same
+resources, and the per-position weights (`rece89382b690` for one sequence, `ra0ad3d431842`
+averaged over 128 sequences, `r6122f26085ec` on 128 long documents) use
+`attention_position_weights.sbatch`. On long documents, `r313eb59e1d5f` scores exp, query + W
+decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns the ablation with
+`evaluate_extrapolation_ablation.sbatch`; all use the same resources and arguments.
 
 ## Exploratory diagnostics
 
