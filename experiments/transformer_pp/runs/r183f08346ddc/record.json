@@ -1,6 +1,21 @@
 {
   "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.16 hours",
+    "failed_utc": "2026-11-04T02:03:45.804223+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "21a99daf92daa47ea23b0932f38498a0e9c0574a21841fb185fff298a4262c7c"
+    },
+    "identity": "24ec1f55eafe3eb8cbc18be4523ee25fecb7a68389d26c926c0983c234c2a243",
+    "pilot_metadata": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/.runtime/acceptance/H100-1/pilot/metadata.json",
+      "sha256": "addbfeb458b488bb1197b77bc80edf1148184b0a7b8d717cb4dac5fa56024f73"
+    },
     "sha256": "acebb8bb1a5e9533e544abc386a062d7461158429042a0314942a9c681279eba",
+    "slurm_job_id": "233846",
+    "stage": "pilot",
+    "status": "failed",
     "summary": {
       "allocation_seconds": 86400,
       "checks": [
@@ -68,8 +83,8 @@
     },
     {
       "path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
-      "sha256": "77cd1e0baa0c6a55f155bc11ded89cbfff42443b458572d3de66def09893ad75",
-      "size_bytes": 582321
+      "sha256": "f3ad19eac8d5502624adba64f1b63286903896a8f2857e1c9f7f19535aae6638",
+      "size_bytes": 587236
     }
   ],
   "attempts": [
@@ -133,6 +148,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/r183f08346ddc/config.yaml",
       "config_sha256": "6eb0100dd7d4a8332b6c1ff5ec0c5526c99006cd3013d1d35499c12507e0689e",
+      "exit_code": 1,
+      "finished_utc": "2026-11-04T02:03:46.678105+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -164,7 +181,7 @@
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "version": 2
   },
-  "error": "JaxRuntimeError: INTERNAL: CUDA error: Failed to end stream capture: CUDA_ERROR_STREAM_CAPTURE_INVALIDATED: operation failed due to a previous error during capture",
+  "error": "RuntimeError: Pilot projects beyond a 24h allocation with a 2h reserve: 28.16 hours",
   "execution": {
     "attention_backend": "blocked",
     "raw_config": {
@@ -350,8 +367,8 @@
   "label": "exp-forget-gate-no-rope",
   "log": {
     "path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
-    "sha256": "77cd1e0baa0c6a55f155bc11ded89cbfff42443b458572d3de66def09893ad75",
-    "size_bytes": 582321
+    "sha256": "f3ad19eac8d5502624adba64f1b63286903896a8f2857e1c9f7f19535aae6638",
+    "size_bytes": 587236
   },
   "log_path": "experiments/transformer_pp/runs/r183f08346ddc/training.log",
   "metadata": {
@@ -370,18 +387,18 @@
   "run_id": "r183f08346ddc",
   "seed": 42,
   "source_commit": "35f0d01bf30d9e5fcba98df1ecc1bc505ae10dd8",
-  "status": "acceptance",
+  "status": "acceptance_failed",
   "step": 6500,
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=standard",
+      "--partition=long",
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--time=24:00:00",
-      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--time=48:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
       "--job-name=r183f08346ddc",
       "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log",
       "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/fox-softmax-exp-path/experiments/transformer_pp/runs/r183f08346ddc/training.log",
@@ -392,9 +409,9 @@
       "1",
       "B300,H100"
     ],
-    "partition": "standard",
-    "slurm_job_id": "233846",
-    "submitted_utc": "2026-11-04T01:54:32.323494+00:00"
+    "partition": "long",
+    "slurm_job_id": "233923",
+    "submitted_utc": "2026-11-04T03:53:51.708735+00:00"
   },
   "training_tokens": 3407872000,
   "updated_utc": "2026-11-04T00:08:49.246908+00:00",
