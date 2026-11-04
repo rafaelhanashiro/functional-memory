@@ -7,9 +7,9 @@
     "optimizer_updates": 0,
     "partition": "standard",
     "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
-    "slurm_job_id": "233841",
-    "source_commit": "c71b0935e313d56d557979e59bc98de0982a5407",
-    "started_utc": "2026-11-04T00:29:09.924972+00:00",
+    "slurm_job_id": "234173",
+    "source_commit": "120437c6c40ab287c1b5b15d9ba0b52599b714e5",
+    "started_utc": "2026-11-04T05:22:43.807612+00:00",
     "versions": {
       "flax": "0.12.7",
       "jax": "0.10.0",

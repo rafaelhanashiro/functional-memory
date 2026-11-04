@@ -1,6 +1,0 @@
-{
-  "finished_utc": "2026-11-04T00:16:17.884052+00:00",
-  "interpretation": "|w| share of the last query (position 4,096) over every key position, per layer, averaged over the 14 heads and 128 single long documents neither model trained on (the first 4,097 tokens of rows 9,827-9,954 of fineweb_12b_long_documents_seq16385/train: an end-of-document token and the document's first 4,096 tokens), for query + W decay (m = 4) trained at 2,048 and at 4,096 tokens. No gradient or optimizer update.",
-  "optimizer_updates": 0,
-  "status": "complete"
-}

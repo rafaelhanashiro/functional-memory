@@ -205,19 +205,19 @@ block in the two stretches.)
 In packed rows about three quarters of the predictions past position 2,048 have only other
 documents more than 2,048 tokens back, so distant text helps little there. To test whether
 the models use long context, the 16k evaluation and the window and clamp passes were repeated
-on 608 single documents: rows 9,827–10,434 of `fineweb_12b_long_documents_seq16385/train`,
-each an end-of-document token and the first 16,384 tokens of one document at least that
-long. All start after the 3.97B stream tokens of every compared run's full training budget
-(the step-7,500 checkpoints saw 3.93B), and the evaluators refuse rows that start earlier.
-That check is by position only: 15 of the 608 documents repeat an earlier, trained document
-token for token, and 21 share its first 1,024 tokens (6 of the 128 weight documents).
-`r2a655e742cb7` scores exp, query + W decay and FoX no RoPE + W decay; `r4b4496032e30` runs
-the query model's window and clamp passes; `ra1909f45d1e4` measures the per-key weights on
-the first 4,096 tokens of rows 9,827–9,954. Every 2,048-token replay reproduces its recorded
-validation NLL within 6e-6 nats, and `r2a655e742cb7`'s three 16k passes pass the
-causal-prefix check. The ablation's full pass matches `r2a655e742cb7`'s query curve in mean
-NLL within 2e-5 nats over positions 1–2,048 (2e-6 overall; single positions within 5.3e-3),
-and its window and clamp passes equal it over the first 2,048 positions.
+on 608 single documents: rows 9,657–10,264 of `fineweb_12b_long_documents_seq16385/train`,
+each an end-of-document token and the first 16,384 tokens of one document at least that long.
+Every row is a document's first appearance in the stream (no earlier document begins with the
+same 1,024 tokens), and all start after the 3.97B stream tokens of every compared run's full
+training budget (the step-7,500 checkpoints saw 3.93B), so no model trained on them by
+position or by content; the evaluators refuse earlier rows. `r313eb59e1d5f` scores exp,
+query + W decay and FoX no RoPE + W decay; `ra9834409e40a` runs the query model's window and
+clamp passes; `r6122f26085ec` measures the per-key weights on the first 4,096 tokens of rows
+9,657–9,784. Every 2,048-token replay reproduces its recorded validation NLL within 6e-6
+nats, and `r313eb59e1d5f`'s three 16k passes pass the causal-prefix check. The ablation's full
+pass matches `r313eb59e1d5f`'s query curve in mean NLL within 2e-5 nats over positions
+1–2,048 (2e-6 overall; single positions within 5e-3), and its window and clamp passes equal
+it over the first 2,048 positions.
 
 ![Per-position perplexity on long documents](long_documents_16k.png)
 
@@ -227,31 +227,32 @@ and its window and clamp passes equal it over the first 2,048 positions.
 
 | Perplexity at positions | 1,025–2,048 | 2,049–2,304 | 2,305–3,072 | 3,073–4,096 | 4,097–8,192 | 8,193–12,288 | 12,289–16,384 | 1–16,384 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| exp | 14.22 | 14.41 | 14.61 | 15.14 | 15.75 | 17.27 | 18.06 | 16.30 |
-| query + W decay | 14.78 | 20.26 | 114.44 | 175.51 | 466.83 | 1,404.08 | 1,810.14 | 468.44 |
-| FoX no RoPE + W decay | 13.79 | 13.86 | 13.89 | 14.16 | 14.90 | 15.57 | 14.53 | 14.68 |
-| query, 2,048-key window | 14.78 | 15.49 | 16.49 | 22.01 | 32.67 | 31.12 | 27.87 | 26.15 |
-| query, RoPE clamped at 2,047 | 14.78 | 15.06 | 15.97 | 22.63 | 189.09 | 2,037.23 | 2,378.32 | 350.65 |
+| exp | 14.17 | 14.39 | 14.58 | 15.11 | 15.69 | 17.23 | 18.06 | 16.26 |
+| query + W decay | 14.72 | 20.26 | 114.34 | 175.46 | 467.65 | 1,405.60 | 1,811.19 | 468.50 |
+| FoX no RoPE + W decay | 13.74 | 13.86 | 13.87 | 14.14 | 14.85 | 15.56 | 14.54 | 14.65 |
+| query, 2,048-key window | 14.72 | 15.46 | 16.45 | 21.95 | 32.50 | 31.03 | 27.86 | 26.07 |
+| query, RoPE clamped at 2,047 | 14.72 | 15.04 | 15.93 | 22.58 | 188.73 | 2,026.93 | 2,361.49 | 349.10 |
 
-([long_documents_summary.csv](long_documents_summary.csv) has these values; packed rows are
-in [summary.csv](summary.csv).)
+([long_documents_summary.csv](long_documents_summary.csv) has these values and positions
+1–1,024; packed rows are in [summary.csv](summary.csv).)
 
 - **Every model is worse late in a document than at positions 1,025–2,048**: exp by 27% at
-  12,289–16,384 (14.22 to 18.06), FoX by 13% at 8,193–12,288 and 5% at 12,289–16,384 (13.79
-  to 15.57 and 14.53). On packed rows FoX stayed flat (13.41 to 13.43). This does not show
+  12,289–16,384 (14.17 to 18.06), FoX by 13% at 8,193–12,288 and 6% at 12,289–16,384 (13.74
+  to 15.56 and 14.54). On packed rows FoX stayed flat (13.41 to 13.43). This does not show
   that the models fail to use distant text: these documents also get harder with position
   inside the training length (positions 1,025–2,048 are 4–5% worse than 1–1,024 for all
-  three models, while packed rows get 7–8% better), and no same-position control without the
-  distant text was run for exp or FoX.
+  three models, while packed rows get 8% better), and no same-position control without the
+  distant text was run.
 - **Query + W decay fails as on packed rows.** It reaches 114 by positions 2,305–3,072 and
-  1,810 at 12,289–16,384. Clamping RoPE at 2,047 keeps it near the window until about
+  1,811 at 12,289–16,384. Clamping RoPE at 2,047 keeps it near the window until about
   position 3,700 (block means 15–23 through 4,096), then it collapses (189 at 4,097–8,192,
-  2,378 at 12,289–16,384). The window never collapses: it falls from 32.7 at 4,097–8,192 to
-  27.9 at 12,289–16,384, where on packed rows it stays near 29. Its per-key weights at position 4,095
-  ([figure](position_weights_long_documents.png), [table](position_weights_long_documents.csv))
-  match those on packed rows: 55–73% of the weight 2,048 or more back in layers 6–12, peaks
-  up to 7.5 times uniform at the same two stretches, against 23–32% in every layer of the
-  4k-trained model. The failure follows positions, not the text.
+  2,361 at 12,289–16,384). The window never collapses: it falls from 32.5 at 4,097–8,192 to
+  27.9 at 12,289–16,384, where on packed rows it stays near 29. Its per-key weights at
+  position 4,095 ([figure](position_weights_long_documents.png),
+  [table](position_weights_long_documents.csv)) match those on packed rows: 55–73% of the
+  weight 2,048 or more back in layers 6–12, peaks of about 7.5 times uniform at the same two
+  stretches, against 23–32% in every layer of the 4k-trained model. The failure follows
+  positions, not the text.
 
 `plot.py`, `plot_profile.py`, `plot_positions.py` and `plot_long_documents.py` in this
 directory regenerate the figures and tables from [selection.yaml](selection.yaml), run from
