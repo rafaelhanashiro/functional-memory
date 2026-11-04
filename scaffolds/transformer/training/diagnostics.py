@@ -404,6 +404,10 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.backends.fused_taylor import _tile_sizes
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
+        if has_score_mlp(config.model):
+            from scaffolds.transformer.attention.backends.fused_score_mlp import BLOCK_K, BLOCK_Q
+
+            block_q, block_k = BLOCK_Q, BLOCK_K
         identity.update({
             "attention_implementation": ("pallas_triton_score_mlp" if has_score_mlp(config.model) else
                                          "pallas_triton_query_key_polynomial" if key_conditioned else

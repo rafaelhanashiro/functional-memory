@@ -46,9 +46,14 @@ from scaffolds.transformer.attention.backends.fused_query_polynomial import (
     _cast_output, _coefficient_spec, _columns, _full_coefficient_spec,
 )
 from scaffolds.transformer.attention.backends.fused_unnormalized import (
-    NUM_STAGES, NUM_WARPS, _dot, _full_spec, _load, _spec, _tile_sizes,
+    NUM_STAGES, NUM_WARPS, _dot, _full_spec, _load, _spec,
 )
 from scaffolds.transformer.attention.score_mlp import FORMS
+
+# Each unit keeps several FP32 score tiles live. At 64x64 the J = 8 backward spills registers and
+# runs about 4x slower on H100 than at 32x32, so all three programs use 32x32 tiles at every width.
+BLOCK_Q = 32
+BLOCK_K = 32
 
 
 def _activation(pre, *, derivative=False):
@@ -195,7 +200,7 @@ def _unit_columns(amplitude, offset, slope):
 def _forward(q, k, v, amplitude, offset, slope, form, interpret):
     batch, time, heads, dq = q.shape
     dv, width = v.shape[-1], amplitude.shape[-1]
-    block_q, block_k = _tile_sizes(dq, dv)
+    block_q, block_k = BLOCK_Q, BLOCK_K
     return pl.pallas_call(
         partial(_forward_kernel, form=form, width=width, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
         out_shape=jax.ShapeDtypeStruct(v.shape, jnp.float32),
@@ -222,7 +227,7 @@ def _attention_bwd(form, interpret, residuals, do):
     q, k, v, amplitude, offset, slope = residuals
     batch, time, heads, dq = q.shape
     dv, width = v.shape[-1], amplitude.shape[-1]
-    block_q, block_k = _tile_sizes(dq, dv)
+    block_q, block_k = BLOCK_Q, BLOCK_K
     compiler = plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES)
     columns = _unit_columns(amplitude, offset, slope)
     grad_q, *grad_columns = pl.pallas_call(

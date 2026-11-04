@@ -174,16 +174,16 @@ def test_interpreted_outputs_and_all_gradients_match_float64(monkeypatch, form, 
     _assert_dtypes(actual, dtype)
 
 
-@pytest.mark.parametrize(("time", "qk", "value"), ((1, 2, 1), (64, 64, 64), (65, 128, 128), (75, 72, 40)))
+@pytest.mark.parametrize(("time", "qk", "value"), ((1, 2, 1), (32, 64, 64), (33, 128, 128), (75, 72, 40)))
 @pytest.mark.parametrize("form", score_mlp.FORMS)
 def test_interpreted_edge_shapes_and_wide_heads_match_float64(monkeypatch, form, time, qk, value):
-    """One token, exactly one tile, and widths above 64, which use 32-token tiles."""
+    """One token, exactly one 32-token tile, one past it, and heads up to the maximum width 128."""
+    assert (fused.BLOCK_Q, fused.BLOCK_K) == (32, 32)
     _interpret(monkeypatch)
     operands, cotangent = _inputs(3, time=time, batch=1, heads=2, qk=qk, value=value)
     actual = _vjp(_attend(form), operands, cotangent)
     _compare(actual, _oracle(form, operands, cotangent), _tolerances(jnp.float32),
              _slope_magnitude(form, operands, cotangent))
-    assert fused._tile_sizes(qk, value) == ((64, 64) if max(qk, value) <= 64 else (32, 32))
 
 
 @pytest.mark.parametrize("prefix", (37, 70))
@@ -425,6 +425,7 @@ def test_identity_names_the_fused_implementation_and_keeps_the_blocked_one():
     assert identity["attention_kernel"] == "exp_score_mlp_residual_unnormalized"
     assert identity["attention_implementation"] == "pallas_triton_score_mlp"
     assert identity["attention_score_mlp_backward"] == "pallas_triton_query_and_key_tiles"
+    assert (identity["query_block_size"], identity["key_block_size"]) == (fused.BLOCK_Q, fused.BLOCK_K)
     assert identity["diagnostic_backend"] == "blocked"
     blocked = attention_identity(_config("exp_residual", 4))
     assert blocked["attention_implementation"] == "blocked"
@@ -468,7 +469,7 @@ def _compare_models(form, tokens, *, tolerance, **changes):
 
 @pytest.mark.parametrize("form", score_mlp.FORMS)
 def test_interpreted_model_matches_the_blocked_model(monkeypatch, form):
-    """Two layers, 70 tokens (two query tiles): loss and every parameter gradient."""
+    """Two layers, 70 tokens (three query tiles): loss and every parameter gradient."""
     _interpret(monkeypatch)
     tokens = jnp.asarray(np.random.default_rng(3).integers(0, 16, size=(2, 71)), jnp.int32)
     _compare_models(form, tokens, tolerance=1e-4, max_seq_len=70)
