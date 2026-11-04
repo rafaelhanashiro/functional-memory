@@ -10,6 +10,8 @@ import yaml
 
 from scaffolds.transformer.configs.base import Config, validate_config
 
+SCORE_MLP_CONSTANTS = tuple(f"attention_score_mlp_{name}_initial" for name in ("amplitude", "slope", "offset"))
+
 
 def load_config(path: str | Path, config_factory=Config) -> Config:
     config_path = Path(path)
@@ -56,6 +58,9 @@ def config_to_dict(config: Config) -> dict[str, Any]:
         values["model"]["attention_fixed_coefficients"] = list(config.model.attention_fixed_coefficients)
     if config.model.attention_fixed_square_factors is not None:
         values["model"]["attention_fixed_square_factors"] = list(config.model.attention_fixed_square_factors)
+    for key in SCORE_MLP_CONSTANTS:
+        if getattr(config.model, key) is not None:
+            values["model"][key] = list(getattr(config.model, key))
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -122,6 +127,14 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_forget_gate", False)
         value["model"].setdefault("attention_forget_gate_mode", "cumulative")
         value["model"].setdefault("attention_forget_gate_form", "input")
+        for key, default in (("attention_score_mlp_width", None), ("attention_score_mlp_form", "kernel"),
+                             ("attention_score_mlp_activation", "silu"),
+                             ("attention_score_mlp_kernel_weight_decay", False)):
+            value["model"].setdefault(key, default)
+        for key in SCORE_MLP_CONSTANTS:
+            constants = value["model"].setdefault(key, None)
+            if isinstance(constants, (tuple, list)):
+                value["model"][key] = list(constants)
         value["model"].setdefault("positional_encoding", "rope")
         value["model"].setdefault("path_w_rank", 32)
         value["model"].setdefault("path_conv_size", 3)

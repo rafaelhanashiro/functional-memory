@@ -127,6 +127,20 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # Score MLP (attention/score_mlp.py): J = width hidden units per layer/head replace exp in
+    # unnormalized attention, o_t = sum_(i<=t) f(x_t, s_ti) v_i, with a_tj = alpha_j + x_t A_j and
+    # b_tj = beta_j + x_t B_j from the attention input. "kernel": f = sum_j a_tj SiLU(w_j s + b_tj);
+    # "exp_residual": f = exp(s) (1 + that sum). null keeps the score MLP off.
+    attention_score_mlp_width: int | None = None
+    attention_score_mlp_form: Literal["kernel", "exp_residual"] = "kernel"
+    attention_score_mlp_activation: Literal["silu"] = "silu"
+    # Frozen starting alpha, w, beta (length J each); A and B start at zero. score_mlp.initial_constants
+    # gives the exp-residual defaults (f starts at exp) and the kernel form's fits to exp.
+    attention_score_mlp_amplitude_initial: tuple[float, ...] | None = None
+    attention_score_mlp_slope_initial: tuple[float, ...] | None = None
+    attention_score_mlp_offset_initial: tuple[float, ...] | None = None
+    # Apply optim.weight_decay to A and B; alpha, beta, and w never decay.
+    attention_score_mlp_kernel_weight_decay: bool = False
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -234,6 +248,47 @@ class ModelConfig:
             return "softmax"
         return "query_polynomial"
 
+    def _validate_score_mlp(self) -> None:
+        """Score-MLP settings: all at their defaults when off; frozen, complete constants when on."""
+        from scaffolds.transformer.attention.score_mlp import ACTIVATIONS, FORMS
+
+        width = self.attention_score_mlp_width
+        constants = {name: getattr(self, f"attention_score_mlp_{name}_initial")
+                     for name in ("amplitude", "slope", "offset")}
+        if self.attention_score_mlp_form not in FORMS:
+            raise ValueError(f"Unknown score-MLP form: {self.attention_score_mlp_form}")
+        if self.attention_score_mlp_activation not in ACTIVATIONS:
+            raise ValueError(f"Unknown score-MLP activation: {self.attention_score_mlp_activation}")
+        if not isinstance(self.attention_score_mlp_kernel_weight_decay, bool):
+            raise ValueError("model.attention_score_mlp_kernel_weight_decay must be a boolean")
+        if width is None:
+            if (self.attention_score_mlp_form != "kernel" or self.attention_score_mlp_kernel_weight_decay
+                    or any(values is not None for values in constants.values())):
+                raise ValueError("Score-MLP settings require model.attention_score_mlp_width")
+            return
+        if isinstance(width, bool) or not isinstance(width, int) or width < 1:
+            raise ValueError("model.attention_score_mlp_width must be null or a positive integer")
+        if (self.attention_mechanism != "dot_product" or self.attention_normalization
+                or self.attention_degree is not None or self.attention_coefficients != "fixed"
+                or self.attention_fixed_coefficients is not None or self.attention_fixed_square_factors is not None
+                or self.attention_coefficient_conditioning != "static" or self.quadratic_mode != "fixed"):
+            raise ValueError("A score MLP replaces the kernel of unnormalized dot-product attention: it requires "
+                             "attention_normalization false, attention_degree null, fixed static coefficients, "
+                             "and quadratic_mode fixed")
+        if self.attention_backend != "blocked":
+            raise ValueError("A score MLP runs on model.attention_backend blocked")
+        if self.positional_encoding not in ("rope", "none"):
+            raise ValueError("A score MLP supports RoPE or no positional encoding; PaTH is not supported")
+        if self.attention_forget_gate and (self.attention_forget_gate_mode != "cumulative"
+                                           or self.attention_forget_gate_form != "input"):
+            raise ValueError("A score MLP supports only the cumulative input forget gate")
+        for name, values in constants.items():
+            if (not isinstance(values, (tuple, list)) or len(values) != width
+                    or any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+                           for value in values)):
+                raise ValueError(f"model.attention_score_mlp_{name}_initial must hold {width} finite numbers")
+            setattr(self, f"attention_score_mlp_{name}_initial", tuple(float(value) for value in values))
+
     def __post_init__(self):
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
@@ -264,6 +319,7 @@ class ModelConfig:
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"model.{name} must be a positive integer")
+        self._validate_score_mlp()
         if self.positional_encoding == "path":
             softmax = (self.attention_normalization and self.attention_degree is None
                        and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
@@ -437,12 +493,13 @@ class ModelConfig:
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
+        gated_kernel = self.attention_score_mlp_width is not None or (
+            self.attention_coefficient_conditioning == "query" and activation != "identity")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
-                or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or not forget_backend_supported):
-            raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+                or not gated_kernel or not forget_backend_supported):
+            raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial or "
+                             "score-MLP attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
@@ -706,6 +763,9 @@ def validate_config(config: Config) -> None:
         if rate is not None and config.model.attention_coefficients != "learned" and (
                 config.model.qk_norm_token_scale == "none"):
             raise ValueError("continuation.new_parameter_learning_rate applies to introduced parameters only")
+        if config.model.attention_score_mlp_width is not None and not continuation.preserve_all_parameters:
+            raise ValueError("Continuation does not introduce score-MLP parameters; only preserve_all_parameters "
+                             "continues a score-MLP parent")
         if config.model.attention_coefficients == "learned" and not continuation.preserve_all_parameters:
             model = config.model
             if model.attention_coefficient_orders is not None:

@@ -9,6 +9,7 @@ from scaffolds.transformer.attention.taylor import _taylor_polynomial, _validate
 from scaffolds.transformer.attention.learned_quadratic import _quadratic_polynomial
 from scaffolds.transformer.attention.nonnegative_polynomial import square_sum_polynomial, validate_factors
 from scaffolds.transformer.attention.rational_polynomial import denominator_factors, select_denominator
+from scaffolds.transformer.attention.score_mlp import FORMS as SCORE_MLP_FORMS, score_kernel
 from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
@@ -29,6 +30,10 @@ def blocked_dot_product_attention(
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
     query_decay_mode: str = "cumulative",
+    score_mlp_amplitude: jax.Array | None = None,
+    score_mlp_offset: jax.Array | None = None,
+    score_mlp_slope: jax.Array | None = None,
+    score_mlp_form: str = "kernel",
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -67,6 +72,10 @@ def blocked_dot_product_attention(
     factors, with the constant fixed at 1 or learned. Its ``kernel_*`` diagnostics describe
     the numerator, ``denominator_*`` the denominator values, and the cancellation
     ratio is sum_j |p_b(s_j)| / |sum_j p_b(s_j)|.
+    A score MLP (``attention/score_mlp.py``) instead takes unit amplitudes a and offsets b
+    [batch,time,heads,J] per query and slopes w [heads,J]: the unnormalized, signed kernel is
+    sum_j a_j SiLU(w_j s + b_j), or exp(s) (1 + that sum) for ``score_mlp_form="exp_residual"``,
+    optionally times the cumulative forget-gate decay exp(L_t - L_i).
     Diagnostics exclude padded queries and masked future entries.
     """
     _validate_degree(attention_degree)
@@ -90,6 +99,19 @@ def blocked_dot_product_attention(
                               or polynomial_coefficients is not None or coefficients is not None
                               or polynomial_square_factors is not None or denominators):
         raise ValueError("Query coefficients define an unnormalized polynomial of degree >= 1 alone")
+    score_mlp_arrays = (score_mlp_amplitude, score_mlp_offset, score_mlp_slope)
+    score_mlp = any(array is not None for array in score_mlp_arrays)
+    if score_mlp:
+        if any(array is None for array in score_mlp_arrays):
+            raise ValueError("A score MLP requires its unit amplitudes, offsets, and slopes")
+        if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                or coefficients is not None or polynomial_coefficients is not None
+                or polynomial_square_factors is not None or query_conditioned or denominators):
+            raise ValueError("A score MLP defines an unnormalized kernel alone, without a degree or coefficients")
+        if score_mlp_form not in SCORE_MLP_FORMS:
+            raise ValueError(f"Unknown score-MLP form: {score_mlp_form}")
+        if query_decay_mode != "cumulative":
+            raise ValueError("A score MLP supports only the cumulative forget-gate decay")
     nonnegative = polynomial_square_factors is not None
     if nonnegative:
         if polynomial_coefficients is not None or quadratic_mode != "fixed" or not attention_normalization:
@@ -101,10 +123,10 @@ def blocked_dot_product_attention(
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
         denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2])
-    signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
-        not nonnegative and quadratic_mode == "fixed"
-        and attention_degree is not None and attention_degree % 2 == 1
-    )
+    signed = (score_mlp or query_conditioned or polynomial_coefficients is not None
+              or quadratic_mode == "unrestricted" or (
+                  not nonnegative and quadratic_mode == "fixed"
+                  and attention_degree is not None and attention_degree % 2 == 1))
     extended_diagnostics = quadratic_mode != "fixed" or signed or nonnegative
     if not isinstance(query_block_size, int) or isinstance(query_block_size, bool) or query_block_size <= 0:
         raise ValueError("query_block_size must be a positive integer")
@@ -129,8 +151,16 @@ def blocked_dot_product_attention(
         raise ValueError(f"Unknown query decay mode: {query_decay_mode}")
     if query_decay_mode != "cumulative" and not decayed:
         raise ValueError("A query-distance decay mode requires query_log_decay")
-    if decayed and (not query_conditioned or key_conditioned or query_log_decay.shape != (batch, time, heads)):
-        raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone")
+    if decayed and (not (query_conditioned or score_mlp) or key_conditioned
+                    or query_log_decay.shape != (batch, time, heads)):
+        raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients "
+                         "or a score MLP alone")
+    if score_mlp:
+        width = score_mlp_slope.shape[-1] if score_mlp_slope.ndim == 2 else 0
+        if (width < 1 or score_mlp_slope.shape != (heads, width)
+                or score_mlp_amplitude.shape != (batch, time, heads, width)
+                or score_mlp_offset.shape != score_mlp_amplitude.shape):
+            raise ValueError("A score MLP requires amplitudes and offsets [batch,time,heads,J] and slopes [heads,J]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -148,6 +178,14 @@ def blocked_dot_product_attention(
             log_decay = query_log_decay.astype(jnp.float32)
             # Repeat the final gate on padded queries; these rows never enter the output or diagnostics.
             padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
+    if score_mlp:
+        # Padded queries get a = b = 0; their rows never enter the output or diagnostics.
+        padded_amplitude, padded_offset = (jnp.pad(array.astype(jnp.float32), ((0, 0), (0, pad), (0, 0), (0, 0)))
+                                           for array in (score_mlp_amplitude, score_mlp_offset))
+        unit_slope = score_mlp_slope.astype(jnp.float32)
+        if decayed:
+            log_decay = query_log_decay.astype(jnp.float32)
+            padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -162,7 +200,21 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
-        if not attention_normalization and attention_degree is None:
+        if score_mlp:
+            # Masked entries are evaluated at score zero, never at sentinels, and zeroed below.
+            # FP32 units; exp_residual's exp is unshifted, as in the exponential branch.
+            safe_scores = jnp.where(causal, scores, 0.0)
+            amplitude, offset = (jnp.swapaxes(jax.lax.dynamic_slice_in_dim(array, start, block_size, axis=1), 1, 2)
+                                 for array in (padded_amplitude, padded_offset))
+            kernel = score_kernel(safe_scores, amplitude, offset, unit_slope, score_mlp_form)
+            if decayed:
+                # prod_(j=i+1..t) alpha_j = exp(L_t-L_i), as for query coefficients.
+                query_decay = jnp.swapaxes(
+                    jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1), 1, 2)[..., None]
+                gap = query_decay - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :]
+                kernel = kernel * jnp.exp(jnp.where(causal, gap, 0.0))
+            invalid_kernel = ~jnp.isfinite(kernel)
+        elif not attention_normalization and attention_degree is None:
             # A row shift changes the unnormalized operator. Underflow to zero
             # is allowed; a nonfinite causal exponential poisons the output.
             kernel = jnp.exp(jnp.where(causal, scores, 0.0))

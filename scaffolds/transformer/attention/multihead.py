@@ -69,6 +69,9 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
         attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
         attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
+        score_mlp_width=getattr(config, "attention_score_mlp_width", None),
+        score_mlp_form=getattr(config, "attention_score_mlp_form", "kernel"),
+        score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
         rngs=rngs,
     )
 
@@ -97,10 +100,34 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate: bool = False,
         attention_forget_gate_mode: str = "cumulative",
         attention_forget_gate_form: str = "input",
+        score_mlp_width: int | None = None,
+        score_mlp_form: str = "kernel",
+        score_mlp_activation: str = "silu",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {positional_encoding}")
+        from scaffolds.transformer.attention import score_mlp
+
+        if score_mlp_form not in score_mlp.FORMS or score_mlp_activation not in score_mlp.ACTIVATIONS:
+            raise ValueError(f"Unknown score-MLP form or activation: {score_mlp_form}, {score_mlp_activation}")
+        if score_mlp_width is not None:
+            if isinstance(score_mlp_width, bool) or not isinstance(score_mlp_width, int) or score_mlp_width < 1:
+                raise ValueError("The score-MLP width must be a positive integer")
+            if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                    or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None
+                    or attention_coefficient_conditioning != "static"):
+                raise ValueError("A score MLP replaces the kernel of unnormalized attention: no degree, "
+                                 "polynomial coefficients, or normalization")
+            if backend != "blocked":
+                raise ValueError("Score-MLP attention runs on the blocked backend only")
+            if positional_encoding not in ("rope", "none"):
+                raise ValueError("Score-MLP attention supports RoPE or no positional encoding, not PaTH")
+            if attention_forget_gate and (attention_forget_gate_mode != "cumulative"
+                                          or attention_forget_gate_form != "input"):
+                raise ValueError("Score-MLP attention supports only the cumulative input forget gate")
+        self.score_mlp_width = score_mlp_width
+        self.score_mlp_form = score_mlp_form
         if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
             raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
         self.positional_encoding = positional_encoding
@@ -181,11 +208,11 @@ class MultiHeadAttention(nnx.Module):
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and backend == "blocked")
-        if attention_forget_gate and (attention_coefficient_conditioning != "query"
-                                      or attention_coefficient_activation == "identity"
-                                      or not forget_backend_supported):
-            raise ValueError("The forget gate requires nonlinear query coefficients: RoPE/none on the "
-                             "blocked backend, or PaTH on blocked/fused/auto")
+        gated_kernel = score_mlp_width is not None or (attention_coefficient_conditioning == "query"
+                                                       and attention_coefficient_activation != "identity")
+        if attention_forget_gate and (not gated_kernel or not forget_backend_supported):
+            raise ValueError("The forget gate requires nonlinear query coefficients or a score MLP: RoPE/none on "
+                             "the blocked backend, or PaTH on blocked/fused/auto")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
@@ -365,6 +392,20 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        from scaffolds.transformer.attention import score_mlp
+
+        unit_parameters = {name: parameters.pop(name, None) for name in score_mlp.PARAMETERS}
+        if any((value is None) == (self.score_mlp_width is not None) for value in unit_parameters.values()):
+            raise ValueError("A score MLP requires exactly its model-owned unit parameters")
+        if self.score_mlp_width is not None:
+            # a_t = alpha + x_t A and b_t = beta + x_t B per head and unit, from the same FP32
+            # projection of the attention input as the query-coefficient generators.
+            parameters["score_mlp_amplitude"] = score_mlp.project_units(
+                x, unit_parameters[score_mlp.AMPLITUDE_KERNEL], unit_parameters[score_mlp.AMPLITUDE_BIAS])
+            parameters["score_mlp_offset"] = score_mlp.project_units(
+                x, unit_parameters[score_mlp.OFFSET_KERNEL], unit_parameters[score_mlp.OFFSET_BIAS])
+            parameters["score_mlp_slope"] = unit_parameters[score_mlp.SLOPE]
+            parameters["score_mlp_form"] = self.score_mlp_form
         from scaffolds.transformer.attention.forget_gate import (
             PARAMETERS as FORGET_GATE_PARAMETERS, constant_log_decay, log_decay, parameter_names,
         )

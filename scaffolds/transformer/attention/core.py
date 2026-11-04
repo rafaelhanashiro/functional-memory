@@ -26,6 +26,10 @@ def attention_core(
     query_log_decay: jax.Array | None = None,
     query_decay_mode: str = "cumulative",
     attention_coefficient_activation: str = "identity",
+    score_mlp_amplitude: jax.Array | None = None,
+    score_mlp_offset: jax.Array | None = None,
+    score_mlp_slope: jax.Array | None = None,
+    score_mlp_form: str = "kernel",
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
@@ -36,7 +40,8 @@ def attention_core(
     """Apply the mechanism selected by the existing flat model configuration.
 
     ``denominators`` holds at most one rational-kernel denominator array, named as in
-    ``rational_polynomial.DENOMINATOR_KINDS``.
+    ``rational_polynomial.DENOMINATOR_KINDS``. The ``score_mlp_*`` arrays (projected unit
+    amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
     """
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 
@@ -46,6 +51,22 @@ def attention_core(
     denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    score_mlp_arrays = (score_mlp_amplitude, score_mlp_offset, score_mlp_slope)
+    if any(array is not None for array in score_mlp_arrays):
+        from scaffolds.transformer.attention.score_mlp import score_mlp_attention
+
+        if any(array is None for array in score_mlp_arrays):
+            raise ValueError("A score MLP requires its unit amplitudes, offsets, and slopes")
+        if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                or coefficients is not None or polynomial_coefficients is not None
+                or polynomial_square_factors is not None or query_polynomial_coefficients is not None
+                or key_polynomial_factors is not None or denominators):
+            raise ValueError("A score MLP defines an unnormalized kernel alone, without a degree or coefficients")
+        if query_decay_mode != "cumulative":
+            raise ValueError("A score MLP supports only the cumulative forget-gate decay")
+        return score_mlp_attention(q, k, v, score_mlp_amplitude, score_mlp_offset, score_mlp_slope,
+                                   form=score_mlp_form, log_decay=query_log_decay, backend=backend,
+                                   return_diagnostics=return_diagnostics)
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
     if query_decay_mode not in ("cumulative", "query_distance"):
