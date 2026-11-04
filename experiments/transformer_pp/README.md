@@ -745,18 +745,20 @@ the attention input (`A`, `B` start at zero; slopes `w_j` are learned per layer 
 The exp-residual form `f = exp(s) (1 + sum_j a_tj SiLU(w_j s + b_tj))` starts exactly at
 exp (`alpha = 0`, `w = 1`, `beta` evenly spaced on [-3, 3]). Each run copies
 `query-m4-head-scale` (`r2b22f2ff6461`) and changes only `f`: `attention_degree: null` with
-the fixed exponential coefficients of `exp-head-scale` (`r6a76e7fbde45`), the blocked
-backend, and no weight decay on `A` and `B` (the control's projection had none). The
+the fixed exponential coefficients of `exp-head-scale` (`r6a76e7fbde45`), the fused
+score-MLP kernel (`attention_backend: fused`), and no weight decay on `A` and `B` (the control's projection had none). The
 [score-MLP topic](results/exploratory/score_mlp/README.md) lists the runs and controls.
 
-Home cluster: Kennel. `r0a3730174f90` (`J = 4`) and `ree4a7353576c` (`J = 8`) run from
-`worktrees/score-mlp-attention`, branch `claude/score-mlp-attention`, one GPU each. A pilot
-that projects past the 24-hour allocation is resubmitted on `long` with a longer limit:
+Home cluster: Kennel. `re65b12334c5e` (`J = 4`) and `r98e7f3e60a59` (`J = 8`) run from
+`worktrees/score-mlp-attention`, branch `claude/score-mlp-attention`, one GPU each. `J = 8`
+excludes the H100 PCIe node `mastiff`, where it projects past 24 hours; a pilot that projects
+past the allocation is resubmitted on `long` with a longer limit:
 
 ```bash
-for run in r0a3730174f90 ree4a7353576c; do
+for run in re65b12334c5e r98e7f3e60a59; do
+  exclude=collie,samoyed,doodle,terrier,shiba; [ "$run" = r98e7f3e60a59 ] && exclude=mastiff,$exclude
   sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --time=24:00:00 --exclude=$exclude --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \

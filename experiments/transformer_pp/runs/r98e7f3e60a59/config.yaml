@@ -28,7 +28,7 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: blocked
+  attention_backend: fused
   attention_degree: null
   attention_normalization: false
   attention_output_scaling: head_rms_norm
@@ -61,10 +61,14 @@ model:
   attention_coefficient_amplitude_initial: 1.0
   attention_coefficient_projection_initial_std: 0.0
   attention_coefficient_tanh_bias: false
-  attention_score_mlp_width: 4
+  attention_score_mlp_width: 8
   attention_score_mlp_form: exp_residual
   attention_score_mlp_activation: silu
   attention_score_mlp_amplitude_initial:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
   - 0.0
   - 0.0
   - 0.0
@@ -74,10 +78,18 @@ model:
   - 1.0
   - 1.0
   - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
+  - 1.0
   attention_score_mlp_offset_initial:
   - -3.0
-  - -1.0
-  - 1.0
+  - -2.142857142857143
+  - -1.2857142857142858
+  - -0.4285714285714288
+  - 0.4285714285714284
+  - 1.2857142857142856
+  - 2.1428571428571423
   - 3.0
   attention_score_mlp_kernel_weight_decay: false
   positional_encoding: rope
@@ -116,8 +128,8 @@ train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_pp/runs/r0a3730174f90
-  checkpoint_dir: experiments/transformer_pp/runs/r0a3730174f90/checkpoints
+  workdir: experiments/transformer_pp/runs/r98e7f3e60a59
+  checkpoint_dir: experiments/transformer_pp/runs/r98e7f3e60a59/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
@@ -127,7 +139,7 @@ train:
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: score-mlp-exp-residual-j4
+  wandb_run_name: score-mlp-exp-residual-j8
   wandb_group: transformer_pp
   wandb_dir: null
   wandb_mode: online
