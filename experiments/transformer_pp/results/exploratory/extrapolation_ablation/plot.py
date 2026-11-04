@@ -18,7 +18,7 @@ from scaffolds.records.selections import verify_pinned_runs
 TOPIC = Path(__file__).resolve().parent
 ROOT = TOPIC.parents[4]
 INK, MUTED, GRID = "#172334", "#5b6573", "#e4e7eb"
-BLOCKS = ((0, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
+BLOCKS = ((0, 2048), (1024, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
 # Categorical slots in fixed order: blue, orange, aqua, yellow, magenta.
 SERIES = (("query, original attention", "#2a78d6", "-"), ("query, 2,048-key window", "#eb6834", "-"),
           ("query, RoPE clamped at 2,047", "#1baf7a", "-"), ("exp (reference)", "#eda100", "--"),

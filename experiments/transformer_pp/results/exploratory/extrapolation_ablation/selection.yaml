@@ -160,4 +160,16 @@ runs:
 - study: transformer_pp
   run_id: r4b4496032e30
   role: long_documents_ablation
-  sources: {}
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4b4496032e30/config.yaml
+      sha256: cf03e28a4e3bcc4dc14a13ba55d956f4653491d9e71959ac04e223976d5b060d
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4b4496032e30/metrics.jsonl
+      sha256: 6cf921cdb3e8a27e277e1f1bbd4fc6e91c4bfe78a3f97a4cc4be48cca9417cab
+    completion.json:
+      path: experiments/transformer_pp/runs/r4b4496032e30/completion.json
+      sha256: b041bdcebfcad5ae2c22f0b8f0c669b494434bf3f1d50de4ee4d189726249814
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4b4496032e30/metadata.json
+      sha256: d06f95a005d60db82ecb0f5a1742f01d295972e4adc930154d91480befb32463

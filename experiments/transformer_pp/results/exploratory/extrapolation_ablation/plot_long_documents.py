@@ -25,7 +25,7 @@ from scaffolds.records.selections import verify_pinned_runs
 TOPIC = Path(__file__).resolve().parent
 ROOT = TOPIC.parents[4]
 BIN, TRAINED, LENGTH = 64, 2048, 16384
-BLOCKS = ((0, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
+BLOCKS = ((0, 2048), (1024, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
 # (label, color, dashes): the context-length figure's colors; the two ablations add black and dark magenta.
 SERIES = {
     "exp": ("exp", "#1f77b4", None),
