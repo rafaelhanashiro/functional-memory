@@ -1,0 +1,24 @@
+{
+  "source_commit": "97acf91f49578fa22aad2dea02445b38e475db8e",
+  "platform": "cpu",
+  "status": "passed",
+  "checks": [
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=2 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_continuation.py -k preserved_learned_parent scaffolds/transformer/tests/test_config.py",
+      "passed": 2,
+      "deselected": 80
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=2 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_config.py",
+      "passed": 62
+    }
+  ],
+  "coverage": [
+    "Learned static and query parents retain all trained parameters and Adam state exactly",
+    "The next update matches ordinary continuation at the same constant learning rate",
+    "Learned coefficients continue to update",
+    "Interrupted and resumed execution matches uninterrupted updates",
+    "Changed model settings and a separate new-parameter learning rate are rejected"
+  ],
+  "limits": "CPU qualification only. Full recipe GPU acceptance is required before each production run."
+}

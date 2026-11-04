@@ -66,6 +66,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
+        attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
         rngs=rngs,
     )
 
@@ -91,6 +92,7 @@ class MultiHeadAttention(nnx.Module):
         qk_norm_head_scale: bool = False,
         qk_norm_token_scale: str = "none",
         attention_forget_gate: bool = False,
+        attention_forget_gate_mode: str = "cumulative",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -168,12 +170,24 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
+        if attention_forget_gate_mode not in ("cumulative", "query_distance"):
+            raise ValueError(f"Unknown attention forget gate mode: {attention_forget_gate_mode}")
+        if attention_forget_gate_mode != "cumulative" and not attention_forget_gate:
+            raise ValueError("A query-distance decay mode requires attention_forget_gate")
+        forget_backend_supported = (
+            positional_encoding == "path" and backend in ("auto", "blocked", "fused")
+            or positional_encoding in ("rope", "none") and backend == "blocked")
         if attention_forget_gate and (attention_coefficient_conditioning != "query"
                                       or attention_coefficient_activation == "identity"
-                                      or positional_encoding not in ("rope", "none") or backend != "blocked"):
-            raise ValueError("The forget gate requires nonlinear query coefficients with RoPE or no positional "
-                             "encoding on the blocked backend")
+                                      or not forget_backend_supported):
+            raise ValueError("The forget gate requires nonlinear query coefficients: RoPE/none on the "
+                             "blocked backend, or PaTH on blocked/fused/auto")
+        if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
+            # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
+            raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
+                             "blocked backend; PaTH supports only cumulative FoX decay")
         self.attention_forget_gate = attention_forget_gate
+        self.attention_forget_gate_mode = attention_forget_gate_mode
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
@@ -340,9 +354,12 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The forget gate requires exactly its model-owned kernel, log rate and dt bias")
         log_alpha = None
         if self.attention_forget_gate:
-            # Cumulative FP32 log decay L_t; the kernel multiplies each weight by exp(L_t - L_i).
+            # The gate and its parameters are identical in both modes. Only the attenuation
+            # changes: exp(L_t-L_i) for FoX, exp((t-i)*log_alpha_t) for query distance.
             log_alpha = log_decay(x, *forget_gate)
-            parameters["query_log_decay"] = jnp.cumsum(log_alpha, axis=1)
+            parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
+                                               if self.attention_forget_gate_mode == "cumulative" else log_alpha)
+            parameters["query_decay_mode"] = self.attention_forget_gate_mode
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
@@ -398,6 +415,12 @@ class MultiHeadAttention(nnx.Module):
         if self.positional_encoding == "path":
             result = self._path_attention(x, q.astype(self.dtype), k.astype(self.dtype), v, parameters,
                                           path_parameters, output_norm_scale, return_diagnostics)
+            if return_diagnostics and log_alpha is not None:
+                result[1].update(jax.lax.stop_gradient({
+                    "forget_gate_log_alpha_mean": jnp.mean(log_alpha, axis=(0, 1)),
+                    "forget_gate_log_alpha_min": jnp.min(log_alpha, axis=(0, 1)),
+                    "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
+                }))
             return (result, effective_coefficients) if return_coefficients else result
         if self.positional_encoding == "rope":
             positions = jnp.arange(seq_len)
@@ -462,6 +485,9 @@ class MultiHeadAttention(nnx.Module):
         w, beta = path_gates(x, *(path_parameters[name] for name in (
             "path_w_down", "path_w_up", "path_w_conv", "path_beta_kernel", "path_beta_bias")), num_heads=self.num_heads)
         coefficients = parameters.pop("query_polynomial_coefficients", None)
+        cumulative_decay = parameters.pop("query_log_decay", None)
+        if parameters.pop("query_decay_mode", "cumulative") != "cumulative":
+            raise ValueError("PaTH attention supports only the cumulative forget-gate decay")
         if parameters:
             raise ValueError(f"PaTH attention does not accept {sorted(parameters)}")
         if self.attention_normalization and self.attention_degree is None and coefficients is None:
@@ -475,12 +501,14 @@ class MultiHeadAttention(nnx.Module):
         if seq_len % CHUNK_SIZE and seq_len > CHUNK_SIZE:
             raise ValueError(f"PaTH needs a sequence length divisible by {CHUNK_SIZE} (or at most {CHUNK_SIZE})")
         reference = partial(path_attention, q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
+                            log_decay=cumulative_decay,
                             chunk_size=chunk, return_diagnostics=True)
         if self.backend == "fused":
             # "auto" is resolved before tracing; an unresolved request runs the JAX reference.
             from scaffolds.transformer.attention.backends.fla_path_attention import fused_path_attention
 
-            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients)
+            y = fused_path_attention(q, k, v, w, beta, kernel=kernel, coefficients=coefficients,
+                                     log_decay=cumulative_decay)
             # Diagnostics come from the blocked reference, as for the other fused kernels.
             diagnostics = reference()[1] if return_diagnostics else {}
         else:

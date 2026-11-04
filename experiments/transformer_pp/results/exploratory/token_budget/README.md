@@ -11,7 +11,7 @@ Five runs at 2.5x Chinchilla (18,925 updates, 9.92B tokens, warmup 1,138), each 
 data-scaled copy of a 1x run with the canonical per-head QK scale, one GPU each. The
 [study README](../../../README.md#token-budgets) gives the scaling rule and launch
 commands. Softmax has no canonical-QK 1x partner; the 1x exp partner `r6a76e7fbde45`
-is on `codex/qk-head-controls-4b` and is cited here but not pinned.
+is cited here but not pinned.
 
 Five further 2.5x runs on ORCD H100s add key–query attention at degrees 4 and 8 and the
 degree-8 fixed Taylor, static, and query variants. The key–query runs pair with their

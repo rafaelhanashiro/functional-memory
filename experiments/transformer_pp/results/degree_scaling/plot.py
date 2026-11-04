@@ -5,7 +5,7 @@
 Writes ``summary.csv``, ``degree_scaling.png``/``.pdf``, and the generated tables in
 ``README.md``: terminal validation perplexity (update 7,570) against the polynomial
 degree for each coefficient family, with validation-best values reported separately
-and softmax as a reference level.
+and softmax and exp as reference levels.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ ROOT = DIRECTORY.parents[3]
 FIELDS = (
     "run_id", "role", "family", "degree", "status", "terminal_step", "training_tokens",
     "terminal_validation_nll", "terminal_validation_perplexity", "change_from_previous_degree_percent",
-    "percent_above_softmax", "best_validation_step", "best_validation_nll", "best_validation_perplexity",
+    "percent_above_softmax", "percent_above_exp", "best_validation_step", "best_validation_nll", "best_validation_perplexity",
     "metrics_sha256", "completion_sha256",
 )
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
@@ -41,7 +41,8 @@ INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 # second cue, and every point carries its value because slots 3 and 4 sit below 3:1 contrast.
 FAMILIES = {"taylor": ("Fixed Taylor", "#2a78d6", "o"), "hermite": ("Fixed Hermite", "#eb6834", "^"),
             "static": ("Learned static", "#1baf7a", "D"), "query_w_decay": ("Query, W decay", "#eda100", "s")}
-REFERENCE = "softmax"
+# Reference levels: normalized softmax and unnormalized exp with the same output RMSNorm.
+REFERENCES = {"softmax": ("Softmax", "-"), "exp": ("Exp", (0, (4, 2)))}
 # Families sit side by side at each degree so that no marker hides another.
 DODGE = {"taylor": -0.09, "hermite": -0.03, "static": 0.03, "query_w_decay": 0.09}
 CANONICAL_QK = {"qk_norm": True, "qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
@@ -60,8 +61,8 @@ ABSENT = {
     "model.qk_norm_token_scale_kernel_weight_decay": False, "optim.query_coefficient_learning_rate_scale": 1.0,
 }
 # Within a family only the degree changes, with the Hermite coefficients it determines;
-# between families the coefficient parameterization changes too, and softmax also differs
-# in its kernel, normalization, and output scaling.
+# between families the coefficient parameterization changes too, and the references also
+# differ in their kernel, backend, normalization, and (softmax) output scaling.
 DEGREE_KEYS = {"model.attention_degree", "model.attention_fixed_coefficients"}
 FAMILY_KEYS = DEGREE_KEYS | {f"model.attention_{key}" for key in (
     "coefficients", "coefficient_activation", "coefficient_amplitude_initial", "coefficient_amplitude_scale",
@@ -81,8 +82,10 @@ def family_of(model: dict) -> str:
     degree = model.get("attention_degree")
     if degree is None:
         if model.get("attention_normalization"):
-            return REFERENCE
-        raise ValueError("Unnormalized attention without a polynomial degree is not in this comparison")
+            return "softmax"
+        if model.get("attention_coefficients", "fixed") == "fixed":
+            return "exp"
+        raise ValueError("Unnormalized attention without a polynomial degree must be exp")
     coefficients = model.get("attention_coefficients")
     if coefficients == "fixed":
         fixed = model.get("attention_fixed_coefficients")
@@ -117,9 +120,9 @@ def _check_recipe(entry: dict, config: dict, settings: dict) -> None:
     family = family_of(model)
     if family != entry["family"]:
         raise ValueError(f"{run} trains {family}, but the selection says {entry['family']}")
-    if (entry["role"] == "reference") != (family == REFERENCE):
-        raise ValueError(f"Polynomial families are primary and softmax is the reference: {run}")
-    if family != REFERENCE:
+    if (entry["role"] == "reference") != (family in REFERENCES):
+        raise ValueError(f"Polynomial families are primary; softmax and exp are references: {run}")
+    if family not in REFERENCES:
         if model["attention_degree"] != entry["degree"]:
             raise ValueError(f"{run} has degree {model['attention_degree']}, but the selection says {entry['degree']}")
         if model.get("attention_normalization") or model.get("attention_output_scaling") != "head_rms_norm":
@@ -202,21 +205,23 @@ def load_runs(selection: dict | None = None) -> list[dict]:
             metrics_sha256=entry["sources"]["metrics.jsonl"]["sha256"],
             completion_sha256=entry["sources"]["completion.json"]["sha256"],
         ))
-    references = [row for row in rows if row["family"] == REFERENCE]
-    if len(references) != 1:
-        raise ValueError("The selection needs exactly one softmax reference")
+    references = {family: [row for row in rows if row["family"] == family] for family in REFERENCES}
+    if any(len(found) != 1 for found in references.values()):
+        raise ValueError("The selection needs exactly one softmax and one exp reference")
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
     expected = {(family, degree) for family in FAMILIES for degree in settings["degrees"]}
-    if len(cells) != len(rows) - 1 or set(cells) != expected:
+    if len(cells) != len(rows) - len(REFERENCES) or set(cells) != expected:
         raise ValueError("The selection needs exactly one run for every family and degree")
-    softmax = references[0]["terminal_validation_perplexity"]
+    softmax = references["softmax"][0]["terminal_validation_perplexity"]
+    exp = references["exp"][0]["terminal_validation_perplexity"]
     for row in rows:
         previous = cells.get((row["family"], row["degree"] - 1)) if row["role"] == "primary" else None
         ppl = row["terminal_validation_perplexity"]
         row["change_from_previous_degree_percent"] = (
             100 * (ppl / previous["terminal_validation_perplexity"] - 1) if previous else "")
         row["percent_above_softmax"] = 100 * (ppl / softmax - 1) if row["role"] == "primary" else ""
-    order = list(FAMILIES) + [REFERENCE]
+        row["percent_above_exp"] = 100 * (ppl / exp - 1) if row["role"] == "primary" else ""
+    order = list(FAMILIES) + list(REFERENCES)
     rows.sort(key=lambda row: (order.index(row["family"]), row["degree"] if row["role"] == "primary" else 0))
     return rows
 
@@ -243,14 +248,14 @@ def _spread(levels: list[float], gap: float) -> list[float]:
 
 def render(rows: list[dict], output: Path = DIRECTORY) -> None:
     primary = [row for row in rows if row["role"] == "primary"]
-    (softmax,) = [row for row in rows if row["role"] == "reference"]
+    levels = {row["family"]: row["terminal_validation_perplexity"] for row in rows if row["role"] == "reference"}
     degrees = sorted({row["degree"] for row in primary})
     with plt.rc_context({"font.family": "DejaVu Sans", "pdf.fonttype": 42, "svg.hashsalt": "degree-scaling",
                          "figure.facecolor": SURFACE, "savefig.facecolor": SURFACE}):
         figure, axis = plt.subplots(figsize=(8.0, 5.6))
         figure.subplots_adjust(left=0.1, right=0.84, top=0.8, bottom=0.11)
-        level = softmax["terminal_validation_perplexity"]
-        axis.axhline(level, color=MUTED, linewidth=1.0, alpha=0.85, zorder=1)
+        for family, (_, style) in REFERENCES.items():
+            axis.axhline(levels[family], color=MUTED, linewidth=1.0, linestyle=style, alpha=0.85, zorder=1)
         by_degree: dict[int, list[tuple[float, str]]] = {}
         handles = []
         for family, (name, color, marker) in FAMILIES.items():
@@ -265,7 +270,7 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                                       markeredgecolor=SURFACE, markeredgewidth=0.9, label=name))
             for degree, value in points:
                 by_degree.setdefault(degree, []).append((value, family))
-        values = [row["terminal_validation_perplexity"] for row in primary] + [level]
+        values = [row["terminal_validation_perplexity"] for row in primary] + list(levels.values())
         lower, upper = min(values), max(values)
         pad = 0.05 * (upper - lower)
         axis.set_xlim(min(degrees) - 0.35, max(degrees) + 0.6)
@@ -278,9 +283,10 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         right = max(DODGE.values())
         for x, labels in sorted(by_degree.items()):
             positions = _spread([value for value, _ in labels], 0.95 * gap)
-            # Labels that would sit on the softmax level move up together to clear it.
-            if level - 0.6 * gap < min(positions) < level + 0.6 * gap:
-                positions = [position + level + 0.6 * gap - min(positions) for position in positions]
+            # Labels that would sit on a reference level move up together to clear it.
+            for level in sorted(levels.values()):
+                if level - 0.6 * gap < min(positions) < level + 0.6 * gap:
+                    positions = [position + level + 0.6 * gap - min(positions) for position in positions]
             for (value, family), placed in zip(labels, positions):
                 _, color, marker = FAMILIES[family]
                 axis.annotate(f"    {value:.2f}", (x + right, placed), xytext=(9, 0), textcoords="offset points",
@@ -289,9 +295,10 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                                     "linewidth": 0.6})
                 axis.plot([x + right], [placed], marker=marker, markersize=4, color=color, linestyle="none",
                           transform=swatch, clip_on=False, zorder=5)
-        axis.annotate(f"Softmax {level:.2f}", (1.0, level), xycoords=("axes fraction", "data"), xytext=(6, 0),
-                      textcoords="offset points", ha="left", va="center", fontsize=8, color=MUTED,
-                      annotation_clip=False)
+        for family, (name, _) in REFERENCES.items():
+            axis.annotate(f"{name} {levels[family]:.2f}", (1.0, levels[family]), xycoords=("axes fraction", "data"),
+                          xytext=(6, 0), textcoords="offset points", ha="left", va="center", fontsize=8,
+                          color=MUTED, annotation_clip=False)
         axis.legend(handles=handles, loc="upper right", frameon=False, fontsize=8.5, labelcolor=INK,
                     handlelength=2.4, borderaxespad=0.6)
         axis.set_xticks(degrees, [f"m = {degree}" for degree in degrees], fontsize=9, color=INK)
@@ -309,7 +316,7 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                     weight="bold", color=INK, va="top")
         figure.text(0.1, 0.905, f"Transformer++ at 1× Chinchilla, validation perplexity at update {step:,}, "
                     "one run (seed 42) per point.\nEvery polynomial run has per-head output RMSNorm and "
-                    "canonical QK RMSNorm; softmax is the normalized reference.", fontsize=8.5, color=MUTED,
+                    "canonical QK RMSNorm; softmax (normalized, solid) and exp\n(unnormalized, per-head output RMSNorm, dashed) are references.", fontsize=8.5, color=MUTED,
                     va="top", linespacing=1.35)
         figure.savefig(output / "degree_scaling.png", dpi=180, metadata={"Software": "Matplotlib"})
         figure.savefig(output / "degree_scaling.pdf", metadata={"CreationDate": None, "ModDate": None,
@@ -319,7 +326,7 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
 
 def _tables(rows: list[dict]) -> str:
     primary = [row for row in rows if row["role"] == "primary"]
-    (softmax,) = [row for row in rows if row["role"] == "reference"]
+    references = {row["family"]: row for row in rows if row["role"] == "reference"}
     degrees = sorted({row["degree"] for row in primary})
     cells = {(row["family"], row["degree"]): row for row in primary}
     best_steps = {row["best_validation_step"] for row in primary}
@@ -354,9 +361,11 @@ def _tables(rows: list[dict]) -> str:
     lines = table(f"Terminal validation perplexity (update {step:,}); lowest per degree in bold", terminal)
     lines += table(best_title, best)
     lines += table("Change in terminal perplexity from the previous degree", change)
-    lines.append(f"Softmax reference (`{softmax['run_id']}`): terminal "
-                 f"{softmax['terminal_validation_perplexity']:.3f}, validation-best "
-                 f"{softmax['best_validation_perplexity']:.3f} (update {softmax['best_validation_step']:,}).")
+    lines.append("\n\n".join(
+        f"{name} reference (`{references[family]['run_id']}`): terminal "
+        f"{references[family]['terminal_validation_perplexity']:.3f}, validation-best "
+        f"{references[family]['best_validation_perplexity']:.3f} (update {references[family]['best_validation_step']:,})."
+        for family, (name, _) in REFERENCES.items()))
     return "\n".join(lines)
 
 

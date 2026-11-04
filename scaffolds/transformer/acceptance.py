@@ -58,6 +58,7 @@ QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polyn
 DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
 SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
+QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
@@ -66,6 +67,9 @@ QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
+FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
+FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
 TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
 QUERY_KEY_TILING_TESTS = "scaffolds/transformer/tests/test_query_key_tiling.py"
@@ -153,6 +157,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":
             paths.extend((PATH_ATTENTION_FUSED_TESTS, *((TRITON_PORT_TESTS,) if cpu else ())))
+        if model.get("attention_forget_gate", False):
+            paths.extend((FOX_PATH_ATTENTION_TESTS, FOX_PATH_MODEL_TESTS))
+            if resolved_backend == "fused":
+                paths.append(FOX_PATH_ATTENTION_FUSED_TESTS)
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -183,6 +191,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(SIGMOID_COEFFICIENT_TESTS)
         if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
             paths.append(COEFFICIENT_FORM_TESTS)
+        if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
+            paths.append(QUERY_DISTANCE_DECAY_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
@@ -633,6 +643,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
+                                           attention_forget_gate_mode="cumulative",
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
                                            attention_coefficient_scale="none",
@@ -682,7 +693,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False, positional_encoding="rope",
+        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
+        attention_forget_gate_mode="cumulative", positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,

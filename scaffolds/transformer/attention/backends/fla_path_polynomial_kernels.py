@@ -7,8 +7,8 @@
 
 Copied from flash-linear-attention 0.6.0 (``fla/ops/path_attn``: intra_chunk_preprocess_fwd,
 parallel_path_fwd, intra_chunk_preprocess_bwd_prepare, parallel_path_bwd_inter_dkv,
-parallel_path_bwd_inter_dqh, parallel_path_bwd_intra). The forget-gate and variable-length
-branches are removed and the kernels take the scaffold's bridge argument order (inputs,
+parallel_path_bwd_inter_dqh, parallel_path_bwd_intra). Variable-length branches are
+removed and the kernels take the scaffold's bridge argument order (inputs,
 arrays updated in place, outputs, constexprs); transport, Householder, and UT-transform
 arithmetic, dtype casts, and tiling are FLA's, line for line.
 
@@ -18,11 +18,22 @@ Horner's rule. The output is ``o_t = sum_s p_t(s_ts) v_s`` with no normalization
 online-softmax statistics (L, M) and the backward's ``delta`` disappear: the softmax's
 ``dS = P (dP - delta)`` becomes ``dS = p_t'(s) dP`` (times ``scale`` for the raw score), and
 each kernel that visits a (query, key) block also writes the query's coefficient gradient
-``dc_r(t) = sum_s s^r dP_ts`` for the keys it covers.
+``dc_r(t) = sum_s s^r dP_ts`` for the keys it covers. Optional cumulative log decay
+multiplies the polynomial by exp(L_t-L_s). Exponent differences are masked before
+exponentiation; backward returns both query and key contributions to dL.
 """
 
 import triton
 import triton.language as tl
+
+
+@triton.jit
+def _decay(log_decay, queries, keys, valid, T, HQ: tl.constexpr):
+    """Masked exp(L_query-L_key), without exponentiating large prefixes."""
+    query_log = tl.load(log_decay + queries * HQ, mask=queries < T, other=0.0)
+    key_log = tl.load(log_decay + keys * HQ, mask=keys < T, other=0.0)
+    active = valid & (queries < T) & (keys < T)
+    return tl.exp(tl.where(active, query_log - key_log, float('-inf')))
 
 
 @triton.jit
@@ -95,9 +106,9 @@ def _store_moments(dc, rows, mask, m0, m1, m2, m3, m4, HQ: tl.constexpr, R: tl.c
 
 
 @triton.jit(do_not_specialize=['T'])
-def intra_fwd(q, k, v, w, beta, c, A, scale, T, o, w2, q_new, k_new, H: tl.constexpr, G: tl.constexpr,
+def intra_fwd(q, k, v, w, beta, c, log_decay, A, scale, T, o, w2, q_new, k_new, H: tl.constexpr, G: tl.constexpr,
               HQ: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BK: tl.constexpr, BV: tl.constexpr,
-              BT: tl.constexpr, DEGREE: tl.constexpr):
+              BT: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """intra_chunk_preprocess_fwd_kernel: the chunk-local UT transform and outputs."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_nh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -116,6 +127,8 @@ def intra_fwd(q, k, v, w, beta, c, A, scale, T, o, w2, q_new, k_new, H: tl.const
     o += (bos*HQ + i_hq) * V
     beta += (bos*H + i_h)
     c += (bos*HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos*HQ + i_hq
 
     o_t = i_t * BT + tl.arange(0, BT)
     o_i = tl.arange(0, BT)
@@ -166,15 +179,17 @@ def intra_fwd(q, k, v, w, beta, c, A, scale, T, o, w2, q_new, k_new, H: tl.const
     c3 = _coefficient(c, o_t, m_r, HQ, R, 3)[:, None]
     c4 = _coefficient(c, o_t, m_r, HQ, R, 4)[:, None]
     b_p = tl.where(m_t, _polynomial(b_A * scale, c0, c1, c2, c3, c4, DEGREE), 0)
+    if HAS_DECAY:
+        b_p *= _decay(log_decay, o_t[:, None], o_t[None, :], m_t, T, HQ)
     b_o = tl.dot(b_p.to(b_v.dtype), b_v)
     p_o = o + o_t[:, None] * (V*HQ) + o_v[None, :]
     tl.store(p_o, b_o.to(p_o.dtype.element_ty), mask=m_v)
 
 
 @triton.jit(do_not_specialize=['T'])
-def path_fwd(q, k, v, o, w1, w2, c, scale, T, o_new, G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr,
+def path_fwd(q, k, v, o, w1, w2, c, log_decay, scale, T, o_new, G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr,
              K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr, BS: tl.constexpr, BK: tl.constexpr,
-             BV: tl.constexpr, DEGREE: tl.constexpr):
+             BV: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """parallel_path_fwd_kernel: keys outside the query's chunk, moving the queries back."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_bh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -195,6 +210,8 @@ def path_fwd(q, k, v, o, w1, w2, c, scale, T, o_new, G: tl.constexpr, HQ: tl.con
     b_o += tl.load(p_o, mask=m_o, other=0.0)
 
     c += (bos * HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos * HQ + i_hq
     c0 = _coefficient(c, o_q, m_q, HQ, R, 0)[:, None]
     c1 = _coefficient(c, o_q, m_q, HQ, R, 1)[:, None]
     c2 = _coefficient(c, o_q, m_q, HQ, R, 2)[:, None]
@@ -215,6 +232,8 @@ def path_fwd(q, k, v, o, w1, w2, c, scale, T, o_new, G: tl.constexpr, HQ: tl.con
         m_s = i_t * BT + tl.arange(0, BT) >= (offset + BS)
         b_s = tl.dot(b_q.to(b_k.dtype), b_k)
         b_p = tl.where(m_s[:, None], _polynomial(b_s * scale, c0, c1, c2, c3, c4, DEGREE), 0)
+        if HAS_DECAY:
+            b_p *= _decay(log_decay, o_q[:, None], o_k[None, :], m_s[:, None], T, HQ)
         b_o = tl.dot(b_p.to(b_v.dtype), b_v, b_o)
         b_s2 = tl.dot(b_q.to(b_w1.dtype), b_w1)
         b_s2 = tl.where(m_s[:, None], b_s2, 0)
@@ -235,6 +254,8 @@ def path_fwd(q, k, v, o, w1, w2, c, scale, T, o_new, G: tl.constexpr, HQ: tl.con
         b_w2 = tl.load(p_w2, mask=m_k[:, None] & (o_d[None, :] < K), other=0.0)
         b_s = tl.dot(b_q.to(b_k.dtype), b_k)
         b_p = _polynomial(b_s * scale, c0, c1, c2, c3, c4, DEGREE)
+        if HAS_DECAY:
+            b_p *= _decay(log_decay, o_q[:, None], o_k[None, :], True, T, HQ)
         b_o = tl.dot(b_p.to(b_v.dtype), b_v, b_o)
         b_s2 = tl.dot(b_q.to(b_w1.dtype), b_w1)
         b_q -= tl.dot(b_s2.to(b_w2.dtype), b_w2)
@@ -244,9 +265,9 @@ def path_fwd(q, k, v, o, w1, w2, c, scale, T, o_new, G: tl.constexpr, HQ: tl.con
 
 
 @triton.jit(do_not_specialize=['T'])
-def bwd_prepare(q, k, v, w, beta, c, AT, do, scale, T, h, q_new, k_new, dA_local, dv, dc, G: tl.constexpr,
+def bwd_prepare(q, k, v, w, beta, c, log_decay, AT, do, scale, T, h, q_new, k_new, dA_local, dv, dc, dl, G: tl.constexpr,
                 HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BK: tl.constexpr,
-                BV: tl.constexpr, BT: tl.constexpr, DEGREE: tl.constexpr):
+                BV: tl.constexpr, BT: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """chunk_transform_qk_bwd_kernel_prepare: chunk-local dv, dS, and dc."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_nh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -267,6 +288,8 @@ def bwd_prepare(q, k, v, w, beta, c, AT, do, scale, T, h, q_new, k_new, dA_local
     beta += (bos*H + i_h)
     h += (bos*H + i_h) * K
     c += (bos*HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos*HQ + i_hq
     dc += (bos*HQ + i_hq) * R
 
     o_t = i_t * BT + tl.arange(0, BT)
@@ -315,6 +338,9 @@ def bwd_prepare(q, k, v, w, beta, c, AT, do, scale, T, h, q_new, k_new, dA_local
     c4 = _coefficient(c, o_t, m_r, HQ, R, 4)[:, None]
     b_s = b_A * scale
     b_P = tl.where(m_t, _polynomial(b_s, c0, c1, c2, c3, c4, DEGREE), 0)
+    if HAS_DECAY:
+        decay = _decay(log_decay, o_t[:, None], o_t[None, :], m_t, T, HQ)
+        b_P *= decay
     p_do = do + o_t[:, None] * (HQ*V) + o_v[None, :]
     b_do = tl.load(p_do, mask=m_v, other=0.0)
     b_dv = tl.dot(tl.trans(b_P.to(b_do.dtype)), b_do)
@@ -324,6 +350,11 @@ def bwd_prepare(q, k, v, w, beta, c, AT, do, scale, T, h, q_new, k_new, dA_local
     p_v = v + o_v[:, None] + o_t[None, :] * (H*V)
     b_v = tl.load(p_v, mask=(o_v[:, None] < V) & m_r[None, :], other=0.0)
     b_dp = tl.where(m_t, tl.dot(b_do, b_v), 0)
+    if HAS_DECAY:
+        pair_dl = b_dp * b_P
+        tl.store(dl + (bos*HQ + i_hq) + o_t * HQ,
+                 tl.sum(pair_dl, 1) - tl.sum(pair_dl, 0), mask=m_r)
+        b_dp *= decay
     b_dA = tl.where(m_t, _derivative(b_s, c1, c2, c3, c4, DEGREE) * b_dp * scale, 0)
     p_dA = dA_local + o_t[:, None] * (BT*HQ) + o_i[None, :]
     tl.store(p_dA, b_dA.to(p_dA.dtype.element_ty), mask=m_T)
@@ -334,9 +365,9 @@ def bwd_prepare(q, k, v, w, beta, c, AT, do, scale, T, h, q_new, k_new, dA_local
 
 
 @triton.jit(do_not_specialize=['T'])
-def bwd_dkv(q, k, v, c, do, scale, T, dv_in, dk, dv, G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr,
+def bwd_dkv(q, k, v, c, log_decay, do, scale, T, dv_in, dk, dv, dl, G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr,
             K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr, BS: tl.constexpr, BK: tl.constexpr,
-            BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr, DEGREE: tl.constexpr):
+            BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """parallel_path_bwd_dkv_kernel: dk and dv from queries in later splits (dv_in aliases dv)."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_bh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -348,6 +379,8 @@ def bwd_dkv(q, k, v, c, do, scale, T, dv_in, dk, dv, G: tl.constexpr, HQ: tl.con
     dk += (bos * HQ + i_hq) * K
     dv += (bos * HQ + i_hq) * V
     c += (bos * HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos * HQ + i_hq
     k += (bos * H + i_h) * K  # GQA when H!=HQ
     v += (bos * H + i_h) * V  # GQA when H!=HQ
 
@@ -362,6 +395,8 @@ def bwd_dkv(q, k, v, c, do, scale, T, dv_in, dk, dv, G: tl.constexpr, HQ: tl.con
 
     b_dk = tl.zeros([BT, BK], dtype=tl.float32)
     b_dv = tl.zeros([BT, BV], dtype=tl.float32)
+    if HAS_DECAY:
+        b_dl = tl.zeros([BT], dtype=tl.float32)
 
     last_chunk_start = tl.floor(i_t*BT / S).to(tl.int32) * S
     idx_j = (tl.floor(i_t * BT / S).to(tl.int32) + 1).to(tl.int32)
@@ -381,14 +416,22 @@ def bwd_dkv(q, k, v, c, do, scale, T, dv_in, dk, dv, G: tl.constexpr, HQ: tl.con
         c3 = _coefficient(c, o_q, m_q, HQ, R, 3)[None, :]
         c4 = _coefficient(c, o_q, m_q, HQ, R, 4)[None, :]
         b_P = _polynomial(b_s, c0, c1, c2, c3, c4, DEGREE)
+        if HAS_DECAY:
+            decay = _decay(log_decay, o_q[None, :], o_k[:, None], True, T, HQ)
+            b_P *= decay
         p_do = do + o_q[:, None] * (HQ*V) + o_v[None, :]
         b_do = tl.load(p_do, mask=m_q[:, None] & (o_v[None, :] < V), other=0.0)
         b_dv = tl.dot(b_P.to(b_do.dtype), b_do, b_dv)
         b_dp = tl.dot(b_v, tl.trans(b_do))
+        if HAS_DECAY:
+            b_dl -= tl.sum(b_dp * b_P, 1)
+            b_dp *= decay
 
         b_dA = _derivative(b_s, c1, c2, c3, c4, DEGREE) * b_dp * scale
         b_dk = tl.dot(b_dA.to(b_q.dtype), b_q, b_dk)
 
+    if HAS_DECAY:
+        tl.store(dl + (bos * HQ + i_hq) + o_k * HQ, b_dl, mask=m_k)
     p_dk = dk + o_k[:, None] * (HQ*K) + o_d[None, :]
     tl.store(p_dk, b_dk.to(dk.dtype.element_ty), mask=m_k[:, None] & (o_d[None, :] < K))
     mask = i_t * BT + tl.arange(0, BT) < T
@@ -401,9 +444,9 @@ def bwd_dkv(q, k, v, c, do, scale, T, dv_in, dk, dv, G: tl.constexpr, HQ: tl.con
 
 
 @triton.jit(do_not_specialize=['T'])
-def bwd_dq(q, k, v, hc_whole, c, do, scale, T, dq, dhc_whole, dc, G: tl.constexpr, HQ: tl.constexpr,
+def bwd_dq(q, k, v, hc_whole, c, log_decay, do, scale, T, dq, dhc_whole, dc, dl, G: tl.constexpr, HQ: tl.constexpr,
            H: tl.constexpr, K: tl.constexpr, V: tl.constexpr, BT: tl.constexpr, BS: tl.constexpr,
-           BK: tl.constexpr, BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr, DEGREE: tl.constexpr):
+           BK: tl.constexpr, BV: tl.constexpr, S: tl.constexpr, NUM_BLOCKS: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """parallel_path_bwd_dq_kernel: dq, the split products' gradient, and dc from earlier splits."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_nh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -423,6 +466,8 @@ def bwd_dq(q, k, v, hc_whole, c, do, scale, T, dq, dhc_whole, dc, G: tl.constexp
     hc_whole += (boh_large * H + i_h) * K * K
     dhc_whole += (boh_large * HQ + i_hq) * K * K
     c += (bos * HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos * HQ + i_hq
     dc += (bos * HQ + i_hq) * R
 
     stride_h = H * K * K
@@ -440,6 +485,8 @@ def bwd_dq(q, k, v, hc_whole, c, do, scale, T, dq, dhc_whole, dc, G: tl.constexp
     m2 = tl.zeros([BT], dtype=tl.float32)
     m3 = tl.zeros([BT], dtype=tl.float32)
     m4 = tl.zeros([BT], dtype=tl.float32)
+    if HAS_DECAY:
+        b_dl = tl.zeros([BT], dtype=tl.float32)
 
     curr_end = ((i_t * BT // S) * S).to(tl.int32)
     b_dq = tl.zeros([BT, K], dtype=tl.float32)
@@ -467,19 +514,25 @@ def bwd_dq(q, k, v, hc_whole, c, do, scale, T, dq, dhc_whole, dc, G: tl.constexp
             p_v = v + o_k[:, None] * (H*V) + o_v[None, :]
             b_v = tl.load(p_v, mask=m_k[:, None] & (o_v[None, :] < V), other=0.0)
             b_dp = tl.where(m_t[:, None], tl.dot(b_do, tl.trans(b_v).to(b_do.dtype)), 0)
+            if HAS_DECAY:
+                decay = _decay(log_decay, o_t[:, None], o_k[None, :], True, T, HQ)
+                b_dp *= decay
+                b_dl += tl.sum(b_dp * _polynomial(b_s, c0, c1, c2, c3, c4, DEGREE), 1)
             b_dA = _derivative(b_s, c1, c2, c3, c4, DEGREE) * b_dp * scale
             b_dq = tl.dot(b_dA.to(b_k.dtype), b_k, b_dq)
             m0, m1, m2, m3, m4 = _moments(b_s, b_dp, m0, m1, m2, m3, m4, DEGREE, 1)
 
+    if HAS_DECAY:
+        tl.store(dl + (bos * HQ + i_hq) + o_t * HQ, b_dl, mask=m_t)
     p_dq = dq + o_t[:, None] * (K * HQ) + o_d[None, :]
     tl.store(p_dq, b_dq.to(dq.dtype.element_ty), mask=m_t[:, None] & (o_d[None, :] < K))
     _store_moments(dc, o_t, m_t, m0, m1, m2, m3, m4, HQ, R)
 
 
 @triton.jit(do_not_specialize=['T'])
-def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in, dq_new, dk, dv, dw1, dw2, dc,
+def bwd_intra(q, k, v, w1, w2, c, log_decay, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in, dq_new, dk, dv, dw1, dw2, dc, dl,
               G: tl.constexpr, HQ: tl.constexpr, H: tl.constexpr, K: tl.constexpr, V: tl.constexpr,
-              BK: tl.constexpr, BV: tl.constexpr, BT: tl.constexpr, S: tl.constexpr, DEGREE: tl.constexpr):
+              BK: tl.constexpr, BV: tl.constexpr, BT: tl.constexpr, S: tl.constexpr, DEGREE: tl.constexpr, HAS_DECAY: tl.constexpr):
     """parallel_path_bwd_intra_chunk_kernel: earlier chunks of the query's split (*_in alias outputs)."""
     R: tl.constexpr = DEGREE + 1
     i_t, i_bh = tl.program_id(0).to(tl.int64), tl.program_id(1)
@@ -501,6 +554,8 @@ def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in
     dw1 += (bos * HQ + i_hq) * K
     dw2 += (bos * HQ + i_hq) * K
     c += (bos * HQ + i_hq) * R
+    if HAS_DECAY:
+        log_decay += bos * HQ + i_hq
     dc += (bos * HQ + i_hq) * R
 
     o_t = i_t * BT + tl.arange(0, BT)
@@ -527,6 +582,8 @@ def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in
     m2 = tl.zeros([BT], dtype=tl.float32)
     m3 = tl.zeros([BT], dtype=tl.float32)
     m4 = tl.zeros([BT], dtype=tl.float32)
+    if HAS_DECAY:
+        b_dl = tl.zeros([BT], dtype=tl.float32)
 
     curr_start = (tl.floor(i_t * BT / S).to(tl.int32) * S).to(tl.int32)
 
@@ -551,6 +608,9 @@ def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in
         b_A = tl.dot(b_q2, tl.trans(b_k))
         b_s = b_A * scale
         b_P = _polynomial(b_s, c0, c1, c2, c3, c4, DEGREE)
+        if HAS_DECAY:
+            decay = _decay(log_decay, o_t[:, None], o_k[None, :], True, T, HQ)
+            b_P *= decay
         b_dv = tl.dot(tl.trans(b_P.to(b_do.dtype)), b_do)
         tl.atomic_add(
             dv + ((offset + tl.arange(0, BT)) * HQ * V)[:, None] + tl.arange(0, BV)[None, :],
@@ -561,6 +621,12 @@ def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in
         p_v = v + o_k[:, None] * (V*H) + o_v[None, :]
         b_v = tl.load(p_v, mask=mask[:, None] & (o_v[None, :] < V), other=0.0)
         b_dp = tl.where(m_t[:, None], tl.dot(b_do, tl.trans(b_v)), 0)
+        if HAS_DECAY:
+            pair_dl = b_dp * b_P
+            b_dl += tl.sum(pair_dl, 1)
+            tl.atomic_add(dl + (bos * HQ + i_hq) + o_k * HQ, -tl.sum(pair_dl, 0),
+                          mask=mask, sem='relaxed')
+            b_dp *= decay
         b_dA = _derivative(b_s, c1, c2, c3, c4, DEGREE) * b_dp * scale
         m0, m1, m2, m3, m4 = _moments(b_s, b_dp, m0, m1, m2, m3, m4, DEGREE, 1)
         b_dA = b_dA.to(b_v.dtype)
@@ -582,6 +648,8 @@ def bwd_intra(q, k, v, w1, w2, c, dq, do, T, scale, dk_in, dv_in, dw1_in, dw2_in
         b_dq -= tl.dot(b_dA2, b_w1.to(b_v.dtype))
         b_dq = tl.dot(b_dA.to(b_k.dtype), b_k, b_dq)
 
+    if HAS_DECAY:
+        tl.atomic_add(dl + (bos * HQ + i_hq) + o_t * HQ, b_dl, mask=m_t, sem='relaxed')
     p_dq_new = dq_new + o_t[:, None] * (HQ*K) + o_d[None, :]
     tl.store(p_dq_new, b_dq.to(dq_new.dtype.element_ty), mask=m_k)
     _store_moments(dc, o_t, m_t, m0, m1, m2, m3, m4, HQ, R)

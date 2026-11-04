@@ -1,0 +1,55 @@
+question: Does query-dependent distance decay improve on cumulative FoX with the same
+  gate and training recipe?
+study: transformer_pp
+settings:
+  metric: held-out validation perplexity
+  report:
+  - validation-best
+  - terminal at update 7570
+  control_decay: product of alpha_j for j from i+1 through t
+  query_decay: exp(-(t-i) * lambda_t)
+  allowed_mathematical_change: model.attention_forget_gate_mode
+  training_steps: 7570
+  training_context: 2048
+  seed: 42
+runs:
+- study: transformer_pp
+  run_id: r4a80e28ce0a7
+  role: control
+  label: FoX NoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/config.yaml
+      sha256: cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/metrics.jsonl
+      sha256: 366d18a632afcbe08d8d408683421ff747d34173220da0953351330b62f8c3e6
+    completion.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/completion.json
+      sha256: ed704e2bf7be57a9b9afecf802331b4b3743c34f365c39e73f6fed4594498ed2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/metadata.json
+      sha256: 6f6e775bffbad182a5f174a3c1e89e01295921cf3c3970991a76970d65c46ba9
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/best_validation.json
+      sha256: 00fbad27a4a36dbba48be4c195e740017728df4a581117dfe74c72ef45ed82fe
+- study: transformer_pp
+  run_id: r3e26412b2811
+  role: query_distance
+  label: Query-dependent distance decay + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3e26412b2811/config.yaml
+      sha256: 3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metrics.jsonl
+      sha256: 998c8c5b25496c388eca8c290d1f0a77998e120c11931011e3a95da9324bfdf6
+    completion.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/completion.json
+      sha256: 2d36a3387d7ab02cb9c70057327882b66334e68866cd0f3195ec9bd1e4a3325e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metadata.json
+      sha256: c0480d51994baabd4bcf9b11f770165e8e2e505120ef029619346e88e17f5a6b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
+      sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260

@@ -27,12 +27,14 @@ def _parent_config(config):
     parent = load_config(path)
     if parent.continuation.parent_checkpoint:
         raise ValueError("A continuation parent must use the original shared optimizer")
-    if parent.model.attention_coefficients != "fixed" or parent.model.attention_fixed_coefficients is not None:
+    preserve = continuation.preserve_all_parameters
+    if not preserve and (parent.model.attention_coefficients != "fixed"
+                         or parent.model.attention_fixed_coefficients is not None):
         raise ValueError("Continuation requires a fixed Taylor or exp parent")
     if parent.model.attention_mechanism != "dot_product" or parent.model.quadratic_mode != "fixed":
         raise ValueError("Continuation requires dot-product attention")
     exp_parent = parent.model.attention_degree is None
-    if exp_parent and (parent.model.attention_normalization or config.model.attention_degree is None):
+    if not preserve and exp_parent and (parent.model.attention_normalization or config.model.attention_degree is None):
         # An unnormalized exp parent continues with a polynomial kernel of an integer degree:
         # fixed Taylor as the control, or Taylor-initialized learned coefficients.
         raise ValueError("Continuing an exp parent requires an unnormalized exp parent and a polynomial degree")
@@ -54,13 +56,16 @@ def _parent_config(config):
         # its learned distance decay. This changes the function, not the backbone
         # parameter tree: every pretrained array and its Adam history still restore.
         allowed_model_changes.add("positional_encoding")
+    if preserve:
+        allowed_model_changes = {"attention_backend"}
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
     if asdict(parent.data) != asdict(config.data):
         raise ValueError("Continuation must preserve the parent data recipe and batch size")
     for key in ("beta1", "beta2", "weight_decay", "weight_decay_policy", "grad_clip_norm",
-                "coefficient_penalty", "coefficient_penalty_denominator"):
+                "coefficient_penalty", "coefficient_penalty_denominator",
+                "query_coefficient_learning_rate_scale"):
         if getattr(parent.optim, key) != getattr(config.optim, key):
             raise ValueError(f"Continuation changes parent optim.{key}")
     for key in ("seed", "dtype"):

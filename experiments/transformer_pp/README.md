@@ -128,20 +128,21 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4` for four coefficient families of
+perplexity against polynomial degree `m = 1, 2, 3, 4, 5` for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
 and tanh query coefficients with weight decay 0.1 on the projection W. Each new recipe
 copies its family's `m = 4` run (Hermite copies fixed Taylor) and changes only the
-degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs.
+degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs. The
+`m = 5` recipes copy their family's `m = 3` recipe in the same way.
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 |
-| --- | --- | --- | --- | --- |
-| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) |
-| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` |
-| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) |
-| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 |
+| --- | --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) | `r8a526282ac43` |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) | `r3feaf71ff7af` |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) | `r5de86f9f02da` |
 
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The per-head output RMSNorm
 removes that factor, so the two runs train the same function up to the norm's epsilon
@@ -149,8 +150,9 @@ and floating point.
 
 Home clusters: the four new `m = 1` runs are Kennel's, from branch
 `claude/degree-scaling-1x-kennel`; the other eight are ORCD's, from branch
-`claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. On ORCD, one
-H100 each, from the worktree root:
+`claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. The four
+`m = 5` runs are ORCD's, from branch `claude/degree-scaling-m5-orcd`, launched the same
+way with their own run IDs. On ORCD, one H100 each, from the worktree root:
 
 ```bash
 for run in rdb1c706a5b85 r81fad1755b11 rdf6363a4b83c rf378c0e67607 rbd0cd771c676 r99c3ab7d8a77 r1f880c4ee659 r00f1f91a7803; do
@@ -362,32 +364,13 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coef
 
 ## Matched Taylor continuations
 
-The [delayed coefficient-learning topic](results/exploratory/taylor_static_continuation/README.md)
-compares 500 updates with fixed Taylor against learning static coefficients from
-the same pretrained Taylor checkpoint. It preserves the backbone optimizer and
-next training-data position, with a fresh Adam clock for newly introduced
-coefficients. Both continuations use the shared trainer and acceptance procedure.
-
-Allocate the pair once in its isolated worktree, then commit all frozen inputs
-before either independent submission:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r019ca96d6533
-# The allocated IDs below identify this pair; do not allocate it again for a requeue.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r28fb40a1d0e9 --partition standard,long --time-limit 06:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
-  r0332cff0b0c0 --partition standard,long --time-limit 06:00:00
-```
-
-The two recorded continuations are complete; findings and the open research
-decision are in the topic. Fresh reproductions receive new run IDs. The launcher
-defaults to six hours, including the shared acceptance procedure's two-hour reserve.
-Each job requests one B300 or H100 GPU. The launcher's frozen-source check and
-shared runtime qualification run on every allocation; the scientific global batch
-stays fixed through gradient accumulation. See the topic for comparison settings,
-findings, and regeneration.
+Continuations start from a pretrained checkpoint and train a fixed number of further
+updates with the shared trainer and acceptance procedure. They preserve the backbone
+optimizer and the next training-data position, with a fresh Adam clock for newly
+introduced coefficients. The launcher defaults to six hours, including the shared
+acceptance procedure's two-hour reserve. Each job requests one B300 or H100 GPU; the
+launcher's frozen-source check and shared runtime qualification run on every allocation,
+and the scientific global batch stays fixed through gradient accumulation.
 
 The [learned-coefficient topic](results/exploratory/learned_coefficient_continuation/README.md)
 introduces degree-four static or query coefficients (the latter with a decayed projection
@@ -441,6 +424,31 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_cont
 On an H100 PCIe the blocked backend trains this recipe at 16.7 s per update (about 10 h
 for the budget), and the pilot's slowest-step projection reached 31 h, beyond `standard`'s
 24 h limit; the `long` allocation only clears that projection.
+
+### Continuing pretrained static and query models
+
+The [learned-coefficient CPT comparison](results/exploratory/learned_coefficient_continuation/README.md#continuation-of-the-pretrained-learned-models)
+also continues static and query + W decay models from their own step-7,500
+checkpoints for 2,000 updates. All existing parameters and Adam history are retained,
+at a constant learning rate of 0.0001. Their coefficients have already been trained,
+so the separate 0.001 rate for newly introduced coefficients does not apply.
+Home cluster: Kennel. Prepare both in an isolated worktree and commit before launching:
+
+```bash
+PARENTS=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENTS/r4339a245820e" --conditioning static --preserve-all-parameters --topic learned_coefficient_continuation
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare \
+  --parent "$PARENTS/rca97cc9db8f2" --conditioning query --preserve-all-parameters --topic learned_coefficient_continuation
+# Existing executions; do not allocate replacements for resumptions.
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  r1522cd56901a --topic learned_coefficient_continuation --partition standard --time-limit 10:00:00
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation submit \
+  rdfc42659424f --topic learned_coefficient_continuation --partition long --time-limit 10:00:00
+```
+
+Partitions follow the live standard/long allowances; these independent jobs each
+request one H100 or B300 and complete full acceptance before production training.
 
 ### CPT with projection weight decay
 
@@ -603,6 +611,123 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=8 --mem=64G 
 Repacking refuses to overwrite an existing manifest; reuse the existing data only
 when its manifest and shard checksums match the frozen recipe. A new scientific
 execution gets a fresh run ID. The exact submission is recorded with the run.
+
+### Training at 4,096 tokens
+
+A 4,096-token run copies its 2,048-token reference recipe and changes only the context:
+`model.max_seq_len` 4,096, `data.sequence_length` 4,097, `data.batch_size` 128 and global
+microbatch 8, reading `/data/cl/u/rafah/home/datasets/fineweb_12b_seq4097` (the same token
+stream re-cut into 4,097-token rows; its README gives the construction). Tokens per update
+(524,288), the update count, warmup, learning rates, validation cadence and validation tokens
+(19 × 128 sequences, 9,961,472 tokens) stay the same, so a 1× run is still 7,570 updates.
+`runs.csv` records each run's `context_length`.
+
+| 4,096-token run | Label | 2,048-token partner |
+| --- | --- | --- |
+| `r636f433be44f` | `softmax-head-scale-4k` | `r9040f12f3d80` |
+| `r2047d29a0d9f` | `exp-head-scale-4k` | `r6a76e7fbde45` |
+| `r339a31ad8d4b` | `fixed-m4-head-scale-4k` | `r816ab0fbe119` |
+| `r738b35a8e314` | `query-m4-wdecay-4k` | `rca97cc9db8f2` |
+| `r58efc973ff28` | `query-m4-forget-gate-no-rope-wdecay-4k` | `r4a80e28ce0a7` |
+
+The forget-gate partner's recipe sets `attention_coefficient_key_kernel_weight_decay: false`,
+a key this scaffold does not define; it only applies to query-key coefficients, so the
+4,096-token recipe omits it. Each run uses one GPU. The forget gate runs on the blocked
+reference backend, whose cost grows with the context, so it requests 48 hours on `long`
+and a B300:
+
+```bash
+for run in r636f433be44f r2047d29a0d9f r339a31ad8d4b r738b35a8e314; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=48:00:00 \
+  --job-name=r58efc973ff28 --output=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  --error=experiments/transformer_pp/runs/r58efc973ff28/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/r58efc973ff28/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
+## Fixed linear attention
+
+`rd434701f3492` is the raw signed linear attention sanity check: fixed `p(s) = s`,
+using `attention_degree: 1`, `attention_coefficients: fixed`, and
+`attention_fixed_coefficients: [0.0, 1.0]`. It preserves the exp control
+`r6a76e7fbde45`'s RoPE, canonical QK setup, head RMSNorm output, initialization,
+seed, optimizer, data, 2,048-token context, and 7,570-update budget.
+The [fixed-linear topic](results/exploratory/fixed_linear/README.md) records the
+question and explicit control selection. The existing Mosaic polynomial kernel
+runs the model; coefficients are constants and never enter optimizer state.
+
+Home cluster: Kennel. Isolated branch `codex/fixed-linear-1x`, worktree
+`worktrees/fixed-linear-1x`, with its own locked CUDA 12 and CUDA 13 environments.
+Full shared acceptance must pass before training. Submit from that worktree after
+committing inputs and checking the live standard/long allowance:
+
+```bash
+run=rd434701f3492
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+## Query-dependent distance decay
+
+`r3e26412b2811` is one from-scratch ablation of FoX NoPE + W decay control
+`r4a80e28ce0a7`: replace the cumulative product of intervening gates by
+`alpha[t,h] ** (t-i)`. All other scientific settings are identical to the control,
+including degree four, factorial coefficient scaling, gate/coefficients initialization,
+seed 42, QK RMSNorm, attention-output RMSNorm, 2,048-token context, 7,570 updates,
+and the AdamW masks. The [query-distance topic](results/exploratory/query_distance_decay/README.md)
+holds the pinned control and ablation, methods, and best/terminal comparison.
+
+Home cluster: Kennel. Run from `worktrees/query-distance-decay-1x`, branch
+`codex/query-distance-decay-1x`, using its own locked CUDA environments. The adapter
+checks the full recipe against the source and requires all 199,585,066 initial
+parameters to match the source initialization hash. Full shared acceptance includes
+CPU/GPU references and gradients, initialization, a full-recipe timing pilot, and
+checkpoint resume. After successful training, the wrapper refreshes the comparison
+selection and generates the validation-best and terminal PPL table.
+
+After committing inputs and checking live scheduler allowances:
+
+```bash
+run=r3e26412b2811
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/query_distance_decay.sbatch \
+  experiments.transformer_pp.query_distance_decay_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+## FoX with PaTH
+
+`r74495b47d226` combines the degree-four query polynomial, PaTH position encoding,
+and FoX forget gate, with 1× training (7,570 updates) and projection weight decay.
+Its question and selection are in the [forget-gate topic](results/exploratory/forget_gate/README.md).
+It uses one GPU on Kennel from `worktrees/fox-path-1x`, branch `codex/fox-path-1x`.
+The shared acceptance procedure runs the new gated-kernel checks, initialization
+and optimizer checks, a full-recipe pilot, and fresh-process resume before training.
+After committing the frozen execution set and checking live scheduler allowances:
+
+```bash
+run=r74495b47d226
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
 
 ## Execution and records
 

@@ -98,6 +98,9 @@ class ModelConfig:
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
+    # Cumulative FoX uses intervening gates; query_distance uses only the current query's
+    # alpha_t raised to the key distance t-i, with the identical gate parameters.
+    attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -412,12 +415,23 @@ class ModelConfig:
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         if not isinstance(self.attention_forget_gate, bool):
             raise ValueError("model.attention_forget_gate must be a boolean")
+        if self.attention_forget_gate_mode not in ("cumulative", "query_distance"):
+            raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
+        if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
+            raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
+        forget_backend_supported = (
+            self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
+            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or self.attention_normalization
                 or self.attention_coefficient_conditioning != "query" or activation == "identity"
-                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
+                or not forget_backend_supported):
             raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention with RoPE or no positional encoding, on the blocked reference backend")
+                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+        if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
+            # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
+            raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
+                             "blocked backend; PaTH supports only cumulative FoX decay")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay
@@ -618,6 +632,8 @@ class ContinuationConfig:
     # Constant learning rate of the parameters the continuation introduces, which have their
     # own Adam clock; null gives them the backbone's optim.learning_rate.
     new_parameter_learning_rate: float | None = None
+    # Continue the identical architecture, retaining every parameter and Adam moment.
+    preserve_all_parameters: bool = False
 
 
 @dataclass
@@ -634,6 +650,8 @@ def validate_config(config: Config) -> None:
     config.model.__post_init__()
     data, optim, train = config.data, config.optim, config.train
     continuation = config.continuation
+    if not isinstance(continuation.preserve_all_parameters, bool):
+        raise ValueError("continuation.preserve_all_parameters must be a boolean")
     if continuation.parent_checkpoint:
         if not continuation.parent_config:
             raise ValueError("Continuation requires its parent_config")
@@ -650,13 +668,15 @@ def validate_config(config: Config) -> None:
         if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
             raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
         rate = continuation.new_parameter_learning_rate
+        if continuation.preserve_all_parameters and rate is not None:
+            raise ValueError("Preserving all parameters introduces no new parameter learning rate")
         if rate is not None and (not isinstance(rate, (int, float)) or isinstance(rate, bool)
                                  or not math.isfinite(rate) or rate <= 0):
             raise ValueError("continuation.new_parameter_learning_rate must be null or finite and positive")
         if rate is not None and config.model.attention_coefficients != "learned" and (
                 config.model.qk_norm_token_scale == "none"):
             raise ValueError("continuation.new_parameter_learning_rate applies to introduced parameters only")
-        if config.model.attention_coefficients == "learned":
+        if config.model.attention_coefficients == "learned" and not continuation.preserve_all_parameters:
             model = config.model
             if (model.attention_coefficient_conditioning not in ("static", "query")
                     or model.attention_coefficient_parameterization != "direct"
@@ -673,7 +693,8 @@ def validate_config(config: Config) -> None:
                                  "coefficients with no inner bias and either zero amplitude or zero projection")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
-              continuation.parent_step, continuation.new_parameter_learning_rate is not None)):
+              continuation.parent_step, continuation.new_parameter_learning_rate is not None,
+              continuation.preserve_all_parameters)):
         raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")

@@ -77,7 +77,22 @@ runs:
 - study: transformer_pp
   run_id: r738b35a8e314
   role: model_trained_4096
-  sources: {}
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r738b35a8e314/config.yaml
+      sha256: 797dc8ab65a5ba346f1b8dfaaa3ffb8d1fc4bc9a3891598197b6535d120ef820
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r738b35a8e314/metrics.jsonl
+      sha256: 5bac8fbbb174720119cf8233fbba4e8bf6305f861b18d5b9f5f90f83ec8412e8
+    completion.json:
+      path: experiments/transformer_pp/runs/r738b35a8e314/completion.json
+      sha256: 2dd6ebc8b0b36f92402670a5a5e185b4005c0d6d3c5b1e0948aa206a58fce9bb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r738b35a8e314/metadata.json
+      sha256: 312cc874ca1e19a205daf8758bd055b23de80c4e8ece56216413dd1c116f7ca6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r738b35a8e314/best_validation.json
+      sha256: ab20f50b1fd9cfa94c8f1edfa05972c18b44b4634370d28f25784295e311bd7d
 - study: transformer_pp
   run_id: rece89382b690
   role: position_weights

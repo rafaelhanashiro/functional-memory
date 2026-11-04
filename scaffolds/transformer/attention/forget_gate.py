@@ -1,6 +1,7 @@
 """Forgetting Transformer decay with Gated DeltaNet's per-head Mamba-2 gate.
 
-Each attention weight from key i to query t is multiplied by prod_(j=i+1..t) alpha_j, with
+Each attention weight from key i to query t is multiplied by prod_(j=i+1..t) alpha_j in
+cumulative FoX, or by alpha_t ** (t-i) in query-distance mode, with
 log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) per layer and head, computed from
 the attention input x (after the block's pre-attention RMSNorm). The parameterization and the
 initialization are Gated DeltaNet's: exp(A_log) ~ Uniform(0, 16), softplus(dt_bias)

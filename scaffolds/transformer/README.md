@@ -40,6 +40,14 @@ SHA256 of `data_identity.json` beside the parent recipe. Empty defaults preserve
 ordinary training. Continuations use zero warmup and equal peak/minimum learning
 rates; `optim.total_steps` is the absolute ending step, including the parent steps.
 
+To extend an already learned static or query model without changing its attention,
+set `continuation.preserve_all_parameters: true` and leave
+`continuation.new_parameter_learning_rate: null`. Every learned coefficient and
+projection, along with its Adam moments and clock, is restored. All parameters use
+the continuation's constant `optim.learning_rate`; no coefficient optimizer is
+created or reset. This mode requires an identical model recipe except for the
+execution backend and preserves the parent's weight-decay policy.
+
 The shared trainer restores every pretrained parameter and its Adam moments/count
 without change, continues the parent's batch cursor and RNG clock, and independently
 evaluates and checkpoints the starting state before the first new update. A child
@@ -88,6 +96,20 @@ overrides automatic selection. This transport policy does not replace kernel and
 full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
+
+For unnormalized nonlinear query-polynomial attention on the blocked backend,
+`model.attention_forget_gate: true` adds the existing per-layer/head gate
+`log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
+the pre-attention RMSNorm activation. `attention_forget_gate_mode: cumulative`
+(the historical default) multiplies weights by `exp(L_t - L_i)`, where
+`L_t = sum_{j<=t} log(alpha_j)`. The `query_distance` mode instead multiplies by
+`exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+Both apply attenuation after the polynomial, keep diagonal attenuation one,
+and preserve the coefficient generator and attention-output normalization.
+They share identical parameters and initialization: the gate projection decays,
+while `A_log` and `b_dt` do not. The separate coefficient-projection decay switch
+retains its existing behavior. New-mode GPU acceptance compares outputs and all
+operand gradients against an explicit dense reference at 2,048 tokens.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -455,6 +477,17 @@ convolution with SiLU, and L2 normalization per head, and
 `path_beta_bias` (`[layers, heads, ...]`) are drawn from the mechanism stream
 (projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
 so the backbone keeps the softmax control's weights; all but the bias take weight decay.
+
+Set `attention_forget_gate: true` to combine PaTH with FoX for a tanh query
+polynomial. Both the blocked reference and fused kernels multiply the polynomial
+weight by `exp(L_t - L_s)`, where `L` is the cumulative per-token log forget gate.
+The public `path_attention` and `fused_path_attention` APIs accept this optional
+FP32 `[batch, time, heads]` array as `log_decay`; its gradients propagate through
+the cumulative sum into the gate parameters. Causal differences are masked before
+exponentiation, and gate values are never factored into separate global exponentials.
+The fused backward adds O(BTH) gate-gradient buffers. Gated softmax is unsupported.
+Only `attention_forget_gate_mode: cumulative` composes with PaTH; configuration
+rejects `query_distance` with PaTH.
 
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
@@ -846,6 +879,29 @@ these execution records while preserving `config.yaml`. Metrics stay in
 `metrics.jsonl`; logs, checkpoints and W&B files are colocated ignored artifacts.
 Shared helpers regenerate the study's `runs.csv` index. Figures and comparisons
 belong under `results/<comparison>/` and select run IDs explicitly.
+
+### Packed-data tools
+
+A packed corpus is one token stream of documents, each followed by an end-of-document
+token, cut into fixed rows. Both tools check every source shard against its manifest
+checksum, write a new packed corpus that `PackedBatchIterator` reads, and record the source
+manifest and its SHA256 in the new manifest's metadata.
+
+```bash
+# The same stream re-cut into rows of another length (metadata.repacked_from).
+python -m scaffolds.transformer.data.repack SOURCE/manifest.json DESTINATION --sequence-length 4097
+# One row per complete document of at least sequence_length - 1 tokens, in stream order:
+# an end-of-document token, then the document's first sequence_length - 1 tokens
+# (metadata.long_documents_from).
+python -m scaffolds.transformer.data.long_documents SOURCE/manifest.json DESTINATION --sequence-length 16385
+```
+
+`long_documents` also writes `documents.npy`, every complete document's `[start, length]`
+in the stream, and `rows.npy`, each row's document; the manifest pins both by SHA256.
+Offsets are stream tokens, which repacking preserves, so a run that trained on rows
+`[0, n)` of a corpus with row length L consumed stream tokens `[0, n * L)`. The rows it never
+saw are the suffix from `first_unseen_row(manifest, n * L)`, and `row_documents(manifest)`
+gives each row's document.
 
 ### Weights & Biases
 
