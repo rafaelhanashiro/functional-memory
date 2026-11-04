@@ -1,14 +1,63 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-11-04T16:17:39.400939+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/ree4a7353576c/.runtime/acceptance/H100-1/failure.json",
+      "sha256": "83f5766356c1ee33e41d4c7267a874fbefb4c1b2ec186c9cd9d89e72edbb1a5d"
+    },
+    "identity": "05241b3ac2d71f816bdfcaa25f2a4bb6ee80f54c42d7e389c191838ee0493227",
+    "slurm_job_id": "234781",
+    "stage": "gpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/ree4a7353576c/training.log",
+      "sha256": "b228203f6bc389bb89f55b7e63d7e8c53730410525e8706f10e8923b9fab4cd4",
+      "size_bytes": 29916
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/ree4a7353576c/.runtime/acceptance/H100-1",
+      "allocation": "JobId=234781 JobName=ree4a7353576c UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20079 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:33 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-04T10:16:15 EligibleTime=2026-11-04T10:16:16 AccrueTime=2026-11-04T10:16:16 StartTime=2026-11-04T11:06:08 EndTime=2026-11-05T11:06:08 Deadline=N/A PreemptEligibleTime=2026-11-04T13:06:08 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-04T11:06:07 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:2166977 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=mastiff BatchHost=mastiff NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/ree4a7353576c/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/ree4a7353576c/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/ree4a7353576c/config.yaml",
+      "config_sha256": "447c5d8e46a5eab503a702ae474b4bfa67bdcdd69665da83f720d1ad894ea6d8",
+      "exit_code": 1,
+      "finished_utc": "2026-11-04T16:17:39.693851+00:00",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "8ee1151899c9827eee850ec00f202bd147394a09",
+      "slurm_job_id": "234781",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-04T16:06:41.374989+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/ree4a7353576c/config.yaml",
     "sha256": "447c5d8e46a5eab503a702ae474b4bfa67bdcdd69665da83f720d1ad894ea6d8"
   },
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+  "frozen_execution_sha256": "7c6d80460d0e2862c1169392c1bcfe0f9e33e6d00b31fbed971888f351e75240",
   "home_cluster": "kennel",
   "label": "score-mlp-exp-residual-j8",
+  "log": {
+    "path": "experiments/transformer_pp/runs/ree4a7353576c/training.log",
+    "sha256": "b228203f6bc389bb89f55b7e63d7e8c53730410525e8706f10e8923b9fab4cd4",
+    "size_bytes": 29916
+  },
+  "log_path": "experiments/transformer_pp/runs/ree4a7353576c/training.log",
   "name": "score-mlp-exp-residual-j8",
   "record_schema_version": 1,
   "run_id": "ree4a7353576c",
-  "status": "queued",
+  "source_commit": "8ee1151899c9827eee850ec00f202bd147394a09",
+  "status": "acceptance_failed",
   "submission": {
     "command": [
       "sbatch",
