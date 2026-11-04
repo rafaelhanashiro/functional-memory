@@ -22,4 +22,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
 | [query_distance_decay](query_distance_decay/README.md) | Can the current query select its context range using alpha_t^(t-i), versus cumulative FoX gates under the identical NoPE + W decay recipe? | 2026-11-02 |
-| [score_mlp](score_mlp/README.md) | Can a learned, input-dependent score function f(x_t, s) replace exp? Two exp-residual runs (J = 4, 8) queued; the pure kernel form's start is undecided. | 2026-11-04 |
+| [score_mlp](score_mlp/README.md) | Can a learned, input-dependent score function f(x_t, s) replace exp? Two exp-residual runs (J = 4, 8) allocated, not started (blocked backend too slow); the pure kernel form's start is undecided. | 2026-11-04 |
