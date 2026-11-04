@@ -2037,9 +2037,9 @@ FLA's per-token gate `log alpha sqrt(d_K)` (`test_decayed_softmax_matches_the_au
 On B300 (`akita`, `.venv-cuda13`, job 233303), the 63 GPU tests of `test_forget_gate_attention.py`,
 `test_path_attention.py`, and `test_path_attention_fused.py` pass: outputs and every gradient,
 including the decay's, at the production context, at lengths 128-1,536, causality, and the
-model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (jobs 233303
-and 233367). On H100 SXM (`dogo`, `.venv`), the acceptance of `rafcf22b799ed` (job 233373)
-runs the same GPU suites: 117 passed.
+model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (job 233367).
+On H100 SXM (`dogo`, `.venv`), the acceptance of `rafcf22b799ed` (job 233373) passed 117 GPU
+tests, a wider selection that includes these suites.
 
 Merged with the FoX-PaTH polynomial (merge commit `19b9cdea`: one `log_decay` for every
 kernel, which FLA's gate receives as `L sqrt(d_K)` and the polynomial fork as `L`), one H100
