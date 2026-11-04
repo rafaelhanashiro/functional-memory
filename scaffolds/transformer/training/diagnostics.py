@@ -405,7 +405,8 @@ def attention_identity(config) -> dict:
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
-            "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
+            "attention_implementation": ("pallas_triton_score_mlp" if has_score_mlp(config.model) else
+                                         "pallas_triton_query_key_polynomial" if key_conditioned else
                                          "pallas_triton_query_polynomial" if query_tanh or query_sigmoid else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
@@ -499,7 +500,8 @@ def score_mlp_identity(model) -> dict:
         "attention_score_mlp_input": "pre_attention_rmsnorm_activation",
         "attention_score_mlp_dtype": "float32",
         "attention_score_mlp_parameter_count": model.num_layers * model.num_heads * width * (2 * model.hidden_size + 3),
-        "attention_score_mlp_backward": "custom_vjp_over_key_chunks",
+        "attention_score_mlp_backward": ("pallas_triton_query_and_key_tiles" if model.attention_backend == "fused"
+                                         else "custom_vjp_over_key_chunks"),
     }
     if gate:
         identity.update(attention_forget_gate=True, attention_forget_gate_mode="cumulative",

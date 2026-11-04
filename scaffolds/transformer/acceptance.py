@@ -61,6 +61,7 @@ COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SCORE_MLP_TESTS = "scaffolds/transformer/tests/test_score_mlp_attention.py"
+SCORE_MLP_FUSED_TESTS = "scaffolds/transformer/tests/test_score_mlp_fused.py"
 # A softmax control turns the score MLP off: its settings return to their defaults.
 SCORE_MLP_OFF = {"attention_score_mlp_width": None, "attention_score_mlp_form": "kernel",
                  "attention_score_mlp_activation": "silu", "attention_score_mlp_amplitude_initial": None,
@@ -138,6 +139,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if model.get("attention_score_mlp_width") is not None:
         # CPU stages run its exact checks; GPU stages its production-shape BF16 qualification.
         paths.append(SCORE_MLP_TESTS)
+        if resolved_backend == "fused":
+            # The fused kernel in the Pallas interpreter on CPU; compiled on the allocated GPU.
+            paths.append(SCORE_MLP_FUSED_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):

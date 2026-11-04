@@ -392,10 +392,11 @@ def test_configuration_accepts_both_forms_with_rope_none_and_the_cumulative_gate
     ({"attention_degree": 4, "attention_coefficients": "learned", "attention_coefficient_sharing": "per_head",
       "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh"}, "replaces the kernel"),
     ({"attention_mechanism": "gla", "qk_norm": False}, "replaces the kernel"),
-    ({"attention_backend": "fused"}, "blocked"),
-    ({"attention_backend": "mosaic"}, "blocked"),
-    ({"attention_backend": "auto"}, "blocked"),
-    ({"attention_backend": "xla"}, "blocked"),
+    ({"attention_backend": "mosaic"}, "blocked, fused, or auto"),
+    ({"attention_backend": "xla"}, "blocked, fused, or auto"),
+    ({"attention_backend": "cudnn"}, "blocked, fused, or auto"),
+    ({"attention_forget_gate": True, "attention_backend": "fused"}, "gated score MLP runs on"),
+    ({"attention_forget_gate": True, "attention_backend": "auto"}, "gated score MLP runs on"),
     ({"attention_score_mlp_width": 0}, "positive integer"),
     ({"attention_score_mlp_width": True}, "positive integer"),
     ({"attention_score_mlp_width": 4.0}, "positive integer"),
@@ -433,7 +434,8 @@ def test_continuation_cannot_introduce_a_score_mlp():
 
 @pytest.mark.parametrize(("changes", "message"), (
     ({"positional_encoding": "path"}, "PaTH"),
-    ({"backend": "fused"}, "blocked backend"),
+    ({"backend": "mosaic"}, "blocked or fused backend"),
+    ({"backend": "fused", "attention_forget_gate": True}, "gated score MLP runs on the blocked backend"),
     ({"attention_normalization": True}, "replaces the kernel"),
     ({"attention_degree": 2}, "replaces the kernel"),
     ({"attention_forget_gate": True, "attention_forget_gate_mode": "query_distance"}, "cumulative input forget gate"),
@@ -462,8 +464,10 @@ def test_dispatch_rejects_incomplete_or_conflicting_arrays():
     with pytest.raises(ValueError, match="alone"):
         attention_core(q, k, v, attention_normalization=False, attention_degree=2, score_mlp_amplitude=a,
                        score_mlp_offset=b, score_mlp_slope=w)
-    with pytest.raises(ValueError, match="blocked"):
-        score_mlp.score_mlp_attention(q, k, v, a, b, w, backend="fused")
+    with pytest.raises(ValueError, match="blocked or fused"):
+        score_mlp.score_mlp_attention(q, k, v, a, b, w, backend="mosaic")
+    with pytest.raises(ValueError, match="forget gate runs on the blocked backend"):
+        score_mlp.score_mlp_attention(q, k, v, a, b, w, backend="fused", log_decay=jnp.zeros(q.shape[:3]))
 
 
 def test_existing_recipes_are_unchanged(tmp_path):

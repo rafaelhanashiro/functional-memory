@@ -130,7 +130,8 @@ class ModelConfig:
     # Score MLP (attention/score_mlp.py): J = width hidden units per layer/head replace exp in
     # unnormalized attention, o_t = sum_(i<=t) f(x_t, s_ti) v_i, with a_tj = alpha_j + x_t A_j and
     # b_tj = beta_j + x_t B_j from the attention input. "kernel": f = sum_j a_tj SiLU(w_j s + b_tj);
-    # "exp_residual": f = exp(s) (1 + that sum). null keeps the score MLP off.
+    # "exp_residual": f = exp(s) (1 + that sum). null keeps the score MLP off. Backends: blocked, or
+    # without a forget gate fused (Pallas Triton) or auto (fused on an Ampere-or-newer GPU, else blocked).
     attention_score_mlp_width: int | None = None
     attention_score_mlp_form: Literal["kernel", "exp_residual"] = "kernel"
     attention_score_mlp_activation: Literal["silu"] = "silu"
@@ -275,8 +276,11 @@ class ModelConfig:
             raise ValueError("A score MLP replaces the kernel of unnormalized dot-product attention: it requires "
                              "attention_normalization false, attention_degree null, fixed static coefficients, "
                              "and quadratic_mode fixed")
-        if self.attention_backend != "blocked":
-            raise ValueError("A score MLP runs on model.attention_backend blocked")
+        if self.attention_backend not in ("auto", "blocked", "fused"):
+            raise ValueError("A score MLP runs on model.attention_backend blocked, fused, or auto")
+        if self.attention_forget_gate and self.attention_backend != "blocked":
+            raise ValueError("A gated score MLP runs on model.attention_backend blocked: the fused kernel has no "
+                             "forget gate")
         if self.positional_encoding not in ("rope", "none"):
             raise ValueError("A score MLP supports RoPE or no positional encoding; PaTH is not supported")
         if self.attention_forget_gate and (self.attention_forget_gate_mode != "cumulative"

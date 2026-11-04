@@ -14,10 +14,12 @@ query-coefficient generators do):
 amplitudes ``alpha``, offsets ``beta`` and slopes ``w`` ([J] per head) start at recipe constants.
 Projections and kernel arithmetic are FP32; weights may be signed and exp is never row-shifted.
 ``exp_residual_initialization`` starts ``exp_residual`` exactly at exp, and
-``fit_exp_initialization`` fits the ``kernel`` constants to exp on [-4, 4].
+``fit_exp_initialization`` fits the ``kernel`` constants to exp on [-4, 4]. Attention runs on
+the blocked reference or, without a forget gate, the fused kernel (``backends/fused_score_mlp.py``).
 """
 
 from dataclasses import dataclass
+from functools import partial
 import math
 
 import jax
@@ -378,21 +380,35 @@ def unit_statistics(amplitude, offset):
 
 def score_mlp_attention(q, k, v, amplitude, offset, slope, *, form="kernel", log_decay=None, backend="blocked",
                         return_diagnostics=False):
-    """sum_(i<=t) f(x_t, s_ti) v_i on the blocked reference, from post-RoPE Q/K/V [B,T,H,C].
+    """sum_(i<=t) f(x_t, s_ti) v_i from post-RoPE Q/K/V [B,T,H,C], on the blocked reference or fused.
 
     ``amplitude`` and ``offset`` are the projected a and b [B,T,H,J]; ``slope`` is w [H,J].
     ``log_decay`` is an optional cumulative FP32 forget-gate sum L [B,T,H]: each weight is then
-    multiplied by exp(L_t - L_i), as in the query-coefficient blocked branch.
+    multiplied by exp(L_t - L_i), as in the query-coefficient blocked branch; only the blocked
+    backend has it. ``backend="fused"`` runs the Pallas Triton kernel
+    (``backends/fused_score_mlp.py``); its diagnostics come from the blocked reference.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
-    if backend != "blocked":
-        raise ValueError("Score-MLP attention runs on the blocked reference backend only")
-    result = blocked_dot_product_attention(
-        q, k, v, attention_normalization=False, score_mlp_amplitude=amplitude, score_mlp_offset=offset,
-        score_mlp_slope=slope, score_mlp_form=form, query_log_decay=log_decay, return_diagnostics=return_diagnostics)
-    if not return_diagnostics:
-        return result
-    output, diagnostics = result
+    reference = partial(blocked_dot_product_attention, q, k, v, attention_normalization=False,
+                        score_mlp_amplitude=amplitude, score_mlp_offset=offset, score_mlp_slope=slope,
+                        score_mlp_form=form, query_log_decay=log_decay)
+    if backend == "blocked":
+        result = reference(return_diagnostics=return_diagnostics)
+        if not return_diagnostics:
+            return result
+        output, diagnostics = result
+    elif backend == "fused":
+        if log_decay is not None:
+            raise ValueError("The score-MLP forget gate runs on the blocked backend only")
+        from scaffolds.transformer.attention.backends.fused_score_mlp import fused_score_mlp_attention
+
+        output = fused_score_mlp_attention(q, k, v, amplitude.astype(jnp.float32), offset.astype(jnp.float32),
+                                           slope.astype(jnp.float32), form=form)
+        if not return_diagnostics:
+            return output
+        _, diagnostics = reference(return_diagnostics=True)
+    else:
+        raise ValueError("Score-MLP attention runs on the blocked or fused backend")
     diagnostics.update(jax.lax.stop_gradient(unit_statistics(amplitude, offset)))
     return output, diagnostics

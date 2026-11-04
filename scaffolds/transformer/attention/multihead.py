@@ -119,8 +119,10 @@ class MultiHeadAttention(nnx.Module):
                     or attention_coefficient_conditioning != "static"):
                 raise ValueError("A score MLP replaces the kernel of unnormalized attention: no degree, "
                                  "polynomial coefficients, or normalization")
-            if backend != "blocked":
-                raise ValueError("Score-MLP attention runs on the blocked backend only")
+            if backend not in ("blocked", "fused"):
+                raise ValueError("Score-MLP attention runs on the blocked or fused backend")
+            if backend == "fused" and attention_forget_gate:
+                raise ValueError("A gated score MLP runs on the blocked backend: the fused kernel has no forget gate")
             if positional_encoding not in ("rope", "none"):
                 raise ValueError("Score-MLP attention supports RoPE or no positional encoding, not PaTH")
             if attention_forget_gate and (attention_forget_gate_mode != "cumulative"
