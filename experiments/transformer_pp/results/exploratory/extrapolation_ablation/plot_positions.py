@@ -35,6 +35,11 @@ BATCH_NOTE = ("Query + W decay, m = 4; the first 128 validation sequences of 4,0
               "≥ 2,048 back, distances the 2,048-token model never saw. In parentheses: 10th–90th percentile of that "
               "share across sequences.")
 BATCH_CEILING = 8.0
+LONG_NOTE = ("Query + W decay, m = 4; the first 4,096 tokens of 128 long documents neither model trained on. Each bar is "
+             "one key's share of the query's |w|,\naveraged over the 14 heads and the 128 documents, ÷ the uniform share "
+             "1/4,096; the axis stops at {ceiling:.0f}×. Black line: mean over each block of 64 keys.\nDashed line: "
+             "uniform. Gray: keys ≥ 2,048 back, distances the 2,048-token model never saw. In parentheses: 10th–90th "
+             "percentile of that share across documents.")
 
 
 def metrics(role: str) -> dict[tuple[str, int], dict]:
@@ -129,14 +134,20 @@ def main() -> None:
         "weight_end_of_document_keys": lambda row, ratio: " ".join(f"{key}:{ratio[key]:.2f}" for key in row["eos_positions"])})
     draw("position_weights", single, "head_mean_share", title="Where the query at position 4,095 puts its weight",
          note=SINGLE_NOTE, ceiling=8.0, yticks=[0, 1, 2, 4, 6, 8], spread=False)
-    batch = metrics("position_weights_batch")
-    write_table(TOPIC / "position_weights_batch.csv", batch, "mean_share", {
+    averaged = {
         "share_2048_or_more_back_p10": lambda row, _: f"{np.percentile(row['share_beyond_2048_by_row'], 10):.4f}",
         "share_2048_or_more_back_p90": lambda row, _: f"{np.percentile(row['share_beyond_2048_by_row'], 90):.4f}",
-        "stretch_peak_block_weight": lambda _, ratio: f"{max(ratio[low:high].reshape(-1, BLOCK).mean(axis=1).max() for low, high in STRETCHES):.4f}"})
+        "stretch_peak_block_weight": lambda _, ratio: f"{max(ratio[low:high].reshape(-1, BLOCK).mean(axis=1).max() for low, high in STRETCHES):.4f}"}
+    batch = metrics("position_weights_batch")
+    write_table(TOPIC / "position_weights_batch.csv", batch, "mean_share", averaged)
     draw("position_weights_batch", batch, "mean_share",
          title="Where the query at position 4,095 puts its weight, over 128 sequences",
          note=BATCH_NOTE.format(ceiling=BATCH_CEILING), ceiling=BATCH_CEILING, yticks=[0, 1, 2, 4, 6, 8], spread=True)
+    long = metrics("position_weights_long_documents")
+    write_table(TOPIC / "position_weights_long_documents.csv", long, "mean_share", averaged)
+    draw("position_weights_long_documents", long, "mean_share",
+         title="Where the query at position 4,095 puts its weight, over 128 long documents",
+         note=LONG_NOTE.format(ceiling=BATCH_CEILING), ceiling=BATCH_CEILING, yticks=[0, 1, 2, 4, 6, 8], spread=True)
 
 
 if __name__ == "__main__":
