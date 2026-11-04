@@ -97,7 +97,8 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
 
-For unnormalized nonlinear query-polynomial attention on the blocked backend,
+For unnormalized nonlinear query-polynomial attention (or a score MLP, cumulative input
+gate only; see below) on the blocked backend,
 `model.attention_forget_gate: true` adds the existing per-layer/head gate
 `log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
 the pre-attention RMSNorm activation. `attention_forget_gate_mode: cumulative`
@@ -481,6 +482,64 @@ source checkpoint for the frozen backbone. Per-update measurements are fitting
 metrics; no held-out evaluation is implied. Shared-table qualification checks
 original replay before projection and compares the training forward with the
 projected model; changing the initial function is not counted as fitting progress.
+
+### Score-MLP attention
+
+`attention_score_mlp_width: J` (default null, off) replaces exp in unnormalized
+dot-product attention by a learned, input-dependent score function
+(`attention/score_mlp.py`): `o_t = sum_(i<=t) f(x_t, s_ti) v_i`, never divided by a row
+sum, with `s_ti = q_t . k_i / sqrt(d_K)` after QK normalization and RoPE. Per layer and
+head, `J` units read the attention input `x_t` after the block's input RMSNorm:
+`a_tj = alpha_j + x_t . A_j` and `b_tj = beta_j + x_t . B_j`.
+
+| `attention_score_mlp_form` | `f(x_t, s)` |
+| --- | --- |
+| `kernel` (default) | `sum_j a_tj SiLU(w_j s + b_tj)` |
+| `exp_residual` | `exp(s) (1 + sum_j a_tj SiLU(w_j s + b_tj))` |
+
+`A` and `B` (`score_mlp_amplitude_kernel`, `score_mlp_offset_kernel`,
+`[layers, heads, hidden_size, J]`) start at zero, so `f` starts query-independent;
+`alpha`, `beta`, and `w` (`score_mlp_amplitude_bias`, `score_mlp_offset_bias`,
+`score_mlp_slope`, `[layers, heads, J]`) start at the recipe's frozen lists
+`attention_score_mlp_{amplitude,offset,slope}_initial`. All are FP32 and draw no random
+numbers, so the backbone is the exp control's. `attention_score_mlp_kernel_weight_decay:
+true` decays `A` and `B` (default false); `alpha`, `beta`, and `w` never decay. The
+only activation is `silu`.
+
+`score_mlp.initial_constants(J, form)` gives the starting lists:
+
+- `exp_residual`: `alpha = 0`, `w = 1`, `beta` evenly spaced on [-3, 3] (0 for `J = 1`).
+  The model starts exactly at the unnormalized exp control; only `alpha` and `A`
+  receive gradient on the first update.
+- `kernel`: `fit_exp_initialization(J)` minimizes the relative squared error
+  `int_{-4}^{4} (f(s)/exp(s) - 1)^2 ds` (trapezoid rule, 1,601 points). Unconstrained,
+  this has no minimizer: units moved into their left tails, `SiLU(z) ~ z e^z`, reach
+  any accuracy with diverging, cancelling amplitudes. The fit keeps `alpha_j >= 0`,
+  `w_j` in [1/4, 4], and each transition `-beta_j / w_j` in [-8, 4], and runs variable
+  projection with a projected Levenberg-Marquardt step from 16 deterministic starts.
+  `score_mlp.EXP_FITS` pins the results: maximum relative error on [-4, 4] 3.47% for
+  `J = 4` and 0.030% for `J = 8`. The units cancel (summed magnitudes up to about 25
+  times `f` at `s = 0` and 450 times at `s = -4`). Outside the interval the fitted `f`
+  grows about linearly beyond `s = 4` and turns negative below `s = -4.5` (`J = 4`) or
+  `-5.1` (`J = 8`), reaching about -1.0 and -0.7 near `s = -8`.
+
+A score MLP requires `attention_normalization: false`, `attention_degree: null`,
+fixed static coefficients, `quadratic_mode: fixed`, `attention_backend: blocked`, and
+`positional_encoding: rope` or `none`; configuration and the module reject PaTH. With
+`attention_forget_gate: true` (cumulative mode, input form only) each weight is also
+multiplied by `exp(L_t - L_i)`. Weights may be signed; exp is not row-shifted; a
+nonfinite score, kernel value, or output poisons its row with NaN, as in the other
+unnormalized blocked kernels. Diagnostics name the kernel `score_mlp_unnormalized` or
+`exp_score_mlp_residual_unnormalized`, keep the signed-kernel statistics (kernel and
+weight-sum extrema, negative-weight fractions), and report the learned `alpha`, `beta`,
+`w` and per-head statistics of `a` and `b` on the diagnostic sample under
+`coefficients`. `runs.csv` lists `score_mlp_width` and `score_mlp_form`.
+
+Cost: `J` SiLU evaluations per score pair in the forward, recomputed in the backward,
+plus the per-unit gradient reductions. The custom derivative of the unit sum keeps
+only the scores and units; forward and backward loop over `min(J, T)` key chunks inside
+the checkpointed scan and evaluate every unit per chunk, so their intermediates stay
+about one `[batch, heads, 128, T]` score tile for any `J`.
 
 ### PaTH position encoding
 
