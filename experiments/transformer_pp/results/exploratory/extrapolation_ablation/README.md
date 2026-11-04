@@ -210,7 +210,11 @@ each an end-of-document token and the first 16,384 tokens of one document at lea
 Every row is a document's first appearance in the stream (no earlier document begins with the
 same 1,024 tokens), and all start after the 3.97B stream tokens of every compared run's full
 training budget (the step-7,500 checkpoints saw 3.93B), so no model trained on them by
-position or by content; the evaluators refuse earlier rows. `r313eb59e1d5f` scores exp,
+position and none repeats the opening of a document the models trained on; the evaluators
+refuse earlier rows. Revised copies with a different opening remain: a scan of 64-token
+windows against the first 3.97B stream tokens found 31 of the 608 documents (5%) sharing at
+least half their windows with one trained document, 8 of them almost verbatim, and 9 of the
+128 weight documents within their first 4,096 tokens. `r313eb59e1d5f` scores exp,
 query + W decay and FoX no RoPE + W decay; `ra9834409e40a` runs the query model's window and
 clamp passes; `r6122f26085ec` measures the per-key weights on the first 4,096 tokens of rows
 9,657–9,784. Every 2,048-token replay reproduces its recorded validation NLL within 6e-6
@@ -241,7 +245,7 @@ it over the first 2,048 positions.
   to 15.56 and 14.54). On packed rows FoX stayed flat (13.41 to 13.43). This does not show
   that the models fail to use distant text: these documents also get harder with position
   inside the training length (positions 1,025–2,048 are 4–5% worse than 1–1,024 for all
-  three models, while packed rows get 8% better), and no same-position control without the
+  three models, while packed rows get 7–8% better), and no same-position control without the
   distant text was run.
 - **Query + W decay fails as on packed rows.** It reaches 114 by positions 2,305–3,072 and
   1,811 at 12,289–16,384. Clamping RoPE at 2,047 keeps it near the window until about
@@ -250,8 +254,9 @@ it over the first 2,048 positions.
   27.9 at 12,289–16,384, where on packed rows it stays near 29. Its per-key weights at
   position 4,095 ([figure](position_weights_long_documents.png),
   [table](position_weights_long_documents.csv)) match those on packed rows: 55–73% of the
-  weight 2,048 or more back in layers 6–12, peaks of about 7.5 times uniform at the same two
-  stretches, against 23–32% in every layer of the 4k-trained model. The failure follows
+  weight 2,048 or more back in layers 6–12, peaks of up to 7.6 times uniform (1.9–7.6 in
+  layers 2–15) at the same two stretches, against 23–32% in every layer of the 4k-trained
+  model. The failure follows
   positions, not the text.
 
 `plot.py`, `plot_profile.py`, `plot_positions.py` and `plot_long_documents.py` in this
