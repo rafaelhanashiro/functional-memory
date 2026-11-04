@@ -33,7 +33,10 @@ The launcher selects these cases for restricted recipes; GPU qualification is
 required along with the full-recipe pilot/resume acceptance before production.
 
 All 22 selected-order CPU checks and 23 existing coefficient-scaling regressions
-passed. GPU outcomes are recorded by each allocation's acceptance report.
+passed. [H100 qualification](selected_orders_h100.json) passed for both static
+and query coefficients: 50 and 70 GPU checks, respectively, including the two
+restricted-order FP64 comparisons. Both full-recipe initialization, training,
+evaluation and checkpoint-resume checks passed before production.
 
 ### FoX with PaTH polynomial attention (2026-11-01)
 

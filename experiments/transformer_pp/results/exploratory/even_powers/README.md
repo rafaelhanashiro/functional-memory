@@ -24,13 +24,16 @@ and factorial coefficient scaling. The **1× schedule is 7,570 updates,
 validation cadence, data order and other settings match each family's controls;
 see the [study recipe](../../../README.md).
 
-| Family | Role | Run | Terminal validation PPL |
-| --- | --- | --- | ---: |
-| Static | Even orders through eight | `r45831d718944` | Pending |
-| Static | Full degree-four control | `r4339a245820e` | 14.773 |
-| Query + weight decay | Even orders through eight | `r698f9a157a94` | Pending |
-| Query + weight decay | Full degree-four control | `rca97cc9db8f2` | 14.714 |
-| Query + weight decay | Full degree-eight control | `r25fffc16c2f3` | 14.328 |
+Both runs completed all 7,570 updates without numerical failure. The table reports
+terminal validation perplexity separately from validation-best perplexity.
+
+| Family | Role | Run | Terminal validation PPL | Best validation PPL |
+| --- | --- | --- | ---: | ---: |
+| Static | Even orders through eight | `r45831d718944` | 14.620 | 14.616 |
+| Static | Full degree-four control | `r4339a245820e` | 14.773 | 14.767 |
+| Query + weight decay | Even orders through eight | `r698f9a157a94` | 14.618 | 14.615 |
+| Query + weight decay | Full degree-four control | `rca97cc9db8f2` | 14.714 | 14.709 |
+| Query + weight decay | Full degree-eight control | `r25fffc16c2f3` | 14.328 | 14.323 |
 
 The [selection](selection.yaml) pins the comparisons explicitly. Full degree four
 controls for five coefficient channels; full degree eight controls for maximum
@@ -39,8 +42,28 @@ odd terms changes both the available functions and initialization; this does not
 isolate whether an odd highest power alone causes a performance difference.
 One seed cannot establish the size of run-to-run variation.
 
-No new findings yet. The open decision is whether either even-only
-parameterization merits further study.
+Static even-only improves terminal PPL by **1.03%** over full degree four.
+Query even-only improves it by **0.65%** over full degree four, but is **2.02% worse**
+than full degree eight. The two even-only models finish effectively tied
+(14.620 versus 14.618); this run provides no meaningful numerical advantage for
+query conditioning over static coefficients. Both new validation-best checkpoints
+are at update 7,500 (14.616102 and 14.615046).
+
+The evidence favors even-only over full degree four at equal coefficient-channel
+count, but does not favor discarding odd terms from full degree eight. The open
+decision is whether either even-only parameterization merits further study;
+these single-seed results remain exploratory.
+
+## Regeneration
+
+The [summary](summary.csv) reads only the explicit [selection](selection.yaml),
+checks its scientific-input pins, and distinguishes terminal and best metrics.
+From the repository root:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
+  experiments/transformer_pp/results/exploratory/even_powers/summarize.py
+```
 
 ## Execution
 

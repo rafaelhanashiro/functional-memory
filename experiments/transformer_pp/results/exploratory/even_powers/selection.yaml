@@ -33,6 +33,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r45831d718944/config.yaml
       sha256: 191e0b17b4056cb975ec825b92e214bfe30097e90f764e50e1859269f20c6034
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r45831d718944/metrics.jsonl
+      sha256: 1c4241ebbeac016663dda078a18c0707fd7052482a09104e8666a00ab8be462c
+    completion.json:
+      path: experiments/transformer_pp/runs/r45831d718944/completion.json
+      sha256: 0f3a50a181a37982ecb1bc0704ddd621e9342f55306240e2a17fa9a6e04ca29a
+    metadata.json:
+      path: experiments/transformer_pp/runs/r45831d718944/metadata.json
+      sha256: 415c584e9d958b4065e6c0fb706a723aa3daf12968e67671bae0916fdf73b147
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r45831d718944/best_validation.json
+      sha256: 01186f2d6e87b4f5d875c3524beab562ceca0fa941c24f590b25d791bdd23e11
 - study: transformer_pp
   run_id: r698f9a157a94
   role: query_even_m8_w_decay
@@ -40,6 +52,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r698f9a157a94/config.yaml
       sha256: c9120e9cababc3b9a8c6594bcfd1fccf1d62fbd426a135afc643b77e1a40a51e
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r698f9a157a94/metrics.jsonl
+      sha256: 8610a3ba11a3f66c183da83f473782aa2026428889915ba5fe4b5b61cb2bf9fa
+    completion.json:
+      path: experiments/transformer_pp/runs/r698f9a157a94/completion.json
+      sha256: 411987e23e4a82a9c436ef3781f22e83f2849b5ea9eb9c0fe451141bd31f8a62
+    metadata.json:
+      path: experiments/transformer_pp/runs/r698f9a157a94/metadata.json
+      sha256: b31ee4b265f4dca7e6a93d700c10d1bdc9b655d05ee67ef2a431591da38c0892
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r698f9a157a94/best_validation.json
+      sha256: 17a0769f9f5f385c314bdac0ced2e6bec2b414d16e6c9ef2ec42aa8bc82fa206
 - study: transformer_pp
   run_id: r4339a245820e
   role: static_full_m4
