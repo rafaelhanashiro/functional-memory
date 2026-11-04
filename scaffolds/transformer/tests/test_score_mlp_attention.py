@@ -22,7 +22,7 @@ from scaffolds.transformer.attention.parameters import attention_parameter_count
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict, load_config, save_config, validate_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
 from scaffolds.transformer.models import build_model, model_parameter_count
-from scaffolds.transformer.training import loop, tracking
+from scaffolds.transformer.training import loop, telemetry, tracking
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, fixed_diagnostic_sample
 from scaffolds.transformer.training.optim import attention_weight_decay_mask, make_optimizer
 from scaffolds.transformer.training.state import create_state
@@ -514,6 +514,20 @@ def test_training_updates_every_score_mlp_parameter(form, gate):
     assert np.isfinite(float(loss))
     for name in score_mlp.PARAMETERS + (GATE_PARAMETERS if gate else ()):
         assert np.linalg.norm(np.asarray(second.params[name][...] - initial.params[name][...])) > 0, name
+
+
+def test_telemetry_reports_the_score_mlp_parameters_as_their_own_group():
+    def statistics(config):
+        params = create_state(config, jax.random.PRNGKey(0)).params
+        values = telemetry.update_statistics(params, jax.tree.map(jnp.ones_like, params), params)
+        return {name: float(value) for name, value in values.items()}
+
+    actual, control = statistics(_config("kernel", 4)), statistics(_control())
+    group = {name: actual.pop(name) for name in list(actual) if name.startswith("update/attention_score_mlp/")}
+    # With unit gradients the group's gradient norm counts exactly the score-MLP parameters,
+    # and every other group is the exp control's.
+    assert group["update/attention_score_mlp/gradient_norm"] == pytest.approx(math.sqrt(2 * 2 * 4 * (2 * 8 + 3)))
+    assert actual == control
 
 
 @pytest.mark.parametrize(("form", "gate"), (("kernel", False), ("exp_residual", True)))

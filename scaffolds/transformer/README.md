@@ -1027,9 +1027,10 @@ with `model.remat: false`. Every update returns, in one packed vector:
 
 Parameter groups are embedding, output head, attention Q/K/V, attention output
 projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
-attention coefficients, and other. `update_norm` is the actual parameter change
-after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
-statistics only. Recording never changes the update: on CPU the update is
+attention coefficients, score-MLP units (`attention_score_mlp`), and other.
+`update_norm` is the actual parameter change after the whole AdamW step. Gated
+DeltaNet and GLA record the residual and update statistics only. Recording never
+changes the update: on CPU the update is
 bit-identical with and without it, and on GPU the differences match GPU
 nondeterminism between identical updates.
 
