@@ -60,6 +60,12 @@ SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficien
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
+SCORE_MLP_TESTS = "scaffolds/transformer/tests/test_score_mlp_attention.py"
+# A softmax control turns the score MLP off: its settings return to their defaults.
+SCORE_MLP_OFF = {"attention_score_mlp_width": None, "attention_score_mlp_form": "kernel",
+                 "attention_score_mlp_activation": "silu", "attention_score_mlp_amplitude_initial": None,
+                 "attention_score_mlp_slope_initial": None, "attention_score_mlp_offset_initial": None,
+                 "attention_score_mlp_kernel_weight_decay": False}
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
@@ -129,6 +135,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "constant"):
         paths.append(CONSTANT_DECAY_TESTS)
+    if model.get("attention_score_mlp_width") is not None:
+        # CPU stages run its exact checks; GPU stages its production-shape BF16 qualification.
+        paths.append(SCORE_MLP_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):
@@ -657,7 +666,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
-                                           attention_denominator_constant="fixed"))
+                                           attention_denominator_constant="fixed", **SCORE_MLP_OFF))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -706,7 +715,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
-        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False))
+        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False, **SCORE_MLP_OFF))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

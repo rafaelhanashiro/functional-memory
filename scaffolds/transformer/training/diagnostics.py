@@ -16,7 +16,7 @@ from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
 from scaffolds.transformer.training.numerics import (
     has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
-    has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
+    has_score_mlp, has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
 )
 
 
@@ -255,6 +255,8 @@ def attention_identity(config) -> dict:
             attention_coefficient_sharing="global",
             attention_coefficient_count=0,
         )
+    if has_score_mlp(config.model):
+        identity.update(score_mlp_identity(config.model))
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
     if getattr(config.model, "attention_coefficient_scale", "none") != "none":
@@ -465,6 +467,43 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
         if model.attention_forget_gate:
             identity["attention_implementation"] += "_forget_gate"
+    return identity
+
+
+def score_mlp_identity(model) -> dict:
+    """The score MLP's formula, frozen settings, and parameter count, beside the mechanism identity."""
+    from scaffolds.transformer.attention.score_mlp import KERNEL_NAMES
+
+    width, form = model.attention_score_mlp_width, model.attention_score_mlp_form
+    units = f"sum_(j=1..{width}) a_j(x_t) SiLU(w_j s_ti + b_j(x_t))"
+    kernel = units if form == "kernel" else f"exp(s_ti) (1 + {units})"
+    gate = getattr(model, "attention_forget_gate", False)
+    formula = (f"sum_(i<=t) f(x_t, s_ti) v_i, f(x_t, s_ti) = {kernel}, "
+               "s_ti = Q_t K_i^T / sqrt(d_k), never divided by a row sum; a_j(x_t) = alpha_j + x_t A_j and "
+               "b_j(x_t) = beta_j + x_t B_j per layer/head, x_t the activation after the block input RMSNorm; "
+               "A, B initially zero, alpha, w, beta initially the recipe constants")
+    if gate:
+        formula += ("; each weight is multiplied by exp(L_t - L_i), L_t = sum_(r<=t) log g_r, log g_t = "
+                    "-exp(A_log) softplus(x_t w_g + dt_bias) per layer/head, with Gated DeltaNet's initialization")
+    identity = {
+        "attention_kernel": KERNEL_NAMES[form],
+        "attention_formula": formula,
+        "attention_score_scale": "1/sqrt(d_k)",
+        "attention_output_normalization": False,
+        "attention_score_mlp_width": width,
+        "attention_score_mlp_form": form,
+        "attention_score_mlp_activation": model.attention_score_mlp_activation,
+        **{f"attention_score_mlp_{name}_initial": list(getattr(model, f"attention_score_mlp_{name}_initial"))
+           for name in ("amplitude", "slope", "offset")},
+        "attention_score_mlp_kernel_weight_decay": model.attention_score_mlp_kernel_weight_decay,
+        "attention_score_mlp_input": "pre_attention_rmsnorm_activation",
+        "attention_score_mlp_dtype": "float32",
+        "attention_score_mlp_parameter_count": model.num_layers * model.num_heads * width * (2 * model.hidden_size + 3),
+        "attention_score_mlp_backward": "custom_vjp_over_key_chunks",
+    }
+    if gate:
+        identity.update(attention_forget_gate=True, attention_forget_gate_mode="cumulative",
+                        forget_gate_parameter_count=(model.hidden_size + 2) * model.num_layers * model.num_heads)
     return identity
 
 
@@ -700,6 +739,44 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
 
+
+def score_mlp_report(params, raw_layers, model) -> dict:
+    """Learned unit constants ([L,H,J]) and the actual a, b on the diagnostic sample.
+
+    ``effective_summary`` holds per-head statistics of a_j(x_t) (names a0..) and b_j(x_t)
+    (names b0..) over the sample's tokens, which the W&B mirror summarizes.
+    """
+    from scaffolds.transformer.attention.score_mlp import (
+        AMPLITUDE_BIAS, AMPLITUDE_KERNEL, OFFSET_BIAS, OFFSET_KERNEL, SLOPE,
+    )
+
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+    slope, amplitude_bias, offset_bias = get(SLOPE), get(AMPLITUDE_BIAS), get(OFFSET_BIAS)
+    amplitude_kernel, offset_kernel = get(AMPLITUDE_KERNEL), get(OFFSET_KERNEL)
+    width = slope.shape[-1]
+    summaries = {statistic: np.concatenate([
+        np.stack([np.asarray(layer[f"score_mlp_{name}_{statistic}"], np.float64) for layer in raw_layers])
+        for name in ("amplitude", "offset")], axis=-1) for statistic in ("mean", "std", "min", "max")}
+    arrays = (slope, amplitude_bias, offset_bias, amplitude_kernel, offset_kernel, *summaries.values())
+    return {
+        "kind": "score_mlp",
+        "form": model.attention_score_mlp_form,
+        "activation": model.attention_score_mlp_activation,
+        "width": width,
+        "formula": "a_j(x_t) = alpha_j + x_t A_j, b_j(x_t) = beta_j + x_t B_j; unit j adds a_j SiLU(w_j s + b_j)",
+        "sample": "fixed_diagnostic_sample",
+        "axes": ["layer", "head", "unit"],
+        "effective_coefficient_names": [f"a{unit}" for unit in range(width)] + [f"b{unit}" for unit in range(width)],
+        "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
+        "slope": _serializable(slope),
+        "amplitude_bias": _serializable(amplitude_bias),
+        "offset_bias": _serializable(offset_bias),
+        "amplitude_kernel_l2": _serializable(np.linalg.norm(amplitude_kernel, axis=-2)),
+        "offset_kernel_l2": _serializable(np.linalg.norm(offset_kernel, axis=-2)),
+        "finite": bool(all(np.isfinite(values).all() for values in arrays)),
+    }
+
+
 def forget_gate_report(params, raw_layers, *, form: str = "input") -> dict:
     """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H])."""
     get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
@@ -855,7 +932,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_")):
+            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_", "score_mlp_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -902,6 +979,14 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if getattr(config.model, "attention_forget_gate", False):
             coefficient_report["forget_gate"] = forget_gate_report(
                 params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
+    elif has_score_mlp(config.model):
+        coefficient_report = score_mlp_report(params, raw_layers, config.model)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite score-MLP parameters or unit values")
+        if getattr(config.model, "attention_forget_gate", False):
+            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers)
             if not coefficient_report["forget_gate"]["finite"]:
                 issues.append("Nonfinite forget gate parameters or decay")
     elif has_learned_polynomial(config.model):
@@ -983,6 +1068,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):
         report["kernel_values"] = "unshifted_query_polynomial"
+    if has_score_mlp(config.model):
+        report["kernel_values"] = ("unshifted_score_mlp" if config.model.attention_score_mlp_form == "kernel"
+                                   else "unshifted_exp_times_one_plus_score_mlp")
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     if gain_report is not None:

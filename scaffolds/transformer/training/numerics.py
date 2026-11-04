@@ -34,10 +34,15 @@ def has_rational_kernel(model) -> bool:
             and getattr(model, "attention_coefficient_parameterization", "direct") == "rational")
 
 
+def has_score_mlp(model) -> bool:
+    """A learned, input-dependent score MLP replaces the exponential (attention/score_mlp.py)."""
+    return getattr(model, "attention_score_mlp_width", None) is not None
+
+
 def is_signed_kernel(model) -> bool:
     """Kernels whose weights may be negative or zero by design."""
     return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
-            or (has_learned_polynomial(model) and not has_sum_of_squares_kernel(model)))
+            or (has_learned_polynomial(model) and not has_sum_of_squares_kernel(model)) or has_score_mlp(model))
 
 
 def requires_update_checks(model) -> bool:
