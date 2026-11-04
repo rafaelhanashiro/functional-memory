@@ -94,8 +94,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
-| Endpoint query-key distance decay + W decay | `r20c185733426` | planned | — | — | — |
-| Bounded query rate + W decay | `re6d261fd59ab` | planned | — | — | — |
+| Endpoint query-key distance decay + W decay | `r20c185733426` | queued | — | — | — |
+| Bounded query rate + W decay | `re6d261fd59ab` | queued | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).

@@ -4,6 +4,7 @@
     "sha256": "98e14bce8730febb432a9e1736b9efeebb05e784982957e8807cce1b7cf6ae23"
   },
   "control_run_id": "r3e26412b2811",
+  "frozen_execution_sha256": "09b429e5e9232992e2048ef9fec218747d2af8eb2620847017f24f0fa6dc17dc",
   "home_cluster": "kennel",
   "label": "query-m4-bounded-query-rate-no-rope-w-decay",
   "name": "query-m4-bounded-query-rate-no-rope-w-decay",
@@ -12,6 +13,40 @@
   "run_id": "re6d261fd59ab",
   "scientific_change": "Bounded sigmoid query rate with zero-input rate matched at initialization",
   "seed": 42,
-  "status": "planned",
+  "source_commit": "553cd6ef749e3fb5901ea61de6df1f260f97aa18",
+  "status": "queued",
+  "submission": {
+    "allowed_gpu_types": [
+      "B300",
+      "H100"
+    ],
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=re6d261fd59ab",
+      "--output=experiments/transformer_pp/runs/re6d261fd59ab/training.log",
+      "--error=experiments/transformer_pp/runs/re6d261fd59ab/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.endpoint_decay_acceptance",
+      "experiments/transformer_pp/runs/re6d261fd59ab/config.yaml",
+      "553cd6ef749e3fb5901ea61de6df1f260f97aa18",
+      "1",
+      "B300,H100"
+    ],
+    "gpu_count": 1,
+    "home_cluster": "kennel",
+    "partition": "standard,long",
+    "slurm_job_id": "234401",
+    "submitted_utc": "2026-11-04T06:15:12.918977+00:00",
+    "walltime_seconds": 86400,
+    "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/endpoint-decay-ablations"
+  },
   "training_tokens": 3968860160
 }
