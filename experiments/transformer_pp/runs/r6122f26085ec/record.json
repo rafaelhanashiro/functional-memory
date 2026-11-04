@@ -1,4 +1,53 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r6122f26085ec/completion.json",
+      "sha256": "50bb4da278443cf3f9006172d36a35409e95de89440f31688b43a349d1505540",
+      "size_bytes": 574
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r6122f26085ec/metadata.json",
+      "sha256": "d240ca8c261c41f0bab5f1ccc5b14598777729da34e9686edf05b4f969226deb",
+      "size_bytes": 725
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r6122f26085ec/metrics.jsonl",
+      "sha256": "d6a4d7566fb7066ca4d4b2b31e4c33b0dccfcc6e50793f7089d5d522bd346b27",
+      "size_bytes": 1615014
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r6122f26085ec/training.log",
+      "sha256": "851c65346c0aa3c5bf6e8e43fabb500d64a1917126e6cea26ddb1eb6a469d1ef",
+      "size_bytes": 302
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 0,
+      "finished_utc": "2026-11-04T05:09:17.349398+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "234132",
+      "source_commit": "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+      "started_utc": "2026-11-04T05:07:42.546542+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r6122f26085ec/completion.json",
+    "sha256": "50bb4da278443cf3f9006172d36a35409e95de89440f31688b43a349d1505540",
+    "size_bytes": 574
+  },
   "condition": "context_length/position_weights_long_documents",
   "config": {
     "path": "experiments/transformer_pp/runs/r6122f26085ec/config.yaml",
@@ -7,8 +56,69 @@
   "experiment_kind": "attention_position_weights",
   "home_cluster": "kennel",
   "label": "query-m4-w-decay-position-weights-4k-long-documents",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r6122f26085ec/training.log",
+    "sha256": "851c65346c0aa3c5bf6e8e43fabb500d64a1917126e6cea26ddb1eb6a469d1ef",
+    "size_bytes": 302
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r6122f26085ec/metadata.json",
+    "sha256": "d240ca8c261c41f0bab5f1ccc5b14598777729da34e9686edf05b4f969226deb",
+    "size_bytes": 725
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r6122f26085ec/metrics.jsonl",
+    "sha256": "d6a4d7566fb7066ca4d4b2b31e4c33b0dccfcc6e50793f7089d5d522bd346b27",
+    "size_bytes": 1615014
+  },
   "name": "query-m4-w-decay-position-weights-4k-long-documents",
+  "position_weights_outcome": {
+    "finished_utc": "2026-11-04T05:09:14.559098+00:00",
+    "interpretation": "|w| share of the last query (position 4,096) over every key position, per layer, averaged over the 14 heads and 128 single long documents neither model trained on, by position or by content (the first 4,097 tokens of rows 9,657-9,784 of fineweb_12b_long_documents_seq16385/train: an end-of-document token and the document's first 4,096 tokens), for query + W decay (m = 4) trained at 2,048 and at 4,096 tokens. No gradient or optimizer update.",
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
   "record_schema_version": 1,
   "run_id": "r6122f26085ec",
-  "status": "planned"
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "234132",
+    "source_commit": "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+    "started_utc": "2026-11-04T05:07:42.546542+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=04:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r6122f26085ec",
+      "--output=experiments/transformer_pp/runs/r6122f26085ec/training.log",
+      "--error=experiments/transformer_pp/runs/r6122f26085ec/training.log",
+      "experiments/transformer_pp/results/exploratory/extrapolation_ablation/position_weights.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation",
+      "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+      "r6122f26085ec"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "234132",
+    "submitted_utc": "2026-11-04T05:04:16.212436+00:00"
+  }
 }

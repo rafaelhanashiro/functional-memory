@@ -142,21 +142,21 @@ runs:
       path: experiments/transformer_pp/runs/r2a655e742cb7/metadata.json
       sha256: 0a714137953a1d2b435afbc1910c61a6f2f0583c987e7ed60dd5734060756d10
 - study: transformer_pp
-  run_id: ra1909f45d1e4
+  run_id: r6122f26085ec
   role: position_weights_long_documents
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/ra1909f45d1e4/config.yaml
-      sha256: 750be566d1093bbdb7abe2a2cda64800a2782bfb03648a81ee4b746589437113
+      path: experiments/transformer_pp/runs/r6122f26085ec/config.yaml
+      sha256: 38b97eba90a280c6c90ec223428d63df1bcca2a5fac34ba25e977e8e955ba778
     metrics.jsonl:
-      path: experiments/transformer_pp/runs/ra1909f45d1e4/metrics.jsonl
-      sha256: 73f52849d26ac30f1036f8439910b56bb23b710dc6b7b2af656cff17dfd46909
+      path: experiments/transformer_pp/runs/r6122f26085ec/metrics.jsonl
+      sha256: d6a4d7566fb7066ca4d4b2b31e4c33b0dccfcc6e50793f7089d5d522bd346b27
     completion.json:
-      path: experiments/transformer_pp/runs/ra1909f45d1e4/completion.json
-      sha256: 275c73144aed3501bc47f2a5cb0e828c08e9547334265ab29ae17f80c1a65ad7
+      path: experiments/transformer_pp/runs/r6122f26085ec/completion.json
+      sha256: 50bb4da278443cf3f9006172d36a35409e95de89440f31688b43a349d1505540
     metadata.json:
-      path: experiments/transformer_pp/runs/ra1909f45d1e4/metadata.json
-      sha256: 19a6a5eafc535af0bffb03bbd96c7629188c2431e72f18a60840dda273f7953b
+      path: experiments/transformer_pp/runs/r6122f26085ec/metadata.json
+      sha256: d240ca8c261c41f0bab5f1ccc5b14598777729da34e9686edf05b4f969226deb
 - study: transformer_pp
   run_id: r4b4496032e30
   role: long_documents_ablation

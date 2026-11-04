@@ -1,0 +1,14 @@
+{
+  "condition": "context_length/extrapolation_ablation_16k_long_documents",
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/config.yaml",
+    "sha256": "961e26b412ab1dbd772a2302a432928f58465be8e2215e4deb6bf76ce07de10e"
+  },
+  "experiment_kind": "per_position_evaluation",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-extrapolation-ablation-16k-long-documents",
+  "name": "query-m4-w-decay-extrapolation-ablation-16k-long-documents",
+  "record_schema_version": 1,
+  "run_id": "ra9834409e40a",
+  "status": "planned"
+}

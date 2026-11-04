@@ -35,7 +35,7 @@ BATCH_NOTE = ("Query + W decay, m = 4; the first 128 validation sequences of 4,0
               "≥ 2,048 back, distances the 2,048-token model never saw. In parentheses: 10th–90th percentile of that "
               "share across sequences.")
 BATCH_CEILING = 8.0
-LONG_NOTE = ("Query + W decay, m = 4; the first 4,096 tokens of 128 long documents past both models' training data. Each bar is "
+LONG_NOTE = ("Query + W decay, m = 4; the first 4,096 tokens of 128 long documents neither model trained on. Each bar is "
              "one key's share of the query's |w|,\naveraged over the 14 heads and the 128 documents, ÷ the uniform share "
              "1/4,096; the axis stops at {ceiling:.0f}×. Black line: mean over each block of 64 keys.\nDashed line: "
              "uniform. Gray: keys ≥ 2,048 back, distances the 2,048-token model never saw. In parentheses: 10th–90th "

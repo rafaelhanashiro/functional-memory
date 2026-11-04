@@ -1,14 +1,286 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r313eb59e1d5f/completion.json",
+      "sha256": "b812b7bc9584cc023751f4440e73ba4115e74c2953e4c8b35ddde8759a998e46",
+      "size_bytes": 5996
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r313eb59e1d5f/metadata.json",
+      "sha256": "9c3050b88d58cb048b0d495049b253f3ee8b934df42004b344c0ec22aa991158",
+      "size_bytes": 1003
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r313eb59e1d5f/metrics.jsonl",
+      "sha256": "f82aeb2b6ab177fd6a0c00765f17173daeb65e24d16cf4167b87422b46301528",
+      "size_bytes": 1076069
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r313eb59e1d5f/training.log",
+      "sha256": "b4c281f4d9c4fddc2b42276f4317f202fcfb8f0a83cc4830e5440eaa9d23c544",
+      "size_bytes": 16691
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "XLA_FLAGS": null
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-04T05:20:14.851659+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "234131",
+      "source_commit": "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+      "started_utc": "2026-11-04T05:06:18.634918+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r313eb59e1d5f/completion.json",
+    "sha256": "b812b7bc9584cc023751f4440e73ba4115e74c2953e4c8b35ddde8759a998e46",
+    "size_bytes": 5996
+  },
   "condition": "context_length/long_documents_2k_to_16k",
   "config": {
     "path": "experiments/transformer_pp/runs/r313eb59e1d5f/config.yaml",
     "sha256": "eeb4c7fa107112375d7db0887197480b9fe57e230e23cc0813444cb9e0fabdf1"
   },
+  "evaluation_outcome": {
+    "finished_utc": "2026-11-04T05:20:13.601521+00:00",
+    "interpretation": "Validation-best 2,048-token checkpoints scored per position at 2,048 (replaying each model's validation set) and at 16,384 tokens on 608 single long documents none of them trained on, by position or by content: rows 9,657-10,264 of fineweb_12b_long_documents_seq16385/train, each an end-of-document token and the first 16,384 tokens of the first appearance of one document; 9,961,472 predictions per model at 16,384. Original attention mathematics, RoPE settings and checkpoints are unchanged; only the forward length guard is raised; no gradient or optimizer update.",
+    "measurements": [
+      {
+        "attention_backend": "fused",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 37.314,
+        "length": "training",
+        "nll": 2.657254927826216,
+        "perplexity": 14.257098568311399,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.657260386567367,
+        "replay_absolute_error": 5.458741151098678e-06,
+        "role": "exp",
+        "seconds": 57.9,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r6a76e7fbde45",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 20.075
+      },
+      {
+        "attention_backend": "fused",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 1.9073486328125e-06,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 6.05359673500061e-08,
+          "mean_nll_absolute_error": 2.7939677238464355e-09,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 14.772,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 15.259,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "nll": 2.7888679719099425,
+        "nll_beyond_training_length": 2.8117594940002957,
+        "nll_within_training_length": 2.6286273172774695,
+        "perplexity": 16.262599658065177,
+        "prediction_tokens": 9961472,
+        "role": "exp",
+        "seconds": 99.8,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "r6a76e7fbde45",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 66.894
+      },
+      {
+        "attention_backend": "mosaic",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 14.023,
+        "length": "training",
+        "nll": 2.688429397190559,
+        "perplexity": 14.708556469344147,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 1.2140553256045905e-06,
+        "role": "query_wdecay_m4",
+        "seconds": 33.8,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 19.508
+      },
+      {
+        "attention_backend": "mosaic",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 0.12030410766601562,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 0.012647444847971201,
+          "mean_nll_absolute_error": 0.00015949318185448647,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 8.728,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 9.695,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "nll": 6.149536425138888,
+        "nll_beyond_training_length": 6.647469455611997,
+        "nll_within_training_length": 2.6640052118271247,
+        "perplexity": 468.5001515412271,
+        "prediction_tokens": 9961472,
+        "role": "query_wdecay_m4",
+        "seconds": 59.4,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 39.887
+      },
+      {
+        "attention_backend": "blocked",
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 15.456,
+        "length": "training",
+        "nll": 2.6299720699919478,
+        "perplexity": 13.873382413036136,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6299757886874047,
+        "replay_absolute_error": 3.7186954569001784e-06,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 77.9,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "r4a80e28ce0a7",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 62.191
+      },
+      {
+        "attention_backend": "blocked",
+        "causal_prefix_qualification": {
+          "max_token_nll_absolute_error": 0.11763668060302734,
+          "max_token_nll_atol": 0.2,
+          "mean_absolute_token_nll_error": 0.012442832812666893,
+          "mean_nll_absolute_error": 0.00045901816338300705,
+          "mean_nll_atol": 0.002,
+          "passed": true,
+          "prefix_tokens": 2048,
+          "seconds_including_compile": 13.389,
+          "sequences": 1
+        },
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 13.236,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "nll": 2.6847082214029987,
+        "nll_beyond_training_length": 2.6969060544752823,
+        "nll_within_training_length": 2.5993233898970125,
+        "perplexity": 14.653925054729878,
+        "prediction_tokens": 9961472,
+        "role": "forget_gate_no_rope_wdecay_m4",
+        "seconds": 428.7,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "r4a80e28ce0a7",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 401.118
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
   "experiment_kind": "per_position_evaluation",
   "home_cluster": "kennel",
   "label": "long-documents-16k-evaluation",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r313eb59e1d5f/training.log",
+    "sha256": "b4c281f4d9c4fddc2b42276f4317f202fcfb8f0a83cc4830e5440eaa9d23c544",
+    "size_bytes": 16691
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r313eb59e1d5f/metadata.json",
+    "sha256": "9c3050b88d58cb048b0d495049b253f3ee8b934df42004b344c0ec22aa991158",
+    "size_bytes": 1003
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r313eb59e1d5f/metrics.jsonl",
+    "sha256": "f82aeb2b6ab177fd6a0c00765f17173daeb65e24d16cf4167b87422b46301528",
+    "size_bytes": 1076069
+  },
   "name": "long-documents-16k-evaluation",
   "record_schema_version": 1,
   "run_id": "r313eb59e1d5f",
-  "status": "planned"
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "234131",
+    "source_commit": "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+    "started_utc": "2026-11-04T05:06:18.634918+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=04:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r313eb59e1d5f",
+      "--output=experiments/transformer_pp/runs/r313eb59e1d5f/training.log",
+      "--error=experiments/transformer_pp/runs/r313eb59e1d5f/training.log",
+      "experiments/transformer_pp/evaluate_per_position.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation",
+      "26799c76f7b9abc7eb235f1b8b30b55ca283c91e",
+      "r313eb59e1d5f"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "234131",
+    "submitted_utc": "2026-11-04T05:04:16.093320+00:00"
+  }
 }
