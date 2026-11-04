@@ -81,6 +81,15 @@ def test_scale_rms_queries_adds_the_token_log_scale():
         scale_rms_queries(q, gamma, delta[:, :, :2])
 
 
+def test_acceptance_softmax_comparison_drops_the_token_scale():
+    """The acceptance's derived softmax controls must validate without the gate."""
+    from scaffolds.transformer import acceptance
+
+    config = _config()
+    facts = acceptance.matches_softmax_backbone_initialization(config)  # raises on any mismatch
+    assert "qk_norm_token_scale_amplitude" in facts["mechanism_parameters"]
+
+
 def test_token_scale_requires_head_scale_and_a_known_form():
     with pytest.raises(ValueError, match="head scaling"):
         _config(qk_norm_head_scale=False)

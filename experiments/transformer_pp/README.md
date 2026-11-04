@@ -681,6 +681,23 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## ALiBi-style constant decay without RoPE
+
+The [alibi_decay topic](results/exploratory/alibi_decay/README.md) pretrains
+`query-m4-alibi-no-rope` (`r8d4fc24ef537`): the FoX-without-RoPE recipe of
+`r82a80d3091e2` with `attention_forget_gate_form: constant`, one learned decay rate per
+layer and head starting at ALiBi's slopes, on the blocked backend. It requests a B300 on
+`long`, like its control:
+
+```bash
+sbatch --parsable --nice=0 --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+  --time=48:00:00 --job-name=r8d4fc24ef537 \
+  --output=experiments/transformer_pp/runs/r8d4fc24ef537/training.log \
+  --error=experiments/transformer_pp/runs/r8d4fc24ef537/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/r8d4fc24ef537/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
 ## Query-dependent distance decay
 
 `r3e26412b2811` is one from-scratch ablation of FoX NoPE + W decay control
