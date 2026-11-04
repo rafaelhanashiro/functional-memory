@@ -215,7 +215,17 @@ coefficients, so the penalty is the only shrinkage they receive.
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
 Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
 with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
-`per_head`, FP32, without weight decay. The blocked reference evaluates them by
+`per_head`, FP32, without weight decay. For learned static/direct or diagonal tanh-query polynomials,
+`attention_coefficient_orders: [0, 2, 4, 6, 8]` stores only five entries and fixes
+all omitted orders at zero. Orders must be strictly increasing and include the
+configured highest degree. Taylor initialization retains `1/r!` on these orders;
+with `attention_coefficient_scale: factorial`, the stored entries start at one
+and divide by the factorial of their actual order, not their compact array index.
+The existing attention kernels receive the expanded monomial vector, with exactly
+zero omitted coefficients. Query generators store and project only the selected
+columns of W and entries of a,b (and an optional inner bias); projection weight
+decay still applies to W only. Both bias and amplitude scaling use the selected
+orders' factorials before expanding the effective coefficients. The blocked reference evaluates them by
 Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.

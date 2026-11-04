@@ -127,6 +127,9 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("path_conv_size", 3)
         value["model"].setdefault("attention_coefficient_amplitude_scale", "none")
         value["model"].setdefault("attention_coefficient_scale", "none")
+        orders = value["model"].setdefault("attention_coefficient_orders", None)
+        if isinstance(orders, (tuple, list)):
+            value["model"]["attention_coefficient_orders"] = list(orders)
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
         for key, default in (("qk_norm", False), ("qk_norm_type", "cosine_log_scale"),
                              ("qk_norm_sharing", "per_head"),

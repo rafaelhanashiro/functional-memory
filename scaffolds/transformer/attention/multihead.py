@@ -58,6 +58,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
+        attention_coefficient_orders=config.attention_coefficient_orders,
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
         qk_norm_type=config.qk_norm_type,
@@ -89,6 +90,7 @@ class MultiHeadAttention(nnx.Module):
         positional_encoding: str = "rope",
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
+        attention_coefficient_orders: tuple[int, ...] | None = None,
         qk_norm_type: str = "cosine_log_scale",
         qk_norm_head_scale: bool = False,
         qk_norm_token_scale: str = "none",
@@ -222,6 +224,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("A non-unit readout scale requires dense coefficient readout")
         self.attention_coefficient_readout = attention_coefficient_readout
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
+        self.attention_coefficient_orders = attention_coefficient_orders
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
@@ -319,13 +322,18 @@ class MultiHeadAttention(nnx.Module):
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        if self.attention_coefficient_orders is not None and self.attention_coefficient_conditioning == "static":
+            from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+
+            parameters["polynomial_coefficients"] = expand_polynomial_coefficients(
+                parameters["polynomial_coefficients"], self.attention_degree, self.attention_coefficient_orders)
         if self.attention_coefficient_scale == "factorial":
             from scaffolds.transformer.attention.parameters import factorial_scale
 
             if (query_bias is None) == ("polynomial_coefficients" not in parameters):
                 raise ValueError("A coefficient scale needs exactly one learned coefficient array")
             if query_bias is not None:
-                query_bias = factorial_scale(query_bias)
+                query_bias = factorial_scale(query_bias, self.attention_coefficient_orders)
             else:
                 parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
         if self.attention_coefficient_conditioning in ("query", "query_key"):
@@ -345,7 +353,8 @@ class MultiHeadAttention(nnx.Module):
                     x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
                     amplitude_scale=self.attention_coefficient_amplitude_scale,
-                    readout_scale=self.attention_coefficient_readout_scale)
+                    readout_scale=self.attention_coefficient_readout_scale,
+                    orders=self.attention_coefficient_orders)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:

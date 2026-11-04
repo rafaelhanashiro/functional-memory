@@ -86,6 +86,9 @@ class ModelConfig:
     # p(s) = q1(s)^2 + q2(s)^2. Evaluated without expanding near real roots.
     attention_fixed_square_factors: tuple[float, ...] | None = None
     attention_coefficient_sharing: Literal["global", "per_head"] = "global"
+    # Optional ascending active monomial orders for static or diagonal tanh-query coefficients.
+    # Store only these entries; all omitted orders remain exactly zero.
+    attention_coefficient_orders: tuple[int, ...] | None = None
     # Query coefficients use the incoming attention activation, per layer/head. "query_key" also
     # multiplies each key's degree-r term by f_r(x_i) = 1 + a_r tanh(w_r^T x_i) from the key token.
     attention_coefficient_conditioning: Literal["static", "query", "query_key"] = "static"
@@ -463,6 +466,21 @@ class ModelConfig:
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
             if self.attention_degree is None or self.attention_degree < 1:
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
+        if self.attention_coefficient_orders is not None:
+            orders = self.attention_coefficient_orders
+            if (self.attention_coefficients != "learned"
+                    or self.attention_coefficient_parameterization != "direct"
+                    or (self.attention_coefficient_conditioning != "static" and not (
+                        self.attention_coefficient_conditioning == "query"
+                        and self.attention_coefficient_activation == "tanh"
+                        and self.attention_coefficient_readout == "diagonal"))):
+                raise ValueError("Selected coefficient orders require learned direct static or diagonal tanh-query coefficients")
+            if (not isinstance(orders, (tuple, list)) or not orders
+                    or any(type(order) is not int or not 0 <= order <= self.attention_degree for order in orders)
+                    or list(orders) != sorted(set(orders)) or orders[-1] != self.attention_degree):
+                raise ValueError("attention_coefficient_orders must be strictly increasing integers from 0 to "
+                                 "attention_degree, including attention_degree")
+            self.attention_coefficient_orders = tuple(orders)
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
         if self.attention_coefficient_initialization not in ("taylor", "linear"):
@@ -690,6 +708,8 @@ def validate_config(config: Config) -> None:
             raise ValueError("continuation.new_parameter_learning_rate applies to introduced parameters only")
         if config.model.attention_coefficients == "learned" and not continuation.preserve_all_parameters:
             model = config.model
+            if model.attention_coefficient_orders is not None:
+                raise ValueError("Continuation with selected coefficient orders is not supported")
             if (model.attention_coefficient_conditioning not in ("static", "query")
                     or model.attention_coefficient_parameterization != "direct"
                     or model.attention_coefficient_initialization != "taylor"):

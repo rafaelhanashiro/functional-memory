@@ -68,10 +68,21 @@ RANDOM_INITIALIZERS = {"uniform_fan_in": _uniform_fan_in, "mamba2_log_rate": _ma
 SCALED_COEFFICIENTS = ("polynomial_coefficients", "query_polynomial_bias")
 
 
-def factorial_scale(values: jax.Array) -> jax.Array:
+def factorial_scale(values: jax.Array, orders: tuple[int, ...] | None = None) -> jax.Array:
     """Divide order r (the last axis) by r!: the coefficients a stored c~_r represents."""
-    factorials = jnp.asarray([math.factorial(order) for order in range(values.shape[-1])], jnp.float32)
+    factorials = jnp.asarray([math.factorial(order) for order in
+                             (range(values.shape[-1]) if orders is None else orders)], jnp.float32)
     return values.astype(jnp.float32) / factorials
+
+
+def expand_polynomial_coefficients(values: jax.Array, degree: int, orders: tuple[int, ...] | None) -> jax.Array:
+    """Expand compact stored coefficients; omitted powers are constants with zero gradient."""
+    if orders is None:
+        return values
+    if values.shape[-1] != len(orders):
+        raise ValueError("Stored coefficient count must match attention_coefficient_orders")
+    expanded = jnp.zeros((*values.shape[:-1], degree + 1), dtype=values.dtype)
+    return expanded.at[..., jnp.asarray(orders)].set(values)
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -117,6 +128,21 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
             specs = tuple(replace(spec, initial=tuple(value * math.factorial(order)
                                                       for order, value in enumerate(spec.initial)))
                           if spec.name in SCALED_COEFFICIENTS else spec for spec in specs)
+        orders = getattr(config, "attention_coefficient_orders", None)
+        if orders is not None:
+            # Select after factorial storage scaling, so indices still denote actual powers.
+            selected = []
+            for spec in specs:
+                if spec.name == "query_polynomial_kernel":
+                    width, count = spec.initial_shape
+                    spec = replace(spec, initial=tuple(spec.initial[row * count + order]
+                                                       for row in range(width) for order in orders),
+                                   initial_shape=(width, len(orders)))
+                elif spec.name in ("polynomial_coefficients", "query_polynomial_bias",
+                                    "query_polynomial_amplitude", "query_polynomial_tanh_bias"):
+                    spec = replace(spec, initial=tuple(spec.initial[order] for order in orders))
+                selected.append(spec)
+            specs = tuple(selected)
     elif config.quadratic_mode == "fixed":
         specs = ()
     else:
