@@ -116,6 +116,48 @@ run), terminal is update 7,570:
   percentiles 10/25/50/75/90% = 0.4/1.0/5.7/106/198 tokens (38% of heads under two
   tokens, 32% over 64). The fused kernels ran at 5.2 s per update on one H100.
 
+### Softmax and exp with the forget gate
+
+Four runs (added 2026-11-03) put the same gate on the exponential kernels of softmax
+(`r9040f12f3d80`) and unnormalized exp (`r6a76e7fbde45`), without RoPE: the decay joins
+every score, $\mathrm{softmax}_i(s_{ti} + L_t - L_i)$ or $\exp(s_{ti} + L_t - L_i)$ with
+$L_t = \sum_{j\le t}\log\alpha_j$. Positions come from the gate alone (blocked reference) or
+from PaTH as well (PaTH-FoX, FLA's gated kernels). Exp keeps its per-head output RMSNorm and
+softmax has none, as in their sources. All are 1× (7,570 updates), seed 42; launch commands
+are in the [study README](../../../README.md#forget-gate-on-softmax-and-exp).
+
+Validation perplexity; best is the validation-best checkpoint (update 7,500 for every
+run), terminal is update 7,570:
+
+| Run | Kernel | Positions | 2,500 | 5,000 | Best | Terminal | Training GPU |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- |
+| PaTH-FoX exp `rafcf22b799ed` | unnormalized exp, per-head RMSNorm | PaTH | 16.98 | 14.44 | **13.321** | 13.326 | H100 SXM (`dogo`) |
+| PaTH-FoX softmax `r14db6f0e8592` | softmax | PaTH | 17.00 | 14.47 | 13.354 | 13.357 | H100 PCIe (`mastiff`) |
+| FoX exp `r183f08346ddc` | unnormalized exp, per-head RMSNorm | none | 17.40 | 14.77 | 13.628 | 13.630 | H100 SXM (`dogo`) |
+| FoX softmax `r5adc29a91e3b` | softmax | none | 17.39 | 14.81 | 13.680 | 13.680 | B300 (`akita`) |
+| Forget gate, no RoPE, projection decay `r4a80e28ce0a7` | query m = 4 | none | 17.84 | 15.08 | 13.873 | 13.875 | B300 |
+| FoX + PaTH, projection decay `r74495b47d226` | query m = 4 | PaTH | 18.39 | 15.33 | 14.094 | 14.094 | H100 SXM |
+| Exp `r6a76e7fbde45` | unnormalized exp, per-head RMSNorm | RoPE | 18.40 | 15.47 | 14.257 | 14.262 | B300 |
+| Softmax `r9040f12f3d80` | softmax | RoPE | 18.64 | 15.76 | 14.543 | 14.546 | B300 |
+
+- The gate without RoPE improves both exponential kernels over their RoPE sources: exp
+  14.257 to 13.628 (−4.4%), softmax 14.543 to 13.680 (−5.9%).
+- PaTH adds 2.3% (exp) and 2.4% (softmax) under the gate, steady from update 2,500 on.
+  PaTH-FoX exp (13.321) and softmax (13.354) are the two lowest validation-best PPLs of any
+  Transformer++ 1× run. PaTH-FoX exp is 4.0% below the best gated polynomial
+  (`r4a80e28ce0a7`, 13.873) and 6.6% below exp.
+- Under the gate the exponential kernels lead the degree-four query polynomial with
+  projection decay: exp by 1.8% without PaTH (13.628 against 13.873) and 5.5% with PaTH
+  (13.321 against 14.094); softmax by 1.4% and 5.2%.
+- Softmax and exp nearly tie under the gate: softmax is 0.4% (none) and 0.2% (PaTH) above
+  exp. The pairs also differ in per-head output RMSNorm, so this does not isolate
+  normalization.
+- Cost: the blocked reference ran FoX at 8.0 s per update on an H100 SXM (exp) and 6.2 s on
+  a B300 (softmax); FLA's gated PaTH kernels ran at 4.2 s (exp, H100 SXM) and 6.7 s
+  (softmax, H100 PCIe).
+- Limits: one seed each, on the mixed hardware above. FoX exp resumed from its update-6,500
+  checkpoint after a preemption and a CUDA-graph runtime error.
+
 ## Open decision
 
 Determine whether combining FoX and PaTH improves on either alone with projection

@@ -588,11 +588,11 @@ RMSNorm as in its source. Two use no positional encoding; two use PaTH (PaTH-FoX
 | `r14db6f0e8592` | softmax-path-forget-gate | `r9040f12f3d80` | PaTH | fused (FLA's gated kernels) |
 | `rafcf22b799ed` | exp-path-forget-gate | `r6a76e7fbde45` | PaTH | fused (FLA's gated kernels) |
 
-Home cluster: **Kennel**. They launch from `worktrees/fox-softmax-exp-path` (branch
-`claude/fox-softmax-exp-path`). After committing the inputs, submit each on one B300 or
-H100 SXM, excluding the H100 PCIe node `mastiff` and the B200 node `shiba`, with the PaTH
-runs at `nice` 1,000 so that polynomial-attention runs schedule first, and the partition
-(`standard` or `long`) chosen from the live allowance:
+Home cluster: **Kennel**. All four are complete; each record holds its launch commit.
+After committing the inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe
+node `mastiff` and the B200 node `shiba`, with the PaTH runs at `nice` 1,000 so that
+polynomial-attention runs schedule first, and the partition (`standard` or `long`) chosen
+from the live allowance:
 
 ```bash
 for run in r5adc29a91e3b r183f08346ddc r14db6f0e8592 rafcf22b799ed; do
@@ -606,7 +606,8 @@ for run in r5adc29a91e3b r183f08346ddc r14db6f0e8592 rafcf22b799ed; do
 done
 ```
 
-Each record's `submission` holds its exact command and partition.
+Each record's `submission` holds its exact (re)submission, and its `attempts` the partition
+and node of every allocation.
 
 ## Context length
 
