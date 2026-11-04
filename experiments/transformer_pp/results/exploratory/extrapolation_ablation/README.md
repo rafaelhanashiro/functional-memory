@@ -202,17 +202,22 @@ block in the two stretches.)
 
 ## Long documents
 
-Packed rows put other documents behind a query, so ignoring distant text is the best a model
-can do there. To test whether the models use long context, the 16k evaluation and the window
-and clamp passes were repeated on 608 single documents: rows 9,827–10,434 of
-`fineweb_12b_long_documents_seq16385/train`, each an end-of-document token and the first
-16,384 tokens of one document at least that long. All start after the 3.97B stream tokens
-every compared checkpoint trained on, and the evaluators refuse rows a model saw.
+In packed rows about three quarters of the predictions past position 2,048 have only other
+documents more than 2,048 tokens back, so distant text helps little there. To test whether
+the models use long context, the 16k evaluation and the window and clamp passes were repeated
+on 608 single documents: rows 9,827–10,434 of `fineweb_12b_long_documents_seq16385/train`,
+each an end-of-document token and the first 16,384 tokens of one document at least that
+long. All start after the 3.97B stream tokens of every compared run's full training budget
+(the step-7,500 checkpoints saw 3.93B), and the evaluators refuse rows that start earlier.
+That check is by position only: 15 of the 608 documents repeat an earlier, trained document
+token for token, and 21 share its first 1,024 tokens (6 of the 128 weight documents).
 `r2a655e742cb7` scores exp, query + W decay and FoX no RoPE + W decay; `r4b4496032e30` runs
 the query model's window and clamp passes; `ra1909f45d1e4` measures the per-key weights on
 the first 4,096 tokens of rows 9,827–9,954. Every 2,048-token replay reproduces its recorded
-validation NLL within 6e-6 nats, the 16k passes pass the causal-prefix check, and the
-ablation's full pass matches `r2a655e742cb7`'s query curve within 2e-5 nats.
+validation NLL within 6e-6 nats, and `r2a655e742cb7`'s three 16k passes pass the
+causal-prefix check. The ablation's full pass matches `r2a655e742cb7`'s query curve in mean
+NLL within 2e-5 nats over positions 1–2,048 (2e-6 overall; single positions within 5.3e-3),
+and its window and clamp passes equal it over the first 2,048 positions.
 
 ![Per-position perplexity on long documents](long_documents_16k.png)
 
@@ -231,15 +236,18 @@ ablation's full pass matches `r2a655e742cb7`'s query curve within 2e-5 nats.
 ([long_documents_summary.csv](long_documents_summary.csv) has these values; packed rows are
 in [summary.csv](summary.csv).)
 
-- **No 2k-trained model gains from context beyond 2,048 tokens.** Further into a document,
-  more context should lower perplexity. Instead every model is worse late than at positions
-  1,025–2,048: exp by 27% at 12,289–16,384 (14.22 to 18.06), FoX by 13% at 8,193–12,288 and
-  5% at 12,289–16,384 (13.79 to 15.57 and 14.53). On packed rows FoX stayed flat (13.41 to
-  13.43), the best possible when distant text belongs to other documents, which hid this.
+- **Every model is worse late in a document than at positions 1,025–2,048**: exp by 27% at
+  12,289–16,384 (14.22 to 18.06), FoX by 13% at 8,193–12,288 and 5% at 12,289–16,384 (13.79
+  to 15.57 and 14.53). On packed rows FoX stayed flat (13.41 to 13.43). This does not show
+  that the models fail to use distant text: these documents also get harder with position
+  inside the training length (positions 1,025–2,048 are 4–5% worse than 1–1,024 for all
+  three models, while packed rows get 7–8% better), and no same-position control without the
+  distant text was run for exp or FoX.
 - **Query + W decay fails as on packed rows.** It reaches 114 by positions 2,305–3,072 and
-  1,810 at 12,289–16,384. Clamping RoPE at 2,047 holds it to 15–23 through position 4,096,
-  then it collapses (189 at 4,097–8,192, 2,378 at 12,289–16,384). The window never collapses
-  but settles at 28–33. Its per-key weights at position 4,095
+  1,810 at 12,289–16,384. Clamping RoPE at 2,047 keeps it near the window until about
+  position 3,700 (block means 15–23 through 4,096), then it collapses (189 at 4,097–8,192,
+  2,378 at 12,289–16,384). The window never collapses: it falls from 32.7 at 4,097–8,192 to
+  27.9 at 12,289–16,384, where on packed rows it stays near 29. Its per-key weights at position 4,095
   ([figure](position_weights_long_documents.png), [table](position_weights_long_documents.csv))
   match those on packed rows: 55–73% of the weight 2,048 or more back in layers 6–12, peaks
   up to 7.5 times uniform at the same two stretches, against 23–32% in every layer of the

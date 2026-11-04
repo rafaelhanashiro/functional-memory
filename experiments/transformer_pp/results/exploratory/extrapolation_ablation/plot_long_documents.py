@@ -25,7 +25,7 @@ from scaffolds.records.selections import verify_pinned_runs
 TOPIC = Path(__file__).resolve().parent
 ROOT = TOPIC.parents[4]
 BIN, TRAINED, LENGTH = 64, 2048, 16384
-BLOCKS = ((0, 2048), (1024, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
+BLOCKS = ((0, 2048), (0, 1024), (1024, 2048), (2048, 2304), (2304, 3072), (3072, 4096), (4096, 8192), (8192, 12288), (12288, 16384))
 # (label, color, dashes): the context-length figure's colors; the two ablations add black and dark magenta.
 SERIES = {
     "exp": ("exp", "#1f77b4", None),
@@ -83,8 +83,8 @@ def draw(name: str, data: dict[str, np.ndarray], keys: tuple[str, ...], sequence
         offset, align = ((-6, "right") if zoom else (6, "left"))
         axis.annotate("training length", xy=(TRAINED, 1), xycoords=("data", "axes fraction"), xytext=(offset, -7),
                       textcoords="offset points", ha=align, va="top", color="#555555", fontsize=10)
-        axis.set_title(f"Per-position perplexity on {sequences:,} long documents none of the models trained on\n"
-                       f"2,048-token checkpoints · one document per row · bold: {BIN}-position bins · "
+        axis.set_title(f"Per-position perplexity on {sequences:,} long documents past the models' training data\n"
+                       f"2,048-token checkpoints · each document read from its start · bold: {BIN}-position bins · "
                        "light: every position", fontsize=14)
         if zoom:
             axis.set_ylim(10, 30)
