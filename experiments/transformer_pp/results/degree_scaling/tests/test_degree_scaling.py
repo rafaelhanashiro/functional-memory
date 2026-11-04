@@ -17,13 +17,13 @@ DERIVED = ("degree_scaling.png", "degree_scaling.pdf", "summary.csv", "README.md
 # Terminal validation perplexity at update 7,570, as quoted in the README.
 TERMINAL = {
     ("taylor", 1): 19.556, ("taylor", 2): 15.912, ("taylor", 3): 15.974, ("taylor", 4): 14.724,
-    ("taylor", 5): 14.843,
+    ("taylor", 5): 14.843, ("taylor", 6): 14.334,
     ("hermite", 1): 19.513, ("hermite", 2): 16.168, ("hermite", 3): 15.732, ("hermite", 4): 14.987,
-    ("hermite", 5): 14.609,
+    ("hermite", 5): 14.609, ("hermite", 6): 14.396,
     ("static", 1): 19.531, ("static", 2): 15.822, ("static", 3): 16.649, ("static", 4): 14.773,
-    ("static", 5): 14.871,
+    ("static", 5): 14.871, ("static", 6): 14.408,
     ("query_w_decay", 1): 19.219, ("query_w_decay", 2): 15.832, ("query_w_decay", 3): 16.443,
-    ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080,
+    ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080, ("query_w_decay", 6): 14.641,
 }
 
 
@@ -34,7 +34,7 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 22 and set(cells) == set(TERMINAL)
+    assert len(rows) == 26 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
@@ -47,6 +47,11 @@ def test_committed_runs_and_quoted_values():
     assert cells["query_w_decay", 5]["change_from_previous_degree_percent"] == pytest.approx(2.49, abs=5e-3)
     assert cells["hermite", 5]["change_from_previous_degree_percent"] == pytest.approx(-2.53, abs=5e-3)
     assert cells["hermite", 5]["percent_above_softmax"] == pytest.approx(0.43, abs=5e-3)
+    # m = 6: every family improves; Taylor, Hermite, and static end below softmax.
+    assert cells["taylor", 6]["change_from_previous_degree_percent"] == pytest.approx(-3.43, abs=5e-3)
+    assert cells["taylor", 6]["percent_above_softmax"] == pytest.approx(-1.46, abs=5e-3)
+    assert cells["taylor", 6]["percent_above_exp"] == pytest.approx(0.51, abs=5e-3)
+    assert cells["query_w_decay", 6]["percent_above_softmax"] == pytest.approx(0.65, abs=5e-3)
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
