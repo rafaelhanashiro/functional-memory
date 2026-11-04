@@ -2041,6 +2041,17 @@ model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (
 and 233367). On H100 SXM (`dogo`, `.venv`), the acceptance of `rafcf22b799ed` (job 233373)
 runs the same GPU suites: 117 passed.
 
+Merged with the FoX-PaTH polynomial (merge commit `19b9cdea`: one `log_decay` for every
+kernel, which FLA's gate receives as `L sqrt(d_K)` and the polynomial fork as `L`), one H100
+SXM (`dogo`, `.venv`, job 235146) passed the 71 GPU tests of `test_forget_gate_attention.py`,
+`test_path_attention.py`, `test_path_attention_fused.py`, and `test_fox_path_attention_fused.py`
+(`test_fox_path_attention.py` and `test_fox_path_model.py` have no GPU cases). A 72nd case
+compared the fused and blocked gated-polynomial models in BF16: the fused `path_beta_bias`
+gradient's error against FP32, 0.149, exceeded twice the blocked model's (0.055), so that
+model is compared in FP32 by the interpreter only. The CPU suites of the touched mechanisms
+pass (813 tests), as do the records and study tests (180). Log:
+`validation/logs/fox-merge-qualify-235146.log` (Kennel).
+
 Relative L2 error against FP32 HIGHEST, BF16 q/k/v, B = 2, T = 2048, 4 heads, width 64,
 scores `2 cos(q, k)`, decay drawn from Gated DeltaNet's initial range (B300, job 233347):
 
