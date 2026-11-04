@@ -144,7 +144,7 @@ PCIe. Sigmoid and softplus rates cost the same.
 Attention is now about 0.8 s of the endpoint update's 2.5 s. The rest is the model outside
 attention, the same as the floor. The decay dK/dV kernel costs about twice the gate-free one,
 even for the single extra exponential of query-only decay. Recomputing instead of reusing the
-decay tile did not change it, so it is not register reuse; profiling the Hopper dK/dV step is the
+decay tile did not change it, so holding that tile across the matrix products is not the cause; profiling the Hopper dK/dV step is the
 next step. The endpoint dQ pass costs about twice the gate-free one, for its softplus and sigmoid.
 
 ## Results
