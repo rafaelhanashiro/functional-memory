@@ -1,294 +1,547 @@
 {
-  "context_length": 2048,
-  "qk_head_dim": 64,
-  "heads": 4,
-  "batch": 1,
-  "gpu_type": "NVIDIA H100 PCIe",
-  "node": "mastiff",
-  "home_cluster": "kennel",
-  "slurm_job_id": "235099",
-  "source_commit": "b47715f3",
-  "jax": "0.10.0",
-  "production": "fused Pallas Triton kernel (attention/backends/fused_score_mlp.py), 32x32 tiles, 4 warps; BF16 q/k/v, FP32 units",
-  "reference": "host NumPy FP64 forward and analytic VJP on the same BF16 values; crosschecked against CPU float64 autodiff",
-  "relative_tolerance": 0.012,
-  "unit_gradient_tolerance": 0.0001,
-  "tolerance_scope": "relative L2 for the whole array, each head, and (a, b) each head and unit; each dw_hj error over the FP64 absolute sum of its terms, which may cancel",
-  "test": "scaffolds/transformer/tests/test_score_mlp_fused.py -m gpu",
-  "tests_passed": 22,
-  "pytest_seconds": 331.08,
-  "status": "passed",
-  "relative_l2_errors": {
-    "kernel-4": {
-      "output": 0.00165,
-      "q": 0.00166,
-      "k": 0.00166,
-      "v": 0.00166,
-      "a": 1.6e-07,
-      "b": 1.88e-07,
-      "w": 2.63e-07,
-      "w_over_term_magnitude": 8.13e-10
-    },
-    "kernel-8": {
-      "output": 0.00166,
-      "q": 0.00167,
-      "k": 0.00166,
-      "v": 0.00166,
-      "a": 1.56e-07,
-      "b": 1.84e-07,
-      "w": 4.29e-07,
-      "w_over_term_magnitude": 2.51e-08
-    },
-    "exp_residual-4": {
-      "output": 0.00165,
-      "q": 0.00167,
-      "k": 0.00166,
-      "v": 0.00166,
-      "a": 3.25e-07,
-      "b": 2.91e-07,
-      "w": 4.55e-07,
-      "w_over_term_magnitude": 1.03e-08
-    },
-    "exp_residual-8": {
-      "output": 0.00166,
-      "q": 0.00165,
-      "k": 0.00165,
-      "v": 0.00166,
-      "a": 3.4e-07,
-      "b": 2.93e-07,
-      "w": 3.97e-07,
-      "w_over_term_magnitude": 6.6e-09
-    }
-  },
-  "blocked_comparison": {
-    "kernel-4": {
-      "fused_vs_blocked": {
-        "output": 0.000861,
-        "q": 0.000875,
-        "k": 0.00491,
-        "v": 0.00488,
-        "a": 1.78e-07,
-        "b": 1.75e-07,
-        "w": 2.69e-07
-      },
-      "blocked_vs_oracle": {
-        "output": 0.00167,
-        "q": 0.00167,
-        "k": 0.00462,
-        "v": 0.00459,
-        "a": 1.39e-07,
-        "b": 1.71e-07,
-        "w": 1.81e-07
-      }
-    },
-    "kernel-8": {
-      "fused_vs_blocked": {
-        "output": 0.000865,
-        "q": 0.000859,
-        "k": 0.0049,
-        "v": 0.00491,
-        "a": 1.66e-07,
-        "b": 1.7e-07,
-        "w": 3.81e-07
-      },
-      "blocked_vs_oracle": {
-        "output": 0.00167,
-        "q": 0.00168,
-        "k": 0.00462,
-        "v": 0.00463,
-        "a": 1.25e-07,
-        "b": 1.62e-07,
-        "w": 3.08e-07
-      }
-    },
-    "exp_residual-4": {
-      "fused_vs_blocked": {
-        "output": 0.000884,
-        "q": 0.000883,
-        "k": 0.00485,
-        "v": 0.00488,
-        "a": 1.72e-07,
-        "b": 1.74e-07,
-        "w": 3.04e-07
-      },
-      "blocked_vs_oracle": {
-        "output": 0.00166,
-        "q": 0.00168,
-        "k": 0.00457,
-        "v": 0.0046,
-        "a": 3.29e-07,
-        "b": 2.87e-07,
-        "w": 4.79e-07
-      }
-    },
-    "exp_residual-8": {
-      "fused_vs_blocked": {
-        "output": 0.000864,
-        "q": 0.000868,
-        "k": 0.00488,
-        "v": 0.00487,
-        "a": 1.69e-07,
-        "b": 1.69e-07,
-        "w": 2.27e-07
-      },
-      "blocked_vs_oracle": {
-        "output": 0.00168,
-        "q": 0.00167,
-        "k": 0.00459,
-        "v": 0.00459,
-        "a": 3.36e-07,
-        "b": 2.81e-07,
-        "w": 3.23e-07
-      }
-    }
-  },
-  "bitwise_repeatable": {
-    "kernel-4": true,
-    "kernel-8": true,
-    "exp_residual-4": true,
-    "exp_residual-8": true
-  },
+  "command": "python -m scaffolds.transformer.validation.qualify_score_mlp_fused --launch-commit b1712a0c5926826008b60331f0103b35507d795e --junit scaffolds/transformer/validation/logs/score-mlp/235164/gpu-tests.xml --exit-code 0 --output scaffolds/transformer/validation/runs/score-mlp/fused-gpu-qualification.json",
+  "completed_utc": "2026-11-04T22:54:11.401907+00:00",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "exit_code": 0,
   "exp_residual_zero_amplitude_vs_fused_exp": {
-    "note": "the fused exp kernel accumulates over 64x64 tiles and this kernel over 32x32, so the same arithmetic runs in another FP32 summation order",
     "exp_residual-4": {
+      "bitwise_equal": {
+        "k": false,
+        "output": false,
+        "q": false,
+        "v": false
+      },
+      "db_dw_exactly_zero": true,
       "relative_l2": {
+        "k": 4.89e-05,
         "output": 3.23e-05,
         "q": 3.32e-05,
-        "k": 4.89e-05,
         "v": 3.3e-05
-      },
-      "bitwise_equal": {
-        "output": false,
-        "q": false,
-        "k": false,
-        "v": false
-      },
-      "db_dw_exactly_zero": true
+      }
     },
     "exp_residual-8": {
-      "relative_l2": {
-        "output": 4.91e-05,
-        "q": 4.31e-05,
-        "k": 2.66e-05,
-        "v": 3.06e-05
-      },
       "bitwise_equal": {
+        "k": false,
         "output": false,
         "q": false,
-        "k": false,
         "v": false
       },
-      "db_dw_exactly_zero": true
+      "db_dw_exactly_zero": true,
+      "relative_l2": {
+        "k": 2.66e-05,
+        "output": 4.91e-05,
+        "q": 4.31e-05,
+        "v": 3.06e-05
+      }
     }
   },
-  "odd_shape": {
-    "time": 131,
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "home_cluster": "kennel",
+  "jax": "0.10.0",
+  "masked_entries": {
+    "poisoned_row": {
+      "exp_residual": {
+        "nan_entries": {
+          "a": 0,
+          "b": 1,
+          "k": 24,
+          "output": 3,
+          "q": 4,
+          "v": 18,
+          "w": 1
+        },
+        "nan_entries_match_blocked": true,
+        "unreached_vs_blocked": {
+          "a": 3.64e-07,
+          "b": 2.1e-07,
+          "k": 4.48e-07,
+          "output": 4.6e-07,
+          "q": 5.07e-07,
+          "v": 3.48e-07,
+          "w": 9.28e-08
+        }
+      },
+      "kernel": {
+        "nan_entries": {
+          "a": 0,
+          "b": 1,
+          "k": 24,
+          "output": 3,
+          "q": 4,
+          "v": 18,
+          "w": 1
+        },
+        "nan_entries_match_blocked": true,
+        "unreached_vs_blocked": {
+          "a": 1.67e-07,
+          "b": 1.81e-07,
+          "k": 2.1e-07,
+          "output": 1.85e-07,
+          "q": 2.12e-07,
+          "v": 1.24e-07,
+          "w": 2.33e-07
+        }
+      }
+    },
+    "score_overflow_vs_oracle": {
+      "exp_residual": {
+        "a": 2.8e-07,
+        "b": 2.15e-07,
+        "k": 3.07e-07,
+        "output": 1.77e-07,
+        "q": 3.12e-07,
+        "v": 2.41e-07,
+        "w": 3.91e-07,
+        "w_over_term_magnitude": 1.46e-07
+      },
+      "kernel": {
+        "a": 1.44e-07,
+        "b": 1.4e-07,
+        "k": 2.05e-07,
+        "output": 1.35e-07,
+        "q": 2.69e-07,
+        "v": 1.25e-07,
+        "w": 1.82e-07,
+        "w_over_term_magnitude": 1.91e-08
+      }
+    },
+    "value_overflow": {
+      "tokens-1": {
+        "finite": true,
+        "max_relative_vs_blocked": {
+          "a": 0.0,
+          "b": 0.0,
+          "k": 0.0,
+          "output": 0.0,
+          "q": 0.0,
+          "v": 0.0,
+          "w": 0.0
+        },
+        "max_relative_vs_oracle": {
+          "a": 0.0,
+          "b": 0.0,
+          "k": 3.09e-08,
+          "output": 3.09e-08,
+          "q": 3.09e-08,
+          "v": 3.09e-08,
+          "w": 0.0
+        }
+      },
+      "tokens-2": {
+        "finite": true,
+        "max_relative_vs_blocked": {
+          "a": 0.0,
+          "b": 0.0,
+          "k": 0.0,
+          "output": 0.0,
+          "q": 0.0,
+          "v": 0.0,
+          "w": 0.0
+        },
+        "max_relative_vs_oracle": {
+          "a": 0.0,
+          "b": 0.0,
+          "k": 8.19e-08,
+          "output": 1.01e-07,
+          "q": 5.8e-08,
+          "v": 8.19e-08,
+          "w": 0.0
+        }
+      }
+    }
+  },
+  "measurement_seconds": 230.8,
+  "model_shape": {
+    "exp_residual-8": {
+      "finite": true,
+      "fused_vs_blocked": {
+        "a": 1.66e-07,
+        "b": 1.68e-07,
+        "k": 0.00488,
+        "output": 0.000875,
+        "q": 0.000887,
+        "v": 0.0049,
+        "w": 2.49e-07
+      }
+    },
+    "kernel-8": {
+      "finite": true,
+      "fused_vs_blocked": {
+        "a": 1.69e-07,
+        "b": 1.7e-07,
+        "k": 0.00491,
+        "output": 0.000862,
+        "q": 0.00087,
+        "v": 0.00493,
+        "w": 2.67e-07
+      }
+    },
+    "shape": {
+      "batch": 16,
+      "heads": 14,
+      "qk_head_dim": 64,
+      "time": 2048,
+      "value_head_dim": 64
+    }
+  },
+  "node": "dogo",
+  "odd_shapes": {
     "batch": 2,
     "heads": 3,
-    "qk_head_dim": 33,
-    "value_head_dim": 17,
-    "width": 3,
     "relative_l2_errors": {
-      "kernel-float32": {
-        "output": 1.55e-07,
-        "q": 2.13e-07,
-        "k": 2.12e-07,
-        "v": 1.63e-07,
-        "a": 1.66e-07,
-        "b": 1.66e-07,
-        "w": 2.63e-07,
-        "w_over_term_magnitude": 7.41e-09
-      },
-      "kernel-bfloat16": {
-        "output": 0.00171,
-        "q": 0.00161,
+      "exp_residual-J3-128-128-bfloat16": {
+        "a": 5.89e-07,
+        "b": 4.23e-07,
         "k": 0.00165,
-        "v": 0.00164,
-        "a": 1.11e-07,
-        "b": 1.12e-07,
-        "w": 2.3e-07,
-        "w_over_term_magnitude": 4.95e-09
+        "output": 0.00163,
+        "q": 0.00166,
+        "v": 0.00166,
+        "w": 4.9e-07,
+        "w_over_term_magnitude": 5.32e-08
       },
-      "exp_residual-float32": {
-        "output": 5.28e-07,
-        "q": 5.33e-07,
-        "k": 4.83e-07,
-        "v": 4.79e-07,
+      "exp_residual-J3-128-128-float32": {
+        "a": 1.45e-06,
+        "b": 1e-06,
+        "k": 1.38e-06,
+        "output": 1.19e-06,
+        "q": 1.38e-06,
+        "v": 1.2e-06,
+        "w": 1.31e-06,
+        "w_over_term_magnitude": 1.27e-07
+      },
+      "exp_residual-J3-33-17-bfloat16": {
+        "a": 1.65e-07,
+        "b": 1.73e-07,
+        "k": 0.00166,
+        "output": 0.00159,
+        "q": 0.00168,
+        "v": 0.00165,
+        "w": 2.04e-07,
+        "w_over_term_magnitude": 1.64e-08
+      },
+      "exp_residual-J3-33-17-float32": {
         "a": 4.2e-07,
         "b": 3.95e-07,
+        "k": 4.83e-07,
+        "output": 5.28e-07,
+        "q": 5.33e-07,
+        "v": 4.79e-07,
         "w": 5.27e-07,
         "w_over_term_magnitude": 3.7e-08
       },
-      "exp_residual-bfloat16": {
-        "output": 0.00159,
-        "q": 0.00168,
+      "exp_residual-J3-72-40-bfloat16": {
+        "a": 3.18e-07,
+        "b": 2.14e-07,
         "k": 0.00166,
-        "v": 0.00165,
-        "a": 1.65e-07,
-        "b": 1.73e-07,
-        "w": 2.04e-07,
-        "w_over_term_magnitude": 1.64e-08
+        "output": 0.00165,
+        "q": 0.0016,
+        "v": 0.00162,
+        "w": 3.89e-07,
+        "w_over_term_magnitude": 3.19e-08
+      },
+      "exp_residual-J3-72-40-float32": {
+        "a": 9.23e-07,
+        "b": 6.3e-07,
+        "k": 1.28e-06,
+        "output": 8.27e-07,
+        "q": 1.18e-06,
+        "v": 8.38e-07,
+        "w": 7.66e-07,
+        "w_over_term_magnitude": 7.18e-08
+      },
+      "exp_residual-J8-128-128-bfloat16": {
+        "a": 5.34e-07,
+        "b": 3.8e-07,
+        "k": 0.00154,
+        "output": 0.00169,
+        "q": 0.00179,
+        "v": 0.0017,
+        "w": 7.87e-07,
+        "w_over_term_magnitude": 8.56e-08
+      },
+      "exp_residual-J8-128-128-float32": {
+        "a": 1.41e-06,
+        "b": 9.75e-07,
+        "k": 1.52e-06,
+        "output": 1.24e-06,
+        "q": 1.51e-06,
+        "v": 1.25e-06,
+        "w": 1.77e-06,
+        "w_over_term_magnitude": 2.08e-07
+      },
+      "kernel-J3-128-128-bfloat16": {
+        "a": 1.92e-07,
+        "b": 1.66e-07,
+        "k": 0.00165,
+        "output": 0.00167,
+        "q": 0.00167,
+        "v": 0.00166,
+        "w": 2.16e-07,
+        "w_over_term_magnitude": 9.2e-09
+      },
+      "kernel-J3-128-128-float32": {
+        "a": 4.72e-07,
+        "b": 3.67e-07,
+        "k": 4.84e-07,
+        "output": 2.86e-07,
+        "q": 4.86e-07,
+        "v": 2.99e-07,
+        "w": 5.74e-07,
+        "w_over_term_magnitude": 2.94e-08
+      },
+      "kernel-J3-33-17-bfloat16": {
+        "a": 1.11e-07,
+        "b": 1.12e-07,
+        "k": 0.00165,
+        "output": 0.00171,
+        "q": 0.00161,
+        "v": 0.00164,
+        "w": 2.3e-07,
+        "w_over_term_magnitude": 4.95e-09
+      },
+      "kernel-J3-33-17-float32": {
+        "a": 1.66e-07,
+        "b": 1.66e-07,
+        "k": 2.12e-07,
+        "output": 1.55e-07,
+        "q": 2.13e-07,
+        "v": 1.63e-07,
+        "w": 2.63e-07,
+        "w_over_term_magnitude": 7.41e-09
+      },
+      "kernel-J3-72-40-bfloat16": {
+        "a": 1.17e-07,
+        "b": 1.1e-07,
+        "k": 0.00167,
+        "output": 0.00168,
+        "q": 0.00164,
+        "v": 0.00166,
+        "w": 1.43e-07,
+        "w_over_term_magnitude": 4.98e-09
+      },
+      "kernel-J3-72-40-float32": {
+        "a": 2.23e-07,
+        "b": 1.91e-07,
+        "k": 2.79e-07,
+        "output": 2.05e-07,
+        "q": 2.79e-07,
+        "v": 2.06e-07,
+        "w": 3.24e-07,
+        "w_over_term_magnitude": 1.12e-08
+      },
+      "kernel-J8-128-128-bfloat16": {
+        "a": 1.81e-07,
+        "b": 1.67e-07,
+        "k": 0.00166,
+        "output": 0.00166,
+        "q": 0.00168,
+        "v": 0.00167,
+        "w": 2.8e-07,
+        "w_over_term_magnitude": 1.03e-08
+      },
+      "kernel-J8-128-128-float32": {
+        "a": 4.4e-07,
+        "b": 3.75e-07,
+        "k": 4.82e-07,
+        "output": 2.61e-07,
+        "q": 4.86e-07,
+        "v": 2.64e-07,
+        "w": 7.43e-07,
+        "w_over_term_magnitude": 2.78e-08
       }
+    },
+    "time": 131
+  },
+  "producer": "scaffolds/transformer/validation/qualify_score_mlp_fused.py",
+  "production": "fused Pallas Triton kernel (attention/backends/fused_score_mlp.py), 32x32 tiles, 4 warps, 2 stages",
+  "production_shape": {
+    "bitwise_repeatable": {
+      "exp_residual-4": true,
+      "exp_residual-8": true,
+      "kernel-4": true,
+      "kernel-8": true
+    },
+    "blocked_comparison": {
+      "exp_residual-4": {
+        "blocked_vs_oracle": {
+          "a": 3.29e-07,
+          "b": 2.87e-07,
+          "k": 0.00457,
+          "output": 0.00166,
+          "q": 0.00168,
+          "v": 0.0046,
+          "w": 5.05e-07
+        },
+        "fused_vs_blocked": {
+          "a": 1.72e-07,
+          "b": 1.74e-07,
+          "k": 0.00485,
+          "output": 0.000884,
+          "q": 0.000883,
+          "v": 0.00488,
+          "w": 2.91e-07
+        }
+      },
+      "exp_residual-8": {
+        "blocked_vs_oracle": {
+          "a": 3.36e-07,
+          "b": 2.81e-07,
+          "k": 0.00459,
+          "output": 0.00168,
+          "q": 0.00167,
+          "v": 0.00459,
+          "w": 3.23e-07
+        },
+        "fused_vs_blocked": {
+          "a": 1.69e-07,
+          "b": 1.69e-07,
+          "k": 0.00488,
+          "output": 0.000864,
+          "q": 0.000868,
+          "v": 0.00487,
+          "w": 1.88e-07
+        }
+      },
+      "kernel-4": {
+        "blocked_vs_oracle": {
+          "a": 1.39e-07,
+          "b": 1.71e-07,
+          "k": 0.00462,
+          "output": 0.00167,
+          "q": 0.00167,
+          "v": 0.00459,
+          "w": 2.06e-07
+        },
+        "fused_vs_blocked": {
+          "a": 1.78e-07,
+          "b": 1.75e-07,
+          "k": 0.00491,
+          "output": 0.000861,
+          "q": 0.000875,
+          "v": 0.00488,
+          "w": 2.95e-07
+        }
+      },
+      "kernel-8": {
+        "blocked_vs_oracle": {
+          "a": 1.25e-07,
+          "b": 1.62e-07,
+          "k": 0.00462,
+          "output": 0.00167,
+          "q": 0.00168,
+          "v": 0.00463,
+          "w": 3.08e-07
+        },
+        "fused_vs_blocked": {
+          "a": 1.66e-07,
+          "b": 1.7e-07,
+          "k": 0.0049,
+          "output": 0.000865,
+          "q": 0.000859,
+          "v": 0.00491,
+          "w": 2.69e-07
+        }
+      }
+    },
+    "relative_l2_errors": {
+      "exp_residual-4": {
+        "a": 3.25e-07,
+        "b": 2.91e-07,
+        "k": 0.00166,
+        "output": 0.00165,
+        "q": 0.00167,
+        "v": 0.00166,
+        "w": 4.55e-07,
+        "w_over_term_magnitude": 1.03e-08
+      },
+      "exp_residual-8": {
+        "a": 3.4e-07,
+        "b": 2.93e-07,
+        "k": 0.00165,
+        "output": 0.00166,
+        "q": 0.00165,
+        "v": 0.00166,
+        "w": 3.21e-07,
+        "w_over_term_magnitude": 7.17e-09
+      },
+      "kernel-4": {
+        "a": 1.6e-07,
+        "b": 1.88e-07,
+        "k": 0.00166,
+        "output": 0.00165,
+        "q": 0.00166,
+        "v": 0.00166,
+        "w": 2.63e-07,
+        "w_over_term_magnitude": 8.13e-10
+      },
+      "kernel-8": {
+        "a": 1.56e-07,
+        "b": 1.84e-07,
+        "k": 0.00166,
+        "output": 0.00166,
+        "q": 0.00167,
+        "v": 0.00166,
+        "w": 3.53e-07,
+        "w_over_term_magnitude": 2.09e-08
+      }
+    },
+    "shape": {
+      "batch": 1,
+      "heads": 4,
+      "qk_head_dim": 64,
+      "time": 2048,
+      "value_head_dim": 64
     }
   },
-  "model_shape": {
-    "shape": {
-      "batch": 16,
-      "time": 2048,
-      "heads": 14,
-      "qk_head_dim": 64,
-      "value_head_dim": 64
-    },
-    "kernel-8": {
-      "finite": true,
-      "fused_vs_blocked": {
-        "output": 0.000862,
-        "q": 0.00087,
-        "k": 0.00491,
-        "v": 0.00493,
-        "a": 1.69e-07,
-        "b": 1.7e-07,
-        "w": 2.93e-07
-      }
-    },
-    "exp_residual-8": {
-      "finite": true,
-      "fused_vs_blocked": {
-        "output": 0.000875,
-        "q": 0.000887,
-        "k": 0.00488,
-        "v": 0.0049,
-        "a": 1.66e-07,
-        "b": 1.68e-07,
-        "w": 2.56e-07
-      }
+  "reference": "host NumPy FP64 forward and analytic VJP on the same (rounded) values, crosschecked against CPU float64 autodiff; the blocked path on the same GPU",
+  "runtime_environment": {
+    "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+    "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+    "TRITON_PTXAS_PATH": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin/ptxas",
+    "XLA_FLAGS": null,
+    "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+  },
+  "slurm_job_id": "235164",
+  "source_commit": "b1712a0c5926826008b60331f0103b35507d795e",
+  "status": "passed",
+  "tests": {
+    "gpu-tests": {
+      "cases": 41,
+      "failed": 0,
+      "junit": {
+        "path": "scaffolds/transformer/validation/logs/score-mlp/235164/gpu-tests.xml",
+        "sha256": "caa665cf781e0def713f8f59bb68764da9d70aacd36ab4828ce1d411538dd3ed"
+      },
+      "seconds": 300.5,
+      "skipped": 0
     }
+  },
+  "tolerance_scope": "relative L2 for the whole array, each head, and (a, b) each head and unit; each dw_hj error over the FP64 absolute sum of its terms, which may cancel",
+  "tolerances": {
+    "bfloat16_output_and_qkv_gradients": 0.012,
+    "float32": 0.0001,
+    "unit_gradients": 0.0001
   },
   "whole_model_fused_vs_blocked": {
-    "layers": 2,
-    "tokens": 256,
-    "hidden": 32,
-    "heads": 2,
-    "head_dims": 16,
-    "width": 4,
-    "kernel": {
-      "loss_fused": 2.7773594856262207,
-      "loss_blocked": 2.7773594856262207,
+    "exp_residual": {
+      "loss_blocked": 2.770780563354492,
+      "loss_fused": 2.770780563354492,
       "loss_relative_difference": 0.0,
-      "max_parameter_gradient_relative_l2": 1.74e-05,
+      "max_parameter_gradient_relative_l2": 2.86e-05,
+      "worst_parameter": "score_mlp_slope"
+    },
+    "head_dims": 16,
+    "heads": 2,
+    "hidden": 32,
+    "kernel": {
+      "loss_blocked": 2.7773594856262207,
+      "loss_fused": 2.7773594856262207,
+      "loss_relative_difference": 0.0,
+      "max_parameter_gradient_relative_l2": 1.24e-05,
       "worst_parameter": "qk_norm_k_gain"
     },
-    "exp_residual": {
-      "loss_fused": 2.770780563354492,
-      "loss_blocked": 2.770780563354492,
-      "loss_relative_difference": 0.0,
-      "max_parameter_gradient_relative_l2": 2.13e-05,
-      "worst_parameter": "score_mlp_slope"
-    }
-  },
-  "cpu_interpreter_tests": {
-    "test": "scaffolds/transformer/tests/test_score_mlp_fused.py -m 'not gpu'",
-    "passed": 96,
-    "reference": "float64 autodiff of the dense definition; Pallas interpreter with exact FP32 products"
+    "layers": 2,
+    "tokens": 256,
+    "width": 4
   }
 }

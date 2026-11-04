@@ -2295,7 +2295,7 @@ H100 PCIe (job 234788):
 
 ### Score MLP on the fused backend
 
-CPU tests (`test_score_mlp_fused.py`, 96 cases) run the kernel's three Pallas programs
+CPU tests (`test_score_mlp_fused.py`, 102 cases) run the kernel's three Pallas programs
 in the interpreter with exact FP32 products against float64 autodiff of the dense
 definition: both forms, `J` = 1, 2, 3, 4, 8, 1 to 160 tokens across 32-token query and
 key tiles, Q/K widths 1 to 128 (including 17) with other value widths, FP32 and BF16
@@ -2305,55 +2305,76 @@ terms (in one case a unit's terms cancel to 1/1,219 of that sum). They also chec
 causality, that `a = 0` gives exp with exactly zero `db` and `dw`, NaN row poisoning,
 input validation, selection, and a two-layer model against the blocked model.
 
-[H100 qualification](runs/score-mlp/fused-gpu-qualification.json) passed in job 235099
-on mastiff (H100 PCIe) at commit `b47715f3`, 22 cases: 2,048 tokens, 4 heads,
-64-channel BF16 Q/K/V against the FP64 oracle, below 0.012 (output, dQ, dK, dV) and
-1e-4 (`a`, `b`, `w`) whole, per head, and per unit:
+Masked and padded entries are evaluated at score zero and get zero dS in the backward,
+as in the VJP of the causal mask. Three VJP checks, interpreted and compiled, cover them:
+a future key in the query's own tile whose FP32 score or exp overflows, against float64
+and the blocked path; `f(0) = 1 + sum_j a_tj SiLU(b_tj)` overflowing FP32 at masked and
+padded entries while every causal value is finite, against the host FP64 definition and
+the blocked path; and a NaN unit, whose NaN entries in every gradient are the blocked
+path's, with everything outside its row's reach finite and equal to the blocked path's.
+
+[H100 qualification](runs/score-mlp/fused-gpu-qualification.json) passed in job 235164
+on dogo (H100 SXM) at commit `b1712a0c`: all 41 GPU tests of both score-MLP test files,
+36 of them for the fused kernel. At 2,048 tokens, 4 heads, and 64-channel BF16 Q/K/V,
+errors against the FP64 oracle are below 0.012 (output, dQ, dK, dV) and 1e-4 (`a`, `b`,
+`w`) whole, per head, and per unit:
 
 | Case | Output | dQ | dK | dV | da, db, dw |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | kernel, `J` = 4 | 1.7e-3 | 1.7e-3 | 1.7e-3 | 1.7e-3 | ≤ 3e-7 |
-| kernel, `J` = 8 | 1.7e-3 | 1.7e-3 | 1.7e-3 | 1.7e-3 | ≤ 5e-7 |
+| kernel, `J` = 8 | 1.7e-3 | 1.7e-3 | 1.7e-3 | 1.7e-3 | ≤ 4e-7 |
 | exp residual, `J` = 4 | 1.7e-3 | 1.7e-3 | 1.7e-3 | 1.7e-3 | ≤ 5e-7 |
 | exp residual, `J` = 8 | 1.7e-3 | 1.7e-3 | 1.7e-3 | 1.7e-3 | ≤ 4e-7 |
 
-- Against the blocked path on the same GPU: output and dQ 9e-4, dK and dV 4.9e-3
-  (the blocked path's own dK and dV errors against the oracle are 4.6e-3), units ≤ 4e-7.
+- Against the blocked path on the same GPU: output and dQ ≤ 9e-4, dK and dV ≤ 4.9e-3
+  (the blocked path's own dK and dV errors against the oracle are 4.6e-3), units ≤ 3e-7.
 - Two calls return bitwise identical outputs and gradients.
 - The exp residual at `a = 0` matches the fused exp kernel to 5e-5 (its 64x64 tiles
   sum in another FP32 order), with `db` and `dw` exactly zero.
-- 131 tokens, widths 33 and 17, `J` = 3: FP32 ≤ 5.3e-7; BF16 ≤ 1.7e-3, units ≤ 2.3e-7.
+- 131 tokens, two batches, three heads; Q/K and value widths 33/17 and 72/40 at `J` = 3,
+  and 128/128 at `J` = 3 and 8: FP32 ≤ 1.8e-6; BF16 ≤ 1.8e-3, units ≤ 8e-7.
+- Masked entries (FP32): the overflowing in-tile score or exp, ≤ 4e-7 from the FP64
+  oracle; the overflowing `f(0)`, finite, within 1.1e-7 of the FP64 definition and equal
+  to the blocked path; the NaN unit, NaN exactly where the blocked path has NaN, the rest
+  within 5.1e-7 of it.
 - Model shape (micro-batch 16, 14 heads, 2,048 tokens, `J` = 8): finite, with the same
   agreement with the blocked path.
 - A two-layer model at 256 tokens (FP32, HIGHEST precision): the same loss, parameter
-  gradients within 2.2e-5 of the blocked model.
+  gradients within 2.9e-5 of the blocked model.
 
 [Throughput](runs/score-mlp/fused-throughput.json) at the Transformer++ attention shape
-(micro-batch 16, 14 heads, 2,048 tokens), forward and backward of one layer, both
-backends on one H100 SXM (dogo, job 235098); attention time per update is 15 layers
-times 16 micro-batches:
+(micro-batch 16, 14 heads, 2,048 tokens), median forward and backward of one layer, both
+backends on one H100 SXM (dogo, job 235165, commit `b1712a0c`); attention time per update
+is 15 layers times 16 micro-batches:
 
 | Kernel | Fused ms | Fused s/update | Blocked ms | Blocked s/update |
 | --- | ---: | ---: | ---: | ---: |
-| Plain exp | 3.2 | 0.77 | 25.7 | 6.2 |
-| kernel, `J` = 4 | 14.9 | 3.6 | 97.0 | 23.3 |
-| kernel, `J` = 8 | 32.3 | 7.8 | 119.0 | 28.6 |
-| Exp residual, `J` = 4 | 15.9 | 3.8 | 104.3 | 25.0 |
-| Exp residual, `J` = 8 | 35.0 | 8.4 | 126.2 | 30.3 |
+| Plain exp | 3.3 | 0.79 | 25.8 | 6.2 |
+| kernel, `J` = 4 | 15.5 | 3.7 | 97.2 | 23.3 |
+| kernel, `J` = 8 | 33.7 | 8.1 | 119.1 | 28.6 |
+| Exp residual, `J` = 4 | 16.8 | 4.0 | 104.3 | 25.0 |
+| Exp residual, `J` = 8 | 34.7 | 8.3 | 126.2 | 30.3 |
 
-The kernel uses 32x32 tiles, 4 warps, and 2 stages. In the record's sweep this is within
-5% of the fastest setting at `J` = 8 and for the exp residual at `J` = 4; for the kernel
-form at `J` = 4, 64x32 tiles are 10% faster (13.5 ms). With 64x64 tiles the `J` = 8
-backward is about 4x slower (exp residual `J` = 8: 132.7 ms), consistent with register
-pressure from the per-unit tiles.
+The kernel uses 32x32 tiles, 4 warps, and 2 stages. In the record's sweep this is the
+fastest setting for the exp residual at `J` = 8 and within 5% of it for the kernel form
+at `J` = 8 (3 stages: 32.2 ms); at `J` = 4, 64x32 tiles are 8% faster for the exp
+residual (15.5 ms) and 12% for the kernel form (13.5 ms). With 64x64 tiles the `J` = 8
+backward is 3-4x slower (exp residual `J` = 8: 116.7 against 28.3 ms), consistent with
+register pressure from the per-unit tiles.
+
+Repeat from a committed worktree on Kennel: the CPU tests, then each GPU step within its
+own H100 allocation, which writes that step's record:
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
   scaffolds/transformer/tests/test_score_mlp_attention.py \
   scaffolds/transformer/tests/test_score_mlp_fused.py -m 'not gpu'
-# Inside a GPU allocation:
-python -m pytest -q scaffolds/transformer/tests/test_score_mlp_attention.py \
-  scaffolds/transformer/tests/test_score_mlp_fused.py -m gpu
+mkdir -p scaffolds/transformer/validation/logs/score-mlp
+for step in tests benchmark; do
+  sbatch --partition=debug --gres=gpu:h100:1 --exclude=collie,samoyed,doodle,terrier,shiba \
+    --output=scaffolds/transformer/validation/logs/score-mlp/%j.log \
+    scaffolds/transformer/validation/qualify_score_mlp_fused.sbatch "$(git rev-parse HEAD)" "$step"
+done
 ```
 
 ## Continuing learned models
