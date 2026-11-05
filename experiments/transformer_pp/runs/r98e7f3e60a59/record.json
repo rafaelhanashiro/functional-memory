@@ -1,14 +1,50 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
+      "sha256": "3b8929b81340693435733836a4f73dbac39be06999338159dfa8f3aa35cdeb83",
+      "size_bytes": 6701
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/.runtime/acceptance/B300-1",
+      "allocation": "JobId=235226 JobName=r98e7f3e60a59 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:31 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-04T18:35:22 EligibleTime=2026-11-04T18:35:22 AccrueTime=2026-11-04T18:35:22 StartTime=2026-11-04T18:35:23 EndTime=2026-11-05T18:35:23 Deadline=N/A PreemptEligibleTime=2026-11-04T20:35:23 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-04T18:35:23 Scheduler=Main Partition=standard AllocNode:Sid=kennel:794908 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r98e7f3e60a59/config.yaml",
+      "config_sha256": "cd6f7b55425674103e34d78697add53d1cf6b6206d99a262839d0900190ff897",
+      "exit_code": 1,
+      "finished_utc": "2026-11-04T23:36:52.926505+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
+      "slurm_job_id": "235226",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-04T23:35:54.726484+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r98e7f3e60a59/config.yaml",
     "sha256": "cd6f7b55425674103e34d78697add53d1cf6b6206d99a262839d0900190ff897"
   },
+  "error": "Job process exited with code 1; see training.log",
+  "frozen_execution_sha256": "b791cdade9458c3f6171c54e46b71997c03eae40f7a0ab8c98e63faa21187806",
   "home_cluster": "kennel",
   "label": "score-mlp-exp-residual-j8",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
+    "sha256": "3b8929b81340693435733836a4f73dbac39be06999338159dfa8f3aa35cdeb83",
+    "size_bytes": 6701
+  },
+  "log_path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
   "name": "score-mlp-exp-residual-j8",
   "record_schema_version": 1,
   "run_id": "r98e7f3e60a59",
-  "status": "queued",
+  "source_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
+  "status": "failed",
   "submission": {
     "command": [
       "sbatch",
@@ -18,7 +54,7 @@
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
-      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--exclude=akita,mastiff,collie,samoyed,doodle,terrier,shiba",
       "--job-name=r98e7f3e60a59",
       "--output=experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
       "--error=experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
@@ -32,6 +68,6 @@
     "gpu_count": 1,
     "launch_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
     "partition": "standard,long",
-    "slurm_job_id": "235226"
+    "slurm_job_id": "235233"
   }
 }
