@@ -43,7 +43,10 @@ A100/A6000 nodes and `shiba`; A6000 training is markedly slower in this project'
 tests, and the transformer launcher accepts only B300 and H100, so a job granted
 a B200 exits within seconds. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
-60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
+60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
+node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps
+it and then requeues under its old job ID, so `scancel` it before resubmitting its
+run; otherwise two jobs train the same run directory.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
