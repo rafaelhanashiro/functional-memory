@@ -106,8 +106,9 @@ class ModelConfig:
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
-    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
-    attention_forget_gate_form: Literal["input", "constant"] = "input"
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. "sigmoid": the Forgetting
+    # Transformer's original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
+    attention_forget_gate_form: Literal["input", "constant", "sigmoid"] = "input"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -427,7 +428,7 @@ class ModelConfig:
             raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
         if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
             raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
-        if self.attention_forget_gate_form not in ("input", "constant"):
+        if self.attention_forget_gate_form not in ("input", "constant", "sigmoid"):
             raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
         if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
             raise ValueError("A forget gate form requires the forget gate")
@@ -438,7 +439,11 @@ class ModelConfig:
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                       and activation != "identity")
-        if self.attention_forget_gate_form != "input" and (
+        if self.attention_forget_gate_form == "sigmoid" and (
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
+            raise ValueError("The sigmoid forget gate form is qualified as cumulative decay with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_form == "constant" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
                 or not polynomial):
             raise ValueError("The constant forget gate form is qualified only as cumulative decay of nonlinear "

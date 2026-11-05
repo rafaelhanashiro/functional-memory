@@ -95,7 +95,7 @@ CONTINUATION_PARAMETERS = frozenset({
     "polynomial_coefficients", "query_polynomial_bias", "query_polynomial_kernel",
     "query_polynomial_amplitude", "query_polynomial_mixing",
     "qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude",
-    "forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias",
+    "forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias", "forget_gate_bias",
 })
 
 
