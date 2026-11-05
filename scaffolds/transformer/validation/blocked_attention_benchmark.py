@@ -18,7 +18,10 @@ Stages (run from the repository root with PYTHONPATH=.):
                 per (variant, micro-batch), each in a fresh process for its allocator peak.
 
 Timings are medians of compiled calls after warmup, synchronized after every call;
-compilation is excluded. Compiled memory is the compiler's estimate for one call.
+compilation is excluded. Compiled memory is the compiler's estimate for one call; it covers one
+layer, not memory a model holds across layers (each layer's residuals until its backward).
+Accuracy and failure programs compile at the accuracy shape without GEMM autotuning; the timed
+programs (XLA defaults, timing shape) are also scored on their first sequence.
 """
 from __future__ import annotations
 
@@ -45,6 +48,7 @@ BACKWARDS = ("columns", "rows", "saved")
 ROOT = Path(__file__).resolve().parents[3]
 RECIPE = ROOT / "experiments/transformer_pp/runs/r9040f12f3d80/config.yaml"
 UPDATE_LAYER_MICRO_BATCHES = 15 * 16  # layers x micro-batches of 16 sequences in one 256-sequence update
+TIMED_ACCURACY_SEQUENCES = 1  # sequences of each timed program's result scored against the oracle
 
 
 # --------------------------------------------------------------------------------------------
@@ -66,6 +70,22 @@ def _validate(q, k, v, block_size, weights="float32"):
         raise ValueError("block_size must be a positive integer")
     if weights not in WEIGHTS:
         raise ValueError(f"weights must be one of {WEIGHTS}")
+
+
+def _rounded_to(x, dtype):
+    """``x`` rounded to ``dtype``'s precision and kept in x's dtype; ``x`` itself if dtype is not narrower.
+
+    Write every intended rounding of a value that is upcast again this way. With the default
+    xla_allow_excess_precision, XLA GPU removes a conversion pair f32 -> bf16 -> f32 when the
+    second conversion directly consumes the first, so ``x.astype(bf16).astype(f32)`` may not
+    round (test_xla_gpu_removes_bf16_round_trips); reduce_precision is kept.
+    For BF16 (FP32's exponent range) it equals the conversion round trip; for narrower exponent
+    ranges XLA flushes values below the normal range to zero.
+    """
+    source, target = jnp.finfo(x.dtype), jnp.finfo(dtype)
+    if target.nmant >= source.nmant and target.nexp >= source.nexp:
+        return x
+    return jax.lax.reduce_precision(x, exponent_bits=target.nexp, mantissa_bits=target.nmant)
 
 
 def _strips(length: int, block_size: int) -> list[tuple[int, int]]:
@@ -180,8 +200,9 @@ def _flash(q, k, v, block_size, weights, backward):
 
 def _flash_fwd(q, k, v, block_size, weights, backward):
     output, log_sum_exp, kept = _flash_forward(q, k, v, block_size, weights, backward)
-    # delta = rowsum(dO * O) uses the FP32 output with FP32 weights, and the rounded
-    # output with input-dtype weights (as FlashAttention and cuDNN).
+    # delta = rowsum(dO * O) uses the FP32 output with FP32 weights, and the output rounded to
+    # the input dtype with input-dtype weights (as FlashAttention and cuDNN); the residual is
+    # stored rounded.
     saved = output if weights == "float32" else output.astype(v.dtype)
     return jnp.swapaxes(output, 1, 2).astype(v.dtype), (q, k, v, saved, log_sum_exp, kept)
 
@@ -196,7 +217,10 @@ def _flash_bwd(block_size, weights, backward, residuals, cotangent):
     scale = 1.0 / math.sqrt(q.shape[-1])
     length = q.shape[1]
     qt, kt, vt, gt = (jnp.swapaxes(x, 1, 2) for x in (q, k, v, cotangent))
-    delta = jnp.sum(gt.astype(compute) * saved.astype(compute), axis=-1)  # [B, H, T]
+    # Residuals stored in the input dtype enter FP32 arithmetic with their rounding restated, so it
+    # does not depend on the barrier keeping the two conversions apart (see _rounded_to).
+    output = _rounded_to(saved.astype(compute), saved.dtype)
+    delta = jnp.sum(gt.astype(compute) * output, axis=-1)  # [B, H, T]
     # Operands of the weight products: FP32 weights multiply upcast copies (converted once),
     # input-dtype weights multiply them as stored. Score products always use the stored inputs.
     qo, ko, go = (x.astype(compute) for x in (qt, kt, gt)) if weights == "float32" else (qt, kt, gt)
@@ -235,7 +259,7 @@ def _flash_bwd(block_size, weights, backward, residuals, cotangent):
             key, value = kt[:, :, :end], vt[:, :, :end]
             causal = jnp.arange(end)[None, :] <= jnp.arange(start, end)[:, None]
             if backward == "saved":
-                weights_ = kept[index].astype(compute)
+                weights_ = _rounded_to(kept[index].astype(compute), kept[index].dtype)
             else:
                 scores = contract("bhqd,bhkd->bhqk", query, key) * scale
                 weights_ = jnp.exp(jnp.where(causal, scores - log_sum_exp[:, :, start:end, None], -jnp.inf))
@@ -480,11 +504,228 @@ def measure(program, arguments, *, warmup: int, iterations: int):
     }, result, compiled
 
 
+KERNEL_CLASSES = ("gemm", "fused_attention", "other")
+FUSED_ATTENTION_KERNEL = re.compile(r"cudnn", re.IGNORECASE)  # only the cuDNN attention calls cuDNN here
 GEMM_KERNEL = re.compile(r"gemm|nvjet|cutlass|xmma|matmul|cublas|sm90_", re.IGNORECASE)
 
 
+def kernel_class(name: str) -> str:
+    """Class of a GPU kernel by name: cuDNN fused attention (all its kernels), GEMM (cuBLAS,
+    CUTLASS, XLA's Triton GEMM fusions), or other (XLA's elementwise, reduction, transpose and
+    copy kernels)."""
+    if FUSED_ATTENTION_KERNEL.search(name):
+        return "fused_attention"
+    return "gemm" if GEMM_KERNEL.search(name) else "other"
+
+
+_HLO_ARRAY = re.compile(r"\b(pred|[su](?:4|8|16|32|64)|f8e\w+|bf16|f16|f32|f64|c64|c128)\[([\d,]*)\]")
+_HLO_ITEM_BYTES = {"pred": 1, "s4": 0.5, "u4": 0.5, "s8": 1, "u8": 1, "s16": 2, "u16": 2, "s32": 4, "u32": 4,
+                   "s64": 8, "u64": 8, "bf16": 2, "f16": 2, "f32": 4, "f64": 8, "c64": 8, "c128": 16}
+_HLO_INSTRUCTION = re.compile(r"^\s+(ROOT\s+)?%?([\w.\-]+)\s*=\s*")
+_HLO_NOT_KERNELS = {"parameter", "constant", "get-tuple-element", "tuple", "bitcast", "opt-barrier",
+                    "optimization-barrier", "after-all", "partition-id", "replica-id", "add-dependency"}
+
+
+def _hlo_arrays(shape: str) -> list[tuple[str, list[int]]]:
+    return [(dtype, [int(d) for d in dims.split(",") if d]) for dtype, dims in _HLO_ARRAY.findall(shape)]
+
+
+def _hlo_bytes(shape: str) -> float:
+    return sum(_HLO_ITEM_BYTES.get(dtype, 1) * math.prod(dims) for dtype, dims in _hlo_arrays(shape))
+
+
+def _closing(text: str, start: int) -> int:
+    """Index of the bracket closing text[start]."""
+    depth = 0
+    for index in range(start, len(text)):
+        depth += text[index] in "([{"
+        depth -= text[index] in ")]}"
+        if depth == 0:
+            return index
+    raise ValueError(f"Unbalanced HLO text: {text[:200]}")
+
+
+def _split_top_level(text: str) -> list[str]:
+    parts, depth, start = [], 0, 0
+    for index, char in enumerate(text):
+        depth += char in "([{"
+        depth -= char in ")]}"
+        if char == "," and depth == 0:
+            parts.append(text[start:index])
+            start = index + 1
+    return [part for part in [*parts, text[start:]] if part.strip()]
+
+
+def hlo_computations(text: str) -> dict:
+    """Optimized HLO text -> {computation: {"entry", "instructions": [...]}}; each instruction has
+    name, shape, opcode, operand names and its attribute text."""
+    computations, current = {}, None
+    for line in text.splitlines():
+        if line and not line[0].isspace():
+            current = None
+            words = line.split()
+            if line.rstrip().endswith("{") and words and words[0] != "HloModule":
+                name = (words[1] if words[0] == "ENTRY" else words[0]).lstrip("%")
+                current = computations[name] = {"entry": words[0] == "ENTRY", "instructions": []}
+            continue
+        match = _HLO_INSTRUCTION.match(line) if current is not None else None
+        if match is None:
+            continue
+        rest = line[match.end():]
+        if rest.startswith("("):
+            end = _closing(rest, 0)
+            shape, rest = rest[:end + 1], rest[end + 1:].lstrip()
+        else:
+            shape, _, rest = rest.partition(" ")
+        opcode, _, rest = rest.partition("(")
+        end = _closing("(" + rest, 0) - 1
+        operands = [part.split()[-1].lstrip("%") for part in _split_top_level(rest[:end])]
+        current["instructions"].append({"root": bool(match.group(1)), "name": match.group(2), "shape": shape,
+                                        "opcode": opcode.strip(), "operands": operands,
+                                        "attributes": rest[end + 1:]})
+    return computations
+
+
+def _called(attributes: str, key: str) -> str | None:
+    match = re.search(rf"\b{key}=%?([\w.\-]+)", attributes)
+    return match.group(1) if match else None
+
+
+def _dot_flops(computation: dict, computations: dict, seen=None) -> float:
+    """2 x output elements x contraction length, summed over the dots of a (nested) computation."""
+    seen = set() if seen is None else seen
+    shapes = {instruction["name"]: instruction["shape"] for instruction in computation["instructions"]}
+    flops = 0.0
+    for instruction in computation["instructions"]:
+        if instruction["opcode"] == "dot":
+            dims = re.search(r"lhs_contracting_dims=\{([\d,]*)\}", instruction["attributes"])
+            lhs = _hlo_arrays(shapes.get(instruction["operands"][0], ""))
+            if dims and lhs:
+                length = math.prod(lhs[0][1][int(d)] for d in dims.group(1).split(",") if d)
+                flops += 2.0 * math.prod(_hlo_arrays(instruction["shape"])[0][1]) * length
+        nested = _called(instruction["attributes"], "calls")
+        if nested in computations and nested not in seen:
+            seen.add(nested)
+            flops += _dot_flops(computations[nested], computations, seen)
+    return flops
+
+
+def _fusion_bytes(instruction: dict, shapes: dict, fused: dict | None) -> float:
+    """Operands read plus results written, counting operands used only through slices at the sliced
+    size and in-place dynamic-update-slice buffers at the update's size."""
+    if fused is None:
+        return _hlo_bytes(instruction["shape"]) + sum(_hlo_bytes(shapes.get(name, "")) for name in instruction["operands"])
+    inner = {item["name"]: item for item in fused["instructions"]}
+    parameters = {int(item["operands"][0]): item["name"] for item in fused["instructions"]
+                  if item["opcode"] == "parameter" and item["operands"] and item["operands"][0].isdigit()}
+    users = {}
+    for item in fused["instructions"]:
+        for name in item["operands"]:
+            users.setdefault(name, []).append(item)
+
+    def through_bitcasts(item):
+        while item is not None and item["opcode"] == "bitcast" and item["operands"]:
+            item = inner.get(item["operands"][0])
+        return item
+
+    in_place, written = set(), 0.0
+    roots = [item for item in fused["instructions"] if item["root"]]
+    if roots and roots[0]["opcode"] == "tuple":
+        roots = [inner[name] for name in roots[0]["operands"] if name in inner]
+    for root in roots:
+        update = through_bitcasts(root)
+        if update is not None and update["opcode"] == "dynamic-update-slice" and len(update["operands"]) > 1:
+            buffer = through_bitcasts(inner.get(update["operands"][0]))
+            if buffer is not None:
+                in_place.add(buffer["name"])
+            written += _hlo_bytes(inner.get(update["operands"][1], {}).get("shape", ""))
+        else:
+            written += _hlo_bytes(root["shape"])
+    read = 0.0
+    for index, name in enumerate(instruction["operands"]):
+        parameter = parameters.get(index)
+        if parameter in in_place:
+            continue
+        uses = users.get(parameter, [])
+        if uses and all(use["opcode"] in ("slice", "dynamic-slice") and use["operands"][0] == parameter for use in uses):
+            read += min(sum(_hlo_bytes(use["shape"]) for use in uses), _hlo_bytes(shapes.get(name, "")))
+        else:
+            read += _hlo_bytes(shapes.get(name, ""))
+    return read + written
+
+
+def hlo_kernel_estimate(text: str) -> dict:
+    """Per kernel class, launches, bytes moved (operands + results of each launch) and GEMM FLOPs
+    of one execution of an optimized GPU HLO module, with known while-loop trip counts.
+
+    An estimate of HBM traffic: caches, re-reads inside a kernel and launch-internal split-K
+    passes are not modeled.
+    """
+    computations = hlo_computations(text)
+    totals = {name: {"launches": 0, "bytes": 0.0, "flops": 0.0} for name in KERNEL_CLASSES}
+    unresolved = []  # while loops counted once (unknown trip count), missing computations
+
+    def walk(name, repeat):
+        if name not in computations:
+            unresolved.append(f"missing computation {name}")
+            return
+        computation = computations[name]
+        shapes = {instruction["name"]: instruction["shape"] for instruction in computation["instructions"]}
+        for instruction in computation["instructions"]:
+            opcode, attributes = instruction["opcode"], instruction["attributes"]
+            if opcode == "while":
+                trips = re.search(r'"known_trip_count":\{"n":"(\d+)"', attributes)
+                if trips is None:
+                    unresolved.append(f"while {instruction['name']}: unknown trip count, counted once")
+                count = int(trips.group(1)) if trips else 1
+                walk(_called(attributes, "body"), repeat * count)
+                walk(_called(attributes, "condition"), repeat * (count + 1))
+                continue
+            if opcode in ("call", "async-start"):
+                target = _called(attributes, "to_apply") or _called(attributes, "calls")
+                if target in computations:
+                    walk(target, repeat)
+                continue
+            if opcode in _HLO_NOT_KERNELS or opcode.endswith("-done"):
+                continue
+            fused = computations.get(_called(attributes, "calls")) if opcode == "fusion" else None
+            flops = 0.0
+            if opcode == "custom-call":
+                target = re.search(r'custom_call_target="([^"]+)"', attributes)
+                target = target.group(1) if target else ""
+                kind = ("fused_attention" if "cudnn$fmha" in target.lower() or "fmha" in target.lower()
+                        else "gemm" if re.search(r"cublas|gemm|matmul", target, re.IGNORECASE) else "other")
+                arrays = _hlo_arrays(instruction["shape"])
+                result = arrays[0] if kind == "gemm" else None
+                moved = sum(_hlo_bytes(shapes.get(name, "")) for name in instruction["operands"])
+                moved += (_HLO_ITEM_BYTES.get(result[0], 1) * math.prod(result[1]) if result
+                          else sum(_HLO_ITEM_BYTES.get(d, 1) * math.prod(s) for d, s in arrays if d != "s8" and d != "u8"))
+                if kind == "gemm" and instruction["operands"]:
+                    dims = re.search(r'"lhs_contracting_dimensions":\[([^\]]*)\]', attributes)
+                    lhs = _hlo_arrays(shapes.get(instruction["operands"][0], ""))
+                    if dims and lhs:
+                        length = math.prod(lhs[0][1][int(d.strip('"'))] for d in dims.group(1).split(",") if d.strip('"'))
+                        flops = 2.0 * math.prod(result[1]) * length
+            else:
+                kind = "gemm" if fused is not None and (
+                    "gemm" in attributes or _dot_flops(fused, computations)) else "other"
+                moved = _fusion_bytes(instruction, shapes, fused)
+                if kind == "gemm":
+                    flops = _dot_flops(fused, computations)
+            totals[kind]["launches"] += repeat
+            totals[kind]["bytes"] += repeat * moved
+            totals[kind]["flops"] += repeat * flops
+
+    entry = next(name for name, computation in computations.items() if computation["entry"])
+    walk(entry, 1)
+    return {"classes": totals, "unresolved": unresolved,
+            "method": "per launch: operands read + results written at full size (slices and in-place "
+                      "updates at their size); GEMM FLOPs 2 x output x contraction; while bodies x trip count"}
+
+
 def profile(compiled, arguments, trace_dir: Path, *, calls: int = 3) -> dict:
-    """GPU stream time of ``calls`` synchronized calls of an already compiled program."""
+    """GPU stream time of ``calls`` synchronized calls of an already compiled program, by kernel
+    class over all kernels, with the optimized HLO's traffic and FLOP estimate per class."""
     from scaffolds.transformer.benchmarks.analyze_profile import analyze_file, discover_traces
 
     jax.block_until_ready(compiled(*arguments))
@@ -492,23 +733,37 @@ def profile(compiled, arguments, trace_dir: Path, *, calls: int = 3) -> dict:
         for index in range(calls):
             with jax.profiler.StepTraceAnnotation("attention", step_num=index + 1):
                 jax.block_until_ready(compiled(*arguments))
-    summary = analyze_file(discover_traces([trace_dir])[-1], step_name="attention", top_kernels=12,
-                           max_bytes=400 * 1024 * 1024)
+    return {"calls": calls, **profile_summary(analyze_file(
+        discover_traces([trace_dir])[-1], step_name="attention", top_kernels=1_000_000,
+        max_bytes=400 * 1024 * 1024), compiled.as_text())}
+
+
+def profile_summary(summary: dict, hlo_text: str) -> dict:
+    """Per-call class times of an analyze_profile summary, with the HLO estimate and achieved rates."""
     device = summary["devices"][0]
     mean = device["mean_per_update"]
     names = {}
     for update in device["updates"]:
         for kernel in update["top_kernels"]:
             names[kernel["name"]] = names.get(kernel["name"], 0.0) + kernel["kernel_sum_ms"] / len(device["updates"])
-    gemm_ms = sum(duration for name, duration in names.items() if GEMM_KERNEL.search(name))
+    class_ms = {name: 0.0 for name in KERNEL_CLASSES}
+    for name, duration in names.items():
+        class_ms[kernel_class(name)] += duration
+    estimate = hlo_kernel_estimate(hlo_text)
+    achieved = {}
+    for name in KERNEL_CLASSES:
+        seconds = class_ms[name] / 1e3
+        moved, flops = estimate["classes"][name]["bytes"], estimate["classes"][name]["flops"]
+        achieved[name] = {"tb_per_s": moved / seconds / 1e12 if seconds else None,
+                          "tflop_per_s": flops / seconds / 1e12 if seconds and flops else None}
     return {
-        "calls": calls, "wall_ms": mean["wall_ms"], "kernel_count": mean["kernel_count"],
+        "wall_ms": mean["wall_ms"], "kernel_count": mean["kernel_count"],
         "kernel_sum_ms": mean["kernel_sum_ms"], "gpu_activity_union_ms": mean["gpu_activity_union_ms"],
         "no_recorded_gpu_activity_ms": mean["no_recorded_gpu_activity_ms"],
-        "top_kernels_gemm_ms": gemm_ms, "top_kernels_other_ms": sum(names.values()) - gemm_ms,
-        "top_kernels": sorted(({"name": name[:120], "ms": duration} for name, duration in names.items()),
-                              key=lambda item: -item["ms"])[:12],
-        "note": "profiled calls; top-kernel split is by kernel name (GEMM: cuBLAS/nvjet/cutlass/Triton gemm)",
+        "class_ms": class_ms, "hlo_estimate": estimate, "achieved": achieved,
+        "top_kernels": sorted(({"name": name[:120], "ms": duration, "class": kernel_class(name)}
+                               for name, duration in names.items()), key=lambda item: -item["ms"])[:12],
+        "note": "per call, all kernels; class by kernel name (kernel_class); achieved = HLO estimate / class time",
     }
 
 
@@ -645,6 +900,64 @@ def _bf16_inputs(shape, seed, sharp):
     return tuple(jnp.asarray(x, jnp.bfloat16) for x in (q, k, v, g))
 
 
+GRADIENT_LABELS = ("output", "dq", "dk", "dv")
+
+
+def _errors(results, references, *, sequences=None) -> dict:
+    """Relative L2 errors of (output, dq, dk, dv), optionally over the first ``sequences`` only."""
+    return {label: relative_l2(np.asarray((x if sequences is None else x[:sequences]).astype(jnp.float32)), reference)
+            for label, x, reference in zip(GRADIENT_LABELS, results, references, strict=True)}
+
+
+def _rounding_floor(references) -> dict:
+    return {label: relative_l2(np.asarray(jnp.asarray(x, jnp.bfloat16).astype(jnp.float32)), x)
+            for label, x in zip(GRADIENT_LABELS, references, strict=True)}
+
+
+def historical_blocked_kernels(shape, seed: int) -> dict:
+    """Options of blocked_dot_product_attention for kernels that trained BF16 runs on the blocked
+    backend (softmax for comparison): query coefficients (Taylor x (1 + 0.1 noise)) and a
+    normalized learned polynomial."""
+    rng = np.random.default_rng(seed)
+    taylor = np.array([1.0, 1.0, 0.5, 1 / 6, 1 / 24], np.float32)
+    coefficients = taylor * (1 + 0.1 * rng.standard_normal((*shape[:3], 5))).astype(np.float32)
+    return {
+        "softmax": {},
+        "query polynomial m=4, unnormalized": {
+            "attention_degree": 4, "attention_normalization": False,
+            "query_polynomial_coefficients": jnp.asarray(coefficients)},
+        "normalized learned polynomial m=2": {
+            "attention_degree": 2, "polynomial_coefficients": jnp.asarray([1.0, 1.0, 0.5], jnp.float32)},
+    }
+
+
+def block_sum_check(shape, seed: int, block_sizes=(128, 2048), compile_options=None) -> dict:
+    """BF16 production blocked attention at several query-block sizes against an FP32 reference
+    of the same kernel (HIGHEST matmul precision, one block) on the same BF16 values."""
+    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+
+    inputs = _bf16_inputs(shape, seed, False)
+    upcast = tuple(x.astype(jnp.float32) for x in inputs)
+    report = {"shape": list(shape), "reference": "same kernel, FP32-upcast inputs, one query block, "
+              "jax.default_matmul_precision('highest')", "kernels": {}}
+    for name, options in historical_blocked_kernels(shape, seed + 1).items():
+        def attend(q, k, v, size, options=options):
+            return blocked_dot_product_attention(q, k, v, query_block_size=size, **options)
+
+        with jax.default_matmul_precision("highest"):
+            program = forward_backward(functools.partial(attend, size=shape[1]))
+            output, grads = jax.jit(program).lower(*upcast).compile(compile_options)(*upcast)
+        reference = tuple(np.asarray(x) for x in (output, *grads))
+        entry = {"bf16_rounding_floor": _rounding_floor(reference), "blocks": {}}
+        for size in block_sizes:
+            program = forward_backward(functools.partial(attend, size=size))
+            output, grads = jax.jit(program).lower(*inputs).compile(compile_options)(*inputs)
+            entry["blocks"][str(size)] = _errors((output, *grads), reference)
+        report["kernels"][name] = entry
+        jax.clear_caches()
+    return report
+
+
 # --------------------------------------------------------------------------------------------
 # Stages
 # --------------------------------------------------------------------------------------------
@@ -661,7 +974,10 @@ def kernel_stage(args) -> dict:
                                 "timing": "median of synchronized compiled calls after warmup; compile excluded",
                                 "memory": "compiled.memory_analysis temp bytes (estimate, one call)",
                                 "backward": "jax.vjp of the attention; outputs, dq, dk, dv",
-                                "accuracy_compile": "xla_gpu_autotune_level=0 (timed programs use defaults)"},
+                                "accuracy_compile": "accuracy and failure programs: accuracy shape, "
+                                                    "xla_gpu_autotune_level=0; timed programs: timing shape, "
+                                                    "XLA defaults, scored on their first sequence",
+                                "timed_accuracy_sequences": TIMED_ACCURACY_SEQUENCES},
               "matmul_precision": matmul_precision_probe(), "variants": {}}
     write_json(args.output, report)
     deadline = time.monotonic() + 60 * args.budget_minutes
@@ -670,13 +986,16 @@ def kernel_stage(args) -> dict:
     oracles, floors = {}, {}
     for name, (q, k, v, g) in accuracy_inputs.items():
         oracles[name] = oracle(*(np.asarray(x.astype(jnp.float32)) for x in (q, k, v, g)))
-        floors[name] = {label: relative_l2(np.asarray(jnp.asarray(x, jnp.bfloat16).astype(jnp.float32)), x)
-                        for label, x in zip(("output", "dq", "dk", "dv"), oracles[name], strict=True)}
+        floors[name] = _rounding_floor(oracles[name])
     report["bf16_rounding_floor"] = floors
     float32_inputs = tuple(x.astype(jnp.float32) for x in accuracy_inputs["normal"])
     float32_oracle = oracle(*(np.asarray(x) for x in float32_inputs))
     cases = failure_cases(*(np.asarray(x) for x in accuracy_inputs["normal"][:3]), position=args.failure_position)
     time_inputs = _bf16_inputs(args.time_shape, args.seed + 1, False)
+    # The timed (default-compiled) programs are scored too, on their first sequence(s): attention is
+    # independent per sequence, so the oracle of that slice is exact for it.
+    timed_oracle = oracle(*(np.asarray(x[:TIMED_ACCURACY_SEQUENCES].astype(jnp.float32)) for x in time_inputs))
+    report["bf16_rounding_floor_timed"] = _rounding_floor(timed_oracle)
 
     for name in names:
         variant = table[name]
@@ -697,25 +1016,21 @@ def kernel_stage(args) -> dict:
             entry["accuracy"] = {}
             for distribution, inputs in accuracy_inputs.items():
                 output, grads = compiled(*inputs)
-                entry["accuracy"][distribution] = {
-                    label: relative_l2(np.asarray(x.astype(jnp.float32)), reference)
-                    for label, x, reference in zip(("output", "dq", "dk", "dv"), (output, *grads),
-                                                   oracles[distribution], strict=True)}
+                entry["accuracy"][distribution] = _errors((output, *grads), oracles[distribution])
             entry["failure"] = failure_report(compiled, cases, accuracy_inputs["normal"][3])
             del compiled
             if name in (args.float32_input_variants or ()):
                 output, grads = jax.jit(program).lower(*float32_inputs).compile(untuned)(*float32_inputs)
-                entry["accuracy"]["float32_inputs"] = {
-                    label: relative_l2(np.asarray(x), reference)
-                    for label, x, reference in zip(("output", "dq", "dk", "dv"), (output, *grads),
-                                                   float32_oracle, strict=True)}
+                entry["accuracy"]["float32_inputs"] = _errors((output, *grads), float32_oracle)
             forward, result, _ = measure(attend, time_inputs[:3], warmup=args.warmup, iterations=args.iterations)
             del result
             both, result, compiled = measure(program, time_inputs, warmup=args.warmup, iterations=args.iterations)
             finite = bool(jax.device_get(jnp.all(jnp.stack(
                 [jnp.all(jnp.isfinite(x.astype(jnp.float32))) for x in jax.tree.leaves(result)]))))
+            timed_accuracy = _errors((result[0], *result[1]), timed_oracle, sequences=TIMED_ACCURACY_SEQUENCES)
             del result
             entry["timing"] = {"forward": forward, "forward_backward": both, "outputs_finite": finite,
+                               "accuracy_first_sequences": timed_accuracy,
                                "attention_seconds_per_update": both["median_ms"] * UPDATE_LAYER_MICRO_BATCHES / 1e3}
             if name in (args.profile_variants or ()):
                 try:
@@ -742,22 +1057,39 @@ def kernel_stage(args) -> dict:
                                       iterations=args.iterations)
             del result
             report["repeats"][name] = {"forward_backward_median_ms": both["median_ms"]}
+    if not args.skip_block_sums:
+        # Production's BF16 dK/dV block sums for kernels that trained historical blocked runs.
+        try:
+            report["block_sums"] = block_sum_check(args.accuracy_shape, args.seed + 2,
+                                                   compile_options={"xla_gpu_autotune_level": "0"})
+        except Exception as error:  # noqa: BLE001
+            report["block_sums"] = {"error": f"{type(error).__name__}: {str(error)[:2000]}"}
     report["status"] = "complete"
     report["completed_at_utc"] = datetime.now(UTC).isoformat()
     write_json(args.output, report)
     return report
 
 
-def _routed_softmax(attend):
-    def softmax_attention(q, k, v, *, backend="blocked", return_diagnostics=False, dropout=None,
-                          deterministic=True, rngs=None, weights_dtype=None):
+class _RoutedSoftmax:
+    """Stands in for attention.softmax.softmax_attention: sends attention to ``attend`` and counts
+    the calls in ``calls`` (one per layer each time the model is traced)."""
+
+    def __init__(self, attend):
+        self.attend = attend
+        self.calls = 0
+
+    def __call__(self, q, k, v, *, backend="blocked", return_diagnostics=False, dropout=None,
+                 deterministic=True, rngs=None, weights_dtype=None):
         if return_diagnostics:
             raise ValueError("Benchmark routing computes no attention diagnostics")
         if dropout is not None and getattr(dropout, "rate", 0.0) != 0.0:
             raise ValueError("Benchmark routing requires dropout 0")
-        return attend(q, k, v)
+        self.calls += 1
+        return self.attend(q, k, v)
 
-    return softmax_attention
+
+def _routed_softmax(attend) -> _RoutedSoftmax:
+    return _RoutedSoftmax(attend)
 
 
 def load_model_config(recipe: Path, *, micro_batch: int, backend: str):
@@ -772,9 +1104,10 @@ def load_model_config(recipe: Path, *, micro_batch: int, backend: str):
 
 
 def micro_step_program(config, *, variant: str | None):
-    """(state, jit-able f(params, batch, rng) -> (nll, grads)) running the scaffold's loss_and_grads.
+    """(state, jit-able f(params, batch, rng) -> (nll, grads), router) running the scaffold's loss_and_grads.
 
-    ``variant`` None keeps the configured backend; otherwise softmax attention is routed to it.
+    ``variant`` None keeps the configured backend (router None); otherwise softmax attention is
+    routed to it for the rest of the process, and ``router.calls`` counts the routed calls.
     """
     from types import SimpleNamespace
 
@@ -782,14 +1115,16 @@ def micro_step_program(config, *, variant: str | None):
     from scaffolds.transformer.training import loop
     from scaffolds.transformer.training.state import create_state
 
+    router = None
     if variant is not None:
-        softmax_module.softmax_attention = _routed_softmax(variants(config.model.max_seq_len)[variant].function())
+        router = _routed_softmax(variants(config.model.max_seq_len)[variant].function())
+        softmax_module.softmax_attention = router
     state = create_state(config, jax.random.PRNGKey(config.train.seed))
 
     def program(params, batch, rng):
         return loop.loss_and_grads(SimpleNamespace(graphdef=state.graphdef, params=params), batch, rng)
 
-    return state, program
+    return state, program, router
 
 
 def model_case(args) -> dict:
@@ -801,14 +1136,22 @@ def model_case(args) -> dict:
         routed = args.variant not in ("production-b128", "cudnn")
         backend = "cudnn" if args.variant == "cudnn" else "blocked"
         config = load_model_config(args.recipe, micro_batch=args.micro_batch, backend=backend)
-        state, program = micro_step_program(config, variant=args.variant if routed else None)
-        result["routing"] = (f"model.attention_backend={backend}" if not routed else
-                             f"model.attention_backend=blocked; softmax_attention routed to {args.variant}")
+        state, program, router = micro_step_program(config, variant=args.variant if routed else None)
+        result["routing"] = {"attention_backend": backend, "routed_to": args.variant if routed else None,
+                             "layers": config.model.num_layers, "routed_calls_traced": None}
         batch = jnp.asarray(np.random.default_rng(config.train.seed).integers(
             0, config.model.vocab_size, (args.micro_batch, config.data.sequence_length), dtype=np.int32))
         rng = jax.random.PRNGKey(config.train.seed)
+        if router is not None:
+            router.calls = 0  # count the measured program's single trace only
         timing, (nll, grads), _ = measure(program, (state.params, batch, rng), warmup=args.warmup,
                                           iterations=args.iterations)
+        if router is not None:
+            # Observed, not configured: each layer's attention passed through the routed candidate.
+            result["routing"]["routed_calls_traced"] = router.calls
+            if router.calls != config.model.num_layers:
+                raise RuntimeError(f"Routing traced {router.calls} attention calls for "
+                                   f"{config.model.num_layers} layers")
         import optax
         nll, grad_norm = (float(x) for x in jax.device_get((nll, optax.tree.norm(grads))))
         del grads
@@ -928,6 +1271,14 @@ def summarize(kernel_path: Path | None, model_path: Path | None) -> str:
         if float32_rows:
             lines += ["", "FP32 inputs, relative L2 error x 1e6:", "", "| Variant | Output | dQ | dK | dV |",
                       "| --- | ---: | ---: | ---: | ---: |", *float32_rows]
+        timed_rows = [f"| {name} | " + " | ".join(errors(entry["timing"]["accuracy_first_sequences"])) + " |"
+                      for name, entry in entries.items() if "accuracy_first_sequences" in entry.get("timing", {})]
+        if timed_rows:
+            sequences = kernel["configuration"].get("timed_accuracy_sequences", 1)
+            lines += ["", f"Timed programs (XLA defaults, timing shape), first {sequences} sequence(s), relative L2 "
+                          "error x 1e3:", "", "| Variant | Output | dQ | dK | dV |", "| --- | ---: | ---: | ---: | ---: |",
+                      "| BF16 rounding of the oracle | " + " | ".join(errors(kernel["bf16_rounding_floor_timed"])) + " |",
+                      *timed_rows]
         cases = ("q_nan", "k_nan", "v_nan", "v_inf", "score_neg_inf", "score_overflow", "score_huge")
         lines += ["", f"Nonfinite output rows (batch 0, head 1; injected at token "
                       f"{kernel['configuration']['failure_position']}); gradients finite in brackets:", "",
@@ -949,31 +1300,76 @@ def summarize(kernel_path: Path | None, model_path: Path | None) -> str:
         profiled = [(name, entry["profile"]) for name, entry in entries.items()
                     if "profile" in entry and "error" not in entry["profile"]]
         if profiled:
-            lines += ["", "Profiled forward+backward calls (GPU stream time per call; GEMM/other among the top kernels):", "",
-                      "| Variant | Wall ms | GPU busy ms | Idle ms | Kernels | Top GEMM ms | Top other ms |",
-                      "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+            def rate(value):
+                return "" if value is None else f"{value:.2f}"
+
+            lines += ["", "Profiled forward+backward calls (GPU stream time per call, all kernels by class; "
+                          "HLO-estimated traffic and GEMM FLOPs over class time):", "",
+                      "| Variant | Wall ms | GPU busy ms | Idle ms | Kernels | GEMM ms | Other ms | cuDNN ms | "
+                      "GEMM GB | Other GB | GEMM TB/s | GEMM TFLOP/s | Other TB/s |",
+                      "| --- |" + " ---: |" * 12]
             for name, record in profiled:
+                ms, estimate, achieved = record["class_ms"], record["hlo_estimate"]["classes"], record["achieved"]
                 lines.append(f"| {name} | {record['wall_ms']:.2f} | {record['gpu_activity_union_ms']:.2f} | "
                              f"{record['no_recorded_gpu_activity_ms']:.2f} | {record['kernel_count']:.0f} | "
-                             f"{record['top_kernels_gemm_ms']:.2f} | {record['top_kernels_other_ms']:.2f} |")
+                             f"{ms['gemm']:.2f} | {ms['other']:.2f} | {ms['fused_attention']:.2f} | "
+                             f"{estimate['gemm']['bytes'] / 1e9:.1f} | {estimate['other']['bytes'] / 1e9:.1f} | "
+                             f"{rate(achieved['gemm']['tb_per_s'])} | {rate(achieved['gemm']['tflop_per_s'])} | "
+                             f"{rate(achieved['other']['tb_per_s'])} |")
         repeats = kernel.get("repeats", {})
         if repeats:
             lines += ["", "Repeated at the end of the job (fwd+bwd ms): " + ", ".join(
                 f"{name} {value['forward_backward_median_ms']:.2f} (first {entries[name]['timing']['forward_backward']['median_ms']:.2f})"
                 for name, value in repeats.items())]
+        block_sums = kernel.get("block_sums", {})
+        if "kernels" in block_sums:
+            sizes = list(next(iter(block_sums["kernels"].values()))["blocks"])
+            lines += ["", f"Production blocked BF16 at {block_sums['shape']} against an FP32 reference of the same "
+                          "kernel: dK and dV error x 1e3 (ratio to the BF16 rounding floor) per query-block size:", "",
+                      "| Kernel | Floor dK / dV | " + " | ".join(f"{size}-query blocks dK / dV" for size in sizes) + " |",
+                      "| --- | ---: |" + " ---: |" * len(sizes)]
+            for name, record in block_sums["kernels"].items():
+                floor = record["bf16_rounding_floor"]
+                cells = [f"{1e3 * record['blocks'][size]['dk']:.2f} ({record['blocks'][size]['dk'] / floor['dk']:.2f}x) / "
+                         f"{1e3 * record['blocks'][size]['dv']:.2f} ({record['blocks'][size]['dv'] / floor['dv']:.2f}x)"
+                         for size in sizes]
+                lines.append(f"| {name} | {1e3 * floor['dk']:.2f} / {1e3 * floor['dv']:.2f} | " + " | ".join(cells) + " |")
+        elif block_sums:
+            lines += ["", f"Block sums: {block_sums.get('error', '')[:200]}"]
     if model_path is not None:
         model = json.loads(model_path.read_text())
-        lines += ["", "| Variant | Micro-batch | Micro-step ms | s/update | Peak GB | Compile s | NLL |",
-                  "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"]
+        lines += ["", "| Variant | Micro-batch | Micro-step ms | s/update | Peak GB | Compile s | NLL | Routed calls |",
+                  "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"]
+        steps, layers = {}, None
         for case in model["cases"]:
+            routing = case.get("routing") if isinstance(case.get("routing"), dict) else {}
+            calls = routing.get("routed_calls_traced")
+            layers = routing.get("layers", layers)
             if case.get("status") != "complete":
                 reason = "out of memory" if case.get("out_of_memory") else case.get("status")
-                lines.append(f"| {case['variant']} | {case['micro_batch']} | {reason} | | | | |")
+                lines.append(f"| {case['variant']} | {case['micro_batch']} | {reason} | | | | | |")
                 continue
+            steps[(case["variant"], case["micro_batch"])] = case["timing"]["median_ms"]
             peak = case.get("peak_bytes_in_use")
             lines.append(f"| {case['variant']} | {case['micro_batch']} | {case['timing']['median_ms']:.1f} | "
                          f"{case['seconds_per_update']:.2f} | {'' if peak is None else f'{peak / 1e9:.1f}'} | "
-                         f"{case['timing']['compile_seconds']:.0f} | {case['nll']:.4f} |")
+                         f"{case['timing']['compile_seconds']:.0f} | {case['nll']:.4f} | "
+                         f"{'-' if calls is None else calls} |")
+        if kernel_path is not None and layers:
+            # A routed model's micro-step differs from the cuDNN model's by its attention only, one call per
+            # layer at the kernel stage's batch: compare with layers x the one-layer difference.
+            batch = kernel["configuration"]["time_shape"][0]
+            base_step = steps.get(("cudnn", batch))
+            base_layer = entries.get("cudnn", {}).get("timing", {}).get("forward_backward", {}).get("median_ms")
+            rows = []
+            for (variant, micro_batch), step in steps.items():
+                layer = entries.get(variant, {}).get("timing", {}).get("forward_backward", {}).get("median_ms")
+                if micro_batch == batch and variant != "cudnn" and None not in (base_step, base_layer, layer):
+                    rows.append(f"| {variant} | {step - base_step:.1f} | {layers * (layer - base_layer):.1f} |")
+            if rows:
+                lines += ["", f"Micro-step minus cuDNN's at micro-batch {batch} against {layers} x the one-layer "
+                              "forward+backward difference (ms):", "", "| Variant | Model | Layers x kernel |",
+                          "| --- | ---: | ---: |", *rows]
     return "\n".join(lines) + "\n"
 
 
@@ -992,6 +1388,8 @@ def main():
                         help="Trace three forward+backward calls of these variants (GPU stream time breakdown)")
     parser.add_argument("--float32-input-variants", nargs="+",
                         help="Also measure these variants' accuracy with FP32 inputs (precision of the products)")
+    parser.add_argument("--skip-block-sums", action="store_true",
+                        help="Skip the BF16 block-sum check of the historical blocked kernels")
     parser.add_argument("--micro-batches", type=int, nargs="+", default=[16, 8, 4])
     parser.add_argument("--micro-batch", type=int)
     parser.add_argument("--recipe", type=Path, default=RECIPE)
