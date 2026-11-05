@@ -1,11 +1,35 @@
 {
+  "artifacts": [],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-ab-decay-1x/experiments/transformer_pp/runs/r68cac6f03d77/.runtime/acceptance/B300-1",
+      "allocation": "JobId=235889 JobName=r68cac6f03d77 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20062 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:17 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-04T23:28:17 EligibleTime=2026-11-04T23:28:17 AccrueTime=2026-11-04T23:28:17 StartTime=2026-11-04T23:28:42 EndTime=2026-11-05T23:28:42 Deadline=N/A PreemptEligibleTime=2026-11-05T01:28:42 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-04T23:28:42 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:3441929 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-ab-decay-1x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-ab-decay-1x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-ab-decay-1x/experiments/transformer_pp/runs/r68cac6f03d77/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-ab-decay-1x/experiments/transformer_pp/runs/r68cac6f03d77/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
+      "config_sha256": "8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015",
+      "exit_code": 1,
+      "finished_utc": "2026-11-05T04:29:54.670063+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "053a84f48209999d0fa1bcd6a139a6863b67374f",
+      "slurm_job_id": "235889",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-05T04:28:59.395516+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
     "sha256": "8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015"
   },
+  "error": null,
   "frozen_execution_sha256": "172347386475e75dac38578e7ef064111b10006eee888df6531daa2b5b14f407",
   "home_cluster": "kennel",
   "label": "query-m4-abw-decay-1x",
+  "log": null,
+  "log_path": "experiments/transformer_pp/runs/r68cac6f03d77/training.log",
   "name": "query-m4-abw-decay-1x",
   "record_schema_version": 1,
   "run_id": "r68cac6f03d77",
@@ -15,12 +39,12 @@
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=standard",
-      "--gres=gpu:1",
+      "--partition=long",
+      "--gres=gpu:h100:1",
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
-      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--exclude=akita,collie,samoyed,doodle,terrier,shiba",
       "--job-name=r68cac6f03d77",
       "--output=experiments/transformer_pp/runs/r68cac6f03d77/training.log",
       "--error=experiments/transformer_pp/runs/r68cac6f03d77/training.log",
@@ -29,10 +53,10 @@
       "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
       "053a84f48209999d0fa1bcd6a139a6863b67374f",
       "1",
-      "B300,H100"
+      "H100"
     ],
-    "partition": "standard",
-    "slurm_job_id": "235889",
-    "submitted_utc": "2026-11-05T04:28:17.184905+00:00"
+    "partition": "long",
+    "slurm_job_id": "235893",
+    "submitted_utc": "2026-11-05T04:34:42.748770+00:00"
   }
 }

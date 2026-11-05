@@ -262,25 +262,25 @@ done
 Each record captures its submission command and job ID. Resumptions keep the same
 run ID, recipe, launch commit, and checkpoint; do not submit a duplicate live job.
 
-The pending 1× run `r68cac6f03d77` (`query-m4-abw-decay-1x`) matches the
+The submitted 1× run `r68cac6f03d77` (`query-m4-abw-decay-1x`) matches the
 degree-four query + W-decay reference `rca97cc9db8f2` and additionally applies
 AdamW decay 0.1 to the stored amplitudes a and offsets b. All three generator
 parameters W, a, and b decay. The run retains 7,570 updates, seed 42, global batch
 256, 2,048-token context, factorial coefficient scaling, and the reference's
-initialization and learning-rate schedule. Its home cluster is Kennel; results
+initialization and learning-rate schedule. Its home cluster is Kennel, with one H100 on `long`; results
 remain in the [query-optimization topic](results/exploratory/query_optimization/README.md).
 
 From `worktrees/query-ab-decay-1x` on branch `codex/query-ab-decay-1x`, after
 committing the recipe and implementation and syncing both locked CUDA environments:
 
 ```bash
-sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba \
+sbatch --parsable --partition=long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba \
   --job-name=r68cac6f03d77 \
   --output=experiments/transformer_pp/runs/r68cac6f03d77/training.log \
   --error=experiments/transformer_pp/runs/r68cac6f03d77/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
-  experiments/transformer_pp/runs/r68cac6f03d77/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+  experiments/transformer_pp/runs/r68cac6f03d77/config.yaml 053a84f48209999d0fa1bcd6a139a6863b67374f 1 H100
 ```
 
 ### Projection decay at 2.5×

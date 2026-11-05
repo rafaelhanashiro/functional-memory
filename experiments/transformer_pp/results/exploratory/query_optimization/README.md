@@ -66,7 +66,7 @@ trajectories need not be identical. Small differences warrant confirmation.
 
 ## Decay on W, a, and b at 1×
 
-Run `r68cac6f03d77` (`query-m4-abw-decay-1x`) is pending. It matches the completed
+Run `r68cac6f03d77` (`query-m4-abw-decay-1x`) is submitted on Kennel for one H100. It matches the completed
 W-decay reference `rca97cc9db8f2`, adding
 `model.attention_coefficient_amplitude_weight_decay: true` and
 `model.attention_coefficient_bias_weight_decay: true`. The existing
@@ -78,7 +78,7 @@ data order, batch, and learning rates as the reference.
 | Role | Run | W decay | a decay | b decay | Status |
 | --- | --- | ---: | ---: | ---: | --- |
 | W-only reference | `rca97cc9db8f2` | 0.1 | 0 | 0 | Complete |
-| W, a, b decay | `r68cac6f03d77` | 0.1 | 0.1 | 0.1 | Pending |
+| W, a, b decay | `r68cac6f03d77` | 0.1 | 0.1 | 0.1 | Submitted |
 
 The comparison asks whether decaying a and b together improves validation PPL.
 With W fixed, the decay component scales all coefficients in a head equally;
@@ -87,7 +87,7 @@ Training dynamics can still change. The existing run diagnostics record a,b
 magnitudes, projection norms, and tanh saturation. No outcome is available yet;
 compare terminal and validation-best metrics separately after completion.
 
-The run uses one B300 or H100 on Kennel. See the
+The run uses one H100 on Kennel’s `long` partition. See the
 [study launch instructions](../../../README.md#query-coefficient-optimization)
 for its exact command. Acceptance checks the actual AdamW updates, initialization,
 GPU kernels, production-shaped pilot, and checkpoint resume before training.
