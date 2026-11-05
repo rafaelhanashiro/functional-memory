@@ -1,11 +1,11 @@
 {
  "format": "blocked-softmax-oracle-check",
  "schema_version": 1,
- "created_at_utc": "2026-11-05T00:44:12.493357+00:00",
+ "created_at_utc": "2026-11-05T02:29:05.914315+00:00",
  "provenance": {
-  "source_commit": "2d60c813313ed6a3fe4892dc7f2214fe77469660",
+  "source_commit": "8df8ce2fc5003b2c1372be728650ad4c16f73f4e",
   "tracked_files_dirty": false,
-  "script_sha256": "fb5c9be50410ef162d44211fa1ec5d4c371cdb870396337614f636bc6320f593",
+  "script_sha256": "6cb23daf252f2f193f34c02359cda8b3910de5287d1b6be5fdf77af2e351928c",
   "hostname": "kennel.csail.mit.edu",
   "slurm_job_id": null,
   "device_kind": "cpu",
@@ -62,9 +62,9 @@
     32
    ],
    "output_relative_l2": 2.43523376754146e-16,
-   "dq_relative_l2": 5.459364265931529e-16,
+   "dq_relative_l2": 5.45936426593153e-16,
    "dk_relative_l2": 6.787863052253692e-16,
-   "dv_relative_l2": 2.838990743472765e-16
+   "dv_relative_l2": 2.838990743472766e-16
   }
  ],
  "worst_relative_l2": 6.787863052253692e-16,
