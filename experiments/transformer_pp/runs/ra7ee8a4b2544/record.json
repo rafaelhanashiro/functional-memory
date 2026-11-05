@@ -3,9 +3,35 @@
     "path": "experiments/transformer_pp/runs/ra7ee8a4b2544/config.yaml",
     "sha256": "ad685b374e7caa940ebed20c5a696747e142b3ec252a6811cda322898c484a02"
   },
+  "home_cluster": "kennel",
   "label": "fixed-m8-head-scale",
   "name": "fixed-m8-head-scale",
   "record_schema_version": 1,
   "run_id": "ra7ee8a4b2544",
-  "status": "planned"
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:h100:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=akita,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=ra7ee8a4b2544",
+      "--output=experiments/transformer_pp/runs/ra7ee8a4b2544/training.log",
+      "--error=experiments/transformer_pp/runs/ra7ee8a4b2544/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/ra7ee8a4b2544/config.yaml",
+      "7c645a742eada75bc5fd4c70d45581201219c11f",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "7c645a742eada75bc5fd4c70d45581201219c11f",
+    "partition": "standard,long",
+    "slurm_job_id": "235950"
+  }
 }

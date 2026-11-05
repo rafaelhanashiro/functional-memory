@@ -3,9 +3,35 @@
     "path": "experiments/transformer_pp/runs/ra040de24096c/config.yaml",
     "sha256": "1bc4f903083895123ed95bf0f1635b7bf1af870ce8285197ebdb12971ea6a227"
   },
+  "home_cluster": "kennel",
   "label": "hermite-m8-head-scale",
   "name": "hermite-m8-head-scale",
   "record_schema_version": 1,
   "run_id": "ra040de24096c",
-  "status": "planned"
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:h100:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=akita,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=ra040de24096c",
+      "--output=experiments/transformer_pp/runs/ra040de24096c/training.log",
+      "--error=experiments/transformer_pp/runs/ra040de24096c/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/ra040de24096c/config.yaml",
+      "7c645a742eada75bc5fd4c70d45581201219c11f",
+      "1",
+      "H100"
+    ],
+    "gpu_count": 1,
+    "launch_commit": "7c645a742eada75bc5fd4c70d45581201219c11f",
+    "partition": "standard,long",
+    "slurm_job_id": "235951"
+  }
 }
