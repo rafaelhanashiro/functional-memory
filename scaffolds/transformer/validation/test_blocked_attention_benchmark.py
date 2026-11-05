@@ -117,6 +117,15 @@ def test_gradient_sums_over_blocks_round_once_with_fp32_accumulation():
         assert single[index] < 1.05 * floor[index] < blocked[index] / 1.3
 
 
+@pytest.mark.parametrize("backward", bench.BACKWARDS)
+def test_custom_backward_starts_behind_a_barrier_with_the_cotangent(backward):
+    """Keeps XLA from merging the backward's score products with the forward's across layers."""
+    q = jnp.ones((1, 8, 1, 4))
+    jaxpr = jax.make_jaxpr(lambda q, k, v, g: jax.vjp(flash(4, "float32", backward=backward), q, k, v)[1](g))(
+        q, q, q, q)
+    assert "optimization_barrier" in str(jaxpr)
+
+
 @pytest.mark.parametrize("checkpoint", (True, False))
 def test_upcast_lean_matches_float64_oracle(checkpoint):
     q, k, v, g = inputs((2, 37, 3, 8), seed=9)

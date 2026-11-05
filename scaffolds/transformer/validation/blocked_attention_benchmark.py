@@ -187,6 +187,10 @@ def _flash_fwd(q, k, v, block_size, weights, backward):
 
 
 def _flash_bwd(block_size, weights, backward, residuals, cotangent):
+    # Recompute only from values that pass this barrier with the cotangent. Without it XLA merges
+    # the backward's score products with the forward's identical ones (or schedules them early)
+    # and keeps every layer's scores alive between the passes, as checkpointing would prevent.
+    residuals, cotangent = jax.lax.optimization_barrier((residuals, cotangent))
     q, k, v, saved, log_sum_exp, kept = residuals
     compute = _compute_dtype(q.dtype)
     scale = 1.0 / math.sqrt(q.shape[-1])
