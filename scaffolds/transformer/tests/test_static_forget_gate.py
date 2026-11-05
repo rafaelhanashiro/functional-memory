@@ -239,6 +239,8 @@ def test_full_context_bfloat16_forward_and_all_gradients_match_host_oracle():
                      for i, a in enumerate(arrays))
     cotangent = jnp.asarray(cotangent, jnp.bfloat16)
     expected = _numpy_vjp(operands, cotangent)
-    with jax.default_matmul_precision("highest"):
+    # Qualify the training precision, including its FP32 matmuls' default GPU lowering.
+    # The independent reference stays in host FP64; do not raise production precision here.
+    with jax.default_matmul_precision("default"):
         actual = jax.jit(lambda *a: _vjp(_production, a, cotangent))(*operands)
     _compare(actual, expected, .018)
