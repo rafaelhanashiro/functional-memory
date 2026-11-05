@@ -2632,3 +2632,35 @@ $PY -m scaffolds.transformer.validation.blocked_attention_benchmark model --outp
 $PY -m scaffolds.transformer.validation.blocked_attention_benchmark summarize \
   --kernel-record kernel.json --model-record model.json --output summary.md
 ```
+
+## Static polynomial attention with cumulative FoX
+
+2026-11-05: learned direct static coefficients support the existing cumulative
+input gate on the blocked backend, with RoPE or no positional encoding. The
+coefficients retain their static parameter ownership and factorial scaling;
+only their effective values broadcast into the general polynomial computation.
+
+CPU qualification passed 56 static/FoX/coefficient-scaling checks and 19 experiment
+recipe guards. An independent FP64 oracle checks forward values and analytic
+Q/K/V, coefficient, input, and gate-parameter gradients against an explicit
+product-of-gates reference. Actual full-model initialization matches the source
+FoX control on every shared parameter, including gates, and the actual masks
+apply decay to the gate projection while exempting static coefficients and
+rate/bias parameters. The test module also checks coefficient capture, causal
+masking, zero-decay equivalence, diagnostics, and unsupported configurations.
+
+Reproduce the reusable checks from the repository root:
+
+```bash
+JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_static_forget_gate.py \
+  scaffolds/transformer/tests/test_forget_gate_attention.py \
+  scaffolds/transformer/tests/test_coefficient_scale.py -m 'not gpu'
+```
+
+The full-context GPU test compares production at its default matmul precision to
+the host FP64 oracle at 2,048 tokens, BF16 activations, and width 64. The test passed on one H100 PCIe with the locked CUDA 12 environment
+(source `a7c6831c`), bounding relative errors below 1.8% for the output and each
+gradient. The full acceptance test stages passed 396 CPU tests, 9 distributed CPU
+tests, and this GPU check. The acceptance launcher additionally requires
+initialization, a full-recipe pilot, and exact checkpoint resume before training.

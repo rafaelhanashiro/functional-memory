@@ -181,7 +181,8 @@ parameters. Acceptance compares outputs and gradients to explicit references and
 checks actual initial parameters and optimizer masks against the control before
 the full-recipe pilot and checkpoint-resume check.
 
-The run is prepared on Kennel, using one GPU in its own worktree; see the
+The run is queued as Kennel job `236330` for one H100 in `long` (48-hour allocation), in its own
+worktree. Acceptance gates training; see the
 [study launch instructions](../../../README.md#static-coefficients-with-fox-nope).
 Its primary control is `r4a80e28ce0a7`; ungated static `r4339a245820e` is also
 selected for context but uses RoPE, so that comparison changes both the gate and

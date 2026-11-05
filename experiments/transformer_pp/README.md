@@ -815,8 +815,8 @@ inputs and checking live scheduler allowances:
 
 ```bash
 run=r17fd7f040bff
-sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
-  --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+sbatch --parsable --partition=long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+  --time=48:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
   --output="experiments/transformer_pp/runs/$run/training.log" \
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_fox_acceptance \
