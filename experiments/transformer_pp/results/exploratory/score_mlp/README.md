@@ -8,23 +8,40 @@ the [study README](../../../README.md#score-mlp).
 
 ## Runs
 
-Each copies `query-m4-head-scale` (`r2b22f2ff6461`) and changes only `f`.
+Each copies `query-m4-head-scale` (`r2b22f2ff6461`) and changes only `f`, on the fused
+score-MLP kernel ([qualification and throughput](../../../../../scaffolds/transformer/validation/README.md)).
+Validation-best and terminal (update 7,570) perplexity:
 
-| Run | Label | Form | `J` | Status |
-| --- | --- | --- | ---: | --- |
-| `re65b12334c5e` | `score-mlp-exp-residual-j4` | `exp(s) (1 + sum_j a_j SiLU(w_j s + b_j))` | 4 | training |
-| `r98e7f3e60a59` | `score-mlp-exp-residual-j8` | `exp(s) (1 + sum_j a_j SiLU(w_j s + b_j))` | 8 | cancelled at update 1,547 |
+| Run | Label | Form | `J` | Outcome | Best | Terminal |
+| --- | --- | --- | ---: | --- | ---: | ---: |
+| `re65b12334c5e` | `score-mlp-exp-residual-j4` | `exp(s) (1 + sum_j a_j SiLU(w_j s + b_j))` | 4 | complete | 17.792 | 17.802 |
+| `r98e7f3e60a59` | `score-mlp-exp-residual-j8` | `exp(s) (1 + sum_j a_j SiLU(w_j s + b_j))` | 8 | cancelled at update 1,547 | – | – |
+| `r4239d082c182` | `score-mlp-kernel-j4` | `sum_j a_j SiLU(w_j s + b_j)`, SiLU fit to exp | 4 | cancelled at update 581 | – | – |
 
-Both run on the fused score-MLP kernel ([qualification and throughput](../../../../../scaffolds/transformer/validation/README.md)).
-The pure kernel form `f = sum_j a_j SiLU(w_j s + b_j)` (`J = 4, 8`) is not allocated:
-its starting point is undecided.
+`r4239d082c182` is recorded on branch `claude/score-mlp-kernel`. `re65b12334c5e` trained on
+an H100 SXM to update 934 and on an H100 PCIe after two preemptions.
 
-## Training so far
+## Findings
 
-Both runs track exp through update 400. After warmup (455 updates) the gradient norm spikes to
-3-15x its usual size between updates 350 and 900 and clipping cuts most updates; the controls
-stay at 0.3-0.9. Validation PPL at update 1,500: J=4 29.07, J=8 28.90, against exp 21.59 and
-query-only 22.41. J=8 was cancelled at update 1,547 (checkpoint 1,500 kept for diagnosis).
+- The exp residual at `J = 4` ends 24.8% above exp, 20.9% above fixed Taylor `m = 4`
+  and 20.4% above query-only.
+- All three runs destabilize. The exp residuals track exp through update 400, then
+  their gradient norm spikes to 3-15x the controls' between updates 350 and 900 and
+  clipping cuts most updates. The pure form spikes from update 60 (57.0 at 110, 81.6 at
+  410). Validation PPL at update 1,500: `J = 4` 29.07, `J = 8` 28.90, against exp 21.59.
+- Cause: the unbounded readouts `a_tj = alpha_j + x_t A_j` and `b_tj = beta_j + x_t B_j`.
+  Under Adam, `x_t A_j` moves about 700 times faster than `alpha_j`. Within about 100
+  updates the correction `C = sum_j a_j SiLU(w_j s + b_j)` is no longer small (`|C| > 1`
+  for 88-99.6% of score pairs at update 1,500), and `1 + C` changes sign from token to
+  token. The gradient concentrates on the 2.5% of rows where it nearly cancels (97% of
+  the gradient with respect to `a`). Each spike is one micro-batch, mostly one layer-0
+  head plus token-embedding rows. Afterwards the model learns at about 0.4 of exp's pace
+  and never grows its QK scale (head scale 1.02 against exp's 1.18 at update 1,000).
+- Not the cause: the kernel (a replay of 48 real updates with the trainer reproduces the
+  spikes), the data (no correlation with batch difficulty), weight decay, or negative
+  weights as such (the stable query control has a similar fraction).
+- The evidence comes from the update-1,500 checkpoint of `r98e7f3e60a59` (kept for this
+  reason), Adam moments in snapshot checkpoints, and the GPU replay.
 
 ## Controls
 
@@ -38,4 +55,5 @@ Validation-best perplexity, 1x Chinchilla:
 
 ## Open decision
 
-Promote the score MLP to its own collection or discard it, once the runs finish.
+Rerun with bounded readouts, `a = alpha + g_a tanh(x A)` and `b = beta + g_b tanh(x B)`
+with gains starting at zero (the query control's design), or discard the score MLP.
