@@ -1,4 +1,63 @@
 {
+  "acceptance": {
+    "sha256": "26c57e6b2c2d656d88c90b502c63f7efc8d0b4511d59d3c6cd6d0766d13889ec",
+    "summary": {
+      "allocation_seconds": 86400,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-05T00:53:43.507371+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA H100 80GB HBM3"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "19045eabf5f728c25a74d6483755199adbb713f070afd1b9ce31e2224b59a8d1",
+      "reused_tests": {
+        "cpu-distributed-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/re65b12334c5e/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-11-05T00:23:38.849457+00:00",
+          "junit_sha256": "d5b3406ea52815245c37cb0733a84b1eb45225bf37c951e1392b1beadb741995",
+          "slurm_job_id": "235232",
+          "test_identity": "75c445da36b84a942653d39021b336260c035ede7c3a56b7e87efaede231e4e3"
+        },
+        "cpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/re65b12334c5e/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-11-05T00:20:27.940046+00:00",
+          "junit_sha256": "a570d47da1f2a44713238cd3800cca2c24f9e4d599b28a6d3a46b521fa31cfd5",
+          "slurm_job_id": "235232",
+          "test_identity": "fad31a9ca1fbd6977e529d7e4661da9409176fe04ae659aeb8aae41712c092d6"
+        },
+        "gpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/re65b12334c5e/.runtime/acceptance/H100-1",
+          "completed_utc": "2026-11-05T00:34:58.571191+00:00",
+          "junit_sha256": "43e488544d796d52f0cbbc8b94667208ca9debf4e6e6186ac38f6f54d0cfad43",
+          "slurm_job_id": "235232",
+          "test_identity": "212559f6b7fa35cbadae7d671c3f104f87d4dabc9d152c933c8db142870ad664"
+        }
+      },
+      "slurm_job_id": "235233",
+      "slurm_restart_count": "0",
+      "source_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
+      "status": "passed"
+    }
+  },
   "artifacts": [
     {
       "path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
@@ -24,13 +83,263 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-11-04T23:35:54.726484+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/.runtime/acceptance/H100-1",
+      "allocation": "JobId=235233 JobName=r98e7f3e60a59 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20063 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:19 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-04T19:04:44 EligibleTime=2026-11-04T19:04:44 AccrueTime=2026-11-04T19:04:44 StartTime=2026-11-04T19:42:02 EndTime=2026-11-05T19:42:02 Deadline=N/A PreemptEligibleTime=2026-11-04T21:42:02 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-04T19:42:02 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1429044 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,mastiff,samoyed,shiba,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r98e7f3e60a59/config.yaml",
+      "config_sha256": "cd6f7b55425674103e34d78697add53d1cf6b6206d99a262839d0900190ff897",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
+      "slurm_job_id": "235233",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-05T00:42:21.835748+00:00",
+      "stop_after_step": null
     }
   ],
+  "cancellation": {
+    "cancelled_utc": "2026-11-05T05:41:52+00:00",
+    "last_checkpoint_step": 1500,
+    "production_started": true,
+    "reason": "user_requested",
+    "slurm_job_id": "235233",
+    "slurm_state": "CANCELLED"
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r98e7f3e60a59/config.yaml",
     "sha256": "cd6f7b55425674103e34d78697add53d1cf6b6206d99a262839d0900190ff897"
   },
-  "error": "Job process exited with code 1; see training.log",
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "e85fd378a8a4b2ee4690f2f05ca498843fa5b9af2fc305f539d40f29a94aec20"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "1f0dec1a90a3fe0d82510dc3e0b24a50ace36cee37fa2cf413b759c5742f439e"
+    },
+    "resolved_config": {
+      "continuation": {
+        "new_parameter_learning_rate": null,
+        "parent_checkpoint": "",
+        "parent_checkpoint_sha256": "",
+        "parent_config": "",
+        "parent_config_sha256": "",
+        "parent_data_identity_sha256": "",
+        "parent_step": 0,
+        "preserve_all_parameters": false
+      },
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_coefficient_activation": "identity",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_amplitude_scale": "none",
+        "attention_coefficient_conditioning": "static",
+        "attention_coefficient_feature_count": null,
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_kernel_weight_decay": false,
+        "attention_coefficient_orders": null,
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_readout": "diagonal",
+        "attention_coefficient_readout_scale": 1.0,
+        "attention_coefficient_scale": "none",
+        "attention_coefficient_sharing": "global",
+        "attention_coefficient_tanh_bias": false,
+        "attention_coefficients": "fixed",
+        "attention_degree": null,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_forget_gate": false,
+        "attention_forget_gate_form": "input",
+        "attention_forget_gate_mode": "cumulative",
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "attention_score_mlp_activation": "silu",
+        "attention_score_mlp_amplitude_initial": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "attention_score_mlp_form": "exp_residual",
+        "attention_score_mlp_kernel_weight_decay": false,
+        "attention_score_mlp_offset_initial": [
+          -3.0,
+          -2.142857142857143,
+          -1.2857142857142858,
+          -0.4285714285714288,
+          0.4285714285714284,
+          1.2857142857142856,
+          2.1428571428571423,
+          3.0
+        ],
+        "attention_score_mlp_slope_initial": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "attention_score_mlp_width": 8,
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 896,
+        "initialization": "transformer_truncated_reference",
+        "intermediate_size": 2304,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 14,
+        "num_kv_heads": 14,
+        "num_layers": 15,
+        "path_conv_size": 3,
+        "path_w_rank": 32,
+        "positional_encoding": "rope",
+        "qk_head_dim": 64,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_head_scale": true,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_layer",
+        "qk_norm_token_scale": "none",
+        "qk_norm_token_scale_kernel_weight_decay": false,
+        "qk_norm_type": "rms_norm",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rms_norm_fp32": true,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.001,
+        "min_learning_rate": 0.0001,
+        "query_coefficient_learning_rate_scale": 1.0,
+        "total_steps": 7570,
+        "warmup_steps": 455,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 19,
+        "eval_early_every": 100,
+        "eval_early_until": 1500,
+        "eval_every": 500,
+        "log_every": 10,
+        "micro_batch_size": 16,
+        "seed": 42,
+        "source_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "transformer_pp",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "score-mlp-exp-residual-j8",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59"
+      }
+    },
+    "resolved_config_sha256": "79a1c4f2fe6d09c8cd2a51181f9ed2a9bf9b313a4aab0b9e085b67f9be1a0642",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA H100 80GB HBM3",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": null,
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "235233",
+        "timestamp_utc": "2026-11-05T00:54:12.481438+00:00"
+      }
+    ]
+  },
   "frozen_execution_sha256": "b791cdade9458c3f6171c54e46b71997c03eae40f7a0ab8c98e63faa21187806",
   "home_cluster": "kennel",
   "label": "score-mlp-exp-residual-j8",
@@ -39,12 +348,15 @@
     "sha256": "3b8929b81340693435733836a4f73dbac39be06999338159dfa8f3aa35cdeb83",
     "size_bytes": 6701
   },
-  "log_path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
   "name": "score-mlp-exp-residual-j8",
+  "numerical_failure_path": null,
   "record_schema_version": 1,
   "run_id": "r98e7f3e60a59",
+  "seed": 42,
   "source_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
-  "status": "failed",
+  "status": "cancelled",
+  "step": 1500,
   "submission": {
     "command": [
       "sbatch",
@@ -69,5 +381,7 @@
     "launch_commit": "9d918096ed7e6e78495ce5453fbfec62744e0dd3",
     "partition": "standard,long",
     "slurm_job_id": "235233"
-  }
+  },
+  "training_tokens": 786432000,
+  "updated_utc": "2026-11-05T05:33:54.105061+00:00"
 }
