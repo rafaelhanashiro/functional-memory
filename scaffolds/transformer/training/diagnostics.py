@@ -380,15 +380,18 @@ def attention_identity(config) -> dict:
                                    "DeltaNet's initialization") if forget_gate else "")),
         )
     if forget_gate and not query_conditioned:
-        # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
-        # joins every score (the Forgetting Transformer); the configuration admits no other mode or form.
+        # Static polynomial coefficients remain independent of the token; only the gate reads x_t.
+        formula = (("causal_softmax" if normalized else "causal_exp")
+                   + "(QK^T / sqrt(d_k) + D) V, D_ti = sum_(j=i+1..t) log alpha_j"
+                   if degree is None else
+                   f"sum_(i<=t) prod_(j=i+1..t) alpha_j sum_(r<={degree}) c_r s_ti^r v_i, "
+                   f"s_ti = Q_t K_i^T / sqrt(d_k), learned static c ({sharing}) initialized at {initialized}")
         identity.update(
             attention_forget_gate=True,
             attention_forget_gate_mode=gate_mode,
             forget_gate_parameter_count=(config.model.hidden_size + 2) * config.model.num_layers
             * config.model.num_heads,
-            attention_formula=(("causal_softmax" if normalized else "causal_exp")
-                               + "(QK^T / sqrt(d_k) + D) V, D_ti = sum_(j=i+1..t) log alpha_j, log alpha_t = "
+            attention_formula=(formula + ", log alpha_t = "
                                "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated DeltaNet's "
                                "initialization; x_t is the activation after the block input RMSNorm"),
         )
@@ -950,10 +953,14 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         }
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
-    if getattr(config.model, "attention_forget_gate", False) and coefficient_report is None:
-        # Softmax and the exponential have no coefficients; their forget gate is reported alone.
-        coefficient_report = {"forget_gate": forget_gate_report(
-            params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))}
+    if (getattr(config.model, "attention_forget_gate", False)
+            and (coefficient_report is None or "forget_gate" not in coefficient_report)):
+        # Static polynomials report both their coefficients and their input-dependent gate.
+        # Softmax and the exponential have no coefficients, so their gate is reported alone.
+        if coefficient_report is None:
+            coefficient_report = {}
+        coefficient_report["forget_gate"] = forget_gate_report(
+            params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))
         if not coefficient_report["forget_gate"]["finite"]:
             issues.append("Nonfinite forget gate parameters or decay")
     scale_report = None

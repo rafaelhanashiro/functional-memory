@@ -797,6 +797,32 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## Static coefficients with FoX NoPE
+
+`r17fd7f040bff` replaces the query-dependent coefficient generator of FoX NoPE
+control `r4a80e28ce0a7` with learned static degree-four coefficients per layer/head.
+The complete recipe preserves the control's factorial scaling, gate initialization,
+QK/output RMSNorm, seed, context, optimizer, and 7,570-update budget. Weight decay
+0.1 applies to the gate projection; static coefficients and gate rates/biases are
+exempt. Methods and the explicit comparison are in the
+[forget-gate topic](results/exploratory/forget_gate/README.md#static-coefficients-with-fox-nope).
+
+Home cluster: Kennel. Execute from `worktrees/static-fox-nope-m4`, branch
+`codex/static-fox-nope-m4`, with its own locked environment. The experiment adapter
+pins the source recipe, verifies shared initial parameters and decay masks, and
+requires full shared acceptance before training. After committing the execution
+inputs and checking live scheduler allowances:
+
+```bash
+run=r17fd7f040bff
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_fox_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

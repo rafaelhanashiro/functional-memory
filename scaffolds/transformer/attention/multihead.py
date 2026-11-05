@@ -194,12 +194,21 @@ class MultiHeadAttention(nnx.Module):
                             and attention_coefficient_conditioning == "static")
         polynomial_gate = (attention_coefficient_conditioning == "query"
                            and attention_coefficient_activation != "identity")
+        static_polynomial_gate = (attention_coefficient_conditioning == "static"
+                                  and attention_degree is not None and attention_degree >= 1
+                                  and not attention_normalization and quadratic_mode == "fixed"
+                                  and attention_fixed_square_factors is None
+                                  and attention_forget_gate_mode == "cumulative"
+                                  and attention_forget_gate_form == "input"
+                                  and positional_encoding in ("rope", "none") and backend == "blocked")
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and backend == "blocked")
-        if attention_forget_gate and not ((exponential_gate or polynomial_gate) and forget_backend_supported):
+        if attention_forget_gate and not ((exponential_gate or polynomial_gate or static_polynomial_gate)
+                                         and forget_backend_supported):
             raise ValueError("The forget gate requires softmax, the unnormalized exponential, or nonlinear query "
-                             "coefficients: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+                             "coefficients: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto; "
+                             "direct static polynomials support cumulative input decay on blocked with RoPE/none")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "

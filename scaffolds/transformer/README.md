@@ -100,7 +100,7 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 `model.attention_forget_gate: true` adds the existing per-layer/head gate
 `log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
 the pre-attention RMSNorm activation, to softmax, unnormalized exponential, and
-unnormalized nonlinear query-polynomial attention ([Forget gate](#forget-gate) lists
+unnormalized nonlinear query-polynomial or learned direct static-polynomial attention ([Forget gate](#forget-gate) lists
 positions and backends). `attention_forget_gate_mode: cumulative` (the historical
 default) multiplies weights by `exp(L_t - L_i)`, where `L_t = sum_{j<=t} log(alpha_j)`.
 For query polynomials on the blocked backend, the `query_distance` mode instead
@@ -498,8 +498,13 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | softmax | `softmax_i(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
+| learned direct static coefficients | `p(s_ti) exp(L_t - L_i)` | RoPE or none | `blocked` |
 
-Softmax and the exponential take the cumulative mode with the input gate form only.
+Softmax, the exponential, and static polynomials take the cumulative mode with the input gate form only.
+Static coefficients keep their ordinary parameter ownership and factorial order scaling;
+the blocked kernel broadcasts their effective values across queries and sums gradients back
+into the static array. No coefficient projection is created, and the coefficient array stays
+exempt from weight decay.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
 parameters.

@@ -69,6 +69,7 @@ COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
+STATIC_FORGET_GATE_TESTS = "scaffolds/transformer/tests/test_static_forget_gate.py"
 FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
 FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
 FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
@@ -163,6 +164,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     exponential_gate = model.get("attention_forget_gate", False) and model.get("attention_degree") is None
     if exponential_gate:
         paths.append(FORGET_GATE_ATTENTION_TESTS)
+    if (model.get("attention_forget_gate", False) and model.get("attention_degree") is not None
+            and model.get("attention_coefficient_conditioning", "static") == "static"):
+        paths.append(STATIC_FORGET_GATE_TESTS)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

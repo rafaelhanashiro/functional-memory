@@ -7,6 +7,7 @@ configuration and disappears when JAX traces the training step.
 """
 
 import jax
+import jax.numpy as jnp
 
 
 def attention_core(
@@ -52,6 +53,24 @@ def attention_core(
         raise ValueError(f"Unknown query decay mode: {query_decay_mode}")
     if query_decay_mode != "cumulative" and query_log_decay is None:
         raise ValueError("A query-distance decay mode requires query_log_decay")
+    if query_log_decay is not None and polynomial_coefficients is not None:
+        # Static parameters remain owned once per layer/head (or globally). The general blocked
+        # polynomial kernel accepts their effective values broadcast across queries; autodiff
+        # sums those contributions back into the original static coefficient array.
+        if (attention_normalization or attention_degree is None or attention_degree < 1
+                or quadratic_mode != "fixed" or coefficients is not None
+                or polynomial_square_factors is not None or query_polynomial_coefficients is not None
+                or key_polynomial_factors is not None or denominators
+                or backend != "blocked" or query_decay_mode != "cumulative"):
+            raise ValueError("Static polynomial forget gates require an unnormalized direct polynomial "
+                             "with cumulative decay on the blocked backend")
+        if polynomial_coefficients.shape not in ((attention_degree + 1,), (q.shape[2], attention_degree + 1)):
+            raise ValueError("Static coefficients require [degree+1] or [heads,degree+1]")
+        from scaffolds.transformer.attention.input_dependent import query_polynomial_attention
+
+        return query_polynomial_attention(
+            q, k, v, jnp.broadcast_to(polynomial_coefficients, (*q.shape[:3], attention_degree + 1)),
+            backend=backend, return_diagnostics=return_diagnostics, log_decay=query_log_decay)
     if query_log_decay is not None and query_polynomial_coefficients is None:
         # Softmax and the unnormalized exponential add the decay to every score (the Forgetting Transformer).
         if (attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None

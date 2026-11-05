@@ -97,7 +97,7 @@ class ModelConfig:
     # c_r = sigmoid(x w_r) and pure_tanh is c_r = tanh(x w_r) (dense: c_r = sum_j V_rj f(x w_j),
     # V starting at I). pure_tanh needs a random W start, since tanh(0) = 0 zeroes every coefficient.
     attention_coefficient_activation: Literal["identity", "tanh", "sigmoid", "pure_tanh", "affine_sigmoid"] = "identity"
-    # Forgetting Transformer decay: each query-conditioned polynomial weight is multiplied by
+    # Forgetting Transformer decay: each polynomial weight is multiplied by
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
@@ -211,7 +211,7 @@ class ModelConfig:
         # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
                   and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
-                  and self.attention_fixed_square_factors is None and integer_degree
+                  and self.attention_fixed_square_factors is None and integer_degree and not self.attention_forget_gate
                   and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         return (self.attention_mechanism == "dot_product" and (taylor or query or static)
                 and getattr(self, "positional_encoding", "rope") == "rope"
@@ -432,12 +432,20 @@ class ModelConfig:
         if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
             raise ValueError("A forget gate form requires the forget gate")
         # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
-        # Transformer; with PaTH, PaTH-FoX); nonlinear query-coefficient polynomials multiply their
-        # weights by exp(L_t - L_i).
+        # Transformer; with PaTH, PaTH-FoX); polynomials multiply their weights by exp(L_t - L_i).
         exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                       and activation != "identity")
+        static_polynomial = (not self.attention_normalization and self.attention_degree is not None
+                             and self.attention_degree >= 1 and self.attention_coefficients == "learned"
+                             and self.attention_coefficient_conditioning == "static"
+                             and self.attention_coefficient_parameterization == "direct"
+                             and self.quadratic_mode == "fixed"
+                             and self.attention_forget_gate_mode == "cumulative"
+                             and self.attention_forget_gate_form == "input"
+                             and self.positional_encoding in ("rope", "none")
+                             and self.attention_backend == "blocked")
         if self.attention_forget_gate_form != "input" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
                 or not polynomial):
@@ -448,11 +456,12 @@ class ModelConfig:
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
         if self.attention_forget_gate and (
-                self.attention_mechanism != "dot_product" or not (exponential or polynomial)
+                self.attention_mechanism != "dot_product" or not (exponential or polynomial or static_polynomial)
                 or not forget_backend_supported):
             raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
                              "nonlinear query-conditioned polynomial attention: RoPE/none on the blocked backend, "
-                             "or PaTH on blocked/fused/auto")
+                             "or PaTH on blocked/fused/auto; learned direct static polynomials support the "
+                             "cumulative input gate with RoPE/none on blocked")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "

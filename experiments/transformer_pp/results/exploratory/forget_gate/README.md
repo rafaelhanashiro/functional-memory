@@ -1,9 +1,10 @@
-# Forget gate on query coefficients (m = 4)
+# Forget gate on polynomial and exponential attention
 
 Opened 2026-10-27.
 
 **Question.** Does a Forgetting Transformer decay, defined as in Gated DeltaNet, improve
-degree-four polynomial attention with tanh query coefficients?
+polynomial and exponential attention, and does its benefit require query-dependent
+polynomial coefficients?
 
 ## Method
 
@@ -158,7 +159,36 @@ run), terminal is update 7,570:
 - Limits: one seed each, on the mixed hardware above. FoX exp resumed from its update-6,500
   checkpoint after a preemption and a CUDA-graph runtime error.
 
+### Static coefficients with FoX NoPE
+
+`r17fd7f040bff` (added 2026-11-05) tests whether query-dependent polynomial
+coefficients are needed under the gate. It copies FoX NoPE + W decay control
+`r4a80e28ce0a7` and replaces its coefficient generator with one learned static
+coefficient vector per layer and head:
+$$w_{ti,h}=\exp(L_{t,h}-L_{i,h})\sum_{r=0}^{4}\frac{\tilde c_{\ell,h,r}}{r!}s_{ti,h}^{r},
+\qquad L_{t,h}=\sum_{j\le t}\log\alpha_{j,h}.$$
+The stored coefficients start at one, so the effective initial polynomial is Taylor.
+The cumulative input-dependent gate, its initialization, NoPE, QK RMSNorm with
+learned head scale, attention-output RMSNorm, seed 42, 2,048-token context, and
+7,570-update budget match the control. Peak/minimum LR remains 0.001/0.0001, with
+455 warmup updates. Gate projection `w_alpha` receives weight decay 0.1; static
+coefficients, gate `A_log,b_dt`, and the usual exempt parameter groups do not.
+There is no coefficient projection `W` in this model.
+
+The blocked implementation broadcasts the static effective coefficients to the
+existing polynomial computation; gradients sum back into the original static
+parameters. Acceptance compares outputs and gradients to explicit references and
+checks actual initial parameters and optimizer masks against the control before
+the full-recipe pilot and checkpoint-resume check.
+
+The run is prepared on Kennel, using one GPU in its own worktree; see the
+[study launch instructions](../../../README.md#static-coefficients-with-fox-nope).
+Its primary control is `r4a80e28ce0a7`; ungated static `r4339a245820e` is also
+selected for context but uses RoPE, so that comparison changes both the gate and
+positional encoding. Report validation-best and terminal PPL separately.
+
 ## Open decision
 
-Determine whether combining FoX and PaTH improves on either alone with projection
-weight decay, then decide whether to promote this question or discard it.
+Determine whether FoX's benefit extends to static polynomial coefficients and how
+its interaction with PaTH depends on the attention kernel, then decide whether to
+promote this question or discard it.
