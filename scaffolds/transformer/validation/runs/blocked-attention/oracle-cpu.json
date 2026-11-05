@@ -1,0 +1,72 @@
+{
+ "format": "blocked-softmax-oracle-check",
+ "schema_version": 1,
+ "created_at_utc": "2026-11-05T00:44:12.493357+00:00",
+ "provenance": {
+  "source_commit": "2d60c813313ed6a3fe4892dc7f2214fe77469660",
+  "tracked_files_dirty": false,
+  "script_sha256": "fb5c9be50410ef162d44211fa1ec5d4c371cdb870396337614f636bc6320f593",
+  "hostname": "kennel.csail.mit.edu",
+  "slurm_job_id": null,
+  "device_kind": "cpu",
+  "platform": "cpu",
+  "device_count": 1,
+  "package_versions": {
+   "jax": "0.10.0",
+   "jaxlib": "0.10.0",
+   "jax-cuda12-plugin": "0.10.0",
+   "flax": "0.12.7",
+   "numpy": "2.4.6",
+   "nvidia-cudnn-cu12": "9.22.0.52",
+   "nvidia-cublas-cu12": "12.9.2.10"
+  },
+  "environment": {
+   "JAX_PLATFORMS": "cpu",
+   "XLA_FLAGS": null,
+   "XLA_PYTHON_CLIENT_PREALLOCATE": null,
+   "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+   "CUDA_VISIBLE_DEVICES": null
+  }
+ },
+ "reference": "float64 jax.vjp of jax.nn.softmax over -inf-masked scores",
+ "cases": [
+  {
+   "shape": [
+    2,
+    37,
+    3,
+    16
+   ],
+   "output_relative_l2": 1.492173482640634e-16,
+   "dq_relative_l2": 4.744702481848961e-16,
+   "dk_relative_l2": 4.467589094197046e-16,
+   "dv_relative_l2": 1.6898033175383035e-16
+  },
+  {
+   "shape": [
+    1,
+    1,
+    2,
+    8
+   ],
+   "output_relative_l2": 0.0,
+   "dq_relative_l2": 0.0,
+   "dk_relative_l2": 0.0,
+   "dv_relative_l2": 0.0
+  },
+  {
+   "shape": [
+    2,
+    130,
+    2,
+    32
+   ],
+   "output_relative_l2": 2.43523376754146e-16,
+   "dq_relative_l2": 5.459364265931529e-16,
+   "dk_relative_l2": 6.787863052253692e-16,
+   "dv_relative_l2": 2.838990743472765e-16
+  }
+ ],
+ "worst_relative_l2": 6.787863052253692e-16,
+ "passed": true
+}

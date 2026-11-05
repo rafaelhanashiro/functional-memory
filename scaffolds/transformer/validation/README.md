@@ -2264,3 +2264,224 @@ query-coefficient continuations preserve the complete parent model and Adam stat
 match ordinary continued updates, and resume exactly after interruption. Model changes
 and a separate new-parameter learning rate are rejected in this mode. Full recipe GPU
 acceptance remains mandatory before training.
+
+## Blocked softmax attention at 2,048 tokens
+
+Which plain JAX/XLA (non-fused) causal softmax should become the blocked basis for the
+blocked-only mechanisms at 2,048 tokens, keeping FP32 scores and softmax arithmetic,
+production's NaN rows for nonfinite causal scores, and a 15-layer model on one 80 GB H100?
+The candidates are in [`blocked_attention_benchmark.py`](blocked_attention_benchmark.py);
+no scaffold code or default changed. Measured on 2026-11-04 on `dogo` (H100 SXM, driver
+560.35.05, JAX 0.10.0, cuDNN 9.22) at commit `2d60c813`: kernel job 235231
+([record](runs/blocked-attention/kernel-h100-235231.json)) and model job 235255
+([record](runs/blocked-attention/model-h100-235255.json)).
+
+| Candidate | Design |
+| --- | --- |
+| `production-bN` | `blocked_dot_product_attention(query_block_size=N)`: checkpointed scan of N-query blocks, each against all 2,048 keys |
+| `lean-f32-scan-*-b128` | production's scan with fewer passes: a max shift without a gradient, output (P V)/l |
+| `lean-{f32,bf16}-skip-{ckpt,nockpt}-bN` | the same strips unrolled in Python, so strip b multiplies only keys [0, end_b); JAX autodiff, with or without `jax.checkpoint` per strip |
+| `lean-f32up-*` | the same on FP32-upcast Q/K/V, so the strips' dK/dV sum in FP32 |
+| `flash-{f32,bf16}-{rows,cols}-bN` | custom VJP over the unrolled strips: the forward keeps O and the row log-sum-exp; the backward recomputes S and P = exp(S - lse), dS = P (dP - rowsum(dO O)), over query strips (rows; sums dK, dV) or key strips (cols; sums dQ) |
+| `flash-{f32,bf16}-saved-bN` | the same, keeping each strip's normalized weights from the forward instead of recomputing them |
+| `dense-f32scores-bf16w` | one dense block: FP32 scores and softmax, BF16 weights, no checkpoint |
+| `dense-manual` | `softmax_attention(backend="manual")`: BF16 scores and weights, no checkpoint |
+| `cudnn` | `softmax_attention(backend="cudnn")`, the production softmax path |
+
+`f32`: FP32 softmax weights enter the products with upcast V, dO, Q and K, as in production.
+`bf16`: P (and dS) are rounded to BF16 before the products, with FP32 accumulation, as in
+cuDNN and FlashAttention. Every blocked candidate returns NaN for any row with a nonfinite
+causal score. The custom backward starts with an optimization barrier on its residuals and
+cotangent: without it XLA merged the backward's score products with the forward's and kept
+every layer's scores alive (15-layer model at commit `3782b98e`, job 235223, stopped after
+these cases: out of memory at micro-batch 16, 34.1 GB peak at 8;
+[record](runs/blocked-attention/model-h100-235223-no-barrier.json)).
+
+### Accuracy
+
+Relative L2 error x 1e3 against a host NumPy FP64 forward and analytic VJP at
+[2, 2048, 4, 64] (BF16 inputs; sharp: Q x 4, score standard deviation 4). The oracle matches
+float64 JAX autodiff to 6.8e-16 ([CPU check](runs/blocked-attention/oracle-cpu.json)). The
+first row is the oracle rounded to BF16, the best a BF16 result can be.
+
+| Variant | Output | dQ | dK | dV | Sharp output | Sharp dQ | Sharp dK | Sharp dV |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Oracle rounded to BF16 | 1.61 | 1.65 | 1.65 | 1.64 | 1.66 | 1.66 | 1.66 | 1.65 |
+| `cudnn` | 2.04 | 2.48 | 2.43 | 2.30 | 1.73 | 3.50 | 3.23 | 2.27 |
+| `dense-manual` | 3.74 | 4.15 | 4.18 | 3.75 | 10.07 | 12.43 | 12.51 | 10.06 |
+| `dense-f32scores-bf16w` | 2.05 | 2.65 | 2.64 | 2.09 | 1.77 | 3.73 | 3.52 | 1.77 |
+| `production-b128` | 1.62 | 1.67 | 3.27 | 3.08 | 1.67 | 1.68 | 4.04 | 3.96 |
+| `production-b512` | 1.62 | 1.67 | 2.58 | 2.51 | 1.67 | 1.68 | 2.79 | 2.77 |
+| `production-b2048` | 1.62 | 1.67 | 1.67 | 1.65 | 1.67 | 1.68 | 1.68 | 1.66 |
+| `lean-f32-skip-ckpt-b512` | 1.62 | 1.68 | 2.59 | 2.51 | 1.66 | 1.73 | 2.81 | 2.77 |
+| `lean-f32up-skip-ckpt-b512` | 1.62 | 1.68 | 1.68 | 1.66 | 1.66 | 1.73 | 1.72 | 1.67 |
+| `lean-bf16-skip-nockpt-b512` | 2.05 | 2.65 | 3.29 | 2.81 | 1.76 | 3.73 | 4.17 | 2.83 |
+| `flash-f32-{rows,cols}`, every strip size | 1.62 | 1.67 | 1.67 | 1.65 | 1.66 | 1.68 | 1.68 | 1.66 |
+| `flash-bf16-{rows,cols}`, every strip size | 2.05 | 2.48 | 2.44 | 2.30 | 1.76 | 3.52 | 3.24 | 2.27 |
+| `flash-bf16-saved-b512` | 2.30 | 2.89 | 2.87 | 2.30 | 2.27 | 3.96 | 3.68 | 2.27 |
+
+- Production's blocked backward sums each block's dK and dV in BF16: autodiff returns a BF16
+  cotangent for K and V in every scan iteration. The error grows with the number of blocks
+  (16 blocks: 3.3e-3, twice the floor and above cuDNN; one block: the floor). Autodiff over
+  unrolled BF16 strips inherits this; FP32-upcast operands or the custom VJP remove it.
+- JAX's default precision runs FP32 x FP32 products as TF32 on H100: an FP32 matmul has
+  2.9e-4 relative error (2.2e-7 at `HIGHEST`), and with FP32 inputs production and every
+  FP32-weight candidate have 1.6-3.1e-4. "FP32 weights" are therefore TF32 weights; with BF16
+  outputs this stays below the output rounding (`flash-f32` is at the floor).
+- `flash-bf16` reproduces cuDNN's errors to the digits shown; the BF16-score textbook path is
+  6-8x the floor on sharp inputs.
+
+### Nonfinite inputs
+
+One value injected at token 1,000 of one head, on the GPU at [2, 2048, 4, 64]
+([CPU tests](test_blocked_attention_benchmark.py) check the same against production). Entries
+are the nonfinite output rows of that head; every other head stays finite, and every variant's
+gradients are nonfinite in every case.
+
+| Injection | Production's rule | `production-*`, scans, single block | Causal-skip strips | `cudnn` | `dense-manual` |
+| --- | --- | --- | --- | --- | --- |
+| Q NaN | 1000 | 1000 | 1000 | 1000 | 1000 |
+| K NaN | >= 1000 | >= 1000 | >= 1000 | >= 1000 | >= 1000 |
+| V NaN or +inf | >= 1000 | all | >= start of its strip (896, 768, 512 for 128, 256, 512 queries) | >= 896 | all |
+| K = -inf (scores -inf) | >= 1000 | >= 1000 | >= 1000 | none | none |
+| Overflowing score (1e40/8) | 1000 | 1000 | 1000 | 1000 | 1000 |
+| Huge finite scores (1e20 in every channel) | 1000 | 1000 | 1000 | 1000 | 1000 |
+
+Masked weights are exact zeros and 0 x NaN = NaN, so a bad V value also poisons the earlier
+rows that share its product: every row when each block multiplies all keys, the rows of its
+strip with causal skipping. cuDNN and the textbook path treat a -inf score as a zero weight;
+the blocked candidates keep production's rule. On CPU, rows with huge finite scores
+(|s| ~ 1e20) also became nonfinite after a fused multiply-add rounded S x scale differently in
+two fusions, identically in production and the candidates.
+
+### Speed and compiled memory, one layer
+
+[16, 2048, 14, 64] BF16, median of 20 synchronized calls after 3 warmups; temp is the
+compiler's estimate for forward + backward. One Transformer++ update runs 240 layer
+micro-batches (15 layers x 16), so attention s/update = forward + backward ms x 0.24.
+
+| Variant | Forward ms | Fwd + bwd ms | Temp GB | Attention s/update |
+| --- | ---: | ---: | ---: | ---: |
+| `cudnn` | 0.51 | 1.53 | 0.12 | 0.37 |
+| `dense-manual` | 3.54 | 11.27 | 5.64 | 2.70 |
+| `dense-f32scores-bf16w` | 6.63 | 14.43 | 5.94 | 3.46 |
+| `production-b128` | 9.28 | 37.41 | 1.01 | 8.98 |
+| `production-b512` | 8.36 | 35.32 | 3.28 | 8.48 |
+| `production-b2048` | 8.16 | 22.83 | 12.34 | 5.48 |
+| `lean-f32-scan-ckpt-b128` | 8.02 | 31.35 | 1.01 | 7.52 |
+| `lean-f32-skip-ckpt-b256` | 4.76 | 15.29 | 2.46 | 3.67 |
+| `lean-f32-skip-nockpt-b512` | 4.79 | 11.44 | 5.17 | 2.75 |
+| `lean-f32up-skip-ckpt-b512` | 4.98 | 16.49 | 4.55 | 3.96 |
+| `lean-bf16-skip-nockpt-b512` | 3.91 | 9.49 | 3.82 | 2.28 |
+| `flash-f32-cols-b512` | 4.79 | 13.88 | 2.76 | 3.33 |
+| `flash-f32-rows-b512` | 4.79 | 13.33 | 2.44 | 3.20 |
+| `flash-f32-saved-b512` | 4.88 | 13.03 | 3.35 | 3.13 |
+| `flash-bf16-cols-b512` | 3.88 | 10.11 | 2.98 | 2.43 |
+| `flash-bf16-rows-b512` | 3.87 | 10.26 | 3.32 | 2.46 |
+| `flash-bf16-saved-b512` | 4.17 | 9.69 | 2.25 | 2.33 |
+
+- Strip size: `flash-f32-cols` takes 15.13, 13.58, 13.88, 15.19 and 19.83 ms at 128, 256,
+  512, 1,024 and 2,048 queries; `flash-bf16-cols` 11.65, 10.38, 10.11, 11.56 and 15.31 ms.
+  Small strips pay a fixed cost per strip; large ones compute more of the masked triangle.
+  Rows and cols are within 5% at 256 and 512 queries.
+- Keeping the weights (`saved`) gains 2-6% over recomputing them and stores O(T^2) per layer.
+- Profiles of 3 calls: the GPU idles 0.4-1.3 ms per call; the time is memory-bound
+  elementwise and reduction passes over the [16, 14, strip, keys] score blocks plus their
+  GEMMs.
+- First compile of a strip size, forward + backward: 94-99 s at 128 queries, 46-55 s at 256,
+  24-29 s at 512 (GEMM autotuning of each strip shape); the scans and cuDNN take under 8 s.
+- Repeated at the end of the job: cuDNN 1.51 ms (first 1.53), production 37.28 ms (37.41).
+
+### Full model
+
+The Transformer++ softmax recipe
+([`r9040f12f3d80`](../../../experiments/transformer_pp/runs/r9040f12f3d80/config.yaml), 15 layers)
+on synthetic tokens: one forward + backward micro-step of the scaffold's
+`training.loop.loss_and_grads` (no optimizer update), with softmax attention routed to each
+candidate inside the benchmark; `production-b128` and `cudnn` use the model's own backends.
+Each case runs in a fresh process. Peak is the allocator peak including the train state
+(parameters and AdamW moments), under the default allocator limit of 63.8 GB;
+s/update = micro-step x 256 / micro-batch, median of 10 after 2 warmups. Every case's loss
+(10.5088 at micro-batch 16) and gradient norm (2.811) agree to four digits.
+
+| Variant | Micro-batch | Micro-step ms | s/update | Peak GB | Compile s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `cudnn` | 16 / 8 / 4 | 105.2 / 58.4 / 34.4 | 1.68 / 1.87 / 2.20 | 26.3 / 15.6 / 9.9 | 31-37 |
+| `production-b128` | 16 / 8 / 4 | 636.7 / 335.8 / 179.2 | 10.19 / 10.75 / 11.47 | 27.8 / 15.9 / 9.9 | 44-46 |
+| `flash-f32-rows-b512` | 16 / 8 / 4 | 275.2 / 146.7 / 80.5 | 4.40 / 4.69 / 5.15 | 29.1 / 17.0 / 10.5 | 62-74 |
+| `flash-bf16-rows-b512` | 16 / 8 / 4 | 229.3 / 123.3 / 67.3 | 3.67 / 3.95 / 4.31 | 27.8 / 16.4 / 10.3 | 60-66 |
+| `lean-f32up-skip-ckpt-b512` | 16 / 8 / 4 | 322.7 / 172.5 / 94.4 | 5.16 / 5.52 / 6.04 | 34.5 / 19.7 / 12.2 | 63-70 |
+| `lean-bf16-skip-nockpt-b512` | 16 / 8 / 4 | OOM / 117.9 / 64.3 | - / 3.77 / 4.11 | - / 42.9 / 23.3 | 69-82 |
+
+Without checkpoints, autodiff keeps every layer's weights: at micro-batch 16 its 52.4 GiB of
+temporaries did not fit.
+
+### Recommendation
+
+- **Blocked basis: `flash-f32-rows-b512`.** The custom VJP over four unrolled 512-query
+  strips with causal key prefixes; the forward keeps O and the row log-sum-exp, and the
+  backward recomputes each strip behind the barrier and sums dK and dV in FP32. It keeps FP32
+  scores and softmax, production's TF32 products and NaN-row rule, puts the output and every
+  gradient at the BF16 rounding floor (more accurate than production and cuDNN), fits
+  micro-batch 16 at 29.1 GB, and cuts the forward + backward of an update from 10.19 s to
+  4.40 s, 2.3x (cuDNN: 1.68 s).
+- **cuDNN numerics: `flash-bf16-rows-b512`**, the same code with BF16 weights: 3.67 s per
+  update and cuDNN's errors.
+- 256 and 512 queries per strip tie in speed; 512 compiles in about half the time. Rows and
+  cols tie; rows shares the forward's layout.
+- **Without a hand-written backward: `lean-f32up-skip-ckpt-b512`**, checkpointed autodiff over
+  the same strips on FP32-upcast operands (at the floor; 5.16 s per update, 34.5 GB at
+  micro-batch 16), for mechanisms whose derivative is impractical by hand, such as the score MLP.
+- Not recommended: production's scan at any block size (BF16 dK/dV sums; one dense block
+  avoids them at 12 GB per layer), autodiff without checkpoints (out of memory at
+  micro-batch 16), the dense paths, and saved weights (2-6% faster for O(T^2) memory per layer).
+- The remaining 2.2-2.6x gap to cuDNN per update is memory traffic: plain XLA writes every
+  [strip x keys] score, weight and score-gradient block to HBM.
+
+Integration without changing historical behaviour:
+
+1. Move the strip forward and custom VJP into a scaffold backend beside
+   `blocked_dot_product_attention`, which stays unchanged, with these CPU tests and a GPU
+   FP64-oracle test at 2,048 tokens.
+2. Select it with a new recipe field whose default is the existing scan (for example
+   `model.attention_blocked_implementation: scan | strips`, with strip size and weight
+   precision). Historical recipes and resumptions keep their numerics, including the BF16
+   dK/dV sums; new runs opt in, or get it from `scaffolds.records create` once qualified.
+3. Keep `return_diagnostics=True` on the existing blocked function, as the fused paths do.
+4. Port each blocked-only mechanism into the strip template: its kernel, normalization and
+   invalid-row rules in the forward; dS = f'(S) (dP - delta) (normalized) or f'(S) dP
+   (unnormalized) and its coefficient gradients in the backward, behind the barrier, with its
+   own FP64-oracle tests. Use the `lean-f32up` template where the derivative is impractical.
+5. Strips assume a static sequence length, and the model compiles in 60-74 s instead of 44 s.
+6. Qualify on H100 and B300 (B300 was not measured), then acceptance and a pilot.
+
+### Tests and regeneration
+
+The 127 CPU tests in [`test_blocked_attention_benchmark.py`](test_blocked_attention_benchmark.py)
+pass. They check every candidate's output and dQ/dK/dV against the FP64 oracle in float64 (to
+1e-11) at T = 1, 32 and 37 with strips of 1, 4, 8, 16 and 64 (ragged last strips), float32
+parity with production, BF16 dtypes and rounding, causality, the nonfinite cases above
+against production, FP32 dK/dV sums, the backward's barrier, option and shape validation, and
+a two-layer model routed to the candidates against the scaffold's blocked loss and every
+parameter gradient.
+
+```bash
+PY=scaffolds/transformer/.venv/bin/python
+JAX_PLATFORMS=cpu PYTHONPATH=. $PY -m pytest -q -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib scaffolds/transformer/validation/test_blocked_attention_benchmark.py
+JAX_PLATFORMS=cpu PYTHONPATH=. $PY -m scaffolds.transformer.validation.blocked_attention_benchmark \
+  oracle-check --output oracle-cpu.json
+# One H100 (sbatch --partition=debug,standard --gres=gpu:h100:1 --nodelist=dogo --time=01:30:00
+# --cpus-per-task=8 --mem=120G), PYTHONPATH=$PWD JAX_PLATFORMS=cuda XLA_PYTHON_CLIENT_PREALLOCATE=false:
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark kernel --output kernel.json \
+  --profile-variants cudnn production-b128 flash-f32-cols-b128 flash-f32-rows-b512 \
+    flash-bf16-rows-b512 flash-bf16-saved-b512 lean-f32up-skip-ckpt-b512 \
+  --float32-input-variants production-b128 dense-manual flash-f32-rows-b512 flash-bf16-rows-b512 \
+    flash-f32-saved-b512 lean-f32up-skip-ckpt-b512 lean-f32-skip-ckpt-b512
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark model --output model.json \
+  --variants cudnn production-b128 flash-f32-rows-b512 flash-bf16-rows-b512 \
+    lean-f32up-skip-ckpt-b512 lean-bf16-skip-nockpt-b512 --micro-batches 16 8 4 --warmup 2 --iterations 10
+# All tables of a record, including the 43 kernel variants:
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark summarize \
+  --kernel-record kernel.json --model-record model.json --output summary.md
+```
