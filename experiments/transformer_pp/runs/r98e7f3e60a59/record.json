@@ -348,8 +348,8 @@
   "label": "score-mlp-exp-residual-j8",
   "log": {
     "path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
-    "sha256": "3b8929b81340693435733836a4f73dbac39be06999338159dfa8f3aa35cdeb83",
-    "size_bytes": 6701
+    "sha256": "5423a97a08158c01526b150e5bcb7c6279b31cbf36f85ca471b8da2ef2bdd955",
+    "size_bytes": 134115
   },
   "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-mlp-attention/experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
   "name": "score-mlp-exp-residual-j8",
