@@ -61,8 +61,8 @@
   "artifacts": [
     {
       "path": "experiments/transformer_pp/runs/r98e7f3e60a59/training.log",
-      "sha256": "3b8929b81340693435733836a4f73dbac39be06999338159dfa8f3aa35cdeb83",
-      "size_bytes": 6701
+      "sha256": "5423a97a08158c01526b150e5bcb7c6279b31cbf36f85ca471b8da2ef2bdd955",
+      "size_bytes": 134115
     }
   ],
   "attempts": [
@@ -90,6 +90,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/r98e7f3e60a59/config.yaml",
       "config_sha256": "cd6f7b55425674103e34d78697add53d1cf6b6206d99a262839d0900190ff897",
+      "exit_code": null,
+      "finished_utc": "2026-11-05T05:41:52+00:00",
       "gpu_count": 1,
       "gpu_type": "H100",
       "home_cluster": "kennel",
@@ -97,6 +99,7 @@
       "slurm_job_id": "235233",
       "slurm_partition": "standard",
       "slurm_restart_count": "0",
+      "slurm_state": "CANCELLED",
       "started_utc": "2026-11-05T00:42:21.835748+00:00",
       "stop_after_step": null
     }
