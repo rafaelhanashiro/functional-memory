@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rfa9636279199/config.yaml",
+    "sha256": "bd92f936fe8873f7ba08bd3f9020f11047a1bd25296633448b8cfbb264006cfe"
+  },
+  "label": "query-m4-sigmoid-forget-gate-no-rope-w-decay",
+  "name": "query-m4-sigmoid-forget-gate-no-rope-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rfa9636279199",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdd3e9cb3bb80/config.yaml",
+    "sha256": "54b738aadc7bd4cb6ba8a5ea99c9f58fd61e2d01c0a91aca90a0476143a9b556"
+  },
+  "label": "exp-sigmoid-forget-gate-no-rope",
+  "name": "exp-sigmoid-forget-gate-no-rope",
+  "record_schema_version": 1,
+  "run_id": "rdd3e9cb3bb80",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/reeb92d46a95d/config.yaml",
+    "sha256": "139e7df4eb246531d54f79c9921a21e0323da8ee225adb076c5b5591d5d204c1"
+  },
+  "label": "softmax-sigmoid-forget-gate-no-rope-plain-qk",
+  "name": "softmax-sigmoid-forget-gate-no-rope-plain-qk",
+  "record_schema_version": 1,
+  "run_id": "reeb92d46a95d",
+  "status": "planned"
+}
