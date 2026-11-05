@@ -227,3 +227,11 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r5bd803b3e562/best_validation.json
       sha256: 51dfdf9b7213b94b5c2d965cdfc22125e03e335071a19c7566c393db8d1485aa
+- study: transformer_pp
+  run_id: r68cac6f03d77
+  label: query-m4-abw-decay-1x
+  role: all_generator_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/config.yaml
+      sha256: 8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015

@@ -4,8 +4,9 @@ Opened 2026-10-29.
 
 ## Question and method
 
-Does weight decay on the query projection W, or a higher learning rate on the
-coefficient offsets b and amplitudes a, improve degree-four query/tanh attention?
+Does weight decay on the query projection W, additional decay on the coefficient
+offsets b and amplitudes a, or a higher learning rate on a,b improve degree-four
+query/tanh attention?
 
 Every run uses unnormalized attention with per-head output RMSNorm and
 
@@ -63,6 +64,34 @@ in a host loop; the new runs use the shared trainer's compiled accumulation loop
 The averaging, clipping, and AdamW mathematics agree, but floating-point training
 trajectories need not be identical. Small differences warrant confirmation.
 
+## Decay on W, a, and b at 1×
+
+Run `r68cac6f03d77` (`query-m4-abw-decay-1x`) is pending. It matches the completed
+W-decay reference `rca97cc9db8f2`, adding
+`model.attention_coefficient_amplitude_weight_decay: true` and
+`model.attention_coefficient_bias_weight_decay: true`. The existing
+`model.attention_coefficient_kernel_weight_decay: true` remains enabled, so
+AdamW applies the same `optim.weight_decay: 0.1` to W, a, and b. This is one
+fresh pretraining run with the same m = 4, 1× schedule, seed, initialization,
+data order, batch, and learning rates as the reference.
+
+| Role | Run | W decay | a decay | b decay | Status |
+| --- | --- | ---: | ---: | ---: | --- |
+| W-only reference | `rca97cc9db8f2` | 0.1 | 0 | 0 | Complete |
+| W, a, b decay | `r68cac6f03d77` | 0.1 | 0.1 | 0.1 | Pending |
+
+The comparison asks whether decaying a and b together improves validation PPL.
+With W fixed, the decay component scales all coefficients in a head equally;
+head output RMSNorm approximately cancels that common scale, apart from epsilon.
+Training dynamics can still change. The existing run diagnostics record a,b
+magnitudes, projection norms, and tanh saturation. No outcome is available yet;
+compare terminal and validation-best metrics separately after completion.
+
+The run uses one B300 or H100 on Kennel. See the
+[study launch instructions](../../../README.md#query-coefficient-optimization)
+for its exact command. Acceptance checks the actual AdamW updates, initialization,
+GPU kernels, production-shaped pilot, and checkpoint resume before training.
+
 ## Projection decay at 2.5×
 
 Does W decay still help at 2.5× Chinchilla, at degree 8, and with key–query
@@ -110,8 +139,9 @@ Terminal validation perplexity; every run's validation best is its terminal chec
 
 ## Selection and open decision
 
-The [selection](selection.yaml) names the 1x control and both optimizer ablations, and
-the four 2.5× pairs (roles `*_2p5x_control` and `*_2p5x_w_decay`).
+The [selection](selection.yaml) names the 1x control, both completed optimizer
+ablations, the pending `all_generator_decay` run, and the four 2.5× pairs
+(roles `*_2p5x_control` and `*_2p5x_w_decay`).
 After collecting run measurements, refresh their scientific input hashes with:
 
 ```bash
@@ -121,5 +151,6 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh \
 
 At 2.5× the W-decay improvement holds for query coefficients at a smaller size and is
 absent for key–query. Decide whether W decay becomes the default for new query runs,
-and whether a second seed is worth its cost; neither change is a default yet. Promote
+whether adding joint a,b decay helps at 1×, and whether a second seed is worth its
+cost; neither decay policy is a default yet. Promote
 this comparison into its own canonical collection, or discard the topic. These runs enter no canonical comparison while the topic is open.

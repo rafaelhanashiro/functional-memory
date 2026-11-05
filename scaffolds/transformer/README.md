@@ -209,8 +209,8 @@ its factors. The recorded training NLL,
 perplexities, and the validation loss exclude the penalty; its value at the logged
 step's parameters is printed as `train_coefficient_penalty`, stored as
 `train_coefficient_penalty` in each validation record, and mirrored to W&B as
-`train/coefficient_penalty`. AdamW weight decay never touches polynomial
-coefficients, so the penalty is the only shrinkage they receive.
+`train/coefficient_penalty`. Static and rational polynomial coefficients are
+exempt from AdamW weight decay, so the penalty is the only shrinkage they receive.
 
 `qk_head_dim` controls projection geometry independently of the mechanism.
 `quadratic_sharing: global` stores one pair across all layers and heads;
@@ -225,8 +225,8 @@ with `attention_coefficient_scale: factorial`, the stored entries start at one
 and divide by the factorial of their actual order, not their compact array index.
 The existing attention kernels receive the expanded monomial vector, with exactly
 zero omitted coefficients. Query generators store and project only the selected
-columns of W and entries of a,b (and an optional inner bias); projection weight
-decay still applies to W only. Both bias and amplitude scaling use the selected
+columns of W and entries of a,b (and an optional inner bias); the independent
+W, a, and b decay flags also apply to these compact arrays. Both bias and amplitude scaling use the selected
 orders' factorials before expanding the effective coefficients. The blocked reference evaluates them by
 Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
@@ -336,15 +336,22 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 `query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
 `[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
 decay, except that `model.attention_coefficient_kernel_weight_decay: true` decays the
-kernel `W` with `optim.weight_decay`. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+kernel `W` with `optim.weight_decay`. For diagonal query-only `tanh` and
+`affine_sigmoid` coefficients, the independent flags
+`model.attention_coefficient_amplitude_weight_decay` and
+`model.attention_coefficient_bias_weight_decay` apply the same `optim.weight_decay`
+to the stored amplitude `a` and baseline `b`, respectively. Both default to `false`.
+They do not apply to key amplitudes, dense mixing matrices, static coefficients,
+or the optional bias inside the activation; unsupported settings are rejected.
+The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
 For learned query-conditioned tanh coefficients with diagonal readout,
 `optim.query_coefficient_learning_rate_scale` (default `1.0`) multiplies the learning
 rate of the stored bias `b` and amplitude `a` at every layer, head, and order. It
 scales the completed Adam update after global gradient clipping; the projection
-`W` and all other parameters keep the base schedule. Both `a` and `b` remain
-excluded from weight decay. A value of `3.0` gives them three times both peak and
+`W` and all other parameters keep the base schedule. The independent decay flags
+above also apply when this multiplier is used. A value of `3.0` gives them three times both peak and
 minimum LR with the same warmup and cosine horizon, without changing their forward
 factorial scaling or optimizer moments. The optimizer state layout stays unchanged.
 The multiplier is frozen in each run's recipe and supports ordinary checkpoint

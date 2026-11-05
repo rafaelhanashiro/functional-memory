@@ -211,6 +211,50 @@ def test_index_exposes_selected_coefficient_orders_without_inventing_legacy_sett
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_distinguishes_coefficient_decay_flags_without_inventing_legacy_settings(tmp_path):
+    study = tmp_path / "study"
+    model = {"attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "query",
+             "attention_coefficient_kernel_weight_decay": True}
+    legacy = create_run(study, {"model": model})
+    runs = {}
+    for amplitude, bias in ((False, False), (True, False), (False, True), (True, True)):
+        runs[amplitude, bias] = create_run(study, {"model": {
+            **model,
+            "attention_coefficient_amplitude_weight_decay": amplitude,
+            "attention_coefficient_bias_weight_decay": bias,
+        }})
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert rows[legacy.name]["coefficient_amplitude_weight_decay"] == ""
+    assert rows[legacy.name]["coefficient_bias_weight_decay"] == ""
+    for (amplitude, bias), run in runs.items():
+        row = rows[run.name]
+        assert row["coefficient_kernel_weight_decay"] == "True"
+        assert row["coefficient_amplitude_weight_decay"] == str(amplitude)
+        assert row["coefficient_bias_weight_decay"] == str(bias)
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
+@pytest.mark.parametrize("parameterization", [
+    "shared_batch_query_coefficients", "static_coefficients", "free_per_example_query_coefficients",
+])
+def test_index_does_not_inherit_generator_decay_for_coefficient_tables(tmp_path, parameterization):
+    study = tmp_path / "study"
+    create_run(study, {"model": {
+        "attention_coefficients": "learned",
+        "attention_coefficient_conditioning": "query",
+        "attention_coefficient_kernel_weight_decay": True,
+        "attention_coefficient_amplitude_weight_decay": True,
+        "attention_coefficient_bias_weight_decay": True,
+    }, "oracle": {"parameterization": parameterization}})
+    with (study / "runs.csv").open() as stream:
+        row, = list(csv.DictReader(stream))
+    for component in ("kernel", "amplitude", "bias"):
+        assert row[f"coefficient_{component}_weight_decay"] == ""
+
+
 @pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients"])
 def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_path, parameterization):
     study = tmp_path / "study"

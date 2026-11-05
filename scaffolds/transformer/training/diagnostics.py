@@ -354,6 +354,10 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             **({"attention_coefficient_kernel_weight_decay": True}
                if config.model.attention_coefficient_kernel_weight_decay else {}),
+            **({"attention_coefficient_amplitude_weight_decay": True}
+               if config.model.attention_coefficient_amplitude_weight_decay else {}),
+            **({"attention_coefficient_bias_weight_decay": True}
+               if config.model.attention_coefficient_bias_weight_decay else {}),
             **({"attention_forget_gate": True,
                 "attention_forget_gate_mode": gate_mode,
                 **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),

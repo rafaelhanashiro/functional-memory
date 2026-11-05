@@ -20,21 +20,25 @@ PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
-                    feature_count: int | None = None, kernel_weight_decay: bool = False):
+                    feature_count: int | None = None, kernel_weight_decay: bool = False,
+                    amplitude_weight_decay: bool = False, bias_weight_decay: bool = False):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
-    and dense V. kernel_weight_decay decays the projections W and W_k; b, a, a_k, beta, and V
-    never decay."""
+    and dense V. kernel_weight_decay decays the projections W and W_k. Independent flags
+    enable decay of diagonal query-only affine readout a and b; a_k, beta, and V never decay."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
     if readout == "dense" and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or conditioning != "query"):
         raise ValueError("Dense coefficient readout requires nonlinear query-only coefficients")
+    if (amplitude_weight_decay or bias_weight_decay) and (
+            conditioning != "query" or readout != "diagonal" or activation not in AFFINE_FEATURES):
+        raise ValueError("Readout weight decay requires diagonal query-only affine coefficients")
     count = degree + 1
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):
@@ -59,7 +63,8 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     specs = (
         AttentionParameterSpec(
             name="query_polynomial_bias", argument="query_polynomial_bias",
-            initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head", weight_decay=False,
+            initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head",
+            weight_decay=bool(bias_weight_decay),
         ),
         kernel,
     )
@@ -74,7 +79,8 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         else:
             specs += (AttentionParameterSpec(
                 name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
-                initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
+                initial=(float(amplitude_initial),) * count, sharing="per_head",
+                weight_decay=bool(amplitude_weight_decay),
             ),)
         if tanh_bias:
             specs += (AttentionParameterSpec(

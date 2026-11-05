@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
+    "sha256": "8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-abw-decay-1x",
+  "name": "query-m4-abw-decay-1x",
+  "record_schema_version": 1,
+  "run_id": "r68cac6f03d77",
+  "status": "planned"
+}

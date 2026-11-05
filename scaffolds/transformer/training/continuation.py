@@ -47,7 +47,9 @@ def _parent_config(config):
                              "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
                              "qk_norm_token_scale", "qk_norm_token_scale_kernel_weight_decay",
                              "attention_forget_gate", "attention_forget_gate_form",
-                             "attention_coefficient_kernel_weight_decay"}
+                             "attention_coefficient_kernel_weight_decay",
+                             "attention_coefficient_amplitude_weight_decay",
+                             "attention_coefficient_bias_weight_decay"}
     if exp_parent:
         allowed_model_changes |= {"attention_degree"}
     if (parent.model.positional_encoding == "rope" and config.model.positional_encoding == "none"

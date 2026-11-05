@@ -195,6 +195,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         if activation in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
             # Every nonlinear generator runs on the same query-coefficient kernels as tanh.
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
+        if cpu and conditioning == "query" and activation in ("tanh", "affine_sigmoid"):
+            paths.append("scaffolds/transformer/tests/test_query_coefficient_weight_decay.py")
         if activation == "tanh" and model.get("attention_coefficient_readout", "diagonal") == "dense":
             paths.append(DENSE_QUERY_READOUT_TESTS)
         if activation == "sigmoid":
@@ -654,6 +656,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_kernel_weight_decay=False,
+                                           attention_coefficient_amplitude_weight_decay=False,
+                                           attention_coefficient_bias_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_mode="cumulative",
                                            attention_forget_gate_form="input",
@@ -706,7 +710,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
+        attention_coefficient_kernel_weight_decay=False, attention_coefficient_amplitude_weight_decay=False,
+        attention_coefficient_bias_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input", positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_coefficient_orders=None,

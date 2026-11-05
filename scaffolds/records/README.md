@@ -80,6 +80,8 @@ whole sweep before any jobs can run or requeue.
   coefficients from coefficients predicted from the incoming query activation.
   `coefficient_orders` lists explicitly selected polynomial powers as a JSON array;
   it stays empty when the recipe does not restrict the powers.
+  `coefficient_kernel_weight_decay`, `coefficient_amplitude_weight_decay`, and
+  `coefficient_bias_weight_decay` report the generator's independent decay settings.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 

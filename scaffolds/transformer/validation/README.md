@@ -11,6 +11,35 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query coefficient readout weight decay (2026-11-04)
+
+The independent amplitude and bias decay flags apply AdamW's configured decay to
+the stored `a` and `b` of diagonal query-only tanh or affine-sigmoid generators.
+Both default to false. The existing W flag remains independent; inner biases,
+key amplitudes, dense mixing matrices and static coefficients keep their policies.
+
+All **139 CPU checks passed**, including 36 new checks in
+`tests/test_query_coefficient_weight_decay.py` and the existing query-LR,
+parameter-policy, configuration and continuation suites. Actual zero-gradient
+AdamW updates at nonzero W, a and b verify independent decay, and nonzero-gradient
+updates verify that each array remains trainable. Checks also cover exemptions,
+unsupported settings, legacy configuration/resume compatibility, diagnostics,
+initialization acceptance and continuation policy. Reproduce with:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+  -c scaffolds/transformer/pyproject.toml -q \
+  scaffolds/transformer/tests/test_query_coefficient_weight_decay.py \
+  scaffolds/transformer/tests/test_query_coefficient_learning_rate.py \
+  scaffolds/transformer/tests/test_parameter_policy.py \
+  scaffolds/transformer/tests/test_config.py \
+  scaffolds/transformer/tests/test_continuation.py -m 'not gpu'
+```
+
+The attention kernels are unchanged. Production GPU initialization, training,
+evaluation and checkpoint-resume qualification remain required in the run's
+allocation, where the shared acceptance also selects the new CPU checks.
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders

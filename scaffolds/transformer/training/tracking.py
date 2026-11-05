@@ -66,6 +66,10 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"coefficient_{config.model.attention_coefficient_activation}")
         if config.model.attention_coefficient_kernel_weight_decay:
             tags.append("coefficient_kernel_weight_decay")
+        if config.model.attention_coefficient_amplitude_weight_decay:
+            tags.append("coefficient_amplitude_weight_decay")
+        if config.model.attention_coefficient_bias_weight_decay:
+            tags.append("coefficient_bias_weight_decay")
     if getattr(config.model, "attention_forget_gate", False):
         tags.append("forget_gate")
     if identity.get("attention_output_scaling"):

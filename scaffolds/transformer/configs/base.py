@@ -109,8 +109,12 @@ class ModelConfig:
     # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
     attention_forget_gate_form: Literal["input", "constant"] = "input"
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
-    # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
+    # query_key conditioning, the key W_k. Readout parameters use separate flags below.
     attention_coefficient_kernel_weight_decay: bool = False
+    # Independently apply optim.weight_decay to diagonal query-only affine readout a and b.
+    # Defaults preserve their exemption; key amplitudes, dense V, and inner biases stay exempt.
+    attention_coefficient_amplitude_weight_decay: bool = False
+    attention_coefficient_bias_weight_decay: bool = False
     # Dense readout mixes all degree+1 tanh or sigmoid features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.
     attention_coefficient_readout: Literal["diagonal", "dense"] = "diagonal"
@@ -465,6 +469,17 @@ class ModelConfig:
         if (self.attention_coefficient_kernel_weight_decay
                 and self.attention_coefficient_conditioning not in ("query", "query_key")):
             raise ValueError("Coefficient kernel weight decay requires query-conditioned coefficients")
+        for name in ("attention_coefficient_amplitude_weight_decay", "attention_coefficient_bias_weight_decay"):
+            value = getattr(self, name)
+            if not isinstance(value, bool):
+                raise ValueError(f"model.{name} must be a boolean")
+            if value and not (
+                    self.attention_coefficients == "learned"
+                    and self.attention_coefficient_conditioning == "query"
+                    and activation in AFFINE_ACTIVATIONS
+                    and self.attention_coefficient_readout == "diagonal"):
+                raise ValueError(f"model.{name} requires learned diagonal query-only affine coefficients "
+                                 "(tanh or affine_sigmoid)")
         if self.attention_coefficient_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient scale: {self.attention_coefficient_scale}")
         if self.attention_coefficient_scale != "none" and (
