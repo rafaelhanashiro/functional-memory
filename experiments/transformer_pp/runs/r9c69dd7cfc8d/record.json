@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml",
+    "sha256": "f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8-head-scale",
+  "name": "static-m8-head-scale",
+  "record_schema_version": 1,
+  "run_id": "r9c69dd7cfc8d",
+  "status": "planned"
+}

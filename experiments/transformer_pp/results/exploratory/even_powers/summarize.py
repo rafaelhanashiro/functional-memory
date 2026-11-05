@@ -20,21 +20,27 @@ def main():
     for entry in selection["runs"]:
         run = ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
         record = json.loads((run / "record.json").read_text())
+        row = {
+            "role": entry["role"], "run_id": entry["run_id"], "status": record["status"],
+            "terminal_step": "", "terminal_validation_perplexity": "",
+            "best_step": "", "best_validation_perplexity": "",
+        }
         if record["status"] != "complete":
-            raise ValueError(f"{entry['run_id']} is {record['status']}, not completed training")
+            rows.append(row)
+            continue
         completion = json.loads((run / "completion.json").read_text())
         final_step = completion["final_step"]
         measurements = [json.loads(line) for line in (run / "metrics.jsonl").read_text().splitlines()]
         terminal = [row for row in measurements
                     if row.get("step") == final_step and "validation_perplexity" in row][-1]
         best = json.loads((run / "best_validation.json").read_text())
-        rows.append({
-            "role": entry["role"], "run_id": entry["run_id"], "status": record["status"],
+        row.update({
             "terminal_step": final_step,
             "terminal_validation_perplexity": f"{terminal['validation_perplexity']:.9f}",
             "best_step": best["step"],
             "best_validation_perplexity": f"{best['validation_perplexity']:.9f}",
         })
+        rows.append(row)
     with (DIRECTORY / "summary.csv").open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()
