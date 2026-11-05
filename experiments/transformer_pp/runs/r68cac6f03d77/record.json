@@ -3,10 +3,36 @@
     "path": "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
     "sha256": "8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015"
   },
+  "frozen_execution_sha256": "172347386475e75dac38578e7ef064111b10006eee888df6531daa2b5b14f407",
   "home_cluster": "kennel",
   "label": "query-m4-abw-decay-1x",
   "name": "query-m4-abw-decay-1x",
   "record_schema_version": 1,
   "run_id": "r68cac6f03d77",
-  "status": "planned"
+  "source_commit": "053a84f48209999d0fa1bcd6a139a6863b67374f",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r68cac6f03d77",
+      "--output=experiments/transformer_pp/runs/r68cac6f03d77/training.log",
+      "--error=experiments/transformer_pp/runs/r68cac6f03d77/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r68cac6f03d77/config.yaml",
+      "053a84f48209999d0fa1bcd6a139a6863b67374f",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "235889",
+    "submitted_utc": "2026-11-05T04:28:17.184905+00:00"
+  }
 }
