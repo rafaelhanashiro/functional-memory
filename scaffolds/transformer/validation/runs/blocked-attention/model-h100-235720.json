@@ -1,0 +1,1134 @@
+{
+ "format": "blocked-softmax-model-benchmark",
+ "schema_version": 1,
+ "status": "complete",
+ "created_at_utc": "2026-11-05T03:04:10.167284+00:00",
+ "recipe": "experiments/transformer_pp/runs/r9040f12f3d80/config.yaml",
+ "recipe_sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897",
+ "configuration": {
+  "micro_batches": [
+   16,
+   8,
+   4
+  ],
+  "warmup": 2,
+  "iterations": 10,
+  "timing": "jit(training.loop.loss_and_grads): one forward+backward micro-step (no optimizer update), median of synchronized calls; compile excluded",
+  "memory": "allocator peak_bytes_in_use of a fresh process holding the full train state (params and AdamW moments) plus the micro-step"
+ },
+ "cases": [
+  {
+   "variant": "cudnn",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "cudnn",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 107.29064838960767,
+    "p10_ms": 102.55892579443753,
+    "p90_ms": 108.75179595313966,
+    "samples_ms": [
+     99.04651064425707,
+     103.66235487163067,
+     102.94919414445758,
+     107.90763003751636,
+     105.7810578495264,
+     106.71473806723952,
+     110.1027512922883,
+     108.60168980434537,
+     107.86655871197581,
+     107.95649932697415
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 28.70089481305331,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 22087945504,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 646872
+    },
+    "kernels": 1108
+   },
+   "nll": 10.508788108825684,
+   "grad_norm": 2.8109281063079834,
+   "finite": true,
+   "seconds_per_update": 1.7166503742337227,
+   "peak_bytes_in_use": 26268964096,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 39.27289644442499,
+   "provenance_matches": true
+  },
+  {
+   "variant": "cudnn",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "cudnn",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 59.06703509390354,
+    "p10_ms": 56.1655567958951,
+    "p90_ms": 61.31009026430547,
+    "samples_ms": [
+     53.0234738253057,
+     56.89317733049393,
+     56.669797748327255,
+     56.51467712596059,
+     59.06407022848725,
+     59.06999995931983,
+     61.479452066123486,
+     61.29127228632569,
+     61.28475209698081,
+     61.22216209769249
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 29.991275419015437,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 11413657888,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 725464
+    },
+    "kernels": 994
+   },
+   "nll": 10.508230209350586,
+   "grad_norm": 3.931813955307007,
+   "finite": true,
+   "seconds_per_update": 1.8901451230049133,
+   "peak_bytes_in_use": 15594610944,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 39.94291546288878,
+   "provenance_matches": true
+  },
+  {
+   "variant": "cudnn",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "cudnn",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 33.25813892297447,
+    "p10_ms": 31.541519751772285,
+    "p90_ms": 35.49619298428297,
+    "samples_ms": [
+     28.6847990937531,
+     32.676242757588625,
+     31.88858274370432,
+     32.0930415764451,
+     31.85893315821886,
+     33.84003508836031,
+     34.155074041336775,
+     34.25406524911523,
+     35.46082600951195,
+     35.814495757222176
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 31.863706986885518,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 5670693920,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 682104
+    },
+    "kernels": 994
+   },
+   "nll": 10.507101058959961,
+   "grad_norm": 5.558130741119385,
+   "finite": true,
+   "seconds_per_update": 2.128520891070366,
+   "peak_bytes_in_use": 9851614208,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 41.21045365696773,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 638.3251168299466,
+    "p10_ms": 638.05738883093,
+    "p90_ms": 638.8708293437958,
+    "samples_ms": [
+     637.9952160641551,
+     638.2839372381568,
+     638.0642969161272,
+     638.7572172097862,
+     639.3671981059015,
+     638.5651072487235,
+     638.3276465348899,
+     638.8156772591174,
+     638.3225871250033,
+     638.1292860023677
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 50.296468714717776,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 23574761080,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1200132
+    },
+    "kernels": 1797
+   },
+   "nll": 10.50877571105957,
+   "grad_norm": 2.8114469051361084,
+   "finite": true,
+   "seconds_per_update": 10.213201869279146,
+   "peak_bytes_in_use": 27755779584,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 67.73547440487891,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 335.67621000111103,
+    "p10_ms": 335.54630116559565,
+    "p90_ms": 335.96994960680604,
+    "samples_ms": [
+     335.2767596952617,
+     335.6643901206553,
+     335.8424501493573,
+     335.65521985292435,
+     335.8593909069896,
+     335.68802988156676,
+     335.6100502423942,
+     335.576250217855,
+     335.9870403073728,
+     335.9680506400764
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 42.462256976403296,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 11692434808,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1041356
+    },
+    "kernels": 1604
+   },
+   "nll": 10.5082368850708,
+   "grad_norm": 3.9319651126861572,
+   "finite": true,
+   "seconds_per_update": 10.741638720035553,
+   "peak_bytes_in_use": 15873387776,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 55.390945146325976,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": null,
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "timing": {
+    "median_ms": 179.36403187923133,
+    "p10_ms": 179.10712081938982,
+    "p90_ms": 179.5285398606211,
+    "samples_ms": [
+     178.7345209158957,
+     179.5271118171513,
+     179.4579909183085,
+     179.32461202144623,
+     179.24253223463893,
+     179.14852080866694,
+     179.54139225184917,
+     179.40761195495725,
+     179.40345173701644,
+     179.26949122920632
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 45.89043257990852,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 5667501944,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1053596
+    },
+    "kernels": 1590
+   },
+   "nll": 10.50709342956543,
+   "grad_norm": 5.5625176429748535,
+   "finite": true,
+   "seconds_per_update": 11.479298040270805,
+   "peak_bytes_in_use": 9848422144,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 56.302325499709696,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-rows-b512",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 277.2137599531561,
+    "p10_ms": 274.36945638619363,
+    "p90_ms": 277.7665909845382,
+    "samples_ms": [
+     267.5529201515019,
+     277.120319660753,
+     277.6876422576606,
+     277.4447905831039,
+     277.88286097347736,
+     277.14304998517036,
+     275.27663903310895,
+     277.7536720968783,
+     275.1268493011594,
+     277.28446992114186
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 60.43404396669939,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 24950819120,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1088256
+    },
+    "kernels": 1860
+   },
+   "nll": 10.508764266967773,
+   "grad_norm": 2.8113327026367188,
+   "finite": true,
+   "seconds_per_update": 4.435420159250498,
+   "peak_bytes_in_use": 29131837696,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 76.44629464065656,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-rows-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 147.37973944284022,
+    "p10_ms": 145.03095843829215,
+    "p90_ms": 147.5650319363922,
+    "samples_ms": [
+     139.59613116458058,
+     145.6348281353712,
+     145.65103687345982,
+     147.46677037328482,
+     147.45973888784647,
+     147.55888003855944,
+     147.29682868346572,
+     147.62039901688695,
+     147.29973999783397,
+     147.46792893856764
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 67.24150232411921,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 12813811248,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1179688
+    },
+    "kernels": 1837
+   },
+   "nll": 10.508186340332031,
+   "grad_norm": 3.930298089981079,
+   "finite": true,
+   "seconds_per_update": 4.716151662170887,
+   "peak_bytes_in_use": 16994764288,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 79.11089479224756,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-rows-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 80.54502191953361,
+    "p10_ms": 77.8801126871258,
+    "p90_ms": 82.85050303675234,
+    "samples_ms": [
+     73.87307472527027,
+     78.47958896309137,
+     78.5011500120163,
+     78.32533912733197,
+     80.37829212844372,
+     80.7117517106235,
+     82.65833277255297,
+     82.84562407061458,
+     82.75519357994199,
+     82.89441373199224
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 64.7588267987594,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 6352728880,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1431616
+    },
+    "kernels": 1822
+   },
+   "nll": 10.50706672668457,
+   "grad_norm": 5.562155246734619,
+   "finite": true,
+   "seconds_per_update": 5.154881402850151,
+   "peak_bytes_in_use": 10533649152,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 74.5688163288869,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-rows-b512",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 232.07512986846268,
+    "p10_ms": 229.19148900546134,
+    "p90_ms": 232.73056210018694,
+    "samples_ms": [
+     221.37396410107613,
+     231.6211648285389,
+     232.7892961911857,
+     232.14138485491276,
+     232.0088748820126,
+     232.31484601274133,
+     230.1963740028441,
+     232.72403609007597,
+     230.06010288372636,
+     232.47208492830396
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 58.607651265803725,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 23656442672,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1291952
+    },
+    "kernels": 1905
+   },
+   "nll": 10.508797645568848,
+   "grad_norm": 2.811389446258545,
+   "finite": true,
+   "seconds_per_update": 3.713202077895403,
+   "peak_bytes_in_use": 27837461248,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 70.47221441799775,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-rows-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 120.87250268086791,
+    "p10_ms": 120.25342490524054,
+    "p90_ms": 120.91385591775179,
+    "samples_ms": [
+     116.18274776265025,
+     120.76201289892197,
+     120.72325218468904,
+     120.70572236552835,
+     120.90323306620121,
+     120.91011181473732,
+     120.88460335507989,
+     120.86040200665593,
+     120.94755284488201,
+     120.90767221525311
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 65.2038126802072,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 12194823728,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1285960
+    },
+    "kernels": 1897
+   },
+   "nll": 10.508238792419434,
+   "grad_norm": 3.9320523738861084,
+   "finite": true,
+   "seconds_per_update": 3.867920085787773,
+   "peak_bytes_in_use": 16375776768,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 75.40631255693734,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-rows-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-rows-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 67.6738282199949,
+    "p10_ms": 65.34978575073183,
+    "p90_ms": 68.74960791319609,
+    "samples_ms": [
+     61.904133297502995,
+     66.07775669544935,
+     65.7326360233128,
+     65.78908720985055,
+     67.6456387154758,
+     67.70201772451401,
+     68.44705995172262,
+     68.7389187514782,
+     68.71281983330846,
+     68.84581036865711
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 64.9009818919003,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 6141949744,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1519312
+    },
+    "kernels": 1867
+   },
+   "nll": 10.507102966308594,
+   "grad_norm": 5.5612664222717285,
+   "finite": true,
+   "seconds_per_update": 4.331125006079674,
+   "peak_bytes_in_use": 10322870016,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 82.21263245493174,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-f32up-skip-ckpt-b512",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-f32up-skip-ckpt-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 323.4891425818205,
+    "p10_ms": 321.67585119605064,
+    "p90_ms": 323.9530869759619,
+    "samples_ms": [
+     315.950820222497,
+     323.754217941314,
+     323.32738814875484,
+     323.4643372707069,
+     323.5139478929341,
+     323.55618802830577,
+     322.5124669261277,
+     324.46165895089507,
+     322.3119657486677,
+     323.89657897874713
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 65.78001618338749,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 30331585568,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1411536
+    },
+    "kernels": 2100
+   },
+   "nll": 10.508771896362305,
+   "grad_norm": 2.8113210201263428,
+   "finite": true,
+   "seconds_per_update": 5.175826281309128,
+   "peak_bytes_in_use": 34512604160,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 78.69160625617951,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-f32up-skip-ckpt-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-f32up-skip-ckpt-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 171.94909369572997,
+    "p10_ms": 168.01033369265497,
+    "p90_ms": 173.0295247398317,
+    "samples_ms": [
+     163.9183359220624,
+     168.525330722332,
+     168.4650001116097,
+     170.52954342216253,
+     171.09646322205663,
+     172.80172416940331,
+     172.91466612368822,
+     173.45162481069565,
+     172.9826247319579,
+     172.9509150609374
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 74.10995768383145,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 15534734624,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1450712
+    },
+    "kernels": 1942
+   },
+   "nll": 10.508160591125488,
+   "grad_norm": 3.9317877292633057,
+   "finite": true,
+   "seconds_per_update": 5.502370998263359,
+   "peak_bytes_in_use": 19715687680,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 85.80254175094888,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-f32up-skip-ckpt-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-f32up-skip-ckpt-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 94.96753104031086,
+    "p10_ms": 91.28306987695396,
+    "p90_ms": 97.28099829517305,
+    "samples_ms": [
+     86.95413917303085,
+     91.76406217738986,
+     91.76957281306386,
+     94.09716492518783,
+     95.1286661438644,
+     94.80639593675733,
+     96.6462679207325,
+     97.17643912881613,
+     97.2672482021153,
+     97.40474913269281
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 73.66575674386695,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 8042836512,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1695928
+    },
+    "kernels": 1927
+   },
+   "nll": 10.507068634033203,
+   "grad_norm": 5.5601806640625,
+   "finite": true,
+   "seconds_per_update": 6.077921986579895,
+   "peak_bytes_in_use": 12223756800,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 83.61913665011525,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-saved-b512",
+   "micro_batch": 16,
+   "status": "failed",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "error": "JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 52.67GiB.",
+   "out_of_memory": true,
+   "wall_seconds": 77.704558277037,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-saved-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 145.55995306000113,
+    "p10_ms": 141.99453135952353,
+    "p90_ms": 146.15563419647515,
+    "samples_ms": [
+     137.84675998613238,
+     142.52061396837234,
+     142.45539484545588,
+     144.87706683576107,
+     145.15929808840156,
+     146.1358182132244,
+     146.02726697921753,
+     146.33397804573178,
+     146.00336784496903,
+     145.9606080316007
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 61.42944411514327,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 29903439432,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1232104
+    },
+    "kernels": 1747
+   },
+   "nll": 10.508234024047852,
+   "grad_norm": 3.931814193725586,
+   "finite": true,
+   "seconds_per_update": 4.657918497920036,
+   "peak_bytes_in_use": 34084392448,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 73.15293993381783,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-saved-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-f32-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 79.35830019414425,
+    "p10_ms": 76.15214581601322,
+    "p90_ms": 80.15125673264265,
+    "samples_ms": [
+     72.1431733109057,
+     76.59758720546961,
+     76.60861732438207,
+     78.49759981036186,
+     78.7816597148776,
+     80.15052182599902,
+     80.07445093244314,
+     80.15787089243531,
+     79.93494067341089,
+     79.9915511161089
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 71.54430875414982,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 14956177480,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1404928
+    },
+    "kernels": 1732
+   },
+   "nll": 10.507147789001465,
+   "grad_norm": 5.56162166595459,
+   "finite": true,
+   "seconds_per_update": 5.078931212425232,
+   "peak_bytes_in_use": 19137097728,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 84.76990685472265,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-saved-b512",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 221.8710849992931,
+    "p10_ms": 218.6671075411141,
+    "p90_ms": 222.86903327330947,
+    "samples_ms": [
+     213.8927369378507,
+     223.1957959011197,
+     222.8327263146639,
+     222.05487499013543,
+     222.26504515856504,
+     221.8916048295796,
+     219.66745285317302,
+     221.8328849412501,
+     219.1975931636989,
+     221.8505651690066
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 64.73257614299655,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 40559488840,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1308592
+    },
+    "kernels": 1845
+   },
+   "nll": 10.508831024169922,
+   "grad_norm": 2.811852216720581,
+   "finite": true,
+   "seconds_per_update": 3.5499373599886894,
+   "peak_bytes_in_use": 44740507392,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 76.68348253099248,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-saved-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 117.90346470661461,
+    "p10_ms": 114.56473493017256,
+    "p90_ms": 119.15693930350244,
+    "samples_ms": [
+     110.22636201232672,
+     115.45708682388067,
+     115.04677636548877,
+     117.2244087792933,
+     117.43951914831996,
+     118.52575000375509,
+     118.36741026490927,
+     118.61512996256351,
+     119.15241135284305,
+     119.19769085943699
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 62.272682319860905,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 20671481416,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1223152
+    },
+    "kernels": 1762
+   },
+   "nll": 10.508193969726562,
+   "grad_norm": 3.9322597980499268,
+   "finite": true,
+   "seconds_per_update": 3.7729108706116676,
+   "peak_bytes_in_use": 24852434432,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 72.80133358761668,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-bf16-saved-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "flash-bf16-saved-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 64.62402059696615,
+    "p10_ms": 62.17707940377295,
+    "p90_ms": 66.32932107895613,
+    "samples_ms": [
+     58.95368987694383,
+     63.4186239913106,
+     62.53523379564285,
+     63.07548377662897,
+     64.56695590168238,
+     64.68108529224992,
+     66.00194703787565,
+     66.32670713588595,
+     66.15058658644557,
+     66.35284656658769
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 70.03408920392394,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 10306779976,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1592208
+    },
+    "kernels": 1747
+   },
+   "nll": 10.507028579711914,
+   "grad_norm": 5.559347629547119,
+   "finite": true,
+   "seconds_per_update": 4.135937318205833,
+   "peak_bytes_in_use": 14487700224,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 87.99865209683776,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-bf16-skip-nockpt-b512",
+   "micro_batch": 16,
+   "status": "failed",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-bf16-skip-nockpt-b512",
+    "layers": 15,
+    "routed_calls_traced": null
+   },
+   "error": "JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 52.43GiB.",
+   "out_of_memory": true,
+   "wall_seconds": 89.10812884103507,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-bf16-skip-nockpt-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-bf16-skip-nockpt-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 117.57353460416198,
+    "p10_ms": 114.77840170264244,
+    "p90_ms": 118.56397395022213,
+    "samples_ms": [
+     111.28591326996684,
+     115.16645597293973,
+     115.95048801973462,
+     117.0466085895896,
+     117.17287916690111,
+     118.07515006512403,
+     117.97419004142284,
+     118.4769687242806,
+     118.44654893502593,
+     119.34702098369598
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 79.56432360131294,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 38743765824,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1179584
+    },
+    "kernels": 1627
+   },
+   "nll": 10.508238792419434,
+   "grad_norm": 3.9320790767669678,
+   "finite": true,
+   "seconds_per_update": 3.7623531073331833,
+   "peak_bytes_in_use": 42924718848,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 130.74831718439236,
+   "provenance_matches": true
+  },
+  {
+   "variant": "lean-bf16-skip-nockpt-b512",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": {
+    "attention_backend": "blocked",
+    "routed_to": "lean-bf16-skip-nockpt-b512",
+    "layers": 15,
+    "routed_calls_traced": 15
+   },
+   "timing": {
+    "median_ms": 64.50956547632813,
+    "p10_ms": 62.15740442276001,
+    "p90_ms": 66.33662977255881,
+    "samples_ms": [
+     59.153659734874964,
+     62.9672440700233,
+     62.51715263351798,
+     62.491153832525015,
+     64.34236606582999,
+     64.67676488682628,
+     66.15771679207683,
+     66.5013580583036,
+     66.28166697919369,
+     66.31832662969828
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 97.379825102631,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 19165308992,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1494368
+    },
+    "kernels": 1612
+   },
+   "nll": 10.507126808166504,
+   "grad_norm": 5.560337066650391,
+   "finite": true,
+   "seconds_per_update": 4.128612190485001,
+   "peak_bytes_in_use": 23346228992,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 180.56845640623942,
+   "provenance_matches": true
+  }
+ ],
+ "provenance": {
+  "source_commit": "8df8ce2fc5003b2c1372be728650ad4c16f73f4e",
+  "tracked_files_dirty": false,
+  "script_sha256": "6cb23daf252f2f193f34c02359cda8b3910de5287d1b6be5fdf77af2e351928c",
+  "hostname": "dogo.csail.mit.edu",
+  "slurm_job_id": "235720",
+  "device_kind": "NVIDIA H100 80GB HBM3",
+  "platform": "gpu",
+  "device_count": 1,
+  "package_versions": {
+   "jax": "0.10.0",
+   "jaxlib": "0.10.0",
+   "jax-cuda12-plugin": "0.10.0",
+   "flax": "0.12.7",
+   "numpy": "2.4.6",
+   "nvidia-cudnn-cu12": "9.22.0.52",
+   "nvidia-cublas-cu12": "12.9.2.10"
+  },
+  "environment": {
+   "JAX_PLATFORMS": "cuda",
+   "XLA_FLAGS": null,
+   "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+   "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+   "CUDA_VISIBLE_DEVICES": "0"
+  }
+ },
+ "completed_at_utc": "2026-11-05T03:37:32.985055+00:00"
+}
