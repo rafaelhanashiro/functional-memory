@@ -1,4 +1,5 @@
 {
+  "artifacts": [],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-m8-1x/experiments/transformer_pp/runs/r9c69dd7cfc8d/.runtime/acceptance/B300-1",
@@ -6,6 +7,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml",
       "config_sha256": "f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f",
+      "exit_code": 1,
+      "finished_utc": "2026-11-05T00:16:13.098053+00:00",
       "gpu_count": 1,
       "gpu_type": "B300",
       "home_cluster": "kennel",
@@ -21,25 +24,27 @@
     "path": "experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml",
     "sha256": "f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f"
   },
+  "error": null,
   "frozen_execution_sha256": "41f42f8abc0a8dde10b532e87a74b2b23b8fde84897d85b9458a1cd6ad2119e9",
   "home_cluster": "kennel",
   "label": "static-m8-head-scale",
+  "log": null,
   "log_path": "experiments/transformer_pp/runs/r9c69dd7cfc8d/training.log",
   "name": "static-m8-head-scale",
   "record_schema_version": 1,
   "run_id": "r9c69dd7cfc8d",
   "source_commit": "af919f3f4af1a3e647d267cf098d385bbb952941",
-  "status": "acceptance",
+  "status": "submitted",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
-      "--partition=long",
-      "--gres=gpu:1",
+      "--partition=standard",
+      "--gres=gpu:h100:1",
       "--cpus-per-task=16",
       "--mem=128G",
       "--time=24:00:00",
-      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--exclude=akita,collie,samoyed,doodle,terrier,shiba",
       "--job-name=r9c69dd7cfc8d",
       "--output=experiments/transformer_pp/runs/r9c69dd7cfc8d/training.log",
       "--error=experiments/transformer_pp/runs/r9c69dd7cfc8d/training.log",
@@ -48,10 +53,10 @@
       "experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml",
       "af919f3f4af1a3e647d267cf098d385bbb952941",
       "1",
-      "B300,H100"
+      "H100"
     ],
-    "partition": "long",
-    "slurm_job_id": "235236",
-    "submitted_utc": "2026-11-05T00:14:59.837747+00:00"
+    "partition": "standard",
+    "slurm_job_id": "235891",
+    "submitted_utc": "2026-11-05T04:34:08.030531+00:00"
   }
 }
