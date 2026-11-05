@@ -50,6 +50,11 @@ The four `m = 6` runs copy their family's `m = 5` recipe with degree 6 (and, for
 the degree-6 coefficients) and trained on ORCD H100 80GB HBM3s with the same scaffold
 code, from a branch started at `ba8494e7`.
 
+An `m = 7` column runs on ORCD H100s with the same code: fixed Taylor `re12e78d1ded3`,
+fixed Hermite `r751e8aaecb78`, learned static `r99ba8f9d26fc`, and query, W decay
+`rdb67453630c8`, each its family's `m = 6` recipe with degree 7. The figure, tables, and
+selection cover `m = 1-6` until they finish.
+
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
 floating point; their difference measures how far equivalent runs diverge numerically.

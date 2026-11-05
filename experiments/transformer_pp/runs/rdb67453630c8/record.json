@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdb67453630c8/config.yaml",
+    "sha256": "0e2020e57615d3ad7eafa802f43c25a2c5509c34e06d4329bebd4759a1b317e3"
+  },
+  "label": "query-m7-w-decay",
+  "name": "query-m7-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rdb67453630c8",
+  "status": "planned"
+}
