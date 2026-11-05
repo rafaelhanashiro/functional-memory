@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra040de24096c/config.yaml",
+    "sha256": "1bc4f903083895123ed95bf0f1635b7bf1af870ce8285197ebdb12971ea6a227"
+  },
+  "label": "hermite-m8-head-scale",
+  "name": "hermite-m8-head-scale",
+  "record_schema_version": 1,
+  "run_id": "ra040de24096c",
+  "status": "planned"
+}

@@ -179,6 +179,24 @@ for RUN in ra7f2fda1c792 rddf0b0173f42 r5c691128699f rf9099d70ab3a; do
 done
 ```
 
+At `m = 8`, fixed Taylor `ra7ee8a4b2544` and fixed Hermite `ra040de24096c` copy their
+family's `m = 6` recipe with degree 8 (and, for Hermite, the degree-8 coefficients). They
+are Kennel's, from branch `claude/degree-scaling-m8`. Two cells reuse runs with the
+`m = 6` recipe at degree 8: query is the key-width run `r25fffc16c2f3`
+(`query-m8-dk64-w-decay`), and static is `r9c69dd7cfc8d` (`static-m8-head-scale`, branch
+`codex/static-m8-1x`). On Kennel, one H100 each, excluding `akita`:
+
+```bash
+for RUN in ra7ee8a4b2544 ra040de24096c; do
+  sbatch --parsable --partition=standard,long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ## Query coefficients across key width and degree
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
