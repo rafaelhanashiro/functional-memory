@@ -46,10 +46,11 @@ Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
 node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps
 it and then requeues under its old job ID, so `scancel` it before resubmitting its
-run; otherwise two jobs train the same run directory. On 2026-11-05 `mastiff`'s H100 at
-bus `41:00.0` (Slurm GPU index 1) stopped responding (`nvidia-smi`: "Unknown Error")
-and hung a run until the stall check requeued it; Slurm hands out the lowest free
-index, so exclude `mastiff` until that card is reset.
+run; otherwise two jobs train the same run directory. A GPU that stops responding
+(`nvidia-smi`: "Unknown Error") hangs its job until the stall check requeues it, and
+Slurm can hand the same free GPU to the requeued job, so exclude the node until the GPU
+is reset. `mastiff`'s H100 at bus `41:00.0` did this on 2026-11-05; the node's reboot on
+2026-11-06 restored it (no uncorrected ECC errors or pending row remaps).
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
