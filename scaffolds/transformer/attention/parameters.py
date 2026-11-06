@@ -48,20 +48,41 @@ def _uniform_fan_in(key, shape):
     return jax.random.uniform(key, shape, jnp.float32, -bound, bound)
 
 
+def _alibi_log_slope(key, shape):
+    """Deterministic: log 2^(-8 h / H) for head h of H, the same in every layer; [L, H, 1]."""
+    from scaffolds.transformer.attention.forget_gate import alibi_log_slopes
+
+    if len(shape) != 3 or shape[-1] != 1:
+        raise ValueError("ALiBi slopes initialize a per-head [layers, heads, 1] parameter")
+    slopes = jnp.asarray(alibi_log_slopes(shape[1]), jnp.float32).reshape(1, shape[1], 1)
+    return jnp.broadcast_to(slopes, shape)
+
+
 # Gated DeltaNet's decay-gate draws: a PyTorch-default Linear row over the last axis,
 # exp(A_log) ~ Uniform(0, 16), and softplus(dt_bias) log-uniform on [0.001, 0.1].
 RANDOM_INITIALIZERS = {"uniform_fan_in": _uniform_fan_in, "mamba2_log_rate": _mamba2_log_rate,
-                       "mamba2_dt_bias": _mamba2_dt_bias}
+                       "mamba2_dt_bias": _mamba2_dt_bias, "alibi_log_slope": _alibi_log_slope}
 
 
 # The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
 SCALED_COEFFICIENTS = ("polynomial_coefficients", "query_polynomial_bias")
 
 
-def factorial_scale(values: jax.Array) -> jax.Array:
+def factorial_scale(values: jax.Array, orders: tuple[int, ...] | None = None) -> jax.Array:
     """Divide order r (the last axis) by r!: the coefficients a stored c~_r represents."""
-    factorials = jnp.asarray([math.factorial(order) for order in range(values.shape[-1])], jnp.float32)
+    factorials = jnp.asarray([math.factorial(order) for order in
+                             (range(values.shape[-1]) if orders is None else orders)], jnp.float32)
     return values.astype(jnp.float32) / factorials
+
+
+def expand_polynomial_coefficients(values: jax.Array, degree: int, orders: tuple[int, ...] | None) -> jax.Array:
+    """Expand compact stored coefficients; omitted powers are constants with zero gradient."""
+    if orders is None:
+        return values
+    if values.shape[-1] != len(orders):
+        raise ValueError("Stored coefficient count must match attention_coefficient_orders")
+    expanded = jnp.zeros((*values.shape[:-1], degree + 1), dtype=values.dtype)
+    return expanded.at[..., jnp.asarray(orders)].set(values)
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -107,6 +128,21 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
             specs = tuple(replace(spec, initial=tuple(value * math.factorial(order)
                                                       for order, value in enumerate(spec.initial)))
                           if spec.name in SCALED_COEFFICIENTS else spec for spec in specs)
+        orders = getattr(config, "attention_coefficient_orders", None)
+        if orders is not None:
+            # Select after factorial storage scaling, so indices still denote actual powers.
+            selected = []
+            for spec in specs:
+                if spec.name == "query_polynomial_kernel":
+                    width, count = spec.initial_shape
+                    spec = replace(spec, initial=tuple(spec.initial[row * count + order]
+                                                       for row in range(width) for order in orders),
+                                   initial_shape=(width, len(orders)))
+                elif spec.name in ("polynomial_coefficients", "query_polynomial_bias",
+                                    "query_polynomial_amplitude", "query_polynomial_tanh_bias"):
+                    spec = replace(spec, initial=tuple(spec.initial[order] for order in orders))
+                selected.append(spec)
+            specs = tuple(selected)
     elif config.quadratic_mode == "fixed":
         specs = ()
     else:
@@ -132,7 +168,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     if getattr(config, "attention_forget_gate", False):
         from scaffolds.transformer.attention.forget_gate import parameter_specs as forget_gate_specs
 
-        specs += forget_gate_specs(hidden_size=config.hidden_size)
+        specs += forget_gate_specs(hidden_size=config.hidden_size,
+                                   form=getattr(config, "attention_forget_gate_form", "input"))
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 

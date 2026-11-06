@@ -123,7 +123,7 @@ def test_rejects_a_new_parameter_rate_without_new_parameters(pretrained, tmp_pat
         child_config(pretrained, tmp_path / "fixed", gate=False, new_rate=1e-2)
 
 
-def forget_gate_config(pretrained, path, *, new_rate=1e-2):
+def forget_gate_config(pretrained, path, *, new_rate=1e-2, form="input"):
     """Zero-amplitude tanh query coefficients with Gated DeltaNet's forget gate, on the blocked backend."""
     parent, _, continuation, _ = pretrained
     config = copy.deepcopy(parent)
@@ -135,9 +135,29 @@ def forget_gate_config(pretrained, path, *, new_rate=1e-2):
                            attention_coefficient_activation="tanh", attention_coefficient_amplitude_scale="factorial",
                            attention_coefficient_amplitude_initial=0.0,
                            attention_coefficient_projection_initial_std=1 / math.sqrt(config.model.hidden_size),
-                           attention_forget_gate=True, attention_backend="blocked")
+                           attention_forget_gate=True, attention_forget_gate_form=form, attention_backend="blocked")
     validate_config(config)
     return config
+
+
+def test_constant_decay_continuation_introduces_only_the_rate(pretrained, tmp_path):
+    _, parent, _, batch = pretrained
+    gated, audit = initialize_continuation_state(
+        forget_gate_config(pretrained, tmp_path / "constant", form="constant"))
+    introduced, backbone = split_continuation_parameters(gated.params)
+    assert set(introduced) == {"query_polynomial_bias", "query_polynomial_amplitude", "query_polynomial_kernel",
+                               "forget_gate_log_rate"}
+    assert_equal_tree(backbone, parent.params)
+    assert audit["new_coefficient_optimizer_count"] == 0
+    rate = np.exp(np.asarray(introduced["forget_gate_log_rate"][...])[..., 0])
+    np.testing.assert_allclose(rate, np.broadcast_to([2 ** -4, 2 ** -8], rate.shape), rtol=1e-6)
+    before = np.asarray(gated.params["forget_gate_log_rate"][...])
+    _, grads = loop.loss_and_grads(gated, batch, jax.random.PRNGKey(0))
+    after, *_ = loop.train_step(gated, batch, jax.random.PRNGKey(0))
+    step = np.abs(np.asarray(after.params["forget_gate_log_rate"][...]) - before)
+    gradient = np.abs(np.asarray(grads["forget_gate_log_rate"][...]))
+    np.testing.assert_allclose(step[gradient > 1e-6], 1e-2, rtol=1e-2)
+    assert int(after.opt_state[1].coefficients[0].count) == 1 and int(after.opt_state[1].backbone[0].count) == 4
 
 
 def test_forget_gate_continuation_starts_open_on_the_parent_backbone(pretrained, tmp_path):

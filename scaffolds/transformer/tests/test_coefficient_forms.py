@@ -111,7 +111,7 @@ def test_config_validation_and_legacy_default(tmp_path):
     with pytest.raises(ValueError, match="tanh activation"):
         _config("affine_sigmoid", attention_coefficient_conditioning="query_key")
     for backend in ("mosaic", "fused"):
-        with pytest.raises(ValueError, match="Backend 'mosaic'|blocked reference"):
+        with pytest.raises(ValueError, match="Backend 'mosaic'|RoPE/none on the blocked backend"):
             _config("tanh", forget_gate=True, attention_backend=backend)
     with pytest.raises(ValueError, match="boolean"):
         _config(forget_gate=1)

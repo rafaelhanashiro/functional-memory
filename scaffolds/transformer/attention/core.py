@@ -24,6 +24,7 @@ def attention_core(
     query_polynomial_coefficients: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
+    query_decay_mode: str = "cumulative",
     attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
@@ -47,7 +48,25 @@ def attention_core(
         raise ValueError("attention_normalization must be a boolean")
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
-    if query_log_decay is not None and (query_polynomial_coefficients is None or key_polynomial_factors is not None):
+    if query_decay_mode not in ("cumulative", "query_distance"):
+        raise ValueError(f"Unknown query decay mode: {query_decay_mode}")
+    if query_decay_mode != "cumulative" and query_log_decay is None:
+        raise ValueError("A query-distance decay mode requires query_log_decay")
+    if query_log_decay is not None and query_polynomial_coefficients is None:
+        # Softmax and the unnormalized exponential add the decay to every score (the Forgetting Transformer).
+        if (attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None
+                or polynomial_coefficients is not None or polynomial_square_factors is not None or denominators
+                or key_polynomial_factors is not None):
+            raise ValueError("The forget gate requires query coefficients, softmax, or the unnormalized exponential")
+        if query_decay_mode != "cumulative":
+            raise ValueError("Softmax and exponential attention take only the cumulative forget-gate decay")
+        if backend != "blocked":
+            raise ValueError("Softmax and exponential attention with a forget gate run on the blocked backend")
+        from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+
+        return blocked_dot_product_attention(q, k, v, attention_normalization=attention_normalization,
+                                             query_log_decay=query_log_decay, return_diagnostics=return_diagnostics)
+    if query_log_decay is not None and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:
         from scaffolds.transformer.attention.input_dependent import (
@@ -75,7 +94,8 @@ def attention_core(
         if attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
             raise ValueError("Unknown attention coefficient activation")
         return query_polynomial_attention(q, k, v, query_polynomial_coefficients, backend=backend,
-                                          return_diagnostics=return_diagnostics, log_decay=query_log_decay)
+                                          return_diagnostics=return_diagnostics, log_decay=query_log_decay,
+                                          decay_mode=query_decay_mode)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 

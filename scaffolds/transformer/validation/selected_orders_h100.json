@@ -1,0 +1,52 @@
+{
+  "backend": "mosaic",
+  "context_length": 2048,
+  "orders": [
+    0,
+    2,
+    4,
+    6,
+    8
+  ],
+  "qk_head_dim": 64,
+  "qualifications": [
+    {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-03T23:39:36.455134+00:00",
+      "conditioning": "static",
+      "gpu_count": 1,
+      "gpu_tests_passed": 50,
+      "gpu_type": "H100",
+      "pilot_seconds_per_training_update": 2.062957923859358,
+      "slurm_job_id": "233731",
+      "source_commit": "b5eb83b556b1ef264277da3dc4b450f9650f2eef",
+      "status": "passed"
+    },
+    {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-03T23:40:06.739084+00:00",
+      "conditioning": "query",
+      "gpu_count": 1,
+      "gpu_tests_passed": 70,
+      "gpu_type": "H100",
+      "pilot_seconds_per_training_update": 2.2071003490127623,
+      "slurm_job_id": "233732",
+      "source_commit": "b5eb83b556b1ef264277da3dc4b450f9650f2eef",
+      "status": "passed"
+    }
+  ]
+}

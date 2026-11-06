@@ -33,8 +33,9 @@ def test_none_validates_with_and_without_the_forget_gate():
     _config(positional_encoding="none", attention_forget_gate=True)
     with pytest.raises(ValueError, match="positional encoding"):
         _config(positional_encoding="sinusoidal")
+    _config(positional_encoding="path", attention_forget_gate=True)
     with pytest.raises(ValueError, match="forget gate"):
-        _config(positional_encoding="path", attention_forget_gate=True)
+        _config(positional_encoding="none", attention_forget_gate=True, attention_backend="fused")
 
 
 def test_none_never_applies_rope(monkeypatch):

@@ -1,0 +1,13 @@
+{
+  "backbone_optimizer_count": 7500,
+  "backbone_optimizer_sha256": "c837d96152c30be258db1828275b788fa3b23fb84ea94b1409be95b556b94ed2",
+  "backbone_parameters_sha256": "7eff24bfe7c1020b48424e372c8fb58eed39d09d02e53146a369bf2298943206",
+  "data_start_sequence": 1920000,
+  "new_coefficient_optimizer_count": null,
+  "parent_checkpoint_sha256": "e2b6079d8008d18405dd2a1ff2c313754ee712dacac652873f6b5d349293cc7c",
+  "parent_config_sha256": "231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d",
+  "parent_optimizer_sha256": "c837d96152c30be258db1828275b788fa3b23fb84ea94b1409be95b556b94ed2",
+  "parent_parameters_sha256": "7eff24bfe7c1020b48424e372c8fb58eed39d09d02e53146a369bf2298943206",
+  "parent_step": 7500,
+  "seed": 42
+}

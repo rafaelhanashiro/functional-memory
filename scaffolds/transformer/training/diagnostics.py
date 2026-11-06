@@ -37,6 +37,9 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
 def _initialization_text(model) -> str:
     """How the learned coefficients start, for formula strings."""
     initialization = getattr(model, "attention_coefficient_initialization", "taylor")
+    orders = getattr(model, "attention_coefficient_orders", None)
+    if initialization == "taylor" and orders is not None:
+        return f"1/r! for r in {list(orders)}; omitted orders fixed at zero"
     return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
 
 
@@ -152,6 +155,8 @@ def attention_identity(config) -> dict:
     query_sigmoid = query_conditioned and activation in ("sigmoid", "pure_tanh")
     feature = "sigmoid" if activation in ("sigmoid", "affine_sigmoid") else "tanh"
     forget_gate = getattr(config.model, "attention_forget_gate", False)
+    gate_mode = getattr(config.model, "attention_forget_gate_mode", "cumulative")
+    forget_gate_form = getattr(config.model, "attention_forget_gate_form", "input")
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -268,6 +273,10 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        elif config.model.attention_coefficient_orders is not None:
+            per_polynomial = len(config.model.attention_coefficient_orders) * (
+                config.model.hidden_size + 2 + int(config.model.attention_coefficient_tanh_bias)
+                if query_conditioned else 1)
         elif query_sigmoid:
             features = config.model.attention_coefficient_feature_count or degree + 1
             per_polynomial = features * config.model.hidden_size + (
@@ -287,6 +296,8 @@ def attention_identity(config) -> dict:
                 1 if sharing == "global" else config.model.num_layers * config.model.num_heads),
             "coefficient_penalty": penalty,
         })
+        if config.model.attention_coefficient_orders is not None:
+            identity["attention_coefficient_orders"] = list(config.model.attention_coefficient_orders)
         if rational:
             identity["coefficient_penalty_denominator"] = penalize_denominator
         if penalty:
@@ -344,8 +355,10 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_kernel_weight_decay": True}
                if config.model.attention_coefficient_kernel_weight_decay else {}),
             **({"attention_forget_gate": True,
-                "forget_gate_parameter_count": (config.model.hidden_size + 2) * config.model.num_layers
-                * config.model.num_heads} if forget_gate else {}),
+                "attention_forget_gate_mode": gate_mode,
+                **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),
+                "forget_gate_parameter_count": (1 if forget_gate_form == "constant" else config.model.hidden_size + 2)
+                * config.model.num_layers * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
@@ -356,9 +369,28 @@ def attention_identity(config) -> dict:
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
                                + " after the block input RMSNorm"
-                               + ("; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = "
-                                  "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
-                                  "DeltaNet's initialization" if forget_gate else "")),
+                               + (f"; retained orders {list(config.model.attention_coefficient_orders)}, "
+                                  "omitted orders fixed at zero" if config.model.attention_coefficient_orders is not None else "")
+                               + (("; each weight is multiplied by exp(-exp(A_log) (t - i)) per layer/head, "
+                                   "A_log starting at ALiBi's log slopes" if forget_gate_form == "constant" else
+                                   ("; each weight is multiplied by exp((t-i) log alpha_t), log alpha_t = "
+                                    if gate_mode == "query_distance" else
+                                    "; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = ")
+                                   + "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                                   "DeltaNet's initialization") if forget_gate else "")),
+        )
+    if forget_gate and not query_conditioned:
+        # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
+        # joins every score (the Forgetting Transformer); the configuration admits no other mode or form.
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            forget_gate_parameter_count=(config.model.hidden_size + 2) * config.model.num_layers
+            * config.model.num_heads,
+            attention_formula=(("causal_softmax" if normalized else "causal_exp")
+                               + "(QK^T / sqrt(d_k) + D) V, D_ti = sum_(j=i+1..t) log alpha_j, log alpha_t = "
+                               "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated DeltaNet's "
+                               "initialization; x_t is the activation after the block input RMSNorm"),
         )
     if mode != "fixed":
         identity.update({
@@ -430,8 +462,10 @@ def attention_identity(config) -> dict:
             "path_chunk_size": CHUNK_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "jax_path_chunked_ut_transform",
-            **({"attention_implementation": ("fla_parallel_path_attention_triton" if model.path_kernel() == "softmax"
-                                             else "fla_parallel_path_query_polynomial_triton"),
+            **({"attention_implementation": {"softmax": "fla_parallel_path_attention_triton",
+                                             "exp": "fla_parallel_path_attention_triton_times_row_sum",
+                                             "query_polynomial": "fla_parallel_path_query_polynomial_triton",
+                                             }[model.path_kernel()],
                 # FLA sizes its tiles from the GPU's shared memory: 64-token UT-transform chunks and
                 # key blocks, 128-token query blocks, and 512-token splits on H100 and B300.
                 "path_chunk_size": None, "path_split_size": SPLIT, "key_block_size": None,
@@ -441,6 +475,11 @@ def attention_identity(config) -> dict:
                 "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
                 "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),
         })
+        if "attention_formula" in identity:
+            identity["attention_formula"] = identity["attention_formula"].replace(
+                "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
+        if model.attention_forget_gate:
+            identity["attention_implementation"] += "_forget_gate"
     return identity
 
 
@@ -567,10 +606,14 @@ def polynomial_coefficient_report(params, config) -> dict:
         effective = np.concatenate([numerator, expanded if constant == "learned" else expanded[..., 1:]], axis=-1)
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
-        raw_names = [f"c{order}" for order in range(raw.shape[-1])]
+        orders = config.model.attention_coefficient_orders
+        raw_names = [f"c{order}" for order in (range(raw.shape[-1]) if orders is None else orders)]
         effective = raw
+        if orders is not None:
+            effective = np.zeros((*raw.shape[:-1], config.model.attention_degree + 1), dtype=np.float64)
+            effective[..., list(orders)] = raw
         if getattr(config.model, "attention_coefficient_scale", "none") == "factorial":
-            effective = raw / np.asarray([math.factorial(order) for order in range(raw.shape[-1])], np.float64)
+            effective = effective / np.asarray([math.factorial(order) for order in range(effective.shape[-1])], np.float64)
     if has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
@@ -591,7 +634,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
-                             readout_scale=1.0, activation="tanh") -> dict:
+                             readout_scale=1.0, activation="tanh", orders=None) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -628,7 +671,8 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
     if amplitude is not None:
         report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
-            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            factorials = np.asarray([math.factorial(r) for r in
+                                     (range(amplitude.shape[-1]) if orders is None else orders)], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
     if activation in ("sigmoid", "pure_tanh"):
@@ -648,8 +692,11 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         if readout_scale != 1.0:
             report["readout_scale"] = readout_scale
     if coefficient_scale == "factorial":
-        factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
+        factorials = np.asarray([math.factorial(r) for r in
+                                 (range(bias.shape[-1]) if orders is None else orders)], dtype=np.float64)
         report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
+    if orders is not None:
+        report["stored_parameter_orders"] = list(orders)
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -668,15 +715,23 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
 
-def forget_gate_report(params, raw_layers) -> dict:
+def forget_gate_report(params, raw_layers, *, form: str = "input") -> dict:
     """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H])."""
     get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
-    rate, dt, kernel = np.exp(get("forget_gate_log_rate")[..., 0]), np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0]), \
-        get("forget_gate_kernel")
+    rate = np.exp(get("forget_gate_log_rate")[..., 0])
     sample = {statistic: np.stack([np.asarray(layer[f"forget_gate_log_alpha_{statistic}"], np.float64)
                                    for layer in raw_layers]) for statistic in ("mean", "min", "max")}
     with np.errstate(divide="ignore"):
         half_life = np.log(0.5) / sample["mean"]
+    if form == "constant":
+        return {
+            "formula": "log alpha_t = -exp(A_log); weights decay as exp(-exp(A_log) (t - i))",
+            "rate_exp_A_log": _serializable(rate),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(rate).all() and all(np.isfinite(values).all() for values in sample.values())),
+        }
+    dt, kernel = np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0]), get("forget_gate_kernel")
     return {
         "formula": "log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias)",
         "rate_exp_A_log": _serializable(rate),
@@ -855,11 +910,13 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
             coefficient_scale=config.model.attention_coefficient_scale,
             readout_scale=config.model.attention_coefficient_readout_scale,
-            activation=config.model.attention_coefficient_activation)
+            activation=config.model.attention_coefficient_activation,
+            orders=config.model.attention_coefficient_orders)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
         if getattr(config.model, "attention_forget_gate", False):
-            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers)
+            coefficient_report["forget_gate"] = forget_gate_report(
+                params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))
             if not coefficient_report["forget_gate"]["finite"]:
                 issues.append("Nonfinite forget gate parameters or decay")
     elif has_learned_polynomial(config.model):
@@ -893,6 +950,12 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         }
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
+    if getattr(config.model, "attention_forget_gate", False) and coefficient_report is None:
+        # Softmax and the exponential have no coefficients; their forget gate is reported alone.
+        coefficient_report = {"forget_gate": forget_gate_report(
+            params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))}
+        if not coefficient_report["forget_gate"]["finite"]:
+            issues.append("Nonfinite forget gate parameters or decay")
     scale_report = None
     gain_report = None
     head_scale_report = None

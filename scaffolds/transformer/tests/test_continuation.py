@@ -84,6 +84,77 @@ def assert_equal_tree(first, second):
         np.testing.assert_array_equal(a, b)
 
 
+@pytest.mark.parametrize("query", [False, True])
+def test_preserved_learned_parent_keeps_coefficients_moments_and_exact_resume(pretrained, tmp_path, query):
+    parent, _, _, batch = pretrained
+    parent = copy.deepcopy(parent)
+    parent.model = replace(parent.model, attention_coefficients="learned",
+                           attention_coefficient_sharing="per_head", attention_coefficient_scale="factorial")
+    if query:
+        parent.model = replace(parent.model, attention_coefficient_conditioning="query",
+                               attention_coefficient_activation="tanh",
+                               attention_coefficient_amplitude_scale="factorial",
+                               attention_coefficient_amplitude_initial=0.0,
+                               attention_coefficient_projection_initial_std=0.25,
+                               attention_coefficient_kernel_weight_decay=True)
+    # Train the coefficient arrays so restoring initialization instead would fail.
+    state = create_state(parent, jax.random.PRNGKey(parent.train.seed))
+    for step in range(1, 4):
+        state, *_ = loop.train_step(state, batch, jax.random.fold_in(jax.random.PRNGKey(0), step))
+    config_path = parent.train.workdir / "learned-config.yaml"
+    save_config(parent, config_path)
+    checkpoint = tmp_path / "learned-checkpoint" / "3"
+    with ocp.StandardCheckpointer() as checkpointer:
+        checkpointer.save(checkpoint / "default", {"state": state})
+    child = copy.deepcopy(parent)
+    child.train.workdir = tmp_path / "preserved"
+    child.optim.learning_rate = child.optim.min_learning_rate = 1e-4
+    child.optim.total_steps = 6
+    child.continuation = ContinuationConfig(
+        parent_config=str(config_path), parent_config_sha256=hashlib.sha256(config_path.read_bytes()).hexdigest(),
+        parent_checkpoint=str(checkpoint), parent_checkpoint_sha256=_tree_descriptor(checkpoint)["sha256"],
+        parent_data_identity_sha256=hashlib.sha256((parent.train.workdir / "data_identity.json").read_bytes()).hexdigest(),
+        parent_step=3, preserve_all_parameters=True)
+    restored, audit = initialize_continuation_state(child)
+    assert_equal_tree(restored.params, state.params)
+    assert_equal_tree(restored.opt_state, state.opt_state)
+    assert audit["new_coefficient_optimizer_count"] is None
+    assert audit["backbone_optimizer_count"] == 3
+    assert audit["data_start_sequence"] == 12
+    # The next update must match ordinary training with the new constant LR and
+    # the parent's complete state, including learned-coefficient Adam moments.
+    ordinary = copy.deepcopy(child)
+    ordinary.continuation = ContinuationConfig()
+    expected = create_state(ordinary, jax.random.PRNGKey(0)).replace(
+        params=state.params, opt_state=state.opt_state, step=state.step)
+    rng = jax.random.fold_in(jax.random.PRNGKey(0), 4)
+    actual, *_ = loop.train_step(restored, batch, rng)
+    expected, *_ = loop.train_step(expected, batch, rng)
+    assert_equal_tree(actual.params, expected.params)
+    assert_equal_tree(actual.opt_state, expected.opt_state)
+    coefficient_name = "query_polynomial_amplitude" if query else "polynomial_coefficients"
+    assert np.any(np.asarray(actual.params[coefficient_name][...]) != np.asarray(state.params[coefficient_name][...]))
+    interrupted = copy.deepcopy(child)
+    interrupted.train.workdir = tmp_path / "preserved-resume"
+    complete = loop.run_training(child, audit_checkpoint=True)
+    loop.run_training(interrupted, stop_after_step=4, audit_checkpoint=True)
+    resumed = loop.run_training(interrupted, audit_checkpoint=True)
+    assert complete["checkpoint_audit"]["final_state_sha256"] == resumed["checkpoint_audit"]["final_state_sha256"]
+    changed = copy.deepcopy(child)
+    if query:
+        changed.model.attention_coefficient_kernel_weight_decay = False
+        changed_field = "attention_coefficient_kernel_weight_decay"
+    else:
+        changed.model.attention_coefficient_sharing = "global"
+        changed_field = "attention_coefficient_sharing"
+    with pytest.raises(ValueError, match=f"parent model.{changed_field}"):
+        initialize_continuation_state(changed)
+    changed = copy.deepcopy(child)
+    changed.continuation.new_parameter_learning_rate = 1e-3
+    with pytest.raises(ValueError, match="no new parameter learning rate"):
+        validate_config(changed)
+
+
 @pytest.mark.parametrize("query,zero_amplitude", [(False, True), (True, True), (True, False)])
 def test_matched_initial_outputs_and_exact_backbone_history(pretrained, tmp_path, query, zero_amplitude):
     _, parent, _, batch = pretrained
