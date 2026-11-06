@@ -633,6 +633,40 @@ done
 Each record's `submission` holds its exact (re)submission, and its `attempts` the partition
 and node of every allocation.
 
+## Original FoX sigmoid gate
+
+Three runs replace the Gated DeltaNet gate of the no-RoPE forget-gate runs with the
+Forgetting Transformer's own gate (`attention_forget_gate_form: sigmoid`):
+`log alpha_t = log sigmoid(x_t w_f + b_f)` per layer and head, with the paper's
+initialization `w_f ~ N(0, 0.02^2)` and `b_f = 0`; `w_f` takes weight decay and `b_f` does
+not. Everything else is copied from the source. The softmax run also drops QK
+normalization (`qk_norm: false`, plain scores), matching FoX (LLaMA); exp and query keep
+the canonical QK RMSNorm with a learned head scale and per-head output RMSNorm. See the
+[forget gate topic](results/exploratory/forget_gate/README.md).
+
+| Run | Label | Source | Changes from the source | Backend |
+| --- | --- | --- | --- | --- |
+| `reeb92d46a95d` | softmax-sigmoid-forget-gate-no-rope-plain-qk | `r5adc29a91e3b` | sigmoid gate, plain scores | blocked |
+| `rdd3e9cb3bb80` | exp-sigmoid-forget-gate-no-rope | `r183f08346ddc` | sigmoid gate | blocked |
+| `rfa9636279199` | query-m4-sigmoid-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | sigmoid gate | blocked |
+
+Home cluster: **Kennel**. Each record holds its launch commit, its exact `submission`, and
+the partition and node of every allocation. Submit each on one B300 or H100; the blocked
+softmax run's H100 pilot projects beyond a 24-hour allocation, so it runs on `long` with a
+48-hour limit:
+
+```bash
+for run in reeb92d46a95d rdd3e9cb3bb80 rfa9636279199; do
+  case $run in reeb92d46a95d) partition=long time=48:00:00 ;; *) partition=standard time=24:00:00 ;; esac
+  sbatch --parsable --partition=$partition --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=$time --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Context length
 
 The [context-length topic](results/exploratory/context_length/README.md) compares
