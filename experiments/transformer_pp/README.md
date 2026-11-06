@@ -128,7 +128,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6` for four coefficient families of
+perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7` for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
@@ -138,12 +138,12 @@ degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs
 `m = 5` recipes copy their family's `m = 3` recipe in the same way, and the `m = 6` recipes
 their family's `m = 5` recipe.
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) | `r8a526282ac43` | `r167091e2aeac` |
-| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` |
-| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) | `r3feaf71ff7af` | `r5e6f23bd0533` |
-| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) | `r5de86f9f02da` | `r688344e6dcc6` |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) | `r8a526282ac43` | `r167091e2aeac` | `re12e78d1ded3` |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` | `r751e8aaecb78` |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) | `r3feaf71ff7af` | `r5e6f23bd0533` | `r99ba8f9d26fc` |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) | `r5de86f9f02da` | `r688344e6dcc6` | `rdb67453630c8` |
 
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The per-head output RMSNorm
 removes that factor, so the two runs train the same function up to the norm's epsilon
@@ -154,7 +154,9 @@ Home clusters: the four new `m = 1` runs are Kennel's, from branch
 `claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. The four
 `m = 5` runs are ORCD's, from branch `claude/degree-scaling-m5-orcd`, and the four `m = 6`
 runs from `claude/degree-scaling-m6-orcd`, branched from `ba8494e7` so that they run the
-same scaffold code as the other ORCD cells; both launch the same way with their own run IDs. On ORCD, one H100 each, from the worktree root:
+same scaffold code as the other ORCD cells. The four `m = 7` runs, which copy their family's
+`m = 6` recipe, come from `claude/degree-scaling-m7-orcd`, branched from `c3e963a6` for the
+same reason. All of them launch the same way with their own run IDs. On ORCD, one H100 each, from the worktree root:
 
 ```bash
 for run in rdb1c706a5b85 r81fad1755b11 rdf6363a4b83c rf378c0e67607 rbd0cd771c676 r99c3ab7d8a77 r1f880c4ee659 r00f1f91a7803; do
