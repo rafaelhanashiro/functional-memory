@@ -65,6 +65,10 @@ QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
     "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
 QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
+COEFFICIENT_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gates.py"
+COEFFICIENT_GATE_GPU_TESTS = ("test_gated_coefficients_through_mosaic_match_fp64",
+                              "test_gated_mosaic_model_matches_float32_blocked_model")
+COEFFICIENT_GATE_DEGREES = (8, 10)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
@@ -212,6 +216,15 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
                 paths.append(QUERY_KEY_TILING_TESTS)
+    if model.get("attention_coefficient_gate", "none") != "none":
+        if cpu:
+            paths.append(COEFFICIENT_GATE_TESTS)
+        else:
+            # Every qualified degree runs together, so runs at different degrees share one GPU
+            # stage; a degree without a parametrized case has no node id and fails closed.
+            degrees = sorted({*COEFFICIENT_GATE_DEGREES, int(model["attention_degree"])})
+            paths.extend(f"{COEFFICIENT_GATE_TESTS}::{test}[{degree}]"
+                         for test in COEFFICIENT_GATE_GPU_TESTS for degree in degrees)
     if model.get("attention_coefficient_orders") is not None:
         paths.append("scaffolds/transformer/tests/test_coefficient_orders.py")
     if model.get("attention_coefficient_scale", "none") != "none":
@@ -658,6 +671,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_gate="none",
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_mode="cumulative",
@@ -713,6 +727,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_gate="none",
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
         attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
