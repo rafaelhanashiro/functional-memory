@@ -157,6 +157,8 @@ def attention_identity(config) -> dict:
     forget_gate = getattr(config.model, "attention_forget_gate", False)
     gate_mode = getattr(config.model, "attention_forget_gate_mode", "cumulative")
     forget_gate_form = getattr(config.model, "attention_forget_gate_form", "input")
+    gate_conditioning = getattr(config.model, "attention_forget_gate_conditioning", "query")
+    gate_rate_activation = getattr(config.model, "attention_forget_gate_rate_activation", "softplus")
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -357,8 +359,11 @@ def attention_identity(config) -> dict:
             **({"attention_forget_gate": True,
                 "attention_forget_gate_mode": gate_mode,
                 **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),
-                "forget_gate_parameter_count": {"constant": 1, "sigmoid": config.model.hidden_size + 1}.get(
-                    forget_gate_form, config.model.hidden_size + 2)
+                **({"attention_forget_gate_conditioning": gate_conditioning} if gate_conditioning != "query" else {}),
+                **({"attention_forget_gate_rate_activation": gate_rate_activation} if gate_rate_activation != "softplus" else {}),
+                "forget_gate_parameter_count": (1 if forget_gate_form == "constant" else
+                                                config.model.hidden_size + 1 if forget_gate_form == "sigmoid" else
+                                                (2 if gate_conditioning == "query_key" else 1) * config.model.hidden_size + 2)
                 * config.model.num_layers * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
@@ -436,8 +441,12 @@ def attention_identity(config) -> dict:
         from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
+        gate = config.model.attention_forget_gate
+        endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
+                                         else "pallas_mosaic_gpu_query_polynomial_query_decay" if gate
+                                         else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
                                          if not normalized else "pallas_mosaic_gpu"),
@@ -487,6 +496,15 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
         if model.attention_forget_gate:
             identity["attention_implementation"] += "_forget_gate"
+    if forget_gate and (gate_conditioning != "query" or gate_rate_activation != "softplus"):
+        prefix = identity["attention_formula"].split("; each weight is multiplied")[0]
+        if gate_conditioning == "query_key":
+            gate_formula = ("exp(-(t-i) exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)) per layer/head; "
+                            "w_key initialized zero, other gate parameters use Gated DeltaNet initialization")
+        else:
+            gate_formula = ("exp(-(t-i) exp(A_log) sigmoid(x_t w_query + dt_bias)) per layer/head; "
+                            "sigmoid(dt_bias) matches the legacy softplus bias draw at zero input")
+        identity["attention_formula"] = prefix + "; each weight is multiplied by " + gate_formula
     return identity
 
 
@@ -726,7 +744,8 @@ SIGMOID_GATE_TEXT = ("log sigmoid(x_t w_f + b_f) per layer/head, with the Forget
                      "w_f ~ N(0, 0.02^2), b_f = 0")
 
 
-def forget_gate_report(params, raw_layers, *, form: str = "input") -> dict:
+def forget_gate_report(params, raw_layers, *, form: str = "input", conditioning: str = "query",
+                       rate_activation: str = "softplus") -> dict:
     """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H])."""
     get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
     sample = {statistic: np.stack([np.asarray(layer[f"forget_gate_log_alpha_{statistic}"], np.float64)
@@ -754,17 +773,25 @@ def forget_gate_report(params, raw_layers, *, form: str = "input") -> dict:
             "mean_half_life_tokens": _serializable(half_life),
             "finite": bool(np.isfinite(rate).all() and all(np.isfinite(values).all() for values in sample.values())),
         }
-    dt, kernel = np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0]), get("forget_gate_kernel")
-    return {
-        "formula": "log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias)",
+    bias, kernel = get("forget_gate_dt_bias")[..., 0], get("forget_gate_kernel")
+    dt = np.exp(-np.logaddexp(0.0, -bias)) if rate_activation == "sigmoid" else np.logaddexp(0.0, bias)
+    report = {
+        "formula": f"log alpha_t = -exp(A_log) {rate_activation}(x_t w_alpha + dt_bias)",
         "rate_exp_A_log": _serializable(rate),
-        "softplus_dt_bias": _serializable(dt),
+        f"{rate_activation}_dt_bias": _serializable(dt),
         "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
         "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
         "mean_half_life_tokens": _serializable(half_life),
-        "finite": bool(np.isfinite(rate).all() and np.isfinite(dt).all() and np.isfinite(kernel).all()
-                       and all(np.isfinite(values).all() for values in sample.values())),
+        "finite": bool(np.isfinite(rate).all() and np.isfinite(bias).all() and np.isfinite(dt).all()
+                       and np.isfinite(kernel).all() and all(np.isfinite(values).all() for values in sample.values())),
     }
+    if conditioning == "query_key":
+        key_kernel = get("forget_gate_key_kernel")
+        report.update(formula="log alpha_ti = -exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)",
+                      sample_domain="all causal query-key pairs in the diagnostic sample, including diagonal",
+                      key_kernel_l2=_serializable(np.linalg.norm(key_kernel, axis=-1)))
+        report["finite"] = bool(report["finite"] and np.isfinite(key_kernel).all())
+    return report
 
 
 def qk_norm_scale_report(params, config) -> dict:
@@ -939,7 +966,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
         if getattr(config.model, "attention_forget_gate", False):
             coefficient_report["forget_gate"] = forget_gate_report(
-                params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))
+                params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"),
+                conditioning=getattr(config.model, "attention_forget_gate_conditioning", "query"),
+                rate_activation=getattr(config.model, "attention_forget_gate_rate_activation", "softplus"))
             if not coefficient_report["forget_gate"]["finite"]:
                 issues.append("Nonfinite forget gate parameters or decay")
     elif has_learned_polynomial(config.model):

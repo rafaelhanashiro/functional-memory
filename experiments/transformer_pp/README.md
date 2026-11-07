@@ -128,7 +128,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6` for four coefficient families of
+perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7` for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
@@ -138,12 +138,12 @@ degree and, for Hermite, the fixed coefficients. Four cells reuse completed runs
 `m = 5` recipes copy their family's `m = 3` recipe in the same way, and the `m = 6` recipes
 their family's `m = 5` recipe.
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) | `r8a526282ac43` | `r167091e2aeac` |
-| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` |
-| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) | `r3feaf71ff7af` | `r5e6f23bd0533` |
-| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) | `r5de86f9f02da` | `r688344e6dcc6` |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` (existing) | `r8a526282ac43` | `r167091e2aeac` | `re12e78d1ded3` |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` | `r751e8aaecb78` |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` (existing) | `r3feaf71ff7af` | `r5e6f23bd0533` | `r99ba8f9d26fc` |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` (existing) | `r00f1f91a7803` | `rca97cc9db8f2` (existing) | `r5de86f9f02da` | `r688344e6dcc6` | `rdb67453630c8` |
 
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The per-head output RMSNorm
 removes that factor, so the two runs train the same function up to the norm's epsilon
@@ -154,7 +154,9 @@ Home clusters: the four new `m = 1` runs are Kennel's, from branch
 `claude/degree-scaling-1x-orcd`. Both branches launch from the same commit. The four
 `m = 5` runs are ORCD's, from branch `claude/degree-scaling-m5-orcd`, and the four `m = 6`
 runs from `claude/degree-scaling-m6-orcd`, branched from `ba8494e7` so that they run the
-same scaffold code as the other ORCD cells; both launch the same way with their own run IDs. On ORCD, one H100 each, from the worktree root:
+same scaffold code as the other ORCD cells. The four `m = 7` runs, which copy their family's
+`m = 6` recipe, come from `claude/degree-scaling-m7-orcd`, branched from `c3e963a6` for the
+same reason. All of them launch the same way with their own run IDs. On ORCD, one H100 each, from the worktree root:
 
 ```bash
 for run in rdb1c706a5b85 r81fad1755b11 rdf6363a4b83c rf378c0e67607 rbd0cd771c676 r99c3ab7d8a77 r1f880c4ee659 r00f1f91a7803; do
@@ -596,6 +598,20 @@ sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --
 
 Each record's `submission` holds its exact command and partition.
 
+The degree-eight gate without RoPE, `r9353f554b917` (`query-m8-forget-gate-no-rope-wdecay`),
+copies `query-m8-dk64-w-decay` (`r25fffc16c2f3`) and changes only
+`attention_forget_gate: true`, `positional_encoding: none`, and
+`attention_backend: blocked`. Its home cluster is ORCD (branch
+`claude/forget-gate-m8-orcd`); from the worktree root, on one H100:
+
+```bash
+run=r9353f554b917
+sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+  --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+  scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+```
+
 ## Forget gate on softmax and exp
 
 Four runs add the forget gate of `query-m4-forget-gate-no-rope` (`attention_forget_gate: true`:
@@ -809,6 +825,42 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   experiments/transformer_pp/query_distance_decay.sbatch \
   experiments.transformer_pp.query_distance_decay_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+## Endpoint gate ablations
+
+`r02f984133092` adds a zero-initialized key projection to the query-distance gate;
+`r4f169e5370da` replaces its softplus rate by a sigmoid rate, matching zero-input
+rates at initialization. Both use the full m = 4, NoPE + W decay recipe of
+`r3e26412b2811` with 7,570 updates and query-only polynomial coefficients, on the
+Mosaic decay kernels (`model.attention_backend: mosaic`), which compute the same
+weights as the control's blocked reference. Methods, initialization details, pinned
+controls, kernel throughput, and results live in the
+[query-distance topic](results/exploratory/query_distance_decay/README.md).
+
+Home cluster: Kennel. Branch `codex/endpoint-decay-ablations`, worktree
+`worktrees/endpoint-decay-ablations`. Sync both locked CUDA environments as in
+[CLUSTERS.md](../../CLUSTERS.md). The adapter verifies the pinned control recipe
+(apart from the attention backend) and full initialization identity apart from the
+declared gate change. Shared acceptance runs the Mosaic decay-kernel GPU tests on the
+allocated GPU, initialization, full-recipe throughput, and fresh-process checkpoint
+resume before production training.
+
+After committing inputs and checking scheduler allowances, submit each run
+independently from that worktree. Measured H100 updates project 5-8 hours, so the
+runs use `standard`. `akita` is excluded while its NVSwitch fabric manager is down
+(CUDA initialization fails there), which also leaves the B300 kernels unqualified:
+
+```bash
+for run in r02f984133092 r4f169e5370da; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.endpoint_decay_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
 ```
 
 ## FoX with PaTH

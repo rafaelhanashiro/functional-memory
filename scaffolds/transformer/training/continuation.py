@@ -89,7 +89,8 @@ def _check_taylor_initialization(config, coefficients):
         # The gate starts open with Gated DeltaNet's random initialization, not at the identity.
         from scaffolds.transformer.attention.forget_gate import parameter_names
 
-        gate_names = parameter_names(getattr(model, "attention_forget_gate_form", "input"))
+        gate_names = parameter_names(getattr(model, "attention_forget_gate_form", "input"),
+                                     getattr(model, "attention_forget_gate_conditioning", "query"))
         token_names |= set(gate_names)
         if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in gate_names
                    if name in coefficients):

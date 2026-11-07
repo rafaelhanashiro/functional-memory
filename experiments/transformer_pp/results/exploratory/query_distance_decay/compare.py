@@ -16,7 +16,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
 BEGIN = "<!-- BEGIN GENERATED RESULTS -->"
 END = "<!-- END GENERATED RESULTS -->"
-ROLES = ("control", "query_distance")
+ROLES = ("control", "query_distance", "query_key_distance", "bounded_query_distance")
 STEPS = 7570
 
 
@@ -25,15 +25,24 @@ def read_json(path: Path) -> dict:
 
 
 def scientific_recipe(recipe: dict) -> dict:
-    """Ignore execution names/paths and explicit inactive historical defaults only."""
+    """Ignore execution names/paths, the attention implementation (blocked reference or Mosaic
+    kernels, which compute the same weights), and explicit inactive historical defaults only."""
     recipe = deepcopy(recipe)
     model = recipe["model"]
+    if model.get("attention_backend") not in ("blocked", "mosaic"):
+        raise ValueError("Selected runs use the blocked reference or the Mosaic kernels")
+    model.pop("attention_backend")
     if "attention_coefficient_key_kernel_weight_decay" in model:
         if model["attention_coefficient_key_kernel_weight_decay"] is not False:
             raise ValueError("This query-only control must have no key-projection decay")
         model.pop("attention_coefficient_key_kernel_weight_decay")
     model.setdefault("attention_forget_gate_mode", "cumulative")
     model.setdefault("qk_norm_token_scale_kernel_weight_decay", False)
+    model.setdefault("attention_coefficient_orders", None)
+    model.setdefault("attention_forget_gate_form", "input")
+    model.setdefault("attention_forget_gate_conditioning", "query")
+    model.setdefault("attention_forget_gate_rate_activation", "softplus")
+    recipe["continuation"].setdefault("preserve_all_parameters", False)
     for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir"):
         recipe["train"].pop(key, None)
     return recipe
@@ -49,6 +58,17 @@ def check_recipes(runs: dict) -> None:
     variant["model"]["attention_forget_gate_mode"] = "cumulative"
     if control != variant:
         raise ValueError("The selected runs differ beyond their declared decay rule and execution names/paths")
+    for role, field, value in (
+            ("query_key_distance", "attention_forget_gate_conditioning", "query_key"),
+            ("bounded_query_distance", "attention_forget_gate_rate_activation", "sigmoid")):
+        candidate = scientific_recipe(runs[role]["config"])
+        expected = scientific_recipe(runs["query_distance"]["config"])
+        expected["model"][field] = value
+        if candidate != expected:
+            differences = [f"{section}.{key}" for section in set(candidate) | set(expected)
+                           for key in set(candidate.get(section, {})) | set(expected.get(section, {}))
+                           if candidate.get(section, {}).get(key) != expected.get(section, {}).get(key)]
+            raise ValueError(f"{role} differs beyond its declared gate change: {differences}")
     if (control["optim"]["total_steps"] != STEPS or control["train"]["seed"] != 42
             or control["model"]["max_seq_len"] != 2048 or control["model"]["attention_degree"] != 4
             or control["model"]["positional_encoding"] != "none"):
@@ -115,17 +135,24 @@ def format_value(value, digits=6) -> str:
 def main() -> None:
     selection = yaml.safe_load((HERE / "selection.yaml").read_text())
     entries = selection["runs"]
-    if len(entries) != 2 or {entry["role"] for entry in entries} != set(ROLES):
-        raise ValueError("Select exactly one control and one query_distance run")
+    if len(entries) != len(ROLES) or {entry["role"] for entry in entries} != set(ROLES):
+        raise ValueError("Select one run for every declared decay comparison role")
     verify_pinned_runs(ROOT, entries)
     runs = {entry["role"]: collect(entry) for entry in entries}
     check_recipes(runs)
-    complete = all(runs[role]["status"] == "complete" for role in ROLES)
+    complete = all(runs[role]["status"] == "complete" for role in ("control", "query_distance"))
     if complete:
         control, variant = runs["control"], runs["query_distance"]
         for metric in ("best_ppl", "terminal_ppl"):
             variant[f"delta_{metric}"] = variant[metric] - control[metric]
             variant[f"percent_{metric}"] = 100.0 * (variant[metric] / control[metric] - 1.0)
+    for role in ("query_key_distance", "bounded_query_distance"):
+        row = runs[role]
+        reference = runs["query_distance"]
+        if row["status"] == reference["status"] == "complete":
+            for metric in ("best_ppl", "terminal_ppl"):
+                row[f"delta_{metric}"] = row[metric] - reference[metric]
+                row[f"percent_{metric}"] = 100.0 * (row[metric] / reference[metric] - 1.0)
     columns = ["role", "label", "run_id", "status", "best_step", "best_nll", "best_ppl",
                "terminal_step", "terminal_nll", "terminal_ppl", "delta_best_ppl", "percent_best_ppl",
                "delta_terminal_ppl", "percent_terminal_ppl"]
@@ -151,6 +178,8 @@ def main() -> None:
                       f"(**{variant['percent_terminal_ppl']:+.3f}%**)."])
     else:
         lines.extend(["", "The query-dependent run is not complete; a final PPL comparison is pending."])
+    lines.extend(["", "Endpoint query–key and bounded-rate variants compare against the query-dependent control.",
+                  "Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison."])
     path = HERE / "README.md"
     text = path.read_text()
     if text.count(BEGIN) != 1 or text.count(END) != 1:

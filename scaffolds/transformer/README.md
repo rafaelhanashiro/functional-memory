@@ -112,6 +112,24 @@ while `A_log` and `b_dt` do not. The separate coefficient-projection decay switc
 retains its existing behavior. New-mode GPU acceptance compares outputs and all
 operand gradients against an explicit dense reference at 2,048 tokens.
 
+Input-form `query_distance` gates also support two independent options on the
+blocked backend. `attention_forget_gate_conditioning: query_key` adds
+`forget_gate_key_kernel` and uses the endpoint rate
+`exp(A_log) * softplus(wq·x_t + wk·x_i + b_dt)`. The key projection starts at zero
+and takes weight decay, exactly recovering the query-only control initially.
+Compact query/key projections pass to the attention core; pair rates and causal
+statistics are evaluated within query blocks. Polynomial coefficients stay
+query-conditioned.
+
+With query-only gating, `attention_forget_gate_rate_activation: sigmoid` replaces
+softplus by sigmoid, giving a positive rate bounded by learned `exp(A_log)`.
+Initialization preserves the rate/projection draws and sets `b_dt = logit(dt)`
+from the original Mamba-2 `dt` draw, matching the control's zero-input rate.
+Rates on nonzero inputs need not match. Both new fields default to the historical
+`query`/`softplus` behavior; combining key dependence with sigmoid is unqualified
+and rejected. Gate diagnostics report endpoint rates over causal pairs when
+key-conditioned, otherwise over query tokens.
+
 `attention_forget_gate_form: input` (the default) is that gate. The `constant` form
 drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,

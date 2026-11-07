@@ -1,5 +1,5 @@
-question: Does query-dependent distance decay improve on cumulative FoX with the same
-  gate and training recipe?
+question: Can endpoint query-key dependence or a bounded positive rate improve query-dependent
+  distance decay without intervening gates?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -8,10 +8,15 @@ settings:
   - terminal at update 7570
   control_decay: product of alpha_j for j from i+1 through t
   query_decay: exp(-(t-i) * lambda_t)
-  allowed_mathematical_change: model.attention_forget_gate_mode
   training_steps: 7570
   training_context: 2048
   seed: 42
+  query_key_decay: exp(-(t-i)*a_h*softplus(w_q,h*x_t+w_k,h*x_i+b_h))
+  bounded_query_decay: exp(-(t-i)*a_h*sigmoid(w_q,h*x_t+b_h))
+  allowed_mathematical_changes:
+  - model.attention_forget_gate_mode
+  - model.attention_forget_gate_conditioning
+  - model.attention_forget_gate_rate_activation
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -53,3 +58,43 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
       sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r02f984133092
+  role: query_key_distance
+  label: Endpoint query-key distance decay + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r02f984133092/config.yaml
+      sha256: 3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r02f984133092/metrics.jsonl
+      sha256: 8620469d2dfe19ed600435dd77e4d65527de69af99743b789a8894fe8ab3fe1a
+    completion.json:
+      path: experiments/transformer_pp/runs/r02f984133092/completion.json
+      sha256: f8a26e3d4cb9c82436e0987506d2e6943f12556e2c19daf667886556faa7011f
+    metadata.json:
+      path: experiments/transformer_pp/runs/r02f984133092/metadata.json
+      sha256: 639a60d4d9926e9501e7d28d41a9cd0dae1eb7eaa69785ba56559de165f7c014
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r02f984133092/best_validation.json
+      sha256: 685c058daa8f4dd2c0f6a361013ce838ecfee7ff719e71dd73c30487964c16e0
+- study: transformer_pp
+  run_id: r4f169e5370da
+  role: bounded_query_distance
+  label: Bounded query rate + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4f169e5370da/config.yaml
+      sha256: cc18f6be43afb7d7e1fefb74ba18cdff680b79c59d5109307d7d3fa62aa60758
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4f169e5370da/metrics.jsonl
+      sha256: fb0c855731adcc88c4499a339b1f08aac62cecdcc9f6ed7a12909dbce7b66e97
+    completion.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/completion.json
+      sha256: 30c9da7548fa9da76cd790c8e29a566c42e39943d6a675fa3b75f6d2cbda9814
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/metadata.json
+      sha256: 1ec77b654b6811bcea0206b7933dfe8d767d8ae69df75c0aae8aea411003733e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/best_validation.json
+      sha256: 8d1a590d2cadc2dd8751aea299a7a557c7635e95427d3a2dd2679bdb81c43bbc

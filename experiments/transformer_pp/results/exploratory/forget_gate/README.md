@@ -1,4 +1,4 @@
-# Forget gate on query coefficients (m = 4)
+# Forget gate on query coefficients (m = 4 and 8)
 
 Opened 2026-10-27.
 
@@ -158,6 +158,35 @@ run), terminal is update 7,570:
   (softmax, H100 PCIe).
 - Limits: one seed each, on the mixed hardware above. FoX exp resumed from its update-6,500
   checkpoint after a preemption and a CUDA-graph runtime error.
+
+### At m = 8 with projection decay
+
+`r9353f554b917` (`query-m8-forget-gate-no-rope-wdecay`, added 2026-11-03) asks whether the
+no-RoPE gate with projection decay still helps at degree eight. It copies
+`query-m8-dk64-w-decay` (`r25fffc16c2f3`, from the
+[query width-by-degree topic](../query_width_degree/README.md)) and changes only
+`attention_forget_gate: true`, `positional_encoding: none`, and the blocked backend the gate
+requires; that run is its control. Home cluster ORCD: it trained on H100s in three
+allocations, the last resuming from update 3,500.
+
+Validation perplexity; best is update 7,500 for every run, terminal is update 7,570:
+
+| Run | 2,500 | 5,000 | Best | Terminal |
+| --- | ---: | ---: | ---: | ---: |
+| Forget gate, no RoPE, projection decay, m = 8 `r9353f554b917` | 17.86 | 15.10 | 13.907 | 13.910 |
+| Forget gate, no RoPE, projection decay, m = 4 `r4a80e28ce0a7` | 17.84 | 15.08 | **13.873** | 13.875 |
+| Query, projection decay, m = 8 `r25fffc16c2f3` (control) | 18.43 | 15.54 | 14.323 | 14.328 |
+| Query, projection decay, m = 4 `rca97cc9db8f2` | 19.01 | 15.96 | 14.709 | 14.714 |
+
+- The gate improves degree-eight query attention by 2.9% (13.910 against 14.328), half its
+  5.7% gain at degree four, because the control improves with degree and the gated runs do
+  not.
+- Under the gate, degree eight matches degree four: 13.910 against 13.875 (+0.25%), within the
+  0.2% gap between the degree-scaling study's numerically equivalent `m = 1` runs. The two
+  curves are within 0.2% at updates 2,500 and 5,000 as well.
+- Cost: 9.8 s per update on one H100 on the blocked reference.
+- Limits: one seed. The control ran on a Kennel B300 at an earlier commit on Mosaic, and
+  `r4a80e28ce0a7` on a B300; the gated degree-eight run trained on ORCD H100s.
 
 ### Original FoX sigmoid gate
 
