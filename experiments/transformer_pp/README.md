@@ -61,7 +61,7 @@ partner run by these rules and changes nothing else:
 | 1× Chinchilla | 20 prediction tokens per parameter of the normalized-softmax model (64-wide heads) at that depth and width, held for every variant at the shape |
 | Batch | a shape change scales the tokens per update (524,288 at the reference) by 2^k, with k the nearest integer to log2(the shape's 1× parameters / 198,440,146), which holds the update count to within that rounding; a budget change keeps the partner's batch |
 | Updates | budget × 1× tokens / tokens per update, rounded; the budget defaults to the partner's |
-| Warmup | 6.01% of the updates (455 of 7,570), rounded half up |
+| Warmup | 455/7,570 of the updates (about 6.01%), rounded half up |
 | Validation | the reference's 9,961,472 validation tokens (4,864 sequences of 2,049), in whole training batches; cadence × budget |
 | Learning rate | the partner's peak (0.001 unless a run sets another), floor 0.1 × peak; weight decay, betas and clipping unchanged |
 | Initialization | the reference rules; a nonzero query-coefficient projection std keeps its multiple of 1/sqrt(width) |
@@ -71,9 +71,9 @@ partner run by these rules and changes nothing else:
 | Reference | 15 × 896 | 14 | 2,304 | 198,440,146 | 256 | 7,570 | 455 | 19 |
 | 12-layer width 640 | 12 × 640 | 10 | 1,664 | 98,977,016 | 128 | 7,551 | 454 | 38 |
 
-At the 12-layer shape embeddings are 41% of the parameters (29% at the reference), so
-that step is 0.50× in total parameters, 0.41× without embeddings, and about 0.25× in
-compute. Because validation runs in whole training batches, the rules reach shapes up to
+At the 12-layer shape the input and output embeddings are 41% of the parameters (29% at
+the reference), so that step is 0.50× in total parameters but 0.41× without embeddings; with
+half the tokens it is about 0.25× in training compute. Because validation runs in whole training batches, the rules reach shapes up to
 batch 256 at context 2,048 (about 1.4× the reference's parameters); a larger shape needs
 the validation batch decoupled from the training batch first. Derive and allocate a recipe
 from the worktree root:
@@ -91,8 +91,9 @@ and recomputes `optim.total_steps` (and so the cosine horizon) from its tokens, 
 validation cadence (`train.eval_early_every`, `train.eval_early_until`, `train.eval_every`)
 scale with it. Peak and floor learning rate, weight decay, batch, data order, seed, and
 checkpoint interval stay the same.
-Every run reads the same sequence stream from its start, so a run that reads fewer
-sequences sees a prefix of a longer run's tokens. The 12.0B-token training set covers up to about 22,900 updates at
+Every pretraining run reads the same sequence stream (data order 0) from its start, so a run
+that reads fewer sequences sees a prefix of a longer run's tokens; a continuation resumes the
+stream at its parent's position. The 12.0B-token training set covers up to about 22,900 updates at
 batch 256 (45,800 at 128) without repeating data. `runs.csv` records each run's shape,
 batch, peak learning rate, and `training_steps`; compare runs at the same shape and
 budget, or the same variant across shapes or budgets.

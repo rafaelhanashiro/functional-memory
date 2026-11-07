@@ -36,14 +36,53 @@ INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
 # query keep their degree-scaling hues; marker shapes repeat the hue, and every point carries its
 # value because aqua, yellow and magenta sit below 3:1 contrast on the surface.
 VARIANTS = {
-    "softmax": ("Softmax", "Softmax", "#eb6834", "o"),
+    "softmax": ("Softmax", "Softmax", "#eb6834", "h"),
     "exp": ("Exp", "Exp", "#e87ba4", "v"),
     "fixed_taylor_m4": ("Fixed Taylor m = 4", "Fixed Taylor", "#2a78d6", "o"),
     "static_m4": ("Static m = 4", "Static", "#1baf7a", "D"),
     "query_m4_w_decay": ("Query m = 4 + W decay", "Query + W decay", "#eda100", "s"),
-    "fox_no_pe_query_m4_w_decay": ("FoX query m = 4 + W decay", "FoX query + W decay", "#008300", "s"),
-    "fox_no_pe_exp": ("FoX exp", "FoX exp", "#6250d6", "v"),
+    "fox_no_pe_query_m4_w_decay": ("FoX query m = 4 + W decay", "FoX query + W decay", "#008300", "p"),
+    "fox_no_pe_exp": ("FoX exp", "FoX exp", "#6250d6", "^"),
 }
+# Variants sit side by side at each shape so that no marker hides another.
+DODGE = {variant: 0.025 * (index - 3) for index, variant in enumerate(VARIANTS)}
+CANONICAL_QK = {"model.qk_norm": True, "model.qk_norm_type": "rms_norm", "model.qk_norm_sharing": "per_layer",
+                "model.qk_norm_initial_scale": None, "model.qk_norm_head_scale": True,
+                "model.attention_mechanism": "dot_product"}
+# The settings on which the variants differ at one shape. Each variant's mechanism is declared here
+# (the backend is execution, and the projection std follows the width by the shape rules); every
+# other setting must equal softmax's at the same shape.
+VARIANT_KEYS = {f"model.{key}" for key in (
+    "attention_backend", "attention_degree", "attention_normalization", "attention_output_scaling",
+    "attention_coefficients", "attention_coefficient_activation", "attention_coefficient_amplitude_initial",
+    "attention_coefficient_amplitude_scale", "attention_coefficient_conditioning",
+    "attention_coefficient_kernel_weight_decay", "attention_coefficient_projection_initial_std",
+    "attention_coefficient_scale", "attention_coefficient_sharing", "attention_forget_gate", "positional_encoding")}
+_FIXED = {"attention_coefficients": "fixed", "attention_coefficient_activation": "identity",
+          "attention_coefficient_amplitude_initial": 1.0, "attention_coefficient_amplitude_scale": "none",
+          "attention_coefficient_conditioning": "static", "attention_coefficient_kernel_weight_decay": False,
+          "attention_coefficient_scale": "none", "attention_coefficient_sharing": "global"}
+_QUERY = {"attention_degree": 4, "attention_coefficients": "learned", "attention_coefficient_activation": "tanh",
+          "attention_coefficient_amplitude_initial": 0.0, "attention_coefficient_amplitude_scale": "factorial",
+          "attention_coefficient_conditioning": "query", "attention_coefficient_kernel_weight_decay": True,
+          "attention_coefficient_scale": "factorial", "attention_coefficient_sharing": "per_head"}
+_UNNORMALIZED = {"attention_normalization": False, "attention_output_scaling": "head_rms_norm"}
+SPEC = {variant: {f"model.{key}": value for key, value in spec.items()} for variant, spec in {
+    "softmax": {**_FIXED, "attention_degree": None, "attention_normalization": True,
+                "attention_output_scaling": "none", "attention_forget_gate": False, "positional_encoding": "rope"},
+    "exp": {**_FIXED, **_UNNORMALIZED, "attention_degree": None, "attention_forget_gate": False,
+            "positional_encoding": "rope"},
+    "fixed_taylor_m4": {**_FIXED, **_UNNORMALIZED, "attention_degree": 4, "attention_forget_gate": False,
+                        "positional_encoding": "rope"},
+    "static_m4": {**_FIXED, **_UNNORMALIZED, "attention_degree": 4, "attention_coefficients": "learned",
+                  "attention_coefficient_scale": "factorial", "attention_coefficient_sharing": "per_head",
+                  "attention_forget_gate": False, "positional_encoding": "rope"},
+    "query_m4_w_decay": {**_QUERY, **_UNNORMALIZED, "attention_forget_gate": False, "positional_encoding": "rope"},
+    "fox_no_pe_query_m4_w_decay": {**_QUERY, **_UNNORMALIZED, "attention_forget_gate": True,
+                                   "positional_encoding": "none"},
+    "fox_no_pe_exp": {**_FIXED, **_UNNORMALIZED, "attention_degree": None, "attention_forget_gate": True,
+                      "positional_encoding": "none"},
+}.items()}
 SHAPES = {"reference": "15 × 896 (reference)", "l12_d640": "12 × 640"}
 SHAPE_KEYS = {"model.num_layers", "model.hidden_size", "model.num_heads", "model.num_kv_heads",
               "model.intermediate_size", "data.batch_size", "optim.total_steps", "optim.warmup_steps",
@@ -156,6 +195,25 @@ def check_recipes(entries: list[dict], configs: dict, settings: dict) -> None:
         gains = [recipe[std] * recipe["model.hidden_size"] ** 0.5 for recipe in (control, primary)]
         if abs(gains[0] - gains[1]) > 1e-9:
             raise ValueError(f"{shapes['l12_d640']} rescales its projection std off 1/sqrt(width)")
+    # Within each shape every variant is softmax's recipe except for its declared mechanism.
+    for shape in SHAPES:
+        softmax = _recipe(configs[pairs["softmax"][shape]])
+        for variant, shapes in pairs.items():
+            run, recipe = shapes[shape], _recipe(configs[shapes[shape]])
+            wrong = {key: recipe.get(key, missing) for key, value in {**CANONICAL_QK, **SPEC[variant]}.items()
+                     if recipe.get(key, missing) != value}
+            if wrong:
+                raise ValueError(f"{run} is not the declared {variant}: {wrong}")
+            differing = sorted(key for key in set(softmax) | set(recipe) if key not in VARIANT_KEYS | SHAPE_KEYS
+                               and softmax.get(key, missing) != recipe.get(key, missing))
+            if differing:
+                raise ValueError(f"{run} differs from softmax at {shape} beyond its variant: {', '.join(differing)}")
+    # Each shape's 1x budget: 20 prediction tokens per parameter of its normalized-softmax model.
+    for name, shape in settings["shapes"].items():
+        tokens = 20 * shape["reference_parameters"]
+        per_update = shape["batch_size"] * (configs[pairs["softmax"][name]]["data"]["sequence_length"] - 1)
+        if shape["updates"] != int(tokens / per_update + 0.5):
+            raise ValueError(f"The {name} shape's {shape['updates']} updates are not its 1x budget")
 
 
 def load_runs(selection: dict | None = None) -> list[dict]:
@@ -164,8 +222,8 @@ def load_runs(selection: dict | None = None) -> list[dict]:
     verify_pinned_runs(ROOT, selection["runs"])
     paths = {entry["run_id"]: ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
              for entry in selection["runs"]}
-    check_recipes(selection["runs"], {run: yaml.safe_load((path / "config.yaml").read_text())
-                                      for run, path in paths.items()}, settings)
+    configs = {run: yaml.safe_load((path / "config.yaml").read_text()) for run, path in paths.items()}
+    check_recipes(selection["runs"], configs, settings)
     rows = []
     for entry in selection["runs"]:
         path, shape = paths[entry["run_id"]], settings["shapes"][entry["shape"]]
@@ -177,9 +235,11 @@ def load_runs(selection: dict | None = None) -> list[dict]:
         completion = json.loads((path / "completion.json").read_text())
         best = json.loads((path / "best_validation.json").read_text())
         metadata = json.loads((path / "metadata.json").read_text())
-        if (completion["final_step"], completion["training_tokens"]) != (
-                shape["updates"], shape["updates"] * shape["batch_size"] * 2048):
+        tokens = shape["updates"] * shape["batch_size"] * (configs[entry["run_id"]]["data"]["sequence_length"] - 1)
+        if (completion["final_step"], completion["training_tokens"]) != (shape["updates"], tokens):
             raise ValueError(f"Selected run did not finish its shape's schedule: {entry['run_id']}")
+        if entry["variant"] == "softmax" and metadata["parameter_count"] != shape["reference_parameters"]:
+            raise ValueError(f"The {entry['shape']} softmax model does not have the shape's 1x parameter count")
         rows.append(dict(
             run_id=entry["run_id"], role=entry["role"], variant=entry["variant"], shape=entry["shape"],
             status=record["status"], parameter_count=metadata["parameter_count"],
@@ -229,27 +289,34 @@ def _slopes(figure, axis, rows: list[dict], value, label, *, reference: float | 
         axis.axhline(reference, color=MUTED, linewidth=1.0, alpha=0.85, zorder=1)
     for variant in variants:
         _, _, color, marker = VARIANTS[variant]
+        xs = [DODGE[variant], 1 + DODGE[variant]]
         ys = [cells[variant, "reference"], cells[variant, "l12_d640"]]
-        axis.plot([0, 1], ys, color=color, linewidth=1.8, zorder=2, solid_capstyle="round")
-        axis.plot([0, 1], ys, linestyle="none", marker=marker, markersize=6.5, color=color,
+        axis.plot(xs, ys, color=color, linewidth=1.8, zorder=2, solid_capstyle="round")
+        axis.plot(xs, ys, linestyle="none", marker=marker, markersize=6.5, color=color,
                   markeredgecolor=SURFACE, markeredgewidth=0.9, zorder=3)
     values = [cells[variant, shape] for variant in variants for shape in SHAPES] + (
         [reference] if reference is not None else [])
     lower, upper = min(values), max(values)
     pad = 0.08 * (upper - lower)
     axis.set_ylim(lower - pad, upper + pad)
-    axis.set_xlim(-0.75, 2.05)
+    axis.set_xlim(-0.85, 2.3)
     height_points = axis.get_window_extent().height * 72 / figure.dpi
-    gap = 10.5 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
-    for x, shape, side in ((0, "reference", "right"), (1, "l12_d640", "left")):
+    gap = 11.5 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
+    # Value chips sit beside each shape's markers on an opaque background, so the reference line
+    # and the other variants' lines pass behind them; the leader starts at the chip's near edge.
+    for shape, side, x_text in (("reference", "right", min(DODGE.values()) - 0.14),
+                                ("l12_d640", "left", 1 + max(DODGE.values()) + 0.14)):
         positions = _spread([cells[variant, shape] for variant in variants], gap)
         for variant, placed in zip(variants, positions):
             _, name, color, _ = VARIANTS[variant]
-            text = label(cells[variant, shape]) + (f"  {name}" if side == "left" else "")
-            axis.annotate(text, (x, cells[variant, shape]), xytext=(x + (0.07 if side == "left" else -0.07), placed),
-                          textcoords="data", ha=side, va="center", fontsize=7.5, color=INK, zorder=4,
+            text = label(cells[variant, shape]).replace("-", "\u2212") + (f"  {name}" if side == "left" else "")
+            x = (0 if shape == "reference" else 1) + DODGE[variant]
+            axis.annotate(text, (x, cells[variant, shape]), xytext=(x_text, placed), textcoords="data",
+                          ha=side, va="center", fontsize=7.5, color=INK, zorder=4,
+                          bbox={"boxstyle": "round,pad=0.15", "facecolor": SURFACE, "edgecolor": GRID,
+                                "linewidth": 0.6},
                           arrowprops={"arrowstyle": "-", "color": color, "linewidth": 0.8, "shrinkA": 0,
-                                      "shrinkB": 2})
+                                      "shrinkB": 3, "relpos": (1, 0.5) if side == "right" else (0, 0.5)})
     if reference is not None:
         axis.annotate("Softmax", (0.0, reference), xycoords=("axes fraction", "data"), xytext=(4, 4),
                       textcoords="offset points", ha="left", va="bottom", fontsize=7.5, color=MUTED)
@@ -266,7 +333,7 @@ def _slopes(figure, axis, rows: list[dict], value, label, *, reference: float | 
 def render(rows: list[dict], output: Path = DIRECTORY) -> None:
     with plt.rc_context({"font.family": "DejaVu Sans", "pdf.fonttype": 42, "svg.hashsalt": "model-scale",
                          "figure.facecolor": SURFACE, "savefig.facecolor": SURFACE}):
-        figure, (absolute, relative) = plt.subplots(1, 2, figsize=(11.5, 5.8))
+        figure, (absolute, relative) = plt.subplots(1, 2, figsize=(12.0, 5.9))
         figure.subplots_adjust(left=0.07, right=0.985, top=0.77, bottom=0.08, wspace=0.24)
         _slopes(figure, absolute, rows, lambda row: row["best_validation_perplexity"], lambda value: f"{value:.2f}")
         absolute.set_ylabel("Validation-best perplexity (lower is better)", fontsize=9.5, color=INK)
@@ -275,10 +342,12 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         relative.set_ylabel("Difference from softmax at the same shape (%)", fontsize=9.5, color=INK)
         figure.text(0.07, 0.955, "Attention variants at two model shapes", fontsize=13, weight="bold",
                     color=INK, va="top")
-        figure.text(0.07, 0.905, "Transformer++ at 1× Chinchilla for each shape (198.4M and 99.0M parameters), "
-                    "validation-best perplexity, one run (seed 42) per point.\nPolynomial variants have degree m = 4; "
-                    "FoX variants use no positional encoding. The 12-layer runs halve the batch and keep the update\n"
-                    "count, the validation set and everything else of their partner.",
+        sizes = {row["shape"]: row["parameter_count"] for row in rows if row["variant"] == "softmax"}
+        figure.text(0.07, 0.905, f"Transformer++ at 1× Chinchilla for each shape ({sizes['reference'] / 1e6:.1f}M "
+                    f"and {sizes['l12_d640'] / 1e6:.1f}M parameters), validation-best perplexity, one run (seed 42) "
+                    "per point.\nPolynomial variants have degree m = 4; FoX variants use the Gated DeltaNet gate and no "
+                    "positional encoding. The 12-layer runs\nhalve the batch, hold the update count within 0.3%, and "
+                    "keep the validation set and everything else of their partner.",
                     fontsize=8.5, color=MUTED, va="top", linespacing=1.35)
         figure.savefig(output / "model_scale.png", dpi=180, metadata={"Software": "Matplotlib"})
         figure.savefig(output / "model_scale.pdf", metadata={"CreationDate": None, "ModDate": None,

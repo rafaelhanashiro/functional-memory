@@ -99,6 +99,52 @@ def test_pairs_differ_only_by_the_shape_rules():
             check_recipes(SELECTION["runs"], changed, SELECTION["settings"])
 
 
+# Pairs as (reference-shape run, 12-layer run).
+PAIRS = {"softmax": ("r9040f12f3d80", "rf81c96f76a1d"), "exp": ("r6a76e7fbde45", "r3e2fa2532c23"),
+         "fixed_taylor_m4": ("r816ab0fbe119", "r2c432bd3a2a4"), "static_m4": ("r4339a245820e", "r94e0f2b8cff9"),
+         "query_m4_w_decay": ("rca97cc9db8f2", "r4cce9a985a70"),
+         "fox_no_pe_query_m4_w_decay": ("r4a80e28ce0a7", "r3d14b598d88f"), "fox_no_pe_exp": ("r183f08346ddc", "ra5dfd978d3bd")}
+
+
+def test_a_change_to_both_runs_of_a_pair_is_rejected():
+    configs = _configs()
+    # (variant, section, key, value, expected message): consistent within the pair, wrong for the comparison.
+    mutations = [
+        ("softmax", "optim", "learning_rate", 0.002, "beyond its variant: optim.learning_rate"),
+        ("softmax", "model", "qk_norm", False, "not the declared softmax"),
+        ("softmax", "model", "positional_encoding", "path", "not the declared softmax"),
+        ("fixed_taylor_m4", "model", "attention_normalization", True, "not the declared fixed_taylor_m4"),
+        ("fixed_taylor_m4", "model", "attention_output_scaling", "none", "not the declared fixed_taylor_m4"),
+        ("fixed_taylor_m4", "model", "attention_mechanism", "gated_deltanet", "not the declared fixed_taylor_m4"),
+        ("static_m4", "model", "attention_coefficient_scale", "none", "not the declared static_m4"),
+        ("query_m4_w_decay", "model", "attention_coefficient_readout", "dense", "attention_coefficient_readout"),
+        ("fox_no_pe_exp", "model", "attention_forget_gate_form", "sigmoid", "attention_forget_gate_form"),
+        ("fox_no_pe_query_m4_w_decay", "model", "attention_forget_gate_mode", "query_distance",
+         "attention_forget_gate_mode"),
+        ("exp", "data", "sequence_length", 4097, "data.sequence_length"),
+    ]
+    for variant, section, key, value, message in mutations:
+        changed = copy.deepcopy(configs)
+        for run in PAIRS[variant]:
+            changed[run][section][key] = value
+        with pytest.raises(ValueError, match=message):
+            check_recipes(SELECTION["runs"], changed, SELECTION["settings"])
+    settings = copy.deepcopy(SELECTION["settings"])
+    settings["shapes"]["l12_d640"]["reference_parameters"] = 99_000_000
+    with pytest.raises(ValueError, match="not its 1x budget"):
+        check_recipes(SELECTION["runs"], configs, settings)
+
+
+def test_each_12_layer_recipe_is_its_partner_derived_by_the_study_rules():
+    from experiments.transformer_pp.derive_recipe import derive
+    from experiments.transformer_pp.results.model_scale.plot import _recipe
+
+    configs = _configs()
+    for variant, (reference, small) in PAIRS.items():
+        derived, _ = derive(configs[reference], layers=12, width=640)
+        assert _recipe(derived) == _recipe(configs[small]), variant
+
+
 def test_changed_inputs_and_mislabeled_runs_are_rejected():
     changed = copy.deepcopy(SELECTION)
     changed["runs"][5]["sources"]["completion.json"]["sha256"] = "0" * 64

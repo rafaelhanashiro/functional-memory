@@ -14,7 +14,10 @@ Each 12-layer run is its partner's recipe derived by the study's
 values, SwiGLU width 1,664, batch 128, 7,551 updates (1.98B prediction tokens), warmup 454,
 and the reference's 4,864 validation sequences (38 batches of 128) at the same cadence.
 The 1× budget comes from the normalized-softmax model at the shape (98,977,016 parameters)
-and holds for every variant. A query-coefficient projection initializes at $1/\sqrt{640}$.
+and holds for every variant. A query-coefficient projection draws its initial entries with
+standard deviation $1/\sqrt{640}$ (the reference's $1/\sqrt{896}$, rescaled with the width).
+"FoX" here is the forget gate in Gated DeltaNet's form (`attention_forget_gate_form: input`),
+not the Forgetting Transformer's original sigmoid gate.
 Everything else is the partner's: data and its order, tokenizer, context 2,048, positional
 encoding, QK RMSNorm with the learned head scale, output normalization (per-head RMSNorm for
 the unnormalized variants), peak learning rate 0.001 with floor 0.0001, AdamW settings,
@@ -75,29 +78,37 @@ Validation-best updates: 15 × 896 (reference) 7,500; 12 × 640 7,551.
   (×1.219–1.235). Each variant's difference from softmax changes by at most 1.3 percentage
   points between the shapes.
 - The leading order holds at both shapes: FoX exp, then FoX query m = 4 + W decay, then exp,
-  all below softmax. Their gains over softmax grow slightly at the smaller shape: FoX exp
-  −6.3% to −6.7%, FoX query −4.6% to −5.9%, exp −2.0% to −2.3%.
-- The three m = 4 polynomials move toward softmax at the smaller shape: query + W decay from
-  +1.1% to −0.1% (a tie), static from +1.5% to +0.3%, fixed Taylor from +1.2% to +0.7%.
+  all below softmax. Their gains over softmax grow at the smaller shape: FoX exp −6.3% to
+  −6.7% and exp −2.0% to −2.3% (0.3–0.4 points), FoX query −4.6% to −5.9% (1.3 points).
+- The three m = 4 polynomials with RoPE and no forget gate move toward softmax at the smaller
+  shape: query + W decay from +1.1% to −0.1% (a tie), static from +1.5% to +0.3%, fixed Taylor
+  from +1.2% to +0.7%.
   Softmax pays the most for the smaller shape (×1.235); FoX query, query and static the least
   (×1.219–1.220).
 - At the reference shape softmax leads that cluster by 1.1–1.5%; at 12 × 640 it sits inside
-  the cluster's 0.8% spread, whose order changes (query, softmax, static, fixed Taylor). With
-  one seed per run that order is not resolved: in this study a second seed moved one pair's
-  runs by 0.6–0.7% while their paired gap held within 0.1%.
+  the cluster's 0.8% spread, whose order changes (query, softmax, static, fixed Taylor; 0.1–0.4
+  points between neighbors). With one seed per run and no gap in this comparison replicated,
+  that order is not resolved.
 
 ## Limits
 
-- The step is 0.50× in total parameters but 0.41× without embeddings and about 0.25× in
-  compute, because the 32,000-token vocabulary is fixed: embeddings are 41% of the smaller
-  model and 29% of the reference.
-- Shape and batch change together, by rule, so the update count stays at the reference's.
-- The peak learning rate stays 0.001 at both shapes; it is not re-tuned for either.
+- The step is 0.50× in total parameters but 0.41× without the input and output embeddings,
+  because the 32,000-token vocabulary is fixed: they are 41% of the smaller model and 29% of
+  the reference. With half the tokens as well, training compute is about 0.25× (6ND).
+- Shape and batch change together, by rule, so the update count stays within 0.3% of the
+  reference's (7,551 against 7,570).
+- The peak learning rate is 0.001 at both shapes. It was chosen at the reference shape by
+  1,500-update normalized-softmax pilots (peaks 0.0005, 0.001 and 0.002, with the earlier QK
+  setup) and is not re-tuned for the 12-layer shape or for any variant.
 - One seed per run.
-- Every 12-layer run trained on a B300 except FoX query (H100 SXM). Fixed Taylor trained
-  updates 1–1,892 on a B300 and resumed from its update-1,500 checkpoint on an H100 SXM after
-  a preemption. Each 12-layer run's validation-best checkpoint is its final update, 7,551;
-  the reference runs' is update 7,500 of 7,570.
+- Five 12-layer runs trained on one B300 and FoX query on one H100 SXM. Fixed Taylor trained
+  updates 1–1,892 on a B300, was preempted, and resumed from its update-1,500 checkpoint on an
+  H100 SXM, which trained the rest and its validation-best checkpoint. The partners trained on
+  a B300 (softmax, exp, fixed Taylor, FoX query), an H100 PCIe (static) and an H100 SXM (query;
+  FoX exp, resumed from update 6,500), so the GPU type differs within five pairs, and each
+  pair's runs executed different source commits.
+- Each 12-layer run's validation-best checkpoint is its final update, 7,551; the reference
+  runs' is update 7,500 of 7,570.
 
 ## Regeneration
 
@@ -109,5 +120,6 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.model_scale.plot
 ```
 
-`tests/` checks the pins, that each pair differs only by the shape rules, the quoted values,
-and byte-identical regeneration.
+`tests/` checks the pins; that each pair differs only by the shape rules and matches a fresh
+derivation; that every variant is its declared mechanism and otherwise softmax's recipe at the
+same shape; each shape's 1× budget; the quoted values; and byte-identical regeneration.
