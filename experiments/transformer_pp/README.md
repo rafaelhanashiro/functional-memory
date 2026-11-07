@@ -159,6 +159,40 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
+## Model scale
+
+The [model scale collection](results/model_scale/README.md) repeats seven attention
+variants at the 12-layer width-640 shape. Each recipe is its reference-shape partner's,
+derived by `derive_recipe.py --layers 12 --width 640` and allocated with
+`scaffolds.records create`:
+
+| Run | Label | Partner | Backend |
+| --- | --- | --- | --- |
+| `rf81c96f76a1d` | softmax-l12-d640 | `r9040f12f3d80` | cuDNN |
+| `r3e2fa2532c23` | exp-l12-d640 | `r6a76e7fbde45` | fused |
+| `r2c432bd3a2a4` | fixed-m4-l12-d640 | `r816ab0fbe119` | Mosaic |
+| `r94e0f2b8cff9` | static-m4-l12-d640 | `r4339a245820e` | Mosaic |
+| `r4cce9a985a70` | query-m4-w-decay-l12-d640 | `rca97cc9db8f2` | Mosaic |
+| `r3d14b598d88f` | query-m4-forget-gate-no-rope-w-decay-l12-d640 | `r4a80e28ce0a7` | blocked |
+| `ra5dfd978d3bd` | exp-forget-gate-no-rope-l12-d640 | `r183f08346ddc` | blocked |
+
+Home cluster: **Kennel**. After committing the inputs, submit each on one B300 or H100,
+choosing the partition (`standard` or `long`) from the live allowance:
+
+```bash
+for run in rf81c96f76a1d r3e2fa2532c23 r2c432bd3a2a4 r94e0f2b8cff9 r4cce9a985a70 r3d14b598d88f ra5dfd978d3bd; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+Each record's `submission` holds its exact submission, and its `attempts` the partition and
+node of every allocation.
+
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation

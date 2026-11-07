@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r4cce9a985a70/config.yaml",
+    "sha256": "1358b1436cbd4267e24f98862de090460933b0b1031cd2549b81320002a93770"
+  },
+  "label": "query-m4-w-decay-l12-d640",
+  "name": "query-m4-w-decay-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "r4cce9a985a70",
+  "status": "planned"
+}

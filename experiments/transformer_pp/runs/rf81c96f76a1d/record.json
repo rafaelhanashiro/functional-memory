@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf81c96f76a1d/config.yaml",
+    "sha256": "4621704e13586958eb3a770f2ed6c5ef93091ae5caca80fdfb4fb02821313713"
+  },
+  "label": "softmax-l12-d640",
+  "name": "softmax-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "rf81c96f76a1d",
+  "status": "planned"
+}

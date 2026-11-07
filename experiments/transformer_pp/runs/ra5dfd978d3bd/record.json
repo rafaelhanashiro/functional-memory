@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra5dfd978d3bd/config.yaml",
+    "sha256": "25f37717ac466b821f955dbb8693d8de44feb1c2a365f33205a76e27ef35bd8d"
+  },
+  "label": "exp-forget-gate-no-rope-l12-d640",
+  "name": "exp-forget-gate-no-rope-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "ra5dfd978d3bd",
+  "status": "planned"
+}

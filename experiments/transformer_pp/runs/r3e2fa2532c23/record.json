@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3e2fa2532c23/config.yaml",
+    "sha256": "ba17a37799f1c4e1e58a23593f994c5510e237f26e04c0d9a4c51ea9700f083c"
+  },
+  "label": "exp-l12-d640",
+  "name": "exp-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "r3e2fa2532c23",
+  "status": "planned"
+}

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2c432bd3a2a4/config.yaml",
+    "sha256": "e3c11bbf11f59b63540311cb44aea0919d55b408174e3cf530a406fb9072f31c"
+  },
+  "label": "fixed-m4-l12-d640",
+  "name": "fixed-m4-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "r2c432bd3a2a4",
+  "status": "planned"
+}
