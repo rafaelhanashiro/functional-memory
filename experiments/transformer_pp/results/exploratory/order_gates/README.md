@@ -96,15 +96,16 @@ runs.
 
 ## Execution
 
-Home cluster: ORCD. Each run uses one H100, with no scheduling dependency. From the
-experiment worktree after committing the frozen execution inputs:
+Home cluster: ORCD. Each run uses one H200 (Hopper, sm90, the H100's kernels), with no
+scheduling dependency; at submission Slurm estimated an H200 start about two days before
+an H100 one. From the experiment worktree after committing the frozen execution inputs:
 
 ```bash
 for RUN in r77698776d82c r8c4a6ecdf4d2; do
   sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
-    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    --gres=gpu:h200:1 \
     scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.coefficient_gate_acceptance \
-    "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H100
+    "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H200
 done
 ```
 
