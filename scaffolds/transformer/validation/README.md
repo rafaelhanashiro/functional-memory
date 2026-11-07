@@ -2698,6 +2698,8 @@ has maximum relative L2 error 0.0026623; Compute Sanitizer reports **zero errors
 for the fixed backward pass at training's default matmul precision. Recipes,
 runtime settings and mathematical definitions are unchanged. Full per-run
 acceptance still gates production training on its actual GPU allocation.
+The targeted CPU suite passes 73 tests covering per-order and shared endpoint
+outputs/gradients, initialization, decay masks and the experiment's recipe guard.
 The B300 diagnostic job 239100 was cancelled while pending; it produced no
 diagnostic result.
 
