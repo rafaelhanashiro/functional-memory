@@ -362,6 +362,7 @@ def attention_identity(config) -> dict:
                 **({"attention_forget_gate_conditioning": gate_conditioning} if gate_conditioning != "query" else {}),
                 **({"attention_forget_gate_rate_activation": gate_rate_activation} if gate_rate_activation != "softplus" else {}),
                 "forget_gate_parameter_count": (1 if forget_gate_form == "constant" else
+                                                config.model.hidden_size + 1 if forget_gate_form == "sigmoid" else
                                                 (2 if gate_conditioning == "query_key" else 1) * config.model.hidden_size + 2)
                 * config.model.num_layers * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
@@ -381,21 +382,27 @@ def attention_identity(config) -> dict:
                                    ("; each weight is multiplied by exp((t-i) log alpha_t), log alpha_t = "
                                     if gate_mode == "query_distance" else
                                     "; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = ")
-                                   + "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
-                                   "DeltaNet's initialization") if forget_gate else "")),
+                                   + (SIGMOID_GATE_TEXT if forget_gate_form == "sigmoid" else
+                                      "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                                      "DeltaNet's initialization")) if forget_gate else "")),
         )
     if forget_gate and not query_conditioned:
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
-        # joins every score (the Forgetting Transformer); the configuration admits no other mode or form.
+        # joins every score (the Forgetting Transformer); the configuration admits only the cumulative
+        # mode, with the Gated DeltaNet (input) or the original sigmoid gate.
+        sigmoid_gate = forget_gate_form == "sigmoid"
         identity.update(
             attention_forget_gate=True,
             attention_forget_gate_mode=gate_mode,
-            forget_gate_parameter_count=(config.model.hidden_size + 2) * config.model.num_layers
-            * config.model.num_heads,
+            **({"attention_forget_gate_form": forget_gate_form} if sigmoid_gate else {}),
+            forget_gate_parameter_count=(config.model.hidden_size + (1 if sigmoid_gate else 2))
+            * config.model.num_layers * config.model.num_heads,
             attention_formula=(("causal_softmax" if normalized else "causal_exp")
                                + "(QK^T / sqrt(d_k) + D) V, D_ti = sum_(j=i+1..t) log alpha_j, log alpha_t = "
-                               "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated DeltaNet's "
-                               "initialization; x_t is the activation after the block input RMSNorm"),
+                               + (SIGMOID_GATE_TEXT if sigmoid_gate else
+                                  "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated DeltaNet's "
+                                  "initialization")
+                               + "; x_t is the activation after the block input RMSNorm"),
         )
     if mode != "fixed":
         identity.update({
@@ -733,15 +740,31 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
 
+SIGMOID_GATE_TEXT = ("log sigmoid(x_t w_f + b_f) per layer/head, with the Forgetting Transformer's initialization "
+                     "w_f ~ N(0, 0.02^2), b_f = 0")
+
+
 def forget_gate_report(params, raw_layers, *, form: str = "input", conditioning: str = "query",
                        rate_activation: str = "softplus") -> dict:
     """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H])."""
     get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
-    rate = np.exp(get("forget_gate_log_rate")[..., 0])
     sample = {statistic: np.stack([np.asarray(layer[f"forget_gate_log_alpha_{statistic}"], np.float64)
                                    for layer in raw_layers]) for statistic in ("mean", "min", "max")}
     with np.errstate(divide="ignore"):
         half_life = np.log(0.5) / sample["mean"]
+    if form == "sigmoid":
+        bias, kernel = get("forget_gate_bias")[..., 0], get("forget_gate_kernel")
+        return {
+            "formula": "log alpha_t = log sigmoid(x_t w_f + b_f) (Forgetting Transformer)",
+            "bias": _serializable(bias),
+            "sigmoid_bias": _serializable(1.0 / (1.0 + np.exp(-bias))),
+            "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+                           and all(np.isfinite(values).all() for values in sample.values())),
+        }
+    rate = np.exp(get("forget_gate_log_rate")[..., 0])
     if form == "constant":
         return {
             "formula": "log alpha_t = -exp(A_log); weights decay as exp(-exp(A_log) (t - i))",

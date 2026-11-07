@@ -3,7 +3,8 @@
 Opened 2026-10-27.
 
 **Question.** Does a Forgetting Transformer decay, defined as in Gated DeltaNet, improve
-degree-four polynomial attention with tanh query coefficients?
+degree-four polynomial attention with tanh query coefficients? Later sections add the
+exponential kernels (softmax, exp) and compare the paper's original sigmoid gate.
 
 ## Method
 
@@ -186,6 +187,54 @@ Validation perplexity; best is update 7,500 for every run, terminal is update 7,
 - Cost: 9.8 s per update on one H100 on the blocked reference.
 - Limits: one seed. The control ran on a Kennel B300 at an earlier commit on Mosaic, and
   `r4a80e28ce0a7` on a B300; the gated degree-eight run trained on ORCD H100s.
+
+### Original FoX sigmoid gate
+
+Three runs (added 2026-11-05) replace the Gated DeltaNet gate of the no-RoPE runs with the
+Forgetting Transformer's own gate, $\log\alpha_t = \log\sigma(w_f^\top x_t + b_f)$ per layer
+and head, initialized as in its code: $w_f \sim \mathcal N(0, 0.02^2)$ and $b_f = 0$, so every
+gate starts near $\sigma(0) = 1/2$; $w_f$ takes weight decay and $b_f$ does not. The Gated
+DeltaNet gate is the same sigmoid raised to a learned per-head power,
+$\alpha_t = \sigma(-z_t)^{e^{A_{\log}}}$ with $z_t = w_\alpha^\top x_t + b_{dt}$, under
+Mamba-2's initialization. Exp and query change only the gate; softmax also drops QK
+normalization (plain scores), as in FoX (LLaMA). All are 1× (7,570 updates), seed 42, on the
+blocked backend; launch commands are in the
+[study README](../../../README.md#original-fox-sigmoid-gate).
+
+Validation perplexity; best is the validation-best checkpoint (update 7,500 for every run),
+terminal is update 7,570:
+
+| Run | Gate | 2,500 | 5,000 | Best | Terminal | Training GPU |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| Exp, sigmoid gate `rdd3e9cb3bb80` | sigmoid | 17.98 | 15.20 | 14.005 | 14.010 | H100 SXM (`dogo`) |
+| FoX exp `r183f08346ddc` | Gated DeltaNet | 17.40 | 14.77 | **13.628** | 13.630 | H100 SXM (`dogo`) |
+| Query + W decay, sigmoid gate `rfa9636279199` | sigmoid | 18.58 | 15.64 | 14.372 | 14.377 | H100 SXM (`dogo`) |
+| Forget gate, no RoPE, projection decay `r4a80e28ce0a7` | Gated DeltaNet | 17.84 | 15.08 | **13.873** | 13.875 | B300 |
+| Softmax, sigmoid gate, plain scores `reeb92d46a95d` | sigmoid | 18.01 | 15.23 | 14.014 | 14.014 | H100 PCIe (`mastiff`) to update 200, then B300 (`akita`) |
+| FoX softmax `r5adc29a91e3b` | Gated DeltaNet | 17.39 | 14.81 | **13.680** | 13.680 | B300 (`akita`) |
+
+- Where the gate is the only change it costs 2.8% on exp (14.005 against 13.628) and 3.6% on
+  query (14.372 against 13.873). Both gaps are steady through the second half of training
+  (exp 2.8–3.0% from update 4,500, query 3.6–3.8% from 5,500).
+- Softmax with plain scores, as in FoX (LLaMA), trails its control by 2.4% (14.014 against
+  13.680). That gap narrowed from 4.2% at update 1,500, but the run changes the QK
+  normalization as well as the gate, so it does not isolate the gate.
+- The sigmoid gate stays short-range. At update 100 its heads' mean half-lives on the
+  diagnostic sample have 10/50/90th percentiles of 0.38/0.52/1.4 tokens (exp) with none over
+  64 tokens, against 0.31/3.2/79 tokens and 17% over 64 for the Gated DeltaNet gate. It
+  gains long-range heads slowly: at the end 0.25/0.79/17.8 tokens, 68% of heads under two
+  tokens and 7% over 64, against 0.28/2.8/98 tokens, 46% and 20%. Query matches (0.28/0.84/16
+  tokens, 71% and 7%, against 0.32/3.0/117 tokens, 45% and 23%). Softmax's control starts
+  longer-range (median 8.5 tokens and 22% over 64 at update 100, against 0.67 and none) and
+  ends at 14.9 tokens and 38% over 64, against 1.7 and 10%. The learned biases stay between
+  −1.1 and 0.55 (per-layer mean $\sigma(b_f)$ 0.27–0.53), so long memory comes only from the
+  projection $w_f^\top x_t$.
+- Mamba-2's initialization spreads the decay rates from the start, while the paper's starts
+  every head at $\alpha \approx 1/2$; within 1× the sigmoid gate does not build the same
+  long memory. These runs do not separate the gate's form from its initialization.
+- Limits: one seed each. On an H100 SXM the blocked backend ran exp at 8.0 s per update, as
+  with the Gated DeltaNet gate, and query at 9.8 s. Softmax trained its first 200 updates on
+  an H100 PCIe and the rest on a B300 (6.1 s per update) after that H100 stopped responding.
 
 ## Open decision
 
