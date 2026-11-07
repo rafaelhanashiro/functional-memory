@@ -137,7 +137,11 @@ ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for 
 `h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
 form is qualified only for query polynomials with the cumulative mode under RoPE or no
 positional encoding on the blocked backend; configuration rejects it with `query_distance`,
-PaTH, softmax, or the exponential.
+PaTH, softmax, or the exponential. The `sigmoid` form is the Forgetting Transformer's original
+gate, `alpha_t = sigmoid(x_t w_f + b_f)`, with the paper's initialization (`w_f ~ N(0, 0.02^2)`,
+`b_f = 0`) and weight decay on `w_f` only; it equals the input form with `exp(A_log) = 1` and the
+projection negated. It is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -517,7 +521,12 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
 
-Softmax and the exponential take the cumulative mode with the input gate form only.
+`attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
+original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
+paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
+1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
+Softmax and the exponential take the cumulative mode with the input or sigmoid gate form; the
+sigmoid form needs RoPE or no positional encoding.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
 parameters.
