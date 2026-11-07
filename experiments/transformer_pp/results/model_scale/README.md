@@ -35,10 +35,56 @@ forget gate's projection Uniform(±1/sqrt(640)).
 The [selection](selection.yaml) pins each pair. Launch commands are in the
 [study README](../../README.md#model-scale).
 
+## Results
+
+![Validation-best perplexity of seven attention variants at the two shapes](model_scale.png)
+
+<!-- BEGIN GENERATED RESULTS -->
+
+**Validation-best perplexity**
+
+| Variant | 15 × 896 | 12 × 640 | 12 × 640 / 15 × 896 | vs softmax, 15 × 896 | vs softmax, 12 × 640 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| FoX exp | 13.628 | 16.753 | 1.229 | -6.29% | -6.74% |
+| FoX query m = 4 + W decay | 13.873 | 16.911 | 1.219 | -4.60% | -5.86% |
+| Exp | 14.257 | 17.550 | 1.231 | -1.96% | -2.30% |
+| Query m = 4 + W decay | 14.709 | 17.944 | 1.220 | +1.14% | -0.11% |
+| Softmax | 14.543 | 17.964 | 1.235 | – | – |
+| Static m = 4 | 14.767 | 18.010 | 1.220 | +1.54% | +0.26% |
+| Fixed Taylor m = 4 | 14.722 | 18.087 | 1.229 | +1.23% | +0.68% |
+
+Validation-best updates: 15 × 896 (reference) 7,500; 12 × 640 7,551.
+
+**Terminal perplexity and parameters**
+
+| Variant | 15 × 896 run | Terminal | Parameters | 12 × 640 run | Terminal | Parameters |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| FoX exp | `r183f08346ddc` | 13.630 | 198,642,166 | `ra5dfd978d3bd` | 16.753 | 99,061,736 |
+| FoX query m = 4 + W decay | `r4a80e28ce0a7` | 13.875 | 199,585,066 | `r3d14b598d88f` | 16.911 | 99,446,936 |
+| Exp | `r6a76e7fbde45` | 14.262 | 198,453,586 | `r3e2fa2532c23` | 17.550 | 98,984,696 |
+| Query m = 4 + W decay | `rca97cc9db8f2` | 14.714 | 199,396,486 | `r4cce9a985a70` | 17.944 | 99,369,896 |
+| Softmax | `r9040f12f3d80` | 14.546 | 198,440,146 | `rf81c96f76a1d` | 17.964 | 98,977,016 |
+| Static m = 4 | `r4339a245820e` | 14.773 | 198,454,636 | `r94e0f2b8cff9` | 18.010 | 98,985,296 |
+| Fixed Taylor m = 4 | `r816ab0fbe119` | 14.724 | 198,453,586 | `r2c432bd3a2a4` | 18.087 | 98,984,696 |
+
+<!-- END GENERATED RESULTS -->
+
 ## Findings
 
-Pending: the 12-layer runs are allocated and not yet trained. The summary table and figure
-will regenerate from the selection once they complete.
+- Every variant's validation-best perplexity rises by 22–24% at the 12-layer shape
+  (×1.219–1.235). Each variant's difference from softmax changes by at most 1.3 percentage
+  points between the shapes.
+- The leading order holds at both shapes: FoX exp, then FoX query m = 4 + W decay, then exp,
+  all below softmax. Their gains over softmax grow slightly at the smaller shape: FoX exp
+  −6.3% to −6.7%, FoX query −4.6% to −5.9%, exp −2.0% to −2.3%.
+- The three m = 4 polynomials move toward softmax at the smaller shape: query + W decay from
+  +1.1% to −0.1% (a tie), static from +1.5% to +0.3%, fixed Taylor from +1.2% to +0.7%.
+  Softmax pays the most for the smaller shape (×1.235); FoX query, query and static the least
+  (×1.219–1.220).
+- At the reference shape softmax leads that cluster by 1.1–1.5%; at 12 × 640 it sits inside
+  the cluster's 0.8% spread, whose order changes (query, softmax, static, fixed Taylor). With
+  one seed per run that order is not resolved: in this study a second seed moved one pair's
+  runs by 0.6–0.7% while their paired gap held within 0.1%.
 
 ## Limits
 
@@ -48,11 +94,20 @@ will regenerate from the selection once they complete.
 - Shape and batch change together, by rule, so the update count stays at the reference's.
 - The peak learning rate stays 0.001 at both shapes; it is not re-tuned for either.
 - One seed per run.
+- Every 12-layer run trained on a B300 except FoX query (H100 SXM). Fixed Taylor trained
+  updates 1–1,892 on a B300 and resumed from its update-1,500 checkpoint on an H100 SXM after
+  a preemption. Each 12-layer run's validation-best checkpoint is its final update, 7,551;
+  the reference runs' is update 7,500 of 7,570.
 
 ## Regeneration
 
-Re-pin the selection from the worktree root after the runs change:
+From the worktree root, re-pin the selection after its runs change, then regenerate
+`summary.csv`, `model_scale.png`/`.pdf` and the tables above:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/model_scale
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.model_scale.plot
 ```
+
+`tests/` checks the pins, that each pair differs only by the shape rules, the quoted values,
+and byte-identical regeneration.

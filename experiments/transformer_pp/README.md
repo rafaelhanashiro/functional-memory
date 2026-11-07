@@ -180,8 +180,9 @@ derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 | `r3d14b598d88f` | query-m4-forget-gate-no-rope-w-decay-l12-d640 | `r4a80e28ce0a7` | blocked |
 | `ra5dfd978d3bd` | exp-forget-gate-no-rope-l12-d640 | `r183f08346ddc` | blocked |
 
-Home cluster: **Kennel**. After committing the inputs, submit each on one B300 or H100,
-choosing the partition (`standard` or `long`) from the live allowance:
+Home cluster: **Kennel**. All seven are complete; each record holds its launch commit.
+After committing the inputs, submit each on one B300 or H100, choosing the partition
+(`standard` or `long`) from the live allowance:
 
 ```bash
 for run in rf81c96f76a1d r3e2fa2532c23 r2c432bd3a2a4 r94e0f2b8cff9 r4cce9a985a70 r3d14b598d88f ra5dfd978d3bd; do

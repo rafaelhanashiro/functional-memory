@@ -11,7 +11,7 @@ softmax as the reference level; all sixteen runs are complete.
 
 The canonical [model scale](model_scale/README.md) collection repeats seven attention
 variants at the 12-layer width-640 shape (98,977,016 parameters at 1×) and compares each
-with its reference-shape partner.
+with its reference-shape partner; all fourteen runs are complete.
 
 The current exploratory collection is the
 [coefficient oracle](exploratory/coefficient_oracle/README.md): fitting free coefficients, the trained query generator, or coefficient tables shared across sequences and optionally query positions
