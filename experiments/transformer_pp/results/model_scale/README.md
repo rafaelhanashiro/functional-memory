@@ -16,8 +16,11 @@ and the reference's 4,864 validation sequences (38 batches of 128) at the same c
 The 1× budget comes from the normalized-softmax model at the shape (98,977,016 parameters)
 and holds for every variant. A query-coefficient projection initializes at $1/\sqrt{640}$.
 Everything else is the partner's: data and its order, tokenizer, context 2,048, positional
-encoding, QK RMSNorm with the learned head scale, per-head output RMSNorm, initialization,
-peak learning rate 0.001 with floor 0.0001, AdamW settings, seed 42, and attention backend.
+encoding, QK RMSNorm with the learned head scale, output normalization (per-head RMSNorm for
+the unnormalized variants), peak learning rate 0.001 with floor 0.0001, AdamW settings,
+seed 42, attention backend, and the initialization rules, whose depth- and width-dependent
+values follow the shape: residual projections 0.02/sqrt(24) instead of 0.02/sqrt(30), and the
+forget gate's projection Uniform(±1/sqrt(640)).
 
 | Variant | 12-layer width-640 run | Reference-shape partner | Partner best |
 | --- | --- | --- | ---: |

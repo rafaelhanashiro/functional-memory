@@ -2,20 +2,21 @@ import pytest
 import yaml
 
 from experiments.transformer_pp.derive_recipe import (
-    RUNS, _changes, _defined, derive, main, parameter_count, reference_parameter_count,
+    RUNS, _changes, _defined, budget_of, derive, main, parameter_count, reference_parameter_count,
 )
 
 # Run identity and output locations, set by `scaffolds.records create`, not by the recipe rules.
 IDENTITY = {"train.workdir", "train.checkpoint_dir", "train.wandb_run_name", "continuation"}
 PARTNERS = ("r9040f12f3d80", "r6a76e7fbde45", "r816ab0fbe119", "r4339a245820e", "rca97cc9db8f2",
             "r4a80e28ce0a7", "r183f08346ddc")
+CONTEXT_4K = ("r2047d29a0d9f", "r339a31ad8d4b", "r58efc973ff28", "r636f433be44f", "r738b35a8e314")
 
 
 def recipe(run):
     return yaml.safe_load((RUNS / run / "config.yaml").read_text())
 
 
-@pytest.mark.parametrize("run", PARTNERS)
+@pytest.mark.parametrize("run", PARTNERS + CONTEXT_4K)
 def test_the_reference_shape_and_budget_reproduce_each_partner(run):
     derived, dropped = derive(recipe(run))
     assert _changes(_defined(recipe(run))[0], derived) == {}
@@ -49,9 +50,7 @@ def test_the_twelve_layer_width_640_shape():
     assert derived["train"]["eval_batches"] * derived["data"]["batch_size"] == 19 * 256
     assert [derived["train"][key] for key in ("eval_early_every", "eval_early_until", "eval_every")] == [100, 1500, 500]
     assert derived["train"]["ckpt_every"] == 500
-    assert reference_parameter_count({key: model[key] for key in
-                                      ("num_layers", "hidden_size", "num_heads", "num_kv_heads", "intermediate_size")}) \
-        == 98_977_016
+    assert reference_parameter_count(12, 640, 1664) == 98_977_016
     assert parameter_count(model) == 99_369_896
     assert reference_parameter_count() == 198_440_146
 
@@ -70,7 +69,10 @@ def test_a_new_peak_learning_rate_keeps_the_tenfold_floor():
 @pytest.mark.parametrize("changes,message", [
     ({"width": 650}, "multiple of the value head width"),
     ({"batch": 96}, "does not divide the 4864 validation sequences"),
-    ({"batch": 120}, "not a multiple of micro_batch_size"),
+    ({"batch": 120}, "not a positive multiple of micro_batch_size"),
+    ({"batch": -16}, "not a positive multiple of micro_batch_size"),
+    ({"layers": 18, "width": 1024}, "does not divide the 4864 validation sequences"),
+    ({"peak_learning_rate": 0.0}, "must be positive"),
     ({"budget": 0.0}, "must be positive"),
 ])
 def test_inconsistent_requests_fail(changes, message):
@@ -86,3 +88,33 @@ def test_the_cli_writes_a_recipe_that_loads(tmp_path, capsys):
     config = load_config(output)
     assert (config.model.num_layers, config.model.hidden_size, config.data.batch_size) == (12, 640, 128)
     assert "parameters: 99,061,736" in capsys.readouterr().out
+
+
+def test_rules_count_tokens_so_a_4k_partner_keeps_its_tokens_per_update():
+    derived, _ = derive(recipe("r58efc973ff28"), layers=12, width=640)
+    assert derived["data"]["sequence_length"] == 4097 and derived["data"]["batch_size"] == 64
+    assert (derived["optim"]["total_steps"], derived["optim"]["warmup_steps"]) == (7551, 454)
+    # The 4k runs' 2,432 validation sequences, the reference's 9,961,472 tokens.
+    assert derived["train"]["eval_batches"] * derived["data"]["batch_size"] == 19 * 128
+
+
+def test_the_budget_defaults_to_the_partner_s():
+    assert budget_of(recipe("r816ab0fbe119")) == 1.0 and budget_of(recipe("r4f1682c1b54d")) == 2.5
+    derived, _ = derive(recipe("r4f1682c1b54d"), layers=12, width=640)
+    assert derived["data"]["batch_size"] == 128 and derived["optim"]["total_steps"] == 18878
+
+
+def test_a_budget_change_keeps_the_partner_s_batch():
+    partner = recipe("r816ab0fbe119")
+    partner["data"]["batch_size"], partner["optim"]["total_steps"] = 128, 15140
+    derived, _ = derive(partner, budget=2.5)
+    assert derived["data"]["batch_size"] == 128 and derived["train"]["eval_batches"] == 38
+    assert derived["optim"]["total_steps"] == 37849  # 2.5 x 20 x 198,440,146 / (128 x 2,048)
+
+
+def test_derived_values_carry_no_float_noise():
+    derived, _ = derive(recipe("r816ab0fbe119"), peak_learning_rate=3e-4)
+    assert derived["optim"]["min_learning_rate"] == 3e-5
+    partner = recipe("rca97cc9db8f2")
+    partner["model"]["attention_coefficient_projection_initial_std"] = 0.02
+    assert derive(partner, budget=2.5)[0]["model"]["attention_coefficient_projection_initial_std"] == 0.02

@@ -47,9 +47,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   `experiments/transformer_pp/`. The study is its recipe's rules, not their values: model
   shape and token budget are per-run settings, 1× Chinchilla is defined per shape, and
   `experiments/transformer_pp/derive_recipe.py` derives a run's recipe from a partner run.
-  Name shapes by structure (for example the 12-layer width-640 shape). Its name is its recipe: call it
+  Its name is its recipe: call it
   Transformer++ in READMEs, indexes, figures, and reports, never by its size or token budget
-  ("200M", "4B", "1x"). The study holds its `recipe.yaml`, run membership,
+  ("200M", "4B", "1x"), and name model shapes by structure (for example the 12-layer
+  width-640 shape). The study holds its `recipe.yaml`, run membership,
   `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
   diagnostics belong under `experiments/transformer_pp/results/exploratory/<topic>/`,
   with their runs in the same study. Add runs deliberately; do not reproduce the old
