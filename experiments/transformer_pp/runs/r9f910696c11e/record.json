@@ -3,10 +3,33 @@
     "path": "experiments/transformer_pp/runs/r9f910696c11e/config.yaml",
     "sha256": "7ccbb1c55e0c8f0974332ecf4bf6d3c40a04207a2dcdb486dcfbeab9043a2fb1"
   },
+  "frozen_execution_sha256": "f5580a0bd3309d0f67d1c35beb545a1181c2caa0ecb44d82d32969451a751a91",
   "home_cluster": "kennel",
   "label": "query-m4-per-order-query-key-gate-nope-wd",
+  "log_path": "experiments/transformer_pp/runs/r9f910696c11e/training.log",
   "name": "query-m4-per-order-query-key-gate-nope-wd",
   "record_schema_version": 1,
   "run_id": "r9f910696c11e",
-  "status": "planned"
+  "source_commit": "49c82efd0d71bfc969c439fac0d762c033140f2d",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=long",
+      "--time=7-00:00:00",
+      "--job-name=r9f910696c11e",
+      "--output=experiments/transformer_pp/runs/r9f910696c11e/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.per_order_decay_acceptance",
+      "experiments/transformer_pp/runs/r9f910696c11e/config.yaml",
+      "49c82efd0d71bfc969c439fac0d762c033140f2d",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "long",
+    "slurm_job_id": "238215",
+    "submitted_utc": "2026-11-07T06:01:16.935506+00:00"
+  }
 }

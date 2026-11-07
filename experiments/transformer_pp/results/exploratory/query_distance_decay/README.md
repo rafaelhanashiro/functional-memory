@@ -159,8 +159,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 | Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
-| Per-order query distance + W decay | `rabf7547013ca` | planned | — | — | — |
-| Per-order query-key distance + W decay | `r9f910696c11e` | planned | — | — | — |
+| Per-order query distance + W decay | `rabf7547013ca` | submitted | — | — | — |
+| Per-order query-key distance + W decay | `r9f910696c11e` | submitted | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
