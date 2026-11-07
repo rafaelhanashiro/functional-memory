@@ -1,7 +1,9 @@
 # Even polynomial powers
 
 Opened: 2026-11-03. Do even-only degree-eight polynomials improve static or
-query-conditioned attention at the 1× Chinchilla budget?
+query-conditioned attention at the 1× Chinchilla budget? A third run asks the
+mirror question for query coefficients: keep the intercept and only the odd orders
+through seven ([below](#intercept-and-odd-orders)).
 
 Both new Transformer++ runs use only orders `R = {0, 2, 4, 6, 8}`:
 
@@ -54,6 +56,23 @@ count, but does not favor discarding odd terms from full degree eight. The open
 decision is whether either even-only parameterization merits further study;
 these single-seed results remain exploratory.
 
+## Intercept and odd orders
+
+The query + weight decay run `r0bdac8e1b97b` (`query-odd-m7-w-decay`) keeps orders
+`R = {0, 1, 3, 5, 7}` and is otherwise the even-only query run's recipe: the same
+`p_t(z)` with five coefficient channels and weight decay on the five projection
+columns, and orders 2, 4 and 6 fixed at exactly zero. It initializes to
+`1 + z + z^3/3! + z^5/5! + z^7/7!`, the intercept plus the odd part of the Taylor
+polynomial. That polynomial increases monotonically, like `exp`, and turns negative
+for scores below about -0.88, whereas an even-only polynomial gives a score and its
+negation the same weight. Coefficients are otherwise unconstrained, so the learned
+polynomial need not stay monotonic. The run uses the even-only runs' source code.
+
+Its comparisons are the even-only query run (five channels), the full degree-four
+query control (five channels), the full degree-seven query control `rdb67453630c8`
+(same highest power, also on an ORCD H100), and the full degree-eight control.
+The run is in progress; this topic reports it when it completes.
+
 ## Regeneration
 
 The [summary](summary.csv) reads only the explicit [selection](selection.yaml),
@@ -67,9 +86,9 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python \
 
 ## Execution
 
-Home cluster: Kennel. Both runs use the existing degree-eight Mosaic kernel,
-one GPU each, and no scheduling dependencies. From the experiment worktree after
-committing the frozen execution inputs:
+The two even-only runs are hosted on Kennel. Both use the existing degree-eight
+Mosaic kernel, one GPU each, and no scheduling dependencies. From the experiment
+worktree after committing the frozen execution inputs:
 
 ```bash
 for RUN in r45831d718944 r698f9a157a94; do
@@ -82,6 +101,19 @@ for RUN in r45831d718944 r698f9a157a94; do
 done
 ```
 
+The intercept-and-odd run `r0bdac8e1b97b` is hosted on ORCD and uses the existing
+degree-seven Mosaic kernel on one H100. From its worktree after committing the
+frozen execution inputs:
+
+```bash
+RUN=r0bdac8e1b97b
+sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
+  --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+  scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H100
+```
+
 Acceptance checks retained orders, gradients, kernel correctness, backbone
 initialization, production-shaped throughput and checkpoint resume before
-training. Actual submissions and allocations live in each run's record.
+training; its order tests cover both the even and the intercept-and-odd sets.
+Actual submissions and allocations live in each run's record.

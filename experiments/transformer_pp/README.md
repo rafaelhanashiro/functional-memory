@@ -203,8 +203,9 @@ The [even-powers topic](results/exploratory/even_powers/README.md) tests static
 and query-conditioned coefficients using only orders 0, 2, 4, 6, and 8 at the
 1× Chinchilla budget (7,570 updates). Static compares with full degree four;
 query with projection weight decay compares with full degrees four and eight.
-Both new runs are hosted on Kennel. The topic records the exact controls and
-launch command.
+Both even-only runs are hosted on Kennel. A third query run with projection weight
+decay, `r0bdac8e1b97b` on ORCD, keeps the intercept and the odd orders 1, 3, 5,
+and 7 instead. The topic records the exact controls and launch commands.
 
 ### Query coefficient optimization
 

@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0bdac8e1b97b/config.yaml",
+    "sha256": "9af6ed5b4d818701a6be194652b138e091e6f9ad90ecdf98f9a6b04ef73f0507"
+  },
+  "label": "query-odd-m7-w-decay",
+  "name": "query-odd-m7-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r0bdac8e1b97b",
+  "status": "planned"
+}
