@@ -232,6 +232,15 @@ query with projection weight decay compares with full degrees four and eight.
 Both new runs are hosted on Kennel. The topic records the exact controls and
 launch command.
 
+### Per-order coefficient gates
+
+The [order-gates topic](results/exploratory/order_gates/README.md) asks whether
+multiplicative gates on individual polynomial orders improve query-conditioned attention
+without a distance-dependent forget gate. Two runs add independent per-order sigmoid gates
+(`model.attention_coefficient_gate: sigmoid`) to the query + weight decay, RoPE recipe of
+`r25fffc16c2f3`: `r77698776d82c` at degree 8 and `r8c4a6ecdf4d2` at degree 10, both
+hosted on ORCD. The topic records the formulas, the control and the exact launch commands.
+
 ### Query coefficient optimization
 
 Two degree-four query/tanh runs test weight decay on the projection and a higher

@@ -7,6 +7,7 @@ promotion into a maintained collection or by discarding its results and runs.
 
 | Topic | Question | Opened |
 | --- | --- | --- |
+| [order_gates](order_gates/README.md) | Do independent query-dependent gates on each polynomial order improve query + W decay attention without a distance-dependent forget gate? m = 8 and 10 are running on ORCD. | 2026-11-07 |
 | [even_powers](even_powers/README.md) | At 1×, both even-only models finish near PPL 14.62 and beat full m=4; query remains behind full m=8. Does this basis merit further study? | 2026-11-03 |
 | [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? At 2.5× W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8 and leaves key–query level. | 2026-10-29 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How do coefficient fits reveal capacity and conditioning, and can a dense generator distill the free solution and generalize to fresh sequences? | 2026-10-23 |
