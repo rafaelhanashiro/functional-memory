@@ -102,15 +102,16 @@ done
 ```
 
 The intercept-and-odd run `r0bdac8e1b97b` is hosted on ORCD and uses the existing
-degree-seven Mosaic kernel on one H100. From its worktree after committing the
-frozen execution inputs:
+degree-seven Mosaic kernel on one H200 (Hopper, sm90, the H100's kernels), which Slurm
+expected to start days before an H100. From its worktree after committing the frozen
+execution inputs:
 
 ```bash
 RUN=r0bdac8e1b97b
 sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
-  --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+  --gres=gpu:h200:1 \
   scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
-  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H100
+  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H200
 ```
 
 Acceptance checks retained orders, gradients, kernel correctness, backbone
