@@ -157,8 +157,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | --- | --- | --- | ---: | ---: | ---: |
 | FoX NoPE + W decay | `r4a80e28ce0a7` | complete | 13.8734 | 7500 | 13.8755 |
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
-| Endpoint query-key distance decay + W decay | `r02f984133092` | planned | — | — | — |
-| Bounded query rate + W decay | `r4f169e5370da` | planned | — | — | — |
+| Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
+| Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
@@ -176,15 +176,29 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
   diagnostic sample) has the same median over the 210 layer-heads, 2.9 tokens;
   42 heads exceed 100 tokens with query-dependent decay against 31 with FoX.
 
+- Endpoint key dependence helps but does not reach FoX. The query–key gate
+  (`r02f984133092`) beats the query-only control at 26 of 28 evaluations:
+  by 1.21% at the best update (14.026 vs 14.198) and 1.20% at update 7,570.
+  From update 3,000 on it leads by 1.0–1.3% and closes 42–54% of the control's
+  gap to FoX. FoX still leads at all 28 evaluations, by 1.10% at the best update.
+- The bounded rate ties softplus. The sigmoid-rate run (`r4f169e5370da`) ends
+  at 14.197 vs 14.198 (best; −0.006%), within ±0.3% of the control from update
+  3,000 on.
+
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
 The methods differ only in how the same gate values attenuate distance; it is not
-a comparison of additional gate capacity or separately tuned optimization.
+a comparison of additional gate capacity or separately tuned optimization. The two
+ablations run on the Mosaic kernels, the two earlier runs on the blocked reference.
+Their only numerical difference is BF16 rounding of attention weights and score
+gradients (see [Attention kernels](#attention-kernels)). Both ablations were preempted
+once and resumed from their latest checkpoint.
 
 ## Open decision
 
-Determine whether endpoint key dependence or the bounded-rate nonlinearity
-closes the gap with cumulative FoX. The completed query-only softplus-rate run
-trails cumulative FoX throughout training; the two new ablations are pending.
+Endpoint key dependence closes about half of the query-only gap to cumulative
+FoX, and the bounded rate changes nothing. Decide whether to extend the endpoint
+form (for example a second seed, or richer endpoint features) or close the topic:
+discard it, or promote it as its own collection.
 
 ## Regeneration
 
