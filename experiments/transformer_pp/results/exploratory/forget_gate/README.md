@@ -168,7 +168,7 @@ and learned per-head score scale. The only scientific configuration change is
 and initialization together. This distinguishes it from the plain-score sigmoid
 run `reeb92d46a95d`, which also removes QK normalization.
 
-The new run is planned for Kennel B300, seed 42, the same data and 2,048-token
+The new run uses Kennel B300, seed 42, the same data and 2,048-token
 context, and 7,570 updates (1×); gate projection weight decay remains 0.1. Its
 result is pending. The explicit selection includes this run and its existing
 softmax control. The study README gives its launch command.

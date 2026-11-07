@@ -3,10 +3,36 @@
     "path": "experiments/transformer_pp/runs/rac200ce11221/config.yaml",
     "sha256": "5caa9fb2005cc6b8e8d9243d023ed338699fdbcfe7ae9dc09b88056026b93b37"
   },
+  "frozen_execution_sha256": "900f9e9c8573d1e8e8cea79030587d9622db1817dbdf988629b7769e1ecfad38",
   "home_cluster": "kennel",
   "label": "softmax-sigmoid-forget-gate-no-rope-qk-norm",
   "name": "softmax-sigmoid-forget-gate-no-rope-qk-norm",
   "record_schema_version": 1,
   "run_id": "rac200ce11221",
-  "status": "planned"
+  "source_commit": "1c22f87a5bb87378427628da9fce3c5960e09026",
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:b300:1",
+      "--nodelist=akita",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=rac200ce11221",
+      "--output=experiments/transformer_pp/runs/rac200ce11221/training.log",
+      "--error=experiments/transformer_pp/runs/rac200ce11221/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/rac200ce11221/config.yaml",
+      "1c22f87a5bb87378427628da9fce3c5960e09026",
+      "1",
+      "B300"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "238201",
+    "submitted_utc": "2026-11-07T05:28:56.826001+00:00"
+  }
 }
