@@ -881,8 +881,10 @@ The [query-distance exploratory comparison](results/exploratory/query_distance_d
 adds query (`rabf7547013ca`) and query–key (`r9f910696c11e`) gates independently
 for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
 and 1× budget. Home cluster: Kennel. The blocked implementation has additional
-per-order gate arithmetic; use one GPU per run, qualify memory/runtime, and
-choose a long allocation when the pilot does not fit 24 hours. These jobs have
+per-order gate arithmetic; use one GPU per run and begin qualification on
+`standard` while its allowance is available. Use `long` when the pilot measures
+a runtime beyond the 24-hour allocation (22 hours after acceptance's reserve),
+or when the applicable standard allowance is already committed. These jobs have
 no scheduling dependencies on each other.
 
 From the isolated `codex/degree-dependent-fox` worktree, after committing its
@@ -890,13 +892,19 @@ frozen execution set:
 
 ```bash
 for run in rabf7547013ca r9f910696c11e; do
-  sbatch --partition=long --time=7-00:00:00 --job-name="$run" \
+  sbatch --partition=standard --time=1-00:00:00 --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch \
     experiments.transformer_pp.per_order_decay_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 done
 ```
+
+If the measured pilot exceeds the available wall time, acceptance retains its
+timing projection and stops before training. Move that run to `long` with an
+adequate limit while keeping its recipe and ID. Requeue a running job before
+changing its allocation: its launcher must resolve the new time limit so the
+acceptance budget matches the scheduler's budget.
 
 The adapter pins each control's recipe and rejects unrelated scientific changes.
 It collapses duplicate order axes, removes the zero key projection when present,
