@@ -1,9 +1,10 @@
 # Transformer++
 
 How do attention variants perform under the Transformer++ recipe, and how do their
-comparisons change with the training-token budget? The budget is a per-run setting:
-the reference is 1× Chinchilla (about 4B tokens), and a run at another budget scales its
-schedule with the data: updates, warmup and validation cadence.
+comparisons change with the training-token budget and the model shape? Both are per-run
+settings: the reference is the 15-layer width-896 model at 1× Chinchilla (about 4B tokens),
+and [the recipe rules](#model-shapes-and-token-budgets) derive every other run's batch and
+schedule.
 This self-contained study owns its [recipe](recipe.yaml), [run index](runs.csv),
 [membership](sweep.yaml), and [results](results/README.md), including exploratory
 diagnostics. Reusable model, attention, data, optimizer, and runtime code live in
@@ -34,7 +35,8 @@ retain the established recipe, including its previously selected learning rate.
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
-and FFN down projections additionally scale by 1/sqrt(30). AdamW uses betas
+and FFN down projections additionally scale by 1/sqrt(2 × layers), 1/sqrt(30) at the
+reference's 15 layers. AdamW uses betas
 (0.9, 0.95), epsilon 1e-8, global gradient clipping at 1, and weight decay 0.1,
 excluding embeddings, normalization gains, biases, and attention coefficients.
 The untied output head decays.
@@ -46,18 +48,50 @@ updates and cosine decay to 0.0001 over the run. Validation uses 9,961,472 token
 1,500, then every 500 and at the final update. Individual diagnostic recipes
 specify their own fitting objective, trainable parameters, and stopping rule.
 
-### Token budgets
+### Model shapes and token budgets
 
-A run at another budget is the data-scaled reference: it copies its reference recipe
-and multiplies `optim.total_steps` (and so the cosine horizon), `optim.warmup_steps`
-(6.01% of the run), and the validation cadence (`train.eval_early_every`,
-`train.eval_early_until`, `train.eval_every`) by the budget's factor, rounding warmup
-to whole updates. Peak and floor learning rate, weight decay, batch, data order, seed,
+The study fixes the recipe's rules, not their values. Model shape and token budget are
+per-run settings; [`derive_recipe.py`](derive_recipe.py) derives a run's recipe from a
+partner run by these rules and changes nothing else:
+
+| Setting | Rule |
+| --- | --- |
+| Heads | width / value head width (64); key/value heads equal query heads |
+| SwiGLU width | 18/7 × width, rounded to a multiple of 64 |
+| 1× Chinchilla | 20 prediction tokens per parameter of the normalized-softmax model at that shape, held for every variant at the shape |
+| Batch | a shape change holds the update count: 256 × 2^k sequences, with k the nearest integer to log2(the shape's 1× parameters / 198,440,146); a budget change keeps the batch |
+| Updates | budget × 1× tokens / (batch × 2,048), rounded |
+| Warmup | 6.01% of the updates (455 of 7,570), rounded half up |
+| Validation | the reference's 4,864 validation sequences (`eval_batches` × batch); cadence × budget |
+| Learning rate | the partner's peak (0.001 unless a run sets another), floor 0.1 × peak; weight decay, betas and clipping unchanged |
+| Initialization | the reference rules; a nonzero query-coefficient projection std keeps its multiple of 1/sqrt(width) |
+
+| Shape | Layers × width | Heads | SwiGLU | 1× parameters | Batch | 1× updates | Warmup | `eval_batches` |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Reference | 15 × 896 | 14 | 2,304 | 198,440,146 | 256 | 7,570 | 455 | 19 |
+| 12-layer width 640 | 12 × 640 | 10 | 1,664 | 98,977,016 | 128 | 7,551 | 454 | 38 |
+
+At the 12-layer shape embeddings are 41% of the parameters (29% at the reference), so
+that step is 0.50× in total parameters, 0.41× without embeddings, and about 0.25× in
+compute. Derive and allocate a recipe from the worktree root:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <run_id> --layers 12 --width 640 --output /tmp/<label>.yaml  # add --budget 2.5 for 2.5×
+scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
+  --study experiments/transformer_pp --config /tmp/<label>.yaml --label <label>
+```
+
+A run at another budget is the data-scaled run at its shape: it multiplies
+`optim.total_steps` (and so the cosine horizon), `optim.warmup_steps`, and the validation
+cadence (`train.eval_early_every`, `train.eval_early_until`, `train.eval_every`) by the
+budget's factor. Peak and floor learning rate, weight decay, batch, data order, seed,
 and checkpoint interval stay the same.
-With the same shuffle seed, a longer run first sees exactly the tokens of a
-shorter one. The 12.0B-token training set covers up to about 22,900 updates
-without repeating data. `runs.csv` records each run's `training_steps`; compare
-runs at the same budget, or the same variant across budgets.
+Every run reads the same sequence stream from its start, so a run that reads fewer
+sequences sees a prefix of a longer run's tokens. The 12.0B-token training set covers up to about 22,900 updates at
+batch 256 (45,800 at 128) without repeating data. `runs.csv` records each run's shape,
+batch, peak learning rate, and `training_steps`; compare runs at the same shape and
+budget, or the same variant across shapes or budgets.
 
 | Budget | Updates | Warmup | Validation | Prediction tokens |
 | --- | ---: | ---: | --- | ---: |

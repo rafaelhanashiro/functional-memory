@@ -43,6 +43,22 @@ def test_pretrained_head_index_distinguishes_reconstruction_from_lm_loss(tmp_pat
     assert row["prediction_tokens"] == ""
 
 
+def test_index_exposes_the_model_shape_batch_learning_rate_and_parameter_count(tmp_path):
+    study = tmp_path / "study"
+    run = create_run(study, {"model": {"num_layers": 12, "hidden_size": 640, "num_heads": 10, "qk_head_dim": 64,
+                                       "value_head_dim": 64, "intermediate_size": 1664},
+                             "data": {"batch_size": 128, "sequence_length": 2049},
+                             "optim": {"learning_rate": 0.001, "total_steps": 7551}, "train": {"seed": 42}})
+    (run / "metadata.json").write_text(json.dumps({"parameter_count": 98977016}))
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        row = next(csv.DictReader(stream))
+    assert [row[key] for key in ("num_layers", "hidden_size", "num_heads", "value_head_dim", "intermediate_size")] \
+        == ["12", "640", "10", "64", "1664"]
+    assert (row["parameter_count"], row["batch_size"], row["peak_learning_rate"]) == ("98977016", "128", "0.001")
+    assert row["prediction_tokens"] == str(7551 * 128 * 2048)
+
+
 @pytest.mark.parametrize("outcome_source", ["terminal", "completion", "metadata", "record"])
 def test_index_keeps_fixed_input_fitting_outcomes_separate_from_validation(tmp_path, outcome_source):
     study = tmp_path / "study"
