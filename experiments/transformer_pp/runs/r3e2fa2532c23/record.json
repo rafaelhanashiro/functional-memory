@@ -7,5 +7,30 @@
   "name": "exp-l12-d640",
   "record_schema_version": 1,
   "run_id": "r3e2fa2532c23",
-  "status": "planned"
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=r3e2fa2532c23",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/model-scale/experiments/transformer_pp/runs/r3e2fa2532c23/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/model-scale/experiments/transformer_pp/runs/r3e2fa2532c23/training.log",
+      "--open-mode=append",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.acceptance",
+      "experiments/transformer_pp/runs/r3e2fa2532c23/config.yaml",
+      "3687bd10a381e01b406b0d55ebfad872b7eaed5c",
+      "1",
+      "B300,H100"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "238284",
+    "submitted_utc": "2026-11-07T07:29:21.261412+00:00"
+  }
 }
