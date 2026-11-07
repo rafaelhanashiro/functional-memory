@@ -148,6 +148,34 @@ evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
 recorded in `scaffolds/transformer/validation/README.md`.
 
+### Monitoring selected runs
+
+`scaffolds/launch/run_monitor.py` is a lightweight, read-only observer for explicitly
+selected runs. It combines canonical records with `squeue` and `sacct`, follows the
+latest submission through retries, and queues significant updates to an existing
+Codex chat with `codex queue --thread <id> --message <text> --resume`. Delivery
+depends on the user's Codex daemon and account remaining available; a successful
+queue command with a resume warning is recorded as unconfirmed, not as a resumed
+agent. Verify a real delivery when installing a monitor.
+
+Keep its JSON configuration, lock, state and log outside the repository. Required
+configuration keys are `thread_id`, `state_path`, `codex`, `end_utc` (UTC ISO8601)
+and `runs`, whose entries have absolute `path` and optional `label` and
+`control_run_id`. Validate observations with:
+
+```bash
+python3 -m scaffolds.launch.run_monitor --config /absolute/monitor/config.json --dry-run
+```
+
+After testing, cron can invoke a frozen copy of the standard-library helper every
+five minutes on the login node; no GPU allocation is needed. The observer reports
+state changes, failures, stalls and six-hour progress summaries, with duplicate
+suppression. By default, training inactivity is flagged after 20 minutes and
+acceptance inactivity after 60 minutes. Failed runs stay observed for retries.
+Monitoring disables itself after both selected runs complete or its configured
+deadline, after queuing the corresponding update; remove its owned cron entry
+when disabled. Record the installed helper's source hash beside its configuration.
+
 ## ORCD / Engaging (MIT)
 
 - **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.
