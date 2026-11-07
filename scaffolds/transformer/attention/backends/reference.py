@@ -200,11 +200,19 @@ def blocked_dot_product_attention(
             "bqhd,bkhd->bhqk", query, k,
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
+        if endpoint and per_order:
+            # Share the time slice across orders so its transpose combines all
+            # order gradients locally before updating the full query buffer.
+            # Repeating this slice per order produces nested updates that XLA
+            # can fuse into a GPU kernel whose device stack overflows.
+            query_gate_block = jax.lax.dynamic_slice_in_dim(
+                padded_query_gate_input, start, block_size, axis=1,
+            )
+
         def order_log_alpha(order):
             # Only one [B,H,Q,K] rate block at a time; no full pair-by-order tensor.
             if endpoint:
-                projected = jax.lax.dynamic_slice_in_dim(padded_query_gate_input, start, block_size, axis=1)
-                projected = jnp.swapaxes(projected[..., order], 1, 2)[..., None]
+                projected = jnp.swapaxes(query_gate_block[..., order], 1, 2)[..., None]
                 key_projected = key_gate[..., order]
                 valid = (jnp.isfinite(projected) & jnp.isfinite(key_projected)
                          & jnp.isfinite(gate_log_rate[:, order, 0])[None, :, None, None])

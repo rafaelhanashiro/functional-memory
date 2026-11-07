@@ -174,24 +174,24 @@ def test_nonfinite_query_projection_is_not_hidden_by_softplus(bad):
 
 
 @pytest.mark.gpu
-def test_gpu_per_order_forward_and_backward():
+@pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
+def test_gpu_per_order_forward_and_backward(endpoint):
     if jax.default_backend() != "gpu":
         pytest.skip("GPU qualification")
-    for endpoint in (False, True):
-        arrays = list(inputs(2048, 4, width=64, value_width=64))
-        arrays[:3] = [a.astype(jnp.bfloat16) for a in arrays[:3]]
-        cotangent = jnp.asarray(np.random.default_rng(5).normal(size=arrays[2].shape), jnp.bfloat16)
-        with jax.enable_x64(), jax.default_matmul_precision("highest"):
-            out, backward = jax.vjp(partial(dense, endpoint=endpoint), *[a.astype(jnp.float64) for a in arrays])
-            expected = jax.tree.map(np.asarray, (out, backward(cotangent.astype(jnp.float64))))
-        def evaluate(*args):
-            out, backward = jax.vjp(partial(operation, endpoint=endpoint), *args)
-            return out, backward(cotangent)
-        with jax.default_matmul_precision("highest"):
-            actual = jax.jit(evaluate)(*arrays)
-        for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
-            got = np.asarray(got, np.float64)
-            assert np.isfinite(got).all()
-            error = np.linalg.norm(got - want) / max(np.linalg.norm(want), 1e-12)
-            assert error < .01, error
-        test_model_initialization_matches_control_and_decay_masks("query_key" if endpoint else "query")
+    arrays = list(inputs(2048, 4, width=64, value_width=64))
+    arrays[:3] = [a.astype(jnp.bfloat16) for a in arrays[:3]]
+    cotangent = jnp.asarray(np.random.default_rng(5).normal(size=arrays[2].shape), jnp.bfloat16)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        out, backward = jax.vjp(partial(dense, endpoint=endpoint), *[a.astype(jnp.float64) for a in arrays])
+        expected = jax.tree.map(np.asarray, (out, backward(cotangent.astype(jnp.float64))))
+    def evaluate(*args):
+        out, backward = jax.vjp(partial(operation, endpoint=endpoint), *args)
+        return out, backward(cotangent)
+    with jax.default_matmul_precision("highest"):
+        actual = jax.jit(evaluate)(*arrays)
+    for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+        got = np.asarray(got, np.float64)
+        assert np.isfinite(got).all()
+        error = np.linalg.norm(got - want) / max(np.linalg.norm(want), 1e-12)
+        assert error < .01, error
+    test_model_initialization_matches_control_and_decay_masks("query_key" if endpoint else "query")
