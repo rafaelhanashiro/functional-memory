@@ -111,6 +111,9 @@ class ModelConfig:
     # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
     attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
+    # Independent input-form query-distance gate for every polynomial order, including zero.
+    # Every order starts as a copy of the corresponding shared gate.
+    attention_forget_gate_per_order: bool = False
     # Apply optim.weight_decay to the coefficient projections: the query W and, under
     # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
@@ -234,6 +237,7 @@ class ModelConfig:
                 and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
                 and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
                 and self.attention_forget_gate_form == "input" and integer_degree
+                and not self.attention_forget_gate_per_order
                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
                                            gate=self.attention_forget_gate_conditioning)
                 and self.positional_encoding in ("rope", "none")
@@ -461,6 +465,16 @@ class ModelConfig:
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                       and activation != "identity")
+        if not isinstance(self.attention_forget_gate_per_order, bool):
+            raise ValueError("model.attention_forget_gate_per_order must be a boolean")
+        if self.attention_forget_gate_per_order and (
+                not self.attention_forget_gate or not polynomial
+                or self.attention_forget_gate_form != "input"
+                or self.attention_forget_gate_mode != "query_distance"
+                or self.attention_forget_gate_rate_activation != "softplus"
+                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
+            raise ValueError("Per-order gates require input-form softplus query-distance polynomial "
+                             "attention with RoPE/NoPE on the blocked backend")
         if self.attention_forget_gate_form != "input" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
                 or not polynomial):

@@ -149,7 +149,7 @@ next step. The endpoint dQ pass costs about twice the gate-free one, for its sof
 
 ## Results
 
-The selection pins all four runs explicitly. Best PPL is the lowest validation PPL
+The selection pins all six runs explicitly. Best PPL is the lowest validation PPL
 over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
@@ -159,11 +159,14 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 | Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
+| Per-order query distance + W decay | `rabf7547013ca` | planned | — | — | — |
+| Per-order query-key distance + W decay | `r9f910696c11e` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 
 Endpoint query–key and bounded-rate variants compare against the query-dependent control.
+Each per-order variant compares against its corresponding shared-gate control.
 Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
 <!-- END GENERATED RESULTS -->
 
@@ -186,19 +189,52 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
   3,000 on.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
-The methods differ only in how the same gate values attenuate distance; it is not
-a comparison of additional gate capacity or separately tuned optimization. The two
+The four completed runs differ in their decay rule, without separately tuned optimization.
+The two per-order extensions below increase gate capacity and are still pending. The two
 ablations run on the Mosaic kernels, the two earlier runs on the blocked reference.
 Their only numerical difference is BF16 rounding of attention weights and score
 gradients (see [Attention kernels](#attention-kernels)). Both ablations were preempted
 once and resumed from their latest checkpoint.
 
+## Independent per-order gates
+
+Added 2026-11-07 at the user's request. Each degree-r contribution has its own
+positive distance-decay rate, including r=0:
+
+`weight[t,i] = sum_(r=0..4) c_r(x_t) s_ti^r exp(-(t-i) lambda[t,i,r])`.
+
+| Variant | Run | Shared-gate control | Rate |
+| --- | --- | --- | --- |
+| Query, NoPE, WD | `rabf7547013ca` | `r3e26412b2811` | `exp(A_r) softplus(wq_r·x_t + b_r)` |
+| Query–key, NoPE, WD | `r9f910696c11e` | `r02f984133092` | `exp(A_r) softplus(wq_r·x_t + wk_r·x_i + b_r)` |
+
+All gate parameters are per layer, head, and order. Every order starts as an
+exact copy of the shared gate's parameters; key projections start at zero.
+This preserves the control's initial attention function up to floating-point
+summation differences. Polynomial coefficients remain query-only and unchanged.
+Both runs retain the controls' Transformer++ recipe: degree four, NoPE, QK
+RMSNorm with learned per-head scale, output head RMSNorm, 2,048 tokens, global
+batch 256, seed 42, and 7,570 updates. WD 0.1 applies to coefficient W and gate
+Wq/Wk; polynomial a,b and gate A,bias remain exempt. Counts are 200,339,386
+(query) and 201,280,186 (query–key).
+
+The new mechanism uses the blocked backend; Mosaic currently implements only
+shared gates. This matches the query control's FP32 attention arithmetic; the
+query–key control used Mosaic's BF16 tensor-core weights/score gradients, a
+numerical implementation difference to retain when interpreting results.
+Qualification checks independent FP64 outputs/gradients, every order's decay,
+causality and invalid values, duplicated initialization, optimizer masks,
+full-model initialization recovery, and the shared GPU pilot/resume checks.
+Rates and half-lives are retained per order in the run's diagnostics. These
+runs test whether different orders benefit from different learned ranges.
+They do not test cumulative per-order forgetting or a larger polynomial degree.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
-FoX, and the bounded rate changes nothing. Decide whether to extend the endpoint
-form (for example a second seed, or richer endpoint features) or close the topic:
-discard it, or promote it as its own collection.
+FoX, and the bounded rate changes nothing. Evaluate the two per-order extensions against their matched shared gates.
+Then decide whether to run additional seeds or close the topic by discarding it
+or promoting it as its own collection.
 
 ## Regeneration
 

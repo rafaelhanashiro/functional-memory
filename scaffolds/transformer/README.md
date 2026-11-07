@@ -130,6 +130,17 @@ Rates on nonzero inputs need not match. Both new fields default to the historica
 and rejected. Gate diagnostics report endpoint rates over causal pairs when
 key-conditioned, otherwise over query tokens.
 
+`attention_forget_gate_per_order: true` gives every order, including zero, its
+own softplus query-distance gate on the blocked backend. With query-only
+coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
+The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
+`query_key` adds `wk_r·x_i` inside softplus. Gate arrays add an order axis
+before their final channel axis. All orders initially duplicate the shared
+gate's draw; key projections start at zero. The copies then learn independently.
+Projection matrices receive WD; rates and biases remain exempt. Diagnostics
+retain the layer, head, and order axes. Cumulative gates, sigmoid rates, and
+other backends reject this option. Existing recipes default to a shared gate.
+
 `attention_forget_gate_form: input` (the default) is that gate. The `constant` form
 drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,

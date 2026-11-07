@@ -874,3 +874,33 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
+
+## Per-order query-distance FoX gates
+
+The [query-distance exploratory comparison](results/exploratory/query_distance_decay/README.md)
+adds query (`rabf7547013ca`) and query–key (`r9f910696c11e`) gates independently
+for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
+and 1× budget. Home cluster: Kennel. The blocked implementation has additional
+per-order gate arithmetic; use one GPU per run, qualify memory/runtime, and
+choose a long allocation when the pilot does not fit 24 hours. These jobs have
+no scheduling dependencies on each other.
+
+From the isolated `codex/degree-dependent-fox` worktree, after committing its
+frozen execution set:
+
+```bash
+for run in rabf7547013ca r9f910696c11e; do
+  sbatch --partition=long --time=7-00:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+The adapter pins each control's recipe and rejects unrelated scientific changes.
+It collapses duplicate order axes, removes the zero key projection when present,
+and verifies the full original query-control initialization fingerprint.
+Production begins only after CPU/GPU correctness, initialization, the full-recipe
+pilot and checkpoint-resume checks pass. The shared launcher records the allocated
+GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.

@@ -335,6 +335,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
     exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
+    On the blocked backend, an extra order axis applies independent decay inside the
+    polynomial sum. These gates include the constant term.
     """
     from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
 
@@ -344,6 +346,10 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     if decay_mode not in ("cumulative", "query_distance"):
         raise ValueError(f"Unknown query decay mode: {decay_mode}")
     endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    per_order = ((log_decay is not None and log_decay.ndim == 4)
+                 or (query_gate_input is not None and query_gate_input.ndim == 4))
+    if per_order and backend != "blocked":
+        raise ValueError("Per-order gates currently require the blocked backend")
     if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
                      or log_decay is not None or decay_mode != "query_distance"):
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")

@@ -11,6 +11,24 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Per-order query-distance gates (2026-11-07)
+
+The blocked polynomial backend supports independent softplus distance gates for
+every order, including zero, conditioned on the query or query–key endpoints.
+The focused CPU suites pass independent FP64 output and all-parameter-gradient
+checks, matched full-model starts, per-order statistics, zero-order decay,
+causality, invalid inputs, WD masks, and historical checkpoint compatibility.
+The existing shared-gate and endpoint regressions also pass. Recipes are guarded
+against unrelated changes, and full-model initialization is recovered by
+collapsing the duplicated gate axes.
+
+`tests/test_per_order_decay.py -m gpu` checks both variants at 2,048 tokens with
+64-channel BF16 Q/K/V against FP64, including every gate gradient. This new
+hardware qualification, the full-recipe pilot with memory/runtime measurements,
+and checkpoint resume must pass through shared acceptance before production.
+GPU qualification is pending for this revision; CPU success alone does not
+qualify the new mechanism. Each run retains the authoritative acceptance result.
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders

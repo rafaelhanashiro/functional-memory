@@ -1,5 +1,5 @@
-question: Can endpoint query-key dependence or a bounded positive rate improve query-dependent
-  distance decay without intervening gates?
+question: Can endpoint dependence, bounded rates, or independent per-order decay improve
+  query-distance FoX?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -17,6 +17,9 @@ settings:
   - model.attention_forget_gate_mode
   - model.attention_forget_gate_conditioning
   - model.attention_forget_gate_rate_activation
+  - model.attention_forget_gate_per_order
+  per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..4; duplicate
+    shared gates at initialization
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -98,3 +101,19 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r4f169e5370da/best_validation.json
       sha256: 8d1a590d2cadc2dd8751aea299a7a557c7635e95427d3a2dd2679bdb81c43bbc
+- study: transformer_pp
+  run_id: rabf7547013ca
+  role: per_order_query
+  label: Per-order query distance + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rabf7547013ca/config.yaml
+      sha256: e366df615b823450cffef0aeacfaa9034b67d389a5ff049b283684d4ce4609ab
+- study: transformer_pp
+  run_id: r9f910696c11e
+  role: per_order_query_key
+  label: Per-order query-key distance + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9f910696c11e/config.yaml
+      sha256: 7ccbb1c55e0c8f0974332ecf4bf6d3c40a04207a2dcdb486dcfbeab9043a2fb1

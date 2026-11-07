@@ -27,6 +27,9 @@ class AttentionParameterSpec:
     # A named random draw (RANDOM_INITIALIZERS) from the same mechanism stream; it replaces
     # ``initial``, which then only fixes the shape.
     initializer: str | None = None
+    # Draw the shared control's array once and repeat it on this axis at initialization.
+    # The stored copies are independent trainable parameters afterwards.
+    repeat_initial_axis: int | None = None
 
 
 def _mamba2_dt_bias(key, shape):
@@ -177,7 +180,9 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         specs += forget_gate_specs(hidden_size=config.hidden_size,
                                    form=getattr(config, "attention_forget_gate_form", "input"),
                                    conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
-                                   rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"))
+                                   rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
+                                   order_count=(config.attention_degree + 1
+                                                if getattr(config, "attention_forget_gate_per_order", False) else None))
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 
@@ -215,7 +220,12 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
             if spec.initializer:
                 if spec.initial_std or spec.initializer not in RANDOM_INITIALIZERS:
                     raise ValueError(f"{spec.name} needs one known random initialization")
-                value = RANDOM_INITIALIZERS[spec.initializer](name_key, shape)
+                if spec.repeat_initial_axis is None:
+                    value = RANDOM_INITIALIZERS[spec.initializer](name_key, shape)
+                else:
+                    axis = spec.repeat_initial_axis % len(shape)
+                    draw = RANDOM_INITIALIZERS[spec.initializer](name_key, shape[:axis] + shape[axis + 1:])
+                    value = jnp.broadcast_to(jnp.expand_dims(draw, axis), shape)
             else:
                 value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
         values[spec.name] = value

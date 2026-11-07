@@ -159,6 +159,7 @@ def attention_identity(config) -> dict:
     forget_gate_form = getattr(config.model, "attention_forget_gate_form", "input")
     gate_conditioning = getattr(config.model, "attention_forget_gate_conditioning", "query")
     gate_rate_activation = getattr(config.model, "attention_forget_gate_rate_activation", "softplus")
+    gate_per_order = getattr(config.model, "attention_forget_gate_per_order", False)
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
@@ -384,6 +385,16 @@ def attention_identity(config) -> dict:
                                    + "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
                                    "DeltaNet's initialization") if forget_gate else "")),
         )
+    if gate_per_order:
+        identity["attention_forget_gate_per_order"] = True
+        identity["forget_gate_parameter_count"] *= degree + 1
+        identity["attention_formula"] = (
+            f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r exp(-(t-i) lambda_tir) v_i; "
+            "lambda_tir = exp(A_log_r) softplus(x_t w_query_r + "
+            + ("x_i w_key_r + " if gate_conditioning == "query_key" else "")
+            + "dt_bias_r); c_r uses the configured query-only coefficient generator and factorial scales; "
+            "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
+            "by duplicating the shared gate; x is the pre-attention RMSNorm activation")
     if forget_gate and not query_conditioned:
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer); the configuration admits no other mode or form.
@@ -768,6 +779,11 @@ def forget_gate_report(params, raw_layers, *, form: str = "input", conditioning:
                       sample_domain="all causal query-key pairs in the diagnostic sample, including diagonal",
                       key_kernel_l2=_serializable(np.linalg.norm(key_kernel, axis=-1)))
         report["finite"] = bool(report["finite"] and np.isfinite(key_kernel).all())
+    if kernel.ndim == 4:
+        report["axes"] = ["layer", "head", "polynomial_order"]
+        report["formula"] = ("log alpha_tir = -exp(A_log_r) softplus(x_t w_query_r + "
+                             + ("x_i w_key_r + " if conditioning == "query_key" else "")
+                             + "dt_bias_r); degree-r weight multiplied by exp((t-i) log alpha_tir)")
     return report
 
 

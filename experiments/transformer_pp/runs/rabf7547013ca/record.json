@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rabf7547013ca/config.yaml",
+    "sha256": "e366df615b823450cffef0aeacfaa9034b67d389a5ff049b283684d4ce4609ab"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-per-order-query-gate-nope-wd",
+  "name": "query-m4-per-order-query-gate-nope-wd",
+  "record_schema_version": 1,
+  "run_id": "rabf7547013ca",
+  "status": "planned"
+}
