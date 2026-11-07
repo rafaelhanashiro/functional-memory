@@ -99,9 +99,12 @@ def test_supported_backends_accept_the_combination(backend):
     replace(_config().model, attention_backend=backend, qk_head_dim=64, value_head_dim=64)
 
 
-def test_forget_gate_does_not_silently_change_path_softmax():
-    with pytest.raises(ValueError):
-        ModelConfig(positional_encoding="path", attention_forget_gate=True)
+def test_forget_gate_on_path_softmax_is_path_fox():
+    # The gate is applied, never silently dropped: PaTH-FoX softmax is qualified in test_path_attention.py.
+    model = ModelConfig(positional_encoding="path", attention_forget_gate=True)
+    assert model.path_kernel() == "softmax"
+    assert {"forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias"} <= {
+        spec.name for spec in attention_parameter_specs(model)}
 
 
 def test_path_rejects_query_distance_decay():

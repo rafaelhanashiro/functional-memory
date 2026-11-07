@@ -97,14 +97,15 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
 
-For unnormalized nonlinear query-polynomial attention on the blocked backend,
 `model.attention_forget_gate: true` adds the existing per-layer/head gate
 `log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
-the pre-attention RMSNorm activation. `attention_forget_gate_mode: cumulative`
-(the historical default) multiplies weights by `exp(L_t - L_i)`, where
-`L_t = sum_{j<=t} log(alpha_j)`. The `query_distance` mode instead multiplies by
-`exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
-Both apply attenuation after the polynomial, keep diagonal attenuation one,
+the pre-attention RMSNorm activation, to softmax, unnormalized exponential, and
+unnormalized nonlinear query-polynomial attention ([Forget gate](#forget-gate) lists
+positions and backends). `attention_forget_gate_mode: cumulative` (the historical
+default) multiplies weights by `exp(L_t - L_i)`, where `L_t = sum_{j<=t} log(alpha_j)`.
+For query polynomials on the blocked backend, the `query_distance` mode instead
+multiplies by `exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+Both modes apply attenuation after the polynomial, keep diagonal attenuation one,
 and preserve the coefficient generator and attention-output normalization.
 They share identical parameters and initialization: the gate projection decays,
 while `A_log` and `b_dt` do not. The separate coefficient-projection decay switch
@@ -134,8 +135,9 @@ drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
 ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for heads
 `h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
-form is qualified only with the cumulative mode under RoPE or no positional encoding
-on the blocked backend; configuration rejects it with `query_distance` or PaTH.
+form is qualified only for query polynomials with the cumulative mode under RoPE or no
+positional encoding on the blocked backend; configuration rejects it with `query_distance`,
+PaTH, softmax, or the exponential.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -500,6 +502,26 @@ metrics; no held-out evaluation is implied. Shared-table qualification checks
 original replay before projection and compares the training forward with the
 projected model; changing the initial function is not counted as fitting progress.
 
+### Forget gate
+
+`attention_forget_gate: true` adds the Forgetting Transformer's decay with Gated DeltaNet's
+per-head gate (`attention/forget_gate.py`): `log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias)`
+from the block's normalized input, with GDN's initialization (`exp(A_log)` uniform on (0, 16),
+`softplus(dt_bias)` log-uniform on [0.001, 0.1]); `w_alpha` takes weight decay, `A_log` and
+`dt_bias` do not. With `L_t = sum_(j<=t) log alpha_j` (FP32), each weight from key `i` to query
+`t` is multiplied by `prod_(j=i+1..t) alpha_j = exp(L_t - L_i)`, one difference per pair:
+
+| Kernel | Gated weight | Positions | Backends |
+| --- | --- | --- | --- |
+| softmax | `softmax_i(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
+| unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
+| nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
+
+Softmax and the exponential take the cumulative mode with the input gate form only.
+`positional_encoding: none` skips RoPE, so positions enter only through the causal mask
+and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
+parameters.
+
 ### PaTH position encoding
 
 `positional_encoding: path` replaces RoPE with PaTH (Yang et al., arXiv:2505.16381):
@@ -514,25 +536,25 @@ convolution with SiLU, and L2 normalization per head, and
 (projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
 so the backbone keeps the softmax control's weights; all but the bias take weight decay.
 
-Set `attention_forget_gate: true` to combine PaTH with FoX for a tanh query
-polynomial. Both the blocked reference and fused kernels multiply the polynomial
-weight by `exp(L_t - L_s)`, where `L` is the cumulative per-token log forget gate.
-The public `path_attention` and `fused_path_attention` APIs accept this optional
-FP32 `[batch, time, heads]` array as `log_decay`; its gradients propagate through
-the cumulative sum into the gate parameters. Causal differences are masked before
-exponentiation, and gate values are never factored into separate global exponentials.
-The fused backward adds O(BTH) gate-gradient buffers. Gated softmax is unsupported.
-Only `attention_forget_gate_mode: cumulative` with the input gate form composes with
-PaTH; configuration rejects `query_distance` and the constant form with PaTH.
+Set `attention_forget_gate: true` to combine PaTH with FoX (PaTH-FoX). With `L` the
+cumulative per-token log forget gate, softmax and the exponential add `L_t - L_s` to each
+transported score, and the tanh query polynomial multiplies its weight by `exp(L_t - L_s)`,
+on the blocked reference and the fused kernels alike. The public `path_attention` and
+`fused_path_attention` APIs accept this optional FP32 `[batch, time, heads]` array as
+`log_decay` for every kernel; its gradients propagate through the cumulative sum into the
+gate parameters. Causal differences are masked before exponentiation, and gate values are
+never factored into separate global exponentials. The fused backward adds O(BTH)
+gate-gradient buffers. Only `attention_forget_gate_mode: cumulative` with the input gate
+form composes with PaTH; configuration rejects `query_distance` and the constant form with PaTH.
 
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
 query chunk against the key chunk behind it and moves the queries through that chunk's
 Householder product. Automatic differentiation of a rematerialized forward pass gives the
-derivative. It supports softmax (normalized, with a running maximum) and tanh
-query-conditioned unnormalized polynomials, is tested against the definition and the
-authors' PyTorch reference, and is the reference for the fused kernels and their
-diagnostics.
+derivative. It supports softmax (normalized, with a running maximum), the unnormalized
+exponential, and tanh query-conditioned unnormalized polynomials, each with the forget
+gate above. It is tested against the definition and the authors' PyTorch reference (with and
+without their gate), and is the reference for the fused kernels and their diagnostics.
 
 `attention_backend: fused` runs FLA's fused Triton kernels
 (`attention/backends/fla_path_attention.py`, through `triton_port`, below). Softmax
@@ -544,20 +566,28 @@ query polynomial uses the same launches with FLA's six softmax-dependent kernels
 by a fork (`fla_path_polynomial_kernels.py`): `o_t = sum_s p_t(s_ts) v_s` without
 normalization, so no running maximum, normalizer, or `delta`; the backward's softmax
 derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that visit a
-(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. Transport, Householder, and
-UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
-FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
-by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
-kernel fails to launch at width 128), and degree 1-4; `auto` selects
-it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
+(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. The unnormalized
+exponential is FLA's softmax output times its row sum `2^lse` (FLA's base-2 log-sum-exp);
+its derivative is FLA's softmax backward given `do 2^lse` and `delta = 0`, which is exact
+because the row sum's own derivative cancels `delta`. For softmax and the exponential,
+the forget gate enables FLA's own gate path in six of the kernels (`USE_G`, `USE_GATE`);
+FLA adds its gate to the unscaled scores, so the kernels receive `L sqrt(d_K)`, and the
+four kernels that form its gradient each write a separate FP32 part that the wrapper sums.
+The polynomial fork multiplies each weight by `exp(L_t - L_s)` itself and receives `L`.
+Transport, Householder, and UT-transform arithmetic are FLA's. It needs an sm90+ GPU,
+`train.dtype: bfloat16` (with FP32 tiles one of FLA's kernels exceeds the shared memory), a
+prediction length divisible by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to
+64 on B300, where FLA's dq kernel fails to launch at width 128), and degree 1-4; `auto`
+selects it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
 as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
 rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
 errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
 and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at the
 production shape). Its backward accumulates dk, dv, dw, and the split products'
-gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise repeatable;
-outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are
-in [validation](validation/README.md#fused-path-attention-kernels).
+gradient (and the gate's) with FP32 atomic additions, so dk, dv, dw, dbeta, and the decay
+gradient are not bitwise repeatable; outputs, dq, and the coefficient gradients are.
+Accuracy, speed, and training pilots are in
+[validation](validation/README.md#fused-path-attention-kernels).
 
 ### Unnormalized output scaling
 

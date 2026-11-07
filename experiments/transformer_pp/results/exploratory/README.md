@@ -11,7 +11,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? At 2.5× W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8 and leaves key–query level. | 2026-10-29 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How do coefficient fits reveal capacity and conditioning, and can a dense generator distill the free solution and generalize to fresh sequences? | 2026-10-23 |
 | [coefficient_forms](coefficient_forms/README.md) | Does the query generator's form matter at m = 4: pure tanh, and affine sigmoid against affine tanh? | 2026-10-27 |
-| [forget_gate](forget_gate/README.md) | Does a FoX forget gate improve m = 4 tanh query attention, including its combination with PaTH and projection decay? | 2026-10-27 |
+| [forget_gate](forget_gate/README.md) | Does a FoX forget gate improve tanh query attention at m = 4, including its combination with PaTH and projection decay, and at m = 8? | 2026-10-27 |
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale with direction weight decay improve degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? | 2026-10-28 |

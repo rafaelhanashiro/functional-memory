@@ -163,14 +163,14 @@ def test_interpreted_per_head_prefix_offsets_leave_attention_unchanged():
     _check(_interpreted(shifted, cotangent), _interpreted(operands, cotangent), 1e-3)
 
 
-def test_forget_gate_rejects_wrong_shape_and_unsupported_softmax():
+def test_forget_gate_rejects_wrong_shape_and_dtype():
+    """Softmax and the exponential take the same gate (test_path_attention_fused.py)."""
     operands, _, _ = _inputs(time=128, seed=9)
     with triton_port.interpreter(HOPPER):
-        with pytest.raises(ValueError):
-            fused_path_attention(*operands[:5], kernel="query_polynomial", coefficients=operands[5],
-                                 log_decay=operands[-1][..., None])
-        with pytest.raises(ValueError):
-            fused_path_attention(*operands[:5], kernel="softmax", log_decay=operands[-1])
+        for wrong in (operands[-1][..., None], operands[-1].astype(jnp.bfloat16)):
+            with pytest.raises(ValueError):
+                fused_path_attention(*operands[:5], kernel="query_polynomial", coefficients=operands[5],
+                                     log_decay=wrong)
 
 
 def _require_gpu():

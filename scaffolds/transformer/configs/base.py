@@ -252,8 +252,8 @@ class ModelConfig:
         """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
         if self.positional_encoding != "path":
             return None
-        if self.attention_normalization and self.attention_degree is None:
-            return "softmax"
+        if self.attention_degree is None:
+            return "softmax" if self.attention_normalization else "exp"
         return "query_polynomial"
 
     def __post_init__(self):
@@ -287,13 +287,14 @@ class ModelConfig:
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"model.{name} must be a positive integer")
         if self.positional_encoding == "path":
-            softmax = (self.attention_normalization and self.attention_degree is None
-                       and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
+            # Softmax, or the unnormalized exponential.
+            exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                           and self.quadratic_mode == "fixed")
             query_tanh = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                           and self.attention_coefficient_activation == "tanh")
-            if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
-                raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
-                                 "unnormalized polynomial attention")
+            if self.attention_mechanism != "dot_product" or not (exponential or query_tanh):
+                raise ValueError("PaTH position encoding supports softmax, unnormalized exponential, and tanh "
+                                 "query-conditioned unnormalized polynomial attention")
             if self.attention_backend not in ("auto", "blocked", "fused"):
                 raise ValueError("PaTH attention runs on model.attention_backend blocked (its chunked JAX "
                                  "implementation), fused (FLA's Triton kernels), or auto")
@@ -453,10 +454,19 @@ class ModelConfig:
             raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
         if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
             raise ValueError("A forget gate form requires the forget gate")
+        # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
+        # Transformer; with PaTH, PaTH-FoX); nonlinear query-coefficient polynomials multiply their
+        # weights by exp(L_t - L_i).
+        exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                       and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
+        polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                      and activation != "identity")
         if self.attention_forget_gate_form != "input" and (
-                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
-            raise ValueError("The constant forget gate form is qualified only as cumulative decay with RoPE or "
-                             "no positional encoding on the blocked backend")
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
+                or not polynomial):
+            raise ValueError("The constant forget gate form is qualified only as cumulative decay of nonlinear "
+                             "query-coefficient polynomials with RoPE or no positional encoding on the blocked "
+                             "backend")
         if self.attention_forget_gate_conditioning not in ("query", "query_key"):
             raise ValueError("Unknown forget gate conditioning")
         if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
@@ -474,15 +484,18 @@ class ModelConfig:
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
             or self.attention_backend == "mosaic" and self.mosaic_decay_supported())
         if self.attention_forget_gate and (
-                self.attention_mechanism != "dot_product" or self.attention_normalization
-                or self.attention_coefficient_conditioning != "query" or activation == "identity"
+                self.attention_mechanism != "dot_product" or not (exponential or polynomial)
                 or not forget_backend_supported):
-            raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+            raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
+                             "nonlinear query-conditioned polynomial attention: RoPE/none on the blocked backend "
+                             "(query-distance decay of polynomials also on mosaic), or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
                              "blocked backend; PaTH supports only cumulative FoX decay")
+        if self.attention_forget_gate_mode == "query_distance" and not polynomial:
+            raise ValueError("The query-distance decay mode applies to nonlinear query-conditioned polynomial "
+                             "attention; softmax and the exponential take the cumulative decay")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

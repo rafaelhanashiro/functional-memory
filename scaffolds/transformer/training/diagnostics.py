@@ -384,6 +384,19 @@ def attention_identity(config) -> dict:
                                    + "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
                                    "DeltaNet's initialization") if forget_gate else "")),
         )
+    if forget_gate and not query_conditioned:
+        # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
+        # joins every score (the Forgetting Transformer); the configuration admits no other mode or form.
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            forget_gate_parameter_count=(config.model.hidden_size + 2) * config.model.num_layers
+            * config.model.num_heads,
+            attention_formula=(("causal_softmax" if normalized else "causal_exp")
+                               + "(QK^T / sqrt(d_k) + D) V, D_ti = sum_(j=i+1..t) log alpha_j, log alpha_t = "
+                               "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated DeltaNet's "
+                               "initialization; x_t is the activation after the block input RMSNorm"),
+        )
     if mode != "fixed":
         identity.update({
             "quadratic_mode": mode,
@@ -458,8 +471,10 @@ def attention_identity(config) -> dict:
             "path_chunk_size": CHUNK_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "jax_path_chunked_ut_transform",
-            **({"attention_implementation": ("fla_parallel_path_attention_triton" if model.path_kernel() == "softmax"
-                                             else "fla_parallel_path_query_polynomial_triton"),
+            **({"attention_implementation": {"softmax": "fla_parallel_path_attention_triton",
+                                             "exp": "fla_parallel_path_attention_triton_times_row_sum",
+                                             "query_polynomial": "fla_parallel_path_query_polynomial_triton",
+                                             }[model.path_kernel()],
                 # FLA sizes its tiles from the GPU's shared memory: 64-token UT-transform chunks and
                 # key blocks, 128-token query blocks, and 512-token splits on H100 and B300.
                 "path_chunk_size": None, "path_split_size": SPLIT, "key_block_size": None,
@@ -964,6 +979,12 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         }
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
+    if getattr(config.model, "attention_forget_gate", False) and coefficient_report is None:
+        # Softmax and the exponential have no coefficients; their forget gate is reported alone.
+        coefficient_report = {"forget_gate": forget_gate_report(
+            params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"))}
+        if not coefficient_report["forget_gate"]["finite"]:
+            issues.append("Nonfinite forget gate parameters or decay")
     scale_report = None
     gain_report = None
     head_scale_report = None

@@ -1,0 +1,222 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rb786bd19c6b1/completion.json",
+      "sha256": "4ccc08c7f6eb0f64f45883456f37d8470a84b517b5b4cd80e94673aec8c8dc76",
+      "size_bytes": 3634
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rb786bd19c6b1/metadata.json",
+      "sha256": "5a1ac4515f16d4af6d4baa20aade2d6869a925ada8da2789912edf3306e8e889",
+      "size_bytes": 727
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rb786bd19c6b1/metrics.jsonl",
+      "sha256": "064ddede39e7915d86d2fc7e8f57b3828bd6f3bfa0c47847901fea27e3c9e9a6",
+      "size_bytes": 1027078
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rb786bd19c6b1/training.log",
+      "sha256": "3d28fff7c2bf54f87d4df39bc60ba0ba780b510f63aa8ea2c85e3b183d84fb0f",
+      "size_bytes": 12673
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 0,
+      "finished_utc": "2026-11-03T05:31:49.399677+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "233290",
+      "source_commit": "5a7769eb49fefbc24a9811e0384f8affb9a91e51",
+      "started_utc": "2026-11-03T05:08:08.581492+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/completion.json",
+    "sha256": "4ccc08c7f6eb0f64f45883456f37d8470a84b517b5b4cd80e94673aec8c8dc76",
+    "size_bytes": 3634
+  },
+  "condition": "context_length/extrapolation_ablation_16k",
+  "config": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml",
+    "sha256": "20121775265ca3d6edefc116b74fb88dbc51e7fb78448ba561ee32e32bd824f1"
+  },
+  "evaluation_outcome": {
+    "finished_utc": "2026-11-03T05:30:31.182092+00:00",
+    "interpretation": "The validation-best query + W decay (m = 4) checkpoint scored per position at 16,384 tokens on the original 16k evaluation's rows, with each query restricted to its most recent 2,048 keys (window) or with every key farther than 2,047 tokens given the RoPE phase of distance 2,047 (clamp), beside an unmodified control. Only the attention call changes; no gradient or optimizer update.",
+    "measurements": [
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 33.366,
+        "length": "training",
+        "mode": "full",
+        "nll": 2.6884245758661374,
+        "perplexity": 14.708485554792587,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 3.607269095873278e-06,
+        "seconds": 72.6,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 38.235,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 13.839,
+        "length": "training",
+        "mode": "clamp",
+        "nll": 2.6884245758661374,
+        "perplexity": 14.708485554792587,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 3.607269095873278e-06,
+        "seconds": 65.5,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 50.693,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 20.373,
+        "length": "evaluation",
+        "mode": "full",
+        "nll": 6.491734069559722,
+        "nll_beyond_training_length": 7.0341461364846065,
+        "nll_within_training_length": 2.6948496010855276,
+        "perplexity": 659.6662791952474,
+        "prediction_tokens": 9961472,
+        "reference_mean_nll_absolute_error": 1.1264543087641243e-05,
+        "reference_prefix_mean_nll_absolute_error": 1.5080108775933354e-05,
+        "seconds": 256.9,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 233.909,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 8.48,
+        "length": "evaluation",
+        "mode": "window",
+        "nll": 3.2177513767062824,
+        "nll_beyond_training_length": 3.2924516303663904,
+        "nll_within_training_length": 2.6948496010855276,
+        "perplexity": 24.971904594825677,
+        "prediction_tokens": 9961472,
+        "seconds": 244.0,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 234.172,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 10.439,
+        "length": "evaluation",
+        "mode": "clamp",
+        "nll": 6.152528660487022,
+        "nll_beyond_training_length": 6.646482811830093,
+        "nll_within_training_length": 2.6948496010855276,
+        "perplexity": 469.9041137003469,
+        "prediction_tokens": 9961472,
+        "seconds": 358.6,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 347.165,
+        "window": 2048
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
+  "experiment_kind": "per_position_evaluation",
+  "frozen_execution_sha256": "0b9b1071d1ba86911d5201be54d44acd71f6509a30094c0ae5cdbd6fde4d1af2",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-extrapolation-ablation-16k",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/training.log",
+    "sha256": "3d28fff7c2bf54f87d4df39bc60ba0ba780b510f63aa8ea2c85e3b183d84fb0f",
+    "size_bytes": 12673
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/experiments/transformer_pp/runs/rb786bd19c6b1/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/metadata.json",
+    "sha256": "5a1ac4515f16d4af6d4baa20aade2d6869a925ada8da2789912edf3306e8e889",
+    "size_bytes": 727
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rb786bd19c6b1/metrics.jsonl",
+    "sha256": "064ddede39e7915d86d2fc7e8f57b3828bd6f3bfa0c47847901fea27e3c9e9a6",
+    "size_bytes": 1027078
+  },
+  "name": "query-m4-w-decay-extrapolation-ablation-16k",
+  "record_schema_version": 1,
+  "run_id": "rb786bd19c6b1",
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "node": "dogo.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "233290",
+    "source_commit": "5a7769eb49fefbc24a9811e0384f8affb9a91e51",
+    "started_utc": "2026-11-03T05:08:08.581492+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "source_commit": "1745b7d8c24d82665b63c7ca4bb9b5867893bdb6",
+  "source_run_id": "rca97cc9db8f2",
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=04:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier,shiba",
+      "--job-name=rb786bd19c6b1",
+      "--output=experiments/transformer_pp/runs/rb786bd19c6b1/training.log",
+      "--error=experiments/transformer_pp/runs/rb786bd19c6b1/training.log",
+      "experiments/transformer_pp/results/exploratory/extrapolation_ablation/evaluate.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation",
+      "1745b7d8c24d82665b63c7ca4bb9b5867893bdb6",
+      "rb786bd19c6b1"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "233290",
+    "submitted_utc": "2026-11-03T04:48:56.842812+00:00"
+  }
+}
