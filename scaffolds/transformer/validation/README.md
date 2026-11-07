@@ -2688,15 +2688,18 @@ preserves the mathematics and removes the observed crash. The worst numerical
 errors above are BF16 gradients; the passing query–key gate/projection gradients
 have relative L2 error at most 7.56e-7.
 
-The diagnostic switch is **not** enabled in training. A targeted implementation
-candidate is to slice the query-gate time block once per scan iteration, before
-selecting each order; the current helper repeats that slice for every order and
-its transpose creates the nested gradient updates. This candidate remains
-untested. Full acceptance, including production-shape initialization, optimizer
-masks, throughput and B300 qualification, is still required before training.
-Neither failed training recipe, its source implementation, nor its runtime was
-changed by this investigation. The B300 diagnostic job 239100 was cancelled
-while pending; it produced no diagnostic result.
+The diagnostic switch is **not** enabled in training. The targeted implementation
+fix at `4ef08db2` slices the query-gate time block once per scan iteration, before
+selecting each order. Its transpose combines order gradients locally before one
+full-buffer update. H100 qualification job **239129** passes both separately
+identified query/query–key GPU tests, including initialization and decay masks,
+with normal compiler optimizations. The independent query–key FP64 comparison
+has maximum relative L2 error 0.0026623; Compute Sanitizer reports **zero errors**
+for the fixed backward pass at training's default matmul precision. Recipes,
+runtime settings and mathematical definitions are unchanged. Full per-run
+acceptance still gates production training on its actual GPU allocation.
+The B300 diagnostic job 239100 was cancelled while pending; it produced no
+diagnostic result.
 
 Reproduce inside a correctly configured single-H100 allocation using the
 worktree's locked environment (each invocation is a fresh process):
