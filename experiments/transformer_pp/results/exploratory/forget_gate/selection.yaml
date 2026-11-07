@@ -262,3 +262,11 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r5adc29a91e3b/best_validation.json
       sha256: e6f6b3bac353b73ec60ad9f8ae8665987d71260000ea9026c59d5a52c716b72b
+- study: transformer_pp
+  run_id: rac200ce11221
+  label: softmax-sigmoid-forget-gate-no-rope-qk-norm
+  role: softmax_sigmoid_forget_gate_no_rope_qk_norm
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rac200ce11221/config.yaml
+      sha256: 5caa9fb2005cc6b8e8d9243d023ed338699fdbcfe7ae9dc09b88056026b93b37

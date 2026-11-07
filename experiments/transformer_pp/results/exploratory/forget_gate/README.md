@@ -158,7 +158,25 @@ run), terminal is update 7,570:
 - Limits: one seed each, on the mixed hardware above. FoX exp resumed from its update-6,500
   checkpoint after a preemption and a CUDA-graph runtime error.
 
+### Softmax gate comparison with matched QK normalization
+
+Run `rac200ce11221` (`softmax-sigmoid-forget-gate-no-rope-qk-norm`, added
+2026-11-07) compares the original sigmoid gate with the Gated DeltaNet-style
+softmax control `r5adc29a91e3b`. It preserves the control's canonical QK RMSNorm
+and learned per-head score scale. The only scientific configuration change is
+`attention_forget_gate_form: sigmoid`, which changes the gate's parameterization
+and initialization together. This distinguishes it from the plain-score sigmoid
+run `reeb92d46a95d`, which also removes QK normalization.
+
+The new run is planned for Kennel B300, seed 42, the same data and 2,048-token
+context, and 7,570 updates (1×); gate projection weight decay remains 0.1. Its
+result is pending. The explicit selection includes this run and its existing
+softmax control. The study README gives its launch command.
+
 ## Open decision
+
+Determine whether the original sigmoid gate still trails the
+Gated DeltaNet-style gate when softmax keeps the same QK normalization.
 
 Determine whether combining FoX and PaTH improves on either alone with projection
 weight decay, then decide whether to promote this question or discard it.
