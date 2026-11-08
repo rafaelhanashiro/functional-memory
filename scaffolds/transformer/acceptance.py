@@ -128,6 +128,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
         paths.append(COEFFICIENT_RELEASE_TESTS)
     model = config["model"]
+    if model.get("attention_forget_gate_per_order", False):
+        paths.append("scaffolds/transformer/tests/test_per_order_decay.py")
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -686,6 +688,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_gate="none",
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
+                                           attention_forget_gate_per_order=False,
                                            attention_forget_gate_mode="cumulative",
                                            attention_forget_gate_form="input",
                                            attention_forget_gate_conditioning="query",
@@ -741,6 +744,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         attention_coefficient_gate="none",
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
+        attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
         attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
         positional_encoding="rope",
