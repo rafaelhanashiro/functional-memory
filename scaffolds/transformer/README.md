@@ -506,6 +506,63 @@ metrics; no held-out evaluation is implied. Shared-table qualification checks
 original replay before projection and compares the training forward with the
 projected model; changing the initial function is not counted as fitting progress.
 
+### Coefficient release schedule
+
+A release schedule keeps learned coefficients at their initial values for the first
+part of training, then releases them (`training/coefficient_release.py`). It
+applies to learned direct static coefficients (`polynomial_coefficients`, `[m+1]` or
+`[layers, heads, m+1]`) and to diagonal tanh query coefficients without an inner
+bias (`query_polynomial_bias` and `query_polynomial_amplitude`, `[layers, heads, m+1]`,
+and `query_polynomial_kernel`, `[layers, heads, hidden_size, m+1]`). Every array must
+store all orders `0..m` on its last axis, so `attention_coefficient_orders` is
+rejected, as are query-key conditioning, dense readout, other activations,
+continuations, and non-Taylor initialization. Order `r` is entry `r` of that axis:
+static `c_r`, or the query generator's `b_r`, `a_r`, and column `r` of `W` together.
+All other parameters, including QK gains, head score scales, output RMSNorm gains,
+and forget-gate parameters, train from the first update.
+
+| Setting | Meaning |
+| --- | --- |
+| `optim.coefficient_release_schedule` | `all` or `by_order`; null (default) trains the coefficients from the first update |
+| `optim.coefficient_release_step` | first release, with `0 < step < optim.total_steps` |
+| `optim.coefficient_release_end_step` | `by_order` only: the last order's release, `step < end < optim.total_steps` |
+
+Counts `k` are optimizer updates on the learning-rate schedule's own clock: the update
+with count `k` is logged as step `k + 1` and uses `schedule(k)`. Order `r` is frozen
+for `k < s_r` and trains for `k >= s_r`. `all` sets `s_r` to the release step for every
+order; `by_order` sets `s_r = step + floor(r (end - step) / m)`, lowest order first.
+With step 455, end 1500 and `m = 8`, orders 0-8 release at 455, 585, 716, 846, 977,
+1108, 1238, 1369, and 1500.
+
+Freezing has two masks, both functions of the update count alone. A frozen entry's
+gradient is zeroed after microbatch and data-parallel averaging, before global-norm
+clipping and AdamW: it adds nothing to the clip norm, the rest of the model trains
+exactly as if those coefficients had no gradient, and its Adam moments stay exactly
+zero. Its final update is zeroed after AdamW, so decoupled weight decay cannot shrink
+a decayed `W` (`attention_coefficient_kernel_weight_decay`). Frozen entries stay
+bitwise equal to their initial values until release. A released entry starts from
+zero moments while bias correction keeps the global count, so its first update is
+about half the learning rate; it joins the shared learning-rate schedule at its current
+value, with no separate warmup, Adam clock, or learning rate. The logged
+`gradient_norm_pre_clip`, clipping scale, numerical update checks, and telemetry use
+the masked gradient that clipping sees.
+
+The release wraps the unchanged clipping and AdamW chain, reading the schedule's count
+from its state, so the optimizer state layout is the same with or without a schedule
+and a checkpoint resume continues the schedule exactly. It names the arrays it freezes
+and raises before the first update if any is missing, rather than letting it train.
+Without a schedule, the optimizer and train steps are built exactly as before. The
+training log prints
+`coefficient_release_schedule=by_order release_updates=455,585,...` at start and
+`coefficient_release update=455 step=456 orders=0` at each release; W&B receives
+`train/coefficient_trainable_orders` at that step and the tag
+`coefficient_release_all` or `coefficient_release_by_order`. The attention identity
+and formula, recorded in metrics and metadata, include the schedule and every
+`s_r` (`coefficient_release_counts`) only when one is set, and `runs.csv` has
+`coefficient_release_schedule`, `coefficient_release_step`, and
+`coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
+`tests/test_coefficient_release.py` for every recipe with a schedule.
+
 ### Forget gate
 
 `attention_forget_gate: true` adds the Forgetting Transformer's decay with Gated DeltaNet's
@@ -1000,7 +1057,8 @@ Gradient diagnostics are standard for every mechanism. At each normal log step,
 W&B plots `train/gradient_norm_pre_clip`, `train/gradient_norm_post_clip`,
 `train/gradient_clip_scale`, and `train/gradient_clipped`. The norm is taken after
 all microbatch and data-parallel averaging, before clipping, and includes any
-coefficient penalty in the training objective. The optimizer already computes
+coefficient penalty in the training objective; under a coefficient release schedule
+it excludes still-frozen coefficient entries, as clipping does. The optimizer already computes
 this norm for its numerical checks; logging adds no gradient-tree reduction.
 Retained training logs keep the sampled norm and clipping scale. Each validation
 event in `metrics.jsonl` stores the norm count, mean, maximum, and clipped fraction

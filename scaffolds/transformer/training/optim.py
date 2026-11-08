@@ -6,6 +6,7 @@ from typing import NamedTuple
 
 from scaffolds.transformer.configs import Config
 from scaffolds.transformer.attention.parameters import attention_parameter_specs
+from scaffolds.transformer.training.coefficient_release import CoefficientReleaseOptimizer, coefficient_release
 
 
 def make_learning_rate_schedule(config: Config):
@@ -78,7 +79,14 @@ def make_optimizer(config: Config):
         # The multiplier has no state. Keep the original optimizer state layout,
         # moments, and counters, including the unchanged default checkpoint format.
         adam = optax.GradientTransformation(adam.init, update_query_coefficients)
-    return optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
+    optimizer = optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
+    release = coefficient_release(config)
+    if release is None:
+        return optimizer
+    # Frozen coefficient entries lose their gradients before clipping and their final
+    # updates after AdamW (training/coefficient_release.py). The release reads the
+    # schedule's own count and adds no optimizer state.
+    return CoefficientReleaseOptimizer(optimizer, release)
 
 
 class ContinuationAdamState(NamedTuple):

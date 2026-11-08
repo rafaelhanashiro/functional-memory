@@ -227,6 +227,28 @@ def test_index_exposes_selected_coefficient_orders_without_inventing_legacy_sett
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_exposes_coefficient_release_settings_only_for_scheduled_runs(tmp_path):
+    study = tmp_path / "study"
+    model = {"attention_degree": 8, "attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh"}
+    legacy = create_run(study, {"model": model, "optim": {"total_steps": 2000}})
+    unscheduled = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": None, "coefficient_release_step": None,
+        "coefficient_release_end_step": None}})
+    every = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": "all", "coefficient_release_step": 455}})
+    by_order = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": "by_order", "coefficient_release_step": 455,
+        "coefficient_release_end_step": 1500}})
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    fields = ("coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step")
+    assert [tuple(rows[run.name][field] for field in fields) for run in (legacy, unscheduled, every, by_order)] == [
+        ("", "", ""), ("", "", ""), ("all", "455", ""), ("by_order", "455", "1500")]
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 @pytest.mark.parametrize("parameterization", [None, "query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients"])
 def test_index_uses_shared_batch_table_recipe_instead_of_parent_generator(tmp_path, parameterization):
     study = tmp_path / "study"

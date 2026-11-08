@@ -11,6 +11,39 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Coefficient release schedule (2026-11-08)
+
+`optim.coefficient_release_schedule` (`all` or `by_order`), `coefficient_release_step`,
+and `coefficient_release_end_step` hold learned static coefficients, or the diagonal
+tanh query generator's `b`, `a`, and `W`, at their initial values per polynomial order
+until each order's release update ([README](../README.md#coefficient-release-schedule)).
+
+All 73 checks in `tests/test_coefficient_release.py` passed on CPU (one data-parallel
+case on two host devices). Before release, frozen entries stay bitwise at their
+initial values, including a weight-decayed `W`; frozen gradients leave clipping, every
+Adam moment, and every other update bitwise identical to a step without coefficient
+gradients, and the logged pre-clip norm is the masked one. `by_order` first moves each
+order at exactly its listed update; the masks depend only on the update count; released
+entries start from zero moments under the global bias correction; a checkpoint resume
+across a release matches an uninterrupted run bitwise; a missing or renamed coefficient
+array is an error rather than trainable; and without a schedule the optimizer state,
+updates, and train step are bitwise unchanged. Removing either mask,
+the train step's masked gradient, or the signed-zero update fill, or releasing one
+update late, failed 2 to 8 of these checks. The full CPU suite passed: 2,200
+single-device tests, and 23 two-device tests with five four-device cases skipped.
+The acceptance pilot (20 updates) and its resume update end before a release at update
+455, so for such recipes the first release on a GPU happens in production.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py
+JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+  scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py -k distributed
+```
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders

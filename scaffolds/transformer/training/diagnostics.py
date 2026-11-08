@@ -14,6 +14,7 @@ from flax import nnx
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
 from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
+from scaffolds.transformer.training.coefficient_release import coefficient_release
 from scaffolds.transformer.training.numerics import (
     has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
     has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
@@ -505,7 +506,31 @@ def attention_identity(config) -> dict:
             gate_formula = ("exp(-(t-i) exp(A_log) sigmoid(x_t w_query + dt_bias)) per layer/head; "
                             "sigmoid(dt_bias) matches the legacy softplus bias draw at zero input")
         identity["attention_formula"] = prefix + "; each weight is multiplied by " + gate_formula
+    release = coefficient_release(config)
+    if release is not None:
+        identity.update(_release_identity(config, release, identity["attention_formula"]))
     return identity
+
+
+def _release_identity(config, release, formula: str) -> dict:
+    """The coefficient release schedule, recorded only for recipes that set one."""
+    optim, degree = config.optim, config.model.attention_degree
+    start, end = optim.coefficient_release_step, optim.coefficient_release_end_step
+    entries = ("b_r, a_r, and column r of W" if config.model.attention_coefficient_conditioning == "query"
+               else "c_r")
+    counts = list(release.counts)
+    when = (f"s_r = {start} for every order" if release.schedule == "all" else
+            f"s_r = {start} + floor(r ({end} - {start}) / {degree}) = {counts}, lowest order first")
+    return {
+        "coefficient_release_schedule": release.schedule,
+        "coefficient_release_step": start,
+        **({"coefficient_release_end_step": end} if release.schedule == "by_order" else {}),
+        "coefficient_release_counts": counts,
+        "attention_formula": (
+            f"{formula}; order r's stored coefficients ({entries}) stay at their initial values for "
+            f"optimizer updates k < s_r (gradient zeroed before clipping, update zeroed after AdamW) "
+            f"and train for k >= s_r, the update logged as step k + 1, {when}"),
+    }
 
 
 def qk_norm_identity(model) -> dict:

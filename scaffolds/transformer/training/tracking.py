@@ -68,6 +68,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
             tags.append("coefficient_kernel_weight_decay")
     if getattr(config.model, "attention_forget_gate", False):
         tags.append("forget_gate")
+    if identity.get("coefficient_release_schedule"):
+        tags.append(f"coefficient_release_{identity['coefficient_release_schedule']}")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
     if config.model.initialization != "flax_default":
@@ -200,6 +202,11 @@ def log_train(run, step: int, nll: float, perplexity: float, learning_rate: floa
     if telemetry is not None:
         payload.update({f"train/telemetry/{key}": value for key, value in telemetry.items()})
     _log(run, payload, step)
+
+
+def log_coefficient_release(run, step: int, trainable_orders: int) -> None:
+    """A release event: from this step's update, ``trainable_orders`` polynomial orders train."""
+    _log(run, {"train/coefficient_trainable_orders": trainable_orders}, step)
 
 
 def log_validation(run, record: dict) -> None:

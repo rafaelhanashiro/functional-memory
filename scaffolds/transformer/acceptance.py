@@ -67,6 +67,7 @@ QK_HEAD_SCALE_BACKEND_TESTS = (
     "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
 QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
+COEFFICIENT_RELEASE_TESTS = "scaffolds/transformer/tests/test_coefficient_release.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
@@ -119,6 +120,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if cpu and config.get("continuation", {}).get("parent_checkpoint"):
         paths.extend(("scaffolds/transformer/tests/test_continuation.py",
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
+    if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
+        paths.append(COEFFICIENT_RELEASE_TESTS)
     model = config["model"]
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
