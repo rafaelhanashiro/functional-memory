@@ -918,9 +918,10 @@ trains the shared query gate (`r9320e5cd3071`: the recipe of `r3e26412b2811` at 
 eight) and per-order query gates (`r20fe6fe864bc`: `r507193d47450` at degree eight) on the
 Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour `standard`
 or `long` allocation; acceptance's pilot measures the update time and stops before
-training if the run would not fit. Both runs accept only H100: B300's per-order kernels
-hold at most degree seven at this shape, and its decay kernels are slower. These jobs have
-no scheduling dependencies on each other.
+training if the run would not fit. Both runs accept only H100. B300 cannot hold the
+per-order gates at degree eight at this shape; it could run the shared gate, but that run
+uses H100 too, so that the pair trains on the same GPU type. These jobs have no
+scheduling dependencies on each other.
 
 `query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
 eight on the Mosaic backend, and requires every initial parameter to equal those of

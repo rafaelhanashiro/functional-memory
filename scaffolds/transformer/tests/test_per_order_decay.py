@@ -325,6 +325,10 @@ def mosaic_operation(q, k, v, c, x, wq, wk, rate, bias, *, endpoint, per_order=T
 
 def _mosaic_inputs(time=2048, *, key=True, degree=4):
     arrays = list(inputs(time, degree, width=64, value_width=64))
+    if degree > 4:
+        # Unit-scale scores, as QK RMSNorm gives, so that every order up to the degree
+        # contributes; the degree-4 checks keep the score scale they were qualified with.
+        arrays[:2] = [a / .4 for a in arrays[:2]]
     arrays[3] = arrays[3] / jnp.asarray([math.factorial(r) for r in range(degree + 1)], jnp.float32)
     if not key:
         arrays[6] = jnp.zeros_like(arrays[6])
@@ -352,14 +356,22 @@ def test_mosaic_per_order_output_and_every_gradient_match_host_fp64(endpoint, de
     actual = jax.jit(evaluate)(*arrays)
     # output, dq, dk, dv at the Mosaic BF16 bounds; coefficients and gate parameters through FP32 sums.
     tolerances = (.006, .025, .025, .015, .01, .01, .01, .01, .01, .01)
+    # Above degree four, the coefficient and gate-parameter gradients are compared order by order
+    # (their order axis is last for c, second for the gates), so that one order's error is not
+    # hidden by the others' norms.
+    order_axes = {4: -1, 6: 1, 7: 1, 8: 1, 9: 1} if degree > 4 else {}
     for i, (got, want) in enumerate(zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True)):
         got = np.asarray(got, np.float64)
         assert np.isfinite(got).all(), i
         if not endpoint and i == 7:  # wk is unused by query-only gates
             np.testing.assert_array_equal(got, 0)
             continue
-        error = np.linalg.norm(got - want) / np.linalg.norm(want)
-        assert error < tolerances[i], (endpoint, i, error)
+        axis = order_axes.get(i)
+        parts = ([(got, want)] if axis is None else
+                 [(np.take(got, r, axis), np.take(want, r, axis)) for r in range(want.shape[axis])])
+        for order, (part, reference) in enumerate(parts):
+            error = np.linalg.norm(part - reference) / np.linalg.norm(reference)
+            assert error < tolerances[i], (endpoint, i, order, error)
 
 
 @pytest.mark.gpu
@@ -369,8 +381,8 @@ def test_mosaic_duplicated_orders_reproduce_the_shared_gate_kernel(endpoint, deg
     """Every order a copy of one gate (the runs' initialization): the per-order kernels equal the
     shared-gate kernels, and each shared parameter's gradient is the sum over its copies."""
     _requires_mosaic_gpu()
-    if _blackwell_refuses(endpoint, degree, 1024):
-        pytest.skip("B300 cannot hold this per-order shape; the FP64 test checks its refusal")
+    if _blackwell_refuses(endpoint, degree, 1024):  # B300 holds both degrees at 1,024 tokens
+        pytest.skip("B300 cannot hold this per-order shape")
     arrays, cotangent = _mosaic_inputs(1024, key=endpoint, degree=degree)
     q, k, v, c, x, wq, wk, rate, bias = arrays
     copies = [jnp.broadcast_to(a[:, :1], a.shape) for a in (wq, wk, rate, bias)]

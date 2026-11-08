@@ -310,11 +310,12 @@ gate to all nine orders (201,848,026 parameters). The shared-gate run compares a
 the degree-four query-dependent run, and the per-order run against the shared-gate run.
 
 Both use the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) on one H100
-each. B300 cannot hold the per-order gates at degree eight (see [Attention kernels](#attention-kernels)),
-and its decay kernels are slower than either H100's. Degree-eight GPU qualification:
-`test_per_order_decay.py` checks the per-order output and every gradient against FP64 and
-duplicated orders against the shared-gate kernels; `test_endpoint_decay.py` checks the
-shared query gate against FP64.
+each. B300 cannot hold the per-order gates at degree eight (see [Attention kernels](#attention-kernels));
+the shared-gate run uses H100 too, so that the pair trains on the same GPU type. Degree-eight
+GPU qualification: `test_per_order_decay.py` checks the per-order output and every gradient
+against FP64, with unit-scale scores so that every order contributes and each order's
+coefficient and gate gradients compared separately, and duplicated orders against the
+shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate against FP64.
 
 ## Open decision
 
