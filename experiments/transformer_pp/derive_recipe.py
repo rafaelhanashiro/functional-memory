@@ -12,6 +12,9 @@ recipe and recomputes only what the rules determine:
   at the reference) with that parameter count, rounded to a power-of-two multiple; a
   budget change keeps the partner's batch and scales the updates;
 - warmup: 6.01% of the updates (455 of 7,570), rounded half up;
+- coefficient release: a partner's ``optim.coefficient_release_step`` and
+  ``coefficient_release_end_step`` keep their fraction of the updates, rounded half up, so a
+  release at the end of the reference warmup (455 of 7,570) stays at the end of the derived warmup;
 - validation: the reference's 9,961,472 validation tokens (4,864 sequences of 2,049) at
   every batch, with the update cadence scaled by the budget; checkpoints every 500 updates;
 - learning rate: the partner's peak, or ``--peak-learning-rate``, with a floor of 0.1 x
@@ -54,7 +57,8 @@ SHAPE_KEYS = ("num_layers", "hidden_size", "num_heads", "num_kv_heads", "interme
 DERIVED = {
     "model": (*SHAPE_KEYS, "attention_coefficient_projection_initial_std"),
     "data": ("batch_size",),
-    "optim": ("total_steps", "warmup_steps", "learning_rate", "min_learning_rate"),
+    "optim": ("total_steps", "warmup_steps", "learning_rate", "min_learning_rate",
+              "coefficient_release_step", "coefficient_release_end_step"),
     "train": ("eval_batches", *REFERENCE_CADENCE),
 }
 
@@ -186,6 +190,10 @@ def derive(partner: dict, *, layers: int | None = None, width: int | None = None
         gain = _short(model["attention_coefficient_projection_initial_std"] * math.sqrt(old_width))
         model["attention_coefficient_projection_initial_std"] = gain * model["hidden_size"] ** -0.5
     data["batch_size"] = batch
+    for key in ("coefficient_release_step", "coefficient_release_end_step"):
+        if optim.get(key) is not None:
+            # Release updates count on the optimizer clock; keep their fraction of the run, as warmup does.
+            optim[key] = round_half_up(optim[key] * derived["total_steps"] / optim["total_steps"])
     optim["total_steps"], optim["warmup_steps"] = derived["total_steps"], derived["warmup_steps"]
     if peak_learning_rate is not None:
         if peak_learning_rate <= 0:

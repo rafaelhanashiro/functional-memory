@@ -39,7 +39,7 @@ COEFFICIENTS = {
 
 
 def release_config(conditioning="query", schedule="all", start=3, end=None, *, degree=2, total_steps=8,
-                   kernel_weight_decay=False, workdir=Path("unused")):
+                   kernel_weight_decay=False, query_scale=1.0, workdir=Path("unused")):
     """Unnormalized learned polynomial attention with QK RMSNorm, head scales, and head RMSNorm."""
     query = conditioning == "query"
     config = Config()
@@ -63,6 +63,7 @@ def release_config(conditioning="query", schedule="all", start=3, end=None, *, d
     config.optim.total_steps, config.optim.warmup_steps = total_steps, 0
     config.optim.learning_rate, config.optim.min_learning_rate = 1e-2, 1e-3
     config.optim.grad_clip_norm = 0.01  # Every update clips.
+    config.optim.query_coefficient_learning_rate_scale = query_scale
     config.optim.coefficient_release_schedule = schedule
     config.optim.coefficient_release_step = start if schedule else None
     config.optim.coefficient_release_end_step = end
@@ -115,9 +116,11 @@ def test_release_counts_follow_the_schedule_formula():
     assert [release.trainable_orders(count) for count in range(8)] == [0, 0, 1, 1, 2, 2, 3, 3]
 
 
-@pytest.mark.parametrize("conditioning, kernel_weight_decay", [("static", False), ("query", False), ("query", True)])
-def test_frozen_coefficients_stay_bitwise_then_move_after_release(conditioning, kernel_weight_decay):
-    config = release_config(conditioning, "all", start=3, kernel_weight_decay=kernel_weight_decay)
+@pytest.mark.parametrize("conditioning, kernel_weight_decay, query_scale", [
+    ("static", False, 1.0), ("query", False, 1.0), ("query", True, 1.0), ("query", True, 3.0)])
+def test_frozen_coefficients_stay_bitwise_then_move_after_release(conditioning, kernel_weight_decay, query_scale):
+    config = release_config(conditioning, "all", start=3, kernel_weight_decay=kernel_weight_decay,
+                            query_scale=query_scale)
     _, history = train(config, 5)
     initial, names = history[0], COEFFICIENTS[conditioning]
     assert initial[(names[0],)].shape[:2] == (2, 2)  # [layers, heads, ..., m + 1]
@@ -190,6 +193,56 @@ def test_frozen_gradients_are_excluded_from_the_clip_norm():
     masked_norm, raw_norm = float(optax.tree.norm(absent)), float(optax.tree.norm(grads))
     assert raw_norm - masked_norm > 1e-3 * raw_norm  # The coefficient gradients are not negligible.
     np.testing.assert_allclose(float(numerics[1]), masked_norm, rtol=1e-5)
+
+
+@pytest.mark.parametrize("conditioning", ["static", "query"])
+def test_accumulated_train_step_checks_and_reports_the_masked_gradient(conditioning):
+    """Production updates accumulate microbatches: that step masks before its update, checks, and numerics."""
+    config = release_config(conditioning, "all", start=3, kernel_weight_decay=conditioning == "query")
+    state = create_state(config, jax.random.PRNGKey(0))
+    names = set(COEFFICIENTS[conditioning])
+    batches = jnp.stack([batch(1), batch(2)])
+    rngs = jax.random.split(jax.random.PRNGKey(1), 2)
+    micro = [loop.loss_and_grads(state, batches[index], rngs[index])[1] for index in range(2)]
+    grads = jax.tree.map(lambda first, second: (first + second) * 0.5, *micro)
+    masked_norm = float(optax.tree.norm(on_coefficients(grads, jnp.zeros_like, names)))
+    raw_norm = float(optax.tree.norm(grads))
+    assert raw_norm - masked_norm > 1e-3 * raw_norm  # The frozen gradients are not negligible.
+    updated, loss, numerics = loop.accumulated_train_step(state, batches, rngs, check_all_gradients=True)
+    assert np.isfinite(float(loss))
+    np.testing.assert_allclose(float(numerics[1]), masked_norm, rtol=1e-5)
+    before, after = flat(state.params), flat(updated.params)
+    for name in names:
+        assert after[(name,)].tobytes() == before[(name,)].tobytes(), name
+    assert not np.array_equal(after[("lm_head", "kernel")], before[("lm_head", "kernel")])
+
+
+def test_release_composes_with_the_query_coefficient_learning_rate_scale():
+    """Released b and a take exactly the scaled update; W, the rest, and frozen entries are unaffected."""
+    unscaled_config = release_config("query", "by_order", start=2, end=6, kernel_weight_decay=True)
+    scaled_config = release_config("query", "by_order", start=2, end=6, kernel_weight_decay=True, query_scale=3.0)
+    state = create_state(unscaled_config, jax.random.PRNGKey(0))
+    unscaled, scaled = make_optimizer(unscaled_config), make_optimizer(scaled_config)
+    release, names = scaled.coefficient_release, COEFFICIENTS["query"]
+    assert release.counts == (2, 4, 6)
+    readouts = {"query_polynomial_bias", "query_polynomial_amplitude"}
+    grads = jax.tree.map(lambda value: jnp.sin(jnp.arange(value.size, dtype=value.dtype).reshape(value.shape)) + 0.5,
+                         state.params)
+    for count in range(8):
+        opt_state = optax.tree_utils.tree_set(state.opt_state, count=jnp.asarray(count, jnp.int32))
+        trainable = np.asarray(release.counts) <= count
+        expected, observed = (flat(optimizer.update(grads, opt_state, state.params)[0]) for optimizer in (unscaled, scaled))
+        for path, value in observed.items():
+            if path[0] not in names:
+                assert value.tobytes() == expected[path].tobytes(), (path, count)
+                continue
+            frozen = value[..., ~trainable]
+            assert np.all(frozen == 0) and np.all(np.signbit(frozen)), (path, count)
+            released = expected[path][..., trainable]
+            if path[0] in readouts:
+                assert np.all(released != 0), (path, count)  # The comparison below is not vacuous.
+                released = released * np.float32(3.0)
+            assert value[..., trainable].tobytes() == released.tobytes(), (path, count)
 
 
 @pytest.mark.parametrize("conditioning", ["static", "query"])
@@ -326,6 +379,21 @@ def test_resume_across_a_release_matches_an_uninterrupted_run(tmp_path, monkeypa
     assert_bitwise_equal(states[0].opt_state, states[1].opt_state)
 
 
+def test_release_event_reaches_wandb_at_the_logged_step():
+    """The mirror call the resume test replaces: W&B step k + 1, the orders that train from update k."""
+    class Run:
+        def __init__(self):
+            self.payloads = []
+
+        def log(self, payload):
+            self.payloads.append(payload)
+
+    run = Run()
+    tracking.log_coefficient_release(run, 456, 1)
+    assert run.payloads == [{"step": 456, "train/coefficient_trainable_orders": 1}]
+    tracking.log_coefficient_release(None, 456, 1)  # Without W&B it does nothing.
+
+
 @nnx.jit
 def train_step_without_release(state, tokens, rng):
     """The train step as it was before release schedules existed."""
@@ -335,21 +403,42 @@ def train_step_without_release(state, tokens, rng):
             update_numerics(grads, updated.params, loss))
 
 
-@pytest.mark.parametrize("conditioning", ["static", "query"])
-def test_without_a_schedule_the_optimizer_and_train_step_are_unchanged(conditioning):
-    config = release_config(conditioning, None)
+def unmodified_optimizer(config):
+    """``make_optimizer`` for a pretraining recipe as it was before release schedules existed."""
+    excluded = frozenset(spec.name for spec in attention_parameter_specs(config.model) if not spec.weight_decay)
+    adam = optax.adamw(make_learning_rate_schedule(config), b1=config.optim.beta1, b2=config.optim.beta2,
+                       weight_decay=config.optim.weight_decay,
+                       mask=partial(attention_weight_decay_mask, excluded_names=excluded))
+    query_scale = config.optim.query_coefficient_learning_rate_scale
+    if query_scale != 1.0:
+        adam_update = adam.update
+
+        def update_query_coefficients(updates, state, params=None):
+            updates, state = adam_update(updates, state, params)
+
+            def scale_parameter(path, value):
+                keys = tuple(entry.key for entry in path if isinstance(entry, jax.tree_util.DictKey))
+                readout = keys and keys[0] in ("query_polynomial_bias", "query_polynomial_amplitude")
+                return value * query_scale if readout else value
+
+            return jax.tree.map_with_path(scale_parameter, updates), state
+
+        adam = optax.GradientTransformation(adam.init, update_query_coefficients)
+    return optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
+
+
+@pytest.mark.parametrize("conditioning, query_scale", [("static", 1.0), ("query", 1.0), ("query", 3.0)])
+def test_without_a_schedule_the_optimizer_and_train_step_are_unchanged(conditioning, query_scale):
+    config = release_config(conditioning, None, query_scale=query_scale)
     state = create_state(config, jax.random.PRNGKey(0))
     optimizer = make_optimizer(config)
     assert not hasattr(optimizer, "coefficient_release")
-    excluded = frozenset(spec.name for spec in attention_parameter_specs(config.model) if not spec.weight_decay)
-    unmodified = optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), optax.adamw(
-        make_learning_rate_schedule(config), b1=config.optim.beta1, b2=config.optim.beta2,
-        weight_decay=config.optim.weight_decay, mask=partial(attention_weight_decay_mask, excluded_names=excluded)))
+    unmodified = unmodified_optimizer(config)
     params = state.params
     expected_state, observed_state = unmodified.init(params), optimizer.init(params)
     assert_bitwise_equal(expected_state, observed_state)
     # A schedule adds no optimizer state either, so release runs keep this checkpoint layout.
-    scheduled = make_optimizer(release_config(conditioning, "all", start=3))
+    scheduled = make_optimizer(release_config(conditioning, "all", start=3, query_scale=query_scale))
     assert jax.tree.structure(scheduled.init(params)) == jax.tree.structure(observed_state)
     for step in range(3):
         grads = jax.tree.map(lambda value: jnp.sin(jnp.arange(value.size, dtype=value.dtype).reshape(value.shape)

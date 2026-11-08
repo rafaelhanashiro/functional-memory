@@ -62,6 +62,7 @@ partner run by these rules and changes nothing else:
 | Batch | a shape change scales the tokens per update (524,288 at the reference) by 2^k, with k the nearest integer to log2(the shape's 1× parameters / 198,440,146), which holds the update count to within that rounding; a budget change keeps the partner's batch |
 | Updates | budget × 1× tokens / tokens per update, rounded; the budget defaults to the partner's |
 | Warmup | 455/7,570 of the updates (about 6.01%), rounded half up |
+| Coefficient release | a partner's `optim.coefficient_release_step` and `coefficient_release_end_step` keep their fraction of the updates, rounded half up: 455 and 1,500 of 7,570 become 454 and 1,496 at the 12-layer shape, 1,138 and 3,750 at 2.5× |
 | Validation | the reference's 9,961,472 validation tokens (4,864 sequences of 2,049), in whole training batches; cadence × budget |
 | Learning rate | the partner's peak (0.001 unless a run sets another), floor 0.1 × peak; weight decay, betas and clipping unchanged |
 | Initialization | the reference rules; a nonzero query-coefficient projection std keeps its multiple of 1/sqrt(width) |

@@ -18,19 +18,25 @@ and `coefficient_release_end_step` hold learned static coefficients, or the diag
 tanh query generator's `b`, `a`, and `W`, at their initial values per polynomial order
 until each order's release update ([README](../README.md#coefficient-release-schedule)).
 
-All 73 checks in `tests/test_coefficient_release.py` passed on CPU (one data-parallel
+All 79 checks in `tests/test_coefficient_release.py` passed on CPU (one data-parallel
 case on two host devices). Before release, frozen entries stay bitwise at their
 initial values, including a weight-decayed `W`; frozen gradients leave clipping, every
 Adam moment, and every other update bitwise identical to a step without coefficient
-gradients, and the logged pre-clip norm is the masked one. `by_order` first moves each
-order at exactly its listed update; the masks depend only on the update count; released
-entries start from zero moments under the global bias correction; a checkpoint resume
-across a release matches an uninterrupted run bitwise; a missing or renamed coefficient
-array is an error rather than trainable; and without a schedule the optimizer state,
-updates, and train step are bitwise unchanged. Removing either mask,
-the train step's masked gradient, or the signed-zero update fill, or releasing one
-update late, failed 2 to 8 of these checks. The full CPU suite passed: 2,200
-single-device tests, and 23 two-device tests with five four-device cases skipped.
+gradients, and the single-batch, accumulated, and data-parallel train steps log the
+masked pre-clip norm. `by_order` first moves each order at exactly its listed update;
+the masks depend only on the update count; released entries start from zero moments
+under the global bias correction; with `query_coefficient_learning_rate_scale`, released
+`b` and `a` take exactly the scaled update while `W`, frozen entries, and every other
+array match the unscaled optimizer bitwise; a checkpoint resume across a release matches
+an uninterrupted run bitwise, and each release reaches W&B at its logged step; a missing
+or renamed coefficient array is an error rather than trainable; and without a schedule
+the optimizer state, updates, and train step are bitwise unchanged, with or without the
+query learning-rate scale. Each of these changes failed at least one check: removing
+either mask, the single-batch or accumulated train step's masked gradient, or the
+signed-zero update fill; releasing one update late; dropping the release when the query
+learning-rate scale is set; scaling `W` with that scale; or logging the release one W&B
+step early. The full CPU suite passed: 2,208 single-device tests, and 23
+two-device tests with five four-device cases skipped.
 The acceptance pilot (20 updates) and its resume update end before a release at update
 455, so for such recipes the first release on a GPU happens in production.
 

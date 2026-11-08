@@ -541,11 +541,13 @@ exactly as if those coefficients had no gradient, and its Adam moments stay exac
 zero. Its final update is zeroed after AdamW, so decoupled weight decay cannot shrink
 a decayed `W` (`attention_coefficient_kernel_weight_decay`). Frozen entries stay
 bitwise equal to their initial values until release. A released entry starts from
-zero moments while bias correction keeps the global count, so its first update is
-about half the learning rate; it joins the shared learning-rate schedule at its current
-value, with no separate warmup, Adam clock, or learning rate. The logged
-`gradient_norm_pre_clip`, clipping scale, numerical update checks, and telemetry use
-the masked gradient that clipping sees.
+zero moments while bias correction keeps the global count: with betas (0.9, 0.95) and a
+steady gradient, its first update is 0.45 of a steady Adam step, and later ones overshoot
+it by up to 10% (20 updates after release) before settling. It joins the shared
+learning-rate schedule at its current value (`b` and `a` times
+`optim.query_coefficient_learning_rate_scale`, when set), with no separate warmup, Adam
+clock, or learning rate. The logged `gradient_norm_pre_clip`, clipping scale, numerical
+update checks, and telemetry use the masked gradient that clipping sees.
 
 The release wraps the unchanged clipping and AdamW chain, reading the schedule's count
 from its state, so the optimizer state layout is the same with or without a schedule
