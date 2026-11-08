@@ -1,5 +1,69 @@
 {
+  "acceptance": {
+    "atol": 2e-05,
+    "cpu_statistics_reference_tests": {
+      "status": "passed",
+      "tests": 5
+    },
+    "max_absolute_error": 1.5801678330262803e-06,
+    "method": "allocated-device statistics against independent NumPy FP64 dense reference",
+    "rtol": 2e-05,
+    "status": "passed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rb1a3a991da6c/completion.json",
+      "sha256": "9b2535e4f00a35af495ecb08eced64af9adb79fda2272dc903f8188c1ddf6def",
+      "size_bytes": 1503
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rb1a3a991da6c/metadata.json",
+      "sha256": "b2320650c7d9d5c9643da10cd866b2565f902682154c2d389d892c097982c820",
+      "size_bytes": 5907
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rb1a3a991da6c/metrics.jsonl",
+      "sha256": "773d3465cb13bf4f528ec1617ae0ee947c06de312de1bd74108d0321ba3c5e9a",
+      "size_bytes": 4027706
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+      "sha256": "a80f733aed88f1abc79c6b0941155955bae0b3bad8a5882654e09759f1a8c513",
+      "size_bytes": 10048
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+        "XLA_FLAGS": null
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-08T05:45:05.757840+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "239571",
+      "source_commit": "ff146135f42c52fb6a95c378c880763cc95ce283",
+      "started_utc": "2026-11-08T05:38:35.023546+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
   "checkpoint_retention": "none; reads referenced checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/rb1a3a991da6c/completion.json",
+    "sha256": "9b2535e4f00a35af495ecb08eced64af9adb79fda2272dc903f8188c1ddf6def",
+    "size_bytes": 1503
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml",
     "sha256": "51bb93f5e02e26dce76108f085833ffafc1f2b9db968409a6a102c5bfa430bf9"
@@ -8,9 +72,73 @@
     "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
   },
+  "diagnostic_outcome": {
+    "finished_utc": "2026-11-08T05:44:47.155633+00:00",
+    "interpretation": "Forward-only calibration of shared fixed spline knots using regular static and query + W decay m=4 models, at initialization and retained validation-best checkpoints. Same sampled training rows and causal pairs; no FoX, no optimizer updates, and no spline training. Polynomial continuation is the proposed tail policy.",
+    "optimizer_updates": 0,
+    "snapshots": [
+      {
+        "backend": "mosaic",
+        "elapsed_seconds": 43.928,
+        "heads": 14,
+        "initialization_kind": "reconstructed_from_source_recipe",
+        "layers": 15,
+        "role": "static",
+        "source_run_id": "r4339a245820e",
+        "state": "initialization"
+      },
+      {
+        "backend": "mosaic",
+        "elapsed_seconds": 8.382,
+        "heads": 14,
+        "initialization_kind": null,
+        "layers": 15,
+        "role": "static",
+        "source_run_id": "r4339a245820e",
+        "state": "checkpoint"
+      },
+      {
+        "backend": "mosaic",
+        "elapsed_seconds": 5.451,
+        "heads": 14,
+        "initialization_kind": "reconstructed_from_source_recipe",
+        "layers": 15,
+        "role": "query_wdecay",
+        "source_run_id": "rca97cc9db8f2",
+        "state": "initialization"
+      },
+      {
+        "backend": "mosaic",
+        "elapsed_seconds": 5.271,
+        "heads": 14,
+        "initialization_kind": null,
+        "layers": 15,
+        "role": "query_wdecay",
+        "source_run_id": "rca97cc9db8f2",
+        "state": "checkpoint"
+      }
+    ],
+    "status": "complete"
+  },
+  "frozen_execution_sha256": "2e4263262a70d9601b9491f32a386be335f8f77ebd5e005428bd94364f189726",
   "home_cluster": "kennel",
   "label": "spline-knot-score-calibration",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+    "sha256": "a80f733aed88f1abc79c6b0941155955bae0b3bad8a5882654e09759f1a8c513",
+    "size_bytes": 10048
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/rb1a3a991da6c/metadata.json",
+    "sha256": "b2320650c7d9d5c9643da10cd866b2565f902682154c2d389d892c097982c820",
+    "size_bytes": 5907
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rb1a3a991da6c/metrics.jsonl",
+    "sha256": "773d3465cb13bf4f528ec1617ae0ee947c06de312de1bd74108d0321ba3c5e9a",
+    "size_bytes": 4027706
+  },
   "name": "spline-knot-score-calibration",
   "parent_run_ids": [
     "r4339a245820e",
@@ -18,5 +146,50 @@
   ],
   "record_schema_version": 1,
   "run_id": "rb1a3a991da6c",
-  "status": "planned"
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "239571",
+    "source_commit": "ff146135f42c52fb6a95c378c880763cc95ce283",
+    "started_utc": "2026-11-08T05:38:35.023546+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "seed": 42,
+  "source_commit": "ff146135f42c52fb6a95c378c880763cc95ce283",
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--job-name=spline-score-calibration",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+      "experiments/transformer_pp/calibrate_spline_scores.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration",
+      "ff146135f42c52fb6a95c378c880763cc95ce283",
+      "rb1a3a991da6c"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "H100",
+    "job_id": "239571",
+    "launch_commit": "ff146135f42c52fb6a95c378c880763cc95ce283",
+    "partition": "standard",
+    "slurm_job_id": "239571",
+    "submitted_utc": "2026-11-08T05:38:12.928123+00:00",
+    "worktree": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration"
+  }
 }
