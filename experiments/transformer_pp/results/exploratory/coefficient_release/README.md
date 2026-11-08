@@ -49,9 +49,37 @@ validation-best.
 coefficients u_r = r! c_r over training, from the evaluation coefficient reports: raw values
 for static runs; b, a and the effective-coefficient summary for query runs.
 
-**Findings.** Pending.
+**Findings.** All four runs completed 7,570 updates on 2026-11-08 (three B300, one H100).
 
-**Open decision.** Pending the results.
+| Run | Model and schedule | Best | Terminal | Best vs control | Best vs fixed Taylor |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `rd40b46f5dc9b` | query + W decay, released at 455 | 14.229 | 14.237 | −0.094 | +0.011 |
+| `rcc4f4e5d7abb` | query + W decay, by order | 14.242 | 14.243 | −0.081 | +0.024 |
+| `r1c72e8860ade` | static, released at 455 | 14.343 | 14.346 | +0.049 | +0.125 |
+| `r991a756da7a9` | static, by order | 14.243 | 14.246 | −0.051 | +0.025 |
+
+- **No run reaches fixed Taylor (14.218 / 14.223); the success criterion is not met.** The
+  closest, query released at 455, ends 0.011 above Taylor's best and level with Hermite
+  (14.225).
+- **Query + W decay gains from both schedules:** 0.09 and 0.08 below its control, and below
+  exp (14.257). The gain exceeds most same-recipe rerun differences recorded elsewhere
+  (median 0.006, at most 0.074), but rests on one seed.
+- **Static is mixed:** by-order release helps (−0.05), releasing all orders at once hurts
+  (+0.05). Both are within the rerun spread, so their ordering is unresolved.
+- **The freeze held exactly:** before its release every coefficient, and the query runs'
+  W, was bitwise at its initial value at every evaluation (the controls had moved by up to
+  0.16 by update 400). Each release fired at its scheduled update.
+- **Coefficients end near the controls':** once released they follow the controls' pattern
+  ([coefficients.png](coefficients.png)): u_7 and u_8 grow (static means 1.34 / 1.08 with
+  release at 455, against 1.40 / 1.13 for the control), the low orders fall to 0.8-0.9.
+
+![Coefficients over training](coefficients.png)
+
+**Open decision.** Discard, or confirm the query result with a second seed before any
+further schedule variant.
+
+Regenerate `summary.csv` and `coefficients.png` with
+`scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.exploratory.coefficient_release.plot`.
 
 Launch commands are in the [study README](../../../README.md#coefficient-release); the runs
 are listed in [selection.yaml](selection.yaml).
