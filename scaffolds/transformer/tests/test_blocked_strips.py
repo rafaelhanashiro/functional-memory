@@ -324,8 +324,11 @@ def test_bfloat16_strips_put_key_and_value_gradients_at_the_rounding_floor(name)
     assert max(scan[:2]) < 1.1, scan                # the scan's output and dQ are at the floor too
     assert min(scan[2:]) > 1.3, scan                # its BF16 dK/dV block sums are not
     # The forward is the scan's: identical BF16-exact products, FP32 accumulation in another order.
-    np.testing.assert_allclose(np.asarray(strip_results[0], np.float32), np.asarray(scan_results[0], np.float32),
-                               rtol=2 ** -7, atol=1e-6)
+    # Rows whose terms cancel to near zero differ by that order's rounding, which depends on the
+    # host CPU's vectorization, so the absolute tolerance scales with the output.
+    strip_output, scan_output = (np.asarray(x[0], np.float32) for x in (strip_results, scan_results))
+    assert relative_l2(strip_output, scan_output) < 2 ** -9
+    np.testing.assert_allclose(strip_output, scan_output, rtol=2 ** -7, atol=1e-4 * np.abs(scan_output).max())
 
 
 def test_strips_recompute_inside_checkpoints_that_prevent_cse():
