@@ -637,7 +637,6 @@ directory.
 | `ra98612db06d4` | cubic | 8 | `worktrees/gdn-small-width` | complete |
 | `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | `worktrees/gdn-small-width` | held |
 | `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | `worktrees/gdn-small-width` | held |
-| `r1d67ac6f0223`, `r4f60c2ce2f1f` | quartic | 16, 8 | `worktrees/gdn-quartic` | held |
 | `rf65d38ec0552` | tanh linear write | 64 | `worktrees/gdn-tanh-write` | complete |
 
 The records here are copies of the worktree records; a worktree's own record stays
