@@ -383,6 +383,23 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_gate: sigmoid` (default `none`) gates every order independently
+per layer and head: `c~_r(x_t) = 2 g_r(x_t) c_r(x_t)` with
+`g_r(x_t) = sigmoid(U_r^T x_t + beta_r)`, where `x_t` is the coefficient generator's input.
+The kernel `query_polynomial_gate_kernel` (`U`, `[layers, heads, hidden_size, m+1]`) and
+the bias `query_polynomial_gate_bias` (`beta`, `[layers, heads, m+1]`) are FP32, start at
+exactly zero, and draw no random numbers, so every other parameter keeps the ungated
+recipe's initialization. The fixed factor 2 normalizes the gate: `2 g_r` is exactly 1 at
+the start, preserving the ungated function and its derivatives with respect to `W`, `a`
+and `b`, and ranges over `(0, 2)` thereafter, so an order can be suppressed or amplified;
+the gate never starts near saturation. `U` follows
+`attention_coefficient_kernel_weight_decay`, like `W`; `beta` never decays. The gate is
+applied inside the coefficient generator, so every backend receives the gated `c~`
+unchanged, with no distance-dependent decay or row-sum division. It is qualified for
+diagonal tanh query coefficients with RoPE, without selected orders, an inner tanh bias, a
+forget gate, continuation, or a query learning-rate scale. Diagnostics report the gate,
+the ungated `c`, the order tilt `log g_r - mean_r log g_r`, and each order's contribution
+`c~_r s_ti^r` over causal pairs, since a small gate alone does not show suppression.
 `attention_coefficient_amplitude_scale: factorial` (tanh only; default `none`) uses the
 effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no new
 parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s

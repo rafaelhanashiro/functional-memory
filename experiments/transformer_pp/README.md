@@ -347,6 +347,16 @@ sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --me
   experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml af919f3f4af1a3e647d267cf098d385bbb952941 1 H100
 ```
 
+### Per-order coefficient gates
+
+The [order-gates topic](results/exploratory/order_gates/README.md) asks whether
+multiplicative gates on individual polynomial orders improve query-conditioned attention
+without a distance-dependent forget gate. Two runs add independent per-order sigmoid gates
+(`model.attention_coefficient_gate: sigmoid`) to the query + weight decay, RoPE recipe of
+`r25fffc16c2f3`: `r77698776d82c` at degree 8 and `r8c4a6ecdf4d2` at degree 10, both
+hosted on ORCD (H200). Both end 7–8% worse than the ungated control; the topic records
+the formulas, the control, the per-order gate findings and the exact launch commands.
+
 ### Query coefficient optimization
 
 Two degree-four query/tanh runs test weight decay on the projection and a higher
