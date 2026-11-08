@@ -127,3 +127,49 @@ def test_initialization_check_finds_the_shared_start_and_epsilon_level_logit_par
     monkeypatch.setattr(adapter, "CONTROL_INITIALIZATION_SHA256", "0" * 64)
     with pytest.raises(RuntimeError, match="rca97cc9db8f2's start"):
         adapter.check_initialization(config)
+
+
+def _small_gated_config(monkeypatch, perturb):
+    """The small gated test recipe, with ``perturb`` applied to the gated model's parameters only.
+    The shared declared-value check, which runs first and rejects such a start too, is skipped so
+    that the adapter's own checks are the ones exercised."""
+    from flax import nnx
+    import scaffolds.transformer.models as models
+    from scaffolds.transformer.tests.test_coefficient_gdn_gates import _config
+
+    config = _config(4)
+    config.train.seed = 42
+    monkeypatch.setattr(adapter, "check_recipe", lambda config: None)
+    monkeypatch.setattr(adapter, "matches_softmax_backbone_initialization", lambda config: {})
+    original = models.build_model
+
+    def build(model_config, rngs):
+        model = original(model_config, rngs)
+        if model_config.attention_coefficient_gate == "gdn":
+            state = nnx.state(model, nnx.Param)
+            perturb(state)
+            nnx.update(model, state)
+        return model
+
+    monkeypatch.setattr(models, "build_model", build)
+    return config
+
+
+def test_initialization_check_rejects_gates_drawn_independently_per_order(monkeypatch):
+    import jax.numpy as jnp
+
+    def perturb(state):
+        kernel = state["query_polynomial_gate_kernel"]
+        kernel.value = kernel.value + jnp.arange(kernel.value.shape[-1], dtype=kernel.value.dtype)
+
+    with pytest.raises(RuntimeError, match="one finite FP32 draw"):
+        adapter.check_initialization(_small_gated_config(monkeypatch, perturb))
+
+
+def test_initialization_check_rejects_shared_parameters_that_change_with_the_gate(monkeypatch):
+    def perturb(state):
+        scale = state["output_norm_scale"]
+        scale.value = scale.value + 1
+
+    with pytest.raises(RuntimeError, match="differ from the ungated recipe"):
+        adapter.check_initialization(_small_gated_config(monkeypatch, perturb))
