@@ -882,9 +882,12 @@ adds query (`r507193d47450`) and query–key (`r03be769d2069`) gates independent
 for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
 and 1× budget, on the Mosaic per-order decay kernels (`model.attention_backend:
 mosaic`), which compute the same weights as the blocked reference. Home cluster:
-Kennel. Use one GPU per run on a 24-hour `standard` or `long` allocation;
+Kennel. Use one H100 per run on a 24-hour `standard` or `long` allocation;
 acceptance's pilot measures the update time and stops before training if the run
-would not fit. These jobs have no scheduling dependencies on each other.
+would not fit. Exclude `akita`: on B300 both per-order updates are slower than on
+either H100, and the query–key run would not fit 24 hours (see the topic's
+[attention kernels](results/exploratory/query_distance_decay/README.md#attention-kernels)).
+These jobs have no scheduling dependencies on each other.
 
 From the isolated `codex/degree-dependent-fox` worktree, after committing its
 frozen execution set:
@@ -892,7 +895,7 @@ frozen execution set:
 ```bash
 for run in r507193d47450 r03be769d2069; do
   sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch \

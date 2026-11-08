@@ -104,15 +104,13 @@ gradients enter the tensor cores in BF16, as for every Mosaic query-polynomial r
 control's blocked reference keeps them in FP32; the GPU tests show that this rounding is
 the only difference between the two paths.
 
-**Correctness (H100).** `scaffolds/transformer/tests/test_endpoint_decay.py` (`-m gpu`)
+**Correctness.** `scaffolds/transformer/tests/test_endpoint_decay.py` (`-m gpu`)
 checks every variant against host FP64 at 2,048 tokens: the output, dq, dk, dv, the
 coefficient gradients, and every gate gradient. It also checks zero-key recovery of the
 query-only control, invalid-gate poisoning, saturation, and an exact unit diagonal. The
 production dispatch, with gate projections from activations, matches FP64 through the full
 chain rule. A two-layer model matches the FP32 blocked model's loss and gradient direction.
-Acceptance runs these tests on each allocated GPU. **B300 is unqualified.** The Blackwell
-kernels lower for a CUDA target and pass Mosaic's shared-memory checks, but `akita` could not
-initialize CUDA on 2026-11-04: its NVSwitch fabric manager had failed. The runs exclude it.
+Acceptance runs these tests on each allocated GPU. They pass on H100 and on B300 (`akita`).
 
 **Throughput** ([throughput.json](throughput.json), commit `6de6510b`). Every row ran on one GPU
 of the named node. A full update is 16 accumulated microbatches of 16 × 2,049 tokens plus
@@ -147,6 +145,60 @@ even for the single extra exponential of query-only decay. Recomputing instead o
 decay tile did not change it, so holding that tile across the matrix products is not the cause; profiling the Hopper dK/dV step is the
 next step. The endpoint dQ pass costs about twice the gate-free one, for its softplus and sigmoid.
 
+**Per-order kernels.** Added 2026-11-08 for the [independent per-order gates](#independent-per-order-gates).
+Families `per_order_query_decay` and `per_order_endpoint_decay` evaluate
+\(W = \sum_r c_r s^r D_r\) with \(D_r = \exp(-(t-i)\lambda_r)\), one order at a time inside the
+same causal tiles. The dQ and dK passes accumulate \(dS = G \sum_r r\,c_r D_r s^{r-1}\),
+\(dc_r = \sum_i G D_r s^r\), and the gate sums above for each order, with
+\(W_r = c_r D_r s^r\) and the order's own gate argument \(x_r\) in place of \(W\) and \(x\).
+`scaffolds/transformer/tests/test_per_order_decay.py` (`-m gpu`) checks the output and every
+gradient at 2,048 tokens against FP64 autodiff of the explicit all-pairs formula. It also
+checks that duplicated orders reproduce the shared-gate kernels, zero-key recovery of the
+per-order query gates, invalid-gate poisoning, the exact unit diagonal, and a two-layer model
+against the FP32 blocked model. These tests pass on H100 (`dogo`) and B300 (`akita`).
+
+Throughput ([per_order_throughput.json](per_order_throughput.json), commit `b38c116f`),
+measured as above:
+
+| Recipe | dogo (H100 SXM): blocked → Mosaic | mastiff (H100 PCIe): blocked → Mosaic |
+| --- | --- | --- |
+| Per-order query–key (`r03be769d2069`) | 22.47 → 5.19 s/update (4.3×) | 39.72 → 7.70 s/update (5.2×) |
+| Per-order query (`r507193d47450`) | 11.58 → 2.76 s/update (4.2×) | 19.57 → 4.38 s/update (4.5×) |
+| Endpoint query–key control (`r02f984133092`) | 2.50 s/update | 3.98 s/update |
+| Query-only control (`r3e26412b2811`) | 2.24 s/update | 3.48 s/update |
+| Gate-free floor | 1.95 s/update | 3.07 s/update |
+
+For 7,570 updates, training projects 10.9 h (SXM) or 16.2 h (PCIe) for the per-order
+query–key run, and 5.8 h or 9.2 h for the per-order query run. Blocked, they would take 47 h
+and 24 h on SXM. Peak allocator memory is 27.0 GiB on Mosaic, against 27.3–27.5 GiB (query)
+and 28.3–29.6 GiB (query–key) blocked. Over their shared-gate controls, per-order gates cost
+23% (query) and 108% (query–key) on SXM, and 26% and 94% on PCIe.
+
+| Family (SXM, ms) | Blocked | Mosaic | Mosaic forward / dQ / dK-dV |
+| --- | ---: | ---: | --- |
+| Per-order query decay | 11.7 / 27.8 | 1.28 / 4.25 | 1.15 / 2.28 / 2.09 |
+| Per-order endpoint decay | 18.8 / 67.6 | 3.13 / 12.0 | 2.94 / 6.12 / 6.12 |
+
+Attention is about 2.9 s of the per-order query–key update's 5.2 s. Its dQ and dK/dV passes
+cost 3.7× and 3.5× the shared endpoint gate's, because each order adds its own softplus,
+sigmoid and exponential to every weight. Nsight Compute also shows register spills in both
+backward passes, more in dK/dV: 182M local loads and 125M local stores per query–key launch,
+against 88M and 45M in dQ. The dQ order loop keeps five FP32 tiles live (s, dP, distance,
+\(s^r\) and the running dS sum) beside its accumulator; the dK/dV loop also carries W beside
+the dK and dV accumulators. Holding fewer tiles across orders is the next step for these
+kernels. The per-order query kernels cost 1.6× the shared query-decay kernels.
+
+**B300.** On `akita` (B300, same file), the Blackwell decay kernels are the largest remaining
+bottleneck. Per-order query and query–key updates take 4.80 and 10.94 s/update on Mosaic
+(blocked: 6.56 and 16.73), against 1.22 s for the gate-free floor, 1.61 s for the query-only
+control and 2.84 s for the endpoint control. Both per-order recipes are slower there than on
+either H100, and the query–key run's 23.0 h of training would not fit a 24-hour allocation, so
+the per-order runs train on H100 only. At the per-GPU attention shape, Mosaic forward+backward
+takes 15.7 ms (per-order query) and 39.6 ms (per-order query–key) on B300, against 2.23 ms
+without a gate. The backward passes dominate: dQ 9.14 and 18.6 ms, dK 5.34 and 15.9 ms, and
+dV 3.11 and 6.14 ms. The shared endpoint gate's dQ pass also takes 5.26 ms on B300, against
+1.67 ms on H100 SXM.
+
 ## Results
 
 The selection pins all six runs explicitly. Best PPL is the lowest validation PPL
@@ -159,8 +211,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 | Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
-| Per-order query distance + W decay | `r507193d47450` | planned | — | — | — |
-| Per-order query-key distance + W decay | `r03be769d2069` | planned | — | — | — |
+| Per-order query distance + W decay | `r507193d47450` | running | — | — | — |
+| Per-order query-key distance + W decay | `r03be769d2069` | running | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
