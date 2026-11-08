@@ -25,6 +25,7 @@ TERMINAL = {
     ("query_w_decay", 1): 19.219, ("query_w_decay", 2): 15.832, ("query_w_decay", 3): 16.443,
     ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080, ("query_w_decay", 6): 14.641,
     ("query_w_decay", 7): 14.384,
+    ("taylor", 8): 14.223, ("hermite", 8): 14.231, ("static", 8): 14.2985, ("query_w_decay", 8): 14.328,
 }
 
 
@@ -35,7 +36,7 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 30 and set(cells) == set(TERMINAL)
+    assert len(rows) == 34 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
@@ -58,6 +59,13 @@ def test_committed_runs_and_quoted_values():
     assert cells["static", 7]["change_from_previous_degree_percent"] == pytest.approx(0.13, abs=5e-3)
     assert cells["query_w_decay", 7]["change_from_previous_degree_percent"] == pytest.approx(-1.75, abs=5e-3)
     assert cells["hermite", 7]["percent_above_exp"] == pytest.approx(0.07, abs=5e-3)
+    # m = 8: every family improves; the fixed families end 0.2-0.3% below exp.
+    assert cells["taylor", 8]["change_from_previous_degree_percent"] == pytest.approx(-0.60, abs=5e-3)
+    assert cells["static", 8]["change_from_previous_degree_percent"] == pytest.approx(-0.89, abs=5e-3)
+    assert cells["taylor", 8]["percent_above_exp"] == pytest.approx(-0.27, abs=5e-3)
+    assert cells["hermite", 8]["percent_above_exp"] == pytest.approx(-0.21, abs=5e-3)
+    assert cells["query_w_decay", 8]["percent_above_exp"] == pytest.approx(0.46, abs=5e-3)
+    assert cells["taylor", 8]["percent_above_softmax"] == pytest.approx(-2.22, abs=5e-3)
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
