@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7820049184ef/config.yaml",
+    "sha256": "86de8523a9211c79eb493977b32011d1b0306d288cd1d0666295b69fd66b1362"
+  },
+  "label": "exp-alibi-fixed-no-rope",
+  "name": "exp-alibi-fixed-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r7820049184ef",
+  "status": "planned"
+}

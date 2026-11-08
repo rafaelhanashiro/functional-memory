@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/ref652c257797/config.yaml",
+    "sha256": "646df38cbc83c662655784cb6dd8254422f64169c5bab891caccfc5a33e9e3cc"
+  },
+  "label": "softmax-alibi-fixed-no-rope",
+  "name": "softmax-alibi-fixed-no-rope",
+  "record_schema_version": 1,
+  "run_id": "ref652c257797",
+  "status": "planned"
+}
