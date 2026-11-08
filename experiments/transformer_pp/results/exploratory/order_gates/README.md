@@ -226,9 +226,10 @@ The GDN-gated run's launch command and acceptance are in the
 [study README](../../../README.md#per-order-coefficient-gates); it runs on Kennel with one
 B300 or H100 GPU.
 
-Home cluster for the sigmoid runs: ORCD. Each run uses one H200 (Hopper, sm90, the H100's kernels), with no
-scheduling dependency; at submission Slurm estimated an H200 start about two days before
-an H100 one. From the experiment worktree after committing the frozen execution inputs:
+Home cluster for the sigmoid runs: ORCD. Each run uses one H200 (Hopper, sm90, the H100's
+kernels), with no scheduling dependency; at submission Slurm estimated an H200 start about
+two days before an H100 one. From the experiment worktree after committing the frozen
+execution inputs:
 
 ```bash
 for RUN in r77698776d82c r8c4a6ecdf4d2; do
