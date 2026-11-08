@@ -669,6 +669,66 @@ def test_cli_keeps_backends_without_a_mosaic_kernel_or_already_mosaic(tmp_path, 
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == model["attention_backend"]
 
 
+@pytest.mark.parametrize("model", [{}, {"attention_backend": "blocked", "attention_forget_gate": True,
+                                        "positional_encoding": "none"}])
+def test_cli_trains_fresh_dot_product_runs_on_blocked_strips(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    original = source.read_bytes()
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "strips"
+    assert source.read_bytes() == original
+    validate_record(run)
+
+
+def test_cli_requires_explicit_opt_out_for_the_blocked_scan(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "copied.yaml"
+    source.write_text("model:\n  attention_backend: blocked\n  attention_blocked_implementation: scan\ntrain: {}\n")
+    original = source.read_bytes()
+    study = tmp_path / "study"
+    arguments = ["records", "create", "--study", str(study), "--config", str(source)]
+    monkeypatch.setattr("sys.argv", arguments)
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-scan-blocked-attention" in capsys.readouterr().err
+    assert not study.exists()
+    monkeypatch.setattr("sys.argv", arguments + ["--allow-scan-blocked-attention"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "scan"
+    assert source.read_bytes() == original
+    validate_record(run)
+
+
+@pytest.mark.parametrize("model", [{"attention_mechanism": "gla"}, {"attention_mechanism": "gated_deltanet"},
+                                   {"positional_encoding": "path"},
+                                   {"positional_encoding": "path", "attention_blocked_implementation": "scan"},
+                                   {"attention_backend": "cudnn"},
+                                   {"attention_backend": "mosaic", "attention_degree": 2, "qk_head_dim": 64,
+                                    "value_head_dim": 64},
+                                   {"attention_backend": "mosaic", "attention_degree": 2, "qk_head_dim": 64,
+                                    "value_head_dim": 64, "attention_blocked_implementation": "scan"}])
+def test_cli_keeps_the_scan_default_where_strips_do_not_apply(tmp_path, monkeypatch, capsys, model):
+    """PaTH, GLA, and Gated DeltaNet have their own blocked code, and the kernel backends never run
+    the field: it keeps its inert default, so these recipes match their historical partners."""
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    kernel = model.get("attention_backend") in ("cudnn", "mosaic")  # these kernels train in BF16
+    source.write_text(yaml.safe_dump({"model": model, "train": {"dtype": "bfloat16"} if kernel else {}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "scan"
+
+
 @pytest.mark.parametrize("umask,mode", [(0o022, 0o644), (0o002, 0o664), (0o077, 0o600)])
 def test_records_written_atomically_follow_the_process_umask(tmp_path, umask, mode):
     previous = os.umask(umask)

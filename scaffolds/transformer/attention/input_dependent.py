@@ -258,7 +258,7 @@ def project_key_factors(x, kernel, amplitude):
 
 
 def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backend="blocked",
-                                   return_diagnostics=False):
+                                   return_diagnostics=False, blocked_implementation="scan"):
     """sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i: per-query coefficients times per-key factors.
 
     The blocked reference evaluates the pairwise coefficient directly, and the fused Triton
@@ -267,18 +267,21 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
     coefficient vector c_r(x_t) e_r; its m+1 partial outputs are rounded to V's dtype before
     they are summed, which at degree one corrupts the gradient after head RMSNorm.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.shape[-1] < 2:
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
     if key_factors.shape != coefficients.shape:
         raise ValueError("Key factors must match the query coefficient shape [batch,time,heads,degree+1]")
     degree = coefficients.shape[-1] - 1
-    reference = partial(blocked_dot_product_attention, q, k, v, attention_degree=degree,
-                        attention_normalization=False, query_polynomial_coefficients=coefficients,
-                        key_polynomial_factors=key_factors)
+    arguments = dict(attention_degree=degree, attention_normalization=False,
+                     query_polynomial_coefficients=coefficients, key_polynomial_factors=key_factors)
+    reference = partial(blocked_dot_product_attention, q, k, v, **arguments)
     if backend == "blocked":
-        result = reference(return_diagnostics=return_diagnostics)
+        result = blocked_backend_attention(q, k, v, implementation=blocked_implementation,
+                                           return_diagnostics=return_diagnostics, **arguments)
         if not return_diagnostics:
             return result
         output, diagnostics = result
@@ -327,7 +330,8 @@ def key_factor_statistics(key_factors):
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
                                log_decay=None, decay_mode="cumulative",
-                               query_gate_input=None, key_gate_input=None, gate_log_rate=None):
+                               query_gate_input=None, key_gate_input=None, gate_log_rate=None,
+                               blocked_implementation="scan"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
@@ -336,7 +340,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
@@ -355,10 +361,10 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
                          "decay also run on mosaic")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
-        result = blocked_dot_product_attention(
-            q, k, v, attention_degree=degree, attention_normalization=False,
-            query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
-            query_decay_mode=decay_mode, query_gate_input=query_gate_input,
+        result = blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=degree,
+            attention_normalization=False, query_polynomial_coefficients=coefficients,
+            query_log_decay=log_decay, query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
             return_diagnostics=return_diagnostics,
         )
@@ -407,7 +413,8 @@ def coefficient_statistics(coefficients):
     }
 
 
-def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False):
+def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
+                           blocked_implementation="scan"):
     """sum_(i<=t) (c0_t + c1_t * <q_t,k_i>/sqrt(d_K)) v_i.
 
     The fused path reuses the linear learned-polynomial kernel and adds the
@@ -419,13 +426,15 @@ def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_d
     both coefficients, and the coefficient projection. The blocked path directly
     evaluates the query-dependent polynomial and supplies kernel diagnostics.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if coefficients.shape != (*q.shape[:3], 2):
         raise ValueError("Query coefficients must have shape [batch,time,heads,2]")
     if backend == "blocked":
-        result = blocked_dot_product_attention(
-            q, k, v, attention_degree=1, attention_normalization=False,
+        result = blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=1, attention_normalization=False,
             query_polynomial_coefficients=coefficients, return_diagnostics=return_diagnostics,
         )
         if return_diagnostics:

@@ -1,0 +1,78 @@
+{
+  "stage": "model",
+  "micro_batch": 16,
+  "cases": [
+    {
+      "recipe": "experiments/transformer_pp/runs/r82a80d3091e2/config.yaml",
+      "implementation": "scan",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 953.3252910041483,
+        "p10_ms": 952.6924778125249,
+        "p90_ms": 953.6874898971291,
+        "samples_ms": [
+          952.7848760189954,
+          953.8789560028818,
+          953.2647900050506,
+          952.476881997427,
+          953.5395040002186,
+          953.6054329946637,
+          953.385792003246,
+          952.9172950133216
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 63.77547582398984,
+        "compiled_memory": {
+          "argument_size_in_bytes": 798471400,
+          "output_size_in_bytes": 798341460,
+          "temp_size_in_bytes": 27427392888,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2123360
+        },
+        "kernels": 2427
+      },
+      "nll": 10.509969711303711,
+      "grad_norm": 2.018066167831421,
+      "seconds_per_update": 15.253204656066373,
+      "peak_bytes_in_use": 31609769472,
+      "device": "NVIDIA H100 PCIe"
+    },
+    {
+      "recipe": "experiments/transformer_pp/runs/r82a80d3091e2/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 733.3795404992998,
+        "p10_ms": 728.318502890761,
+        "p90_ms": 733.7159887887537,
+        "samples_ms": [
+          718.585221999092,
+          732.4902890250087,
+          733.2700150145683,
+          734.0061359864194,
+          733.5528119874652,
+          733.5916399897542,
+          732.4899089871906,
+          733.4890659840312
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 86.05270148799173,
+        "compiled_memory": {
+          "argument_size_in_bytes": 798471400,
+          "output_size_in_bytes": 798341460,
+          "temp_size_in_bytes": 26132222112,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2741700
+        },
+        "kernels": 3574
+      },
+      "nll": 10.509995460510254,
+      "grad_norm": 2.0181326866149902,
+      "seconds_per_update": 11.734072647988796,
+      "peak_bytes_in_use": 30314598656,
+      "device": "NVIDIA H100 PCIe"
+    }
+  ]
+}

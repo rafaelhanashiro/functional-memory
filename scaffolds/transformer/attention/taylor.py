@@ -23,17 +23,19 @@ def _taylor_polynomial(scores: jax.Array, degree: int) -> jax.Array:
 
 def taylor_attention(
     q: jax.Array, k: jax.Array, v: jax.Array, *, attention_degree: int,
-    backend: str = "blocked", return_diagnostics: bool = False,
+    backend: str = "blocked", return_diagnostics: bool = False, blocked_implementation: str = "scan",
 ):
     """Normalized causal Taylor attention, including signed odd truncations."""
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     _validate_degree(attention_degree)
     if attention_degree is None:
         raise ValueError("Taylor attention requires an integer degree")
     if backend == "blocked":
-        return blocked_dot_product_attention(
-            q, k, v, attention_degree=attention_degree,
+        return blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
             return_diagnostics=return_diagnostics,
         )
     if backend == "fused":

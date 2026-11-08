@@ -874,6 +874,60 @@ as for the fused kernels. They are the canonical kernels for these mechanisms, a
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
 run's weight precision (`--mosaic-precision`).
 
+`model.attention_blocked_implementation` chooses how the blocked backend runs dot-product
+attention with RoPE or no positional encoding. Both choices live in
+`attention/backends/reference.py` and evaluate the same per-block arithmetic, one shared
+function: the same scores, kernels, normalizations, and invalid-row rules for every mechanism.
+
+| Value | Function | Execution |
+| --- | --- | --- |
+| `scan` (default) | `blocked_dot_product_attention` | Checkpointed scan of 128-query blocks, each against all keys. Autodiff sums each block's K and V cotangents in the input dtype: BF16 dK and dV carry 1.8-2.8x the BF16 rounding floor at 2,048 tokens ([validation](validation/README.md)). |
+| `strips` | `strip_dot_product_attention` | Causal 512-query strips (`STRIP_SIZE`; the last may be shorter), each against its key prefix only, each under `jax.checkpoint` so its backward recomputes it. K, V, and the other per-key operands are converted to FP32 once before the strips, so their cotangents sum in FP32 and round once. |
+
+- Precision: the products read the BF16 values (exact in FP32 and TF32) with FP32
+  accumulation, weights stay FP32, and the output has V's dtype, as in the scan. dQ has no sum
+  across strips. Every conversion of a BF16 operand to FP32 (each strip's queries; K, V, and
+  the other operands once) and of the output back to V's dtype is written with
+  `reduce_precision` (`_rounded_to`). With the default `xla_allow_excess_precision`, XLA GPU
+  removes an f32 -> bf16 -> f32 conversion pair, so plain conversions next to the model's FP32
+  math (QK RMSNorm, RoPE, head RMSNorm) would hand the forward unrounded FP32 values and the
+  backward's recomputation the saved BF16 ones. `tests/test_blocked_strips_h100.py` checks the
+  roundings in compile-only H100 programs (it skips without the CUDA plugin; acceptance does not
+  run it).
+- Memory: a strip's working set is FP32 [batch, heads, 512, keys] blocks, 4x the scan's
+  128-query rows, and K and V are kept in FP32 for the backward. Compile-only H100 estimates of
+  one update's temporary memory on the blocked backend, scan then strips: the 15-layer
+  width-896 softmax recipe at micro-batch 16, 23.6 and 26.0 GB; FoX query m = 4 there, 26.8 and
+  26.1 GB; 10-layer width-1024 recipes with 16 heads at micro-batch 64, query m = 4 66.1 and
+  82.4 GB (73.9 GB with 256-query strips) and normalized learned m = 4 63.3 and 57.2 GB. A
+  recipe near a GPU's limit may need a smaller micro-batch; gradient accumulation keeps its
+  scientific batch.
+- The one intended difference: masked keys are never multiplied, so a nonfinite V entry poisons
+  the rows from the start of its strip onward. The scan multiplies every key's V by each block's
+  weights, and a masked zero weight times NaN or inf poisons every row.
+- The strips' checkpoints keep CSE prevention on. Unlike the scan's loop body, unrolled strips
+  have no loop boundary: without it XLA merges each recomputation with its forward and keeps
+  every layer's scores until its backward. The strips assume a static sequence length.
+- Diagnostics (`return_diagnostics`) still come from the scan, forward only, as for the fused
+  kernels. Kernels are still qualified against the scan, and the coefficient fit's
+  blocked-reference check runs it whatever the parent recipe sets.
+- PaTH, Gated DeltaNet, and GLA keep their own blocked code and reject `strips`. Other resolved
+  backends ignore the field, so `auto` recipes use the strips wherever they resolve to `blocked`.
+- Historical recipes and resumptions keep `scan`, the default. `scaffolds.records create` writes
+  `strips` into fresh dot-product recipes (RoPE or no positional encoding) on the `blocked` or
+  `auto` backend that leave the field unset, and rejects an explicit `scan` there unless
+  `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep the inert `scan`,
+  so they match their historical partners. A launcher that allocates copied recipes with
+  `create_run` for the blocked backend applies the same rule
+  (`configs.base.fresh_recipe_uses_blocked_strips`), as the Transformer++ continuation launcher
+  does.
+- The field is an execution setting, like the backend: a continuation, including one that
+  preserves all parameters, may train on the strips from a parent that trained on the scan.
+- Run metadata records `attention_implementation: blocked_causal_strips`,
+  `attention_blocked_implementation`, `attention_strip_size`, and the diagnostic scan
+  (`diagnostic_backend`, `diagnostic_query_block_size`). Acceptance adds
+  `tests/test_blocked_strips.py` to the CPU tests of recipes that train on the strips.
+
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
 when the caller requests `auto`. A resumed run fails if its pinned implementation

@@ -13,7 +13,7 @@ from flax import nnx
 
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
-from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
+from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE, STRIP_SIZE
 from scaffolds.transformer.training.numerics import (
     has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
     has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
@@ -459,6 +459,17 @@ def attention_identity(config) -> dict:
         })
     elif config.model.attention_backend in ("manual", "xla", "cudnn"):
         identity.update({
+            "query_block_size": None,
+            "diagnostic_backend": "blocked",
+            "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
+        })
+    elif (config.model.attention_backend == "blocked"
+          and getattr(config.model, "attention_blocked_implementation", "scan") == "strips"):
+        # Causal query strips with FP32 dK/dV sums train; diagnostics come from the historical scan.
+        identity.update({
+            "attention_implementation": "blocked_causal_strips",
+            "attention_blocked_implementation": "strips",
+            "attention_strip_size": STRIP_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "blocked",
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,

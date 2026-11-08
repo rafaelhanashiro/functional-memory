@@ -1025,7 +1025,10 @@ def main(argv=None):
         # Capture replays the production graph against itself; this checks the restored
         # parent against an independently implemented attention backend.
         print("Comparing the restored forward with the blocked reference backend", flush=True)
-        reference_config = replace(config, model=replace(config.model, attention_backend="blocked"))
+        # The reference is the historical blocked scan, against which kernels are qualified,
+        # whatever implementation the parent recipe would train with on the blocked backend.
+        reference_config = replace(config, model=replace(config.model, attention_backend="blocked",
+                                                         attention_blocked_implementation="scan"))
         reference_model = nnx.eval_shape(lambda: build_model(
             reference_config.model, nnx.Rngs(params=config.train.seed, dropout=config.train.seed)))
         for _, module in nnx.iter_graph(reference_model):
@@ -1035,7 +1038,8 @@ def main(argv=None):
             graph, nnx.split(reference_model, nnx.Param)[0], params, token_chunks[0])
         reference_error = float(np.max(np.abs(np.asarray(reference_agreement["production_nll"])
                                               - np.asarray(reference_agreement["reference_nll"]))))
-        reference_agreement.update(reference_backend="blocked", sequence_count=int(token_chunks[0].shape[0]),
+        reference_agreement.update(reference_backend="blocked", reference_blocked_implementation="scan",
+                                   sequence_count=int(token_chunks[0].shape[0]),
                                    nll_max_absolute_error=reference_error, nll_atol=external_nll_atol)
         print("Reference backend agreement: " + json.dumps(reference_agreement), flush=True)
         if not reference_agreement["all_logits_finite"] or reference_error > external_nll_atol:

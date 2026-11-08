@@ -70,6 +70,7 @@ COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
+BLOCKED_STRIPS_TESTS = "scaffolds/transformer/tests/test_blocked_strips.py"
 FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
 FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
 FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
@@ -145,6 +146,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(DENSE_MIXING_SCALE_TESTS)
     if cpu and model.get("qk_norm_head_scale", False):
         paths.append(QK_HEAD_SCALE_TESTS)
+    if (cpu and resolved_backend == "blocked"
+            and model.get("attention_blocked_implementation", "scan") == "strips"):
+        # Training on causal strips: their equivalence with the scan and their FP32 dK/dV sums.
+        paths.append(BLOCKED_STRIPS_TESTS)
     if (not cpu and model.get("qk_norm_head_scale", False)
             and model.get("attention_mechanism", "dot_product") == "dot_product"
             and not model.get("attention_normalization", True)
