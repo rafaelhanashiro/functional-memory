@@ -37,6 +37,12 @@ def _mamba2_dt_bias(key, shape):
     return dt + jnp.log(-jnp.expm1(-dt))      # inverse softplus
 
 
+def _mamba2_sigmoid_bias(key, shape):
+    """Reuse the legacy dt draw, matching sigmoid(b_new) = softplus(b_old) at zero input."""
+    dt = jax.nn.softplus(_mamba2_dt_bias(key, shape))
+    return jnp.log(dt) - jnp.log1p(-dt)
+
+
 def _mamba2_log_rate(key, shape):
     from scaffolds.transformer.attention.gated_deltanet import A_LOG_RANGE
 
@@ -61,7 +67,7 @@ def _alibi_log_slope(key, shape):
 # Gated DeltaNet's decay-gate draws: a PyTorch-default Linear row over the last axis,
 # exp(A_log) ~ Uniform(0, 16), and softplus(dt_bias) log-uniform on [0.001, 0.1].
 RANDOM_INITIALIZERS = {"uniform_fan_in": _uniform_fan_in, "mamba2_log_rate": _mamba2_log_rate,
-                       "mamba2_dt_bias": _mamba2_dt_bias, "alibi_log_slope": _alibi_log_slope}
+                       "mamba2_dt_bias": _mamba2_dt_bias, "mamba2_sigmoid_bias": _mamba2_sigmoid_bias, "alibi_log_slope": _alibi_log_slope}
 
 
 # The input-independent coefficient arrays that ``attention_coefficient_scale`` stores scaled.
@@ -169,7 +175,9 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         from scaffolds.transformer.attention.forget_gate import parameter_specs as forget_gate_specs
 
         specs += forget_gate_specs(hidden_size=config.hidden_size,
-                                   form=getattr(config, "attention_forget_gate_form", "input"))
+                                   form=getattr(config, "attention_forget_gate_form", "input"),
+                                   conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
+                                   rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"))
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 

@@ -29,6 +29,9 @@ def blocked_dot_product_attention(
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
     query_decay_mode: str = "cumulative",
+    query_gate_input: jax.Array | None = None,
+    key_gate_input: jax.Array | None = None,
+    gate_log_rate: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -59,6 +62,9 @@ def blocked_dot_product_attention(
     coefficients and ``query_decay_mode="query_distance"``, the same array holds raw FP32
     log alpha_t instead: each polynomial weight is multiplied by exp((t-i)*log alpha_t). Gates
     from intervening tokens are unused. A nonfinite or positive raw log alpha poisons its query.
+    Alternatively, endpoint operands query_gate_input/key_gate_input [B,T,H] and gate_log_rate [H,1]
+    replace query_log_decay and yield -exp(gate_log_rate) softplus(query_input_t + key_input_i).
+    Only token projections are stored; pair rates and their causal diagnostics are computed in blocks.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -126,16 +132,25 @@ def blocked_dot_product_attention(
     if key_conditioned and (not query_conditioned
                             or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
-    decayed = query_log_decay is not None
+    endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
+                     or query_log_decay is not None or query_decay_mode != "query_distance"):
+        raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
+    if endpoint and (query_gate_input.shape != (batch, time, heads)
+                     or key_gate_input.shape != (batch, time, heads) or gate_log_rate.shape != (heads, 1)):
+        raise ValueError("Endpoint inputs require [batch,time,heads] and log rate [heads,1]")
+    decayed = query_log_decay is not None or endpoint
     if query_decay_mode not in ("cumulative", "query_distance"):
         raise ValueError(f"Unknown query decay mode: {query_decay_mode}")
     if query_decay_mode != "cumulative" and not decayed:
         raise ValueError("A query-distance decay mode requires query_log_decay")
     exponential = attention_degree is None and quadratic_mode == "fixed"
     if decayed and (key_conditioned or not (query_conditioned or exponential)
-                    or query_log_decay.shape != (batch, time, heads)):
+                    or (not endpoint and query_log_decay.shape != (batch, time, heads))):
         raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone, "
                          "softmax, or the unnormalized exponential")
+    if endpoint and not query_conditioned:
+        raise ValueError("Endpoint decay requires query coefficients")
     if query_decay_mode != "cumulative" and not query_conditioned:
         raise ValueError("The query-distance decay mode requires query coefficients; softmax and the "
                          "exponential take the cumulative decay")
@@ -152,7 +167,12 @@ def blocked_dot_product_attention(
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(jnp.float32),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
         key_factors = key_polynomial_factors.astype(jnp.float32) if key_conditioned else None
-    if decayed:
+    if endpoint:
+        padded_query_gate_input = jnp.pad(query_gate_input.astype(jnp.float32),
+                                          ((0, 0), (0, pad), (0, 0)), mode="edge")
+        key_gate = jnp.swapaxes(key_gate_input.astype(jnp.float32), 1, 2)[:, :, None, :]
+        gate_rate = jnp.exp(gate_log_rate[:, 0].astype(jnp.float32))[None, :, None, None]
+    elif decayed:
         log_decay = query_log_decay.astype(jnp.float32)
         # Repeat the final gate on padded queries; these rows never enter the output or diagnostics.
         padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
@@ -171,8 +191,16 @@ def blocked_dot_product_attention(
             preferred_element_type=jnp.float32,
         ) * (1.0 / math.sqrt(qk_dim))
         if decayed:
-            query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
-            query_decay = jnp.swapaxes(query_decay, 1, 2)[..., None]
+            if endpoint:
+                query_input = jax.lax.dynamic_slice_in_dim(padded_query_gate_input, start, block_size, axis=1)
+                query_input = jnp.swapaxes(query_input, 1, 2)[..., None]
+                valid_gate_inputs = (jnp.isfinite(query_input) & jnp.isfinite(key_gate)
+                                     & jnp.isfinite(gate_log_rate[:, 0])[None, :, None, None])
+                query_decay = -gate_rate * jax.nn.softplus(query_input + key_gate)
+                query_decay = jnp.where(valid_gate_inputs, query_decay, jnp.nan)
+            else:
+                query_decay = jax.lax.dynamic_slice_in_dim(padded_log_decay, start, block_size, axis=1)
+                query_decay = jnp.swapaxes(query_decay, 1, 2)[..., None]
             if query_decay_mode == "cumulative":
                 # prod_(j=i+1..t) alpha_j = exp(L_t - L_i), never above one for causal pairs.
                 gap = jnp.where(causal, query_decay - jnp.swapaxes(log_decay, 1, 2)[:, :, None, :], 0.0)
@@ -269,6 +297,12 @@ def blocked_dot_product_attention(
             "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
             "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
         }
+        if endpoint:
+            diagnostics.update({
+                "forget_gate_log_alpha_sum": jnp.sum(jnp.where(measured, query_decay, 0.0), axis=(0, 2, 3)),
+                "forget_gate_log_alpha_min": jnp.min(jnp.where(measured, query_decay, jnp.inf), axis=(0, 2, 3)),
+                "forget_gate_log_alpha_max": jnp.max(jnp.where(measured, query_decay, -jnp.inf), axis=(0, 2, 3)),
+            })
         if not attention_normalization:
             # This sum is observed, never divided by. It may be zero or infinite
             # while the weighted output is finite, and must not stop training.
@@ -305,10 +339,15 @@ def blocked_dot_product_attention(
     if return_diagnostics:
         output_blocks, per_block = result
         diagnostics = {
-            name: (jnp.min(values) if name.endswith("_min") or name.startswith("min_abs_") else
-                   jnp.max(values) if name.endswith("_max") else jnp.sum(values))
+            name: (jnp.min(values, axis=0 if name.startswith("forget_gate_") else None)
+                   if name.endswith("_min") or name.startswith("min_abs_") else
+                   jnp.max(values, axis=0 if name.startswith("forget_gate_") else None)
+                   if name.endswith("_max") else
+                   jnp.sum(values, axis=0 if name.startswith("forget_gate_") else None))
             for name, values in per_block.items()
         }
+        if endpoint:
+            diagnostics["forget_gate_log_alpha_mean"] = diagnostics.pop("forget_gate_log_alpha_sum") / (batch * time * (time + 1) / 2)
         if extended_diagnostics:
             diagnostics["negative_weight_fraction"] = diagnostics["negative_weight_count"] / diagnostics["causal_entry_count"]
             diagnostics["negative_kernel_fraction"] = diagnostics["negative_kernel_count"] / diagnostics["causal_entry_count"]

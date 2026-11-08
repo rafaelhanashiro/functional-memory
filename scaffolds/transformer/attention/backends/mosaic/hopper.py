@@ -9,7 +9,9 @@ The elementwise mathematics of each kernel family lives in ``common.py`` (``fami
 ``forward`` returns the FP32 output and a per-row statistic [batch, heads, time]; ``dq``
 returns dQ and, for families with per-query sums, those sums [n, batch, heads, time];
 ``dkv`` returns dK and dV. Callers validate shapes; ``scale`` is 1 / sqrt(d_K) for the
-unpadded width.
+unpadded width. Decay families also take per-key FP32 ``key_vectors`` [n, batch, heads, time]
+(streamed with each K tile, or loaded once with a CTA's keys in ``dkv``), see the distance
+t-i in every tile, and ``dkv`` also returns their per-key sums [n, batch, heads, time].
 """
 from functools import partial
 
@@ -26,6 +28,21 @@ B = 64  # rows per compute warpgroup
 WGS = 2
 
 
+def _pair(family, shape, offset, keys, causal, *, transposed=False):
+    """``common.Pair`` of a decay family's tile, else None: the FP32 query-minus-key distance of
+    each entry, from the tile's loop-invariant local pattern plus ``offset`` (the distance of its
+    first entry). Transposed tiles hold keys in rows; ``keys`` are broadcast per-key vectors."""
+    if family not in common.DECAY_FAMILIES:
+        return None
+    rows, cols = (plgpu.broadcasted_iota(jnp.float32, shape, d, layout=L) for d in (0, 1))
+    local = cols - rows if transposed else rows - cols
+    return common.Pair(local + offset.astype(jnp.float32), tuple(keys), causal)
+
+
+def _params(family):
+    return plgpu.CompilerParams(approx_math=True) if common.approx_math(family) else None
+
+
 def _smem(shape):
     """BF16 tile with the widest swizzle its rows allow: 128 bytes at width >= 64, 64 at 32, 32 at 16.
 
@@ -35,20 +52,25 @@ def _smem(shape):
 
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
-def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, stages=3):
+def forward(q, k, v, vectors, key_vectors=None, *, family, degree, scale, precision, block_k=64, stages=3):
     BQ = B
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
     max_steps = (BQ * WGS) // block_k  # tiles beyond a CTA's diagonal block are never needed
     assert BQ // block_k * (WGS - 1) <= stages, "unfreed trailing tiles must never be reloaded"
     n_vec = common.vector_counts(family, degree)[0]
+    n_key = common.key_counts(family)[0]
 
     def kernel(q_gmem, k_gmem, v_gmem, *refs):
-        if n_vec:
+        if n_key:
+            vec_gmem, key_gmem, out_gmem, stat_gmem, *scratch = refs
+        elif n_vec:
             vec_gmem, out_gmem, stat_gmem, *scratch = refs
         else:
             out_gmem, stat_gmem, *scratch = refs
-        q_smem, k_smem, v_smem, vec_smem, o_smem, n_smem, q_bar, k_bar, v_bar, k_free, v_free = scratch
+        q_smem, k_smem, v_smem, vec_smem, *scratch = scratch
+        key_smem = scratch.pop(0) if n_key else None
+        o_smem, n_smem, q_bar, k_bar, v_bar, k_free, v_free = scratch
         wg = lax.axis_index("wg")
         b, h = lax.axis_index("b"), lax.axis_index("h")
         q_index = lax.axis_index("q")
@@ -71,6 +93,8 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
                 acc, statistic = carry
                 slot = lax.rem(j, stages)
                 plgpu.barrier_wait(k_bar.at[slot])
+                # Read the tile's key vectors before its K slot is freed for reloading.
+                keys = [plgpu.load(key_smem.at[slot, i], (), layout=L.reduce(0)) for i in range(n_key)]
 
                 def qk(acc_ref):
                     plgpu.wgmma(acc_ref, q_smem.at[wg], plgpu.transpose_ref(k_smem.at[slot], (1, 0)))
@@ -79,13 +103,17 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
                 s = pl.run_scoped(qk, plgpu.ACC((BQ, block_k), jnp.float32)) * scale
                 plgpu.barrier_arrive(k_free.at[slot])
                 vecs = [lax.broadcast_in_dim(r, s.shape, [0]) for r in rows]
+                causal = None
                 if masked:
                     r = plgpu.broadcasted_iota(jnp.int32, (BQ, block_k), 0, layout=L) + q0
                     c = plgpu.broadcasted_iota(jnp.int32, (BQ, block_k), 1, layout=L) + j * block_k
                     causal = r >= c
-                    p = jnp.where(causal, common.forward_weights(family, degree, jnp.where(causal, s, 0.0), vecs), 0.0)
+                pair = _pair(family, s.shape, q0 - j * block_k, [lax.broadcast_in_dim(x, s.shape, [1]) for x in keys],
+                             causal)
+                if masked:
+                    p = jnp.where(causal, common.forward_weights(family, degree, jnp.where(causal, s, 0.0), vecs, pair), 0.0)
                 else:
-                    p = common.forward_weights(family, degree, s, vecs)
+                    p = common.forward_weights(family, degree, s, vecs, pair)
                 statistic = statistic + common.forward_statistic(family, p).sum(axis=1)
                 parts = common.weight_parts(p, precision)
                 plgpu.barrier_wait(v_bar.at[slot])
@@ -128,6 +156,8 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
 
                 rows = pl.ds(j * block_k, block_k)
                 plgpu.copy_gmem_to_smem(k_gmem.at[b, rows, h], k_smem.at[slot], k_bar.at[slot])
+                for i in range(n_key):
+                    plgpu.copy_gmem_to_smem(key_gmem.at[i, b, h, rows], key_smem.at[slot, i], k_bar.at[slot])
 
                 @pl.when(j >= stages)
                 def _():
@@ -142,39 +172,48 @@ def forward(q, k, v, vectors, *, family, degree, scale, precision, block_k=64, s
         out_shape=(jax.ShapeDtypeStruct((batch, time, heads, dv), jnp.float32),
                    jax.ShapeDtypeStruct((batch, heads, time), jnp.float32)),
         grid=(time // (BQ * WGS), batch, heads), grid_names=("q", "b", "h"),
-        num_threads=WGS + 1, thread_name="wg",
+        num_threads=WGS + 1, thread_name="wg", compiler_params=_params(family),
         scratch_shapes=[
             _smem((WGS, BQ, dq)),
             _smem((stages, block_k, dq)),
             _smem((stages, block_k, dv)),
             plgpu.SMEM((WGS, max(n_vec, 1), BQ), jnp.float32),
+            *([plgpu.SMEM((stages, n_key, block_k), jnp.float32)] if n_key else []),
             plgpu.SMEM((WGS, BQ, dv), jnp.float32),
             plgpu.SMEM((WGS, BQ), jnp.float32),
             plgpu.Barrier(num_arrivals=1 + n_vec, num_barriers=WGS),
-            plgpu.Barrier(num_barriers=stages),
+            plgpu.Barrier(num_arrivals=1 + n_key, num_barriers=stages),
             plgpu.Barrier(num_barriers=stages),
             plgpu.Barrier(num_arrivals=WGS, num_barriers=stages),
             plgpu.Barrier(num_arrivals=WGS, num_barriers=stages),
         ],
     )
+    if n_key:
+        return f(q, k, v, vectors, key_vectors)
     return f(q, k, v, vectors) if n_vec else f(q, k, v)
 
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
-def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, stages=2):
+def dq(q, k, v, do, vectors, key_vectors=None, *, family, degree, scale, precision, block_k=64, stages=2):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     tiles_per_cta = B * WGS // block_k
     assert B // block_k * (WGS - 1) <= stages, "unfreed trailing tiles must never be reloaded"
     _, n_vec, n_sums = common.vector_counts(family, degree)
+    n_key = common.key_counts(family)[0]
 
-    def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, dq_gmem, *refs):
+    def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, *refs):
+        if n_key:
+            key_gmem, *refs = refs
+        dq_gmem, *refs = refs
         if n_sums:
             sums_gmem, *scratch = refs
         else:
             scratch = refs
-        q_smem, do_smem, vec_smem, sums_smem, k_smem, v_smem, in_bar, k_bar, v_bar, k_free, v_free = scratch
+        q_smem, do_smem, vec_smem, sums_smem, k_smem, v_smem, *scratch = scratch
+        key_smem = scratch.pop(0) if n_key else None
+        in_bar, k_bar, v_bar, k_free, v_free = scratch
         wg = lax.axis_index("wg")
         b, h = lax.axis_index("b"), lax.axis_index("h")
         q_index = lax.axis_index("q")
@@ -199,6 +238,7 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
                 acc, sums = carry
                 slot = lax.rem(j, stages)
                 plgpu.barrier_wait(k_bar.at[slot])
+                keys = [plgpu.load(key_smem.at[slot, i], (), layout=L.reduce(0)) for i in range(n_key)]
                 plgpu.barrier_wait(v_bar.at[slot])
 
                 def sdp(refs):
@@ -211,15 +251,19 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
                 plgpu.barrier_arrive(v_free.at[slot])
                 s = s * scale
                 vecs = [lax.broadcast_in_dim(r, s.shape, [0]) for r in row_vectors]
+                causal = None
                 if masked:
                     r = plgpu.broadcasted_iota(jnp.int32, (B, block_k), 0, layout=L) + q0
                     c = plgpu.broadcasted_iota(jnp.int32, (B, block_k), 1, layout=L) + j * block_k
                     causal = r >= c
+                pair = _pair(family, s.shape, q0 - j * block_k, [lax.broadcast_in_dim(x, s.shape, [1]) for x in keys],
+                             causal)
+                if masked:
                     s, dp = jnp.where(causal, s, 0.0), jnp.where(causal, dp, 0.0)
-                    ds = jnp.where(causal, common.score_gradient(family, degree, s, dp, vecs), 0.0)
-                else:
-                    ds = common.score_gradient(family, degree, s, dp, vecs)
-                sums = tuple(a + x for a, x in zip(sums, common.row_sums(family, degree, s, dp)))
+                ds, row = common.dq_terms(family, degree, s, dp, vecs, pair)
+                if masked:
+                    ds = jnp.where(causal, ds, 0.0)
+                sums = tuple(a + x for a, x in zip(sums, row))
                 parts = common.weight_parts(ds, precision)
 
                 def acc_dq(acc_ref):
@@ -256,6 +300,8 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
                 def _():
                     plgpu.barrier_wait(k_free.at[slot])
                 plgpu.copy_gmem_to_smem(k_gmem.at[b, rows, h], k_smem.at[slot], k_bar.at[slot])
+                for i in range(n_key):
+                    plgpu.copy_gmem_to_smem(key_gmem.at[i, b, h, rows], key_smem.at[slot, i], k_bar.at[slot])
 
                 @pl.when(j >= stages)
                 def _():
@@ -271,32 +317,44 @@ def dq(q, k, v, do, vectors, *, family, degree, scale, precision, block_k=64, st
         kernel,
         out_shape=tuple(out_shapes),
         grid=(time // (B * WGS), batch, heads), grid_names=("q", "b", "h"),
-        num_threads=WGS + 1, thread_name="wg",
+        num_threads=WGS + 1, thread_name="wg", compiler_params=_params(family),
         scratch_shapes=[
             _smem((WGS, B, dqk)), _smem((WGS, B, dv)),
             plgpu.SMEM((WGS, n_vec, B), jnp.float32),
             plgpu.SMEM((WGS, max(n_sums, 1), B), jnp.float32),
             _smem((stages, block_k, dqk)), _smem((stages, block_k, dv)),
+            *([plgpu.SMEM((stages, n_key, block_k), jnp.float32)] if n_key else []),
             plgpu.Barrier(num_arrivals=2 + n_vec, num_barriers=WGS),
-            plgpu.Barrier(num_barriers=stages), plgpu.Barrier(num_barriers=stages),
+            plgpu.Barrier(num_arrivals=1 + n_key, num_barriers=stages), plgpu.Barrier(num_barriers=stages),
             plgpu.Barrier(num_arrivals=WGS, num_barriers=stages),
             plgpu.Barrier(num_arrivals=WGS, num_barriers=stages),
         ],
     )
-    outputs = f(q, k, v, do, vectors)
+    outputs = f(q, k, v, do, vectors, key_vectors) if n_key else f(q, k, v, do, vectors)
     return (outputs[0], outputs[1]) if n_sums else (outputs[0], None)
 
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_q", "stages"))
-def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, stages=2):
-    """(dK, dV) in the input dtypes. Lanes are keys; per-query vectors stream with each query tile."""
+def dkv(q, k, v, do, vectors, key_vectors=None, *, family, degree, scale, precision, block_q=64, stages=2):
+    """(dK, dV) in the input dtypes, and for families with per-key sums those sums
+    [n, batch, heads, time]. Lanes are keys; per-query vectors stream with each query tile."""
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     per_wg = B // block_q
     n_vec = common.vector_counts(family, degree)[1]
+    n_key, n_key_sums = common.key_counts(family)
+    decayed = family in common.DECAY_FAMILIES
 
-    def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, dk_gmem, dv_gmem,
-               k_smem, v_smem, q_smem, do_smem, vec_smem, in_bar, t_bar, t_free):
+    def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, *refs):
+        if n_key:
+            key_gmem, *refs = refs
+        dk_gmem, dv_gmem, *refs = refs
+        if n_key_sums:
+            key_sums_gmem, *refs = refs
+        k_smem, v_smem, q_smem, do_smem, vec_smem, *refs = refs
+        key_smem = refs.pop(0) if n_key else None
+        key_sums_smem = refs.pop(0) if n_key_sums else None
+        in_bar, t_bar, t_free = refs
         wg = lax.axis_index("wg")
         b, h = lax.axis_index("b"), lax.axis_index("h")
         k_index = lax.axis_index("k")
@@ -311,7 +369,10 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
             rows = pl.ds(k0, B)
             plgpu.copy_gmem_to_smem(k_gmem.at[b, rows, h], k_smem.at[wg], in_bar.at[wg])
             plgpu.copy_gmem_to_smem(v_gmem.at[b, rows, h], v_smem.at[wg], in_bar.at[wg])
+            for i in range(n_key):
+                plgpu.copy_gmem_to_smem(key_gmem.at[i, b, h, rows], key_smem.at[wg, i], in_bar.at[wg])
             plgpu.barrier_wait(in_bar.at[wg])
+            key_rows = [plgpu.load(key_smem.at[wg, i], (), layout=L.reduce(1)) for i in range(n_key)]
             first = wg * per_wg
 
             def skip(j, _):  # tiles before this warpgroup's keys: consume their phases (waits track parity)
@@ -322,7 +383,7 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
             lax.fori_loop(0, first, skip, None)
 
             def step(j, carry, masked):
-                dk_acc, dv_acc = carry
+                dk_acc, dv_acc, key_sums = carry
                 slot = lax.rem(j, stages)
                 plgpu.barrier_wait(t_bar.at[slot])
 
@@ -333,14 +394,20 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
                 s = pl.run_scoped(st, plgpu.ACC((B, block_q), jnp.float32)) * scale
                 vecs = [lax.broadcast_in_dim(plgpu.load(vec_smem.at[slot, i], (), layout=L.reduce(0)), s.shape, [1])
                         for i in range(n_vec)]
+                causal = terms = None
                 if masked:
                     keys = plgpu.broadcasted_iota(jnp.int32, (B, block_q), 0, layout=L) + k0
                     queries = plgpu.broadcasted_iota(jnp.int32, (B, block_q), 1, layout=L) + (start + j) * block_q
                     causal = queries >= keys
+                pair = _pair(family, s.shape, (start + j) * block_q - k0,
+                             [lax.broadcast_in_dim(x, s.shape, [0]) for x in key_rows], causal, transposed=True)
+                if masked:
                     s = jnp.where(causal, s, 0.0)
-                    w = jnp.where(causal, common.value_weights(family, degree, s, vecs), 0.0)
-                else:
-                    w = common.value_weights(family, degree, s, vecs)
+                if decayed:  # one decay evaluation serves dV, dK, and the per-key sums
+                    terms = common.decay(family, degree, vecs, pair, slopes=n_key_sums > 0)
+                w = common.value_weights(family, degree, s, vecs, pair, terms)
+                if masked:
+                    w = jnp.where(causal, w, 0.0)
                 w_parts = common.weight_parts(w, precision)
 
                 def dv_dp(refs):
@@ -353,9 +420,10 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
                 dv_acc, dp = pl.run_state(dv_dp)((plgpu.ACC.init(dv_acc), plgpu.ACC.init(zeros)))
                 if masked:
                     dp = jnp.where(causal, dp, 0.0)
-                    ds = jnp.where(causal, common.score_gradient(family, degree, s, dp, vecs), 0.0)
-                else:
-                    ds = common.score_gradient(family, degree, s, dp, vecs)
+                ds, sums = common.dk_terms(family, degree, s, dp, vecs, pair, terms)
+                if masked:
+                    ds = jnp.where(causal, ds, 0.0)
+                key_sums = tuple(a + x for a, x in zip(key_sums, sums))
                 ds_parts = common.weight_parts(ds, precision)
 
                 def acc_dk(acc_ref):
@@ -364,17 +432,22 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
 
                 dk_acc = pl.run_state(acc_dk)(plgpu.ACC.init(dk_acc))
                 plgpu.barrier_arrive(t_free.at[slot])
-                return dk_acc, dv_acc
+                return dk_acc, dv_acc, key_sums
 
             zero = plgpu.layout_cast(jnp.zeros((B, dqk), jnp.float32), L)
-            carry = (zero, plgpu.layout_cast(jnp.zeros((B, dv), jnp.float32), L))
+            carry = (zero, plgpu.layout_cast(jnp.zeros((B, dv), jnp.float32), L),
+                     tuple(plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1)) for _ in range(n_key_sums)))
             carry = lax.fori_loop(first, first + per_wg, partial(step, masked=True), carry)
-            dk_acc, dv_acc = lax.fori_loop(first + per_wg, n_tiles, partial(step, masked=False), carry)
+            dk_acc, dv_acc, key_sums = lax.fori_loop(first + per_wg, n_tiles, partial(step, masked=False), carry)
             k_smem.at[wg][...] = (dk_acc * scale).astype(jnp.bfloat16)
             v_smem.at[wg][...] = dv_acc.astype(jnp.bfloat16)
+            for i, total in enumerate(key_sums):
+                key_sums_smem.at[wg, i][...] = total
             plgpu.commit_smem()
             plgpu.copy_smem_to_gmem(k_smem.at[wg], dk_gmem.at[b, rows, h])
             plgpu.copy_smem_to_gmem(v_smem.at[wg], dv_gmem.at[b, rows, h])
+            for i in range(n_key_sums):
+                plgpu.copy_smem_to_gmem(key_sums_smem.at[wg, i], key_sums_gmem.at[i, b, h, rows])
             plgpu.wait_smem_to_gmem(0)
 
         @pl.when(wg == WGS)
@@ -395,18 +468,23 @@ def dkv(q, k, v, do, vectors, *, family, degree, scale, precision, block_q=64, s
 
             lax.fori_loop(0, n_tiles, load, None)
 
+    out_shapes = [jax.ShapeDtypeStruct(k.shape, k.dtype), jax.ShapeDtypeStruct(v.shape, v.dtype)]
+    if n_key_sums:
+        out_shapes.append(jax.ShapeDtypeStruct((n_key_sums, batch, heads, time), jnp.float32))
     f = plgpu.kernel(
         kernel,
-        out_shape=(jax.ShapeDtypeStruct(k.shape, k.dtype), jax.ShapeDtypeStruct(v.shape, v.dtype)),
+        out_shape=tuple(out_shapes),
         grid=(time // (B * WGS), batch, heads), grid_names=("k", "b", "h"),
-        num_threads=WGS + 1, thread_name="wg",
+        num_threads=WGS + 1, thread_name="wg", compiler_params=_params(family),
         scratch_shapes=[
             _smem((WGS, B, dqk)), _smem((WGS, B, dv)),
             _smem((stages, block_q, dqk)), _smem((stages, block_q, dv)),
             plgpu.SMEM((stages, n_vec, block_q), jnp.float32),
-            plgpu.Barrier(num_arrivals=2, num_barriers=WGS),
+            *([plgpu.SMEM((WGS, n_key, B), jnp.float32)] if n_key else []),
+            *([plgpu.SMEM((WGS, n_key_sums, B), jnp.float32)] if n_key_sums else []),
+            plgpu.Barrier(num_arrivals=2 + n_key, num_barriers=WGS),
             plgpu.Barrier(num_arrivals=2 + n_vec, num_barriers=stages),
             plgpu.Barrier(num_arrivals=WGS, num_barriers=stages),
         ],
     )
-    return f(q, k, v, do, vectors)
+    return f(q, k, v, do, vectors, key_vectors) if n_key else f(q, k, v, do, vectors)

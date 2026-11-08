@@ -273,7 +273,11 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         values = [row["terminal_validation_perplexity"] for row in primary] + list(levels.values())
         lower, upper = min(values), max(values)
         pad = 0.05 * (upper - lower)
-        axis.set_xlim(min(degrees) - 0.35, max(degrees) + 0.6)
+        # The value chips at the last degree need about 62 points to the right of its markers;
+        # size the right edge in points so they stay inside the axes at any number of degrees.
+        left, chip = min(degrees) - 0.35, 62.0 / (axis.get_window_extent().width * 72 / figure.dpi)
+        right = (max(DODGE.values()) + chip * (max(degrees) - left)) / (1 - chip)
+        axis.set_xlim(left, max(degrees) + right)
         axis.set_ylim(lower - 1.5 * pad, upper + 1.5 * pad)
         height_points = axis.get_window_extent().height * 72 / figure.dpi
         gap = 10.0 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points

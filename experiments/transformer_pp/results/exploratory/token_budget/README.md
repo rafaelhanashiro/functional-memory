@@ -9,7 +9,7 @@ recipe trains 2.5x longer, with warmup and validation cadence scaled with the bu
 
 Five runs at 2.5x Chinchilla (18,925 updates, 9.92B tokens, warmup 1,138), each the
 data-scaled copy of a 1x run with the canonical per-head QK scale, one GPU each. The
-[study README](../../../README.md#token-budgets) gives the scaling rule and launch
+[study README](../../../README.md#model-shapes-and-token-budgets) gives the scaling rule and launch
 commands. Softmax has no canonical-QK 1x partner; the 1x exp partner `r6a76e7fbde45`
 is cited here but not pinned.
 

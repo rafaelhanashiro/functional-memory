@@ -122,6 +122,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_forget_gate", False)
         value["model"].setdefault("attention_forget_gate_mode", "cumulative")
         value["model"].setdefault("attention_forget_gate_form", "input")
+        value["model"].setdefault("attention_forget_gate_conditioning", "query")
+        value["model"].setdefault("attention_forget_gate_rate_activation", "softplus")
         value["model"].setdefault("positional_encoding", "rope")
         value["model"].setdefault("path_w_rank", 32)
         value["model"].setdefault("path_conv_size", 3)
