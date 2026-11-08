@@ -1,0 +1,22 @@
+{
+  "checkpoint_retention": "none; reads referenced checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml",
+    "sha256": "51bb93f5e02e26dce76108f085833ffafc1f2b9db968409a6a102c5bfa430bf9"
+  },
+  "data_identity": {
+    "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4"
+  },
+  "home_cluster": "kennel",
+  "label": "spline-knot-score-calibration",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-score-calibration/experiments/transformer_pp/runs/rb1a3a991da6c/training.log",
+  "name": "spline-knot-score-calibration",
+  "parent_run_ids": [
+    "r4339a245820e",
+    "rca97cc9db8f2"
+  ],
+  "record_schema_version": 1,
+  "run_id": "rb1a3a991da6c",
+  "status": "planned"
+}

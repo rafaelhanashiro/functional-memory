@@ -1,0 +1,14 @@
+question: Where should fixed spline knots lie for a static versus query-dependent
+  attention comparison?
+settings:
+  metric: score distributions and absolute-weight coverage
+  spline_tail_policy: polynomial_continuation
+  fox: false
+runs:
+- study: transformer_pp
+  run_id: rb1a3a991da6c
+  role: score_calibration
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml
+      sha256: 51bb93f5e02e26dce76108f085833ffafc1f2b9db968409a6a102c5bfa430bf9
