@@ -11,9 +11,10 @@ query-conditioned attention without introducing a distance-dependent forget gate
 | Gated query + weight decay | `r8c4a6ecdf4d2` | `query-m10-w-decay-order-gates` | 10 | ORCD |
 | Ungated control | `r25fffc16c2f3` | `query-m8-dk64-w-decay` | 8 | Kennel |
 
-Both gated runs are in progress; this topic reports them when they finish. No ungated
-degree-ten run exists, so the degree-ten run is compared with the gated degree-eight run and
-the ungated degree-eight control only.
+No ungated degree-ten run exists, so the degree-ten run is compared with the gated
+degree-eight run and the ungated degree-eight control only. The [selection](selection.yaml)
+pins these runs and three references at `m = 8`: fixed Taylor `ra7ee8a4b2544`, learned
+static `r9c69dd7cfc8d` and unnormalized exp `r6a76e7fbde45`.
 
 ## Model
 
@@ -55,8 +56,53 @@ for the second run. The matched 1× budget is 7,570 updates with a global batch 
 (16 micro-batches of 16) at 2,048 tokens, seed 42, the same data order, and the same warmup
 (455 updates) and cosine schedule. The recipe keeps `d_K = 64`, QK RMSNorm with a learned
 per-head score scale, `transformer_truncated_reference` initialization, and per-head
-output RMSNorm, on the Mosaic backend with one H100. Only the dataset manifest paths
+output RMSNorm, on the Mosaic backend with one H200. Only the dataset manifest paths
 differ; ORCD's copies hash identically to Kennel's.
+
+## Results
+
+Both runs completed all 7,570 updates without numerical failure, after preemptions (two
+attempts at `m = 8`, three at `m = 10`, each resuming from its latest checkpoint). Both end
+clearly worse than the ungated control:
+
+| Run | Terminal PPL | Validation-best PPL (update 7,500) | Terminal vs control |
+| --- | ---: | ---: | ---: |
+| Gated, `m = 8` (`r77698776d82c`) | 15.532 | 15.526 | +8.40% |
+| Gated, `m = 10` (`r8c4a6ecdf4d2`) | 15.350 | 15.344 | +7.14% |
+| Ungated query + weight decay, `m = 8` (`r25fffc16c2f3`) | 14.328 | 14.323 | – |
+| Fixed Taylor, `m = 8` (`ra7ee8a4b2544`) | 14.223 | 14.218 | −0.73% |
+| Learned static, `m = 8` (`r9c69dd7cfc8d`) | 14.299 | 14.294 | −0.20% |
+| Unnormalized exp (`r6a76e7fbde45`) | 14.262 | 14.257 | −0.46% |
+
+- **The gated runs lead early and then fall behind for good.** Against the control,
+  gated `m = 8` is −2.9% at update 100, −15.9% at 400 and −1.5% at 600. It crosses the
+  control near update 650, reaches +9.5% at 900, and then holds at +8.4–9.0% to the end.
+  `m = 10` has the same shape. The gap is about 40 times the 0.2% between equivalent runs.
+- **The gates suppress the low orders, and the coefficients do not compensate.** At
+  update 7,570 (`m = 8`, means over the 210 heads, orders 0 to 8):
+
+  | Order | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | Multiplier `2 g_r` | 0.50 | 0.65 | 0.45 | 0.61 | 0.59 | 1.00 | 1.21 | 1.62 | 1.56 |
+  | Tilt | −1.33 | −0.29 | −1.37 | −0.70 | −0.87 | 0.43 | 0.86 | 1.74 | 1.53 |
+  | Ungated `r! c_r` (median) | 0.89 | 0.91 | 0.85 | 0.88 | 0.84 | 0.90 | 0.93 | 1.25 | 1.30 |
+  | Gated `r! c~_r` (median) | 0.32 | 0.42 | 0.23 | 0.28 | 0.28 | 0.85 | 1.24 | 2.21 | 2.33 |
+  | Contribution share | 5.5% | 7.8% | 6.2% | 8.3% | 7.4% | 12.0% | 13.0% | 22.3% | 17.6% |
+
+  The ungated coefficients stay near their Taylor start of 1. In heads whose multiplier
+  is below 0.2, the ungated `|r! c_r|` is 0.72–0.88 times its value in the other heads,
+  smaller rather than larger, and the gated `|r! c~_r|` is 0–10% of theirs. So the low
+  orders are really suppressed, not offset. Orders 0–2 carried 56% of each row's absolute
+  contribution at update 100 and 19% at the end; orders 7–8 went from 6% to 40%. At
+  `m = 10` the multipliers are 0.49–0.74 for orders 0–4 and 1.25–1.44 for orders 7–10,
+  with the contribution spread more evenly over orders 5–10.
+- **The gates lock in while the gap opens.** At `m = 8`, the number of (layer, head,
+  order) gates with a mean multiplier below 0.2 rose from 0 at update 100 to 138 at
+  400, 332 at 900 and 507 of 1,890 at the end. Multipliers above 1.8 numbered 208 by
+  update 200 and stayed near 320–370. A gate near zero also scales its coefficient's
+  gradient toward zero, so neither can recover. The model trains around a configuration
+  dominated by high orders that was fixed while the backbone was still early in training.
+- **Degree within the gated family.** Gated `m = 10` ends 1.2% below gated `m = 8`.
 
 ## Diagnostics
 
@@ -84,15 +130,20 @@ layers and heads of the gate, the tilt, and the contribution share.
 ## Comparisons and limits
 
 The control `r25fffc16c2f3` ran on a Kennel B300 at source commit `6ab34ab1`. The gated
-runs train on ORCD H100s at this topic's source commit. The comparison therefore crosses
-cluster, GPU and code version, as the forget-gate comparison at `m = 8` does. The
-initial parameters match the ungated recipe exactly, but gradient clipping's global norm
-includes the gate gradients, so updates differ from the control's from the first step.
-There is one seed per run. Validation-best and terminal perplexity will be reported
-separately.
+runs trained on ORCD H200s (`m = 8` on H200 NVL and H200 nodes across its attempts) at
+source commit `fa03c22d`. The comparison therefore crosses cluster, GPU and code version,
+as the forget-gate comparison at `m = 8` does; a gap of 7–8% is far larger than any
+cross-cluster difference seen in this study. The initial parameters match the ungated
+recipe exactly, but gradient clipping's global norm includes the gate gradients, so
+updates differ from the control's from the first step. There is one seed per run, and
+the gate diagnostics come from one held-out sequence.
 
-The open decision is whether per-order gates merit a matched comparison beyond these two
-runs.
+The open decision is whether to discard these runs or to redesign the gate. In this
+sigmoid form, a gate that saturates near zero stops both its own learning and its
+coefficient's, and the configuration chosen in the first ~900 updates stays. A redesign
+could use a multiplier that cannot reach zero (for example `exp(delta_r)` with `delta`
+decayed toward zero), a lower learning rate for the gate parameters, or gates held fixed
+through the early updates.
 
 ## Execution
 
@@ -116,5 +167,8 @@ It checks that the gates start at exact zeros, and that every other initial para
 then runs the gate's CPU tests and its GPU qualification at degrees 8 and 10, alongside
 the shared pilot and checkpoint-resume checks. The GPU qualification compares the gated
 generator through Mosaic with FP64 at 2,048 tokens, and the gated model's loss and
-gradients on Mosaic with the FP32 blocked model. Submissions and allocations live in each
-run's record.
+gradients on Mosaic with the FP32 blocked model. Both runs passed every stage on their
+H200 allocations ([qualification record](../../../../../scaffolds/transformer/validation/coefficient_gates_h200.json)).
+Submissions and allocations live in each run's record. The validation-best checkpoints
+and logs are retained under
+`/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/<id>/`.

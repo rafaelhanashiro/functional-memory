@@ -354,7 +354,8 @@ multiplicative gates on individual polynomial orders improve query-conditioned a
 without a distance-dependent forget gate. Two runs add independent per-order sigmoid gates
 (`model.attention_coefficient_gate: sigmoid`) to the query + weight decay, RoPE recipe of
 `r25fffc16c2f3`: `r77698776d82c` at degree 8 and `r8c4a6ecdf4d2` at degree 10, both
-hosted on ORCD. The topic records the formulas, the control and the exact launch commands.
+hosted on ORCD (H200). Both end 7–8% worse than the ungated control; the topic records
+the formulas, the control, the per-order gate findings and the exact launch commands.
 
 ### Query coefficient optimization
 
