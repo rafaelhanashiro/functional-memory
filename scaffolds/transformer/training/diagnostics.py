@@ -155,6 +155,7 @@ def attention_identity(config) -> dict:
     query_tanh = query_conditioned and activation in ("tanh", "affine_sigmoid")
     query_sigmoid = query_conditioned and activation in ("sigmoid", "pure_tanh")
     feature = "sigmoid" if activation in ("sigmoid", "affine_sigmoid") else "tanh"
+    coefficient_gate = getattr(config.model, "attention_coefficient_gate", "none")
     forget_gate = getattr(config.model, "attention_forget_gate", False)
     gate_mode = getattr(config.model, "attention_forget_gate_mode", "cumulative")
     forget_gate_form = getattr(config.model, "attention_forget_gate_form", "input")
@@ -289,6 +290,7 @@ def attention_identity(config) -> dict:
                 config.model.hidden_size + 1 + int(query_tanh)
                 + int(query_tanh and config.model.attention_coefficient_tanh_bias)
                 + (config.model.hidden_size + 1 if key_conditioned else 0)
+                + (config.model.hidden_size + 1 if coefficient_gate != "none" else 0)
                 if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
@@ -354,6 +356,7 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_gate": coefficient_gate} if coefficient_gate != "none" else {}),
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             **({"attention_coefficient_kernel_weight_decay": True}
                if config.model.attention_coefficient_kernel_weight_decay else {}),
@@ -367,11 +370,16 @@ def attention_identity(config) -> dict:
                                                 (2 if gate_conditioning == "query_key" else 1) * config.model.hidden_size + 2)
                 * config.model.num_layers * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
+                                else f"sum_(i<=t) sum_(r<={degree}) 2 g_r(x_t) c_r(x_t) s_ti^r v_i"
+                                if coefficient_gate != "none"
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
                                + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; " if query_tanh
                                   else f"{tanh_formula} per layer/head, {tanh_start}; " if query_sigmoid
                                   else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
+                               + ("g_r(x_t) = sigmoid(x_t U_r + beta_r) per layer/head/order, U and beta initially 0, "
+                                  "so 2 g_r is 1 at initialization and ranges over (0, 2); "
+                                  if coefficient_gate != "none" else "")
                                + ("f(x_i) = 1 + a_k*tanh(x_i W_k) per layer/head, W_k drawn like W and a_k starting "
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
@@ -776,6 +784,53 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
 
+def _float32_serializable(array):
+    """_serializable at FP32 precision: each value's shortest round-trip FP32 decimal, which
+    halves the JSON of FP32 statistics without losing any of their information."""
+    if array.ndim == 0:
+        value = np.float32(array)
+        return float(str(value)) if np.isfinite(value) else json_number(value)
+    return [_float32_serializable(value) for value in array]
+
+
+def coefficient_gate_report(params, raw_layers) -> dict:
+    """Per-order coefficient gates on the pinned diagnostic sample, arrays [layers, heads, degree+1].
+
+    The coefficient report's effective_summary describes the gated c~ = 2 g c. A small gate
+    alone does not show suppression, because c can compensate: read the gate, the ungated
+    c, c~ and the contributions together. The log tilt (log g_r - mean_r log g_r) ignores a
+    factor shared by all orders, which per-head output RMSNorm cancels. Only nonfinite gate
+    parameters or gates are issues; contributions are measurements. Values are stored at the
+    FP32 precision in which they are computed and stored.
+    """
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float32)
+    stack = lambda name: np.stack([np.asarray(layer[f"coefficient_gate_{name}"], dtype=np.float32)
+                                   for layer in raw_layers])
+    kernel, bias = get("query_polynomial_gate_kernel"), get("query_polynomial_gate_bias")
+    gates = {statistic: stack(statistic) for statistic in ("mean", "std", "min", "max")}
+    tilt = {statistic: stack(f"log_tilt_{statistic}") for statistic in ("mean", "std")}
+    ungated = {statistic: stack(f"ungated_{statistic}") for statistic in ("mean", "std")}
+    contributions = {statistic: stack(f"contribution_{statistic}") for statistic in ("rms", "abs_mean", "row_share")}
+    return {
+        "formula": "c~_r(x_t) = 2 g_r(x_t) c_r(x_t), g_r(x_t) = sigmoid(x_t U_r + beta_r); contribution "
+                   "c~_r(x_t) s_ti^r over causal pairs i <= t, with row_share its mean share of each row's "
+                   "sum over orders of |contribution|; attention_kernel_abs_mean is the mean "
+                   "|sum_r c~_r(x_t) s_ti^r| over the same pairs",
+        "axes": ["layer", "head", "order"],
+        "attention_kernel_abs_mean_axes": ["layer", "head"],
+        "order_names": [_coefficient_name(r) for r in range(bias.shape[-1])],
+        "gate_bias": _float32_serializable(bias),
+        "gate_kernel_l2": _float32_serializable(np.linalg.norm(kernel.astype(np.float64), axis=-2)),
+        "gate_summary": {name: _float32_serializable(values) for name, values in gates.items()},
+        "gate_log_tilt_summary": {name: _float32_serializable(values) for name, values in tilt.items()},
+        "ungated_coefficient_summary": {name: _float32_serializable(values) for name, values in ungated.items()},
+        "contribution_summary": {name: _float32_serializable(values) for name, values in contributions.items()},
+        "attention_kernel_abs_mean": _float32_serializable(stack("attention_kernel_abs_mean")),
+        "finite": bool(np.isfinite(kernel).all() and np.isfinite(bias).all()
+                       and all(np.isfinite(values).all() for values in gates.values())),
+    }
+
+
 SIGMOID_GATE_TEXT = ("log sigmoid(x_t w_f + b_f) per layer/head, with the Forgetting Transformer's initialization "
                      "w_f ~ N(0, 0.02^2), b_f = 0")
 
@@ -956,7 +1011,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_")):
+            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
+                                "coefficient_gate_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -1007,6 +1063,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 rate_activation=getattr(config.model, "attention_forget_gate_rate_activation", "softplus"))
             if not coefficient_report["forget_gate"]["finite"]:
                 issues.append("Nonfinite forget gate parameters or decay")
+        if getattr(config.model, "attention_coefficient_gate", "none") != "none":
+            coefficient_report["coefficient_gates"] = coefficient_gate_report(params, raw_layers)
+            if not coefficient_report["coefficient_gates"]["finite"]:
+                issues.append("Nonfinite coefficient gate parameters or gates")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:

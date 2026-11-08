@@ -50,6 +50,32 @@ JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
   scaffolds/transformer/tests/test_coefficient_release.py -k distributed
 ```
 
+### Per-order coefficient gates on H200 (2026-11-07)
+
+`model.attention_coefficient_gate: sigmoid` multiplies each diagonal tanh query
+coefficient by `2 sigmoid(x_t U_r + beta_r)` per layer, head and order inside the shared
+generator, so the Mosaic query kernel receives the gated coefficients unchanged. `U` and
+the gate bias start at exact zeros, so `2 g_r = 1` reproduces the ungated model, its
+parameters and its derivatives in `W`, `a` and `b`; `U` decays with the coefficient
+kernel decay and the gate bias never does.
+
+The CPU checks in `tests/test_coefficient_gates.py` compare gated and ungated models at
+degrees 8 and 10 bitwise (parameters, logits, and the raw gradients of every shared
+parameter), require finite nonzero gate gradients for every layer, head and order, verify
+the decay masks with an actual AdamW update, compare the gated generator and all its
+gradients with an FP64 oracle, check the gate diagnostics against a NumPy oracle, and
+resume a short training run exactly. Two GPU cases per degree compare the gated
+generator through the Mosaic query kernel with FP64 at context 2,048 and width 64,
+including the gate kernel and bias gradients per order, and the gated BF16 Mosaic model's
+loss and gradient direction with the FP32 blocked model.
+
+[H200 qualification](coefficient_gates_h200.json) passed for the two production recipes
+(`r77698776d82c` at degree 8 on an H200 NVL, `r8c4a6ecdf4d2` at degree 10 on an H200):
+510 CPU and 9 distributed CPU checks, 72 GPU checks each including the four gate cases
+(the first Mosaic query qualification at degree 10 and on H200), the study adapter's
+exact initial parity with the ungated recipe, and the full-recipe pilot and
+checkpoint-resume checks. Pilot training cost 2.54 and 2.51 s per update.
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders

@@ -119,8 +119,9 @@ class ModelConfig:
     # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
     attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
-    # Apply optim.weight_decay to the coefficient projections: the query W and, under
-    # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
+    # Apply optim.weight_decay to the coefficient projections: the query W, the coefficient
+    # gate's U, and, under query_key conditioning, the key W_k. b, a, the key amplitude, the
+    # gate bias, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
     # Dense readout mixes all degree+1 tanh or sigmoid features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.
@@ -138,6 +139,12 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # "sigmoid" gates every order independently per layer/head: c~_r(x_t) = 2 g_r(x_t) c_r(x_t),
+    # g_r(x_t) = sigmoid(U_r^T x_t + beta_r), with U and this gate bias beta starting at zero
+    # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
+    # multiplier 2 g_r exactly 1 at the start, so the ungated function and its derivatives in
+    # W, a and b are preserved; 2 g_r ranges over (0, 2), suppressing or amplifying an order.
+    attention_coefficient_gate: Literal["none", "sigmoid"] = "none"
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -453,6 +460,16 @@ class ModelConfig:
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
         if self.attention_coefficient_tanh_bias and activation not in AFFINE_ACTIVATIONS:
             raise ValueError("A bias inside tanh applies to affine tanh or sigmoid coefficients only")
+        if not isinstance(self.attention_coefficient_gate, str) or self.attention_coefficient_gate not in (
+                "none", "sigmoid"):
+            raise ValueError(f"Unknown attention coefficient gate: {self.attention_coefficient_gate!r}")
+        if self.attention_coefficient_gate != "none" and (
+                self.attention_coefficient_conditioning != "query" or activation != "tanh"
+                or self.attention_coefficient_readout != "diagonal"
+                or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
+                or self.attention_forget_gate is not False or self.positional_encoding != "rope"):
+            raise ValueError("Coefficient gates are qualified only for diagonal tanh query coefficients with RoPE, "
+                             "without selected orders, an inner tanh bias, or a forget gate")
         if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
         if (self.attention_coefficient_amplitude_scale != "none"
@@ -815,6 +832,9 @@ def validate_config(config: Config) -> None:
                         and model.attention_coefficient_projection_initial_std != 0)):
                 raise ValueError("Query continuation requires exact Taylor initialization: factorial-scaled tanh "
                                  "coefficients with no inner bias and either zero amplitude or zero projection")
+        if config.model.attention_coefficient_gate != "none":
+            # Neither introducing gates nor carrying them through a continuation is qualified.
+            raise ValueError("Continuation with coefficient gates is not supported")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
               continuation.parent_step, continuation.new_parameter_learning_rate is not None,
@@ -835,6 +855,8 @@ def validate_config(config: Config) -> None:
                 or model.attention_coefficient_readout != "diagonal"):
             raise ValueError("optim.query_coefficient_learning_rate_scale requires learned direct "
                              "query-conditioned tanh coefficients with diagonal readout")
+        if model.attention_coefficient_gate != "none":
+            raise ValueError("optim.query_coefficient_learning_rate_scale does not cover coefficient gates")
         if continuation.parent_checkpoint:
             raise ValueError("optim.query_coefficient_learning_rate_scale is not supported for "
                              "checkpoint continuations; their introduced parameters use "

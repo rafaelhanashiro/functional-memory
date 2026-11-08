@@ -1,0 +1,73 @@
+{
+  "backend": "mosaic",
+  "coefficient_gate": "sigmoid",
+  "conditioning": "query",
+  "context_length": 2048,
+  "qk_head_dim": 64,
+  "qualifications": [
+    {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-07T16:16:14.468250+00:00",
+      "cpu_tests_passed": 510,
+      "degree": 8,
+      "device_kinds": [
+        "NVIDIA H200 NVL"
+      ],
+      "gpu_count": 1,
+      "gpu_tests_passed": 72,
+      "gpu_type": "H200",
+      "pilot_seconds_per_training_update": 2.5423268652521074,
+      "projected_hours": 5.6480486898133275,
+      "run_id": "r77698776d82c",
+      "slurm_job_id": "28198704",
+      "source_commit": "fa03c22d97947dd681022c1978cc57937e3ea914",
+      "status": "passed",
+      "ungated_parity": {
+        "gate_parameter_count": 1695330,
+        "gate_parameters_exact_zero": true,
+        "initial_logits_match_ungated_recipe": "64 tokens, blocked reference, bitwise",
+        "shared_parameters_match_ungated_recipe": true,
+        "ungated_parameter_count": 200150806
+      }
+    },
+    {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-07T16:17:46.076728+00:00",
+      "cpu_tests_passed": 510,
+      "degree": 10,
+      "device_kinds": [
+        "NVIDIA H200"
+      ],
+      "gpu_count": 1,
+      "gpu_tests_passed": 72,
+      "gpu_type": "H200",
+      "pilot_seconds_per_training_update": 2.5135456420248374,
+      "projected_hours": 5.595924290891918,
+      "run_id": "r8c4a6ecdf4d2",
+      "slurm_job_id": "28198705",
+      "source_commit": "fa03c22d97947dd681022c1978cc57937e3ea914",
+      "status": "passed",
+      "ungated_parity": {
+        "gate_parameter_count": 2072070,
+        "gate_parameters_exact_zero": true,
+        "initial_logits_match_ungated_recipe": "64 tokens, blocked reference, bitwise",
+        "shared_parameters_match_ungated_recipe": true,
+        "ungated_parameter_count": 200527966
+      }
+    }
+  ]
+}
