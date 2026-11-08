@@ -112,6 +112,24 @@ while `A_log` and `b_dt` do not. The separate coefficient-projection decay switc
 retains its existing behavior. New-mode GPU acceptance compares outputs and all
 operand gradients against an explicit dense reference at 2,048 tokens.
 
+Input-form `query_distance` gates also support two independent options on the
+blocked backend. `attention_forget_gate_conditioning: query_key` adds
+`forget_gate_key_kernel` and uses the endpoint rate
+`exp(A_log) * softplus(wq·x_t + wk·x_i + b_dt)`. The key projection starts at zero
+and takes weight decay, exactly recovering the query-only control initially.
+Compact query/key projections pass to the attention core; pair rates and causal
+statistics are evaluated within query blocks. Polynomial coefficients stay
+query-conditioned.
+
+With query-only gating, `attention_forget_gate_rate_activation: sigmoid` replaces
+softplus by sigmoid, giving a positive rate bounded by learned `exp(A_log)`.
+Initialization preserves the rate/projection draws and sets `b_dt = logit(dt)`
+from the original Mamba-2 `dt` draw, matching the control's zero-input rate.
+Rates on nonzero inputs need not match. Both new fields default to the historical
+`query`/`softplus` behavior; combining key dependence with sigmoid is unqualified
+and rejected. Gate diagnostics report endpoint rates over causal pairs when
+key-conditioned, otherwise over query tokens.
+
 `attention_forget_gate_form: input` (the default) is that gate. The `constant` form
 drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
@@ -119,7 +137,11 @@ ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for 
 `h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
 form is qualified only for query polynomials with the cumulative mode under RoPE or no
 positional encoding on the blocked backend; configuration rejects it with `query_distance`,
-PaTH, softmax, or the exponential.
+PaTH, softmax, or the exponential. The `sigmoid` form is the Forgetting Transformer's original
+gate, `alpha_t = sigmoid(x_t w_f + b_f)`, with the paper's initialization (`w_f ~ N(0, 0.02^2)`,
+`b_f = 0`) and weight decay on `w_f` only; it equals the input form with `exp(A_log) = 1` and the
+projection negated. It is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -499,7 +521,12 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
 
-Softmax and the exponential take the cumulative mode with the input gate form only.
+`attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
+original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
+paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
+1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
+Softmax and the exponential take the cumulative mode with the input or sigmoid gate form; the
+sigmoid form needs RoPE or no positional encoding.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
 parameters.

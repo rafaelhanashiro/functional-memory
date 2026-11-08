@@ -43,7 +43,14 @@ A100/A6000 nodes and `shiba`; A6000 training is markedly slower in this project'
 tests, and the transformer launcher accepts only B300 and H100, so a job granted
 a B200 exits within seconds. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
-60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
+60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
+node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps
+it and then requeues under its old job ID, so `scancel` it before resubmitting its
+run; otherwise two jobs train the same run directory. A GPU that stops responding
+(`nvidia-smi`: "Unknown Error") hangs its job until the stall check requeues it, and
+Slurm can hand the same free GPU to the requeued job, so exclude the node until the GPU
+is reset. `mastiff`'s H100 at bus `41:00.0` did this on 2026-11-05; the node's reboot on
+2026-11-06 restored it (no uncorrected ECC errors or pending row remaps).
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
@@ -140,6 +147,34 @@ corrupted replicas and batches; the host-staged A100 pilot passed training,
 evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
 recorded in `scaffolds/transformer/validation/README.md`.
+
+### Monitoring selected runs
+
+`scaffolds/launch/run_monitor.py` is a lightweight, read-only observer for explicitly
+selected runs. It combines canonical records with `squeue` and `sacct`, follows the
+latest submission through retries, and queues significant updates to an existing
+Codex chat with `codex queue --thread <id> --message <text> --resume`. Delivery
+depends on the user's Codex daemon and account remaining available; a successful
+queue command with a resume warning is recorded as unconfirmed, not as a resumed
+agent. Verify a real delivery when installing a monitor.
+
+Keep its JSON configuration, lock, state and log outside the repository. Required
+configuration keys are `thread_id`, `state_path`, `codex`, `end_utc` (UTC ISO8601)
+and `runs`, whose entries have absolute `path` and optional `label` and
+`control_run_id`. Validate observations with:
+
+```bash
+python3 -m scaffolds.launch.run_monitor --config /absolute/monitor/config.json --dry-run
+```
+
+After testing, cron can invoke a frozen copy of the standard-library helper every
+five minutes on the login node; no GPU allocation is needed. The observer reports
+state changes, failures, stalls and six-hour progress summaries, with duplicate
+suppression. By default, training inactivity is flagged after 20 minutes and
+acceptance inactivity after 60 minutes. Failed runs stay observed for retries.
+Monitoring disables itself after both selected runs complete or its configured
+deadline, after queuing the corresponding update; remove its owned cron entry
+when disabled. Record the installed helper's source hash beside its configuration.
 
 ## ORCD / Engaging (MIT)
 

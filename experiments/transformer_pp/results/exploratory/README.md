@@ -11,7 +11,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? At 2.5× W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8 and leaves key–query level. | 2026-10-29 |
 | [coefficient_oracle](coefficient_oracle/README.md) | How do coefficient fits reveal capacity and conditioning, and can a dense generator distill the free solution and generalize to fresh sequences? | 2026-10-23 |
 | [coefficient_forms](coefficient_forms/README.md) | Does the query generator's form matter at m = 4: pure tanh, and affine sigmoid against affine tanh? | 2026-10-27 |
-| [forget_gate](forget_gate/README.md) | Does a FoX forget gate improve m = 4 tanh query attention, including its combination with PaTH and projection decay? | 2026-10-27 |
+| [forget_gate](forget_gate/README.md) | Does a FoX forget gate improve tanh query attention at m = 4 (with PaTH and projection decay) and m = 8, softmax, and exp, and does the original sigmoid gate match Gated DeltaNet's? | 2026-10-27 |
 | [token_budget](token_budget/README.md) | Do attention-variant comparisons change between 1x and 2.5x Chinchilla? | 2026-10-27 |
 | [token_query_scale_continuation](token_query_scale_continuation/README.md) | Does a bounded per-token query scale with direction weight decay improve degree-four Taylor continuation? | 2026-10-28 |
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? | 2026-10-28 |
@@ -21,4 +21,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
-| [query_distance_decay](query_distance_decay/README.md) | Can the current query select its context range using alpha_t^(t-i), versus cumulative FoX gates under the identical NoPE + W decay recipe? | 2026-11-02 |
+| [query_distance_decay](query_distance_decay/README.md) | Can query–key endpoints or a bounded positive rate improve query-distance decay without intervening gates? Two matched ablations added 2026-11-04. | 2026-11-02 |

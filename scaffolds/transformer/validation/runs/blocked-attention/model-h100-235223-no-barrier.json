@@ -1,0 +1,358 @@
+{
+ "format": "blocked-softmax-model-benchmark",
+ "schema_version": 1,
+ "status": "running",
+ "created_at_utc": "2026-11-04T23:31:40.166428+00:00",
+ "recipe": "experiments/transformer_pp/runs/r9040f12f3d80/config.yaml",
+ "recipe_sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897",
+ "configuration": {
+  "micro_batches": [
+   16,
+   8,
+   4
+  ],
+  "warmup": 2,
+  "iterations": 10,
+  "timing": "jit(training.loop.loss_and_grads): one forward+backward micro-step (no optimizer update), median of synchronized calls; compile excluded",
+  "memory": "allocator peak_bytes_in_use of a fresh process holding the full train state (params and AdamW moments) plus the micro-step"
+ },
+ "cases": [
+  {
+   "variant": "cudnn",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": "model.attention_backend=cudnn",
+   "timing": {
+    "median_ms": 105.90647184289992,
+    "p10_ms": 104.26814486272633,
+    "p90_ms": 108.35167206823826,
+    "samples_ms": [
+     101.06665221974254,
+     105.36018712446094,
+     104.62386626750231,
+     105.76581675559282,
+     108.33986010402441,
+     106.04712693020701,
+     106.51734797284007,
+     108.45797974616289,
+     105.1180069334805,
+     106.86718765646219
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 36.02162726037204,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 22087937824,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 640672
+    },
+    "kernels": 1108
+   },
+   "nll": 10.508788108825684,
+   "grad_norm": 2.8108794689178467,
+   "finite": true,
+   "seconds_per_update": 1.6945035494863987,
+   "peak_bytes_in_use": 26268956416,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 68.98055017599836,
+   "provenance_matches": true
+  },
+  {
+   "variant": "cudnn",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": "model.attention_backend=cudnn",
+   "timing": {
+    "median_ms": 60.74262200854719,
+    "p10_ms": 56.54611326754093,
+    "p90_ms": 60.908974101766944,
+    "samples_ms": [
+     52.61163366958499,
+     56.983277667313814,
+     58.62005893141031,
+     59.00081992149353,
+     60.85058115422726,
+     60.725882183760405,
+     60.89539220556617,
+     61.03121116757393,
+     60.838641598820686,
+     60.75936183333397
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 34.92517586890608,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 11413657888,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 726544
+    },
+    "kernels": 994
+   },
+   "nll": 10.508230209350586,
+   "grad_norm": 3.9317471981048584,
+   "finite": true,
+   "seconds_per_update": 1.94376390427351,
+   "peak_bytes_in_use": 15594610944,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 47.97349069081247,
+   "provenance_matches": true
+  },
+  {
+   "variant": "cudnn",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": "model.attention_backend=cudnn",
+   "timing": {
+    "median_ms": 33.795499708503485,
+    "p10_ms": 31.25412855297327,
+    "p90_ms": 34.27481292746961,
+    "samples_ms": [
+     28.76262878999114,
+     32.21559291705489,
+     31.530961859971285,
+     33.06369297206402,
+     33.47424417734146,
+     34.11675523966551,
+     34.34238489717245,
+     34.2501038685441,
+     34.26730493083596,
+     34.218414686620235
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 41.67636291868985,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 5670674720,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 709240
+    },
+    "kernels": 979
+   },
+   "nll": 10.507101058959961,
+   "grad_norm": 5.558539867401123,
+   "finite": true,
+   "seconds_per_update": 2.162911981344223,
+   "peak_bytes_in_use": 9851595008,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 166.1151222307235,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 16,
+   "status": "complete",
+   "routing": "model.attention_backend=blocked",
+   "timing": {
+    "median_ms": 637.2969660442322,
+    "p10_ms": 637.0387240312994,
+    "p90_ms": 637.6921998336911,
+    "samples_ms": [
+     637.1530760079622,
+     637.9157057963312,
+     637.4314962886274,
+     637.1624357998371,
+     637.0521951466799,
+     637.5508159399033,
+     637.4760260805488,
+     637.6673658378422,
+     636.9305346161127,
+     637.0507450774312
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 69.2507702098228,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793891720,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 23574761080,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1186260
+    },
+    "kernels": 1797
+   },
+   "nll": 10.508776664733887,
+   "grad_norm": 2.8113369941711426,
+   "finite": true,
+   "seconds_per_update": 10.196751456707716,
+   "peak_bytes_in_use": 27755779584,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 210.10072367964312,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": "model.attention_backend=blocked",
+   "timing": {
+    "median_ms": 335.65404498949647,
+    "p10_ms": 335.53418912924826,
+    "p90_ms": 335.97656609490514,
+    "samples_ms": [
+     335.6460998766124,
+     335.9657400287688,
+     335.6619901023805,
+     336.0740006901324,
+     335.80436976626515,
+     335.808880161494,
+     335.53447015583515,
+     335.6096795760095,
+     335.53165988996625,
+     335.5700499378145
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 48.537366101983935,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 11692434808,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1030524
+    },
+    "kernels": 1604
+   },
+   "nll": 10.5082368850708,
+   "grad_norm": 3.931718349456787,
+   "finite": true,
+   "seconds_per_update": 10.740929439663887,
+   "peak_bytes_in_use": 15873387776,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 92.82320326613262,
+   "provenance_matches": true
+  },
+  {
+   "variant": "production-b128",
+   "micro_batch": 4,
+   "status": "complete",
+   "routing": "model.attention_backend=blocked",
+   "timing": {
+    "median_ms": 179.00910088792443,
+    "p10_ms": 178.8400718010962,
+    "p90_ms": 179.23112604767084,
+    "samples_ms": [
+     178.53489005938172,
+     178.87398088350892,
+     179.12753112614155,
+     178.99074079468846,
+     179.22353092581034,
+     178.95826091989875,
+     179.08398108556867,
+     179.29948214441538,
+     179.00947062298656,
+     179.0087311528623
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 60.46556130889803,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793793368,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 5667509624,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1049620
+    },
+    "kernels": 1590
+   },
+   "nll": 10.507100105285645,
+   "grad_norm": 5.560632228851318,
+   "finite": true,
+   "seconds_per_update": 11.456582456827164,
+   "peak_bytes_in_use": 9848429824,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 171.83682057773694,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-rows-b512",
+   "micro_batch": 16,
+   "status": "failed",
+   "routing": "model.attention_backend=blocked; softmax_attention routed to flash-f32-rows-b512",
+   "error": "JaxRuntimeError: RESOURCE_EXHAUSTED: Out of memory while trying to allocate 52.49GiB.",
+   "out_of_memory": true,
+   "wall_seconds": 270.8056304012425,
+   "provenance_matches": true
+  },
+  {
+   "variant": "flash-f32-rows-b512",
+   "micro_batch": 8,
+   "status": "complete",
+   "routing": "model.attention_backend=blocked; softmax_attention routed to flash-f32-rows-b512",
+   "timing": {
+    "median_ms": 139.26432165317237,
+    "p10_ms": 136.15740151144564,
+    "p90_ms": 140.3701721224934,
+    "samples_ms": [
+     131.9073629565537,
+     136.7675792425871,
+     136.62962801754475,
+     138.3766303770244,
+     138.58836144208908,
+     139.98435204848647,
+     140.23047173395753,
+     140.42677218094468,
+     140.3638832271099,
+     139.94028186425567
+    ],
+    "warmup": 2,
+    "iterations": 10,
+    "compile_seconds": 73.84307427378371,
+    "compiled_memory": {
+     "argument_size_in_bytes": 793826152,
+     "output_size_in_bytes": 793761724,
+     "temp_size_in_bytes": 29931847200,
+     "alias_size_in_bytes": 0,
+     "generated_code_size_in_bytes": 1169480
+    },
+    "kernels": 1702
+   },
+   "nll": 10.508150100708008,
+   "grad_norm": 3.9311864376068115,
+   "finite": true,
+   "seconds_per_update": 4.456458292901516,
+   "peak_bytes_in_use": 34112800256,
+   "bytes_limit": 63787352064,
+   "global_batch": 256,
+   "wall_seconds": 127.17824233695865,
+   "provenance_matches": true
+  }
+ ],
+ "provenance": {
+  "source_commit": "3782b98ee18688c161c7a0eebb34ee4009309f8b",
+  "tracked_files_dirty": false,
+  "script_sha256": "79cd01763ee89d09409a6af62d6a587dc63cc034f03c3db195eab4fcad477f05",
+  "hostname": "dogo.csail.mit.edu",
+  "slurm_job_id": "235223",
+  "device_kind": "NVIDIA H100 80GB HBM3",
+  "platform": "gpu",
+  "device_count": 1,
+  "package_versions": {
+   "jax": "0.10.0",
+   "jaxlib": "0.10.0",
+   "jax-cuda12-plugin": "0.10.0",
+   "flax": "0.12.7",
+   "numpy": "2.4.6",
+   "nvidia-cudnn-cu12": "9.22.0.52",
+   "nvidia-cublas-cu12": "12.9.2.10"
+  },
+  "environment": {
+   "JAX_PLATFORMS": "cuda",
+   "XLA_FLAGS": null,
+   "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+   "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+   "CUDA_VISIBLE_DEVICES": "0"
+  }
+ }
+}
