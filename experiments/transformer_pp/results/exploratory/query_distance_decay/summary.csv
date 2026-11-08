@@ -3,5 +3,5 @@ control,FoX NoPE + W decay,r4a80e28ce0a7,complete,7500,2.629975789,13.873434,757
 query_distance,Query-dependent distance decay + W decay,r3e26412b2811,complete,7500,2.653079852,14.197698,7570,2.653420287,14.202532,0.324264,2.337303,0.327057,2.357087
 query_key_distance,Endpoint query-key distance decay + W decay,r02f984133092,complete,7500,2.640947298,14.026485,7570,2.641336269,14.031942,-0.171214,-1.205925,-0.170591,-1.201130
 bounded_query_distance,Bounded query rate + W decay,r4f169e5370da,complete,7500,2.653022188,14.196880,7570,2.653261691,14.200280,-0.000819,-0.005766,-0.002252,-0.015858
-per_order_query,Per-order query distance + W decay,rabf7547013ca,acceptance,,,,,,,,,,
-per_order_query_key,Per-order query-key distance + W decay,r9f910696c11e,submitted,,,,,,,,,,
+per_order_query,Per-order query distance + W decay,r507193d47450,planned,,,,,,,,,,
+per_order_query_key,Per-order query-key distance + W decay,r03be769d2069,planned,,,,,,,,,,

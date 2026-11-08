@@ -447,8 +447,12 @@ def attention_identity(config) -> dict:
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         gate = config.model.attention_forget_gate
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
+        per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
+                                         if endpoint and per_order
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
+                                         else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
                                          else "pallas_mosaic_gpu_query_polynomial_query_decay" if gate
                                          else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid

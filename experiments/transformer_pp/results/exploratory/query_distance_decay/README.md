@@ -159,8 +159,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 | Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
-| Per-order query distance + W decay | `rabf7547013ca` | acceptance | — | — | — |
-| Per-order query-key distance + W decay | `r9f910696c11e` | submitted | — | — | — |
+| Per-order query distance + W decay | `r507193d47450` | planned | — | — | — |
+| Per-order query-key distance + W decay | `r03be769d2069` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
@@ -205,8 +205,8 @@ positive distance-decay rate, including r=0:
 
 | Variant | Run | Shared-gate control | Rate |
 | --- | --- | --- | --- |
-| Query, NoPE, WD | `rabf7547013ca` | `r3e26412b2811` | `exp(A_r) softplus(wq_r·x_t + b_r)` |
-| Query–key, NoPE, WD | `r9f910696c11e` | `r02f984133092` | `exp(A_r) softplus(wq_r·x_t + wk_r·x_i + b_r)` |
+| Query, NoPE, WD | `r507193d47450` | `r3e26412b2811` | `exp(A_r) softplus(wq_r·x_t + b_r)` |
+| Query–key, NoPE, WD | `r03be769d2069` | `r02f984133092` | `exp(A_r) softplus(wq_r·x_t + wk_r·x_i + b_r)` |
 
 All gate parameters are per layer, head, and order. Every order starts as an
 exact copy of the shared gate's parameters; key projections start at zero.
@@ -218,10 +218,12 @@ batch 256, seed 42, and 7,570 updates. WD 0.1 applies to coefficient W and gate
 Wq/Wk; polynomial a,b and gate A,bias remain exempt. Counts are 200,339,386
 (query) and 201,280,186 (query–key).
 
-The new mechanism uses the blocked backend; Mosaic currently implements only
-shared gates. This matches the query control's FP32 attention arithmetic; the
-query–key control used Mosaic's BF16 tensor-core weights/score gradients, a
-numerical implementation difference to retain when interpreting results.
+Both run on the Mosaic per-order decay kernels (families `per_order_query_decay`
+and `per_order_endpoint_decay`), which evaluate each order's decay inside the causal
+tiles, one order at a time, and accumulate every per-order gate gradient on chip.
+Their BF16 tensor-core weights and score gradients match the query–key control;
+the query control used the blocked reference's FP32 arithmetic, a numerical
+implementation difference to retain when interpreting results.
 Qualification checks independent FP64 outputs/gradients, every order's decay,
 causality and invalid values, duplicated initialization, optimizer masks,
 full-model initialization recovery, and the shared GPU pilot/resume checks.

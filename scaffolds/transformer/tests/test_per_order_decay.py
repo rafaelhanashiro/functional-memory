@@ -150,11 +150,22 @@ def test_invalid_order_gate_poisoning_is_causal(bad):
     np.testing.assert_array_equal(invalid, expected)
 
 
-@pytest.mark.parametrize("changes", ({"attention_backend": "mosaic"}, {"attention_forget_gate_mode": "cumulative"},
+@pytest.mark.parametrize("changes", ({"attention_backend": "fused"}, {"attention_forget_gate_mode": "cumulative"},
     {"attention_forget_gate": False}, {"attention_forget_gate_rate_activation": "sigmoid"}))
 def test_unsupported_per_order_recipes_rejected(changes):
     with pytest.raises(ValueError):
         validate_config(_config(attention_forget_gate_per_order=True, **changes))
+
+
+def test_mosaic_per_order_limits_fit_blackwell_forward_and_dq():
+    """Largest degrees whose B300 kernels lower: the forward and dQ also hold every key's
+    per-order vectors, which leaves the query-key gate little room at d_K = 128."""
+    from scaffolds.transformer.attention.backends.mosaic.api import query_degree_supported
+
+    def limit(gate, width, time):
+        return max(m for m in range(1, 13) if query_degree_supported(m, width, time, gate=gate, per_order=True))
+    assert (limit("query", 64, 2048), limit("query_key", 64, 2048)) == (7, 6)
+    assert (limit("query", 128, 512), limit("query_key", 128, 2048)) == (10, 1)
 
 
 def test_historical_checkpoint_defaults_keep_shared_gates():
@@ -195,3 +206,184 @@ def test_gpu_per_order_forward_and_backward(endpoint):
         error = np.linalg.norm(got - want) / max(np.linalg.norm(want), 1e-12)
         assert error < .01, error
     test_model_initialization_matches_control_and_decay_masks("query_key" if endpoint else "query")
+
+
+# Mosaic GPU kernels for per-order gates: the same mathematics fused into the causal tiles.
+def _requires_mosaic_gpu():
+    if jax.default_backend() != "gpu" or jax.devices()[0].compute_capability not in ("9.0", "10.0", "10.3"):
+        pytest.skip("Requires an H100 or B300 allocation")
+
+
+def mosaic_operation(q, k, v, c, x, wq, wk, rate, bias, *, endpoint, per_order=True):
+    """The production dispatch: gate projections -> attention_core on the Mosaic backend."""
+    from scaffolds.transformer.attention.core import attention_core
+
+    if not per_order:  # the shared gate of the same parameters' order zero
+        wq, wk, rate, bias = wq[:, 0], wk[:, 0], rate[:, 0], bias[:, 0]
+    if endpoint:
+        query, key = forget_gate.project_gate_inputs(x, wq, bias, wk)
+        gate = dict(query_gate_input=query, key_gate_input=key, gate_log_rate=rate)
+    else:
+        gate = dict(query_log_decay=forget_gate.log_decay(x, wq, rate, bias))
+    return attention_core(q, k, v, backend="mosaic", attention_degree=c.shape[-1] - 1, attention_normalization=False,
+                          query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
+                          query_decay_mode="query_distance", **gate)
+
+
+def _mosaic_inputs(time=2048, *, key=True):
+    arrays = list(inputs(time, 4, width=64, value_width=64))
+    arrays[3] = arrays[3] / jnp.asarray([math.factorial(r) for r in range(5)], jnp.float32)
+    if not key:
+        arrays[6] = jnp.zeros_like(arrays[6])
+    arrays[:3] = [a.astype(jnp.bfloat16) for a in arrays[:3]]
+    cotangent = jnp.asarray(np.random.default_rng(5).normal(size=arrays[2].shape), jnp.bfloat16)
+    return arrays, cotangent
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
+def test_mosaic_per_order_output_and_every_gradient_match_host_fp64(endpoint):
+    _requires_mosaic_gpu()
+    arrays, cotangent = _mosaic_inputs(key=endpoint)
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        out, backward = jax.vjp(partial(dense, endpoint=endpoint), *[a.astype(jnp.float64) for a in arrays])
+        expected = jax.tree.map(np.asarray, (out, backward(cotangent.astype(jnp.float64))))
+    def evaluate(*args):
+        out, backward = jax.vjp(partial(mosaic_operation, endpoint=endpoint), *args)
+        return out, backward(cotangent)
+    actual = jax.jit(evaluate)(*arrays)
+    # output, dq, dk, dv at the Mosaic BF16 bounds; coefficients and gate parameters through FP32 sums.
+    tolerances = (.006, .025, .025, .015, .01, .01, .01, .01, .01, .01)
+    for i, (got, want) in enumerate(zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True)):
+        got = np.asarray(got, np.float64)
+        assert np.isfinite(got).all(), i
+        if not endpoint and i == 7:  # wk is unused by query-only gates
+            np.testing.assert_array_equal(got, 0)
+            continue
+        error = np.linalg.norm(got - want) / np.linalg.norm(want)
+        assert error < tolerances[i], (endpoint, i, error)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
+def test_mosaic_duplicated_orders_reproduce_the_shared_gate_kernel(endpoint):
+    """Every order a copy of one gate (the runs' initialization): the per-order kernels equal the
+    shared-gate kernels, and each shared parameter's gradient is the sum over its copies."""
+    _requires_mosaic_gpu()
+    arrays, cotangent = _mosaic_inputs(1024, key=endpoint)
+    q, k, v, c, x, wq, wk, rate, bias = arrays
+    copies = [jnp.broadcast_to(a[:, :1], a.shape) for a in (wq, wk, rate, bias)]
+    per_order = jax.jit(lambda *a: _vjp(partial(mosaic_operation, endpoint=endpoint), a, cotangent))(
+        q, k, v, c, x, *copies)
+    shared = jax.jit(lambda *a: _vjp(partial(mosaic_operation, endpoint=endpoint, per_order=False), a, cotangent))(
+        q, k, v, c, x, *copies)
+    observed = (per_order[0], *per_order[1][:5], *(g.sum(axis=1) for g in per_order[1][5:]))
+    expected = (shared[0], *shared[1][:5], *(g[:, 0] for g in shared[1][5:]))
+    for i, (got, want) in enumerate(zip(observed, expected, strict=True)):
+        got, want = np.asarray(got, np.float64), np.asarray(want, np.float64)
+        norm = np.linalg.norm(want)
+        if norm == 0:
+            np.testing.assert_array_equal(got, 0)
+        else:
+            assert np.linalg.norm(got - want) / norm < 2e-3, (endpoint, i)
+
+
+@pytest.mark.gpu
+def test_mosaic_per_order_zero_key_recovers_per_order_query_gates():
+    _requires_mosaic_gpu()
+    arrays, cotangent = _mosaic_inputs(1024, key=False)
+    endpoint = jax.jit(lambda *a: _vjp(partial(mosaic_operation, endpoint=True), a, cotangent))(*arrays)
+    query = jax.jit(lambda *a: _vjp(partial(mosaic_operation, endpoint=False), a, cotangent))(*arrays)
+    for i, (got, want) in enumerate(zip(jax.tree.leaves(endpoint), jax.tree.leaves(query), strict=True)):
+        got, want = np.asarray(got, np.float64), np.asarray(want, np.float64)
+        if i == 7:  # the key projection's gradient exists only for endpoint gates
+            continue
+        assert np.linalg.norm(got - want) <= 2e-4 * np.linalg.norm(want), i
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("operand", ("query", "key", "rate"))
+def test_mosaic_invalid_order_gate_poisons_only_affected_causal_rows(operand):
+    _requires_mosaic_gpu()
+    from scaffolds.transformer.attention.backends.mosaic.api import per_order_endpoint_decay_attention
+
+    q, k, v, c, x, wq, wk, rate, bias = _mosaic_inputs(512)[0]
+    query, key = forget_gate.project_gate_inputs(x, wq, bias, wk)
+    if operand == "query":
+        query = query.at[0, 300, 0, 2].set(jnp.nan)
+    elif operand == "key":
+        key = key.at[0, 300, 0, 2].set(jnp.inf)
+    else:
+        rate = rate.at[0, 2, 0].set(jnp.nan)
+    out = per_order_endpoint_decay_attention(q, k, v, c, query, key, rate)
+    actual = ~np.isfinite(np.asarray(out, np.float32)).all(axis=-1)
+    expected = np.zeros(actual.shape, bool)
+    expected[:, {"query": slice(300, 301), "key": slice(300, None), "rate": slice(None)}[operand], 0] = True
+    if operand != "rate":
+        expected[1] = False  # the change is in batch 0 only
+    np.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
+def test_mosaic_per_order_diagonal_is_exactly_unattenuated(endpoint):
+    _requires_mosaic_gpu()
+    q, k, v, c, x, wq, wk, rate, bias = _mosaic_inputs(512)[0]
+    c = jnp.zeros_like(c).at[..., 0].set(1.)  # p = 1
+    rate = jnp.full_like(rate, 80.)  # every earlier key underflows in every order
+    output = mosaic_operation(q, k, v, c, x, wq, wk, rate, bias, endpoint=endpoint)
+    np.testing.assert_array_equal(np.asarray(output, np.float32), np.asarray(v, np.float32))
+
+
+def _vjp(function, operands, cotangent):
+    output, backward = jax.vjp(function, *operands)
+    return output, backward(cotangent)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("conditioning", ("query", "query_key"))
+def test_mosaic_per_order_model_trains_like_the_float32_blocked_model(conditioning, monkeypatch):
+    """End-to-end per-order model on Mosaic in BF16: loss and gradient direction of the FP32 blocked model
+    (as test_endpoint_decay's model check, whose tolerances these share)."""
+    _requires_mosaic_gpu()
+    from scaffolds.transformer.attention.backends.mosaic import api
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.state import create_state
+
+    rng = np.random.default_rng(57)
+    batch = jnp.asarray(rng.integers(0, 64, size=(2, 257)), jnp.int32)
+    amplitude = jnp.asarray(rng.normal(size=(2, 2, 5)) * .5, jnp.float32)
+    key_kernel = jnp.asarray(rng.normal(size=(2, 2, 5, 128)) * .1, jnp.float32)
+    gate_kernel = jnp.asarray(rng.normal(size=(2, 2, 5, 128)) * .05, jnp.float32)  # orders differ
+    results = {}
+    for backend, dtype, precision in (("blocked", "float32", None), ("blocked", "bfloat16", None),
+                                      ("mosaic", "bfloat16", "bf16"), ("mosaic", "bfloat16", "bf16x3")):
+        monkeypatch.setattr(api, "default_precision", lambda family, degree, precision=precision: precision)
+        base = _config(vocab_size=64, max_seq_len=256, hidden_size=128, qk_head_dim=64, value_head_dim=64,
+                       intermediate_size=256, attention_backend=backend,
+                       attention_coefficient_projection_initial_std=128 ** -.5,
+                       attention_forget_gate_conditioning=conditioning)
+        config = replace(base, model=replace(base.model, attention_forget_gate_per_order=True))
+        config.train.dtype, config.data.sequence_length = dtype, batch.shape[1]
+        state = create_state(config, jax.random.PRNGKey(3))
+        state.params["query_polynomial_amplitude"][...] = amplitude
+        state.params["forget_gate_kernel"][...] = state.params["forget_gate_kernel"][...] + gate_kernel
+        if conditioning == "query_key":
+            state.params["forget_gate_key_kernel"][...] = key_kernel
+        with jax.default_matmul_precision("highest" if dtype == "float32" else "default"):
+            loss, gradients = jax.jit(lambda *a: loop.loss_and_grads(*a))(state, batch, jax.random.PRNGKey(0))
+        results[backend, dtype, precision] = float(loss), {path: np.asarray(value[...], np.float64)
+                                                          for path, value in nnx.to_flat_state(gradients)}
+    reference_loss, reference = results["blocked", "float32", None]
+    bf16 = results["blocked", "bfloat16", None][1]
+    loss, actual = results["mosaic", "bfloat16", "bf16"]
+    assert math.isfinite(loss) and abs(loss - reference_loss) < .02
+    assert all(np.isfinite(value).all() for value in actual.values())
+
+    def cosine(gradients):
+        a, b = (np.concatenate([g[path].ravel() for path in sorted(reference, key=str)]) for g in (gradients, reference))
+        return a @ b / (np.linalg.norm(a) * np.linalg.norm(b))
+
+    exact = results["mosaic", "bfloat16", "bf16x3"][1]
+    assert cosine(exact) >= min(.995, cosine(bf16) - .01), (cosine(exact), cosine(bf16))
+    assert cosine(actual) >= min(.995, cosine(bf16) - .03), (cosine(actual), cosine(bf16))

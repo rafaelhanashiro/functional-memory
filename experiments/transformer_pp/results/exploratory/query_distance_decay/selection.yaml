@@ -102,18 +102,18 @@ runs:
       path: experiments/transformer_pp/runs/r4f169e5370da/best_validation.json
       sha256: 8d1a590d2cadc2dd8751aea299a7a557c7635e95427d3a2dd2679bdb81c43bbc
 - study: transformer_pp
-  run_id: rabf7547013ca
+  run_id: r507193d47450
   role: per_order_query
   label: Per-order query distance + W decay
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/rabf7547013ca/config.yaml
-      sha256: e366df615b823450cffef0aeacfaa9034b67d389a5ff049b283684d4ce4609ab
+      path: experiments/transformer_pp/runs/r507193d47450/config.yaml
+      sha256: be00699b0e4b01df03202bd26841c29a2657766330a2cd64ede5b96866fe709f
 - study: transformer_pp
-  run_id: r9f910696c11e
+  run_id: r03be769d2069
   role: per_order_query_key
   label: Per-order query-key distance + W decay
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/r9f910696c11e/config.yaml
-      sha256: 7ccbb1c55e0c8f0974332ecf4bf6d3c40a04207a2dcdb486dcfbeab9043a2fb1
+      path: experiments/transformer_pp/runs/r03be769d2069/config.yaml
+      sha256: c48468ebbf4691922df582e347d7adc7fbcb11be951b668f31f8a3175aec265c

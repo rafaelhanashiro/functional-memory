@@ -237,9 +237,9 @@ class ModelConfig:
                 and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
                 and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
                 and self.attention_forget_gate_form == "input" and integer_degree
-                and not self.attention_forget_gate_per_order
                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
-                                           gate=self.attention_forget_gate_conditioning)
+                                           gate=self.attention_forget_gate_conditioning,
+                                           per_order=self.attention_forget_gate_per_order)
                 and self.positional_encoding in ("rope", "none")
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
@@ -472,9 +472,10 @@ class ModelConfig:
                 or self.attention_forget_gate_form != "input"
                 or self.attention_forget_gate_mode != "query_distance"
                 or self.attention_forget_gate_rate_activation != "softplus"
-                or self.positional_encoding not in ("rope", "none") or self.attention_backend != "blocked"):
+                or self.positional_encoding not in ("rope", "none")
+                or self.attention_backend not in ("blocked", "mosaic")):
             raise ValueError("Per-order gates require input-form softplus query-distance polynomial "
-                             "attention with RoPE/NoPE on the blocked backend")
+                             "attention with RoPE/NoPE on the blocked or mosaic backend")
         if self.attention_forget_gate_form != "input" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
                 or not polynomial):
