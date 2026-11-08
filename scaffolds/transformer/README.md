@@ -400,6 +400,24 @@ diagonal tanh query coefficients with RoPE, without selected orders, an inner ta
 forget gate, continuation, or a query learning-rate scale. Diagnostics report the gate,
 the ungated `c`, the order tilt `log g_r - mean_r log g_r`, and each order's contribution
 `c~_r s_ti^r` over causal pairs, since a small gate alone does not show suppression.
+`attention_coefficient_gate: gdn` multiplies instead by Gated DeltaNet's decay without a
+distance exponent, `c~_r(x_t) = alpha_r(x_t) c_r(x_t)` with
+`alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r))` in `(0, 1]`, computed in
+FP32 per layer, head and order. Its arrays are `query_polynomial_gate_kernel` (`w`,
+`[layers, heads, hidden_size, m+1]`), `query_polynomial_gate_log_rate` (`A_log`) and
+`query_polynomial_gate_dt_bias` (`[layers, heads, m+1]`), with the input-form forget gate's
+initialization (`w` uniform in `+-1/sqrt(hidden_size)`, `exp(A_log)` uniform on `(0, 16)`,
+`softplus(dt_bias)` log-uniform on `[0.001, 0.1]`), drawn once per layer and head from the
+mechanism stream and copied to every order. Every order therefore starts with the same
+`alpha_t`, which per-head output RMSNorm cancels up to its epsilon: the normalized output is
+the ungated one times `sqrt((ms + eps alpha^2) / (ms + eps))`, with `ms` the gated head output's
+mean square. `w` follows `attention_coefficient_kernel_weight_decay`; `A_log` and `dt_bias`
+never decay. Nonfinite gate inputs give NaN rather than a saturated gate. The qualification
+restrictions are the sigmoid gate's, and diagnostics report `alpha` in the gate fields
+together with `exp(A_log)`, `softplus(dt_bias)` and `||w_r||`.
+`acceptance.gdn_gate_start_parity` checks a recipe's initial logits against its ungated
+counterpart: to FP32 rounding with the RMSNorm epsilon at `1e-30`, and within the epsilon's
+bound at the recipe's.
 `attention_coefficient_amplitude_scale: factorial` (tanh only; default `none`) uses the
 effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no new
 parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s
@@ -698,7 +716,8 @@ divisor cannot be driven through zero by a signed kernel. Its gain `w` is the
 excluded from weight decay. Run metadata and W&B tags name the option.
 
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
-and weight-decay policy. The model registers each array once and selects the
+and weight-decay policy; `repeat_initial_axis` makes a named random draw once without that
+axis and repeats it along the axis, the copies training independently afterwards. The model registers each array once and selects the
 appropriate device-array arguments for each layer. Gradients from shared uses
 accumulate into one parameter and optimizer state. The existing
 `quadratic_coefficients` checkpoint key and backbone initialization order are

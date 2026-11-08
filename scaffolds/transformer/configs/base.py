@@ -144,7 +144,12 @@ class ModelConfig:
     # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
     # multiplier 2 g_r exactly 1 at the start, so the ungated function and its derivatives in
     # W, a and b are preserved; 2 g_r ranges over (0, 2), suppressing or amplifying an order.
-    attention_coefficient_gate: Literal["none", "sigmoid"] = "none"
+    # "gdn" multiplies instead by Gated DeltaNet's decay without a distance exponent,
+    # alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r)) in (0, 1], per
+    # layer/head/order. w, A_log and dt_bias take the input-form forget gate's draws, made
+    # once per layer/head and copied to every order: all orders start with the same alpha,
+    # which head_rms_norm output scaling cancels up to its epsilon. w decays like U.
+    attention_coefficient_gate: Literal["none", "sigmoid", "gdn"] = "none"
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -461,7 +466,7 @@ class ModelConfig:
         if self.attention_coefficient_tanh_bias and activation not in AFFINE_ACTIVATIONS:
             raise ValueError("A bias inside tanh applies to affine tanh or sigmoid coefficients only")
         if not isinstance(self.attention_coefficient_gate, str) or self.attention_coefficient_gate not in (
-                "none", "sigmoid"):
+                "none", "sigmoid", "gdn"):
             raise ValueError(f"Unknown attention coefficient gate: {self.attention_coefficient_gate!r}")
         if self.attention_coefficient_gate != "none" and (
                 self.attention_coefficient_conditioning != "query" or activation != "tanh"
