@@ -148,7 +148,11 @@ ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for 
 `h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
 form is qualified only for query polynomials with the cumulative mode under RoPE or no
 positional encoding on the blocked backend; configuration rejects it with `query_distance`,
-PaTH, softmax, or the exponential.
+PaTH, softmax, or the exponential. The `sigmoid` form is the Forgetting Transformer's original
+gate, `alpha_t = sigmoid(x_t w_f + b_f)`, with the paper's initialization (`w_f ~ N(0, 0.02^2)`,
+`b_f = 0`) and weight decay on `w_f` only; it equals the input form with `exp(A_log) = 1` and the
+projection negated. It is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend.
 
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
@@ -390,6 +394,23 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_gate: sigmoid` (default `none`) gates every order independently
+per layer and head: `c~_r(x_t) = 2 g_r(x_t) c_r(x_t)` with
+`g_r(x_t) = sigmoid(U_r^T x_t + beta_r)`, where `x_t` is the coefficient generator's input.
+The kernel `query_polynomial_gate_kernel` (`U`, `[layers, heads, hidden_size, m+1]`) and
+the bias `query_polynomial_gate_bias` (`beta`, `[layers, heads, m+1]`) are FP32, start at
+exactly zero, and draw no random numbers, so every other parameter keeps the ungated
+recipe's initialization. The fixed factor 2 normalizes the gate: `2 g_r` is exactly 1 at
+the start, preserving the ungated function and its derivatives with respect to `W`, `a`
+and `b`, and ranges over `(0, 2)` thereafter, so an order can be suppressed or amplified;
+the gate never starts near saturation. `U` follows
+`attention_coefficient_kernel_weight_decay`, like `W`; `beta` never decays. The gate is
+applied inside the coefficient generator, so every backend receives the gated `c~`
+unchanged, with no distance-dependent decay or row-sum division. It is qualified for
+diagonal tanh query coefficients with RoPE, without selected orders, an inner tanh bias, a
+forget gate, continuation, or a query learning-rate scale. Diagnostics report the gate,
+the ungated `c`, the order tilt `log g_r - mean_r log g_r`, and each order's contribution
+`c~_r s_ti^r` over causal pairs, since a small gate alone does not show suppression.
 `attention_coefficient_amplitude_scale: factorial` (tanh only; default `none`) uses the
 effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no new
 parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s
@@ -513,6 +534,65 @@ metrics; no held-out evaluation is implied. Shared-table qualification checks
 original replay before projection and compares the training forward with the
 projected model; changing the initial function is not counted as fitting progress.
 
+### Coefficient release schedule
+
+A release schedule keeps learned coefficients at their initial values for the first
+part of training, then releases them (`training/coefficient_release.py`). It
+applies to learned direct static coefficients (`polynomial_coefficients`, `[m+1]` or
+`[layers, heads, m+1]`) and to diagonal tanh query coefficients without an inner
+bias (`query_polynomial_bias` and `query_polynomial_amplitude`, `[layers, heads, m+1]`,
+and `query_polynomial_kernel`, `[layers, heads, hidden_size, m+1]`). Every array must
+store all orders `0..m` on its last axis, so `attention_coefficient_orders` is
+rejected, as are query-key conditioning, dense readout, other activations,
+continuations, and non-Taylor initialization. Order `r` is entry `r` of that axis:
+static `c_r`, or the query generator's `b_r`, `a_r`, and column `r` of `W` together.
+All other parameters, including QK gains, head score scales, output RMSNorm gains,
+and forget-gate parameters, train from the first update.
+
+| Setting | Meaning |
+| --- | --- |
+| `optim.coefficient_release_schedule` | `all` or `by_order`; null (default) trains the coefficients from the first update |
+| `optim.coefficient_release_step` | first release, with `0 < step < optim.total_steps` |
+| `optim.coefficient_release_end_step` | `by_order` only: the last order's release, `step < end < optim.total_steps` |
+
+Counts `k` are optimizer updates on the learning-rate schedule's own clock: the update
+with count `k` is logged as step `k + 1` and uses `schedule(k)`. Order `r` is frozen
+for `k < s_r` and trains for `k >= s_r`. `all` sets `s_r` to the release step for every
+order; `by_order` sets `s_r = step + floor(r (end - step) / m)`, lowest order first.
+With step 455, end 1500 and `m = 8`, orders 0-8 release at 455, 585, 716, 846, 977,
+1108, 1238, 1369, and 1500.
+
+Freezing has two masks, both functions of the update count alone. A frozen entry's
+gradient is zeroed after microbatch and data-parallel averaging, before global-norm
+clipping and AdamW: it adds nothing to the clip norm, the rest of the model trains
+exactly as if those coefficients had no gradient, and its Adam moments stay exactly
+zero. Its final update is zeroed after AdamW, so decoupled weight decay cannot shrink
+a decayed `W` (`attention_coefficient_kernel_weight_decay`). Frozen entries stay
+bitwise equal to their initial values until release. A released entry starts from
+zero moments while bias correction keeps the global count: with betas (0.9, 0.95) and a
+steady gradient, its first update is 0.45 of a steady Adam step, and later ones overshoot
+it by up to 10% (20 updates after release) before settling. It joins the shared
+learning-rate schedule at its current value (`b` and `a` times
+`optim.query_coefficient_learning_rate_scale`, when set), with no separate warmup, Adam
+clock, or learning rate. The logged `gradient_norm_pre_clip`, clipping scale, numerical
+update checks, and telemetry use the masked gradient that clipping sees.
+
+The release wraps the unchanged clipping and AdamW chain, reading the schedule's count
+from its state, so the optimizer state layout is the same with or without a schedule
+and a checkpoint resume continues the schedule exactly. It names the arrays it freezes
+and raises before the first update if any is missing, rather than letting it train.
+Without a schedule, the optimizer and train steps are built exactly as before. The
+training log prints
+`coefficient_release_schedule=by_order release_updates=455,585,...` at start and
+`coefficient_release update=455 step=456 orders=0` at each release; W&B receives
+`train/coefficient_trainable_orders` at that step and the tag
+`coefficient_release_all` or `coefficient_release_by_order`. The attention identity
+and formula, recorded in metrics and metadata, include the schedule and every
+`s_r` (`coefficient_release_counts`) only when one is set, and `runs.csv` has
+`coefficient_release_schedule`, `coefficient_release_step`, and
+`coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
+`tests/test_coefficient_release.py` for every recipe with a schedule.
+
 ### Forget gate
 
 `attention_forget_gate: true` adds the Forgetting Transformer's decay with Gated DeltaNet's
@@ -528,7 +608,12 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
 
-Softmax and the exponential take the cumulative mode with the input gate form only.
+`attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
+original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
+paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
+1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
+Softmax and the exponential take the cumulative mode with the input or sigmoid gate form; the
+sigmoid form needs RoPE or no positional encoding.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
 parameters.
@@ -876,6 +961,60 @@ as for the fused kernels. They are the canonical kernels for these mechanisms, a
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
 run's weight precision (`--mosaic-precision`).
 
+`model.attention_blocked_implementation` chooses how the blocked backend runs dot-product
+attention with RoPE or no positional encoding. Both choices live in
+`attention/backends/reference.py` and evaluate the same per-block arithmetic, one shared
+function: the same scores, kernels, normalizations, and invalid-row rules for every mechanism.
+
+| Value | Function | Execution |
+| --- | --- | --- |
+| `scan` (default) | `blocked_dot_product_attention` | Checkpointed scan of 128-query blocks, each against all keys. Autodiff sums each block's K and V cotangents in the input dtype: BF16 dK and dV carry 1.8-2.8x the BF16 rounding floor at 2,048 tokens ([validation](validation/README.md)). |
+| `strips` | `strip_dot_product_attention` | Causal 512-query strips (`STRIP_SIZE`; the last may be shorter), each against its key prefix only, each under `jax.checkpoint` so its backward recomputes it. K, V, and the other per-key operands are converted to FP32 once before the strips, so their cotangents sum in FP32 and round once. |
+
+- Precision: the products read the BF16 values (exact in FP32 and TF32) with FP32
+  accumulation, weights stay FP32, and the output has V's dtype, as in the scan. dQ has no sum
+  across strips. Every conversion of a BF16 operand to FP32 (each strip's queries; K, V, and
+  the other operands once) and of the output back to V's dtype is written with
+  `reduce_precision` (`_rounded_to`). With the default `xla_allow_excess_precision`, XLA GPU
+  removes an f32 -> bf16 -> f32 conversion pair, so plain conversions next to the model's FP32
+  math (QK RMSNorm, RoPE, head RMSNorm) would hand the forward unrounded FP32 values and the
+  backward's recomputation the saved BF16 ones. `tests/test_blocked_strips_h100.py` checks the
+  roundings in compile-only H100 programs (it skips without the CUDA plugin; acceptance does not
+  run it).
+- Memory: a strip's working set is FP32 [batch, heads, 512, keys] blocks, 4x the scan's
+  128-query rows, and K and V are kept in FP32 for the backward. Compile-only H100 estimates of
+  one update's temporary memory on the blocked backend, scan then strips: the 15-layer
+  width-896 softmax recipe at micro-batch 16, 23.6 and 26.0 GB; FoX query m = 4 there, 26.8 and
+  26.1 GB; 10-layer width-1024 recipes with 16 heads at micro-batch 64, query m = 4 66.1 and
+  82.4 GB (73.9 GB with 256-query strips) and normalized learned m = 4 63.3 and 57.2 GB. A
+  recipe near a GPU's limit may need a smaller micro-batch; gradient accumulation keeps its
+  scientific batch.
+- The one intended difference: masked keys are never multiplied, so a nonfinite V entry poisons
+  the rows from the start of its strip onward. The scan multiplies every key's V by each block's
+  weights, and a masked zero weight times NaN or inf poisons every row.
+- The strips' checkpoints keep CSE prevention on. Unlike the scan's loop body, unrolled strips
+  have no loop boundary: without it XLA merges each recomputation with its forward and keeps
+  every layer's scores until its backward. The strips assume a static sequence length.
+- Diagnostics (`return_diagnostics`) still come from the scan, forward only, as for the fused
+  kernels. Kernels are still qualified against the scan, and the coefficient fit's
+  blocked-reference check runs it whatever the parent recipe sets.
+- PaTH, Gated DeltaNet, and GLA keep their own blocked code and reject `strips`. Other resolved
+  backends ignore the field, so `auto` recipes use the strips wherever they resolve to `blocked`.
+- Historical recipes and resumptions keep `scan`, the default. `scaffolds.records create` writes
+  `strips` into fresh dot-product recipes (RoPE or no positional encoding) on the `blocked` or
+  `auto` backend that leave the field unset, and rejects an explicit `scan` there unless
+  `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep the inert `scan`,
+  so they match their historical partners. A launcher that allocates copied recipes with
+  `create_run` for the blocked backend applies the same rule
+  (`configs.base.fresh_recipe_uses_blocked_strips`), as the Transformer++ continuation launcher
+  does.
+- The field is an execution setting, like the backend: a continuation, including one that
+  preserves all parameters, may train on the strips from a parent that trained on the scan.
+- Run metadata records `attention_implementation: blocked_causal_strips`,
+  `attention_blocked_implementation`, `attention_strip_size`, and the diagnostic scan
+  (`diagnostic_backend`, `diagnostic_query_block_size`). Acceptance adds
+  `tests/test_blocked_strips.py` to the CPU tests of recipes that train on the strips.
+
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
 when the caller requests `auto`. A resumed run fails if its pinned implementation
@@ -1002,7 +1141,8 @@ Gradient diagnostics are standard for every mechanism. At each normal log step,
 W&B plots `train/gradient_norm_pre_clip`, `train/gradient_norm_post_clip`,
 `train/gradient_clip_scale`, and `train/gradient_clipped`. The norm is taken after
 all microbatch and data-parallel averaging, before clipping, and includes any
-coefficient penalty in the training objective. The optimizer already computes
+coefficient penalty in the training objective; under a coefficient release schedule
+it excludes still-frozen coefficient entries, as clipping does. The optimizer already computes
 this norm for its numerical checks; logging adds no gradient-tree reduction.
 Retained training logs keep the sampled norm and clipping scale. Each validation
 event in `metrics.jsonl` stores the norm count, mean, maximum, and clipped fraction

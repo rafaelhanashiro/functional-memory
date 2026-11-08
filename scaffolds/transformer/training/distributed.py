@@ -12,6 +12,7 @@ from flax import nnx
 from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 
 from scaffolds.transformer.configs import Config
+from scaffolds.transformer.training.coefficient_release import mask_frozen_gradients
 from scaffolds.transformer.training.randomness import model_forward_rngs
 from scaffolds.transformer.training.state import TrainState
 from scaffolds.transformer.training.numerics import checked_update_loss, update_numerics
@@ -281,7 +282,7 @@ def make_data_parallel_functions(
         local_grads = jax.tree.map(lambda grad: grad * scale, grad_sum)
 
         global_loss = jax.lax.pmean(local_loss, DATA_AXIS)
-        global_grads = jax.lax.pmean(local_grads, DATA_AXIS)
+        global_grads = mask_frozen_gradients(current_state, jax.lax.pmean(local_grads, DATA_AXIS))
         updated = current_state.apply_gradients(grads=global_grads)
         checked_loss = checked_update_loss(current_state.params, global_grads, updated.params, global_loss,
                                           check_all_gradients=check_all_gradients)

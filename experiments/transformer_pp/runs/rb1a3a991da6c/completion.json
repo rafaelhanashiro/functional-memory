@@ -1,0 +1,48 @@
+{
+  "finished_utc": "2026-11-08T05:44:47.155633+00:00",
+  "interpretation": "Forward-only calibration of shared fixed spline knots using regular static and query + W decay m=4 models, at initialization and retained validation-best checkpoints. Same sampled training rows and causal pairs; no FoX, no optimizer updates, and no spline training. Polynomial continuation is the proposed tail policy.",
+  "optimizer_updates": 0,
+  "snapshots": [
+    {
+      "backend": "mosaic",
+      "elapsed_seconds": 43.928,
+      "heads": 14,
+      "initialization_kind": "reconstructed_from_source_recipe",
+      "layers": 15,
+      "role": "static",
+      "source_run_id": "r4339a245820e",
+      "state": "initialization"
+    },
+    {
+      "backend": "mosaic",
+      "elapsed_seconds": 8.382,
+      "heads": 14,
+      "initialization_kind": null,
+      "layers": 15,
+      "role": "static",
+      "source_run_id": "r4339a245820e",
+      "state": "checkpoint"
+    },
+    {
+      "backend": "mosaic",
+      "elapsed_seconds": 5.451,
+      "heads": 14,
+      "initialization_kind": "reconstructed_from_source_recipe",
+      "layers": 15,
+      "role": "query_wdecay",
+      "source_run_id": "rca97cc9db8f2",
+      "state": "initialization"
+    },
+    {
+      "backend": "mosaic",
+      "elapsed_seconds": 5.271,
+      "heads": 14,
+      "initialization_kind": null,
+      "layers": 15,
+      "role": "query_wdecay",
+      "source_run_id": "rca97cc9db8f2",
+      "state": "checkpoint"
+    }
+  ],
+  "status": "complete"
+}

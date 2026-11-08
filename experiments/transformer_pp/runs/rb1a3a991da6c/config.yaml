@@ -1,0 +1,423 @@
+schema_version: 1
+experiment_kind: spline_score_calibration
+condition: exploratory/spline_attention
+output_directory: experiments/transformer_pp/runs/rb1a3a991da6c
+diagnostic:
+  data:
+    manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+    manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+    sequence_length: 2049
+    sequences: 16
+    start_sequence: 0
+    sequence_stride: 100003
+  sampling:
+    queries_per_sequence: 128
+    pairs_per_sequence: 4096
+    seed: 42
+  radii:
+  - 2
+  - 4
+  - 6
+  - 8
+  - 10
+  - 12
+  - 16
+  - 24
+  - 32
+  - 48
+  - 64
+  - 96
+  - 128
+  - 256
+  histogram_edges:
+  - -1024
+  - -512
+  - -256
+  - -128
+  - -64
+  - -48
+  - -40
+  - -32.0
+  - -31.75
+  - -31.5
+  - -31.25
+  - -31.0
+  - -30.75
+  - -30.5
+  - -30.25
+  - -30.0
+  - -29.75
+  - -29.5
+  - -29.25
+  - -29.0
+  - -28.75
+  - -28.5
+  - -28.25
+  - -28.0
+  - -27.75
+  - -27.5
+  - -27.25
+  - -27.0
+  - -26.75
+  - -26.5
+  - -26.25
+  - -26.0
+  - -25.75
+  - -25.5
+  - -25.25
+  - -25.0
+  - -24.75
+  - -24.5
+  - -24.25
+  - -24.0
+  - -23.75
+  - -23.5
+  - -23.25
+  - -23.0
+  - -22.75
+  - -22.5
+  - -22.25
+  - -22.0
+  - -21.75
+  - -21.5
+  - -21.25
+  - -21.0
+  - -20.75
+  - -20.5
+  - -20.25
+  - -20.0
+  - -19.75
+  - -19.5
+  - -19.25
+  - -19.0
+  - -18.75
+  - -18.5
+  - -18.25
+  - -18.0
+  - -17.75
+  - -17.5
+  - -17.25
+  - -17.0
+  - -16.75
+  - -16.5
+  - -16.25
+  - -16.0
+  - -15.75
+  - -15.5
+  - -15.25
+  - -15.0
+  - -14.75
+  - -14.5
+  - -14.25
+  - -14.0
+  - -13.75
+  - -13.5
+  - -13.25
+  - -13.0
+  - -12.75
+  - -12.5
+  - -12.25
+  - -12.0
+  - -11.75
+  - -11.5
+  - -11.25
+  - -11.0
+  - -10.75
+  - -10.5
+  - -10.25
+  - -10.0
+  - -9.75
+  - -9.5
+  - -9.25
+  - -9.0
+  - -8.75
+  - -8.5
+  - -8.25
+  - -8.0
+  - -7.75
+  - -7.5
+  - -7.25
+  - -7.0
+  - -6.75
+  - -6.5
+  - -6.25
+  - -6.0
+  - -5.75
+  - -5.5
+  - -5.25
+  - -5.0
+  - -4.75
+  - -4.5
+  - -4.25
+  - -4.0
+  - -3.75
+  - -3.5
+  - -3.25
+  - -3.0
+  - -2.75
+  - -2.5
+  - -2.25
+  - -2.0
+  - -1.75
+  - -1.5
+  - -1.25
+  - -1.0
+  - -0.75
+  - -0.5
+  - -0.25
+  - 0.0
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1.0
+  - 1.25
+  - 1.5
+  - 1.75
+  - 2.0
+  - 2.25
+  - 2.5
+  - 2.75
+  - 3.0
+  - 3.25
+  - 3.5
+  - 3.75
+  - 4.0
+  - 4.25
+  - 4.5
+  - 4.75
+  - 5.0
+  - 5.25
+  - 5.5
+  - 5.75
+  - 6.0
+  - 6.25
+  - 6.5
+  - 6.75
+  - 7.0
+  - 7.25
+  - 7.5
+  - 7.75
+  - 8.0
+  - 8.25
+  - 8.5
+  - 8.75
+  - 9.0
+  - 9.25
+  - 9.5
+  - 9.75
+  - 10.0
+  - 10.25
+  - 10.5
+  - 10.75
+  - 11.0
+  - 11.25
+  - 11.5
+  - 11.75
+  - 12.0
+  - 12.25
+  - 12.5
+  - 12.75
+  - 13.0
+  - 13.25
+  - 13.5
+  - 13.75
+  - 14.0
+  - 14.25
+  - 14.5
+  - 14.75
+  - 15.0
+  - 15.25
+  - 15.5
+  - 15.75
+  - 16.0
+  - 16.25
+  - 16.5
+  - 16.75
+  - 17.0
+  - 17.25
+  - 17.5
+  - 17.75
+  - 18.0
+  - 18.25
+  - 18.5
+  - 18.75
+  - 19.0
+  - 19.25
+  - 19.5
+  - 19.75
+  - 20.0
+  - 20.25
+  - 20.5
+  - 20.75
+  - 21.0
+  - 21.25
+  - 21.5
+  - 21.75
+  - 22.0
+  - 22.25
+  - 22.5
+  - 22.75
+  - 23.0
+  - 23.25
+  - 23.5
+  - 23.75
+  - 24.0
+  - 24.25
+  - 24.5
+  - 24.75
+  - 25.0
+  - 25.25
+  - 25.5
+  - 25.75
+  - 26.0
+  - 26.25
+  - 26.5
+  - 26.75
+  - 27.0
+  - 27.25
+  - 27.5
+  - 27.75
+  - 28.0
+  - 28.25
+  - 28.5
+  - 28.75
+  - 29.0
+  - 29.25
+  - 29.5
+  - 29.75
+  - 30.0
+  - 30.25
+  - 30.5
+  - 30.75
+  - 31.0
+  - 31.25
+  - 31.5
+  - 31.75
+  - 32.0
+  - 40
+  - 48
+  - 64
+  - 128
+  - 256
+  - 512
+  - 1024
+  quantiles:
+  - 0.001
+  - 0.01
+  - 0.05
+  - 0.5
+  - 0.95
+  - 0.99
+  - 0.999
+  models:
+  - role: static
+    run_id: r4339a245820e
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4339a245820e/config.yaml
+    config_sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r4339a245820e/checkpoints/7500
+    checkpoint_sha256: e2b6079d8008d18405dd2a1ff2c313754ee712dacac652873f6b5d349293cc7c
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 793065783e1a2cbe69f4ec053d9476bf18b8f78915f68f64bc78da2dcd4e5fbd
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: 13ff014087890e70b5a19c58a24045dff1759a27aa3ebd8294ec63bf2606b07d
+      size_bytes: 216519
+    - path: default/_sharding
+      sha256: cebf01dbe7df8d233418f30d2da0b4bbf5a304fcfa47884216f2818e9547865a
+      size_bytes: 67909
+    - path: default/array_metadatas/process_0
+      sha256: 60bbb27a2ae7a19d6e8f17deb72562852fc7855dbe4642c3da83d0ab7748cfa7
+      size_bytes: 74230
+    - path: default/d/90b36ef5491d08d5c91b08712bf54ed8
+      sha256: d95b27d75c4492bb9fa550f19659be8a2d67f3cc770dca5d15c7e90040f16e34
+      size_bytes: 7244
+    - path: default/manifest.ocdbt
+      sha256: 66ec0394fbf390a5617a0da57791f99d0e967c524eb9e022c5df53a88d968cc0
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/272331231e17e2bbeeb6c7392380e613
+      sha256: 0d74c325ab4ec92b13c91beab924c5a514b7c53bbca40c673c766ba2daf501f7
+      size_bytes: 239
+    - path: default/ocdbt.process_0/d/2faad897458493aba0321da6c3c26ed0
+      sha256: 59b43b96409be7646ee75e2b58d5efdd3998b748bfb87121eef7f9967b6c8a53
+      size_bytes: 40837120
+    - path: default/ocdbt.process_0/d/41814470dcddad7c3d670ba7a39c8603
+      sha256: f7f3853746539d5c9a7dbbde06c4b5b41a296d5651e729fbe57bb2b1986c3b05
+      size_bytes: 2143694848
+    - path: default/ocdbt.process_0/d/f7aba8c90e3f6b84ae7b11a0575fc120
+      sha256: 15e92b2006072e3d5ee182437cf27b9601685c2add4e2e0c49d9e87fcf9d1c73
+      size_bytes: 3810
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: e892d435ea898719f4f1d66b06071c84ef7e5a1db0d7c1845bbdb9ffb2b883ce
+      size_bytes: 268
+    - path: metrics/metrics
+      sha256: c3f66785686ae241bf3c5254b5051d65be7c32002868020a82f2bed25b98ef0e
+      size_bytes: 136
+    step: 7500
+    recorded_validation_nll: 2.692375774446287
+    training_sequence_length: 2049
+    ignored_config_keys: {}
+    states:
+    - initialization
+    - checkpoint
+  - role: query_wdecay
+    run_id: rca97cc9db8f2
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+    config_sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rca97cc9db8f2/checkpoints/7500
+    checkpoint_sha256: e13faa440ae0268d84d0d32c95351c567f079d5f65445ce94f449f7861b2cac9
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 46c71979d46b6b9bfcc1845bec5faa92d8e007e873817dbdd1cd906980d5297f
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: 668adf79cbb1dbbc8606537da3576916b8e41496c2992c216ad75c8a947c90d1
+      size_bytes: 218972
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: d6a48c3f58a87af06d80b3db720e651d0c7365200aaa1247e524720604df387a
+      size_bytes: 75263
+    - path: default/d/baceee5aa246df37519361bddb6afd06
+      sha256: 1237bb403f135c6330f7fee4178f4f8a7f0e21fe63bae2b87b068c920ca8b471
+      size_bytes: 7248
+    - path: default/manifest.ocdbt
+      sha256: 679a43f06de3853bd7fb1d7952c730db22a11155f7841ffdb6887a741888ac23
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/0a35c0ea758889446fe0ee8811c018e1
+      sha256: fc58ea827567ab1b78b2f972980b5d68f6b92b942940896d2f81db67edd21f49
+      size_bytes: 715808768
+    - path: default/ocdbt.process_0/d/6fee4ba382874fb6b9d316ece9f69eb4
+      sha256: 24b22b5ff929e7b6c961d1c971bd293e58ea9238d416771118aa85819dd30f4c
+      size_bytes: 813
+    - path: default/ocdbt.process_0/d/9faa17b090cb49d04f8826b09b79f549
+      sha256: c53898b8a3ce20bd2b8c1d8199eaad25436ec104546e320638149a9fb4d17722
+      size_bytes: 1353166848
+    - path: default/ocdbt.process_0/d/dce10a699f9a406681f5a67b9b9fa7f4
+      sha256: 535faf8a57deb1265c567cd85a7593ccdc5048c5a77730782be2f9b7eab76909
+      size_bytes: 777
+    - path: default/ocdbt.process_0/d/ebaef6f381545fc0e3eab97f8a8cfda4
+      sha256: 22640e400377384e9639b2814b7531570a11ac06ab96e8781d0723e29ce47b2a
+      size_bytes: 125968384
+    - path: default/ocdbt.process_0/d/f3770b509c45aaf47e60fd44a93a119e
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 1bf56f1371a6a70dbf4c6038ee4f486b7d7dde73bbaa352b3885491ac5b3ff43
+      size_bytes: 357
+    - path: metrics/metrics
+      sha256: 28f03c1d4c16b4226f44547c2289b4376a0c6903a0d771124af5df5c891bea87
+      size_bytes: 138
+    step: 7500
+    recorded_validation_nll: 2.6884281831352332
+    training_sequence_length: 2049
+    ignored_config_keys: {}
+    states:
+    - initialization
+    - checkpoint
+  interpretation: Forward-only calibration of shared fixed spline knots using regular
+    static and query + W decay m=4 models, at initialization and retained validation-best
+    checkpoints. Same sampled training rows and causal pairs; no FoX, no optimizer
+    updates, and no spline training. Polynomial continuation is the proposed tail
+    policy.

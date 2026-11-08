@@ -43,6 +43,22 @@ def test_pretrained_head_index_distinguishes_reconstruction_from_lm_loss(tmp_pat
     assert row["prediction_tokens"] == ""
 
 
+def test_index_exposes_the_model_shape_batch_learning_rate_and_parameter_count(tmp_path):
+    study = tmp_path / "study"
+    run = create_run(study, {"model": {"num_layers": 12, "hidden_size": 640, "num_heads": 10, "qk_head_dim": 64,
+                                       "value_head_dim": 64, "intermediate_size": 1664},
+                             "data": {"batch_size": 128, "sequence_length": 2049},
+                             "optim": {"learning_rate": 0.001, "total_steps": 7551}, "train": {"seed": 42}})
+    (run / "metadata.json").write_text(json.dumps({"parameter_count": 98977016}))
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        row = next(csv.DictReader(stream))
+    assert [row[key] for key in ("num_layers", "hidden_size", "num_heads", "value_head_dim", "intermediate_size")] \
+        == ["12", "640", "10", "64", "1664"]
+    assert (row["parameter_count"], row["batch_size"], row["peak_learning_rate"]) == ("98977016", "128", "0.001")
+    assert row["prediction_tokens"] == str(7551 * 128 * 2048)
+
+
 @pytest.mark.parametrize("outcome_source", ["terminal", "completion", "metadata", "record"])
 def test_index_keeps_fixed_input_fitting_outcomes_separate_from_validation(tmp_path, outcome_source):
     study = tmp_path / "study"
@@ -207,6 +223,28 @@ def test_index_exposes_selected_coefficient_orders_without_inventing_legacy_sett
     assert rows[unrestricted.name]["coefficient_orders"] == ""
     assert rows[even.name]["coefficient_orders"] == "[0,2,4,6,8]"
     assert rows[even.name]["attention_degree"] == "8"
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
+def test_index_exposes_coefficient_release_settings_only_for_scheduled_runs(tmp_path):
+    study = tmp_path / "study"
+    model = {"attention_degree": 8, "attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh"}
+    legacy = create_run(study, {"model": model, "optim": {"total_steps": 2000}})
+    unscheduled = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": None, "coefficient_release_step": None,
+        "coefficient_release_end_step": None}})
+    every = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": "all", "coefficient_release_step": 455}})
+    by_order = create_run(study, {"model": model, "optim": {
+        "total_steps": 2000, "coefficient_release_schedule": "by_order", "coefficient_release_step": 455,
+        "coefficient_release_end_step": 1500}})
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    fields = ("coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step")
+    assert [tuple(rows[run.name][field] for field in fields) for run in (legacy, unscheduled, every, by_order)] == [
+        ("", "", ""), ("", "", ""), ("all", "455", ""), ("by_order", "455", "1500")]
     first = (study / "runs.csv").read_bytes()
     assert regenerate_index(study).read_bytes() == first
 
@@ -651,6 +689,66 @@ def test_cli_keeps_backends_without_a_mosaic_kernel_or_already_mosaic(tmp_path, 
     main()
     run = Path(capsys.readouterr().out.strip())
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_backend"] == model["attention_backend"]
+
+
+@pytest.mark.parametrize("model", [{}, {"attention_backend": "blocked", "attention_forget_gate": True,
+                                        "positional_encoding": "none"}])
+def test_cli_trains_fresh_dot_product_runs_on_blocked_strips(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    original = source.read_bytes()
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "strips"
+    assert source.read_bytes() == original
+    validate_record(run)
+
+
+def test_cli_requires_explicit_opt_out_for_the_blocked_scan(tmp_path, monkeypatch, capsys):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "copied.yaml"
+    source.write_text("model:\n  attention_backend: blocked\n  attention_blocked_implementation: scan\ntrain: {}\n")
+    original = source.read_bytes()
+    study = tmp_path / "study"
+    arguments = ["records", "create", "--study", str(study), "--config", str(source)]
+    monkeypatch.setattr("sys.argv", arguments)
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-scan-blocked-attention" in capsys.readouterr().err
+    assert not study.exists()
+    monkeypatch.setattr("sys.argv", arguments + ["--allow-scan-blocked-attention"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "scan"
+    assert source.read_bytes() == original
+    validate_record(run)
+
+
+@pytest.mark.parametrize("model", [{"attention_mechanism": "gla"}, {"attention_mechanism": "gated_deltanet"},
+                                   {"positional_encoding": "path"},
+                                   {"positional_encoding": "path", "attention_blocked_implementation": "scan"},
+                                   {"attention_backend": "cudnn"},
+                                   {"attention_backend": "mosaic", "attention_degree": 2, "qk_head_dim": 64,
+                                    "value_head_dim": 64},
+                                   {"attention_backend": "mosaic", "attention_degree": 2, "qk_head_dim": 64,
+                                    "value_head_dim": 64, "attention_blocked_implementation": "scan"}])
+def test_cli_keeps_the_scan_default_where_strips_do_not_apply(tmp_path, monkeypatch, capsys, model):
+    """PaTH, GLA, and Gated DeltaNet have their own blocked code, and the kernel backends never run
+    the field: it keeps its inert default, so these recipes match their historical partners."""
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    kernel = model.get("attention_backend") in ("cudnn", "mosaic")  # these kernels train in BF16
+    source.write_text(yaml.safe_dump({"model": model, "train": {"dtype": "bfloat16"} if kernel else {}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_blocked_implementation"] == "scan"
 
 
 @pytest.mark.parametrize("umask,mode", [(0o022, 0o644), (0o002, 0o664), (0o077, 0o600)])

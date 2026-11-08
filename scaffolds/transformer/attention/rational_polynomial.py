@@ -196,11 +196,11 @@ def select_denominator(heads: int, **denominators):
     return array, form, constant, degree
 
 
-def denominator_factors(array: jax.Array, form: str, constant: str) -> tuple[jax.Array, ...]:
-    """Ascending coefficient arrays whose polynomial (direct) or sum of squares is p_b."""
-    array = array.astype(jnp.float32)
+def denominator_factors(array: jax.Array, form: str, constant: str, *, dtype=jnp.float32) -> tuple[jax.Array, ...]:
+    """Ascending coefficient arrays whose polynomial (direct) or sum of squares is p_b, in ``dtype`` (FP32 in models)."""
+    array = array.astype(dtype)
     leading = (*array.shape[:-1], 1)
-    ones, zeros = jnp.ones(leading, jnp.float32), jnp.zeros(leading, jnp.float32)
+    ones, zeros = jnp.ones(leading, dtype), jnp.zeros(leading, dtype)
     if form == "direct":
         return (array,) if constant == "learned" else (jnp.concatenate([ones, array], axis=-1),)
     if constant == "learned":

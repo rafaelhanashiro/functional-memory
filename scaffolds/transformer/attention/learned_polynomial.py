@@ -23,8 +23,11 @@ import jax.numpy as jnp
 
 def normalized_learned_polynomial_attention(q, k, v, *, attention_degree, polynomial_coefficients=None,
                                             polynomial_square_factors=None, backend="blocked",
-                                            return_diagnostics=False, **denominators):
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+                                            return_diagnostics=False, blocked_implementation="scan",
+                                            **denominators):
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
     from scaffolds.transformer.attention.nonnegative_polynomial import validate_factors
     from scaffolds.transformer.attention.rational_polynomial import select_denominator
     from scaffolds.transformer.attention.unnormalized import _validate_coefficients
@@ -45,9 +48,9 @@ def normalized_learned_polynomial_attention(q, k, v, *, attention_degree, polyno
         learned = {"polynomial_square_factors": polynomial_square_factors}
         parameters, parameterization = polynomial_square_factors, "sum_of_squares"
     if backend == "blocked":
-        return blocked_dot_product_attention(
-            q, k, v, attention_degree=attention_degree, attention_normalization=True,
-            return_diagnostics=return_diagnostics, **learned,
+        return blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
+            attention_normalization=True, return_diagnostics=return_diagnostics, **learned,
         )
     if backend != "fused":
         raise ValueError("Normalized learned polynomial attention requires backend='blocked' or 'fused'")

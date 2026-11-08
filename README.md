@@ -11,8 +11,9 @@ a result collection can combine runs from several studies.
 | Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
-| Transformer++: attention variants in its 200M recipe, token budget per run (1× and 2.5× Chinchilla) | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
-| Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-4` | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
+| Transformer++: attention variants under its recipe, with model shape and token budget per run | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
+| Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-8` | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
+| Transformer++ model scale: seven attention variants at the 12-layer width-640 shape against their reference-shape partners | [Comparison across shapes](experiments/transformer_pp/results/model_scale/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#model-scale) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in

@@ -489,15 +489,10 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/r
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/exploratory/coefficient_oracle/summarize_precision.py
 ```
 
-The analyses use completed, pinned measurements. The
-read-only checkpoint probe uses `inspect_batch_fit.sbatch <checkout> <source-commit>
-<run-id>... --record-parity-discrepancies` on one qualified H100 or B300; its source, batch identity, and selected
-checkpoint are checked before evaluation. The bounded gradient/FP32 control uses
-`inspect_coefficient_vjp.sbatch <checkout> <source-commit> rc95f2055e96d
---record-parity-discrepancies` on one B300. Both commands record any failed
-instrumentation bound explicitly, and native checkpoint replay remains required.
-Raw regeneration requires retained home-cluster checkpoints and data, while
-figures and summaries require only committed compact measurements.
+The analyses use completed, pinned measurements, and the figures and summaries require
+only those committed compact measurements. The checkpoint-probe measurements
+(`batch_functional_probe.json` and `coefficient_vjp_probe.json` beside their runs) record
+the source commit and script hashes that produced them.
 
 ## Degree-four query-key generator from its own checkpoint
 

@@ -21,6 +21,7 @@ import yaml
 from scaffolds.launch.frozen import changes, frozen_hash
 from scaffolds.records import create_run, load_run, regenerate_index, update_record, validate_record
 from scaffolds.records.selections import refresh_selection
+from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips
 
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_pp"
@@ -78,6 +79,14 @@ def control_role(kind: str) -> str:
     return "exp_fixed_taylor" if kind == "exp" else "fixed_taylor"
 
 
+def adopt_blocked_strips(model: dict) -> dict:
+    """A copied recipe that can train on the blocked backend uses its causal strips, as
+    ``scaffolds.records create`` writes them (prepare allocates with create_run directly)."""
+    if fresh_recipe_uses_blocked_strips(model):
+        model["attention_blocked_implementation"] = "strips"
+    return model
+
+
 def recipes(source: dict, continuation: dict, *, conditioning: str = "static", updates: int = UPDATES,
             new_rate: float | None = NEW_PARAMETER_LEARNING_RATE, kernel_weight_decay: bool = False,
             degree: int | None = None, no_rope: bool = False,
@@ -104,6 +113,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
                                wandb_group=STUDY.name, wandb_dir=None, wandb_mode="online")
         recipe["continuation"] = {**deepcopy(continuation), "preserve_all_parameters": True,
                                   "new_parameter_learning_rate": None}
+        adopt_blocked_strips(recipe["model"])
         return {role: recipe}
     kind = parent_kind(source["model"])
     if kind == "exp":
@@ -137,6 +147,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
         if kind == "exp":
             recipe["model"].update(attention_degree=degree, attention_backend="mosaic")
         if role == control_role(kind):
+            adopt_blocked_strips(recipe["model"])
             result[role] = recipe
             continue
         recipe["continuation"]["new_parameter_learning_rate"] = new_rate
@@ -163,6 +174,7 @@ def recipes(source: dict, continuation: dict, *, conditioning: str = "static", u
                     attention_coefficient_amplitude_scale="factorial",
                     attention_coefficient_kernel_weight_decay=bool(kernel_weight_decay),
                 )
+        adopt_blocked_strips(recipe["model"])
         result[role] = recipe
     return result
 

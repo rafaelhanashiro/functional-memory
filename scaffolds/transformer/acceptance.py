@@ -60,15 +60,22 @@ SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficien
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
+SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
 QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
 QK_HEAD_SCALE_BACKEND_TESTS = (
     "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
 QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
+COEFFICIENT_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gates.py"
+COEFFICIENT_GATE_GPU_TESTS = ("test_gated_coefficients_through_mosaic_match_fp64",
+                              "test_gated_mosaic_model_matches_float32_blocked_model")
+COEFFICIENT_GATE_DEGREES = (8, 10)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
+COEFFICIENT_RELEASE_TESTS = "scaffolds/transformer/tests/test_coefficient_release.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
+BLOCKED_STRIPS_TESTS = "scaffolds/transformer/tests/test_blocked_strips.py"
 FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
 FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
 FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
@@ -118,6 +125,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if cpu and config.get("continuation", {}).get("parent_checkpoint"):
         paths.extend(("scaffolds/transformer/tests/test_continuation.py",
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
+    if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
+        paths.append(COEFFICIENT_RELEASE_TESTS)
     model = config["model"]
     if model.get("attention_forget_gate_per_order", False):
         paths.append("scaffolds/transformer/tests/test_per_order_decay.py")
@@ -132,6 +141,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "constant"):
         paths.append(CONSTANT_DECAY_TESTS)
+    if (cpu and model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "sigmoid"):
+        paths.append(SIGMOID_GATE_TESTS)
     if (model.get("attention_forget_gate_conditioning", "query") != "query"
             or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
             or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
@@ -143,6 +155,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(DENSE_MIXING_SCALE_TESTS)
     if cpu and model.get("qk_norm_head_scale", False):
         paths.append(QK_HEAD_SCALE_TESTS)
+    if (cpu and resolved_backend == "blocked"
+            and model.get("attention_blocked_implementation", "scan") == "strips"):
+        # Training on causal strips: their equivalence with the scan and their FP32 dK/dV sums.
+        paths.append(BLOCKED_STRIPS_TESTS)
     if (not cpu and model.get("qk_norm_head_scale", False)
             and model.get("attention_mechanism", "dot_product") == "dot_product"
             and not model.get("attention_normalization", True)
@@ -214,6 +230,15 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
                 paths.append(QUERY_KEY_TILING_TESTS)
+    if model.get("attention_coefficient_gate", "none") != "none":
+        if cpu:
+            paths.append(COEFFICIENT_GATE_TESTS)
+        else:
+            # Every qualified degree runs together, so runs at different degrees share one GPU
+            # stage; a degree without a parametrized case has no node id and fails closed.
+            degrees = sorted({*COEFFICIENT_GATE_DEGREES, int(model["attention_degree"])})
+            paths.extend(f"{COEFFICIENT_GATE_TESTS}::{test}[{degree}]"
+                         for test in COEFFICIENT_GATE_GPU_TESTS for degree in degrees)
     if model.get("attention_coefficient_orders") is not None:
         paths.append("scaffolds/transformer/tests/test_coefficient_orders.py")
     if model.get("attention_coefficient_scale", "none") != "none":
@@ -660,6 +685,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_gate="none",
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_per_order=False,
@@ -716,6 +742,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_gate="none",
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
@@ -905,7 +932,10 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         reused = {name: origin for name, origin in reused.items() if origin}
         record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware,
                **({"reused_tests": reused} if reused else {}))
-        shutil.rmtree(directory / "pilot")  # The disposable pilot checkpoint is no longer needed.
+        # The disposable pilot checkpoint is no longer needed. An earlier attempt that passed this
+        # same pilot and resume removed it already when every remaining stage is reused here.
+        if (directory / "pilot").exists():
+            shutil.rmtree(directory / "pilot")
         print(f"acceptance_success={directory / 'success.json'}", flush=True)
     except BaseException as error:
         write_json(directory / "failure.json", {"identity": experiment["identity"], "stage": stage,

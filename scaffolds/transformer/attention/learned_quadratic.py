@@ -4,9 +4,9 @@ import jax
 import jax.numpy as jnp
 
 
-def _quadratic_polynomial(scores: jax.Array, coefficients: jax.Array, mode: str) -> jax.Array:
-    """Evaluate raw learned parameters over [batch, heads, queries, keys] scores."""
-    coefficients = jnp.broadcast_to(coefficients, (scores.shape[1], 2)).astype(jnp.float32)
+def _quadratic_polynomial(scores: jax.Array, coefficients: jax.Array, mode: str, *, dtype=jnp.float32) -> jax.Array:
+    """Evaluate raw learned parameters over [batch, heads, queries, keys] scores (in ``dtype``, FP32 in models)."""
+    coefficients = jnp.broadcast_to(coefficients, (scores.shape[1], 2)).astype(dtype)
     first, second = coefficients[:, 0][None, :, None, None], coefficients[:, 1][None, :, None, None]
     if mode == "positive":
         return 0.5 * (1.0 + jnp.square(first * scores + second))
@@ -28,17 +28,20 @@ def parameter_specs(*, mode: str, sharing: str):
 def learned_quadratic_attention(
     q: jax.Array, k: jax.Array, v: jax.Array, *, coefficients: jax.Array,
     quadratic_mode: str, backend: str = "blocked", return_diagnostics: bool = False,
+    blocked_implementation: str = "scan",
 ):
     """Apply a learned pair shared across heads or an independent pair per head."""
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if quadratic_mode not in ("positive", "unrestricted"):
         raise ValueError(f"Unknown learned quadratic mode: {quadratic_mode}")
     if coefficients is None or coefficients.shape not in ((2,), (q.shape[2], 2)):
         raise ValueError("Quadratic coefficients must have shape (2,) or (heads, 2)")
     if backend == "blocked":
-        return blocked_dot_product_attention(
-            q, k, v, attention_degree=2, coefficients=coefficients,
+        return blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=2, coefficients=coefficients,
             quadratic_mode=quadratic_mode, return_diagnostics=return_diagnostics,
         )
     if backend != "fused":

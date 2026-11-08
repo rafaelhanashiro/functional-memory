@@ -11,6 +11,71 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Coefficient release schedule (2026-11-08)
+
+`optim.coefficient_release_schedule` (`all` or `by_order`), `coefficient_release_step`,
+and `coefficient_release_end_step` hold learned static coefficients, or the diagonal
+tanh query generator's `b`, `a`, and `W`, at their initial values per polynomial order
+until each order's release update ([README](../README.md#coefficient-release-schedule)).
+
+All 79 checks in `tests/test_coefficient_release.py` passed on CPU (one data-parallel
+case on two host devices). Before release, frozen entries stay bitwise at their
+initial values, including a weight-decayed `W`; frozen gradients leave clipping, every
+Adam moment, and every other update bitwise identical to a step without coefficient
+gradients, and the single-batch, accumulated, and data-parallel train steps log the
+masked pre-clip norm. `by_order` first moves each order at exactly its listed update;
+the masks depend only on the update count; released entries start from zero moments
+under the global bias correction; with `query_coefficient_learning_rate_scale`, released
+`b` and `a` take exactly the scaled update while `W`, frozen entries, and every other
+array match the unscaled optimizer bitwise; a checkpoint resume across a release matches
+an uninterrupted run bitwise, and each release reaches W&B at its logged step; a missing
+or renamed coefficient array is an error rather than trainable; and without a schedule
+the optimizer state, updates, and train step are bitwise unchanged, with or without the
+query learning-rate scale. Each of these changes failed at least one check: removing
+either mask, the single-batch or accumulated train step's masked gradient, or the
+signed-zero update fill; releasing one update late; dropping the release when the query
+learning-rate scale is set; scaling `W` with that scale; or logging the release one W&B
+step early. The full CPU suite passed: 2,208 single-device tests, and 23
+two-device tests with five four-device cases skipped.
+The acceptance pilot (20 updates) and its resume update end before a release at update
+455, so for such recipes the first release on a GPU happens in production.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py
+JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+  scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py -k distributed
+```
+
+### Per-order coefficient gates on H200 (2026-11-07)
+
+`model.attention_coefficient_gate: sigmoid` multiplies each diagonal tanh query
+coefficient by `2 sigmoid(x_t U_r + beta_r)` per layer, head and order inside the shared
+generator, so the Mosaic query kernel receives the gated coefficients unchanged. `U` and
+the gate bias start at exact zeros, so `2 g_r = 1` reproduces the ungated model, its
+parameters and its derivatives in `W`, `a` and `b`; `U` decays with the coefficient
+kernel decay and the gate bias never does.
+
+The CPU checks in `tests/test_coefficient_gates.py` compare gated and ungated models at
+degrees 8 and 10 bitwise (parameters, logits, and the raw gradients of every shared
+parameter), require finite nonzero gate gradients for every layer, head and order, verify
+the decay masks with an actual AdamW update, compare the gated generator and all its
+gradients with an FP64 oracle, check the gate diagnostics against a NumPy oracle, and
+resume a short training run exactly. Two GPU cases per degree compare the gated
+generator through the Mosaic query kernel with FP64 at context 2,048 and width 64,
+including the gate kernel and bias gradients per order, and the gated BF16 Mosaic model's
+loss and gradient direction with the FP32 blocked model.
+
+[H200 qualification](coefficient_gates_h200.json) passed for the two production recipes
+(`r77698776d82c` at degree 8 on an H200 NVL, `r8c4a6ecdf4d2` at degree 10 on an H200):
+510 CPU and 9 distributed CPU checks, 72 GPU checks each including the four gate cases
+(the first Mosaic query qualification at degree 10 and on H200), the study adapter's
+exact initial parity with the ungated recipe, and the full-recipe pilot and
+checkpoint-resume checks. Pilot training cost 2.54 and 2.51 s per update.
+
 ### Per-order query-distance gates (2026-11-07)
 
 The blocked polynomial backend supports independent softplus distance gates for
@@ -23,11 +88,14 @@ against unrelated changes, and full-model initialization is recovered by
 collapsing the duplicated gate axes.
 
 `tests/test_per_order_decay.py -m gpu` checks both variants at 2,048 tokens with
-64-channel BF16 Q/K/V against FP64, including every gate gradient. This new
-hardware qualification, the full-recipe pilot with memory/runtime measurements,
-and checkpoint resume must pass through shared acceptance before production.
-GPU qualification is pending for this revision; CPU success alone does not
-qualify the new mechanism. Each run retains the authoritative acceptance result.
+64-channel BF16 Q/K/V against FP64, including every gate gradient, on the blocked
+backend and on the Mosaic per-order kernels (families `per_order_query_decay` and
+`per_order_endpoint_decay`). At commit `b38c116f` these checks passed with the shared
+decay, Mosaic query and repeatability suites (88 GPU checks, `--mosaic-precision bf16`)
+on H100 (`dogo`, job 239602) and B300 (`akita`, job 239603). Production acceptance passed
+its 113 GPU checks on both GPUs (jobs 239609 and 239610), and its pilot and resume checks
+on H100. Throughput is recorded in the query_distance_decay topic's
+`per_order_throughput.json`. Each run retains the authoritative acceptance result.
 
 ### Selected polynomial orders (2026-11-03)
 
@@ -2404,10 +2472,10 @@ oracle rounded to BF16, the best a BF16 result can be.
   | query polynomial m = 4, unnormalized | 2.79x / 2.79x | 1.01x / 1.01x |
   | normalized learned polynomial m = 2 | 1.88x / 1.79x | 1.01x / 1.01x |
 
-  Output and dQ stay at 1.01x. These are the numerics of the 29 BF16 runs that trained on the
-  blocked backend through this function: in `attention_scaling`, the 12 normalized learned
-  m = 1-4 runs and 9 query or query-key coefficient runs; in Transformer++, 8 forget-gate
-  query m = 4 runs (one at 4,096 tokens, 32 blocks, not measured). PaTH, GDN and GLA have
+  Output and dQ stay at 1.01x. These are the numerics of every BF16 run trained on the
+  blocked scan: in `attention_scaling`, the normalized learned m = 1-4 and the query or
+  query-key coefficient runs; in Transformer++, every forget-gate run (softmax, exponential and
+  query polynomials; the 4,096-token runs have 32 blocks, not measured). PaTH, GDN and GLA have
   separate blocked code.
 - JAX's default precision runs FP32 x FP32 products as TF32 on H100: an FP32 matmul has
   2.9e-4 relative error (2.2e-7 at `HIGHEST`), and with FP32 inputs production and every
@@ -2649,6 +2717,61 @@ $PY -m scaffolds.transformer.validation.blocked_attention_benchmark model --outp
 # All tables of the records, including the 43 kernel variants:
 $PY -m scaffolds.transformer.validation.blocked_attention_benchmark summarize \
   --kernel-record kernel.json --model-record model.json --output summary.md
+```
+
+## Blocked causal strips
+
+`model.attention_blocked_implementation: strips` (scaffold README, "Blocked attention
+implementations") evaluates the blocked scan's own per-block arithmetic over causal 512-query
+strips with FP32 K/V cotangent sums: the `lean-f32up-skip-ckpt-b512` form above, generalized
+to every mechanism of `blocked_dot_product_attention` rather than hand-written per mechanism.
+The scan is unchanged (normalized jaxpr text identical to `bc3274e0` in 2,661 configurations).
+CPU checks: `tests/test_blocked_strips.py` (float64 equivalence with the scan's code across 25
+argument families at ragged strips, NaN rules, BF16 accuracy, a two-layer model, records and
+acceptance) and `tests/test_blocked_strips_h100.py` (compile-only H100: no GEMM reads an FP32
+value whose BF16 rounding XLA removed, and per-layer memory).
+
+Measured on 2026-11-08 at commit `6ea739f6` on one H100 PCIe (`mastiff`, jobs 239691 and
+239696) and one B300 (`akita`, jobs 239692 and 239695) with
+[`blocked_strips_qualification.py`](blocked_strips_qualification.py) and
+[`qualify_blocked_strips.sbatch`](qualify_blocked_strips.sbatch); records in
+[runs/blocked-strips/](runs/blocked-strips/). `test_blocked_strips_h100.py` passed on both GPUs.
+
+**Accuracy.** BF16 inputs at [2, 2048, 4, 64], relative L2 error × 1e3 against the scan's
+arithmetic in FP64; the floor is that reference rounded to BF16. The H100 and B300 values agree
+to the digits shown.
+
+| Mechanism | Floor dK / dV | Scan dK / dV | Strips dK / dV | Output and dQ (both) |
+| --- | ---: | ---: | ---: | ---: |
+| FoX softmax | 1.66 / 1.66 | 2.13 / 2.12 | 1.67 / 1.67 | 1.67 / 1.68 |
+| FoX exponential | 1.66 / 1.66 | 2.10 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| FoX query m = 4 | 1.66 / 1.66 | 2.11 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| Static m = 4, unnormalized | 1.66 / 1.66 | 4.62 / 4.63 | 1.67 / 1.67 | 1.67 / 1.67 |
+
+The strips sit at the floor (1.008×, the TF32 products); the scan's BF16 block sums give
+1.27-1.29× under the forget gate's decay and 2.8× without it. FP32 gradients of the log decay
+and the coefficients agree with FP64 to below 1e-6 for both.
+
+**Full model.** One forward and backward micro-step of the recipe's 15-layer model
+(`training.loop.loss_and_grads`, micro-batch 16, synthetic tokens), each in a fresh process;
+s/update = median micro-step × 16.
+
+| Recipe | GPU | Scan s/update | Strips s/update | Speedup | Compile s (scan / strips) | Peak GB (scan / strips) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | H100 PCIe | 17.42 | 11.67 | 1.49× | 47 / 74 | 30.1 / 30.8 |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | B300 | 6.06 | 3.83 | 1.58× | 47 / 103 | 29.5 / 30.4 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | H100 PCIe | 15.25 | 11.73 | 1.30× | 64 / 86 | 31.6 / 30.3 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | B300 | 5.27 | 3.91 | 1.35× | 119 / 93 | 31.0 / 30.3 |
+
+Loss (10.5163 and 10.5100) and gradient norm (3.0317 and 2.0181) agree between the
+implementations to five digits. H100 SXM (`dogo`) was fully allocated; the PCIe card is about
+1.5× slower in absolute terms, not in the ratio.
+
+```bash
+# One GPU per type, from the worktree root (validation files are outside the frozen check):
+sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01:00:00 \
+  --output=scaffolds/transformer/validation/logs/blocked-strips/%x-%j.log \
+  scaffolds/transformer/validation/qualify_blocked_strips.sbatch "$(git rev-parse HEAD)"
 ```
 
 ## Per-order FoX gradient failure investigation (2026-11-07)

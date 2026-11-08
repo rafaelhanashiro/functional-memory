@@ -42,6 +42,8 @@ def check_recipe(config: Config) -> None:
         raise ValueError("This experiment requires query-distance decay")
     actual, expected = config_to_dict(config), config_to_dict(control_config())
     actual["model"]["attention_forget_gate_mode"] = "cumulative"
+    # The blocked backend's causal strips, which new runs there use, compute the scan's arithmetic.
+    actual["model"]["attention_blocked_implementation"] = expected["model"]["attention_blocked_implementation"]
     # Execution locations and monitoring labels are not scientific settings.
     for recipe in (actual, expected):
         for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode"):

@@ -258,8 +258,10 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
 The six runs differ in their decay rule, without separately tuned optimization.
 The endpoint, bounded-rate and per-order runs use the Mosaic kernels; the FoX and
-query-only runs use the blocked reference. Their only numerical difference is BF16
-rounding of attention weights and score gradients (see [Attention kernels](#attention-kernels)).
+query-only runs use the blocked reference. They differ numerically in two ways: Mosaic
+rounds attention weights and score gradients to BF16 (see [Attention kernels](#attention-kernels)),
+and the blocked scan sums the K and V gradients of its 128-query blocks in BF16 (about 1.3x
+the BF16 floor under this decay; see the scaffold validation record).
 The endpoint and bounded-rate runs were preempted once and resumed from their latest
 checkpoint; both per-order runs trained without interruption on one H100 SXM each.
 

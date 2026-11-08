@@ -20,19 +20,24 @@ PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
-                    feature_count: int | None = None, kernel_weight_decay: bool = False):
+                    feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none"):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
-    and dense V. kernel_weight_decay decays the projections W and W_k; b, a, a_k, beta, and V
-    never decay."""
+    and dense V. The "sigmoid" coefficient gate adds U [D, degree+1] and its bias [degree+1],
+    both exactly zero and drawing no random numbers. kernel_weight_decay decays the projections
+    W, W_k and U; b, a, a_k, beta, the gate bias, and V never decay."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
+    if gate not in ("none", "sigmoid"):
+        raise ValueError(f"Unknown coefficient gate: {gate!r}")
+    if gate != "none" and (activation != "tanh" or readout != "diagonal" or conditioning != "query" or tanh_bias):
+        raise ValueError("Coefficient gates require diagonal tanh query coefficients without an inner bias")
     if readout == "dense" and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or conditioning != "query"):
         raise ValueError("Dense coefficient readout requires nonlinear query-only coefficients")
     count = degree + 1
@@ -101,6 +106,18 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         )
     elif conditioning != "query":
         raise ValueError(f"Unknown input-dependent coefficient conditioning: {conditioning}")
+    if gate == "sigmoid":
+        specs += (
+            AttentionParameterSpec(
+                name="query_polynomial_gate_kernel", argument="query_polynomial_gate_kernel",
+                initial=(0.0,) * (hidden_size * count), initial_shape=(hidden_size, count),
+                sharing="per_head", weight_decay=bool(kernel_weight_decay),
+            ),
+            AttentionParameterSpec(
+                name="query_polynomial_gate_bias", argument="query_polynomial_gate_bias",
+                initial=(0.0,) * count, sharing="per_head", weight_decay=False,
+            ),
+        )
     return specs
 
 
@@ -145,8 +162,25 @@ def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, featur
                       precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
 
 
+def coefficient_gate_logits(x, kernel, bias):
+    """FP32 per-order gate pre-activations x U + beta with shape [B,T,H,R]."""
+    if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]
+            or bias.shape != (kernel.shape[0], kernel.shape[-1])):
+        raise ValueError("Coefficient gate projection requires x [B,T,D], kernel [H,D,R], bias [H,R]")
+    projected = jnp.einsum(
+        "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
+        precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
+    )
+    return projected + bias.astype(jnp.float32)
+
+
+def project_coefficient_gates(x, kernel, bias):
+    """FP32 per-order gates g = sigmoid(x U + beta) with shape [B,T,H,R]; exactly 1/2 while U = beta = 0."""
+    return jax.nn.sigmoid(coefficient_gate_logits(x, kernel, bias))
+
+
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
-                         amplitude_scale="none", readout_scale=1.0, orders=None):
+                         amplitude_scale="none", readout_scale=1.0, orders=None, gate_kernel=None, gate_bias=None):
     """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
     otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
@@ -156,7 +190,16 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     readout_scale multiplies only the dense modulation; it never rescales the bias.
     orders selects the actual monomial orders for compact diagonal tanh features;
     omitted outputs are zero, and factorial scaling uses those actual orders.
+    gate_kernel U [H,D,R] and gate_bias [H,R] multiply diagonal tanh coefficients by
+    2*sigmoid(x U + gate_bias) per order: exactly 1 while both are zero.
     """
+    if (gate_kernel is None) != (gate_bias is None):
+        raise ValueError("A coefficient gate requires both its kernel and its bias")
+    if gate_kernel is not None and (activation != "tanh" or mixing is not None or tanh_bias is not None
+                                    or orders is not None or bias is None
+                                    or gate_kernel.shape != kernel.shape or gate_bias.shape != bias.shape):
+        raise ValueError("Coefficient gates require diagonal tanh coefficients without an inner bias or "
+                         "selected orders, with kernel [H,D,R] and bias [H,R] matching the generator's")
     if orders is not None and (activation != "tanh" or mixing is not None or bias is None
                                 or len(orders) != kernel.shape[-1]):
         raise ValueError("Selected orders require matching compact diagonal tanh features")
@@ -201,6 +244,11 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
                 from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
 
                 coefficients = expand_polynomial_coefficients(coefficients, orders[-1], orders)
+            if gate_kernel is not None:
+                # A separate projection leaves W's projection and the readout as they were;
+                # 2*sigmoid(0) is exactly 1, so zero U and bias reproduce the ungated values.
+                multiplier = jax.lax.optimization_barrier(2.0 * project_coefficient_gates(x, gate_kernel, gate_bias))
+                coefficients = coefficients * multiplier
             return coefficients
         mixing = mixing.astype(jnp.float32)
         if readout_scale != 1.0:
@@ -258,7 +306,7 @@ def project_key_factors(x, kernel, amplitude):
 
 
 def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backend="blocked",
-                                   return_diagnostics=False):
+                                   return_diagnostics=False, blocked_implementation="scan"):
     """sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i: per-query coefficients times per-key factors.
 
     The blocked reference evaluates the pairwise coefficient directly, and the fused Triton
@@ -267,18 +315,21 @@ def query_key_polynomial_attention(q, k, v, coefficients, key_factors, *, backen
     coefficient vector c_r(x_t) e_r; its m+1 partial outputs are rounded to V's dtype before
     they are summed, which at degree one corrupts the gradient after head RMSNorm.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.shape[-1] < 2:
         raise ValueError("Query coefficients require [batch,time,heads,degree+1], degree >= 1")
     if key_factors.shape != coefficients.shape:
         raise ValueError("Key factors must match the query coefficient shape [batch,time,heads,degree+1]")
     degree = coefficients.shape[-1] - 1
-    reference = partial(blocked_dot_product_attention, q, k, v, attention_degree=degree,
-                        attention_normalization=False, query_polynomial_coefficients=coefficients,
-                        key_polynomial_factors=key_factors)
+    arguments = dict(attention_degree=degree, attention_normalization=False,
+                     query_polynomial_coefficients=coefficients, key_polynomial_factors=key_factors)
+    reference = partial(blocked_dot_product_attention, q, k, v, **arguments)
     if backend == "blocked":
-        result = reference(return_diagnostics=return_diagnostics)
+        result = blocked_backend_attention(q, k, v, implementation=blocked_implementation,
+                                           return_diagnostics=return_diagnostics, **arguments)
         if not return_diagnostics:
             return result
         output, diagnostics = result
@@ -327,7 +378,8 @@ def key_factor_statistics(key_factors):
 
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
                                log_decay=None, decay_mode="cumulative",
-                               query_gate_input=None, key_gate_input=None, gate_log_rate=None):
+                               query_gate_input=None, key_gate_input=None, gate_log_rate=None,
+                               blocked_implementation="scan"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
@@ -338,7 +390,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     An extra order axis applies independent decay inside the polynomial sum, on the blocked
     and Mosaic backends. These gates include the constant term.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
@@ -359,10 +413,10 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
                          "decay also run on mosaic")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
-        result = blocked_dot_product_attention(
-            q, k, v, attention_degree=degree, attention_normalization=False,
-            query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
-            query_decay_mode=decay_mode, query_gate_input=query_gate_input,
+        result = blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=degree,
+            attention_normalization=False, query_polynomial_coefficients=coefficients,
+            query_log_decay=log_decay, query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
             return_diagnostics=return_diagnostics,
         )
@@ -413,7 +467,62 @@ def coefficient_statistics(coefficients):
     }
 
 
-def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False):
+def coefficient_gate_statistics(gate_logits, ungated, gated, q, k):
+    """Gated query coefficients on the diagnostic sample, per head and order [H,R] (kernel: [H]).
+
+    Gates g_r = sigmoid(gate_logits) [B,T,H,R], the ungated c_r, and the order tilt
+    log g_r - mean_r log g_r, which a factor shared by all orders (cancelled by per-head
+    output RMSNorm) leaves unchanged. Each order's contribution c~_r(x_t) s_ti^r is measured
+    over causal pairs i <= t with the reference's scores s = q k^T / sqrt(d_K) (BF16 operands,
+    FP32 accumulation): RMS, mean |.|, and its mean share of each row's total |.| over orders;
+    attention_kernel_abs_mean [H] is the mean |sum_r c~_r s^r|. The gated c~ itself is summarized
+    by coefficient_statistics. Measurements only: nothing here enters the forward pass.
+    """
+    logits = gate_logits.astype(jnp.float32)
+    gates = jax.nn.sigmoid(logits)
+    log_gates = jax.nn.log_sigmoid(logits)
+    tilt = log_gates - jnp.mean(log_gates, axis=-1, keepdims=True)
+    ungated = ungated.astype(jnp.float32)
+    batch, time, heads, count = gated.shape
+    if k.shape[2] != q.shape[2]:
+        k = jnp.repeat(k, q.shape[2] // k.shape[2], axis=2)
+    scores = jnp.einsum("bqhd,bkhd->bhqk", q, k, preferred_element_type=jnp.float32) * (1.0 / math.sqrt(q.shape[-1]))
+    power = jnp.broadcast_to(jnp.tril(jnp.ones((time, time), jnp.float32)), scores.shape)
+    coefficients = jnp.transpose(gated.astype(jnp.float32), (0, 2, 1, 3))
+    kernel = jnp.zeros_like(scores)
+    squares, magnitudes, rows = [], [], []
+    for order in range(count):
+        if order:
+            power = power * scores
+        term = coefficients[..., order, None] * power
+        kernel = kernel + term
+        squares.append(jnp.sum(term * term, axis=(0, 2, 3)))
+        magnitudes.append(jnp.sum(jnp.abs(term), axis=(0, 2, 3)))
+        rows.append(jnp.sum(jnp.abs(term), axis=-1))
+    pairs = batch * time * (time + 1) / 2
+    rows = jnp.stack(rows, axis=-1)
+    totals = jnp.sum(rows, axis=-1, keepdims=True)
+    shares = jnp.where(totals > 0, rows / jnp.where(totals > 0, totals, 1.0), 0.0)
+    causal = jnp.tril(jnp.ones((time, time), bool))
+    return jax.lax.stop_gradient({
+        "coefficient_gate_mean": jnp.mean(gates, axis=(0, 1)),
+        "coefficient_gate_std": jnp.std(gates, axis=(0, 1)),
+        "coefficient_gate_min": jnp.min(gates, axis=(0, 1)),
+        "coefficient_gate_max": jnp.max(gates, axis=(0, 1)),
+        "coefficient_gate_log_tilt_mean": jnp.mean(tilt, axis=(0, 1)),
+        "coefficient_gate_log_tilt_std": jnp.std(tilt, axis=(0, 1)),
+        "coefficient_gate_ungated_mean": jnp.mean(ungated, axis=(0, 1)),
+        "coefficient_gate_ungated_std": jnp.std(ungated, axis=(0, 1)),
+        "coefficient_gate_contribution_rms": jnp.sqrt(jnp.stack(squares, axis=-1) / pairs),
+        "coefficient_gate_contribution_abs_mean": jnp.stack(magnitudes, axis=-1) / pairs,
+        "coefficient_gate_contribution_row_share": jnp.mean(shares, axis=(0, 2)),
+        "coefficient_gate_attention_kernel_abs_mean": jnp.sum(jnp.where(causal, jnp.abs(kernel), 0.0),
+                                                              axis=(0, 2, 3)) / pairs,
+    })
+
+
+def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
+                           blocked_implementation="scan"):
     """sum_(i<=t) (c0_t + c1_t * <q_t,k_i>/sqrt(d_K)) v_i.
 
     The fused path reuses the linear learned-polynomial kernel and adds the
@@ -425,13 +534,15 @@ def query_linear_attention(q, k, v, coefficients, *, backend="blocked", return_d
     both coefficients, and the coefficient projection. The blocked path directly
     evaluates the query-dependent polynomial and supplies kernel diagnostics.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if coefficients.shape != (*q.shape[:3], 2):
         raise ValueError("Query coefficients must have shape [batch,time,heads,2]")
     if backend == "blocked":
-        result = blocked_dot_product_attention(
-            q, k, v, attention_degree=1, attention_normalization=False,
+        result = blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=1, attention_normalization=False,
             query_polynomial_coefficients=coefficients, return_diagnostics=return_diagnostics,
         )
         if return_diagnostics:
