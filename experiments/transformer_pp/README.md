@@ -62,6 +62,7 @@ partner run by these rules and changes nothing else:
 | Batch | a shape change scales the tokens per update (524,288 at the reference) by 2^k, with k the nearest integer to log2(the shape's 1× parameters / 198,440,146), which holds the update count to within that rounding; a budget change keeps the partner's batch |
 | Updates | budget × 1× tokens / tokens per update, rounded; the budget defaults to the partner's |
 | Warmup | 455/7,570 of the updates (about 6.01%), rounded half up |
+| Coefficient release | a partner's `optim.coefficient_release_step` and `coefficient_release_end_step` keep their fraction of the updates, rounded half up: 455 and 1,500 of 7,570 become 454 and 1,496 at the 12-layer shape, 1,138 and 3,750 at 2.5× |
 | Validation | the reference's 9,961,472 validation tokens (4,864 sequences of 2,049), in whole training batches; cadence × budget |
 | Learning rate | the partner's peak (0.001 unless a run sets another), floor 0.1 × peak; weight decay, betas and clipping unchanged |
 | Initialization | the reference rules; a nonzero query-coefficient projection std keeps its multiple of 1/sqrt(width) |
@@ -996,6 +997,33 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+## Coefficient release
+
+`rd40b46f5dc9b` and `rcc4f4e5d7abb` copy the degree-eight query + W decay run
+`r25fffc16c2f3`; `r1c72e8860ade` and `r991a756da7a9` copy the degree-eight static run
+`r9c69dd7cfc8d`. Each adds only `optim.coefficient_release_*`: the learned coefficients stay
+at their Taylor initialization until update 455, then train, all at once (`all`) or one order
+at a time from order 0 through update 1,500 (`by_order`). The schedule and its masks are
+described in the [scaffold README](../../scaffolds/transformer/README.md#coefficient-release-schedule);
+question, controls and results are in the
+[coefficient-release topic](results/exploratory/coefficient_release/README.md).
+
+Home cluster: Kennel. Branch `claude/coefficient-release`, worktree
+`worktrees/coefficient-release`. After committing the inputs and checking live allowances,
+submit each run independently; the standard lane takes three and `long` the fourth:
+
+```bash
+for run in rd40b46f5dc9b rcc4f4e5d7abb r1c72e8860ade r991a756da7a9; do
+  case $run in r991a756da7a9) partition=long ;; *) partition=standard ;; esac
+  sbatch --parsable --partition=$partition --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
 ```
 
 ## Execution and records

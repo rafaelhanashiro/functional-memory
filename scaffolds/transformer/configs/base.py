@@ -675,6 +675,19 @@ class OptimConfig:
     # Multiply only the diagonal tanh query generator's stored a and b updates.
     # The projection W and all other parameters retain the base LR schedule.
     query_coefficient_learning_rate_scale: float = 1.0
+    # Coefficient release (training/coefficient_release.py), for learned direct static or diagonal
+    # tanh query coefficients storing every order 0..m: each stored entry of order r (static c_r;
+    # query b_r, a_r, and column r of W) stays at its initial value for optimizer updates with
+    # count k < s_r and trains for k >= s_r, on the LR schedule's clock (the update logged as
+    # step k + 1). "all": s_r = coefficient_release_step for every order. "by_order": s_r =
+    # coefficient_release_step + floor(r (coefficient_release_end_step - coefficient_release_step) / m),
+    # lowest order first; requires 0 < release step < end step < total_steps. A frozen entry's
+    # gradient is zeroed before clipping and AdamW, and its update after AdamW, so weight decay
+    # cannot move it; released entries start with zero Adam moments under the global bias
+    # correction and the shared LR schedule. Null (the default) trains them from the first update.
+    coefficient_release_step: int | None = None
+    coefficient_release_schedule: Literal["all", "by_order"] | None = None
+    coefficient_release_end_step: int | None = None
     weight_decay: float = 0.1
     weight_decay_policy: Literal["exclude_embeddings_norms_biases_v1"] = "exclude_embeddings_norms_biases_v1"
     # Penalty weight lambda on learned polynomial coefficients, added to the training
@@ -903,3 +916,45 @@ def validate_config(config: Config) -> None:
             and config.model.attention_denominator_constant != "fixed"):
         raise ValueError("The denominator penalty is defined with its constant fixed at 1; "
                          "set optim.coefficient_penalty_denominator: false for a learned constant")
+    _validate_coefficient_release(config)
+
+
+def _validate_coefficient_release(config: Config) -> None:
+    optim, model = config.optim, config.model
+    schedule, start, end = (optim.coefficient_release_schedule, optim.coefficient_release_step,
+                            optim.coefficient_release_end_step)
+    if schedule is None:
+        if start is not None or end is not None:
+            raise ValueError("optim.coefficient_release_step and coefficient_release_end_step require "
+                             "optim.coefficient_release_schedule")
+        return
+    if schedule not in ("all", "by_order"):
+        raise ValueError(f"Unknown optim.coefficient_release_schedule: {schedule!r}")
+    if start is None:
+        raise ValueError("optim.coefficient_release_schedule requires optim.coefficient_release_step")
+    if type(start) is not int or not 0 < start < optim.total_steps:
+        raise ValueError("optim.coefficient_release_step must be an integer with "
+                         "0 < coefficient_release_step < optim.total_steps")
+    if schedule == "by_order":
+        if end is None:
+            raise ValueError("The by_order coefficient release requires optim.coefficient_release_end_step")
+        if type(end) is not int or not start < end < optim.total_steps:
+            raise ValueError("optim.coefficient_release_end_step must be an integer with "
+                             "coefficient_release_step < coefficient_release_end_step < optim.total_steps")
+    elif end is not None:
+        raise ValueError("optim.coefficient_release_end_step applies to the by_order schedule only")
+    static = (model.attention_coefficient_conditioning == "static"
+              and model.attention_coefficient_parameterization == "direct")
+    query = (model.attention_coefficient_conditioning == "query"
+             and model.attention_coefficient_activation == "tanh"
+             and model.attention_coefficient_readout == "diagonal"
+             and not model.attention_coefficient_tanh_bias)
+    if (model.attention_coefficients != "learned" or not (static or query)
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_orders is not None):
+        # Every released array must store orders 0..m on its last axis, starting at Taylor.
+        raise ValueError("optim.coefficient_release_schedule requires Taylor-initialized learned direct static "
+                         "coefficients or diagonal tanh query coefficients without an inner tanh bias, "
+                         "storing every order 0..m (no attention_coefficient_orders)")
+    if config.continuation.parent_checkpoint:
+        raise ValueError("optim.coefficient_release_schedule is not supported for checkpoint continuations")

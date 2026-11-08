@@ -1,0 +1,10 @@
+run_id,role,label,best_ppl,best_step,terminal_ppl,terminal_step
+rd40b46f5dc9b,release_all,"query m = 8 + W decay, released at 455",14.229,7500,14.237,7570
+rcc4f4e5d7abb,release_by_order,"query m = 8 + W decay, released by order 455-1500",14.242,7500,14.243,7570
+r1c72e8860ade,release_all,"static m = 8, released at 455",14.343,7500,14.346,7570
+r991a756da7a9,release_by_order,"static m = 8, released by order 455-1500",14.243,7500,14.246,7570
+r25fffc16c2f3,control,query m = 8 + W decay,14.323,7500,14.328,7570
+r9c69dd7cfc8d,control,static m = 8,14.294,7500,14.299,7570
+ra7ee8a4b2544,reference,fixed Taylor m = 8,14.218,7500,14.223,7570
+ra040de24096c,reference,Hermite m = 8,14.225,7500,14.231,7570
+r6a76e7fbde45,reference,exp,14.257,7500,14.262,7570

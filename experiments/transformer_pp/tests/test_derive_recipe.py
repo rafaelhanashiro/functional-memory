@@ -118,3 +118,25 @@ def test_derived_values_carry_no_float_noise():
     partner = recipe("rca97cc9db8f2")
     partner["model"]["attention_coefficient_projection_initial_std"] = 0.02
     assert derive(partner, budget=2.5)[0]["model"]["attention_coefficient_projection_initial_std"] == 0.02
+
+
+@pytest.mark.parametrize("partner", ["r9c69dd7cfc8d", "r25fffc16c2f3"])
+def test_a_coefficient_release_keeps_its_fraction_of_the_updates(partner, tmp_path):
+    from scaffolds.transformer.configs import load_config
+
+    by_order, every = recipe(partner), recipe(partner)
+    by_order["optim"].update(coefficient_release_schedule="by_order", coefficient_release_step=455,
+                             coefficient_release_end_step=1500)
+    every["optim"].update(coefficient_release_schedule="all", coefficient_release_step=455,
+                          coefficient_release_end_step=None)
+    assert _changes(_defined(by_order)[0], derive(by_order)[0]) == {}
+    keys = ("total_steps", "warmup_steps", "coefficient_release_step", "coefficient_release_end_step")
+    for changes, expected in (({"layers": 12, "width": 640}, (7551, 454, 454, 1496)),
+                              ({"budget": 2.5}, (18925, 1138, 1138, 3750))):
+        derived, _ = derive(by_order, **changes)
+        assert tuple(derived["optim"][key] for key in keys) == expected
+        # The derived release still satisfies 0 < step < end < total_steps.
+        (tmp_path / "config.yaml").write_text(yaml.safe_dump(derived, sort_keys=False))
+        assert load_config(tmp_path / "config.yaml").optim.coefficient_release_end_step == expected[3]
+        derived, _ = derive(every, **changes)
+        assert tuple(derived["optim"][key] for key in keys) == (*expected[:3], None)
