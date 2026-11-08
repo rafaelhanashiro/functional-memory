@@ -211,8 +211,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Query-dependent distance decay + W decay | `r3e26412b2811` | complete | 14.1977 | 7500 | 14.2025 |
 | Endpoint query-key distance decay + W decay | `r02f984133092` | complete | 14.0265 | 7500 | 14.0319 |
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
-| Per-order query distance + W decay | `r507193d47450` | running | — | — | — |
-| Per-order query-key distance + W decay | `r03be769d2069` | running | — | — | — |
+| Per-order query distance + W decay | `r507193d47450` | complete | 13.8918 | 7500 | 13.8941 |
+| Per-order query-key distance + W decay | `r03be769d2069` | complete | 13.7084 | 7500 | 13.7124 |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
@@ -239,14 +239,29 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
 - The bounded rate ties softplus. The sigmoid-rate run (`r4f169e5370da`) ends
   at 14.197 vs 14.198 (best; −0.006%), within ±0.3% of the control from update
   3,000 on.
+- Per-order rates improve both gates by about 2.2%. The per-order query gate
+  (`r507193d47450`) ends at 13.892 vs 14.198 (best; −2.15%, terminal −2.17%) and
+  is lower at 26 of 28 evaluations (not at updates 100 and 200). The per-order
+  query–key gate (`r03be769d2069`) ends at 13.708 vs 14.027 (best; −2.27%,
+  terminal −2.28%) and is lower at 27 of 28 (not at update 100). From update 3,000
+  on both lead their shared gates by 2.2–2.6%.
+- The per-order query–key gate beats FoX; the per-order query gate ties it.
+  Against cumulative FoX (13.873), per-order query–key is −1.19% at the best update,
+  lower at 26 of 28 evaluations and by 1.1–1.3% from update 3,000 on; per-order
+  query is +0.13%, within ±0.2% from update 3,000 on.
+- Low orders learn short ranges. In the per-order query run at update 7,570, the
+  median half-life over the 210 layer-heads is 0.92 tokens for order 0 (108 heads
+  below one token), 1.84 for order 1, 1.44 for order 2, 2.98 for order 3 (30 heads
+  above 100 tokens), and 3.37 for order 4 (44 heads above 100 tokens). All orders
+  start equal (median 4.7–5.6 tokens at update 100); the split forms by update 900.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
-The four completed runs differ in their decay rule, without separately tuned optimization.
-The two per-order extensions below increase gate capacity and are still pending. The two
-ablations run on the Mosaic kernels, the two earlier runs on the blocked reference.
-Their only numerical difference is BF16 rounding of attention weights and score
-gradients (see [Attention kernels](#attention-kernels)). Both ablations were preempted
-once and resumed from their latest checkpoint.
+The six runs differ in their decay rule, without separately tuned optimization.
+The endpoint, bounded-rate and per-order runs use the Mosaic kernels; the FoX and
+query-only runs use the blocked reference. Their only numerical difference is BF16
+rounding of attention weights and score gradients (see [Attention kernels](#attention-kernels)).
+The endpoint and bounded-rate runs were preempted once and resumed from their latest
+checkpoint; both per-order runs trained without interruption on one H100 SXM each.
 
 ## Independent per-order gates
 
@@ -286,9 +301,10 @@ They do not test cumulative per-order forgetting or a larger polynomial degree.
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
-FoX, and the bounded rate changes nothing. Evaluate the two per-order extensions against their matched shared gates.
-Then decide whether to run additional seeds or close the topic by discarding it
-or promoting it as its own collection.
+FoX, and the bounded rate changes nothing. Per-order rates improve both gates by
+about 2.2%, and the per-order query–key gate beats cumulative FoX by 1.2%. Decide
+whether to confirm with additional seeds, then promote the topic as its own
+collection or discard it.
 
 ## Regeneration
 

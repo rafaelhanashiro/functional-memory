@@ -242,7 +242,7 @@ def _mosaic_inputs(time=2048, *, key=True):
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
-def test_mosaic_per_order_output_and_every_gradient_match_host_fp64(endpoint):
+def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint):
     _requires_mosaic_gpu()
     arrays, cotangent = _mosaic_inputs(key=endpoint)
     with jax.enable_x64(), jax.default_matmul_precision("highest"):
