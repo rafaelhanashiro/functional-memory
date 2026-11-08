@@ -5,16 +5,20 @@ query-conditioned attention without introducing a distance-dependent forget gate
 
 ## Runs
 
-| Role | Run | Label | Degree | Home cluster |
-| --- | --- | --- | ---: | --- |
-| Gated query + weight decay | `r77698776d82c` | `query-m8-w-decay-order-gates` | 8 | ORCD |
-| Gated query + weight decay | `r8c4a6ecdf4d2` | `query-m10-w-decay-order-gates` | 10 | ORCD |
-| Ungated control | `r25fffc16c2f3` | `query-m8-dk64-w-decay` | 8 | Kennel |
+| Role | Run | Label | Gate | Degree | Home cluster |
+| --- | --- | --- | --- | ---: | --- |
+| Gated query + weight decay | `r77698776d82c` | `query-m8-w-decay-order-gates` | sigmoid | 8 | ORCD |
+| Gated query + weight decay | `r8c4a6ecdf4d2` | `query-m10-w-decay-order-gates` | sigmoid | 10 | ORCD |
+| Ungated control | `r25fffc16c2f3` | `query-m8-dk64-w-decay` | – | 8 | Kennel |
+| GDN-gated query + weight decay (planned) | `r1a5d217f030d` | `query-m4-w-decay-order-gdn-gates` | GDN | 4 | Kennel |
+| Ungated control | `rca97cc9db8f2` | `query-m4-w-decay` | – | 4 | Kennel |
+| Shared distance gate, no positional encoding | `r3e26412b2811` | `query-m4-query-distance-no-rope-w-decay` | – | 4 | Kennel |
 
 No ungated degree-ten run exists, so the degree-ten run is compared with the gated
 degree-eight run and the ungated degree-eight control only. The [selection](selection.yaml)
 pins these runs and three references at `m = 8`: fixed Taylor `ra7ee8a4b2544`, learned
-static `r9c69dd7cfc8d` and unnormalized exp `r6a76e7fbde45`.
+static `r9c69dd7cfc8d` and unnormalized exp `r6a76e7fbde45`. The degree-four GDN gate
+and its two references are described [below](#gdn-gate-without-a-distance-exponent).
 
 ## Model
 
@@ -127,6 +131,72 @@ Suppression of an order therefore needs a small gated coefficient `c~_r` and a s
 contribution share, read together with the tilt. W&B mirrors the per-order means over
 layers and heads of the gate, the tilt, and the contribution share.
 
+## GDN gate without a distance exponent
+
+`r1a5d217f030d` asks whether the per-order query-distance gate's gain comes from gating each
+order or from the distance decay. The per-order distance run `r507193d47450`
+(`query-m4-per-order-query-gate-nope-wd`, no positional encoding) weights
+
+    omega_ti = sum_r c_r(x_t) s_ti^r exp(-(t - i) lambda_tr)
+    lambda_tr = exp(A_log_r) softplus(w_r^T x_t + dt_bias_r)
+
+per layer, head and order, in Gated DeltaNet's (Mamba-2's) parameterization. Dropping
+`(t - i)` leaves `alpha_tr = exp(-lambda_tr)`, which depends only on the query and folds into
+the coefficient:
+
+    c~_r(x_t) = alpha_tr c_r(x_t),   omega_ti = sum_r c~_r(x_t) s_ti^r
+
+This is `model.attention_coefficient_gate: gdn`, a per-order coefficient gate applied in the
+shared generator like the sigmoid gate. The Mosaic query-polynomial kernel receives `c~`
+with no kernel change. `alpha` lies in `(0, 1]`; with per-head output RMSNorm only ratios
+between orders matter, so suppressing the other orders amplifies one.
+
+| Run | Gate | Positional encoding | Status | Validation-best PPL | Terminal PPL |
+| --- | --- | --- | --- | ---: | ---: |
+| `r1a5d217f030d` | per order, `exp(-lambda_tr)` | RoPE | planned | – | – |
+| `rca97cc9db8f2` | none | RoPE | complete | 14.709 | 14.714 |
+
+**Initialization.** The generator starts as the control's: stored `b_r = 1`, `a_r = 0`,
+`W_r ~ N(0, 0.0334^2)`. `w`, `A_log` and `dt_bias` take the shared input-form forget gate's
+distributions (`w` uniform on `+-1/sqrt(896)`, `exp(A_log)` uniform on `(0, 16)`,
+`softplus(dt_bias)` log-uniform on `[0.001, 0.1]`), drawn once per layer and head and
+copied to all five orders. All orders of a head therefore share `alpha_t` at each token, and
+the per-head output RMSNorm cancels a shared factor up to its epsilon: the normalized output
+is the ungated one times `sqrt((ms + eps alpha^2) / (ms + eps))`, with `ms` the gated head
+output's mean square. At seed 42 on one 64-token sequence, `alpha` spans 0.057–1 (median
+0.94; per-head means 0.11–1.00). Every other initial parameter equals the control's start
+(state hash, the same at the control's launch commit). The initial logits differ from the
+control's by 5.9e-5 of the largest logit, within the epsilon bound of 2.6e-3, and by 1.0e-6
+(FP32 rounding) with every RMSNorm epsilon at 1e-30.
+
+**Weight decay.** AdamW decay 0.1 applies to `W` and `w`; `a`, `b`, `A_log` and `dt_bias`
+are excluded.
+
+**Training.** `rca97cc9db8f2`'s recipe with only the gate added: 7,570 updates, global batch
+256 at 2,048 tokens, seed 42, warmup 455 and the cosine schedule, `d_K = 64`, QK RMSNorm
+with a learned per-head score scale, RoPE, per-head output RMSNorm,
+`transformer_truncated_reference` initialization, on the Mosaic backend.
+
+**The 2×2.** Validation-best PPL at `m = 4`:
+
+| | Gate shared by all orders | Gate per order |
+| --- | ---: | ---: |
+| Distance exponent `exp(-(t - i) lambda)`, no positional encoding | 14.198 (`r3e26412b2811`) | 13.892 (`r507193d47450`) |
+| No distance exponent, RoPE | 14.709 (`rca97cc9db8f2`) | planned (`r1a5d217f030d`) |
+
+- A gate shared by all orders without a distance exponent is a per-token factor that the
+  per-head output RMSNorm cancels up to its epsilon, so the ungated control fills that cell.
+- The rows also differ in position encoding: the distance gates carry position without
+  RoPE, while attention without a distance gate needs RoPE. `r3e26412b2811` trains on the
+  blocked backend.
+- `r507193d47450` (terminal 13.894) is complete; its records are on branch
+  `codex/degree-dependent-fox`, so the [selection](selection.yaml) pins the other three cells.
+
+The gate reports the sigmoid gate's diagnostics, with `alpha` in the gate fields (mean,
+standard deviation, minimum and maximum over tokens), the tilt
+`log alpha_r - mean_r log alpha_r`, contribution shares, ungated and gated coefficients, and
+the gate parameters `exp(A_log)`, `softplus(dt_bias)` and `||w_r||` per layer, head and order.
+
 ## Comparisons and limits
 
 The control `r25fffc16c2f3` ran on a Kennel B300 at source commit `6ab34ab1`. The gated
@@ -143,11 +213,20 @@ sigmoid form, a gate that saturates near zero stops both its own learning and it
 coefficient's, and the configuration chosen in the first ~900 updates stays. A redesign
 could use a multiplier that cannot reach zero (for example `exp(delta_r)` with `delta`
 decayed toward zero), a lower learning rate for the gate parameters, or gates held fixed
-through the early updates.
+through the early updates. The GDN gate `r1a5d217f030d` starts with the orders' shared
+multiplier, cancelled by the output RMSNorm, rather than at a factor of one per order. Its
+`alpha` can also approach zero, where its gradients vanish as the sigmoid gate's do. Its
+comparison with `rca97cc9db8f2` shares the cluster, backend, seed and every recipe setting
+but the gate; the source commits differ, as they do across the 2×2, whose rows also differ
+in position encoding.
 
 ## Execution
 
-Home cluster: ORCD. Each run uses one H200 (Hopper, sm90, the H100's kernels), with no
+The GDN-gated run's launch command and acceptance are in the
+[study README](../../../README.md#per-order-coefficient-gates); it runs on Kennel with one
+B300 or H100 GPU.
+
+Home cluster for the sigmoid runs: ORCD. Each run uses one H200 (Hopper, sm90, the H100's kernels), with no
 scheduling dependency; at submission Slurm estimated an H200 start about two days before
 an H100 one. From the experiment worktree after committing the frozen execution inputs:
 

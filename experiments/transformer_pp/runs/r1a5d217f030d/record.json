@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1a5d217f030d/config.yaml",
+    "sha256": "f9332dce3491deb4c856234d58e0d7ab94d0162d658c83135b952cf00a21275f"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-order-gdn-gates",
+  "name": "query-m4-w-decay-order-gdn-gates",
+  "record_schema_version": 1,
+  "run_id": "r1a5d217f030d",
+  "status": "planned"
+}

@@ -358,6 +358,42 @@ without a distance-dependent forget gate. Two runs add independent per-order sig
 hosted on ORCD (H200). Both end 7–8% worse than the ungated control; the topic records
 the formulas, the control, the per-order gate findings and the exact launch commands.
 
+`r1a5d217f030d` (`query-m4-w-decay-order-gdn-gates`, planned) copies the degree-four
+query + weight decay, RoPE recipe of `rca97cc9db8f2` with only
+`model.attention_coefficient_gate: gdn`: each layer, head and order multiplies its
+coefficient by `alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r))`, the
+per-order query-distance gate of `r507193d47450` without its distance exponent. Every order
+starts as a copy of one Gated DeltaNet draw per layer and head, so the per-head output
+RMSNorm cancels the shared start up to its epsilon. The topic records the model, the
+initialization, and the 2×2 with the distance-gate runs.
+
+Home cluster: Kennel. Branch `claude/per-order-no-distance`, worktree
+`worktrees/per-order-no-distance`; sync both locked CUDA environments as in
+[CLUSTERS.md](../../CLUSTERS.md). The adapter
+([coefficient_gdn_gate_acceptance.py](coefficient_gdn_gate_acceptance.py)) pins
+`rca97cc9db8f2`'s recipe by SHA256 and rejects any scientific difference except the gate.
+At initialization it requires every other parameter to equal the control's start (state
+hash), each gate array to be one draw repeated over the orders, and the initial logits to
+match the ungated recipe's within the RMSNorm epsilon bound (and to FP32 rounding with the
+epsilon removed). It then runs the gate's CPU tests, its GPU qualification at degree 4
+(the gated generator through Mosaic against FP64 at 2,048 tokens, and the gated BF16 Mosaic
+model against the FP32 blocked model), and the shared pilot and fresh-process resume. The
+control trained in about five hours on one H100. After committing the frozen inputs and
+checking the live allowances, submit from the worktree root:
+
+```bash
+run=r1a5d217f030d
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_gdn_gate_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+The record captures the submission command and job ID. Resumptions keep the run ID,
+recipe, launch commit and checkpoint.
+
 ### Query coefficient optimization
 
 Two degree-four query/tanh runs test weight decay on the projection and a higher

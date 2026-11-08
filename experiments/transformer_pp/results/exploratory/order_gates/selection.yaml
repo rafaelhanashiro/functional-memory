@@ -11,7 +11,10 @@ settings:
   context_length: 2048
   global_batch_size: 256
   seed: 42
-  coefficient_gate: sigmoid
+  coefficient_gates:
+    gated_query_w_decay_m8: sigmoid
+    gated_query_w_decay_m10: sigmoid
+    gdn_gated_query_w_decay_m4: gdn
   comparison_groups:
     gate:
     - gated_query_w_decay_m8
@@ -23,6 +26,13 @@ settings:
     - fixed_taylor_m8
     - static_m8
     - exp
+    gdn_gate:
+    - gdn_gated_query_w_decay_m4
+    - query_w_decay_m4
+    distance:
+    - gdn_gated_query_w_decay_m4
+    - query_w_decay_m4
+    - shared_distance_gate_query_w_decay_m4
 runs:
 - study: transformer_pp
   run_id: r77698776d82c
@@ -138,3 +148,48 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
       sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r1a5d217f030d
+  role: gdn_gated_query_w_decay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1a5d217f030d/config.yaml
+      sha256: f9332dce3491deb4c856234d58e0d7ab94d0162d658c83135b952cf00a21275f
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: query_w_decay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r3e26412b2811
+  role: shared_distance_gate_query_w_decay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3e26412b2811/config.yaml
+      sha256: 3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metrics.jsonl
+      sha256: 998c8c5b25496c388eca8c290d1f0a77998e120c11931011e3a95da9324bfdf6
+    completion.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/completion.json
+      sha256: 2d36a3387d7ab02cb9c70057327882b66334e68866cd0f3195ec9bd1e4a3325e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metadata.json
+      sha256: c0480d51994baabd4bcf9b11f770165e8e2e505120ef029619346e88e17f5a6b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
+      sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
