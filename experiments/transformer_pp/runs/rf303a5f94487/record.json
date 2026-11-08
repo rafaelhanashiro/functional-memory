@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf303a5f94487/config.yaml",
+    "sha256": "1c8ea9e57d7f7a6e4ce0308f12c0fa50a3fba3b8adaea8b6972a26da4f2b2e14"
+  },
+  "label": "spline-query-m4-w-decay",
+  "name": "spline-query-m4-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rf303a5f94487",
+  "status": "planned"
+}

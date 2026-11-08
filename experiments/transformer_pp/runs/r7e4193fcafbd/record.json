@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7e4193fcafbd/config.yaml",
+    "sha256": "250aa775cc7e7635512a7a1194e40a5f9830d3326880bed1842d7674f83be2f9"
+  },
+  "label": "spline-static-m4",
+  "name": "spline-static-m4",
+  "record_schema_version": 1,
+  "run_id": "r7e4193fcafbd",
+  "status": "planned"
+}

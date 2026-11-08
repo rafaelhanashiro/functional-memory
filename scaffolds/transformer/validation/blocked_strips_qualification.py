@@ -157,10 +157,11 @@ def model_case(recipe: Path, implementation: str, micro_batch: int, output: Path
     return result
 
 
-def model_stage(recipes: list[str], micro_batch: int, output: Path) -> dict:
+def model_stage(recipes: list[str], micro_batch: int, output: Path,
+                implementations: tuple[str, ...] = ("scan", "strips")) -> dict:
     report = {"stage": "model", "micro_batch": micro_batch, "cases": []}
     for recipe in recipes:
-        for implementation in ("scan", "strips"):
+        for implementation in implementations:
             path = output.parent / f".case-{Path(recipe).parent.name}-{implementation}-{os.getpid()}.json"
             command = [sys.executable, "-m", "scaffolds.transformer.validation.blocked_strips_qualification",
                        "model-case", "--recipe", recipe, "--implementation", implementation,
@@ -191,6 +192,7 @@ def main():
     model.add_argument("--recipes", nargs="+", required=True)
     model.add_argument("--micro-batch", type=int, default=16)
     model.add_argument("--output", type=Path, required=True)
+    model.add_argument("--implementations", nargs="+", choices=("scan", "strips"), default=["scan", "strips"])
     case = sub.add_parser("model-case")
     case.add_argument("--recipe", type=Path, required=True)
     case.add_argument("--implementation", choices=("scan", "strips"), required=True)
@@ -200,7 +202,7 @@ def main():
     if args.stage == "kernel":
         kernel_stage(args.output)
     elif args.stage == "model":
-        model_stage(args.recipes, args.micro_batch, args.output)
+        model_stage(args.recipes, args.micro_batch, args.output, tuple(args.implementations))
     else:
         model_case(args.recipe, args.implementation, args.micro_batch, args.output)
 
