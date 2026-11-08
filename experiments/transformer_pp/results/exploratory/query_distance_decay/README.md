@@ -189,8 +189,10 @@ One seed is tested, so this comparison cannot quantify seed-to-seed variability.
 The methods differ only in how the same gate values attenuate distance; it is not
 a comparison of additional gate capacity or separately tuned optimization. The two
 ablations run on the Mosaic kernels, the two earlier runs on the blocked reference.
-Their only numerical difference is BF16 rounding of attention weights and score
-gradients (see [Attention kernels](#attention-kernels)). Both ablations were preempted
+They differ numerically in two ways: Mosaic rounds attention weights and score gradients to
+BF16 (see [Attention kernels](#attention-kernels)), and the blocked scan sums the K and V
+gradients of its 128-query blocks in BF16 (about 1.3x the BF16 floor under this decay; see the
+scaffold validation record). Both ablations were preempted
 once and resumed from their latest checkpoint.
 
 ## Open decision
