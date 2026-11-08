@@ -226,7 +226,7 @@ decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns th
 The [even-powers topic](results/exploratory/even_powers/README.md) tests static
 and query-conditioned coefficients using only orders 0, 2, 4, 6, and 8 at the
 1× Chinchilla budget (7,570 updates). Both families compare with full degrees
-four and eight. The full degree-eight static control `r9c69dd7cfc8d` is pending;
+four and eight. The full degree-eight static control `r9c69dd7cfc8d` is complete;
 it matches the even-only static recipe `r45831d718944` with
 `attention_coefficient_orders: null`, learning all nine coefficients from scratch.
 These runs are hosted on Kennel. The topic records the explicit controls and
