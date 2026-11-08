@@ -23,8 +23,10 @@ activation as the coefficients.
 | `r111843b4c7cc` | query-m4-forget-gate | blocked JAX reference |
 | `r82a80d3091e2` | query-m4-forget-gate-no-rope | blocked JAX reference, `positional_encoding: none` |
 
-Mosaic has no forget gate, so this run evaluates attention on the exact blocked
-reference, while its control ran on Mosaic. Earlier blocked and Mosaic tanh runs agreed.
+Mosaic has no kernel for this cumulative forget gate, so this run trains on the blocked
+scan (FP32 weights, BF16 sums of the K and V gradients across 128-query blocks), while its
+control ran on Mosaic (BF16 weights). Same-recipe tanh runs on the blocked scan and on the
+fused Triton kernels agreed within 0.1 PPL at m = 1-4 (input-dependent coefficients collection).
 
 Control in the [selection](selection.yaml): `query-m4-head-scale` (best 14.774), with
 `fixed-m4-head-scale` (best 14.722) for reference.

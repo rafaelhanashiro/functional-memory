@@ -2386,10 +2386,10 @@ oracle rounded to BF16, the best a BF16 result can be.
   | query polynomial m = 4, unnormalized | 2.79x / 2.79x | 1.01x / 1.01x |
   | normalized learned polynomial m = 2 | 1.88x / 1.79x | 1.01x / 1.01x |
 
-  Output and dQ stay at 1.01x. These are the numerics of the 29 BF16 runs that trained on the
-  blocked backend through this function: in `attention_scaling`, the 12 normalized learned
-  m = 1-4 runs and 9 query or query-key coefficient runs; in Transformer++, 8 forget-gate
-  query m = 4 runs (one at 4,096 tokens, 32 blocks, not measured). PaTH, GDN and GLA have
+  Output and dQ stay at 1.01x. These are the numerics of every BF16 run trained on the
+  blocked scan: in `attention_scaling`, the normalized learned m = 1-4 and the query or
+  query-key coefficient runs; in Transformer++, every forget-gate run (softmax, exponential and
+  query polynomials; the 4,096-token runs have 32 blocks, not measured). PaTH, GDN and GLA have
   separate blocked code.
 - JAX's default precision runs FP32 x FP32 products as TF32 on H100: an FP32 matmul has
   2.9e-4 relative error (2.2e-7 at `HIGHEST`), and with FP32 inputs production and every
