@@ -925,7 +925,10 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         reused = {name: origin for name, origin in reused.items() if origin}
         record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware,
                **({"reused_tests": reused} if reused else {}))
-        shutil.rmtree(directory / "pilot")  # The disposable pilot checkpoint is no longer needed.
+        # The disposable pilot checkpoint is no longer needed. An earlier attempt that passed this
+        # same pilot and resume removed it already when every remaining stage is reused here.
+        if (directory / "pilot").exists():
+            shutil.rmtree(directory / "pilot")
         print(f"acceptance_success={directory / 'success.json'}", flush=True)
     except BaseException as error:
         write_json(directory / "failure.json", {"identity": experiment["identity"], "stage": stage,

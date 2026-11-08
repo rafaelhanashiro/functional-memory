@@ -343,6 +343,37 @@ def test_a_requeue_onto_another_gpu_model_repeats_the_runs_own_acceptance(tmp_pa
     assert json.loads((tmp_path / "identity.json").read_text())["device_kinds"] == ["NVIDIA H100 NVL"]
 
 
+def test_returning_to_the_passed_gpu_model_reuses_its_pilot_after_the_checkpoint_was_removed(tmp_path, monkeypatch,
+                                                                                             capsys):
+    """H200 and H200 NVL share one GPU type. An attempt on the other model re-records the test stages;
+    back on the first model, its pilot and resume still pass, and their checkpoint is already gone."""
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    allocated = {"model": "NVIDIA H200"}
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": [allocated["model"]] * args.gpu_count}
+        raise RuntimeError(f"ran {name}")
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    experiment = {"identity": "launcher", "source_commit": "a" * 40, "config": config_to_dict(Config()),
+                  "gpu_type": "H200", "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="H200")
+    first = preflight.on_devices(experiment, ["NVIDIA H200"])
+    for name in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{name}.json", first)
+    for name, _, _ in preflight.TEST_STAGES:
+        preflight.record(tmp_path / f"{name}.json", preflight.on_devices(experiment, ["NVIDIA H200 NVL"]))
+    assert not (tmp_path / "pilot").exists()
+    preflight._run(spec, args, experiment)
+    output = capsys.readouterr().out
+    assert "matching_acceptance_passed=" not in output and "acceptance_success=" in output
+    assert all(preflight.passed(tmp_path / f"{name}.json", first) for name in (*preflight.CHECKS, "success"))
+
+
 def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(monkeypatch):
     monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "auto")
     with pytest.raises(ValueError, match="resolved"):
