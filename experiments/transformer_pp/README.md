@@ -315,6 +315,12 @@ decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns th
 
 ## Exploratory diagnostics
 
+The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
+fixed knots from the ordinary static and query models' scores at initialization
+and retained checkpoints. It records forward-only diagnostics on training examples
+before a proposed static/query spline comparison without FoX; its README gives
+the exact one-GPU Kennel launch command.
+
 ### Even polynomial powers
 
 The [even-powers topic](results/exploratory/even_powers/README.md) tests static
