@@ -22,10 +22,18 @@ OUT=scaffolds/transformer/validation/runs/blocked-strips
 mkdir -p "$OUT"
 printf 'job=%s source=%s environment=%s gpu=%s\n' "$SLURM_JOB_ID" "$LAUNCH_COMMIT" "$TRANSFORMER_CUDA_ENVIRONMENT" "$GPU"
 nvidia-smi --query-gpu=name,uuid,temperature.gpu,clocks.current.sm --format=csv
-"$PYTHON" -m pytest -q -rA scaffolds/transformer/tests/test_blocked_strips_h100.py
-"$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification kernel \
-  --output "$OUT/kernel-$GPU-$SLURM_JOB_ID.json"
-"$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification model --micro-batch 16 \
-  --recipes experiments/transformer_pp/runs/r5adc29a91e3b/config.yaml \
-            experiments/transformer_pp/runs/r4a80e28ce0a7/config.yaml \
-  --output "$OUT/model-$GPU-$SLURM_JOB_ID.json"
+# STAGES (default "tests kernel model") and RECIPES select what runs.
+STAGES="${STAGES:-tests kernel model}"
+RECIPES="${RECIPES:-experiments/transformer_pp/runs/r5adc29a91e3b/config.yaml experiments/transformer_pp/runs/r82a80d3091e2/config.yaml}"
+if [[ " $STAGES " == *" tests "* ]]; then
+  "$PYTHON" -m pytest -q -rA scaffolds/transformer/tests/test_blocked_strips_h100.py
+fi
+if [[ " $STAGES " == *" kernel "* ]]; then
+  "$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification kernel \
+    --output "$OUT/kernel-$GPU-$SLURM_JOB_ID.json"
+fi
+if [[ " $STAGES " == *" model "* ]]; then
+  # shellcheck disable=SC2086
+  "$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification model --micro-batch 16 \
+    --recipes $RECIPES --output "$OUT/model-$GPU-$SLURM_JOB_ID.json"
+fi
