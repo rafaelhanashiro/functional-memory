@@ -227,6 +227,9 @@ class ModelConfig:
         """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
         query-conditioned unnormalized polynomial attention with an input-form query-distance
         forget gate (query or endpoint query-key rates), with RoPE or no positional encoding.
+        Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
+        B300 refuses the per-order shapes it cannot hold when the model is traced
+        (``query_degree_supported``).
         Only an explicit ``mosaic`` backend selects them; ``auto`` keeps its historical choice."""
         from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 

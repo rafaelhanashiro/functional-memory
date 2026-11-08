@@ -24,7 +24,10 @@ defaults to ``default_precision``.
   rows NaN; the diagonal is never attenuated.
 - ``per_order_query_decay_attention`` and ``per_order_endpoint_decay_attention``: the same
   gates with an independent rate for every polynomial order r (including r = 0), as the
-  blocked reference's per-order gates: sum_r c_r s^r exp((t-i) l_r).
+  blocked reference's per-order gates: sum_r c_r s^r exp((t-i) l_r). H100 stages their
+  vectors per tile; B300 keeps every query's and key's per-order vectors in shared memory and
+  raises ValueError, before tracing a kernel, for shapes it cannot hold (``blackwell_supported``:
+  at Q/K width 64 and 2,048 tokens, degree 7 query and degree 6 query-key gates fit).
 
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
 128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
@@ -47,7 +50,7 @@ from scaffolds.transformer.attention.backends.mosaic.common import (
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
-MAX_QUERY_DEGREE = 12  # largest qualified degree; B300 must also fit it (query_degree_supported)
+MAX_QUERY_DEGREE = 12  # largest qualified degree; the GPUs must also fit it (query_degree_supported)
 
 
 # The kernel family of a forget gate, by gate conditioning (query or query_key) and whether every
@@ -57,21 +60,48 @@ DECAY_FAMILY = {("query", False): QUERY_DECAY, ("query_key", False): ENDPOINT_DE
 
 
 def query_degree_supported(degree, width, time, *, gate=None, per_order=False):
-    """Whether the query-coefficient kernels run degree m at this key width and sequence length
-    on both GPUs: B300's dK/dV holds (m+1) FP32 coefficients (and a forget gate's vectors and
-    buffers, for gate conditioning ``gate``) for every query in shared memory."""
+    """Whether the query-coefficient kernels run degree m at this key width and sequence length.
+    Shared coefficients and gates must fit B300 (``blackwell_supported``), and so H100: B300's
+    dK/dV holds (m+1) FP32 coefficients (and a forget gate's vectors and buffers, for gate
+    conditioning ``gate``) for every query in shared memory. Per-order gates must fit H100
+    (``hopper_supported``), which stages their vectors per tile; B300 runs the per-order shapes
+    that ``blackwell_supported`` accepts and refuses the others before building a kernel."""
     family = QUERY if gate is None else DECAY_FAMILY[gate, per_order]
-    if not (1 <= degree <= MAX_QUERY_DEGREE and time > 0 and common.blackwell_dkv_stages(
-            max(width, MIN_WIDTH), VALUE_WIDTH, common.vector_counts(family, degree)[1], time,
-            extra_bytes=common.dkv_extra_bytes(family, "dk", degree)) is not None):
+    if not (1 <= degree <= MAX_QUERY_DEGREE and time > 0):
         return False
-    if family not in common.PER_ORDER_FAMILIES:
-        return True
-    # Per-order families also keep every key's per-order vectors in the B300 forward and dQ.
+    if family in common.PER_ORDER_FAMILIES:
+        return hopper_supported(family, degree, width)
+    return blackwell_supported(family, degree, width, time)
+
+
+def blackwell_supported(family, degree, width, time):
+    """Whether B300's kernels hold a family's buffers in shared memory: its dK/dV keeps every
+    query's FP32 vectors (and a decay family's per-key buffers), and a per-order family's forward
+    and dQ also keep every key's per-order vectors, for the whole sequence."""
+    width = max(width, MIN_WIDTH)
     _, vectors, sums = common.vector_counts(family, degree)
-    return common.blackwell_query_pass_bytes(
-        max(width, MIN_WIDTH), VALUE_WIDTH, vectors, sums, common.key_counts(family, degree)[0], time,
+    if common.blackwell_dkv_stages(width, VALUE_WIDTH, vectors, time,
+                                   extra_bytes=common.dkv_extra_bytes(family, "dk", degree)) is None:
+        return False
+    return family not in common.PER_ORDER_FAMILIES or common.blackwell_query_pass_bytes(
+        width, VALUE_WIDTH, vectors, sums, common.key_counts(family, degree)[0], time,
         head=common.head_count(family, degree) > 0) <= common.BLACKWELL_SMEM_BYTES
+
+
+def hopper_supported(family, degree, width):
+    """Whether H100's forward, dQ, and dK/dV kernels hold a family's buffers in shared memory at
+    any sequence length (``common.hopper_smem_bytes``)."""
+    sizes = common.hopper_smem_bytes(family, degree, max(width, MIN_WIDTH), VALUE_WIDTH)
+    return max(sizes.values()) <= common.HOPPER_SMEM_BYTES
+
+
+def _check_blackwell_per_order(family, degree, q, name):
+    """B300's per-order kernels hold every query's and key's per-order vectors for the whole
+    sequence, so they fit fewer degrees than H100's: refuse a shape they cannot hold before any
+    kernel is traced, rather than failing while lowering one."""
+    if _kernels()[0] == "blackwell" and not blackwell_supported(family, degree, q.shape[-1], q.shape[1]):
+        raise ValueError(f"{name}: degree {degree} at Q/K width {q.shape[-1]} and {q.shape[1]} tokens exceeds "
+                         "B300 shared memory; these per-order gates run on H100")
 
 
 def default_precision(family: str, degree: int) -> str:
@@ -413,6 +443,8 @@ def per_order_query_decay_attention(q, k, v, coefficients, log_decay, *, precisi
     if log_decay.shape != coefficients.shape or log_decay.dtype != jnp.float32:
         raise ValueError("Mosaic per-order query-decay attention requires FP32 log rates [batch, time, heads, m+1], "
                          f"got {log_decay.dtype} {log_decay.shape}")
+    _check_blackwell_per_order(PER_ORDER_QUERY_DECAY, coefficients.shape[-1] - 1, q,
+                               "Mosaic per-order query-decay attention")
     precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
     return _per_order_query_decay(q, k, v, coefficients, log_decay, precision)
@@ -467,6 +499,7 @@ def per_order_endpoint_decay_attention(q, k, v, coefficients, query_gate_input, 
             or not query_gate_input.dtype == key_gate_input.dtype == jnp.float32):
         raise ValueError("Mosaic per-order endpoint-decay attention requires FP32 gate inputs "
                          "[batch, time, heads, m+1] and log rates [heads, m+1, 1]")
+    _check_blackwell_per_order(PER_ORDER_ENDPOINT_DECAY, orders - 1, q, "Mosaic per-order endpoint-decay attention")
     precision = default_precision(QUERY, orders - 1) if precision is None else precision
     _check_precision(precision)
     log_rate = gate_log_rate[..., 0].astype(jnp.float32)
