@@ -48,6 +48,12 @@ query-conditioned or static-coefficient unnormalized polynomial attention of deg
 rejected with `model.attention_backend: fused` unless
 `--allow-triton-attention` is supplied; set `mosaic` (or `auto`) before allocating.
 
+A dot-product recipe with RoPE or no positional encoding on the `blocked` or `auto` backend
+trains on the blocked backend's causal strips: an omitted
+`model.attention_blocked_implementation` resolves to `strips`, and an explicit `scan` is
+rejected unless `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep
+the inert `scan`.
+
 Commit prepared recipes and study membership before production launch. A study’s
 frozen execution set includes all of its registered input recipes. Allocate the
 whole sweep before any jobs can run or requeue.

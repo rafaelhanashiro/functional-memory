@@ -101,6 +101,10 @@ def test_recipes_differ_only_in_the_compared_settings():
         (ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] / "config.yaml").read_text())
         for entry in SELECTION["runs"]}
     check_recipes(SELECTION["runs"], configs, SELECTION["settings"])
+    # The blocked backend's implementation (scan or causal strips) is execution, not a compared setting.
+    executed = copy.deepcopy(configs)
+    executed["r81fad1755b11"]["model"]["attention_blocked_implementation"] = "strips"
+    check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
     # (run, section, key, value, expected message): settings outside the comparison.
     mutations = [
         ("r81fad1755b11", "model", "attention_forget_gate", True, "attention_forget_gate"),

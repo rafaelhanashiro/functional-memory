@@ -177,12 +177,12 @@ def assess_parity(parity, instrumented_nll, recorded_nll, tolerance):
 
 
 def precision_control_graph(config, source):
-    """Same checkpoint arrays with FP32 module arithmetic and blocked attention.
+    """Same checkpoint arrays with FP32 module arithmetic and blocked attention (the historical scan).
 
     Mosaic requires BF16 inputs, so this is a precision/backend sensitivity
     control, not an isolated change to Mosaic's arithmetic.
     """
-    control_config = replace(config.model, attention_backend="blocked")
+    control_config = replace(config.model, attention_backend="blocked", attention_blocked_implementation="scan")
     model = build_model(control_config, nnx.Rngs(params=config.train.seed, dropout=config.train.seed))
     for _, module in nnx.iter_graph(model):
         if isinstance(module, nnx.Module) and hasattr(module, "dtype"):

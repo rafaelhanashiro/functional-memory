@@ -256,6 +256,36 @@ def test_changed_parent_inputs_are_rejected(pretrained, tmp_path):
         initialize_continuation_state(changed)
 
 
+def test_continuations_may_train_on_the_blocked_strips_of_a_scan_parent(pretrained, tmp_path):
+    """The blocked implementation is execution, like the backend: a strips child restores a parent
+    that trained on the scan, with new coefficients or preserving the parent's whole model."""
+    from scaffolds.transformer.training.continuation import _parent_config
+
+    parent = pretrained[0]
+    assert parent.model.attention_blocked_implementation == "scan"
+    children = {}
+    for implementation in ("scan", "strips"):
+        child = child_config(pretrained, tmp_path / implementation, learned=True)
+        child.model = replace(child.model, attention_blocked_implementation=implementation)
+        children[implementation] = initialize_continuation_state(child)
+    assert_equal_tree(children["strips"][0].params, children["scan"][0].params)
+    assert_equal_tree(children["strips"][0].opt_state, children["scan"][0].opt_state)
+    assert children["strips"][1] == children["scan"][1]
+    learned = copy.deepcopy(parent)
+    learned.model = replace(learned.model, attention_coefficients="learned",
+                            attention_coefficient_sharing="per_head", attention_coefficient_scale="factorial")
+    path = tmp_path / "learned.yaml"
+    save_config(learned, path)
+    preserved = copy.deepcopy(learned)
+    preserved.continuation = replace(pretrained[2], parent_config=str(path), preserve_all_parameters=True,
+                                     parent_config_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+    preserved.model = replace(preserved.model, attention_blocked_implementation="strips")
+    _parent_config(preserved)
+    preserved.model = replace(preserved.model, attention_coefficient_sharing="global")
+    with pytest.raises(ValueError, match="parent model.attention_coefficient_sharing"):
+        _parent_config(preserved)
+
+
 @pytest.mark.parametrize("learned,query", [(False, False), (True, False), (True, True)])
 def test_ungated_continuation_cannot_silently_remove_rope(pretrained, tmp_path, learned, query):
     config = child_config(pretrained, tmp_path / "child", learned=learned, query=query)

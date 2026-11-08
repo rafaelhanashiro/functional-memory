@@ -71,6 +71,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
         attention_forget_gate_conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
         attention_forget_gate_rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
+        attention_blocked_implementation=getattr(config, "attention_blocked_implementation", "scan"),
         rngs=rngs,
     )
 
@@ -110,10 +111,17 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate_form: str = "input",
         attention_forget_gate_conditioning: str = "query",
         attention_forget_gate_rate_activation: str = "softplus",
+        attention_blocked_implementation: str = "scan",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {positional_encoding}")
+        # The blocked backend's execution: the historical scan or causal strips (backends.reference).
+        if attention_blocked_implementation not in ("scan", "strips"):
+            raise ValueError(f"Unknown blocked attention implementation: {attention_blocked_implementation}")
+        if attention_blocked_implementation == "strips" and positional_encoding == "path":
+            raise ValueError("Causal strips run RoPE or position-free attention; PaTH has its own blocked code")
+        self.attention_blocked_implementation = attention_blocked_implementation
         if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
             raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
         self.positional_encoding = positional_encoding
@@ -524,6 +532,7 @@ class MultiHeadAttention(nnx.Module):
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
+            blocked_implementation=self.attention_blocked_implementation,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
         if return_diagnostics and log_alpha is not None:

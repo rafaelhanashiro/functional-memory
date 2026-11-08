@@ -268,6 +268,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with
   `fused` requires `--allow-triton-attention`. Historical recipes and resumptions keep
   their backend.
+- New dot-product attention experiments whose attention trains on the blocked backend
+  (RoPE or no positional encoding; PaTH, GDN and GLA keep their own code) use its causal
+  strips (`model.attention_blocked_implementation: strips`: the scan's arithmetic over
+  causal 512-query strips, with FP32 dK/dV sums) unless the user explicitly requests the
+  scan; do not inherit `scan` when copying a recipe. `scaffolds.records create` fills it in
+  for recipes on the blocked or auto backend, and fresh allocation of such a recipe with
+  `scan` requires `--allow-scan-blocked-attention`. Evaluation diagnostics and kernel
+  qualification keep using the scan. Historical recipes and resumptions keep their
+  implementation.
 - New unnormalized attention experiments use per-head RMSNorm output scaling
   (`model.attention_output_scaling: head_rms_norm`) unless the user explicitly requests
   otherwise; it improved every unnormalized kernel tested

@@ -92,6 +92,9 @@ SHAPE_KEYS = {"model.num_layers", "model.hidden_size", "model.num_heads", "model
 # then means the value below.
 LOCATIONS = {"data.train_manifest", "data.eval_manifest", "train.checkpoint_dir", "train.workdir",
              "train.wandb_group", "train.wandb_run_name"}
+# Execution, not science: the blocked backend's historical scan and its causal strips (which new
+# runs there use) evaluate the same arithmetic, and other backends ignore the setting.
+EXECUTION = {"model.attention_blocked_implementation"}
 ABSENT = {
     "continuation.new_parameter_learning_rate": None, "continuation.parent_checkpoint": "",
     "continuation.parent_checkpoint_sha256": "", "continuation.parent_config": "",
@@ -146,9 +149,9 @@ def _flatten(tree: dict, prefix: str = "") -> dict:
 
 
 def _recipe(config: dict) -> dict:
-    """A recipe's settings by dotted key, with absent keys filled and locations dropped."""
+    """A recipe's settings by dotted key, with absent keys filled and locations and execution dropped."""
     recipe = {**ABSENT, **_flatten(config)}
-    return {key: value for key, value in recipe.items() if key not in LOCATIONS}
+    return {key: value for key, value in recipe.items() if key not in LOCATIONS | EXECUTION}
 
 
 def _check_shape(entry: dict, config: dict, settings: dict) -> None:

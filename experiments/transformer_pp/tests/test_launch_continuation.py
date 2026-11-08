@@ -18,12 +18,27 @@ def test_preserved_recipe_keeps_learned_model_and_uses_constant_rate(conditionin
     result = recipes(source, {"parent_step": 7500}, conditioning=conditioning, preserve_all_parameters=True)
     assert set(result) == {role}
     child = result[role]
-    assert child["model"] == source["model"]
+    # An unset backend is auto, which can resolve to blocked: the copy trains on its causal strips.
+    assert child["model"] == {**source["model"], "attention_blocked_implementation": "strips"}
     assert child["data"] == source["data"]
     assert child["optim"]["learning_rate"] == child["optim"]["min_learning_rate"] == 1e-4
     assert child["optim"]["warmup_steps"] == 0 and child["optim"]["total_steps"] == 9500
     assert child["continuation"]["preserve_all_parameters"] is True
     assert child["continuation"]["new_parameter_learning_rate"] is None
+
+
+@pytest.mark.parametrize("backend,implementation", [("mosaic", None), ("blocked", "strips"), ("auto", "strips")])
+def test_preserved_recipe_adopts_the_blocked_strips_where_it_can_train_on_them(backend, implementation):
+    """As ``scaffolds.records create`` would write them: a copied scan is not inherited."""
+    source = {"model": {"attention_degree": 4, "attention_coefficients": "learned", "attention_backend": backend,
+                        "attention_coefficient_conditioning": "query", "attention_coefficient_kernel_weight_decay": True,
+                        **({"attention_blocked_implementation": "scan"} if backend == "blocked" else {})},
+              "data": {"batch_size": 256}, "train": {}, "optim": {"weight_decay": .1}}
+    child = recipes(source, {"parent_step": 7500}, conditioning="query", preserve_all_parameters=True)
+    model = child["query_decay_self"]["model"]
+    assert model.get("attention_blocked_implementation") == implementation
+    assert {key: value for key, value in model.items() if key != "attention_blocked_implementation"} == {
+        key: value for key, value in source["model"].items() if key != "attention_blocked_implementation"}
 
 
 def test_matched_pair_preserves_parent_science_except_new_coefficients():
@@ -87,7 +102,7 @@ def test_query_pair_matches_canonical_m4_initialization_and_training():
     control, query = pair["fixed_taylor"], pair["learned_query"]
     assert control["model"] == {**source["model"], "qk_norm_token_scale": "none",
                                 "qk_norm_token_scale_kernel_weight_decay": False,
-                                "attention_forget_gate": False}
+                                "attention_forget_gate": False, "attention_blocked_implementation": "strips"}
     assert query["model"]["attention_degree"] == 4
     assert query["model"]["attention_coefficient_conditioning"] == "query"
     assert query["model"]["attention_coefficient_activation"] == "tanh"
@@ -128,7 +143,12 @@ def test_decay_variants_preserve_the_matched_control_and_training(conditioning, 
     assert branch["optim"] == control["optim"]
     assert branch["continuation"] == {**parent, "new_parameter_learning_rate": 0.001}
     assert branch["model"]["qk_norm_head_scale"] is True
+    # Only the branch trains on the blocked backend, so only it adopts the causal strips.
+    assert "attention_blocked_implementation" not in control["model"]
+    assert branch["model"].get("attention_blocked_implementation") == (
+        "strips" if conditioning == "forget_gate" else None)
     if conditioning == "forget_gate":
+        assert branch["model"]["attention_backend"] == "blocked"
         assert branch["model"]["positional_encoding"] == "none"
         assert branch["model"]["attention_forget_gate"] is True
         assert branch["model"]["attention_coefficient_kernel_weight_decay"] is True

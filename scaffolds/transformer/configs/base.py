@@ -51,6 +51,13 @@ class ModelConfig:
     tie_embeddings: bool = False
     remat: bool = False
     attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
+    # How the blocked backend runs dot-product attention with RoPE or no positional encoding.
+    # "scan" (historical) evaluates 128-query blocks against every key, summing dK/dV across
+    # blocks in the input dtype; "strips" evaluates the same arithmetic over causal 512-query
+    # strips with FP32 dK/dV sums (attention/backends/reference.py). Other resolved backends
+    # ignore it. Fresh runs that can train on the blocked backend use strips
+    # (fresh_recipe_uses_blocked_strips).
+    attention_blocked_implementation: Literal["scan", "strips"] = "scan"
     attention_degree: int | None = None
     attention_normalization: bool = True
     # Unnormalized dot-product attention only: rescale each head's output
@@ -283,6 +290,12 @@ class ModelConfig:
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
+        if self.attention_blocked_implementation not in ("scan", "strips"):
+            raise ValueError(f"Unknown blocked attention implementation: {self.attention_blocked_implementation}")
+        if self.attention_blocked_implementation == "strips" and (
+                self.attention_mechanism != "dot_product" or self.positional_encoding == "path"):
+            raise ValueError("model.attention_blocked_implementation strips applies to dot-product attention with RoPE "
+                             "or no positional encoding; PaTH, GLA, and Gated DeltaNet have their own blocked code")
         for name in ("path_w_rank", "path_conv_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -727,6 +740,18 @@ class Config:
     optim: OptimConfig = field(default_factory=OptimConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     continuation: ContinuationConfig = field(default_factory=ContinuationConfig)
+
+
+def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
+    """Whether a fresh recipe's ``model`` mapping trains on the blocked backend's causal strips
+    unless it says otherwise: dot-product attention with RoPE or no positional encoding whose
+    backend is blocked, or auto (which resolves to blocked where no kernel applies). Other
+    backends never run the field, so their recipes keep its inert default, scan. Allocation
+    (scaffolds.records create, and launchers that allocate copied recipes) applies this rule.
+    """
+    return (model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("positional_encoding", "rope") != "path"
+            and model.get("attention_backend", "auto") in ("blocked", "auto"))
 
 
 def validate_config(config: Config) -> None:

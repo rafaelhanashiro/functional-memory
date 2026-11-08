@@ -78,6 +78,10 @@ def test_variant_follows_the_recipe():
 def test_pairs_differ_only_by_the_shape_rules():
     configs = _configs()
     check_recipes(SELECTION["runs"], configs, SELECTION["settings"])
+    # The blocked backend's implementation is execution: a FoX run on its causal strips still pairs.
+    executed = copy.deepcopy(configs)
+    executed["r3d14b598d88f"]["model"]["attention_blocked_implementation"] = "strips"
+    check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
     # (run, section, key, value, expected message): settings outside the shape rules.
     mutations = [
         ("rf81c96f76a1d", "optim", "learning_rate", 0.002, "optim.learning_rate"),
