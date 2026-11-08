@@ -2681,6 +2681,26 @@ Loss (10.5163 and 10.5100) and gradient norm (3.0317 and 2.0181) agree between t
 implementations to five digits. H100 SXM (`dogo`) was fully allocated; the PCIe card is about
 1.5× slower in absolute terms, not in the ratio.
 
+### Quartic B-spline score function
+
+`model.attention_kernel_basis: bspline` (scaffold README, "B-spline score function") runs in
+the strips' shared per-block arithmetic. Qualified on 2026-11-08 at commit `927995ed` on one
+B300 (`akita`, job 239705) and one H100 SXM (`dogo`, job 239706) with the same script: the
+spline GPU precision tests (`test_spline_attention.py -m gpu`, static and query) and
+`test_blocked_strips_h100.py` passed on both, and the kernel stage puts static and query
+spline outputs and gradients at the BF16 floor (1.007-1.008×; the scan's block sums give
+2.7×). Full-model micro-steps on the strips, micro-batch 16:
+
+| Recipe | B300 s/update | H100 SXM s/update | Peak GB |
+| --- | ---: | ---: | ---: |
+| static quartic spline (`r7e4193fcafbd`) | 4.53 | 8.56 | 30.5 |
+| query quartic spline + W decay (`rf303a5f94487`) | 5.16 | 9.86 | 32.3-32.5 |
+| static m = 4 polynomial on strips (`r4339a245820e`) | 2.75 | 5.42 | 29.0 |
+| query m = 4 polynomial on strips (`rca97cc9db8f2`) | 3.32 | 6.57 | 31.0 |
+
+Compilation takes 1.4-3.1 minutes. Initial losses agree with the polynomial controls' to five
+digits (both start at T4).
+
 ```bash
 # One GPU per type, from the worktree root (validation files are outside the frozen check):
 sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01:00:00 \
