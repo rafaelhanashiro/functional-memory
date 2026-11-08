@@ -14,6 +14,9 @@ from scaffolds.transformer.attention.qk_norm import (
     TOKEN_SCALE_PARAMETERS, cosine_score_operands, rms_score_operands, scale_rms_queries, token_log_scale,
 )
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
+from scaffolds.transformer.attention.spline import (
+    QUERY_PARAMETERS as SPLINE_QUERY_PARAMETERS, STATIC_PARAMETERS as SPLINE_STATIC_PARAMETERS, validate_knots,
+)
 from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.training import telemetry
@@ -72,6 +75,8 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_forget_gate_conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
         attention_forget_gate_rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
         attention_blocked_implementation=getattr(config, "attention_blocked_implementation", "scan"),
+        attention_kernel_basis=getattr(config, "attention_kernel_basis", "polynomial"),
+        attention_spline_knots=getattr(config, "attention_spline_knots", None),
         rngs=rngs,
     )
 
@@ -112,6 +117,8 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate_conditioning: str = "query",
         attention_forget_gate_rate_activation: str = "softplus",
         attention_blocked_implementation: str = "scan",
+        attention_kernel_basis: str = "polynomial",
+        attention_spline_knots: tuple[float, ...] | None = None,
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -287,6 +294,25 @@ class MultiHeadAttention(nnx.Module):
         if attention_coefficient_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient scale: {attention_coefficient_scale}")
         self.attention_coefficient_scale = attention_coefficient_scale
+        # The score function's basis: monomials (historical) or a fixed B-spline basis (attention/spline.py).
+        if attention_kernel_basis not in ("polynomial", "bspline"):
+            raise ValueError(f"Unknown attention kernel basis: {attention_kernel_basis}")
+        if attention_kernel_basis == "bspline":
+            attention_spline_knots = validate_knots(attention_spline_knots, attention_degree)
+            if (backend != "blocked" or attention_normalization or positional_encoding == "path"
+                    or quadratic_mode != "fixed" or attention_coefficient_conditioning not in ("static", "query")
+                    or (attention_coefficient_conditioning == "query") != (attention_coefficient_activation == "tanh")
+                    or attention_coefficient_readout != "diagonal" or attention_forget_gate
+                    or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None
+                    or attention_coefficient_scale != "none" or attention_coefficient_amplitude_scale != "none"
+                    or attention_coefficient_orders is not None):
+                raise ValueError("B-spline attention requires unnormalized static or diagonal tanh-query coefficients "
+                                 "on the blocked backend, without a forget gate, PaTH, fixed coefficients, selected "
+                                 "orders, or factorial scales")
+        elif attention_spline_knots is not None:
+            raise ValueError("Spline knots apply to the bspline kernel basis only")
+        self.attention_kernel_basis = attention_kernel_basis
+        self.attention_spline_knots = attention_spline_knots
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -332,6 +358,9 @@ class MultiHeadAttention(nnx.Module):
         batch, seq_len, _ = x.shape
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
+        spline = self.attention_kernel_basis == "bspline"
+        if spline and (query_coefficients is not None or return_coefficients or key_factors is not None):
+            raise ValueError("Coefficient override and capture apply to monomial coefficients, not a B-spline basis")
         if query_coefficients is not None or return_coefficients:
             if (self.attention_coefficient_conditioning not in ("static", "query")
                     or self.attention_normalization or self.attention_degree is None
@@ -373,6 +402,13 @@ class MultiHeadAttention(nnx.Module):
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
+        spline_parameters = {name: parameters.pop(name, None)
+                             for name in (*SPLINE_STATIC_PARAMETERS, *SPLINE_QUERY_PARAMETERS)}
+        spline_names = (() if not spline else SPLINE_QUERY_PARAMETERS
+                        if self.attention_coefficient_conditioning == "query" else SPLINE_STATIC_PARAMETERS)
+        if any(spline_parameters[name] is None for name in spline_names) or any(
+                value is not None for name, value in spline_parameters.items() if name not in spline_names):
+            raise ValueError("B-spline attention requires exactly its model-owned coefficient parameters")
         if self.attention_coefficient_orders is not None and self.attention_coefficient_conditioning == "static":
             from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
 
@@ -387,7 +423,22 @@ class MultiHeadAttention(nnx.Module):
                 query_bias = factorial_scale(query_bias, self.attention_coefficient_orders)
             else:
                 parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
-        if self.attention_coefficient_conditioning in ("query", "query_key"):
+        if spline:
+            # theta per layer/head, or theta_j(x_t) = b_j + a_j tanh(w_j^T x_t) from the monomial
+            # query generator's own FP32 projection; the kernel is attention/spline.py's.
+            if any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing,
+                                                   query_tanh_bias, key_kernel, key_amplitude)):
+                raise ValueError("B-spline attention cannot receive monomial coefficient parameters")
+            parameters["spline_knots"] = self.attention_spline_knots
+            if self.attention_coefficient_conditioning == "query":
+                from scaffolds.transformer.attention.input_dependent import project_coefficients
+
+                parameters["query_spline_coefficients"] = project_coefficients(
+                    x, spline_parameters["query_spline_kernel"], spline_parameters["query_spline_bias"],
+                    amplitude=spline_parameters["query_spline_amplitude"], activation="tanh")
+            else:
+                parameters["spline_coefficients"] = spline_parameters["spline_coefficients"]
+        elif self.attention_coefficient_conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
 
             if query_kernel is None or (query_bias is None) != (
