@@ -910,3 +910,35 @@ and verifies the full original query-control initialization fingerprint.
 Production begins only after CPU/GPU correctness, initialization, the full-recipe
 pilot and checkpoint-resume checks pass. The shared launcher records the allocated
 GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
+
+### Degree eight
+
+The [degree-eight pair](results/exploratory/query_distance_decay/README.md#degree-eight)
+trains the shared query gate (`r9320e5cd3071`: the recipe of `r3e26412b2811` at degree
+eight) and per-order query gates (`r20fe6fe864bc`: `r507193d47450` at degree eight) on the
+Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour `standard`
+or `long` allocation; acceptance's pilot measures the update time and stops before
+training if the run would not fit. Both runs accept only H100: B300's per-order kernels
+hold at most degree seven at this shape, and its decay kernels are slower. These jobs have
+no scheduling dependencies on each other.
+
+`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
+eight on the Mosaic backend, and requires every initial parameter to equal those of
+cumulative FoX `r9353f554b917` at the same seed. `per_order_decay_acceptance` pins
+`r9320e5cd3071` as the per-order run's shared-gate control, collapses the nine duplicated
+order axes, and verifies the control's initialization fingerprint.
+
+From the isolated `claude/per-order-m8` worktree, after committing its frozen execution set:
+
+```bash
+submit() {  # run ID, acceptance adapter
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit r9320e5cd3071 query_distance_degree_acceptance
+submit r20fe6fe864bc per_order_decay_acceptance
+```

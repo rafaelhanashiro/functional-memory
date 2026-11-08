@@ -155,7 +155,11 @@ same causal tiles. The dQ and dK passes accumulate \(dS = G \sum_r r\,c_r D_r s^
 gradient at 2,048 tokens against FP64 autodiff of the explicit all-pairs formula. It also
 checks that duplicated orders reproduce the shared-gate kernels, zero-key recovery of the
 per-order query gates, invalid-gate poisoning, the exact unit diagonal, and a two-layer model
-against the FP32 blocked model. These tests pass on H100 (`dogo`) and B300 (`akita`).
+against the FP32 blocked model. Its degree-four cases pass on H100 (`dogo`) and B300 (`akita`).
+H100's kernels stage the per-order vectors with each tile, so their shared memory does not grow
+with the sequence and fits every degree to 12. B300's forward, dQ and dK/dV keep every query's
+and key's per-order vectors for the whole sequence; at \(d_K=64\) and 2,048 tokens they hold
+degree 7 (query) and 6 (query–key) and refuse larger degrees before building a kernel.
 
 Throughput ([per_order_throughput.json](per_order_throughput.json), commit `b38c116f`),
 measured as above:
@@ -201,7 +205,7 @@ dV 3.11 and 6.14 ms. The shared endpoint gate's dQ pass also takes 5.26 ms on B3
 
 ## Results
 
-The selection pins all six runs explicitly. Best PPL is the lowest validation PPL
+The selection pins all eight runs explicitly. Best PPL is the lowest validation PPL
 over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
@@ -213,12 +217,15 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
 | Per-order query distance + W decay | `r507193d47450` | running | — | — | — |
 | Per-order query-key distance + W decay | `r03be769d2069` | running | — | — | — |
+| Query-dependent distance decay + W decay, m = 8 | `r9320e5cd3071` | planned | — | — | — |
+| Per-order query distance + W decay, m = 8 | `r20fe6fe864bc` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 
 Endpoint query–key and bounded-rate variants compare against the query-dependent control.
 Each per-order variant compares against its corresponding shared-gate control.
+The degree-eight shared gate compares against the degree-four query-dependent run.
 Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
 <!-- END GENERATED RESULTS -->
 
@@ -242,7 +249,8 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
 The four completed runs differ in their decay rule, without separately tuned optimization.
-The two per-order extensions below increase gate capacity and are still pending. The two
+The per-order extensions below increase gate capacity; they and the degree-eight pair are
+still pending. The two
 ablations run on the Mosaic kernels, the two earlier runs on the blocked reference.
 Their only numerical difference is BF16 rounding of attention weights and score
 gradients (see [Attention kernels](#attention-kernels)). Both ablations were preempted
@@ -283,10 +291,36 @@ Rates and half-lives are retained per order in the run's diagnostics. These
 runs test whether different orders benefit from different learned ranges.
 They do not test cumulative per-order forgetting or a larger polynomial degree.
 
+### Degree eight
+
+Added 2026-11-08. The query-gate comparison at degree eight, where the per-order run
+gives each of nine orders its own gate:
+
+| Variant | Run | Recipe |
+| --- | --- | --- |
+| Shared query gate | `r9320e5cd3071` | `r3e26412b2811` at degree eight |
+| Per-order query gates | `r20fe6fe864bc` | `r9320e5cd3071` with per-order gates (`r507193d47450` at degree eight) |
+
+Everything else is the degree-four recipe: NoPE, query-only tanh coefficients with
+factorial scaling, WD 0.1 on W and the gate projections, QK RMSNorm with learned per-head
+scale, output head RMSNorm, 2,048 tokens, batch 256, seed 42, and 7,570 updates. The
+shared-gate run starts from exactly the parameters of cumulative FoX at degree eight
+(`r9353f554b917`, the same gate parameters): 200,339,386. The per-order run copies that
+gate to all nine orders (201,848,026 parameters). The shared-gate run compares against
+the degree-four query-dependent run, and the per-order run against the shared-gate run.
+
+Both use the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) on one H100
+each. B300 cannot hold the per-order gates at degree eight (see [Attention kernels](#attention-kernels)),
+and its decay kernels are slower than either H100's. Degree-eight GPU qualification:
+`test_per_order_decay.py` checks the per-order output and every gradient against FP64 and
+duplicated orders against the shared-gate kernels; `test_endpoint_decay.py` checks the
+shared query gate against FP64.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
-FoX, and the bounded rate changes nothing. Evaluate the two per-order extensions against their matched shared gates.
+FoX, and the bounded rate changes nothing. Evaluate the per-order extensions against their matched shared
+gates, at degree four and degree eight.
 Then decide whether to run additional seeds or close the topic by discarding it
 or promoting it as its own collection.
 
