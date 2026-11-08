@@ -51,6 +51,13 @@ class ModelConfig:
     tie_embeddings: bool = False
     remat: bool = False
     attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
+    # How the blocked backend runs dot-product attention with RoPE or no positional encoding.
+    # "scan" (historical) evaluates 128-query blocks against every key, summing dK/dV across
+    # blocks in the input dtype; "strips" evaluates the same arithmetic over causal 512-query
+    # strips with FP32 dK/dV sums (attention/backends/reference.py). Other resolved backends
+    # ignore it. Fresh runs that can train on the blocked backend use strips
+    # (fresh_recipe_uses_blocked_strips).
+    attention_blocked_implementation: Literal["scan", "strips"] = "scan"
     attention_degree: int | None = None
     attention_normalization: bool = True
     # Unnormalized dot-product attention only: rescale each head's output
@@ -106,8 +113,9 @@ class ModelConfig:
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
-    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned.
-    attention_forget_gate_form: Literal["input", "constant"] = "input"
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. "sigmoid": the Forgetting
+    # Transformer's original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
+    attention_forget_gate_form: Literal["input", "constant", "sigmoid"] = "input"
     # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
     attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
@@ -289,6 +297,12 @@ class ModelConfig:
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
+        if self.attention_blocked_implementation not in ("scan", "strips"):
+            raise ValueError(f"Unknown blocked attention implementation: {self.attention_blocked_implementation}")
+        if self.attention_blocked_implementation == "strips" and (
+                self.attention_mechanism != "dot_product" or self.positional_encoding == "path"):
+            raise ValueError("model.attention_blocked_implementation strips applies to dot-product attention with RoPE "
+                             "or no positional encoding; PaTH, GLA, and Gated DeltaNet have their own blocked code")
         for name in ("path_w_rank", "path_conv_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
@@ -467,7 +481,7 @@ class ModelConfig:
             raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
         if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
             raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
-        if self.attention_forget_gate_form not in ("input", "constant"):
+        if self.attention_forget_gate_form not in ("input", "constant", "sigmoid"):
             raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
         if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
             raise ValueError("A forget gate form requires the forget gate")
@@ -478,7 +492,11 @@ class ModelConfig:
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                       and activation != "identity")
-        if self.attention_forget_gate_form != "input" and (
+        if self.attention_forget_gate_form == "sigmoid" and (
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
+            raise ValueError("The sigmoid forget gate form is qualified as cumulative decay with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_form == "constant" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
                 or not polynomial):
             raise ValueError("The constant forget gate form is qualified only as cumulative decay of nonlinear "
@@ -739,6 +757,18 @@ class Config:
     optim: OptimConfig = field(default_factory=OptimConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
     continuation: ContinuationConfig = field(default_factory=ContinuationConfig)
+
+
+def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
+    """Whether a fresh recipe's ``model`` mapping trains on the blocked backend's causal strips
+    unless it says otherwise: dot-product attention with RoPE or no positional encoding whose
+    backend is blocked, or auto (which resolves to blocked where no kernel applies). Other
+    backends never run the field, so their recipes keep its inert default, scan. Allocation
+    (scaffolds.records create, and launchers that allocate copied recipes) applies this rule.
+    """
+    return (model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("positional_encoding", "rope") != "path"
+            and model.get("attention_backend", "auto") in ("blocked", "auto"))
 
 
 def validate_config(config: Config) -> None:

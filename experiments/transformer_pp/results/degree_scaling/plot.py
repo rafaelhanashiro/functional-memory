@@ -52,6 +52,9 @@ CANONICAL_QK = {"qk_norm": True, "qk_norm_type": "rms_norm", "qk_norm_sharing": 
 # lack its key, which then means the value below.
 LOCATIONS = {"data.train_manifest", "data.eval_manifest", "train.checkpoint_dir", "train.workdir",
              "train.wandb_group", "train.wandb_run_name"}
+# Execution, not science: the blocked backend's historical scan and its causal strips (which new
+# runs there use) evaluate the same arithmetic, and other backends ignore the setting.
+EXECUTION = {"model.attention_blocked_implementation"}
 ABSENT = {
     "continuation.new_parameter_learning_rate": None, "continuation.parent_checkpoint": "",
     "continuation.parent_checkpoint_sha256": "", "continuation.parent_config": "",
@@ -59,6 +62,9 @@ ABSENT = {
     "continuation.parent_step": 0, "model.attention_forget_gate": False,
     "model.attention_coefficient_kernel_weight_decay": False, "model.qk_norm_token_scale": "none",
     "model.qk_norm_token_scale_kernel_weight_decay": False, "optim.query_coefficient_learning_rate_scale": 1.0,
+    "continuation.preserve_all_parameters": False, "model.attention_coefficient_orders": None,
+    "model.attention_forget_gate_form": "input", "model.attention_forget_gate_mode": "cumulative",
+    "model.attention_forget_gate_conditioning": "query", "model.attention_forget_gate_rate_activation": "softplus",
 }
 # Within a family only the degree changes, with the Hermite coefficients it determines;
 # between families the coefficient parameterization changes too, and the references also
@@ -140,9 +146,9 @@ def _flatten(tree: dict, prefix: str = "") -> dict:
 
 
 def _recipe(config: dict) -> dict:
-    """A recipe's settings by dotted key, with absent keys filled and locations dropped."""
+    """A recipe's settings by dotted key, with absent keys filled and locations and execution dropped."""
     recipe = {**ABSENT, **_flatten(config)}
-    return {key: value for key, value in recipe.items() if key not in LOCATIONS}
+    return {key: value for key, value in recipe.items() if key not in LOCATIONS | EXECUTION}
 
 
 def _compare(recipes: dict, base: str, run: str, allowed: set) -> None:

@@ -1,9 +1,10 @@
 # Transformer++
 
 How do attention variants perform under the Transformer++ recipe, and how do their
-comparisons change with the training-token budget? The budget is a per-run setting:
-the reference is 1× Chinchilla (about 4B tokens), and a run at another budget scales its
-schedule with the data: updates, warmup and validation cadence.
+comparisons change with the training-token budget and the model shape? Both are per-run
+settings: the reference is the 15-layer width-896 model at 1× Chinchilla (about 4B tokens),
+and [the recipe rules](#model-shapes-and-token-budgets) derive every other run's batch and
+schedule.
 This self-contained study owns its [recipe](recipe.yaml), [run index](runs.csv),
 [membership](sweep.yaml), and [results](results/README.md), including exploratory
 diagnostics. Reusable model, attention, data, optimizer, and runtime code live in
@@ -34,7 +35,8 @@ retain the established recipe, including its previously selected learning rate.
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
-and FFN down projections additionally scale by 1/sqrt(30). AdamW uses betas
+and FFN down projections additionally scale by 1/sqrt(2 × layers), 1/sqrt(30) at the
+reference's 15 layers. AdamW uses betas
 (0.9, 0.95), epsilon 1e-8, global gradient clipping at 1, and weight decay 0.1,
 excluding embeddings, normalization gains, biases, and attention coefficients.
 The untied output head decays.
@@ -46,18 +48,55 @@ updates and cosine decay to 0.0001 over the run. Validation uses 9,961,472 token
 1,500, then every 500 and at the final update. Individual diagnostic recipes
 specify their own fitting objective, trainable parameters, and stopping rule.
 
-### Token budgets
+### Model shapes and token budgets
 
-A run at another budget is the data-scaled reference: it copies its reference recipe
-and multiplies `optim.total_steps` (and so the cosine horizon), `optim.warmup_steps`
-(6.01% of the run), and the validation cadence (`train.eval_early_every`,
-`train.eval_early_until`, `train.eval_every`) by the budget's factor, rounding warmup
-to whole updates. Peak and floor learning rate, weight decay, batch, data order, seed,
-and checkpoint interval stay the same.
-With the same shuffle seed, a longer run first sees exactly the tokens of a
-shorter one. The 12.0B-token training set covers up to about 22,900 updates
-without repeating data. `runs.csv` records each run's `training_steps`; compare
-runs at the same budget, or the same variant across budgets.
+The study fixes the recipe's rules, not their values. Model shape and token budget are
+per-run settings; [`derive_recipe.py`](derive_recipe.py) derives a run's recipe from a
+partner run by these rules and changes nothing else:
+
+| Setting | Rule |
+| --- | --- |
+| Heads | width / value head width (64); key/value heads equal query heads |
+| SwiGLU width | 18/7 × width, rounded to a multiple of 64 |
+| 1× Chinchilla | 20 prediction tokens per parameter of the normalized-softmax model (64-wide heads) at that depth and width, held for every variant at the shape |
+| Batch | a shape change scales the tokens per update (524,288 at the reference) by 2^k, with k the nearest integer to log2(the shape's 1× parameters / 198,440,146), which holds the update count to within that rounding; a budget change keeps the partner's batch |
+| Updates | budget × 1× tokens / tokens per update, rounded; the budget defaults to the partner's |
+| Warmup | 455/7,570 of the updates (about 6.01%), rounded half up |
+| Validation | the reference's 9,961,472 validation tokens (4,864 sequences of 2,049), in whole training batches; cadence × budget |
+| Learning rate | the partner's peak (0.001 unless a run sets another), floor 0.1 × peak; weight decay, betas and clipping unchanged |
+| Initialization | the reference rules; a nonzero query-coefficient projection std keeps its multiple of 1/sqrt(width) |
+
+| Shape | Layers × width | Heads | SwiGLU | 1× parameters | Batch | 1× updates | Warmup | `eval_batches` |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Reference | 15 × 896 | 14 | 2,304 | 198,440,146 | 256 | 7,570 | 455 | 19 |
+| 12-layer width 640 | 12 × 640 | 10 | 1,664 | 98,977,016 | 128 | 7,551 | 454 | 38 |
+
+At the 12-layer shape the input and output embeddings are 41% of the parameters (29% at
+the reference), so that step is 0.50× in total parameters but 0.41× without embeddings; with
+half the tokens it is about 0.25× in training compute. Because validation runs in whole training batches, the rules reach shapes up to
+batch 256 at context 2,048 (about 1.4× the reference's parameters); a larger shape needs
+the validation batch decoupled from the training batch first. Derive and allocate a recipe
+from the worktree root:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <run_id> --layers 12 --width 640 --output /tmp/<label>.yaml  # add --budget 2.5 for 2.5×
+scaffolds/transformer/.venv/bin/python -m scaffolds.records create \
+  --study experiments/transformer_pp --config /tmp/<label>.yaml --label <label>
+```
+
+A run at another budget is the data-scaled run at its shape: it keeps the partner's batch
+and recomputes `optim.total_steps` (and so the cosine horizon) from its tokens, 18,925 at
+2.5× for the reference and 18,878 for the 12-layer shape; `optim.warmup_steps` and the
+validation cadence (`train.eval_early_every`, `train.eval_early_until`, `train.eval_every`)
+scale with it. Peak and floor learning rate, weight decay, batch, data order, seed, and
+checkpoint interval stay the same.
+Every pretraining run reads the same sequence stream (data order 0) from its start, so a run
+that reads fewer sequences sees a prefix of a longer run's tokens; a continuation resumes the
+stream at its parent's position. The 12.0B-token training set covers up to about 22,900 updates at
+batch 256 (45,800 at 128) without repeating data. `runs.csv` records each run's shape,
+batch, peak learning rate, and `training_steps`; compare runs at the same shape and
+budget, or the same variant across shapes or budgets.
 
 | Budget | Updates | Warmup | Validation | Prediction tokens |
 | --- | ---: | ---: | --- | ---: |
@@ -125,10 +164,45 @@ Regenerate the reference image from the current recipe with:
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 ```
 
+## Model scale
+
+The [model scale collection](results/model_scale/README.md) repeats seven attention
+variants at the 12-layer width-640 shape. Each recipe is its reference-shape partner's,
+derived by `derive_recipe.py --layers 12 --width 640` and allocated with
+`scaffolds.records create`:
+
+| Run | Label | Partner | Backend |
+| --- | --- | --- | --- |
+| `rf81c96f76a1d` | softmax-l12-d640 | `r9040f12f3d80` | cuDNN |
+| `r3e2fa2532c23` | exp-l12-d640 | `r6a76e7fbde45` | fused |
+| `r2c432bd3a2a4` | fixed-m4-l12-d640 | `r816ab0fbe119` | Mosaic |
+| `r94e0f2b8cff9` | static-m4-l12-d640 | `r4339a245820e` | Mosaic |
+| `r4cce9a985a70` | query-m4-w-decay-l12-d640 | `rca97cc9db8f2` | Mosaic |
+| `r3d14b598d88f` | query-m4-forget-gate-no-rope-w-decay-l12-d640 | `r4a80e28ce0a7` | blocked |
+| `ra5dfd978d3bd` | exp-forget-gate-no-rope-l12-d640 | `r183f08346ddc` | blocked |
+
+Home cluster: **Kennel**. All seven are complete; each record holds its launch commit.
+After committing the inputs, submit each on one B300 or H100, choosing the partition
+(`standard` or `long`) from the live allowance:
+
+```bash
+for run in rf81c96f76a1d r3e2fa2532c23 r2c432bd3a2a4 r94e0f2b8cff9 r4cce9a985a70 r3d14b598d88f ra5dfd978d3bd; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+Each record's `submission` holds its exact submission, and its `attempts` the partition and
+node of every allocation.
+
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7` for four coefficient families of
+perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7, 8` for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
@@ -181,6 +255,24 @@ for RUN in ra7f2fda1c792 rddf0b0173f42 r5c691128699f rf9099d70ab3a; do
 done
 ```
 
+At `m = 8`, fixed Taylor `ra7ee8a4b2544` and fixed Hermite `ra040de24096c` copy their
+family's `m = 6` recipe with degree 8 (and, for Hermite, the degree-8 coefficients). They
+are Kennel's, from branch `claude/degree-scaling-m8`. Two cells reuse runs with the
+`m = 6` recipe at degree 8: query is the key-width run `r25fffc16c2f3`
+(`query-m8-dk64-w-decay`), and static is `r9c69dd7cfc8d` (`static-m8-head-scale`, branch
+`codex/static-m8-1x`). On Kennel, one H100 each, excluding `akita`:
+
+```bash
+for RUN in ra7ee8a4b2544 ra040de24096c; do
+  sbatch --parsable --partition=standard,long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name=$RUN \
+    --output=experiments/transformer_pp/runs/$RUN/training.log \
+    --error=experiments/transformer_pp/runs/$RUN/training.log \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    experiments/transformer_pp/runs/$RUN/config.yaml "$(git rev-parse HEAD)" 1 H100
+done
+```
+
 ## Query coefficients across key width and degree
 
 The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
@@ -223,14 +315,37 @@ decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns th
 
 ## Exploratory diagnostics
 
+The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
+fixed knots from the ordinary static and query models' scores at initialization
+and retained checkpoints. It records forward-only diagnostics on training examples
+before a proposed static/query spline comparison without FoX; its README gives
+the exact one-GPU Kennel launch command.
+
 ### Even polynomial powers
 
 The [even-powers topic](results/exploratory/even_powers/README.md) tests static
 and query-conditioned coefficients using only orders 0, 2, 4, 6, and 8 at the
-1× Chinchilla budget (7,570 updates). Static compares with full degree four;
-query with projection weight decay compares with full degrees four and eight.
-Both new runs are hosted on Kennel. The topic records the exact controls and
-launch command.
+1× Chinchilla budget (7,570 updates). Both families compare with full degrees
+four and eight. The full degree-eight static control `r9c69dd7cfc8d` is complete;
+it matches the even-only static recipe `r45831d718944` with
+`attention_coefficient_orders: null`, learning all nine coefficients from scratch.
+These runs are hosted on Kennel. The topic records the explicit controls and
+findings.
+
+Launch the full static control from `worktrees/static-m8-1x`, branch
+`codex/static-m8-1x`, after committing its recipe and syncing both locked CUDA
+environments. It uses one H100 GPU with the same global batch of 256,
+2,048-token context, seed 42, and `transformer_truncated_reference` initialization:
+
+```bash
+sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba \
+  --job-name=r9c69dd7cfc8d \
+  --output=experiments/transformer_pp/runs/r9c69dd7cfc8d/training.log \
+  --error=experiments/transformer_pp/runs/r9c69dd7cfc8d/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml af919f3f4af1a3e647d267cf098d385bbb952941 1 H100
+```
 
 ### Per-order coefficient gates
 
@@ -657,6 +772,40 @@ done
 
 Each record's `submission` holds its exact (re)submission, and its `attempts` the partition
 and node of every allocation.
+
+## Original FoX sigmoid gate
+
+Three runs replace the Gated DeltaNet gate of the no-RoPE forget-gate runs with the
+Forgetting Transformer's own gate (`attention_forget_gate_form: sigmoid`):
+`log alpha_t = log sigmoid(x_t w_f + b_f)` per layer and head, with the paper's
+initialization `w_f ~ N(0, 0.02^2)` and `b_f = 0`; `w_f` takes weight decay and `b_f` does
+not. Everything else is copied from the source. The softmax run also drops QK
+normalization (`qk_norm: false`, plain scores), matching FoX (LLaMA); exp and query keep
+the canonical QK RMSNorm with a learned head scale and per-head output RMSNorm. See the
+[forget gate topic](results/exploratory/forget_gate/README.md).
+
+| Run | Label | Source | Changes from the source | Backend |
+| --- | --- | --- | --- | --- |
+| `reeb92d46a95d` | softmax-sigmoid-forget-gate-no-rope-plain-qk | `r5adc29a91e3b` | sigmoid gate, plain scores | blocked |
+| `rdd3e9cb3bb80` | exp-sigmoid-forget-gate-no-rope | `r183f08346ddc` | sigmoid gate | blocked |
+| `rfa9636279199` | query-m4-sigmoid-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | sigmoid gate | blocked |
+
+Home cluster: **Kennel**. Each record holds its launch commit, its exact `submission`, and
+the partition and node of every allocation. Submit each on one B300 or H100; the blocked
+softmax run's H100 pilot projects beyond a 24-hour allocation, so it runs on `long` with a
+48-hour limit:
+
+```bash
+for run in reeb92d46a95d rdd3e9cb3bb80 rfa9636279199; do
+  case $run in reeb92d46a95d) partition=long time=48:00:00 ;; *) partition=standard time=24:00:00 ;; esac
+  sbatch --parsable --partition=$partition --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=$time --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
 
 ## Context length
 

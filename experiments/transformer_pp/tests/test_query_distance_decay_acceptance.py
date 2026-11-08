@@ -45,6 +45,9 @@ def test_only_execution_paths_and_monitoring_labels_may_differ():
     config.train.wandb_dir = Path("/new/execution/wandb")
     config.train.wandb_mode = "disabled"
     adapter.check_recipe(config)
+    # New runs on the blocked backend train on its causal strips; the control used the scan.
+    config.model.attention_blocked_implementation = "strips"
+    adapter.check_recipe(config)
 
 
 @pytest.mark.parametrize(("section", "field", "value"), (

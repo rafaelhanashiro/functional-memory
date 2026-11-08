@@ -2412,10 +2412,10 @@ oracle rounded to BF16, the best a BF16 result can be.
   | query polynomial m = 4, unnormalized | 2.79x / 2.79x | 1.01x / 1.01x |
   | normalized learned polynomial m = 2 | 1.88x / 1.79x | 1.01x / 1.01x |
 
-  Output and dQ stay at 1.01x. These are the numerics of the 29 BF16 runs that trained on the
-  blocked backend through this function: in `attention_scaling`, the 12 normalized learned
-  m = 1-4 runs and 9 query or query-key coefficient runs; in Transformer++, 8 forget-gate
-  query m = 4 runs (one at 4,096 tokens, 32 blocks, not measured). PaTH, GDN and GLA have
+  Output and dQ stay at 1.01x. These are the numerics of every BF16 run trained on the
+  blocked scan: in `attention_scaling`, the normalized learned m = 1-4 and the query or
+  query-key coefficient runs; in Transformer++, every forget-gate run (softmax, exponential and
+  query polynomials; the 4,096-token runs have 32 blocks, not measured). PaTH, GDN and GLA have
   separate blocked code.
 - JAX's default precision runs FP32 x FP32 products as TF32 on H100: an FP32 matmul has
   2.9e-4 relative error (2.2e-7 at `HIGHEST`), and with FP32 inputs production and every
@@ -2657,4 +2657,59 @@ $PY -m scaffolds.transformer.validation.blocked_attention_benchmark model --outp
 # All tables of the records, including the 43 kernel variants:
 $PY -m scaffolds.transformer.validation.blocked_attention_benchmark summarize \
   --kernel-record kernel.json --model-record model.json --output summary.md
+```
+
+## Blocked causal strips
+
+`model.attention_blocked_implementation: strips` (scaffold README, "Blocked attention
+implementations") evaluates the blocked scan's own per-block arithmetic over causal 512-query
+strips with FP32 K/V cotangent sums: the `lean-f32up-skip-ckpt-b512` form above, generalized
+to every mechanism of `blocked_dot_product_attention` rather than hand-written per mechanism.
+The scan is unchanged (normalized jaxpr text identical to `bc3274e0` in 2,661 configurations).
+CPU checks: `tests/test_blocked_strips.py` (float64 equivalence with the scan's code across 25
+argument families at ragged strips, NaN rules, BF16 accuracy, a two-layer model, records and
+acceptance) and `tests/test_blocked_strips_h100.py` (compile-only H100: no GEMM reads an FP32
+value whose BF16 rounding XLA removed, and per-layer memory).
+
+Measured on 2026-11-08 at commit `6ea739f6` on one H100 PCIe (`mastiff`, jobs 239691 and
+239696) and one B300 (`akita`, jobs 239692 and 239695) with
+[`blocked_strips_qualification.py`](blocked_strips_qualification.py) and
+[`qualify_blocked_strips.sbatch`](qualify_blocked_strips.sbatch); records in
+[runs/blocked-strips/](runs/blocked-strips/). `test_blocked_strips_h100.py` passed on both GPUs.
+
+**Accuracy.** BF16 inputs at [2, 2048, 4, 64], relative L2 error × 1e3 against the scan's
+arithmetic in FP64; the floor is that reference rounded to BF16. The H100 and B300 values agree
+to the digits shown.
+
+| Mechanism | Floor dK / dV | Scan dK / dV | Strips dK / dV | Output and dQ (both) |
+| --- | ---: | ---: | ---: | ---: |
+| FoX softmax | 1.66 / 1.66 | 2.13 / 2.12 | 1.67 / 1.67 | 1.67 / 1.68 |
+| FoX exponential | 1.66 / 1.66 | 2.10 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| FoX query m = 4 | 1.66 / 1.66 | 2.11 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| Static m = 4, unnormalized | 1.66 / 1.66 | 4.62 / 4.63 | 1.67 / 1.67 | 1.67 / 1.67 |
+
+The strips sit at the floor (1.008×, the TF32 products); the scan's BF16 block sums give
+1.27-1.29× under the forget gate's decay and 2.8× without it. FP32 gradients of the log decay
+and the coefficients agree with FP64 to below 1e-6 for both.
+
+**Full model.** One forward and backward micro-step of the recipe's 15-layer model
+(`training.loop.loss_and_grads`, micro-batch 16, synthetic tokens), each in a fresh process;
+s/update = median micro-step × 16.
+
+| Recipe | GPU | Scan s/update | Strips s/update | Speedup | Compile s (scan / strips) | Peak GB (scan / strips) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | H100 PCIe | 17.42 | 11.67 | 1.49× | 47 / 74 | 30.1 / 30.8 |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | B300 | 6.06 | 3.83 | 1.58× | 47 / 103 | 29.5 / 30.4 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | H100 PCIe | 15.25 | 11.73 | 1.30× | 64 / 86 | 31.6 / 30.3 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | B300 | 5.27 | 3.91 | 1.35× | 119 / 93 | 31.0 / 30.3 |
+
+Loss (10.5163 and 10.5100) and gradient norm (3.0317 and 2.0181) agree between the
+implementations to five digits. H100 SXM (`dogo`) was fully allocated; the PCIe card is about
+1.5× slower in absolute terms, not in the ratio.
+
+```bash
+# One GPU per type, from the worktree root (validation files are outside the frozen check):
+sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01:00:00 \
+  --output=scaffolds/transformer/validation/logs/blocked-strips/%x-%j.log \
+  scaffolds/transformer/validation/qualify_blocked_strips.sbatch "$(git rev-parse HEAD)"
 ```

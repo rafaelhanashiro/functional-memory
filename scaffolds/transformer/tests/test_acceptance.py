@@ -488,3 +488,16 @@ def test_mosaic_gpu_tests_cover_only_the_precision_in_use(model, backend, expect
 
 def test_test_processes_accept_the_mosaic_precision_option(pytestconfig):
     assert pytestconfig.getoption("--mosaic-precision") in (None, "bf16", "bf16x3")
+
+
+@pytest.mark.parametrize("model,backend,cpu,selected", [
+    ({"attention_blocked_implementation": "strips"}, "blocked", True, True),
+    ({"attention_blocked_implementation": "strips", "attention_forget_gate": True}, "blocked", False, False),
+    ({"attention_blocked_implementation": "strips", "attention_degree": 2}, "fused", True, False),
+    ({"attention_blocked_implementation": "scan"}, "blocked", True, False),
+    ({}, "blocked", True, False),
+])
+def test_recipes_training_on_blocked_strips_require_their_cpu_tests(model, backend, cpu, selected):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+    assert (preflight.BLOCKED_STRIPS_TESTS in paths) == selected

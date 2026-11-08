@@ -34,18 +34,25 @@ def attention_core(
     deterministic: bool = True,
     rngs=None,
     weights_dtype=None,
+    blocked_implementation: str = "scan",
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
 
     ``denominators`` holds at most one rational-kernel denominator array, named as in
-    ``rational_polynomial.DENOMINATOR_KINDS``.
+    ``rational_polynomial.DENOMINATOR_KINDS``. ``blocked_implementation`` selects the blocked
+    backend's execution ("scan" or "strips"; see ``backends.reference``); other backends ignore it.
     """
+    from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 
     unknown = set(denominators) - set(DENOMINATOR_KINDS)
     if unknown:
         raise TypeError(f"Unknown attention arguments: {sorted(unknown)}")
+    if blocked_implementation not in BLOCKED_IMPLEMENTATIONS:
+        raise ValueError(f"Unknown blocked attention implementation: {blocked_implementation}")
+    # The historical scan keeps every mechanism's established call; strips add the selection.
+    strips = {} if blocked_implementation == "scan" else {"blocked_implementation": blocked_implementation}
     denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
@@ -71,10 +78,11 @@ def attention_core(
             raise ValueError("Softmax and exponential attention take only the cumulative forget-gate decay")
         if backend != "blocked":
             raise ValueError("Softmax and exponential attention with a forget gate run on the blocked backend")
-        from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+        from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
 
-        return blocked_dot_product_attention(q, k, v, attention_normalization=attention_normalization,
-                                             query_log_decay=query_log_decay, return_diagnostics=return_diagnostics)
+        return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
+                                         attention_normalization=attention_normalization,
+                                         query_log_decay=query_log_decay, return_diagnostics=return_diagnostics)
     if (query_log_decay is not None or endpoint) and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:
@@ -92,20 +100,20 @@ def attention_core(
             if attention_coefficient_activation != "tanh":
                 raise ValueError("Key factors require tanh query coefficients")
             return query_key_polynomial_attention(q, k, v, query_polynomial_coefficients, key_polynomial_factors,
-                                                  backend=backend, return_diagnostics=return_diagnostics)
+                                                  backend=backend, return_diagnostics=return_diagnostics, **strips)
         if attention_coefficient_activation == "identity":
             if attention_degree != 1:
                 raise ValueError("Identity query coefficients require degree-one attention")
             if query_log_decay is not None or endpoint:
                 raise ValueError("The forget gate requires nonlinear query coefficients")
             return query_linear_attention(q, k, v, query_polynomial_coefficients, backend=backend,
-                                          return_diagnostics=return_diagnostics)
+                                          return_diagnostics=return_diagnostics, **strips)
         if attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
             raise ValueError("Unknown attention coefficient activation")
         return query_polynomial_attention(q, k, v, query_polynomial_coefficients, backend=backend,
                                           return_diagnostics=return_diagnostics, log_decay=query_log_decay,
                                           decay_mode=query_decay_mode, query_gate_input=query_gate_input,
-                                          key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
+                                          key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **strips)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 
@@ -117,7 +125,7 @@ def attention_core(
             raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
-            return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients,
+            return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients, **strips,
         )
     if polynomial_coefficients is not None or polynomial_square_factors is not None or denominators:
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
@@ -127,7 +135,7 @@ def attention_core(
         return normalized_learned_polynomial_attention(
             q, k, v, attention_degree=attention_degree, polynomial_coefficients=polynomial_coefficients,
             polynomial_square_factors=polynomial_square_factors,
-            backend=backend, return_diagnostics=return_diagnostics, **denominators,
+            backend=backend, return_diagnostics=return_diagnostics, **strips, **denominators,
         )
     if quadratic_mode != "fixed":
         from scaffolds.transformer.attention.learned_quadratic import learned_quadratic_attention
@@ -136,7 +144,7 @@ def attention_core(
             raise ValueError("Learned quadratic attention requires degree=2")
         return learned_quadratic_attention(
             q, k, v, coefficients=coefficients, quadratic_mode=quadratic_mode,
-            backend=backend, return_diagnostics=return_diagnostics,
+            backend=backend, return_diagnostics=return_diagnostics, **strips,
         )
     if coefficients is not None:
         raise ValueError("Fixed attention does not accept learned coefficients")
@@ -145,12 +153,12 @@ def attention_core(
 
         return taylor_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
-            return_diagnostics=return_diagnostics,
+            return_diagnostics=return_diagnostics, **strips,
         )
     from scaffolds.transformer.attention.softmax import softmax_attention
 
     return softmax_attention(
         q, k, v, backend=backend, return_diagnostics=return_diagnostics,
         dropout=dropout, deterministic=deterministic, rngs=rngs,
-        weights_dtype=weights_dtype,
+        weights_dtype=weights_dtype, **strips,
     )
