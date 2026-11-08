@@ -59,6 +59,9 @@ ABSENT = {
     "continuation.parent_step": 0, "model.attention_forget_gate": False,
     "model.attention_coefficient_kernel_weight_decay": False, "model.qk_norm_token_scale": "none",
     "model.qk_norm_token_scale_kernel_weight_decay": False, "optim.query_coefficient_learning_rate_scale": 1.0,
+    "continuation.preserve_all_parameters": False, "model.attention_coefficient_orders": None,
+    "model.attention_forget_gate_form": "input", "model.attention_forget_gate_mode": "cumulative",
+    "model.attention_forget_gate_conditioning": "query", "model.attention_forget_gate_rate_activation": "softplus",
 }
 # Within a family only the degree changes, with the Hermite coefficients it determines;
 # between families the coefficient parameterization changes too, and the references also
