@@ -109,17 +109,14 @@ def test_configurations(kernel):
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
-@pytest.mark.parametrize("change,message", [
-    ({"attention_forget_gate_mode": "query_distance"}, "query-distance decay mode"),
-    ({"attention_forget_gate_form": "constant"}, "constant forget gate form"),
-])
-def test_query_distance_and_constant_gates_stay_with_query_polynomials(kernel, change, message):
-    """Only the cumulative input-dependent gate is qualified on softmax and the exponential."""
+def test_query_distance_gates_stay_with_query_polynomials(kernel):
+    """Only cumulative decay is qualified on softmax and the exponential (the constant form, ALiBi,
+    in test_constant_decay)."""
+    message = "query-distance decay mode"
     with pytest.raises(ValueError, match=message):
-        _config(kernel, **change)
+        _config(kernel, attention_forget_gate_mode="query_distance")
     model = _config(kernel).model
-    for name, value in change.items():
-        setattr(model, name, value)  # bypass config validation: the module rejects it too
+    model.attention_forget_gate_mode = "query_distance"  # bypass config validation: the module rejects it too
     with pytest.raises(ValueError, match=message):
         attention_from_config(model, rngs=nnx.Rngs(0))
     q = k = v = jnp.zeros((1, 4, 2, 4))

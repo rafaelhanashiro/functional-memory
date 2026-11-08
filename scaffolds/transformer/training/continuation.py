@@ -91,7 +91,8 @@ def _check_taylor_initialization(config, coefficients):
         from scaffolds.transformer.attention.forget_gate import parameter_names
 
         gate_names = parameter_names(getattr(model, "attention_forget_gate_form", "input"),
-                                     getattr(model, "attention_forget_gate_conditioning", "query"))
+                                     getattr(model, "attention_forget_gate_conditioning", "query"),
+                                     getattr(model, "attention_forget_gate_constant_rate", "learned"))
         token_names |= set(gate_names)
         if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in gate_names
                    if name in coefficients):

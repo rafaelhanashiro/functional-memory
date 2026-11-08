@@ -287,6 +287,26 @@ def test_index_keeps_custom_polynomial_distinct_without_inventing_basis(tmp_path
     assert row["attention_family"] == "polynomial"
 
 
+def test_index_exposes_the_constant_decay_rate_only_for_constant_gates(tmp_path):
+    study = tmp_path / "study"
+    gate = {"attention_forget_gate": True, "positional_encoding": "none"}
+    runs = {
+        "ungated": create_run(study, {"model": {}}),
+        "input": create_run(study, {"model": {**gate, "attention_forget_gate_constant_rate": "learned"}}),
+        # Recipes that predate the field learn the constant form's rate.
+        "legacy": create_run(study, {"model": {**gate, "attention_forget_gate_form": "constant"}}),
+        "fixed": create_run(study, {"model": {**gate, "attention_forget_gate_form": "constant",
+                                              "attention_forget_gate_constant_rate": "fixed"}}),
+    }
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert {name: rows[run.name]["attention_forget_gate_constant_rate"] for name, run in runs.items()} == {
+        "ungated": "", "input": "", "legacy": "learned", "fixed": "fixed"}
+    assert rows[runs["fixed"].name]["attention_forget_gate_form"] == "constant"
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 def test_index_distinguishes_gdn_erase_modes_without_inventing_legacy_settings(tmp_path):
     study = tmp_path / "study"
     runs = {}

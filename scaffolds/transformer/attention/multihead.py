@@ -70,6 +70,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
         attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
         attention_forget_gate_form=getattr(config, "attention_forget_gate_form", "input"),
+        attention_forget_gate_constant_rate=getattr(config, "attention_forget_gate_constant_rate", "learned"),
         attention_forget_gate_conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
         attention_forget_gate_rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
         attention_blocked_implementation=getattr(config, "attention_blocked_implementation", "scan"),
@@ -114,6 +115,7 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate_conditioning: str = "query",
         attention_forget_gate_rate_activation: str = "softplus",
         attention_blocked_implementation: str = "scan",
+        attention_forget_gate_constant_rate: str = "learned",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -236,10 +238,17 @@ class MultiHeadAttention(nnx.Module):
                              "positional encoding on the blocked backend")
         if attention_forget_gate_form == "constant" and (
                 attention_forget_gate_mode != "cumulative"
-                or positional_encoding not in ("rope", "none") or not polynomial_gate):
-            raise ValueError("The constant forget gate form requires the cumulative gate on nonlinear query "
-                             "coefficients, with RoPE or no positional encoding on the blocked backend")
+                or positional_encoding not in ("rope", "none") or not (polynomial_gate or exponential_gate)):
+            raise ValueError("The constant forget gate form requires the cumulative gate on softmax, the "
+                             "unnormalized exponential, or nonlinear query coefficients, with RoPE or no "
+                             "positional encoding on the blocked backend")
         self.attention_forget_gate_form = attention_forget_gate_form
+        if attention_forget_gate_constant_rate not in ("learned", "fixed"):
+            raise ValueError(f"Unknown constant forget gate rate: {attention_forget_gate_constant_rate}")
+        if attention_forget_gate_constant_rate != "learned" and (
+                not attention_forget_gate or attention_forget_gate_form != "constant"):
+            raise ValueError("A fixed forget gate rate requires the constant forget gate form")
+        self.attention_forget_gate_constant_rate = attention_forget_gate_constant_rate
         if attention_forget_gate_conditioning not in ("query", "query_key"):
             raise ValueError("Unknown forget gate conditioning")
         if attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
@@ -435,20 +444,24 @@ class MultiHeadAttention(nnx.Module):
                                                  key_kernel, key_amplitude, gate_kernel, gate_bias)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         from scaffolds.transformer.attention.forget_gate import (
-            PARAMETERS as FORGET_GATE_PARAMETERS, ALL_PARAMETERS, constant_log_decay, log_decay,
+            PARAMETERS as FORGET_GATE_PARAMETERS, ALL_PARAMETERS, alibi_log_rate, constant_log_decay, log_decay,
             parameter_names, project_gate_inputs, sigmoid_log_decay,
         )
 
-        gate_names = parameter_names(self.attention_forget_gate_form, self.attention_forget_gate_conditioning) if self.attention_forget_gate else ()
+        gate_names = parameter_names(self.attention_forget_gate_form, self.attention_forget_gate_conditioning,
+                                     self.attention_forget_gate_constant_rate) if self.attention_forget_gate else ()
         forget_gate = {name: parameters.pop(name, None) for name in ALL_PARAMETERS}
         if any(forget_gate[name] is None for name in gate_names) or any(
                 value is not None for name, value in forget_gate.items() if name not in gate_names):
             raise ValueError("The forget gate requires exactly its model-owned parameters for its form")
         log_alpha = None
         if self.attention_forget_gate:
-            # The constant form's log alpha is -exp(A_log) at every token; the input and sigmoid forms read x_t.
+            # The constant form's log alpha is -exp(A_log) at every token, A_log learned or fixed at
+            # ALiBi's slopes (the learned rate's start); the input and sigmoid forms read x_t.
             if self.attention_forget_gate_form == "constant":
-                log_alpha = constant_log_decay(x, forget_gate["forget_gate_log_rate"])
+                log_alpha = constant_log_decay(x, alibi_log_rate(self.num_heads)
+                                               if self.attention_forget_gate_constant_rate == "fixed"
+                                               else forget_gate["forget_gate_log_rate"])
             elif self.attention_forget_gate_form == "sigmoid":
                 log_alpha = sigmoid_log_decay(x, forget_gate["forget_gate_kernel"], forget_gate["forget_gate_bias"])
             elif self.attention_forget_gate_conditioning == "query_key":
