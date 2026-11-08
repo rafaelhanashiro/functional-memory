@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd40b46f5dc9b/config.yaml",
+    "sha256": "117a300c95486acf6d34c6f209b6d9d957c3bddeb3e9711cb5046c917ff54557"
+  },
+  "label": "query-m8-w-decay-release-all",
+  "name": "query-m8-w-decay-release-all",
+  "record_schema_version": 1,
+  "run_id": "rd40b46f5dc9b",
+  "status": "planned"
+}

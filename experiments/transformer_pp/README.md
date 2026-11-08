@@ -999,6 +999,33 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## Coefficient release
+
+`rd40b46f5dc9b` and `rcc4f4e5d7abb` copy the degree-eight query + W decay run
+`r25fffc16c2f3`; `r1c72e8860ade` and `r991a756da7a9` copy the degree-eight static run
+`r9c69dd7cfc8d`. Each adds only `optim.coefficient_release_*`: the learned coefficients stay
+at their Taylor initialization until update 455, then train, all at once (`all`) or one order
+at a time from order 0 through update 1,500 (`by_order`). The schedule and its masks are
+described in the [scaffold README](../../scaffolds/transformer/README.md#coefficient-release-schedule);
+question, controls and results are in the
+[coefficient-release topic](results/exploratory/coefficient_release/README.md).
+
+Home cluster: Kennel. Branch `claude/coefficient-release`, worktree
+`worktrees/coefficient-release`. After committing the inputs and checking live allowances,
+submit each run independently; the standard lane takes three and `long` the fourth:
+
+```bash
+for run in rd40b46f5dc9b rcc4f4e5d7abb r1c72e8860ade r991a756da7a9; do
+  case $run in r991a756da7a9) partition=long ;; *) partition=standard ;; esac
+  sbatch --parsable --partition=$partition --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

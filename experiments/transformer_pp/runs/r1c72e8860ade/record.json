@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1c72e8860ade/config.yaml",
+    "sha256": "4fae46abe4916cbcd33274eeffcf224e2cdbfeabc34302e7f34622ef7b748c58"
+  },
+  "label": "static-m8-release-all",
+  "name": "static-m8-release-all",
+  "record_schema_version": 1,
+  "run_id": "r1c72e8860ade",
+  "status": "planned"
+}
