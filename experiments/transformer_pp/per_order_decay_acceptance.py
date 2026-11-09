@@ -1,4 +1,4 @@
-"""Qualify per-order gates against the two pinned shared-gate controls."""
+"""Qualify per-order gates against their pinned shared-gate controls."""
 from dataclasses import replace
 from functools import partial
 import hashlib
@@ -9,16 +9,24 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 ROOT = Path(__file__).resolve().parent
+# Shared-gate control of each per-order variant, by polynomial degree and gate conditioning.
 CONTROLS = {
-    "query": ("r3e26412b2811", "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"),
-    "query_key": ("r02f984133092", "3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131"),
+    (4, "query"): ("r3e26412b2811", "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"),
+    (4, "query_key"): ("r02f984133092", "3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131"),
+    (8, "query"): ("r9320e5cd3071", "d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f"),
 }
-INITIALIZATION_SHA256 = "41222e5822311b7c7828965e5f4e03b72e820cc14f0928d6af073c8649a7b7d7"
-PARAMETER_COUNT = 199585066
+# Initialization fingerprint and parameter count of each degree's query-gate control: degree four's
+# verified by query_distance_decay_acceptance at launch, degree eight's computed on CPU from its recipe
+# (query_distance_degree_acceptance requires it to equal cumulative FoX r9353f554b917's).
+INITIALIZATION_SHA256 = {4: "41222e5822311b7c7828965e5f4e03b72e820cc14f0928d6af073c8649a7b7d7",
+                         8: "d2f533debb5896ecf1e2d456b1e2a962de3f62934fb42ad43fd3eacca189241e"}
+PARAMETER_COUNT = {4: 199585066, 8: 200339386}
 
 
-def control_config(conditioning="query"):
-    run, sha = CONTROLS[conditioning]
+def control_config(conditioning="query", degree=4):
+    if (degree, conditioning) not in CONTROLS:
+        raise ValueError(f"No shared-gate control for {conditioning} gates at degree {degree}")
+    run, sha = CONTROLS[degree, conditioning]
     path = ROOT / "runs" / run / "config.yaml"
     if hashlib.sha256(path.read_bytes()).hexdigest() != sha:
         raise ValueError("The pinned shared-gate control recipe changed")
@@ -29,7 +37,7 @@ def check_recipe(config):
     validate_config(config)
     if not config.model.attention_forget_gate_per_order:
         raise ValueError("This comparison requires independent per-order gates")
-    control = control_config(config.model.attention_forget_gate_conditioning)
+    control = control_config(config.model.attention_forget_gate_conditioning, config.model.attention_degree)
     actual, expected = config_to_dict(config), config_to_dict(control)
     actual["model"]["attention_forget_gate_per_order"] = False
     actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
@@ -51,16 +59,17 @@ def _check_initialized_parameters(params, config):
     )
     from scaffolds.transformer.training.checkpointing import state_sha256
 
-    baseline = control_config("query")
+    degree = config.model.attention_degree
+    baseline = control_config("query", degree)
     declared = initial_attention_parameter_values(
         attention_parameter_specs(baseline.model), num_layers=baseline.model.num_layers,
         num_heads=baseline.model.num_heads, key=mechanism_key(jax.random.PRNGKey(config.train.seed)))
-    orders = config.model.attention_degree + 1
+    orders = degree + 1
     endpoint = config.model.attention_forget_gate_conditioning == "query_key"
     shared_gate_count = (config.model.hidden_size + 2) * config.model.num_layers * config.model.num_heads
     key_count = config.model.hidden_size * config.model.num_layers * config.model.num_heads
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
-    if count != PARAMETER_COUNT + (orders - 1) * shared_gate_count + (orders * key_count if endpoint else 0):
+    if count != PARAMETER_COUNT[degree] + (orders - 1) * shared_gate_count + (orders * key_count if endpoint else 0):
         raise RuntimeError(f"Unexpected per-order parameter count: {count}")
     actual_sha = state_sha256(params)
     for name, expected in declared.items():
@@ -80,10 +89,10 @@ def _check_initialized_parameters(params, config):
             raise RuntimeError("Every key projection must initialize at zero")
         del params["forget_gate_key_kernel"]
     recovered = state_sha256(params)
-    if recovered != INITIALIZATION_SHA256:
+    if recovered != INITIALIZATION_SHA256[degree]:
         raise RuntimeError(f"Restored initialization differs from the control: {recovered}")
     return dict(parameter_count=count, parameter_sha256=actual_sha,
-                matched_control_run_id=CONTROLS[config.model.attention_forget_gate_conditioning][0],
+                matched_control_run_id=CONTROLS[degree, config.model.attention_forget_gate_conditioning][0],
                 recovered_query_control_parameter_sha256=recovered,
                 unchanged_parameters_match_control=True, all_order_gates_match_shared_control=True,
                 initialization="duplicate the shared gate across orders, including order zero")

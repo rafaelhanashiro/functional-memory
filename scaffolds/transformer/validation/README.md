@@ -11,6 +11,30 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Architecture-aware per-order Mosaic support (2026-11-08)
+
+Per-order recipes validate for the Mosaic backend when H100's kernels fit them
+(`api.hopper_supported`). B300 refuses shapes its kernels cannot hold
+(`api.blackwell_supported`) with a `ValueError` before tracing a kernel. Every other family
+keeps its predicate: over
+degrees 0–14, all Q/K widths, and 128–8,192 tokens, shared-family support is unchanged, and
+B300's per-order acceptance equals the previous predicate (degree 7 query and degree 6
+query–key at `d_K = 64` and 2,048 tokens).
+
+`common.hopper_smem_bytes` counts each Hopper kernel's shared memory exactly. Lowered for
+cuda on a CPU host, all 288 combinations of six families, degrees 1, 4, 8, and 12, Q/K widths
+16–128, and the forward, dQ, and dK/dV kernels fit the counted bytes and fail one byte below.
+The largest, per-order query–key at degree 12 and width 128, uses 167,024 of 232,448 bytes.
+Per-order query at degree eight and width 64 uses 110,704 (forward), 86,096 (dQ), and 74,800
+(dK/dV). CPU tests lower the production per-order entry points (forward and all gradients)
+at degree eight for H100 and at B300's largest degree, and check the refusal one degree
+higher. Lowering checks shared memory only, not register allocation, numerics, or speed.
+`tests/test_per_order_decay.py -m gpu` adds degree-eight FP64 and duplicated-order cases, with
+unit-scale scores so that every order contributes and each order's coefficient and gate
+gradients compared separately, and `tests/test_endpoint_decay.py -m gpu` the shared query gate at
+degree eight. They passed on H100 (`mastiff`, job 239920: 46 GPU checks), and production
+acceptance passed its GPU checks on H100 (jobs 239930 and 239931).
+
 ### Coefficient release schedule (2026-11-08)
 
 `optim.coefficient_release_schedule` (`all` or `by_order`), `coefficient_release_step`,

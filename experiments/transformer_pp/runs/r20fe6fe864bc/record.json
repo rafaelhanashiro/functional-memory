@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml",
+    "sha256": "19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-per-order-query-gate-nope-wd",
+  "name": "query-m8-per-order-query-gate-nope-wd",
+  "record_schema_version": 1,
+  "run_id": "r20fe6fe864bc",
+  "status": "planned"
+}
