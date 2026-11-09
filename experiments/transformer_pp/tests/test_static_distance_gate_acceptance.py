@@ -43,7 +43,7 @@ def test_frozen_runs_are_their_controls_with_the_gate(degree, per_order):
     assert config.optim.total_steps == 7570 and config.train.seed == 42 and not config.continuation.parent_checkpoint
     assert config.data.batch_size == 256 and config.data.sequence_length == 2049
     record = json.loads((adapter.RUNS / RUNS[degree, per_order] / "record.json").read_text())
-    assert record["home_cluster"] == "kennel" and record["status"] == "planned"
+    assert record["home_cluster"] == "kennel"  # status is the launcher's, so not checked
 
 
 @pytest.mark.parametrize(("section", "field", "value"), (
