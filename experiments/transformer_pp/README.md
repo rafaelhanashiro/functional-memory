@@ -524,7 +524,7 @@ control of their own. Prepare in one worktree, then commit frozen inputs before 
 ```bash
 PREPARE="scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare --topic learned_coefficient_continuation"
 TAYLOR=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
-EXP=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_pp/runs/r6a76e7fbde45
+EXP=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r6a76e7fbde45
 JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $TAYLOR --control r82203a85ef8e
 JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $TAYLOR --control r82203a85ef8e
 JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $EXP --control none --degree 4
