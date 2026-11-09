@@ -1036,6 +1036,29 @@ for run in rd40b46f5dc9b rcc4f4e5d7abb r1c72e8860ade r991a756da7a9; do
 done
 ```
 
+## Spline attention
+
+`r7e4193fcafbd` (static) and `rf303a5f94487` (query + W decay) replace the degree-four
+polynomials of `r4339a245820e` and `rca97cc9db8f2` by quartic B-splines on the fixed knots
+[-32, -6, 0, 6, 32], started exactly at T4, on the blocked strips backend
+(`model.attention_kernel_basis: bspline`; scaffold README, "B-spline score function").
+Question, recipe, controls and results are in the
+[spline topic](results/exploratory/spline_attention/README.md).
+
+Home cluster: Kennel. Branch `claude/spline-attention`, worktree `worktrees/spline-attention`.
+B300 updates project about 10-11 hours, so both use `standard` on one B300:
+
+```bash
+for run in r7e4193fcafbd rf303a5f94487; do
+  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

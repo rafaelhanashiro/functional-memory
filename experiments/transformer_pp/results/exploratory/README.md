@@ -8,7 +8,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | Topic | Question | Opened |
 | --- | --- | --- |
 | [order_gates](order_gates/README.md) | Do independent query-dependent gates on each polynomial order improve query + W decay attention without a distance-dependent forget gate? At m = 8 and 10 they end 8.4% and 7.1% worse than the ungated control; the gates lock low orders off early. | 2026-11-07 |
-| [spline_attention](spline_attention/README.md) | Which shared fixed knot grid covers the static and query models' scores before a spline comparison? | 2026-11-08 |
+| [spline_attention](spline_attention/README.md) | Can quartic B-splines on a fixed knot grid replace the degree-four polynomial? Static 14.745 and query 14.746 tie their m = 4 controls (14.767, 14.709); the coefficients barely leave T4 and scores reach ±150. | 2026-11-08 |
 | [coefficient_release](coefficient_release/README.md) | Do degree-eight learned coefficients held at Taylor through warmup, then released all at once or order by order, reach fixed Taylor? None does; query released at 455 ends 14.229, 0.011 above Taylor and 0.094 below its control. | 2026-11-08 |
 | [even_powers](even_powers/README.md) | At 1×, both even-only models finish near PPL 14.62 and beat full m=4 but trail full m=8 by about 2% (static and query). Does this basis merit further study? | 2026-11-03 |
 | [query_optimization](query_optimization/README.md) | Does projection weight decay or 3x learning rate on a,b improve degree-four query/tanh attention? At 2.5× W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8 and leaves key–query level. | 2026-10-29 |

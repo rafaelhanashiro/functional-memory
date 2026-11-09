@@ -1,0 +1,3 @@
+variant,spline_run,control_run,spline_best_ppl,control_best_ppl,spline_terminal_ppl,control_terminal_ppl,terminal_outer_piece_share,terminal_beyond_range_share,terminal_worst_head_beyond_range,terminal_score_min,terminal_score_max
+static,r7e4193fcafbd,r4339a245820e,14.745,14.767,14.752,14.773,0.1522,0.00155,0.1324,-117.4,157.4
+query + W decay,rf303a5f94487,rca97cc9db8f2,14.746,14.709,14.751,14.714,0.0772,0.00063,0.0706,-91.7,149.4

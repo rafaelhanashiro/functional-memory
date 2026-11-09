@@ -3,7 +3,9 @@
 Stages (run from the repository root with PYTHONPATH=.):
   kernel  BF16 inputs at [2, 2048, 4, 64]: relative L2 error of the scan's and the strips'
           output and gradients against the scan's own arithmetic in FP64, for the forget-gate
-          mechanisms that train on the blocked backend and a static polynomial.
+          mechanisms that train on the blocked backend, a static polynomial, and the quartic
+          B-spline score function (static and query coefficients near its Taylor start, queries
+          scaled so that scores reach every piece and both continuations).
   model   One forward+backward micro-step of a recipe's full model (training.loop.loss_and_grads)
           per implementation, each in a fresh process: compile time, steady-state s/update,
           allocator peak, and the loss and gradient norm the two implementations reach.
@@ -22,7 +24,8 @@ import time
 import numpy as np
 
 SHAPE = tuple(int(x) for x in os.environ.get("BLOCKED_STRIPS_SHAPE", "2,2048,4,64").split(","))
-CASES = ("fox_softmax", "fox_exp", "fox_query_m4", "static_m4")
+CASES = ("fox_softmax", "fox_exp", "fox_query_m4", "static_m4", "static_spline_m4", "query_spline_m4")
+SPLINE_KNOTS = (-32.0, -6.0, 0.0, 6.0, 32.0)
 
 
 def _inputs(case: str, seed: int = 0):
@@ -32,6 +35,9 @@ def _inputs(case: str, seed: int = 0):
     rng = np.random.default_rng(seed)
     batch, length, heads, width = SHAPE
     q, k, v, g = (rng.standard_normal(SHAPE).astype(np.float32) for _ in range(4))
+    if case.endswith("_spline_m4"):
+        # Per-query scales from 0.5 to 16 (log-uniform): scores reach every piece and pass +-32.
+        q = q * np.exp(rng.uniform(math.log(0.5), math.log(16.0), (*SHAPE[:3], 1))).astype(np.float32)
     # Unit-RMS rows give score standard deviation about one, as QK RMSNorm does at initialization.
     q, k, v, g = (jnp.asarray(x, jnp.bfloat16) for x in (q, k, v, g))
     log_alpha = np.log(1.0 / (1.0 + np.exp(-rng.normal(3.0, 1.0, (batch, length, heads)))))
@@ -54,6 +60,17 @@ def _inputs(case: str, seed: int = 0):
         coefficients = np.array([1, 1, 1 / 2, 1 / 6, 1 / 24], np.float32)
         arrays["polynomial_coefficients"] = jnp.asarray(
             coefficients * (1 + 0.1 * rng.standard_normal((heads, 5))), jnp.float32)
+    elif case in ("static_spline_m4", "query_spline_m4"):
+        from scaffolds.transformer.attention.spline import taylor_coefficients
+
+        arguments = {"attention_degree": 4, "attention_normalization": False, "spline_knots": SPLINE_KNOTS}
+        start = np.asarray([float(value) for value in taylor_coefficients(SPLINE_KNOTS, 4)])
+        if case == "static_spline_m4":
+            arrays["spline_coefficients"] = jnp.asarray(start * (1 + 0.1 * rng.standard_normal((heads, 8))),
+                                                        jnp.float32)
+        else:
+            arrays["query_spline_coefficients"] = jnp.asarray(
+                start * (1 + 0.1 * np.tanh(rng.standard_normal((batch, length, heads, 8)))), jnp.float32)
     else:
         raise ValueError(case)
     return (q, k, v, g), arrays, arguments
@@ -140,10 +157,11 @@ def model_case(recipe: Path, implementation: str, micro_batch: int, output: Path
     return result
 
 
-def model_stage(recipes: list[str], micro_batch: int, output: Path) -> dict:
+def model_stage(recipes: list[str], micro_batch: int, output: Path,
+                implementations: tuple[str, ...] = ("scan", "strips")) -> dict:
     report = {"stage": "model", "micro_batch": micro_batch, "cases": []}
     for recipe in recipes:
-        for implementation in ("scan", "strips"):
+        for implementation in implementations:
             path = output.parent / f".case-{Path(recipe).parent.name}-{implementation}-{os.getpid()}.json"
             command = [sys.executable, "-m", "scaffolds.transformer.validation.blocked_strips_qualification",
                        "model-case", "--recipe", recipe, "--implementation", implementation,
@@ -174,6 +192,7 @@ def main():
     model.add_argument("--recipes", nargs="+", required=True)
     model.add_argument("--micro-batch", type=int, default=16)
     model.add_argument("--output", type=Path, required=True)
+    model.add_argument("--implementations", nargs="+", choices=("scan", "strips"), default=["scan", "strips"])
     case = sub.add_parser("model-case")
     case.add_argument("--recipe", type=Path, required=True)
     case.add_argument("--implementation", choices=("scan", "strips"), required=True)
@@ -183,7 +202,7 @@ def main():
     if args.stage == "kernel":
         kernel_stage(args.output)
     elif args.stage == "model":
-        model_stage(args.recipes, args.micro_batch, args.output)
+        model_stage(args.recipes, args.micro_batch, args.output, tuple(args.implementations))
     else:
         model_case(args.recipe, args.implementation, args.micro_batch, args.output)
 

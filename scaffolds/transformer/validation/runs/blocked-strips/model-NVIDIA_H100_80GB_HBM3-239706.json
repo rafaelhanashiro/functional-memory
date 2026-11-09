@@ -1,0 +1,150 @@
+{
+  "stage": "model",
+  "micro_batch": 16,
+  "cases": [
+    {
+      "recipe": "experiments/transformer_pp/runs/r7e4193fcafbd/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 534.8542318679392,
+        "p10_ms": 527.7532980777323,
+        "p90_ms": 535.0530159659684,
+        "samples_ms": [
+          517.2884338535368,
+          534.9164218641818,
+          534.7920418716967,
+          535.0105823017657,
+          535.0232319906354,
+          534.6034318208694,
+          532.2382398881018,
+          535.122511908412
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 86.42917806701735,
+        "compiled_memory": {
+          "argument_size_in_bytes": 793952200,
+          "output_size_in_bytes": 793822220,
+          "temp_size_in_bytes": 26324958448,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2366096
+        },
+        "kernels": 5296
+      },
+      "nll": 10.51112174987793,
+      "grad_norm": 1.9564601182937622,
+      "seconds_per_update": 8.557667709887028,
+      "peak_bytes_in_use": 30506279168,
+      "device": "NVIDIA H100 80GB HBM3"
+    },
+    {
+      "recipe": "experiments/transformer_pp/runs/rf303a5f94487/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 616.3835246115923,
+        "p10_ms": 605.6058847345412,
+        "p90_ms": 616.6028977371752,
+        "samples_ms": [
+          599.2667968384922,
+          608.3226366899908,
+          616.7081850580871,
+          616.5577745996416,
+          616.4613151922822,
+          616.5477354079485,
+          613.1043308414519,
+          616.3057340309024
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 88.23150787316263,
+        "compiled_memory": {
+          "argument_size_in_bytes": 799980040,
+          "output_size_in_bytes": 799850076,
+          "temp_size_in_bytes": 28151376256,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2313800
+        },
+        "kernels": 3325
+      },
+      "nll": 10.51112174987793,
+      "grad_norm": 1.95645272731781,
+      "seconds_per_update": 9.862136393785477,
+      "peak_bytes_in_use": 32332732160,
+      "device": "NVIDIA H100 80GB HBM3"
+    },
+    {
+      "recipe": "experiments/transformer_pp/runs/r4339a245820e/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 338.5618531610817,
+        "p10_ms": 333.09501269832253,
+        "p90_ms": 339.07727347686887,
+        "samples_ms": [
+          324.9473189935088,
+          337.9891822114587,
+          338.5913432575762,
+          338.7825833633542,
+          338.5323630645871,
+          338.73251266777515,
+          336.586881428957,
+          339.7648837417364
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 71.94624084094539,
+        "compiled_memory": {
+          "argument_size_in_bytes": 793949680,
+          "output_size_in_bytes": 793819700,
+          "temp_size_in_bytes": 24821689400,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2051860
+        },
+        "kernels": 3292
+      },
+      "nll": 10.511098861694336,
+      "grad_norm": 1.9565253257751465,
+      "seconds_per_update": 5.416989650577307,
+      "peak_bytes_in_use": 29002997504,
+      "device": "NVIDIA H100 80GB HBM3"
+    },
+    {
+      "recipe": "experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 410.79069185070693,
+        "p10_ms": 405.0828777719289,
+        "p90_ms": 411.46233906038105,
+        "samples_ms": [
+          397.547853179276,
+          411.4053570665419,
+          410.9422159381211,
+          410.8029967173934,
+          410.77838698402047,
+          411.5952970460057,
+          408.312174025923,
+          410.7588971965015
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 73.26615002891049,
+        "compiled_memory": {
+          "argument_size_in_bytes": 797717080,
+          "output_size_in_bytes": 797587116,
+          "temp_size_in_bytes": 26863077280,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 2094444
+        },
+        "kernels": 3205
+      },
+      "nll": 10.511129379272461,
+      "grad_norm": 1.956350564956665,
+      "seconds_per_update": 6.572651069611311,
+      "peak_bytes_in_use": 31044407552,
+      "device": "NVIDIA H100 80GB HBM3"
+    }
+  ]
+}

@@ -56,6 +56,8 @@ def config_to_dict(config: Config) -> dict[str, Any]:
         values["model"]["attention_fixed_coefficients"] = list(config.model.attention_fixed_coefficients)
     if config.model.attention_fixed_square_factors is not None:
         values["model"]["attention_fixed_square_factors"] = list(config.model.attention_fixed_square_factors)
+    if config.model.attention_spline_knots is not None:
+        values["model"]["attention_spline_knots"] = list(config.model.attention_spline_knots)
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -102,6 +104,10 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         fixed_square_factors = value["model"].setdefault("attention_fixed_square_factors", None)
         if isinstance(fixed_square_factors, (tuple, list)):
             value["model"]["attention_fixed_square_factors"] = list(fixed_square_factors)
+        value["model"].setdefault("attention_kernel_basis", "polynomial")
+        spline_knots = value["model"].setdefault("attention_spline_knots", None)
+        if isinstance(spline_knots, (tuple, list)):
+            value["model"]["attention_spline_knots"] = [float(knot) for knot in spline_knots]
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_denominator_degree", None)

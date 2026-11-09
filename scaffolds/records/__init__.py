@@ -417,9 +417,12 @@ def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kerne
         "learned_polynomial_rational": "learned_polynomial",
         "fixed_polynomial": "polynomial", "fixed_polynomial_unnormalized": "polynomial",
         "fixed_polynomial_sum_of_squares": "polynomial",
+        "learned_spline_unnormalized": "spline", "query_spline_unnormalized": "spline",
     }
     if kernel in families:
         return families[kernel]
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        return "spline"
     if model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None:
         return "polynomial"
     if model.get("attention_coefficients") == "learned" or model.get("quadratic_mode") in {"positive", "unrestricted"}:
