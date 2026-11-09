@@ -33,6 +33,7 @@ settings:
     - gdn_gated_query_w_decay_m4
     - query_w_decay_m4
     - shared_distance_gate_query_w_decay_m4
+    - per_order_distance_gate_query_w_decay_m4
 runs:
 - study: transformer_pp
   run_id: r77698776d82c
@@ -155,6 +156,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r1a5d217f030d/config.yaml
       sha256: f9332dce3491deb4c856234d58e0d7ab94d0162d658c83135b952cf00a21275f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1a5d217f030d/metrics.jsonl
+      sha256: e1839985b088b294aba0be3a68f01c76d7617a363df55da3c7880f46ff24bfef
+    completion.json:
+      path: experiments/transformer_pp/runs/r1a5d217f030d/completion.json
+      sha256: 4d801d23746524126f6a481aed71addbd3b2283d7221d12b04a0062549812144
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1a5d217f030d/metadata.json
+      sha256: 188e576cea24106d78b74f70529c59b3570df8aa0fc2e8c064c9386ca8efda18
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1a5d217f030d/best_validation.json
+      sha256: 71a688481b12a28ebdedf4d913bfbade1853012b49f0d1103a9e2c9d95322b5f
 - study: transformer_pp
   run_id: rca97cc9db8f2
   role: query_w_decay_m4
@@ -193,3 +206,22 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
       sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r507193d47450
+  role: per_order_distance_gate_query_w_decay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r507193d47450/config.yaml
+      sha256: be00699b0e4b01df03202bd26841c29a2657766330a2cd64ede5b96866fe709f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r507193d47450/metrics.jsonl
+      sha256: 66e6c8b52633e31725402ebaf54b01e407c097b2cefe74bd82febd5b4a94b792
+    completion.json:
+      path: experiments/transformer_pp/runs/r507193d47450/completion.json
+      sha256: f9b1cdeb79c7c21f066ca26b2d3d2a95434808204f470996efc5dac2e7ade8ed
+    metadata.json:
+      path: experiments/transformer_pp/runs/r507193d47450/metadata.json
+      sha256: e5204a0d92f949d6eacff19f7ce8b8cce5bdbb0b6332e86d3fb4d75f9d9a3264
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r507193d47450/best_validation.json
+      sha256: 34d34118a05bce178cc2ca2876d8e1be0a0befb9fd3529ccdd0c966cd2ef51a3
