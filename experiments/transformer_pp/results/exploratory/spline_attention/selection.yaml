@@ -29,6 +29,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r7e4193fcafbd/config.yaml
       sha256: 250aa775cc7e7635512a7a1194e40a5f9830d3326880bed1842d7674f83be2f9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/metrics.jsonl
+      sha256: 846ede789cd36523aa947e4d3e309d8d06a7cdf40ab5014a45542e96d9b72456
+    completion.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/completion.json
+      sha256: b2e09dfd357238e6c2b41bd94811492ebb8f36475c696c6021f59ae23b09dbd7
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/metadata.json
+      sha256: cc9c6fd31e7a16768029a19ad8e76c4776644ebe4c81b4a91d244c3ee15e9226
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/best_validation.json
+      sha256: 3f30a1792ae37d747472e9e7014ff6a13ac1430ce842808de216b0716276d68e
 - study: transformer_pp
   run_id: rf303a5f94487
   role: query_spline
@@ -37,6 +49,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/rf303a5f94487/config.yaml
       sha256: 1c8ea9e57d7f7a6e4ce0308f12c0fa50a3fba3b8adaea8b6972a26da4f2b2e14
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf303a5f94487/metrics.jsonl
+      sha256: e2eb41b6dd2b169d0a15c168f52c04dacd480409f03a89ada96d6eaadc6cb778
+    completion.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/completion.json
+      sha256: fac1399185eca64a19eb363710b9d32d7a4c7dd27892fa3977aa2cce5f9ea1e3
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/metadata.json
+      sha256: ae5960df05f81a5a5216f48f5a0f6c6d8af202e3a9d9439cc0011e3a47ee3ad6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/best_validation.json
+      sha256: ade8570ef6e3ffb30cf919baa63abda57aa834da44511f59c7c0978159cf635d
 - study: transformer_pp
   run_id: r4339a245820e
   role: control_static

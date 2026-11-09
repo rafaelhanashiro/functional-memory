@@ -155,4 +155,34 @@ f stay at T4 to within about 1e-4; learning is concentrated in the central coeff
 **Monitoring.** Evaluation diagnostics record, per layer and head, the fraction of causal
 scores in each piece and beyond ±32 (polynomial continuation), with score extrema.
 
-**Findings.** Pending.
+**Findings.** Both runs completed 7,570 updates on 2026-11-08 (one B300 each, jobs 239722
+and 239723).
+
+| Run | Best | Terminal | Control best / terminal | Best vs control |
+| --- | ---: | ---: | ---: | ---: |
+| `r7e4193fcafbd` static spline | 14.745 | 14.752 | 14.767 / 14.773 | −0.021 (−0.14%) |
+| `rf303a5f94487` query spline + W decay | 14.746 | 14.751 | 14.709 / 14.714 | +0.038 (+0.26%) |
+
+- **The splines tie the degree-four polynomials.** Both end at 14.75. The static spline
+  starts behind (+2.6 PPL at update 500), crosses its control at update 3,500 and ends
+  0.02 ahead; the query spline closes to +0.04. Both differences are within the
+  same-recipe rerun spread recorded elsewhere (up to 0.074).
+- **The learned functions stay near T4.** The outer coefficients θ_0 and θ_7 never moved
+  (see the coefficient-scale note above); θ_1-θ_6 moved by at most 2.7 (mean 0.1-0.9),
+  under 2% of their values, and the query amplitudes stay below 0.07. These runs therefore
+  test T4 with small central adjustments, not a freely shaped spline.
+- **Scores leave the calibrated range.** At update 100 every score lies within ±8 (the
+  trained m = 4 controls reach about ±30). By the end the static model's scores span
+  −117 to +157 and the query model's −92 to +149: 15% and 8% of causal scores fall in the
+  outer pieces (|s| ≥ 6), 0.16% and 0.06% beyond ±32, and in the most extreme head 13% and
+  7% are evaluated by the polynomial continuation. 11 and 6 of the 210 heads have most of
+  their scores in the outer pieces, where f is still T4.
+
+![Spline training against the controls and score coverage](training.png)
+
+**Open decision.** Discard the spline line, or test a parameterization whose coefficients
+can move (for example per-coefficient scaling of the stored values) before drawing a
+conclusion about splines.
+
+Regenerate `training_summary.csv` and `training.png` with
+`scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.exploratory.spline_attention.plot_training`.
