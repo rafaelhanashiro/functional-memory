@@ -938,13 +938,12 @@ where the sources trained on the scan. See the
 | `ref652c257797` | softmax-alibi-fixed-no-rope | `r5adc29a91e3b` | softmax | 198,440,146 |
 | `r7820049184ef` | exp-alibi-fixed-no-rope | `r183f08346ddc` | unnormalized exp | 198,453,586 |
 
-Home cluster: **Kennel**. Branch `claude/alibi-softmax-exp`, worktree
-`worktrees/alibi-softmax-exp`. Both are allocated and not yet submitted; GPU acceptance runs
-`tests/test_constant_decay.py`'s 2,048-token BF16 strips cases against FP64 ALiBi before
-training. After committing the inputs, submit each on one B300 or H100 SXM, excluding the H100
-PCIe node `mastiff` (the strips' FoX softmax ran 11.7 s per update there, past 24 hours for
-7,570 updates) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen from
-the live allowance:
+Home cluster: **Kennel**. GPU acceptance runs `tests/test_constant_decay.py`'s 2,048-token
+BF16 strips cases against FP64 ALiBi before training. From the isolated
+`claude/alibi-softmax-exp` worktree, after committing the inputs, submit each on one B300 or
+H100 SXM, excluding the H100 PCIe node `mastiff` (the strips' FoX softmax ran 11.7 s per update
+there, past 24 hours for 7,570 updates) and the B200 node `shiba`, with the partition
+(`standard` or `long`) chosen from the live allowance:
 
 ```bash
 for run in ref652c257797 r7820049184ef; do
