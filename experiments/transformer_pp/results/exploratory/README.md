@@ -7,7 +7,7 @@ promotion into a maintained collection or by discarding its results and runs.
 
 | Topic | Question | Opened |
 | --- | --- | --- |
-| [order_gates](order_gates/README.md) | Do independent query-dependent gates on each polynomial order improve query + W decay attention without a distance-dependent forget gate? At m = 8 and 10 they end 8.4% and 7.1% worse than the ungated control; the gates lock low orders off early. | 2026-11-07 |
+| [order_gates](order_gates/README.md) | Do independent query-dependent gates on each polynomial order improve query + W decay attention without a distance-dependent forget gate? At m = 8 and 10 the sigmoid gates end 8.4% and 7.1% worse than the ungated control; the gates lock low orders off early. The per-order Gated DeltaNet gate without the distance exponent (m = 4, RoPE) ends 8.7% worse the same way, against 2.2% better with the exponent: per-order gating helps only through the distance decay. | 2026-11-07 |
 | [spline_attention](spline_attention/README.md) | Can quartic B-splines on a fixed knot grid replace the degree-four polynomial? Static 14.745 and query 14.746 tie their m = 4 controls (14.767, 14.709); the coefficients barely leave T4 and scores reach ±150. | 2026-11-08 |
 | [coefficient_release](coefficient_release/README.md) | Do degree-eight learned coefficients held at Taylor through warmup, then released all at once or order by order, reach fixed Taylor? None does; query released at 455 ends 14.229, 0.011 above Taylor and 0.094 below its control. | 2026-11-08 |
 | [even_powers](even_powers/README.md) | At 1×, both even-only models finish near PPL 14.62 and beat full m=4 but trail full m=8 by about 2% (static and query). Does this basis merit further study? | 2026-11-03 |
@@ -24,4 +24,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
-| [query_distance_decay](query_distance_decay/README.md) | Can endpoint dependence, bounded rates, or independent per-order gates improve query-distance decay? Two per-order ablations added 2026-11-07. | 2026-11-02 |
+| [query_distance_decay](query_distance_decay/README.md) | Can endpoint dependence, bounded rates, or independent per-order gates improve query-distance decay? Per-order gates improve both shared gates by 2.2%; per-order query–key (13.708) beats cumulative FoX by 1.2%. | 2026-11-02 |
