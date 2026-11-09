@@ -516,11 +516,17 @@ def test_model_strips_match_the_scan(recipe, monkeypatch):
         for (path, observed), wanted in zip(jax.tree_util.tree_leaves_with_path(strips[1]),
                                             jax.tree.leaves(scan[1]), strict=True):
             assert observed.dtype == jnp.float64
-            # The forget gate projects in FP32 by design (forget_gate.log_decay): its own parameters'
-            # gradients are FP32 sums over tokens, which the two programs may order differently.
-            tolerance = 2e-6 if "forget_gate" in jax.tree_util.keystr(path) else 1e-11
-            np.testing.assert_allclose(observed, wanted, rtol=tolerance,
-                                       atol=tolerance * max(np.max(np.abs(wanted)), 1.0), err_msg=str(path))
+            if recipe == "fox_exp_distance" and "forget_gate" in jax.tree_util.keystr(path):
+                # The gate computes in FP32 by design (forget_gate.log_decay). Both programs give it the
+                # same FP32 cotangent of the raw log alpha, but XLA orders this recipe's FP32 sums over
+                # the tokens differently (2 ulps in dt_bias's gradient here; the sums cancel up to 14x):
+                # one FP32 epsilon per summed token, at the leaf's scale.
+                np.testing.assert_allclose(
+                    observed, wanted, rtol=0,
+                    atol=tokens[:, :-1].size * np.finfo(np.float32).eps * np.max(np.abs(wanted)), err_msg=str(path))
+            else:
+                np.testing.assert_allclose(observed, wanted, rtol=1e-11,
+                                           atol=1e-11 * max(np.max(np.abs(wanted)), 1.0), err_msg=str(path))
     calls.clear()
     scan = _loss_and_gradients(*_model(MODEL_RECIPES[recipe], implementation="scan", dtype=jnp.float32), tokens)
     strips = _loss_and_gradients(*_model(MODEL_RECIPES[recipe], implementation="strips", dtype=jnp.float32), tokens)

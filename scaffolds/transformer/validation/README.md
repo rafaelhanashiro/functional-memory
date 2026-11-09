@@ -32,22 +32,30 @@ values, and the Transformer++ count are cumulative FoX's; with `w_alpha = 0` the
 cumulative FoX (logits, and every gradient but `w_alpha`'s, to 2e-5); plus the accepted and rejected
 recipes, identity, diagnostics, training updates, and acceptance selection.
 
-All 79 CPU checks in `tests/test_per_order_cumulative.py` passed, at degrees 4 and 8 with unit-scale
+All 92 CPU checks in `tests/test_per_order_cumulative.py` passed, at degrees 4 and 8 with unit-scale
 scores and the coefficient and cumulative-sum gradients compared order by order. FP64 references
 cover the scan and strips in FP64 (1e-10) and FP32 (3e-5), and the module's route through
 `forget_gate.log_decay` and the cumulative sum (every gate parameter, 5e-5). Duplicated orders
 reproduce shared cumulative FoX (FP32 to 2e-6, FP64 to 1e-12), with each shared parameter's gradient
 the sum over its copies. Constant gates reproduce per-order query-distance gates (FP32 to 2e-5, FP64
-to 1e-11). A nonfinite `log alpha` poisons the rows from its token on. Orders stay isolated, and the
-degree-zero term gives the decay matrix `exp(L_t0 - L_i0)` with an exact diagonal. At
-initialization the model equals shared cumulative FoX, and with `w_alpha = 0` it equals the
-per-order query-distance model. Each extra order adds 188,580 parameters in the Transformer++
-shape. The suite also checks weight-decay masks, training updates of every layer, head, and order,
-diagnostics (per-order half-lives), and acceptance selection.
+to 1e-11). A nonfinite `log alpha` poisons the rows from its token on. Open and closed gates
+(`log alpha` 0, -100, -1e30, and mixed by order) keep the output and every gradient finite and
+within 3e-5 of FP64: each order's gap is masked before `exp`, a closed order keeps only the diagonal
+term, and its `log alpha` gradient is exactly zero. The jaxprs of the scan and the strips, forward
+and VJP, hold one order's `[B,H,Q,K]` factor at a time. Orders stay isolated, and the degree-zero
+term gives the decay matrix `exp(L_t0 - L_i0)` with an exact diagonal. At initialization the model
+equals shared cumulative FoX, and with `w_alpha = 0` it equals the per-order query-distance model.
+Each extra order adds 188,580 parameters in the Transformer++ shape. At the Transformer++ widths
+and context with BF16, where Mosaic runs the per-order query-distance twin, Mosaic refuses the
+cumulative recipe. The suite also checks weight-decay masks, training updates of every layer, head,
+and order, diagnostics (per-order half-lives, and the formula of each decay mode), and acceptance
+selection.
 `tests/test_blocked_strips.py` adds both families and the per-order query-distance family to its
-scan/strips equivalence checks (161 passed). Its FP64 model check compares the forget gate's own
-parameters to 2e-6: the gate projects in FP32 by design, and the two programs order its FP32 sums
-over tokens differently (every other gradient still agrees to 1e-11).
+scan/strips equivalence checks (161 passed). Its FP64 model check compares every gradient to 1e-11,
+except the forget-gate parameters of the query-distance exponential, which must agree within one
+FP32 epsilon per summed token (64) at their scale: the gate computes in FP32 by design, both
+programs give it the same FP32 cotangent, and XLA orders that recipe's FP32 sums over the tokens
+differently (2 ulps in `dt_bias`'s gradient on CPU).
 
 Existing mechanisms are unchanged against `e6ed4e58`. The jaxprs of
 `blocked_dot_product_attention` and `strip_dot_product_attention` are identical for 37 existing

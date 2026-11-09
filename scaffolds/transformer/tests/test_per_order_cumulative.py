@@ -44,9 +44,10 @@ SHAPES = ((37, 8, 16), (5, 8, 8), (1, 8, 8))
 NAMES = ("output", "q", "k", "v", "coefficients", "log_decay")
 
 
-def _config(degree=4, **changes):
+def _config(degree=4, *, dtype="float32", **changes):
     """Tiny per-order cumulative recipes as allocated: factorial-scaled tanh query coefficients with
-    W decay, no positional encoding, canonical QK RMSNorm, per-head output RMSNorm, causal strips."""
+    W decay, no positional encoding, canonical QK RMSNorm, per-head output RMSNorm, causal strips;
+    ``dtype`` is train.dtype (Mosaic recipes require BF16)."""
     model = dict(vocab_size=32, max_seq_len=8, num_layers=2, hidden_size=16, num_heads=2, num_kv_heads=2,
                  qk_head_dim=8, value_head_dim=8, intermediate_size=32, positional_encoding="none",
                  attention_backend="blocked", attention_blocked_implementation="strips", attention_degree=degree,
@@ -64,6 +65,7 @@ def _config(degree=4, **changes):
     config.optim.total_steps, config.optim.warmup_steps = 4, 0
     config.optim.learning_rate = config.optim.min_learning_rate = .001
     config.optim.weight_decay = .1
+    config.train.dtype = dtype
     validate_config(config)
     return config
 
@@ -278,6 +280,33 @@ def test_bfloat16_strips_stay_near_float32(degree):
     assert _relative_l2(low.astype(jnp.float32), high) < 2 ** -7
 
 
+def _value_shapes(jaxpr):
+    """The shape of every value that a jaxpr and its sub-jaxprs (scan bodies, checkpoints) compute."""
+    from jax.extend.core import subjaxprs
+
+    shapes = {tuple(getattr(variable.aval, "shape", ())) for equation in jaxpr.eqns for variable in equation.outvars}
+    for inner in subjaxprs(jaxpr):
+        shapes |= _value_shapes(inner)
+    return shapes
+
+
+@pytest.mark.parametrize("implementation", IMPLEMENTATIONS)
+@pytest.mark.parametrize("degree", DEGREES)
+def test_one_order_factor_at_a_time(degree, implementation):
+    """The forward and the VJP hold one order's [B,H,Q,K] decay factor at a time: no value of the scan
+    (16-query blocks) or the strips (32-query strips) of 64 tokens carries the order axis with both a
+    query axis and a key axis, which would multiply each block's working set by m + 1."""
+    batch, time, heads, width, orders = 2, 64, 3, 4, degree + 1
+    q, c = jnp.zeros((batch, time, heads, width)), jnp.zeros((batch, time, heads, orders))
+    attend = _production(implementation, degree, block=16, strip=32)
+    shapes = _value_shapes(jax.make_jaxpr(lambda *x: _vjp(attend, x, q))(q, q, q, c, c).jaxpr)
+    # Query blocks or strips and key spans are the only axes of 16 or more here.
+    assert not [shape for shape in shapes if orders in shape and sum(size >= 16 for size in shape) >= 2]
+    # The walk reaches the blocks: one order's factor [B,H,Q,K] and every key's sums [B,H,1,K,R].
+    assert (batch, heads, 16 if implementation == "scan" else 32, time) in shapes
+    assert (batch, heads, 1, time, orders) in shapes
+
+
 # --- Equivalences -------------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("implementation", IMPLEMENTATIONS)
@@ -371,6 +400,49 @@ def test_constant_gates_are_per_order_query_distance_gates(degree, implementatio
 
 # --- Invalid values, causality, and order isolation ---------------------------------------------------
 
+# Raw log alpha of the five orders at degree four, the same at every token: open gates (exp(0) = 1),
+# closed gates (exp(-100) is subnormal in FP32; -1e30 underflows at once), and the two mixed by order.
+GATE_STATES = {"open": (0.0,) * 5, "closed": (-100.0,) * 5, "closed_at_once": (-1e30,) * 5,
+               "mixed": (0.0, -1e30, 0.0, -100.0, -1e30)}
+
+
+@pytest.mark.parametrize("state", list(GATE_STATES))
+@pytest.mark.parametrize("implementation", IMPLEMENTATIONS)
+def test_open_and_closed_gates_stay_finite(implementation, state):
+    """Each order's L_tr - L_ir is masked before exp: a closed gate's huge positive gaps at future keys
+    never overflow, so the output and the gradients of Q, K, V, the coefficients, and the raw log alpha
+    (through the cumulative sum) stay finite and match FP64. An open order is its ungated term over the
+    causal prefix; a closed order keeps each query's own key, c_tr s_tt^r v_t, and its log alpha has a
+    zero gradient."""
+    (q, k, v, c, _), cotangent = _inputs(37, 4)
+    values = np.asarray(GATE_STATES[state])
+    closed = values < 0
+    raw = np.broadcast_to(values, c.shape)
+    attend = _production(implementation, 4)
+    with jax.enable_x64():
+        expected = jax.tree.map(np.asarray, _vjp(lambda q, k, v, c, a: _dense(q, k, v, c, jnp.cumsum(a, axis=1)),
+                                                 tuple(jnp.asarray(x, jnp.float64) for x in (q, k, v, c, raw)),
+                                                 jnp.asarray(cotangent)))
+    with jax.default_matmul_precision("highest"):
+        actual = jax.jit(lambda *x: _vjp(lambda q, k, v, c, a: attend(q, k, v, c, jnp.cumsum(a, axis=1)),
+                                         x, jnp.asarray(cotangent, jnp.float32)))(
+            *(jnp.asarray(x, jnp.float32) for x in (q, k, v, c, raw)))
+    for name, array in zip(NAMES, (actual[0], *actual[1]), strict=True):
+        assert np.isfinite(np.asarray(array)).all(), name
+    _compare((actual[0], actual[1][:4]), (expected[0], expected[1][:4]), 3e-5, names=NAMES[:5])
+    log_alpha, wanted = np.asarray(actual[1][4]), expected[1][4]
+    np.testing.assert_array_equal(wanted[..., closed], 0)
+    np.testing.assert_array_equal(log_alpha[..., closed], 0)
+    for order in np.flatnonzero(~closed):
+        assert _relative_l2(log_alpha[..., order], wanted[..., order]) < 3e-5, order
+    # The limits themselves: the causal prefix for open orders, the diagonal alone for closed ones.
+    scores = np.einsum("bthd,bihd->bhti", q, k) / math.sqrt(q.shape[-1])
+    masks = np.where(closed[:, None, None], np.eye(37), np.tril(np.ones((37, 37))))
+    weights = sum(np.transpose(c, (0, 2, 1, 3))[..., r, None] * scores ** r * masks[r] for r in range(5))
+    limit = np.einsum("bhti,bihd->bthd", weights, v)
+    np.testing.assert_allclose(actual[0], limit, rtol=2e-5, atol=2e-5 * np.abs(limit).max())
+
+
 @pytest.mark.parametrize("bad", (float("nan"), float("inf"), float("-inf")))
 @pytest.mark.parametrize("implementation", IMPLEMENTATIONS)
 def test_a_nonfinite_log_alpha_poisons_from_its_token_on(implementation, bad):
@@ -436,7 +508,7 @@ def test_accepted_recipes(degree):
     for encoding in ("none", "rope"):
         for implementation in IMPLEMENTATIONS:
             config = _config(degree, positional_encoding=encoding, attention_blocked_implementation=implementation)
-            assert config.model.attention_forget_gate_per_order and not config.model.mosaic_decay_supported()
+            assert config.model.attention_forget_gate_per_order
             attention_from_config(config.model, rngs=nnx.Rngs(0))
     for changes in ({"attention_coefficient_activation": "sigmoid", "attention_coefficient_amplitude_initial": 1.0,
                      "attention_coefficient_scale": "none"},
@@ -450,7 +522,6 @@ def test_accepted_recipes(degree):
 PATH = {"positional_encoding": "path", "qk_head_dim": 16, "value_head_dim": 16,
         "attention_blocked_implementation": "scan"}
 INVALID = (
-    ({"attention_backend": "mosaic"}, None),
     ({"attention_backend": "auto"}, "Per-order gates"),
     ({"attention_backend": "fused"}, "Per-order gates"),
     ({"attention_forget_gate_conditioning": "query_key"}, "Per-order cumulative gates take query conditioning"),
@@ -474,10 +545,30 @@ INVALID = (
 @pytest.mark.parametrize("change,message", INVALID,
                          ids=[",".join(f"{k}={v}" for k, v in c.items())[:60] for c, _ in INVALID])
 def test_unqualified_recipes_are_rejected(change, message):
-    """Mosaic (no cumulative kernels), auto and fused, endpoint or bounded rates, other gate forms, PaTH,
-    no gate, static coefficients, and softmax or the exponential."""
+    """Auto and fused, endpoint or bounded rates, other gate forms, PaTH, no gate, static coefficients,
+    and softmax or the exponential (Mosaic below)."""
     with pytest.raises(ValueError, match=message):
         _config(4, **change)
+
+
+# The Transformer++ head widths and context, where the Mosaic decay kernels run per-order gates.
+MOSAIC_SHAPE = dict(qk_head_dim=64, value_head_dim=64, max_seq_len=2048)
+
+
+@pytest.mark.parametrize("degree", DEGREES)
+def test_mosaic_refuses_cumulative_gates_where_it_runs_query_distance_gates(degree, monkeypatch):
+    """At the Transformer++ widths and context with BF16, Mosaic runs the per-order query-distance twin
+    but has no cumulative kernels: its support check is false for this recipe, which is refused on
+    Mosaic. The per-order cumulative clause refuses Mosaic on its own, should that check ever accept."""
+    twin = dict(attention_forget_gate_mode="query_distance", **MOSAIC_SHAPE)
+    assert _config(degree, **twin).model.mosaic_decay_supported()
+    _config(degree, attention_backend="mosaic", dtype="bfloat16", **twin)
+    assert not _config(degree, **MOSAIC_SHAPE).model.mosaic_decay_supported()
+    with pytest.raises(ValueError, match="query-distance"):
+        _config(degree, attention_backend="mosaic", dtype="bfloat16", **MOSAIC_SHAPE)
+    monkeypatch.setattr(ModelConfig, "mosaic_decay_supported", lambda self: True)
+    with pytest.raises(ValueError, match="Per-order cumulative gates take query conditioning on the blocked"):
+        _config(degree, attention_backend="mosaic", dtype="bfloat16", **MOSAIC_SHAPE)
 
 
 def test_the_operation_rejects_cumulative_orders_outside_query_polynomials_and_off_blocked():
@@ -633,6 +724,13 @@ def test_identity_and_per_order_diagnostics(degree):
     # Duplicated starts: every order has the shared gate's statistics.
     np.testing.assert_allclose(mean, np.broadcast_to(mean[..., :1], mean.shape), rtol=1e-6)
     assert np.asarray(gate["rate_exp_A_log"]).shape == (2, 2, orders)
+    # The report follows the recipe's decay mode: the per-order query-distance twin's formula.
+    twin = _config(degree, attention_forget_gate_mode="query_distance")
+    report = attention_diagnostics(create_state(twin, jax.random.PRNGKey(0)), twin, *fixed_diagnostic_sample(twin))
+    assert report["valid"], report["issues"]
+    gate = report["coefficients"]["forget_gate"]
+    assert gate["axes"] == ["layer", "head", "polynomial_order"]
+    assert gate["formula"].endswith("degree-r weight multiplied by exp((t-i) log alpha_tir)")
 
 
 def test_acceptance_selects_these_checks_on_cpu_and_gpu():
