@@ -359,11 +359,14 @@ best PPL 14.226.
 Both use the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) on one H100 each.
 B300 cannot hold the per-order gates at degree twelve either; it could run the shared gate,
 which uses H100 too so that the pair trains on the same GPU type. GPU qualification adds
-degree twelve to the degree-eight checks: `test_per_order_decay.py` checks the per-order
-output and every gradient against FP64, order by order, and duplicated orders against the
-shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate against FP64 and,
-above degree four, compares its coefficient gradient order by order, since the highest
-orders dominate its norm.
+degree twelve to the degree-eight checks. `test_per_order_decay.py` checks the per-order
+output and every gradient against FP64, comparing the output and the q, k and v gradients as
+whole arrays and each order's coefficient and gate gradients separately, and duplicated
+orders against the shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate
+against FP64, with its coefficient gradient compared order by order. At degree twelve the
+highest orders barely move the output and the q, k and v gradients, so both tests add a case
+that keeps only orders 9-12: dropping order 12 there moves those arrays by 2-40 times their
+tolerances.
 
 ## Open decision
 

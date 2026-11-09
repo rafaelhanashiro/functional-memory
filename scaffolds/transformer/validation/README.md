@@ -32,6 +32,10 @@ per-order test inputs, dropping order 12, giving order 12 order 0's gate, or dro
 9–12 each fails that test's checks for both gates: the affected orders' coefficient and gate
 gradients miss by 100–450× their tolerance, and dropping orders 9–12 also moves the output by
 0.0082–0.0083 against its 0.006 bound (dropping order 12 alone moves it by 3.3e-4–3.7e-4).
+Those per-order sums come from the dQ kernel. The output and the q, k and v gradients, which the
+forward and dK/dV kernels also compute, barely move with the top orders at degree twelve, so
+both tests add a case that keeps only orders 9–12: there, dropping order 12 moves them by
+8.6–40 (per-order gates) and 1.9–6.7 (shared gate) times their tolerances.
 The degree-twelve GPU cases have not yet run.
 
 ### Architecture-aware per-order Mosaic support (2026-11-08)

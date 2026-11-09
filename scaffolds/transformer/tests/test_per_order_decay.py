@@ -327,13 +327,17 @@ def mosaic_operation(q, k, v, c, x, wq, wk, rate, bias, *, endpoint, per_order=T
                           query_decay_mode="query_distance", **gate)
 
 
-def _mosaic_inputs(time=2048, *, key=True, degree=4):
+def _mosaic_inputs(time=2048, *, key=True, degree=4, top=False):
+    """``top`` keeps only the four highest orders' coefficients, so that they dominate the output
+    and the q, k and v gradients, which every kernel computes, instead of hardly moving them."""
     arrays = list(inputs(time, degree, width=64, value_width=64))
     if degree > 4:
         # Unit-scale scores, as QK RMSNorm gives, so that every order up to the degree
         # contributes; the degree-4 checks keep the score scale they were qualified with.
         arrays[:2] = [a / .4 for a in arrays[:2]]
     arrays[3] = arrays[3] / jnp.asarray([math.factorial(r) for r in range(degree + 1)], jnp.float32)
+    if top:
+        arrays[3] = arrays[3] * (jnp.arange(degree + 1) > degree - 4)
     if not key:
         arrays[6] = jnp.zeros_like(arrays[6])
     arrays[:3] = [a.astype(jnp.bfloat16) for a in arrays[:3]]
@@ -342,11 +346,14 @@ def _mosaic_inputs(time=2048, *, key=True, degree=4):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", MOSAIC_DEGREES)
+@pytest.mark.parametrize("degree,top", (*((degree, False) for degree in MOSAIC_DEGREES), (12, True)),
+                         ids=(*map(str, MOSAIC_DEGREES), "12-top"))
 @pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
-def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degree):
+def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degree, top):
+    """At degree 12 the top orders barely move the output and the q, k, v gradients, so a second
+    case keeps only orders 9-12; the zeroed orders' gate gradients are then exactly zero."""
     _requires_mosaic_gpu()
-    arrays, cotangent = _mosaic_inputs(key=endpoint, degree=degree)
+    arrays, cotangent = _mosaic_inputs(key=endpoint, degree=degree, top=top)
     def evaluate(*args):
         out, backward = jax.vjp(partial(mosaic_operation, endpoint=endpoint), *args)
         return out, backward(cotangent)
@@ -374,6 +381,9 @@ def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degr
         parts = ([(got, want)] if axis is None else
                  [(np.take(got, r, axis), np.take(want, r, axis)) for r in range(want.shape[axis])])
         for order, (part, reference) in enumerate(parts):
+            if not np.linalg.norm(reference):  # a zeroed order's gate gradients
+                np.testing.assert_array_equal(part, 0)
+                continue
             error = np.linalg.norm(part - reference) / np.linalg.norm(reference)
             assert error < tolerances[i], (endpoint, i, order, error)
 

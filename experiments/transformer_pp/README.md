@@ -1169,8 +1169,8 @@ per-order gates at degree eight at this shape; it could run the shared gate, but
 uses H100 too, so that the pair trains on the same GPU type. These jobs have no
 scheduling dependencies on each other.
 
-`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
-eight on the Mosaic backend, and requires every initial parameter to equal those of
+`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows degrees eight
+and twelve on the Mosaic backend, and requires every initial parameter to equal those of
 cumulative FoX `r9353f554b917` at the same seed. `per_order_decay_acceptance` pins
 `r9320e5cd3071` as the per-order run's shared-gate control, collapses the nine duplicated
 order axes, and verifies the control's initialization fingerprint.
