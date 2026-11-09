@@ -340,7 +340,7 @@ def _mosaic_inputs(time=2048, *, key=True, degree=4):
 @pytest.mark.gpu
 @pytest.mark.parametrize("degree", MOSAIC_DEGREES)
 @pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
-def test_mosaic_per_order_output_and_every_gradient_match_host_fp64(endpoint, degree):
+def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degree):
     _requires_mosaic_gpu()
     arrays, cotangent = _mosaic_inputs(key=endpoint, degree=degree)
     def evaluate(*args):

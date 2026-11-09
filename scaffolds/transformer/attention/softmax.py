@@ -31,13 +31,19 @@ def padded_dot_product_attention(
 def softmax_attention(
     q: jax.Array, k: jax.Array, v: jax.Array, *, backend: str = "blocked",
     return_diagnostics: bool = False, dropout=None, deterministic: bool = True,
-    rngs=None, weights_dtype=None,
+    rngs=None, weights_dtype=None, blocked_implementation: str = "scan",
 ):
-    """Exact softmax with legacy dropout arithmetic and optional diagnostics."""
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    """Exact softmax with legacy dropout arithmetic and optional diagnostics.
+
+    ``blocked_implementation`` ("scan" or "strips") selects the blocked backend's execution.
+    """
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     if backend == "blocked":
-        return blocked_dot_product_attention(q, k, v, return_diagnostics=return_diagnostics)
+        return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
+                                         return_diagnostics=return_diagnostics)
     if backend == "manual":
         seq_len = q.shape[1]
         scores = jnp.einsum("bthd,bshd->bhts", q, k) / math.sqrt(q.shape[-1])

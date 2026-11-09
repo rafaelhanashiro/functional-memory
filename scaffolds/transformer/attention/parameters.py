@@ -96,7 +96,18 @@ def expand_polynomial_coefficients(values: jax.Array, degree: int, orders: tuple
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     """Ask the configured mechanism, then the score option, which trainable arrays they need."""
-    if getattr(config, "attention_coefficients", "fixed") == "learned":
+    if (getattr(config, "attention_coefficients", "fixed") == "learned"
+            and getattr(config, "attention_kernel_basis", "polynomial") == "bspline"):
+        # B-spline coefficients (attention/spline.py): not monomial orders, never factorial-scaled.
+        from scaffolds.transformer.attention.spline import parameter_specs as spline_specs
+
+        specs = spline_specs(
+            hidden_size=config.hidden_size, degree=config.attention_degree, knots=config.attention_spline_knots,
+            conditioning=config.attention_coefficient_conditioning,
+            amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
+            projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
+            kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False))
+    elif getattr(config, "attention_coefficients", "fixed") == "learned":
         parameterization = getattr(config, "attention_coefficient_parameterization", "direct")
         conditioning = getattr(config, "attention_coefficient_conditioning", "static")
         if conditioning in ("query", "query_key"):
@@ -111,7 +122,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
                 readout=getattr(config, "attention_coefficient_readout", "diagonal"),
-                feature_count=getattr(config, "attention_coefficient_feature_count", None))
+                feature_count=getattr(config, "attention_coefficient_feature_count", None),
+                gate=getattr(config, "attention_coefficient_gate", "none"))
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 

@@ -74,6 +74,15 @@ def test_mosaic_kernels_are_an_execution_choice_but_other_backends_are_rejected(
         adapter.check_recipe(config)
 
 
+@pytest.mark.parametrize("backend", ("blocked", "mosaic"))
+def test_the_blocked_strips_are_an_execution_choice(backend):
+    """New ablations on the blocked backend train on its causal strips; the control used the scan."""
+    config = variant()
+    config.model.attention_backend = backend
+    config.model.attention_blocked_implementation = "strips"
+    adapter.check_recipe(config)
+
+
 def test_execution_names_may_change():
     config = variant()
     config.train.workdir = "/new/run"

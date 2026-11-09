@@ -32,6 +32,11 @@ def main() -> None:
         "--allow-triton-attention", action="store_true",
         help="explicitly keep the fused Triton kernels for a fresh recipe that a Mosaic GPU kernel implements",
     )
+    create.add_argument(
+        "--allow-scan-blocked-attention", action="store_true",
+        help="explicitly keep the historical blocked scan for a fresh dot-product recipe on the blocked "
+             "(or auto) backend instead of causal strips",
+    )
     index = commands.add_parser("index")
     index.add_argument("study", type=Path)
     validate = commands.add_parser(
@@ -61,6 +66,7 @@ def main() -> None:
             parser.error("--config must contain a YAML mapping")
         if isinstance(recipe.get("model"), dict):
             from scaffolds.transformer.configs import Config, config_to_dict, load_config
+            from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips
             from scaffolds.transformer.models.initialization import REFERENCE
             supplied_model = recipe["model"]
             unset = "initialization" not in supplied_model
@@ -71,6 +77,10 @@ def main() -> None:
                 and supplied_model.get("attention_degree") != 0
                 and supplied_model.get("qk_norm") is not False
                 and not args.allow_legacy_qk_normalization)
+            # Dot-product attention with RoPE or no positional encoding that can train on the
+            # blocked backend (blocked or auto) uses its causal strips. PaTH, GLA, and Gated
+            # DeltaNet have their own blocked code; other backends keep the inert scan default.
+            use_strips = fresh_recipe_uses_blocked_strips(supplied_model)
             if use_canonical_qk:
                 incompatible = [key for key, value in canonical_qk.items()
                                 if key in supplied_model and supplied_model[key] != value]
@@ -88,6 +98,8 @@ def main() -> None:
                 if use_canonical_qk:
                     for key, value in canonical_qk.items():
                         setattr(config.model, key, value)
+                if use_strips:
+                    config.model.attention_blocked_implementation = "strips"
                 return config
 
             config = load_config(args.config, config_factory=fresh_config)
@@ -116,6 +128,13 @@ def main() -> None:
                     "new runs of this mechanism use the Mosaic GPU kernels; this recipe sets "
                     "model.attention_backend: fused. Use mosaic (or auto), or --allow-triton-attention "
                     "only when the Triton kernels were explicitly requested."
+                )
+            if (use_strips and model["attention_blocked_implementation"] == "scan"
+                    and not args.allow_scan_blocked_attention):
+                parser.error(
+                    "new dot-product runs on the blocked backend train on its causal strips; this recipe sets "
+                    "model.attention_blocked_implementation: scan. Use strips (or leave it unset), or "
+                    "--allow-scan-blocked-attention only when the scan was explicitly requested."
                 )
             recipe["train"]["source_commit"] = "auto"
             study = args.study.parent if args.study.name == "sweep.yaml" else args.study

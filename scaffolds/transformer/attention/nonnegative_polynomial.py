@@ -94,9 +94,9 @@ def _horner(scores: jax.Array, coefficients: jax.Array) -> jax.Array:
     return value
 
 
-def square_sum_polynomial(scores: jax.Array, factors: jax.Array, degree: int) -> jax.Array:
-    """q1(s)^2 + q2(s)^2 in FP32 for shared ([m+1]) or per-head ([heads, m+1]) factors."""
-    factors = jnp.broadcast_to(factors, (scores.shape[1], degree + 1)).astype(jnp.float32)
+def square_sum_polynomial(scores: jax.Array, factors: jax.Array, degree: int, *, dtype=jnp.float32) -> jax.Array:
+    """q1(s)^2 + q2(s)^2 in FP32 (``dtype``) for shared ([m+1]) or per-head ([heads, m+1]) factors."""
+    factors = jnp.broadcast_to(factors, (scores.shape[1], degree + 1)).astype(dtype)
     q1, q2 = split_factors(factors, degree)
     return jnp.square(_horner(scores, q1)) + jnp.square(_horner(scores, q2))
 

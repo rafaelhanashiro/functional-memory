@@ -15,7 +15,6 @@ degrees:
 - 1
 - 2
 - 3
-- 4
 runs:
 - run_id: r668a588ddc0b
   role: reference
@@ -351,32 +350,6 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/r83c3394eb730/best_validation.json
       sha256: bd5a2c35ed07fab2217a52db7435d2ac5ace5b848fdb07d6b893d818f0ec2264
-- run_id: r4f60c2ce2f1f
-  role: primary
-  label: polynomial, m=4
-  mechanism: gated_deltanet
-  d_k: 8
-  erase: independent
-  write: sigmoid
-  degree: 4
-  control: r5c9701488368
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml
-      sha256: 91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e
-- run_id: r1d67ac6f0223
-  role: primary
-  label: polynomial, m=4
-  mechanism: gated_deltanet
-  d_k: 16
-  erase: independent
-  write: sigmoid
-  degree: 4
-  control: rae2329afb5bd
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml
-      sha256: debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6
 - run_id: rf65d38ec0552
   role: variant
   label: independent erase, tanh write, m=1

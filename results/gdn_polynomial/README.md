@@ -126,17 +126,17 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
 <!-- BEGIN GENERATED RESULTS -->
 ### Terminal perplexity
 
-18 cells: 10 complete, 0 incomplete, 0 pending, 7 cancelled, 1 not run, 0 failed.
+15 cells: 10 complete, 0 incomplete, 0 pending, 5 cancelled, 0 not run, 0 failed.
 
 ![Terminal perplexity by key width](terminal_ppl.png)
 
 [PDF](terminal_ppl.pdf)
 
-| d_K | softmax | Gated DeltaNet | GDN m = 1 | GDN m = 2 | GDN m = 3 | GDN m = 4 |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 8 | 15.732 | 14.816 | cancelled | cancelled | 13.817 | cancelled |
-| 16 | 14.470 | 14.217 | cancelled | cancelled | 13.439 | cancelled |
-| 64 | 13.731 | 13.594 | 13.579 | 13.179 | cancelled (update 7,000: 15.64) | — |
+| d_K | softmax | Gated DeltaNet | GDN m = 1 | GDN m = 2 | GDN m = 3 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 | 15.732 | 14.816 | cancelled | cancelled | 13.817 |
+| 16 | 14.470 | 14.217 | cancelled | cancelled | 13.439 |
+| 64 | 13.731 | 13.594 | 13.579 | 13.179 | cancelled (update 7,000: 15.64) |
 
 ### Against tied Gated DeltaNet
 
@@ -182,10 +182,10 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
 ## Cancelled runs
 
 No polynomial GDN runs remain queued. The width-matched controls at `d_K = 8`
-and 16 (independent erase `m = 1`, quadratic `m = 2`) and quartic `m = 4` at both
-widths were cancelled before training. Cubic `d_K = 64` was also cancelled; this
-collection retains its pinned measurements through update 7,000, not a terminal
-result. All seven runs remain selected, with their recipes and retained artifacts.
+and 16 (independent erase `m = 1`, quadratic `m = 2`) were cancelled before training.
+Cubic `d_K = 64` was also cancelled; this collection retains its pinned measurements
+through update 7,000, not a terminal result. All five runs remain selected, with their
+recipes and retained artifacts.
 
 ## Limits
 

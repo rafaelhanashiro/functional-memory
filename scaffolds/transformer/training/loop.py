@@ -61,6 +61,7 @@ from scaffolds.transformer.training.metrics import (
     ValidationMetricsStore,
     write_json_atomic,
 )
+from scaffolds.transformer.training.coefficient_release import coefficient_release, mask_frozen_gradients
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
 from scaffolds.transformer.training.numerics import checked_update_loss, requires_update_checks, update_numerics
 from scaffolds.transformer.training.randomness import model_forward_rngs
@@ -124,6 +125,7 @@ def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all
                coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True):
     loss, grads = loss_and_grads(state, batch, rng,
                                  **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+    grads = mask_frozen_gradients(state, grads)
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
@@ -158,7 +160,7 @@ def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Arra
     zero_grads = jax.tree_util.tree_map(jnp.zeros_like, state.params)
     (loss_sum, grad_sum), _ = jax.lax.scan(accumulate, (jnp.zeros((), dtype=jnp.float32), zero_grads), (batches, rngs))
     scale = jnp.asarray(1.0 / batches.shape[0], dtype=loss_sum.dtype)
-    grads = jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum)
+    grads = mask_frozen_gradients(state, jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum))
     loss = loss_sum * scale
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
@@ -679,6 +681,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     print(f"param_count={parameter_count} restored_step={restored_step} packed_data_start_sequence={start_sequence}", flush=True)
     print(f"data_parallel_devices={layout.device_count} global_batch_size={layout.global_batch_size} "
           f"global_micro_batch_size={layout.global_micro_batch_size} grad_accum_steps={layout.grad_accum_steps}", flush=True)
+    release = coefficient_release(config)
+    if release is not None:
+        print(f"coefficient_release_schedule={release.schedule} "
+              f"release_updates={','.join(map(str, release.counts))} "
+              f"trainable_orders={release.trainable_orders(start_step)}", flush=True)
     penalty_weight = config.optim.coefficient_penalty
     penalty_options = _penalty_arguments(penalty_weight, config.optim.coefficient_penalty_denominator)
     penalty_sum = (jax.jit(partial(coefficient_penalty_sum, model=config.model,
@@ -823,6 +830,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             print(f"continuation_baseline step={start_step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f}", flush=True)
             window_time = time.perf_counter()
         for step in trange(start_step + 1, end_step + 1, desc="train"):
+            if release is not None and (released := release.released_at(step - 1)):
+                # This step's update, optimizer count step - 1, is the first to train these orders.
+                print(f"coefficient_release update={step - 1} step={step} "
+                      f"orders={','.join(map(str, released))}", flush=True)
+                tracking.log_coefficient_release(wandb_run, step, release.trainable_orders(step - 1))
             train_step_start = time.perf_counter()
             step_rng = jax.random.fold_in(rng, step)
             if data_parallel is not None:
@@ -870,7 +882,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                                   "preceding_update": previous_telemetry}
                                                  if telemetry_values is not None else None))
             # This is the already-computed norm of the full, averaged gradient
-            # before the optimizer clips it, including any coefficient penalty.
+            # before the optimizer clips it, including any coefficient penalty and
+            # excluding coefficient entries a release schedule still freezes.
             gradient_norm = (float(np.asarray(jax.device_get(numerical_metrics[0]))[1])
                              if numerical_metrics else None)
             if gradient_norm is not None:

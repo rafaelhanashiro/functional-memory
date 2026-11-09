@@ -625,20 +625,16 @@ and kernel benchmarks are documented in the linked scaffold validation record.
 These runs add polynomial memory (`model.gdn_polynomial_degree`), narrower keys, or a tanh
 linear write (`model.gdn_write_activation: tanh`) to independent-erase GDN; the
 [polynomial GDN comparison](../../results/gdn_polynomial/README.md) defines the model and
-holds the findings. Home cluster: Kennel. Each run executes from its own worktree, and
-its record's `submission` holds the exact launch command, source commit, and working
-directory.
+holds the findings. Home cluster: Kennel. Each record's `submission` holds the exact
+launch command, source commit, and working directory; the completed runs' retained
+checkpoints and logs are in their run directories here.
 
-| Run | Variant | d_K | Worktree | Status |
-| --- | --- | ---: | --- | --- |
-| `rd40af7956426` | quadratic | 64 | `worktrees/gdn-quadratic` | complete |
-| `r83c3394eb730` | cubic | 64 | `worktrees/gdn-cubic` | training |
-| `ra79e66bd9121` | cubic | 16 | `worktrees/gdn-small-width` | complete |
-| `ra98612db06d4` | cubic | 8 | `worktrees/gdn-small-width` | complete |
-| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | `worktrees/gdn-small-width` | held |
-| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | `worktrees/gdn-small-width` | held |
-| `r1d67ac6f0223`, `r4f60c2ce2f1f` | quartic | 16, 8 | `worktrees/gdn-quartic` | held |
-| `rf65d38ec0552` | tanh linear write | 64 | `worktrees/gdn-tanh-write` | complete |
-
-The records here are copies of the worktree records; a worktree's own record stays
-authoritative until its branch merges.
+| Run | Variant | d_K | Status |
+| --- | --- | ---: | --- |
+| `rd40af7956426` | quadratic | 64 | complete |
+| `r83c3394eb730` | cubic | 64 | cancelled |
+| `ra79e66bd9121` | cubic | 16 | complete |
+| `ra98612db06d4` | cubic | 8 | complete |
+| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | cancelled before training |
+| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | cancelled before training |
+| `rf65d38ec0552` | tanh linear write | 64 | complete |

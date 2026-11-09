@@ -34,8 +34,10 @@ def check_recipe(config: Config) -> None:
     actual, expected = config_to_dict(config), config_to_dict(control_config())
     actual["model"]["attention_forget_gate_conditioning"] = "query"
     actual["model"]["attention_forget_gate_rate_activation"] = "softplus"
-    # The attention implementation is an execution choice: both backends compute the same weights.
-    actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
+    # The attention implementation is an execution choice: both backends compute the same weights,
+    # and the blocked backend's causal strips (which new runs there use) the scan's arithmetic.
+    for key in ("attention_backend", "attention_blocked_implementation"):
+        actual["model"][key] = expected["model"][key]
     for recipe in (actual, expected):
         for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode"):
             recipe["train"].pop(key, None)

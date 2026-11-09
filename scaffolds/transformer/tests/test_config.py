@@ -192,3 +192,54 @@ def test_fused_diagnostics_metadata_reports_adaptive_tiles(qk_dim, value_dim, ti
     identity = attention_identity(config)
     assert identity["attention_implementation"] == "cudnn"
     assert identity["query_block_size"] is identity["key_block_size"] is None
+
+
+def test_blocked_implementation_defaults_to_the_historical_scan(tmp_path):
+    from scaffolds.transformer.configs import config_to_dict
+    from scaffolds.transformer.configs.loader import config_dicts_equal
+
+    path = tmp_path / "historical.yaml"
+    path.write_text(yaml.safe_dump({"model": {"attention_backend": "blocked", "attention_forget_gate": True}}))
+    historical = load_config(path)
+    assert historical.model.attention_blocked_implementation == "scan"
+    # A recorded configuration that predates the field compares equal to its scan default.
+    legacy = config_to_dict(historical)
+    del legacy["model"]["attention_blocked_implementation"]
+    assert config_dicts_equal(legacy, config_to_dict(historical))
+    historical.model.attention_blocked_implementation = "strips"
+    validate_config(historical)
+    assert not config_dicts_equal(legacy, config_to_dict(historical))
+    save_config(historical, tmp_path / "strips.yaml")
+    assert load_config(tmp_path / "strips.yaml").model.attention_blocked_implementation == "strips"
+
+
+@pytest.mark.parametrize("model", [{}, {"positional_encoding": "none"},
+                                   {"attention_backend": "mosaic", "attention_degree": 2, "qk_head_dim": 64,
+                                    "value_head_dim": 64}])
+def test_strips_apply_to_dot_product_attention_with_rope_or_no_position(model):
+    """Any backend may carry the setting; only a resolved blocked backend uses it."""
+    assert ModelConfig(attention_blocked_implementation="strips", **model).attention_blocked_implementation == "strips"
+
+
+@pytest.mark.parametrize("model,expected", [
+    ({}, True), ({"attention_backend": "blocked", "positional_encoding": "none"}, True),
+    ({"attention_backend": "mosaic"}, False), ({"attention_backend": "fused"}, False),
+    ({"attention_backend": "cudnn"}, False), ({"positional_encoding": "path"}, False),
+    ({"attention_mechanism": "gla"}, False), ({"attention_mechanism": "gated_deltanet", "attention_backend": "blocked"}, False),
+])
+def test_fresh_recipes_use_the_strips_where_they_can_train_on_the_blocked_backend(model, expected):
+    """An unset backend is auto, which resolves to blocked where no kernel applies."""
+    from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips
+
+    assert fresh_recipe_uses_blocked_strips(model) is expected
+
+
+@pytest.mark.parametrize("model,error", [
+    ({"attention_blocked_implementation": "flash"}, "Unknown blocked attention implementation"),
+    ({"attention_blocked_implementation": "strips", "attention_mechanism": "gla"}, "own blocked code"),
+    ({"attention_blocked_implementation": "strips", "attention_mechanism": "gated_deltanet"}, "own blocked code"),
+    ({"attention_blocked_implementation": "strips", "positional_encoding": "path"}, "own blocked code"),
+])
+def test_blocked_implementation_is_validated(model, error):
+    with pytest.raises(ValueError, match=error):
+        ModelConfig(**model)

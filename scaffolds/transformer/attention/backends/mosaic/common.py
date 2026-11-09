@@ -326,8 +326,8 @@ def _per_order_backward(family, degree, s, dp, vectors, pair, *, rows, weights=F
     at a time: dS = G sum_r r c_r D_r s^(r-1) and W = sum_r c_r D_r s^r. ``rows`` gives the dQ
     sums (see above); otherwise the per-key sums of the endpoint dK pass. Orders 0 and 1 start
     every accumulator in its layout; later orders form a rolled loop (``_per_order_weights``)
-    whose sums reach their order's accumulator through 0/1 masks. A NaN sum (an invalid gate,
-    whose row is NaN already) therefore also reaches its row's later-order accumulators."""
+    whose sums reach their order's accumulator through 0/1 masks. A NaN sum at a rolled order (an
+    invalid gate, whose row is NaN already) therefore reaches every rolled order's accumulator."""
     endpoint = family == PER_ORDER_ENDPOINT_DECAY
     orders = degree + 1
 

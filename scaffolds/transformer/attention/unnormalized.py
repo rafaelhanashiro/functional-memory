@@ -27,9 +27,11 @@ def parameter_specs(*, degree: int, sharing: str, initialization: str = "taylor"
     ),)
 
 
-def _learned_polynomial(scores: jax.Array, coefficients: jax.Array) -> jax.Array:
-    """Horner evaluation of per-head coefficients [heads, m+1] over [batch, heads, queries, keys] scores."""
-    coefficients = jnp.broadcast_to(coefficients, (scores.shape[1], coefficients.shape[-1])).astype(jnp.float32)
+def _learned_polynomial(scores: jax.Array, coefficients: jax.Array, *, dtype=jnp.float32) -> jax.Array:
+    """Horner evaluation of per-head coefficients [heads, m+1] over [batch, heads, queries, keys] scores.
+
+    Coefficients enter in ``dtype``: FP32 in every model, FP64 only in exact-arithmetic tests."""
+    coefficients = jnp.broadcast_to(coefficients, (scores.shape[1], coefficients.shape[-1])).astype(dtype)
     value = jnp.broadcast_to(coefficients[:, -1][None, :, None, None], scores.shape)
     for order in range(coefficients.shape[-1] - 2, -1, -1):
         value = value * scores + coefficients[:, order][None, :, None, None]
@@ -44,13 +46,15 @@ def _validate_coefficients(coefficients, attention_degree, heads):
 
 
 def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked", return_diagnostics=False,
-                           polynomial_coefficients=None):
+                           polynomial_coefficients=None, blocked_implementation="scan"):
     """``attention_degree=None`` selects unshifted exp; an integer m selects p_m.
 
     ``polynomial_coefficients`` replaces the Taylor coefficients of p_m by learned
     values, shared ([m+1]) or per head ([heads, m+1]); the kernel may be signed.
     """
-    from scaffolds.transformer.attention.backends.reference import blocked_dot_product_attention
+    from scaffolds.transformer.attention.backends.reference import (
+        blocked_backend_attention, blocked_dot_product_attention,
+    )
 
     # Fixed kernels keep their established reference call; learned ones add their coefficients.
     learned = {}
@@ -58,9 +62,9 @@ def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked",
         _validate_coefficients(polynomial_coefficients, attention_degree, q.shape[2])
         learned = {"polynomial_coefficients": polynomial_coefficients}
     if backend == "blocked":
-        return blocked_dot_product_attention(
-            q, k, v, attention_degree=attention_degree, attention_normalization=False,
-            return_diagnostics=return_diagnostics, **learned,
+        return blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
+            attention_normalization=False, return_diagnostics=return_diagnostics, **learned,
         )
     if backend not in ("fused", "mosaic"):
         raise ValueError("Unnormalized attention requires backend='blocked', 'fused' or 'mosaic'")
