@@ -36,7 +36,7 @@ Those per-order sums come from the dQ kernel. The output and the q, k and v grad
 forward and dK/dV kernels also compute, barely move with the top orders at degree twelve, so
 both tests add a case that keeps only orders 9–12: there, dropping order 12 moves them by
 8.6–40 (per-order gates) and 1.9–6.7 (shared gate) times their tolerances.
-The degree-twelve GPU cases have not yet run.
+At commit `41f33aa9` both files passed on H100 (`dogo`, job 240451: 54 GPU checks).
 
 ### Architecture-aware per-order Mosaic support (2026-11-08)
 
