@@ -2,6 +2,8 @@ schema_version: 1
 opened: '2026-10-29'
 question: Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent
   forget gate without RoPE in 1× pretraining of degree-four tanh query attention?
+  Does a learned input-free distance gate, shared or per order, help learned static
+  coefficients without RoPE at degrees four and eight?
 settings:
   metric: validation_perplexity
   primary_comparison: terminal held-out PPL at update 7,570; validation-best reported
@@ -11,6 +13,16 @@ settings:
     encoding, 1× Chinchilla (7,570 updates of 256 sequences)
   difference: attention_forget_gate_form constant (log alpha_t = -exp(A_h), ALiBi
     slopes at initialization) against input (Gated DeltaNet's gate)
+  static_gate_metric: validation-best held-out PPL; terminal PPL at update 7,570 reported
+    separately
+  static_gate_recipe: learned static per-head coefficients stored factorial-scaled
+    (Taylor start), canonical QK RMSNorm with per-head scaling, head RMSNorm output
+    scaling, Mosaic kernels, 1× Chinchilla (7,570 updates of 256 sequences)
+  static_gate_difference: positional_encoding none and the input-free query-distance
+    gate (attention_forget_gate_conditioning none, lambda = exp(A_log) softplus(dt_bias)
+    per layer and head, or per layer, head and order) against the RoPE static controls;
+    each per-order run against its shared-gate run; each against the query-distance
+    gate of the same degree and sharing
 runs:
 - study: transformer_pp
   run_id: r8d4fc24ef537
@@ -88,3 +100,140 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r816ab0fbe119/best_validation.json
       sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914
+- study: transformer_pp
+  run_id: r0e76396bdee5
+  role: primary_static_m4_input_free_gate_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0e76396bdee5/config.yaml
+      sha256: 37bd9073be22efa16f01848a92d188b93dcf9dd2c5f04b4c5d00e131c6ad9307
+- study: transformer_pp
+  run_id: r527a30ff7ed1
+  role: primary_static_m4_per_order_input_free_gates_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r527a30ff7ed1/config.yaml
+      sha256: 7c5a3b6f99d46bfc25f8c60a43363128e30cb8df9d0cb1ee1fd7f94f1c923f23
+- study: transformer_pp
+  run_id: rc60345dfcff7
+  role: primary_static_m8_input_free_gate_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc60345dfcff7/config.yaml
+      sha256: 6861194937981022c88fd0119de12edae142ae44d3fc500db4505887d3e772b0
+- study: transformer_pp
+  run_id: re253a5f1b03e
+  role: primary_static_m8_per_order_input_free_gates_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/re253a5f1b03e/config.yaml
+      sha256: f38998ddd764a2a342e80312710a33aeefb103bf153d9cb9c128653330c5827f
+- study: transformer_pp
+  run_id: r4339a245820e
+  role: control_static_m4_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4339a245820e/config.yaml
+      sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4339a245820e/metrics.jsonl
+      sha256: aac549c56baf062d85bf3a4026d92a81ea0181671127c7cfd89b75fbdd849fd4
+    completion.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/completion.json
+      sha256: afb56b2641f922fef2a15097909d892309d9814cf091d88d9fecc9b88743dc27
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/metadata.json
+      sha256: e365b09aa102c907956d144ffcb066ee4bb78cfc52c554abce53013ffaa152f8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/best_validation.json
+      sha256: d487f8d386c07df16a7e5f8b7d6f6ff756be16fe0abc1b1d57829813167a5514
+- study: transformer_pp
+  run_id: r9c69dd7cfc8d
+  role: control_static_m8_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml
+      sha256: f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metrics.jsonl
+      sha256: 7994e681ec0020b763e35ec84df2e4174fe5e87e0be81e427d59b95e59161652
+    completion.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/completion.json
+      sha256: 537356576ae1b09299fc6d9f0042718f58ddfdbe14cd9ed1ce318ceb5e358db2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metadata.json
+      sha256: 727c612235e3a51db9f1549c44a63e11ddb55470e9a93ad2cf69b38e26b16d57
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/best_validation.json
+      sha256: 7167b5c06e3836695633f652f3926ea4207438153e88b9ed1d16632b774071fb
+- study: transformer_pp
+  run_id: r3e26412b2811
+  role: reference_query_m4_query_distance_gate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3e26412b2811/config.yaml
+      sha256: 3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metrics.jsonl
+      sha256: 998c8c5b25496c388eca8c290d1f0a77998e120c11931011e3a95da9324bfdf6
+    completion.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/completion.json
+      sha256: 2d36a3387d7ab02cb9c70057327882b66334e68866cd0f3195ec9bd1e4a3325e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metadata.json
+      sha256: c0480d51994baabd4bcf9b11f770165e8e2e505120ef029619346e88e17f5a6b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
+      sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r507193d47450
+  role: reference_query_m4_per_order_query_gates
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r507193d47450/config.yaml
+      sha256: be00699b0e4b01df03202bd26841c29a2657766330a2cd64ede5b96866fe709f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r507193d47450/metrics.jsonl
+      sha256: 66e6c8b52633e31725402ebaf54b01e407c097b2cefe74bd82febd5b4a94b792
+    completion.json:
+      path: experiments/transformer_pp/runs/r507193d47450/completion.json
+      sha256: f9b1cdeb79c7c21f066ca26b2d3d2a95434808204f470996efc5dac2e7ade8ed
+    metadata.json:
+      path: experiments/transformer_pp/runs/r507193d47450/metadata.json
+      sha256: e5204a0d92f949d6eacff19f7ce8b8cce5bdbb0b6332e86d3fb4d75f9d9a3264
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r507193d47450/best_validation.json
+      sha256: 34d34118a05bce178cc2ca2876d8e1be0a0befb9fd3529ccdd0c966cd2ef51a3
+- study: transformer_pp
+  run_id: r9320e5cd3071
+  role: reference_query_m8_query_distance_gate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/config.yaml
+      sha256: d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f
+- study: transformer_pp
+  run_id: r20fe6fe864bc
+  role: reference_query_m8_per_order_query_gates
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml
+      sha256: 19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: reference_query_m4_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466

@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r527a30ff7ed1/config.yaml",
+    "sha256": "7c5a3b6f99d46bfc25f8c60a43363128e30cb8df9d0cb1ee1fd7f94f1c923f23"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m4-per-order-learned-alibi-gate-no-rope",
+  "name": "static-m4-per-order-learned-alibi-gate-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r527a30ff7ed1",
+  "status": "planned"
+}

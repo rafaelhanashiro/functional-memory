@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc60345dfcff7/config.yaml",
+    "sha256": "6861194937981022c88fd0119de12edae142ae44d3fc500db4505887d3e772b0"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8-learned-alibi-gate-no-rope",
+  "name": "static-m8-learned-alibi-gate-no-rope",
+  "record_schema_version": 1,
+  "run_id": "rc60345dfcff7",
+  "status": "planned"
+}

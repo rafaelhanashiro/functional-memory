@@ -1,4 +1,4 @@
-# ALiBi-style constant decay without RoPE (m = 4)
+# ALiBi-style distance decay without RoPE
 
 Opened: **2026-10-29**. Home cluster: **Kennel**.
 
@@ -11,10 +11,12 @@ do the same? This topic replaces the gate by a constant per layer and head,
 `log alpha_t = -lambda_h`, so every weight is multiplied by `exp(-lambda_h (t - i))`: ALiBi's
 linear bias in log space, with `lambda_h` learned. Like the forget-gate run it compares
 with, it uses **no positional encoding**, so the decay is the only source of position.
-The runs live in the [Transformer++ study](../../../README.md) and enter no canonical
-comparison.
+A second comparison gives learned **static** coefficients a learned decay that reads no token
+([input-free gates](#learned-input-free-gates-for-static-coefficients)), shared or per
+polynomial order, at degrees four and eight. The runs live in the
+[Transformer++ study](../../../README.md) and enter no canonical comparison.
 
-## Runs
+## Constant decay for query coefficients
 
 | Role | Run | Label | Position |
 | --- | --- | --- | --- |
@@ -37,7 +39,7 @@ standard initialization (188,580 parameters).
 
 Launch commands are in the [study README](../../../README.md#alibi-style-constant-decay-without-rope).
 
-## Findings and open decision
+### Findings
 
 The primary completed its 7,570 updates on one B300 (Kennel `akita`, `long`; job 229720,
 11 h 26 min). The control completed on the same node.
@@ -74,8 +76,92 @@ The primary completed its 7,570 updates on one B300 (Kennel `akita`, `long`; job
   tokens except layers 3 (51), 4 (31) and 14 (86). The query coefficients opened to mean
   `|a_r|` 0.18 (maximum 0.97).
 
-**Open decision:** discard the topic, or promote the comparison with the forget gate into a
-positional-structure collection together with the no-RoPE and continuation results.
+## Learned input-free gates for static coefficients
+
+Added 2026-11-09. Does a learned distance decay help learned static coefficients without RoPE,
+as the query-distance gates help query coefficients (degree-four query + W decay: validation-best
+PPL 14.709 with RoPE, `rca97cc9db8f2`, against 14.198 with the gate and no positional encoding,
+`r3e26412b2811`)? Four runs replace RoPE in the static controls by the query-distance gate of
+`r3e26412b2811` (shared) and `r507193d47450` (per order) with its input projection removed. The
+rate reads no token:
+
+`lambda = exp(A_log) softplus(dt_bias)` per layer and head (shared gate), or per layer, head
+and order (per-order gates), and the weight from key `i` to query `t` is
+`sum_r c_r s_ti^r exp(-(t-i) lambda)` (per order: `exp(-(t-i) lambda_r)`), with
+`s_ti = q_t·k_i / sqrt(d_K)` and the static coefficients `c_r` per layer and head.
+
+For a rate that reads no token, the cumulative product of FoX and the query's rate to the
+power `t - i` coincide. `A_log` and `dt_bias` keep the query gate's Gated DeltaNet
+initialization (`exp(A_log)` uniform on (0, 16), `softplus(dt_bias)` log-uniform on
+[0.001, 0.1]) and its seed-42 draws, and are exempt from weight decay. At the start, half-lives
+`ln 2 / lambda` over the 210 layer-heads are 1.3 / 9.2 / 62 tokens (10th / 50th / 90th
+percentiles). Per-order gates start as copies of the shared draw, so each per-order run starts
+equal to its shared-gate run. Static coefficients have no input projection, so no coefficient
+weight decay applies.
+
+| Role | Run | Label | m | Gate | Position |
+| --- | --- | --- | ---: | --- | --- |
+| Primary: shared gate | `r0e76396bdee5` | `static-m4-learned-alibi-gate-no-rope` | 4 | input-free | gate only |
+| Primary: per-order gates | `r527a30ff7ed1` | `static-m4-per-order-learned-alibi-gate-no-rope` | 4 | input-free, per order | gate only |
+| Primary: shared gate | `rc60345dfcff7` | `static-m8-learned-alibi-gate-no-rope` | 8 | input-free | gate only |
+| Primary: per-order gates | `re253a5f1b03e` | `static-m8-per-order-learned-alibi-gate-no-rope` | 8 | input-free, per order | gate only |
+| Control: static | `r4339a245820e` | `static-m4-head-scale` | 4 | none | RoPE |
+| Control: static | `r9c69dd7cfc8d` | `static-m8-head-scale` | 8 | none | RoPE |
+| Reference: query, no gate | `rca97cc9db8f2` | `query-m4-w-decay` | 4 | none | RoPE |
+| Reference: query gate | `r3e26412b2811` | `query-m4-query-distance-no-rope-w-decay` | 4 | reads `x_t` | gate only |
+| Reference: query gates | `r507193d47450` | `query-m4-per-order-query-gate-nope-wd` | 4 | reads `x_t`, per order | gate only |
+| Reference: query gate | `r9320e5cd3071` | `query-m8-query-distance-no-rope-w-decay` | 8 | reads `x_t` | gate only |
+| Reference: query gates | `r20fe6fe864bc` | `query-m8-per-order-query-gate-nope-wd` | 8 | reads `x_t`, per order | gate only |
+
+Each shared-gate run is its static control's recipe with `positional_encoding: none` and the
+gate (`attention_forget_gate: true`, `attention_forget_gate_mode: query_distance`,
+`attention_forget_gate_conditioning: none`); each per-order run adds
+`attention_forget_gate_per_order: true` to its shared-gate run. Everything else is the
+control's: learned static per-head coefficients stored factorial-scaled (`c_r = c~_r / r!`,
+Taylor start), canonical QK RMSNorm with per-head scaling, head RMSNorm output scaling, the
+Mosaic kernels, seed 42, 2,048 tokens, batch 256, 7,570 updates, learning rate 0.001 with 455
+warmup updates and cosine decay to 0.0001, and weight decay 0.1. Every parameter other than
+the gate starts at its control's start, and the gate at the query-distance gate's draws.
+
+| Run | Parameters |
+| --- | ---: |
+| Static control, m = 4 / 8 | 198,454,636 / 198,455,476 |
+| Shared input-free gate, m = 4 / 8 | 198,455,056 / 198,455,896 |
+| Per-order input-free gates, m = 4 / 8 | 198,456,736 / 198,459,256 |
+
+The runs train on the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) with every
+query's coefficients and rates equal, on one H100 each: B300 cannot hold the degree-eight
+per-order gates, and the other three runs use H100 too, so that all four train on one GPU
+type. Qualification (the scaffold's `tests/test_input_free_gate.py` and the study adapter
+`static_distance_gate_acceptance.py`) checks the output and every gradient against FP64 on the
+blocked scan and strips and, on the allocated GPU, on the Mosaic kernels at 2,048 tokens; that
+duplicated orders reproduce the shared gate; the initialization against the pinned controls;
+the weight-decay masks; and the shared full-recipe pilot and resume. Launch commands are in the
+[study README](../../../README.md#learned-input-free-gates-for-static-coefficients).
+
+Each shared gate compares with its RoPE static control, each per-order run with its shared-gate
+run, and each static gate with its query-distance counterpart at the same degree and gate
+sharing. Best PPL is the lowest validation PPL over all evaluations; terminal PPL is at update
+7,570.
+
+| Run | Status | Validation-best PPL / update | Terminal PPL |
+| --- | --- | --- | ---: |
+| Static m = 4, RoPE `r4339a245820e` | complete | 14.767 / 7,500 | 14.773 |
+| Static m = 8, RoPE `r9c69dd7cfc8d` | complete | 14.294 / 7,500 | 14.299 |
+| Query m = 4, RoPE `rca97cc9db8f2` | complete | 14.709 / 7,500 | 14.714 |
+| Query m = 4, shared gate `r3e26412b2811` | complete | 14.198 / 7,500 | 14.203 |
+| Query m = 4, per-order gates `r507193d47450` | complete | 13.892 / 7,500 | 13.894 |
+| Query m = 8, shared gate `r9320e5cd3071` | planned | — | — |
+| Query m = 8, per-order gates `r20fe6fe864bc` | planned | — | — |
+| Static input-free gates (all four) | planned | — | — |
+
+## Open decision
+
+Discard the topic, or promote the comparison with the forget gate into a positional-structure
+collection together with the no-RoPE and continuation results. Evaluate the input-free gates
+against their static controls and the query-distance gates first.
+
+## Regeneration
 
 Measurements live only in each selected run. Refresh the selection's pins after
 intentionally incorporating new measurements:
