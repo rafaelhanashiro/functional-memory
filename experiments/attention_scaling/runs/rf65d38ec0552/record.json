@@ -394,7 +394,7 @@
     "sha256": "72740e6180fb9d50e752f552b8883f02824ae3da1fe95fa9dc09469d0fada628",
     "size_bytes": 1762476
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-tanh-write/experiments/attention_scaling/runs/rf65d38ec0552/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rf65d38ec0552/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/rf65d38ec0552/metadata.json",
     "sha256": "b56b6e489c97a40b603036e490aa2c7c8974c913bae6e6d1c9c7843d11be335d",

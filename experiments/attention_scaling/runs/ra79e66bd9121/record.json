@@ -418,7 +418,7 @@
     "sha256": "c17dbec20178e49e8103c2335dc59f3c7fb93ff0ab79594cafe2c862721d50c8",
     "size_bytes": 1858521
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-small-width/experiments/attention_scaling/runs/ra79e66bd9121/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/ra79e66bd9121/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/ra79e66bd9121/metadata.json",
     "sha256": "d87afcb70e43d44c06c14fe72478951deaf807e6522917bdfe9d945a1af753ca",
