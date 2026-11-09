@@ -128,6 +128,8 @@ class TransformerLM(nnx.Module):
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         if query_coefficients is not None or return_coefficients:
+            if cfg.attention_kernel_basis != "polynomial":
+                raise ValueError("Coefficient override and capture apply to monomial coefficients, not a B-spline basis")
             fixed_direct = (cfg.attention_coefficients == "fixed"
                             and cfg.attention_coefficient_conditioning == "static"
                             and cfg.attention_fixed_square_factors is None)

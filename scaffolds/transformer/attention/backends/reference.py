@@ -21,11 +21,27 @@ from scaffolds.transformer.attention.taylor import _taylor_polynomial, _validate
 from scaffolds.transformer.attention.learned_quadratic import _quadratic_polynomial
 from scaffolds.transformer.attention.nonnegative_polynomial import square_sum_polynomial, validate_factors
 from scaffolds.transformer.attention.rational_polynomial import denominator_factors, select_denominator
+from scaffolds.transformer.attention.spline import (
+    basis_count, evaluate as evaluate_spline, score_coverage, to_pieces, validate_knots,
+)
 from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
 STRIP_SIZE = 512
 BLOCKED_IMPLEMENTATIONS = ("scan", "strips")
+# Per-head diagnostic arrays: the scan reduces them over its blocks alone.
+PER_HEAD_DIAGNOSTICS = ("forget_gate_", "spline_")
+
+
+class _Spline(NamedTuple):
+    """A B-spline kernel (attention/spline.py): its basis, and static coefficients' pieces."""
+
+    knots: tuple[float, ...]
+    degree: int
+    # Static coefficients' local piece polynomials [heads, pieces, degree + 1] in the compute
+    # dtype; query coefficients are converted by each execution, beside its other query operands.
+    pieces: jax.Array | None
+    query: bool
 
 
 class _Mechanism(NamedTuple):
@@ -46,17 +62,33 @@ class _Mechanism(NamedTuple):
     extended_diagnostics: bool
     endpoint: bool
     decayed: bool
+    per_order: bool
     query_decay_mode: str
+    spline: _Spline | None
 
 
 def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, attention_normalization,
                coefficients, quadratic_mode, polynomial_coefficients, polynomial_square_factors,
                query_polynomial_coefficients, key_polynomial_factors, query_log_decay, query_decay_mode,
-               query_gate_input, key_gate_input, gate_log_rate, **denominators) -> _Mechanism:
+               query_gate_input, key_gate_input, gate_log_rate, spline_knots=None, spline_coefficients=None,
+               query_spline_coefficients=None, **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    spline = None
+    if spline_knots is not None or spline_coefficients is not None or query_spline_coefficients is not None:
+        if spline_knots is None or (spline_coefficients is None) == (query_spline_coefficients is None):
+            raise ValueError("A B-spline kernel requires its knots and exactly one of static or query coefficients")
+        if (attention_normalization or quadratic_mode != "fixed" or coefficients is not None
+                or polynomial_coefficients is not None or polynomial_square_factors is not None
+                or query_polynomial_coefficients is not None or key_polynomial_factors is not None
+                or query_log_decay is not None or query_decay_mode != "cumulative"
+                or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+                or any(value is not None for value in denominators.values())):
+            raise ValueError("B-spline coefficients define an unnormalized kernel alone, without decay")
+        spline = _Spline(validate_knots(spline_knots, attention_degree), attention_degree, None,
+                         query_spline_coefficients is not None)
     if not attention_normalization and quadratic_mode != "fixed":
         raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
     if quadratic_mode not in ("fixed", "positive", "unrestricted"):
@@ -90,7 +122,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
-    )
+    ) or spline is not None
     extended_diagnostics = quadratic_mode != "fixed" or signed or nonnegative
     if not isinstance(block_size, int) or isinstance(block_size, bool) or block_size <= 0:
         raise ValueError(f"{block_name} must be a positive integer")
@@ -111,11 +143,17 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                             or key_polynomial_factors.shape != query_polynomial_coefficients.shape):
         raise ValueError("Key factors require query coefficients of the same shape [batch,time,heads,m+1]")
     endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    per_order = ((query_log_decay is not None and query_log_decay.ndim == 4)
+                 or (query_gate_input is not None and query_gate_input.ndim == 4))
+    if per_order and (not query_conditioned or query_decay_mode != "query_distance"):
+        raise ValueError("Per-order decay requires query-distance polynomial attention")
+    gate_shape = (batch, time, heads, attention_degree + 1) if per_order else (batch, time, heads)
+    rate_shape = (heads, attention_degree + 1, 1) if per_order else (heads, 1)
     if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
                      or query_log_decay is not None or query_decay_mode != "query_distance"):
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
-    if endpoint and (query_gate_input.shape != (batch, time, heads)
-                     or key_gate_input.shape != (batch, time, heads) or gate_log_rate.shape != (heads, 1)):
+    if endpoint and (query_gate_input.shape != gate_shape
+                     or key_gate_input.shape != gate_shape or gate_log_rate.shape != rate_shape):
         raise ValueError("Endpoint inputs require [batch,time,heads] and log rate [heads,1]")
     decayed = query_log_decay is not None or endpoint
     if query_decay_mode not in ("cumulative", "query_distance"):
@@ -124,7 +162,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         raise ValueError("A query-distance decay mode requires query_log_decay")
     exponential = attention_degree is None and quadratic_mode == "fixed"
     if decayed and (key_conditioned or not (query_conditioned or exponential)
-                    or (not endpoint and query_log_decay.shape != (batch, time, heads))):
+                    or (not endpoint and query_log_decay.shape != gate_shape)):
         raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone, "
                          "softmax, or the unnormalized exponential")
     if endpoint and not query_conditioned:
@@ -134,23 +172,34 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                          "exponential take the cumulative decay")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
+    if spline is not None:
+        count = basis_count(spline.knots, spline.degree)
+        if spline.query and query_spline_coefficients.shape != (batch, time, heads, count):
+            raise ValueError(f"Query B-spline coefficients must have shape [batch,time,heads,{count}]")
+        if not spline.query:
+            if spline_coefficients.shape not in ((count,), (heads, count)):
+                raise ValueError(f"B-spline coefficients must have shape ({count},) or (heads, {count})")
+            # The fixed linear map to local piece polynomials, once per call.
+            spline = spline._replace(pieces=to_pieces(jnp.broadcast_to(spline_coefficients, (heads, count)),
+                                                      spline.knots, spline.degree, compute))
     return _Mechanism(
         attention_degree=attention_degree, attention_normalization=attention_normalization,
         quadratic_mode=quadratic_mode, coefficients=coefficients, polynomial_coefficients=polynomial_coefficients,
         polynomial_square_factors=polynomial_square_factors, denominator_factor_arrays=denominator_factor_arrays,
         query_conditioned=query_conditioned, key_conditioned=key_conditioned, nonnegative=nonnegative,
         rational=rational, signed=signed, extended_diagnostics=extended_diagnostics, endpoint=endpoint,
-        decayed=decayed, query_decay_mode=query_decay_mode,
+        decayed=decayed, per_order=per_order, query_decay_mode=query_decay_mode, spline=spline,
     )
 
 
 def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positions, k, v, query_coefficients,
                   key_factors, query_gate_input, key_gate, gate_log_rate, gate_rate, query_log_decay,
-                  key_log_decay, compute, output_dtype, return_diagnostics):
+                  key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None):
     """The query block [start, start + block_size) against the keys at ``key_positions``.
 
     ``query`` holds the block's queries and ``rows(array)`` takes its rows of a query-side
-    [batch, time, ...] array (query coefficients, gate inputs, log decay). ``k``, ``v`` and
+    [batch, time, ...] array (query coefficients, a query B-spline's pieces [batch, time, heads,
+    pieces, degree + 1], gate inputs, log decay). ``k``, ``v`` and
     the per-key operands (key factors, key gate [batch, heads, 1, keys], key log decay) cover
     ``key_positions``: every key in the scan, the causal prefix in a strip. Arithmetic is in
     ``compute``, FP32 in every model; the output has ``output_dtype``, V's dtype.
@@ -166,7 +215,7 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
         "bqhd,bkhd->bhqk", query, k,
         preferred_element_type=compute,
     ) * (1.0 / math.sqrt(qk_dim))
-    if m.decayed:
+    if m.decayed and not m.per_order:
         if m.endpoint:
             query_input = rows(query_gate_input)
             query_input = jnp.swapaxes(query_input, 1, 2)[..., None]
@@ -203,20 +252,56 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     else:
         # Evaluate masked positions at zero, never at masking sentinels.
         safe_scores = jnp.where(causal, scores, 0.0)
-        if m.query_conditioned:
+        if m.spline is not None:
+            if m.spline.query:
+                block_pieces = rows(spline_pieces)
+
+                def piece_coefficient(piece, order):
+                    # [b, h, q, 1]: each query's own piece polynomials.
+                    return jnp.swapaxes(block_pieces[..., piece, order], 1, 2)[..., None]
+            else:
+                def piece_coefficient(piece, order):
+                    return m.spline.pieces[:, piece, order][None, :, None, None]
+
+            kernel = evaluate_spline(safe_scores, piece_coefficient, knots=m.spline.knots, degree=m.spline.degree)
+        elif m.query_conditioned:
             block_coefficients = rows(query_coefficients)
+            if m.per_order:
+                # Slice the gate operands once for every order, so their transposes combine all
+                # order gradients locally before updating the full query buffer. Repeating the
+                # slice per order produces nested updates that XLA can fuse into a GPU kernel
+                # whose device stack overflows.
+                order_inputs = rows(query_gate_input if m.endpoint else query_log_decay)
+                distance = jnp.maximum(query_positions[:, None] - key_positions[None, :], 0).astype(compute)
+
+            def order_log_alpha(order):
+                # Only one [B,H,Q,K] rate block at a time; no full pair-by-order tensor.
+                projected = jnp.swapaxes(order_inputs[..., order], 1, 2)[..., None]
+                if not m.endpoint:
+                    return projected
+                key_projected = key_gate[..., order]
+                valid = (jnp.isfinite(projected) & jnp.isfinite(key_projected)
+                         & jnp.isfinite(gate_log_rate[:, order, 0])[None, :, None, None])
+                alpha = -gate_rate[..., order] * jax.nn.softplus(projected + key_projected)
+                return jnp.where(valid, alpha, jnp.nan)
 
             def pair_coefficient(order):
                 # [b, h, q, 1] per query; a key factor [b, h, 1, k] scales each key's degree-r term.
                 coefficient = jnp.swapaxes(block_coefficients[..., order], 1, 2)[..., None]
                 if m.key_conditioned:
                     coefficient = coefficient * jnp.swapaxes(key_factors[..., order], 1, 2)[:, :, None, :]
+                if m.per_order:
+                    # Each order's own query-distance decay, before the polynomial sum.
+                    alpha = order_log_alpha(order)
+                    valid = jnp.isfinite(alpha) & (alpha <= 0)
+                    factor = jnp.exp(jnp.where(valid, alpha, 0.0) * distance)
+                    coefficient = jnp.where(valid, coefficient * factor, jnp.nan)
                 return coefficient
 
             kernel = jnp.broadcast_to(pair_coefficient(m.attention_degree), safe_scores.shape)
             for order in range(m.attention_degree - 1, -1, -1):
                 kernel = kernel * safe_scores + pair_coefficient(order)
-            if m.decayed:
+            if m.decayed and not m.per_order:
                 kernel = kernel * jnp.exp(gap)
                 if m.query_decay_mode == "query_distance":
                     kernel = jnp.where(valid_decay, kernel, jnp.nan)
@@ -276,7 +361,18 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
         "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
         "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
     }
-    if m.endpoint:
+    if m.spline is not None:
+        diagnostics.update(score_coverage(scores, measured, m.spline.knots))
+    if m.endpoint and m.per_order:
+        summaries = [
+            (jnp.sum(jnp.where(measured, order_log_alpha(r), 0.0), axis=(0, 2, 3)),
+             jnp.min(jnp.where(measured, order_log_alpha(r), jnp.inf), axis=(0, 2, 3)),
+             jnp.max(jnp.where(measured, order_log_alpha(r), -jnp.inf), axis=(0, 2, 3)))
+            for r in range(m.attention_degree + 1)]
+        diagnostics.update({f"forget_gate_log_alpha_{name}": jnp.stack(
+            [summary[index] for summary in summaries], axis=-1)
+            for index, name in enumerate(("sum", "min", "max"))})
+    elif m.endpoint:
         diagnostics.update({
             "forget_gate_log_alpha_sum": jnp.sum(jnp.where(measured, query_decay, 0.0), axis=(0, 2, 3)),
             "forget_gate_log_alpha_min": jnp.min(jnp.where(measured, query_decay, jnp.inf), axis=(0, 2, 3)),
@@ -331,6 +427,9 @@ def blocked_dot_product_attention(
     query_gate_input: jax.Array | None = None,
     key_gate_input: jax.Array | None = None,
     gate_log_rate: jax.Array | None = None,
+    spline_knots: tuple[float, ...] | None = None,
+    spline_coefficients: jax.Array | None = None,
+    query_spline_coefficients: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -364,6 +463,9 @@ def blocked_dot_product_attention(
     Alternatively, endpoint operands query_gate_input/key_gate_input [B,T,H] and gate_log_rate [H,1]
     replace query_log_decay and yield -exp(gate_log_rate) softplus(query_input_t + key_input_i).
     Only token projections are stored; pair rates and their causal diagnostics are computed in blocks.
+    Per-order query-distance gates add an R=m+1 axis to those operands (rates [H,R,1]):
+    each coefficient term gets its own decay before the polynomial sum. Query-only raw log
+    alpha may likewise be [B,T,H,R]. Parameters and diagnostics retain order zero.
     Square factors ([m+1] or [heads, m+1], even m) give q1^2 + q2^2: nonnegative
     kernel values, exact zeros allowed, and only a positive row sum is valid.
     Denominator coefficients ([d] or [heads, d]) with learned polynomial coefficients
@@ -374,6 +476,11 @@ def blocked_dot_product_attention(
     factors, with the constant fixed at 1 or learned. Its ``kernel_*`` diagnostics describe
     the numerator, ``denominator_*`` the denominator values, and the cancellation
     ratio is sum_j |p_b(s_j)| / |sum_j p_b(s_j)|.
+    ``spline_knots`` (distinct knots) with B-spline coefficients, static ``spline_coefficients``
+    ([n] or [heads, n]) or ``query_spline_coefficients`` [batch,time,heads,n], n = len(knots) +
+    attention_degree - 1, gives the unnormalized signed kernel f(s) = sum_j theta_j B_j(s) of
+    attention/spline.py, continued past the end knots by its end pieces; invalid rows follow the
+    signed learned polynomial's rules. Its diagnostics add per-head score coverage (``spline_*``).
     Diagnostics exclude padded queries and masked future entries.
     """
     return _blocked_scan(
@@ -382,8 +489,9 @@ def blocked_dot_product_attention(
         polynomial_coefficients=polynomial_coefficients, polynomial_square_factors=polynomial_square_factors,
         query_polynomial_coefficients=query_polynomial_coefficients, key_polynomial_factors=key_polynomial_factors,
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
-        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, query_block_size=query_block_size,
-        return_diagnostics=return_diagnostics, **denominators,
+        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
+        spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
+        query_block_size=query_block_size, return_diagnostics=return_diagnostics, **denominators,
     )
 
 
@@ -391,6 +499,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   quadratic_mode="fixed", polynomial_coefficients=None, polynomial_square_factors=None,
                   query_polynomial_coefficients=None, key_polynomial_factors=None, query_log_decay=None,
                   query_decay_mode="cumulative", query_gate_input=None, key_gate_input=None, gate_log_rate=None,
+                  spline_knots=None, spline_coefficients=None, query_spline_coefficients=None,
                   query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, **denominators):
     """blocked_dot_product_attention with its arithmetic in ``compute``: FP32 there, FP64 only
     in exact-arithmetic tests of the strips against the scan."""
@@ -400,7 +509,9 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         polynomial_coefficients=polynomial_coefficients, polynomial_square_factors=polynomial_square_factors,
         query_polynomial_coefficients=query_polynomial_coefficients, key_polynomial_factors=key_polynomial_factors,
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
-        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **denominators,
+        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
+        spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
+        **denominators,
     )
     batch, time, heads, qk_dim = q.shape
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -418,13 +529,20 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         key_factors = key_polynomial_factors.astype(compute) if m.key_conditioned else None
     if m.endpoint:
         padded_query_gate_input = jnp.pad(query_gate_input.astype(compute),
-                                          ((0, 0), (0, pad), (0, 0)), mode="edge")
+                                          ((0, 0), (0, pad), (0, 0)) + (((0, 0),) if m.per_order else ()),
+                                          mode="edge")
         key_gate = jnp.swapaxes(key_gate_input.astype(compute), 1, 2)[:, :, None, :]
-        gate_rate = jnp.exp(gate_log_rate[:, 0].astype(compute))[None, :, None, None]
+        gate_rate = jnp.exp(gate_log_rate[..., 0].astype(compute))[None, :, None, None]
     elif m.decayed:
         log_decay = query_log_decay.astype(compute)
         # Repeat the final gate on padded queries; these rows never enter the output or diagnostics.
-        padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0)), mode="edge")
+        padded_log_decay = jnp.pad(log_decay, ((0, 0), (0, pad), (0, 0))
+                                   + (((0, 0),) if m.per_order else ()), mode="edge")
+    spline_pieces = None
+    if m.spline is not None and m.spline.query:
+        # One fixed linear map per query and head, before any per-score work.
+        spline_pieces = jnp.pad(to_pieces(query_spline_coefficients, m.spline.knots, m.spline.degree, compute),
+                                ((0, 0), (0, pad), (0, 0), (0, 0), (0, 0)))
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -437,6 +555,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
             query_gate_input=padded_query_gate_input, key_gate=key_gate, gate_log_rate=gate_log_rate,
             gate_rate=gate_rate, query_log_decay=padded_log_decay, key_log_decay=log_decay,
             compute=compute, output_dtype=v.dtype, return_diagnostics=return_diagnostics,
+            spline_pieces=spline_pieces,
         )
 
     _, result = jax.lax.scan(
@@ -445,11 +564,11 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
     if return_diagnostics:
         output_blocks, per_block = result
         diagnostics = {
-            name: (jnp.min(values, axis=0 if name.startswith("forget_gate_") else None)
+            name: (jnp.min(values, axis=0 if name.startswith(PER_HEAD_DIAGNOSTICS) else None)
                    if name.endswith("_min") or name.startswith("min_abs_") else
-                   jnp.max(values, axis=0 if name.startswith("forget_gate_") else None)
+                   jnp.max(values, axis=0 if name.startswith(PER_HEAD_DIAGNOSTICS) else None)
                    if name.endswith("_max") else
-                   jnp.sum(values, axis=0 if name.startswith("forget_gate_") else None))
+                   jnp.sum(values, axis=0 if name.startswith(PER_HEAD_DIAGNOSTICS) else None))
             for name, values in per_block.items()
         }
         if m.endpoint:
@@ -512,6 +631,9 @@ def strip_dot_product_attention(
     query_gate_input: jax.Array | None = None,
     key_gate_input: jax.Array | None = None,
     gate_log_rate: jax.Array | None = None,
+    spline_knots: tuple[float, ...] | None = None,
+    spline_coefficients: jax.Array | None = None,
+    query_spline_coefficients: jax.Array | None = None,
     strip_size: int = STRIP_SIZE,
     **denominators,
 ) -> jax.Array:
@@ -545,7 +667,9 @@ def strip_dot_product_attention(
         polynomial_coefficients=polynomial_coefficients, polynomial_square_factors=polynomial_square_factors,
         query_polynomial_coefficients=query_polynomial_coefficients, key_polynomial_factors=key_polynomial_factors,
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
-        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **denominators,
+        key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
+        spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
+        **denominators,
     )
     time = q.shape[1]
     # The strips slice these full arrays inside their checkpoints, so the residuals each layer
@@ -560,9 +684,13 @@ def strip_dot_product_attention(
     if m.endpoint:
         operands["query_gate_input"] = _exact_upcast(query_gate_input, compute)
         operands["key_gate"] = jnp.swapaxes(_exact_upcast(key_gate_input, compute), 1, 2)[:, :, None, :]
-        operands["gate_rate"] = jnp.exp(_exact_upcast(gate_log_rate[:, 0], compute))[None, :, None, None]
+        operands["gate_rate"] = jnp.exp(_exact_upcast(gate_log_rate[..., 0], compute))[None, :, None, None]
     elif m.decayed:
         operands["log_decay"] = _exact_upcast(query_log_decay, compute)
+    if m.spline is not None and m.spline.query:
+        # One fixed linear map per query and head, before the strips (as in the scan).
+        operands["spline_pieces"] = to_pieces(_exact_upcast(query_spline_coefficients, compute),
+                                              m.spline.knots, m.spline.degree, compute)
 
     def attend_strip(arrays, *, start, end):
         def prefix(name, axis=1):
@@ -576,6 +704,7 @@ def strip_dot_product_attention(
             gate_log_rate=gate_log_rate, gate_rate=arrays.get("gate_rate"),
             query_log_decay=arrays.get("log_decay"), key_log_decay=prefix("log_decay"),
             compute=compute, output_dtype=compute, return_diagnostics=False,
+            spline_pieces=arrays.get("spline_pieces"),
         )
         # The block's conversion to V's dtype, rounded explicitly: a consumer that upcasts the
         # output (head RMSNorm) would otherwise let XLA drop it. A signed kernel's row with an

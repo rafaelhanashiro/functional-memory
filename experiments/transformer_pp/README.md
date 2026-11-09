@@ -358,6 +358,42 @@ without a distance-dependent forget gate. Two runs add independent per-order sig
 hosted on ORCD (H200). Both end 7–8% worse than the ungated control; the topic records
 the formulas, the control, the per-order gate findings and the exact launch commands.
 
+`r1a5d217f030d` (`query-m4-w-decay-order-gdn-gates`, planned) copies the degree-four
+query + weight decay, RoPE recipe of `rca97cc9db8f2` with only
+`model.attention_coefficient_gate: gdn`: each layer, head and order multiplies its
+coefficient by `alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r))`, the
+per-order query-distance gate of `r507193d47450` without its distance exponent. Every order
+starts as a copy of one Gated DeltaNet draw per layer and head, so the per-head output
+RMSNorm cancels the shared start up to its epsilon. The topic records the model, the
+initialization, and the 2×2 with the distance-gate runs.
+
+Home cluster: Kennel. Branch `claude/per-order-no-distance`, worktree
+`worktrees/per-order-no-distance`; sync both locked CUDA environments as in
+[CLUSTERS.md](../../CLUSTERS.md). The adapter
+([coefficient_gdn_gate_acceptance.py](coefficient_gdn_gate_acceptance.py)) pins
+`rca97cc9db8f2`'s recipe by SHA256 and rejects any scientific difference except the gate.
+At initialization it requires every other parameter to equal the control's start (state
+hash), each gate array to be one draw repeated over the orders, and the initial logits to
+match the ungated recipe's within the RMSNorm epsilon bound (and to FP32 rounding with the
+epsilon removed). It then runs the gate's CPU tests, its GPU qualification at degree 4
+(the gated generator through Mosaic against FP64 at 2,048 tokens, and the gated BF16 Mosaic
+model against the FP32 blocked model), and the shared pilot and fresh-process resume. The
+control trained in about five hours on one H100. After committing the frozen inputs and
+checking the live allowances, submit from the worktree root:
+
+```bash
+run=r1a5d217f030d
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_gdn_gate_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+The record captures the submission command and job ID. Resumptions keep the run ID,
+recipe, launch commit and checkpoint.
+
 ### Query coefficient optimization
 
 Two degree-four query/tanh runs test weight decay on the projection and a higher
@@ -524,7 +560,7 @@ control of their own. Prepare in one worktree, then commit frozen inputs before 
 ```bash
 PREPARE="scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_continuation prepare --topic learned_coefficient_continuation"
 TAYLOR=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r816ab0fbe119
-EXP=/data/cl/u/rafah/home/projects/functional-memory/worktrees/qk-head-controls-4b/experiments/transformer_pp/runs/r6a76e7fbde45
+EXP=/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r6a76e7fbde45
 JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $TAYLOR --control r82203a85ef8e
 JAX_PLATFORMS=cpu $PREPARE --conditioning query --kernel-weight-decay --parent $TAYLOR --control r82203a85ef8e
 JAX_PLATFORMS=cpu $PREPARE --conditioning static --parent $EXP --control none --degree 4
@@ -1070,6 +1106,29 @@ for run in rd40b46f5dc9b rcc4f4e5d7abb r1c72e8860ade r991a756da7a9; do
 done
 ```
 
+## Spline attention
+
+`r7e4193fcafbd` (static) and `rf303a5f94487` (query + W decay) replace the degree-four
+polynomials of `r4339a245820e` and `rca97cc9db8f2` by quartic B-splines on the fixed knots
+[-32, -6, 0, 6, 32], started exactly at T4, on the blocked strips backend
+(`model.attention_kernel_basis: bspline`; scaffold README, "B-spline score function").
+Question, recipe, controls and results are in the
+[spline topic](results/exploratory/spline_attention/README.md).
+
+Home cluster: Kennel. Branch `claude/spline-attention`, worktree `worktrees/spline-attention`.
+B300 updates project about 10-11 hours, so both use `standard` on one B300:
+
+```bash
+for run in r7e4193fcafbd rf303a5f94487; do
+  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
@@ -1095,3 +1154,72 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
+
+## Per-order query-distance FoX gates
+
+The [query-distance exploratory comparison](results/exploratory/query_distance_decay/README.md)
+adds query (`r507193d47450`) and query–key (`r03be769d2069`) gates independently
+for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
+and 1× budget, on the Mosaic per-order decay kernels (`model.attention_backend:
+mosaic`), which compute the same weights as the blocked reference. Home cluster:
+Kennel. Use one H100 per run on a 24-hour `standard` or `long` allocation;
+acceptance's pilot measures the update time and stops before training if the run
+would not fit. Exclude `akita`: on B300 both per-order updates are slower than on
+either H100, and the query–key run would not fit 24 hours (see the topic's
+[attention kernels](results/exploratory/query_distance_decay/README.md#attention-kernels)).
+These jobs have no scheduling dependencies on each other.
+
+From the isolated `codex/degree-dependent-fox` worktree, after committing its
+frozen execution set:
+
+```bash
+for run in r507193d47450 r03be769d2069; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+The adapter pins each control's recipe and rejects unrelated scientific changes.
+It collapses duplicate order axes, removes the zero key projection when present,
+and verifies the full original query-control initialization fingerprint.
+Production begins only after CPU/GPU correctness, initialization, the full-recipe
+pilot and checkpoint-resume checks pass. The shared launcher records the allocated
+GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
+
+### Degree eight
+
+The [degree-eight pair](results/exploratory/query_distance_decay/README.md#degree-eight)
+trains the shared query gate (`r9320e5cd3071`: the recipe of `r3e26412b2811` at degree
+eight) and per-order query gates (`r20fe6fe864bc`: `r507193d47450` at degree eight) on the
+Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour `standard`
+or `long` allocation; acceptance's pilot measures the update time and stops before
+training if the run would not fit. Both runs accept only H100. B300 cannot hold the
+per-order gates at degree eight at this shape; it could run the shared gate, but that run
+uses H100 too, so that the pair trains on the same GPU type. These jobs have no
+scheduling dependencies on each other.
+
+`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
+eight on the Mosaic backend, and requires every initial parameter to equal those of
+cumulative FoX `r9353f554b917` at the same seed. `per_order_decay_acceptance` pins
+`r9320e5cd3071` as the per-order run's shared-gate control, collapses the nine duplicated
+order axes, and verifies the control's initialization fingerprint.
+
+From the isolated `claude/per-order-m8` worktree, after committing its frozen execution set:
+
+```bash
+submit() {  # run ID, acceptance adapter
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit r9320e5cd3071 query_distance_degree_acceptance
+submit r20fe6fe864bc per_order_decay_acceptance
+```

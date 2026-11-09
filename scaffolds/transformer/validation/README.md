@@ -32,17 +32,42 @@ log rate fails 9 of them. In FP32 the cumulative decay at 2,048 tokens and 14 he
 `|L_t - L_i + m_h (t - i)| <= 2.2e-4` for `t - i <= 32`, summed sequentially or as a tree: a
 relative weight error near 1e-4, against the BF16 output rounding of 1.7e-3.
 
-GPU qualification is pending. `test_gpu_strips_alibi_matches_float64_at_the_production_context`
-(softmax and exp) runs BF16 Q/K/V at [1, 2048, 14, 64] through the fixed decay and the strips and
-requires the output, dQ, dK, and dV each within 1.2x its BF16 rounding floor against a host FP64
-oracle; the oracle matches FP64 autodiff to 1e-12 on CPU. Executed on CPU outside pytest, all
-eight ratios were 1.0000; the strips qualification below measured 1.008x on H100 and B300.
+`test_gpu_strips_alibi_matches_float64_at_the_production_context` (softmax and exp) runs BF16
+Q/K/V at [1, 2048, 14, 64] through the fixed decay and the strips and requires the output, dQ,
+dK, and dV each within 1.2x its BF16 rounding floor against a host FP64 oracle; the oracle
+matches FP64 autodiff to 1e-12 on CPU. At commit `93f47769` both cases passed in the production
+runs' acceptance on B300 (`akita`, job 239928) and H100 SXM (`dogo`, job 239929), with the
+full-recipe pilot and resume checks.
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
   -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
   scaffolds/transformer/tests/test_constant_decay.py -m "not gpu"
 ```
+
+### Architecture-aware per-order Mosaic support (2026-11-08)
+
+Per-order recipes validate for the Mosaic backend when H100's kernels fit them
+(`api.hopper_supported`). B300 refuses shapes its kernels cannot hold
+(`api.blackwell_supported`) with a `ValueError` before tracing a kernel. Every other family
+keeps its predicate: over
+degrees 0–14, all Q/K widths, and 128–8,192 tokens, shared-family support is unchanged, and
+B300's per-order acceptance equals the previous predicate (degree 7 query and degree 6
+query–key at `d_K = 64` and 2,048 tokens).
+
+`common.hopper_smem_bytes` counts each Hopper kernel's shared memory exactly. Lowered for
+cuda on a CPU host, all 288 combinations of six families, degrees 1, 4, 8, and 12, Q/K widths
+16–128, and the forward, dQ, and dK/dV kernels fit the counted bytes and fail one byte below.
+The largest, per-order query–key at degree 12 and width 128, uses 167,024 of 232,448 bytes.
+Per-order query at degree eight and width 64 uses 110,704 (forward), 86,096 (dQ), and 74,800
+(dK/dV). CPU tests lower the production per-order entry points (forward and all gradients)
+at degree eight for H100 and at B300's largest degree, and check the refusal one degree
+higher. Lowering checks shared memory only, not register allocation, numerics, or speed.
+`tests/test_per_order_decay.py -m gpu` adds degree-eight FP64 and duplicated-order cases, with
+unit-scale scores so that every order contributes and each order's coefficient and gate
+gradients compared separately, and `tests/test_endpoint_decay.py -m gpu` the shared query gate at
+degree eight. They passed on H100 (`mastiff`, job 239920: 46 GPU checks), and production
+acceptance passed its GPU checks on H100 (jobs 239930 and 239931).
 
 ### Coefficient release schedule (2026-11-08)
 
@@ -108,6 +133,27 @@ loss and gradient direction with the FP32 blocked model.
 (the first Mosaic query qualification at degree 10 and on H200), the study adapter's
 exact initial parity with the ungated recipe, and the full-recipe pilot and
 checkpoint-resume checks. Pilot training cost 2.54 and 2.51 s per update.
+
+### Per-order query-distance gates (2026-11-07)
+
+The blocked polynomial backend supports independent softplus distance gates for
+every order, including zero, conditioned on the query or query–key endpoints.
+The focused CPU suites pass independent FP64 output and all-parameter-gradient
+checks, matched full-model starts, per-order statistics, zero-order decay,
+causality, invalid inputs, WD masks, and historical checkpoint compatibility.
+The existing shared-gate and endpoint regressions also pass. Recipes are guarded
+against unrelated changes, and full-model initialization is recovered by
+collapsing the duplicated gate axes.
+
+`tests/test_per_order_decay.py -m gpu` checks both variants at 2,048 tokens with
+64-channel BF16 Q/K/V against FP64, including every gate gradient, on the blocked
+backend and on the Mosaic per-order kernels (families `per_order_query_decay` and
+`per_order_endpoint_decay`). At commit `b38c116f` these checks passed with the shared
+decay, Mosaic query and repeatability suites (88 GPU checks, `--mosaic-precision bf16`)
+on H100 (`dogo`, job 239602) and B300 (`akita`, job 239603). Production acceptance passed
+its 113 GPU checks on both GPUs (jobs 239609 and 239610), and its pilot and resume checks
+on H100. Throughput is recorded in the query_distance_decay topic's
+`per_order_throughput.json`. Each run retains the authoritative acceptance result.
 
 ### Selected polynomial orders (2026-11-03)
 
@@ -2779,9 +2825,97 @@ Loss (10.5163 and 10.5100) and gradient norm (3.0317 and 2.0181) agree between t
 implementations to five digits. H100 SXM (`dogo`) was fully allocated; the PCIe card is about
 1.5× slower in absolute terms, not in the ratio.
 
+### Quartic B-spline score function
+
+`model.attention_kernel_basis: bspline` (scaffold README, "B-spline score function") runs in
+the strips' shared per-block arithmetic. Qualified on 2026-11-08 at commit `927995ed` on one
+B300 (`akita`, job 239705) and one H100 SXM (`dogo`, job 239706) with the same script: the
+spline GPU precision tests (`test_spline_attention.py -m gpu`, static and query) and
+`test_blocked_strips_h100.py` passed on both, and the kernel stage puts static and query
+spline outputs and gradients at the BF16 floor (1.007-1.008×; the scan's block sums give
+2.7×). Full-model micro-steps on the strips, micro-batch 16:
+
+| Recipe | B300 s/update | H100 SXM s/update | Peak GB |
+| --- | ---: | ---: | ---: |
+| static quartic spline (`r7e4193fcafbd`) | 4.53 | 8.56 | 30.5 |
+| query quartic spline + W decay (`rf303a5f94487`) | 5.16 | 9.86 | 32.3-32.5 |
+| static m = 4 polynomial on strips (`r4339a245820e`) | 2.75 | 5.42 | 29.0 |
+| query m = 4 polynomial on strips (`rca97cc9db8f2`) | 3.32 | 6.57 | 31.0 |
+
+Compilation takes 1.4-3.1 minutes. Initial losses agree with the polynomial controls' to five
+digits (both start at T4).
+
 ```bash
 # One GPU per type, from the worktree root (validation files are outside the frozen check):
 sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01:00:00 \
   --output=scaffolds/transformer/validation/logs/blocked-strips/%x-%j.log \
   scaffolds/transformer/validation/qualify_blocked_strips.sbatch "$(git rev-parse HEAD)"
 ```
+
+## Per-order FoX gradient failure investigation (2026-11-07)
+
+The per-order query and query–key gate recipes stopped in GPU acceptance, before
+training, in `test_per_order_decay.py::test_gpu_per_order_forward_and_backward`.
+That test exercises both gate variants for either recipe. The recorded B300
+failure is `CUDA_ERROR_ILLEGAL_ADDRESS` while synchronizing the compiled output
+and VJP, after the explicit FP64 reference had completed. Later test failures in
+the same process follow the poisoned CUDA context.
+
+Fresh-process H100 diagnostics reproduce the query–key backward failure without
+running the reference at all. This establishes that the problem is not confined
+to B300 or caused by the reference calculation. Qualification used the unchanged
+implementation at `971b2ea6`, JAX 0.10.0, the locked CUDA 12 environment, an H100 on
+Kennel `dogo` with driver 560.35.05, and Slurm diagnostic jobs 239099, 239102 and
+239108. Inputs match the acceptance test: B=2, T=2048, H=2, dK=dV=64, degree 4,
+BF16 Q/K/V, FP32 coefficients/gates and gate input width 7.
+
+| Isolated computation | H100 outcome |
+| --- | --- |
+| Query-only output and all gradients, highest/default matmul precision | Pass |
+| Query-only output and all gradients against the FP64 reference | Pass; maximum relative L2 error 0.0025572 |
+| Query–key forward only | Pass |
+| Query–key output and all gradients, highest/default precision | Illegal address |
+| Query–key output and all gradients, CUDA command buffers disabled | Illegal address |
+| Query–key output and all gradients against FP64, priority fusion disabled | Pass; maximum relative L2 error 0.0026623 |
+
+Compute Sanitizer reports **stack overflow** in `loop_add_fusion_5`. The optimized
+HLO maps this to accumulation of the query-gate input gradient, shape
+`[2,2048,2,5]`, inside the reverse scan, with operation
+`transpose(jvp())/while/body/closed_call/add_any`. Five order-specific gradients
+are padded, repeatedly inserted into and read from the full gradient buffer, and
+added to the scan carry. This is a compiler-generated fusion failure, not a
+cuBLAS matrix multiplication failure. Disabling XLA's `priority-fusion` pass
+preserves the mathematics and removes the observed crash. The worst numerical
+errors above are BF16 gradients; the passing query–key gate/projection gradients
+have relative L2 error at most 7.56e-7.
+
+The diagnostic switch is **not** enabled in training. The targeted implementation
+fix at `4ef08db2` slices the query-gate time block once per scan iteration, before
+selecting each order. Its transpose combines order gradients locally before one
+full-buffer update. H100 qualification job **239129** passes both separately
+identified query/query–key GPU tests, including initialization and decay masks,
+with normal compiler optimizations. The independent query–key FP64 comparison
+has maximum relative L2 error 0.0026623; Compute Sanitizer reports **zero errors**
+for the fixed backward pass at training's default matmul precision. Recipes,
+runtime settings and mathematical definitions are unchanged. Full per-run
+acceptance still gates production training on its actual GPU allocation.
+The targeted CPU suite passes 73 tests covering per-order and shared endpoint
+outputs/gradients, initialization, decay masks and the experiment's recipe guard.
+The B300 diagnostic job 239100 was cancelled while pending; it produced no
+diagnostic result.
+
+Reproduce inside a correctly configured single-H100 allocation using the
+worktree's locked environment (each invocation is a fresh process):
+
+```bash
+PY=scaffolds/transformer/.venv/bin/python
+PROBE=scaffolds/transformer/validation/per_order_crash_probe.py
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase original
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase forward --endpoint
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase backward --endpoint
+XLA_FLAGS=--xla_disable_hlo_passes=priority-fusion JAX_PLATFORMS=cuda PYTHONPATH=. \
+  $PY "$PROBE" --phase original --endpoint
+```
+
+Raw logs, sanitizer output and HLO dumps are retained under the ignored
+`validation/logs/per-order-debug/H100-<job>/` directories.

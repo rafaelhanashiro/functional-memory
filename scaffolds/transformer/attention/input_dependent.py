@@ -15,6 +15,11 @@ import jax.numpy as jnp
 # The feature f of affine generators c = b + a*f(x W) and of pure generators c = f(x W).
 AFFINE_FEATURES = {"tanh": jnp.tanh, "affine_sigmoid": jax.nn.sigmoid}
 PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
+# Per-order multipliers of diagonal tanh coefficients: 2 sigmoid(x U + beta), or Gated
+# DeltaNet's exp(-exp(A_log) softplus(x w + dt_bias)) without a distance exponent.
+COEFFICIENT_GATES = ("none", "sigmoid", "gdn")
+GDN_GATE_PARAMETERS = ("query_polynomial_gate_kernel", "query_polynomial_gate_log_rate",
+                       "query_polynomial_gate_dt_bias")
 
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
@@ -28,13 +33,15 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
     and dense V. The "sigmoid" coefficient gate adds U [D, degree+1] and its bias [degree+1],
-    both exactly zero and drawing no random numbers. kernel_weight_decay decays the projections
-    W, W_k and U; b, a, a_k, beta, the gate bias, and V never decay."""
+    both exactly zero and drawing no random numbers. The "gdn" gate adds w [D, degree+1],
+    A_log and dt_bias [degree+1] with the input-form forget gate's distributions, drawn once
+    per layer and head and repeated over the orders. kernel_weight_decay decays the projections
+    W, W_k, U and w; b, a, a_k, beta, the gate biases, A_log, and V never decay."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
-    if gate not in ("none", "sigmoid"):
+    if gate not in COEFFICIENT_GATES:
         raise ValueError(f"Unknown coefficient gate: {gate!r}")
     if gate != "none" and (activation != "tanh" or readout != "diagonal" or conditioning != "query" or tanh_bias):
         raise ValueError("Coefficient gates require diagonal tanh query coefficients without an inner bias")
@@ -118,6 +125,26 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                 initial=(0.0,) * count, sharing="per_head", weight_decay=False,
             ),
         )
+    elif gate == "gdn":
+        # One forget-gate draw per layer and head (the draw omits the order axis, so the
+        # kernel's fan-in is hidden_size), repeated over the orders: every order starts with
+        # the same multiplier, which the per-head output RMSNorm cancels up to its epsilon.
+        kernel_name, log_rate_name, dt_bias_name = GDN_GATE_PARAMETERS
+        specs += (
+            AttentionParameterSpec(
+                name=kernel_name, argument=kernel_name, initial=(0.0,) * (hidden_size * count),
+                initial_shape=(hidden_size, count), sharing="per_head", weight_decay=bool(kernel_weight_decay),
+                initializer="uniform_fan_in", repeat_initial_axis=-1,
+            ),
+            AttentionParameterSpec(
+                name=log_rate_name, argument=log_rate_name, initial=(0.0,) * count, sharing="per_head",
+                weight_decay=False, initializer="mamba2_log_rate", repeat_initial_axis=-1,
+            ),
+            AttentionParameterSpec(
+                name=dt_bias_name, argument=dt_bias_name, initial=(0.0,) * count, sharing="per_head",
+                weight_decay=False, initializer="mamba2_dt_bias", repeat_initial_axis=-1,
+            ),
+        )
     return specs
 
 
@@ -179,8 +206,23 @@ def project_coefficient_gates(x, kernel, bias):
     return jax.nn.sigmoid(coefficient_gate_logits(x, kernel, bias))
 
 
+def gdn_gate_log_multipliers(logits, log_rate):
+    """FP32 log alpha = -exp(A_log) softplus(x w + dt_bias) with shape [B,T,H,R].
+
+    ``logits`` are the softplus inputs x w + dt_bias (coefficient_gate_logits with dt_bias as
+    its bias) and ``log_rate`` is A_log [H,R]. A nonfinite input or A_log gives NaN rather
+    than a multiplier saturated at zero or one.
+    """
+    if logits.ndim != 4 or log_rate.ndim != 2 or logits.shape[-2:] != log_rate.shape:
+        raise ValueError("The GDN coefficient gate requires inputs [B,T,H,R] and A_log [H,R]")
+    logits, log_rate = logits.astype(jnp.float32), log_rate.astype(jnp.float32)
+    log_alpha = -jnp.exp(log_rate) * jax.nn.softplus(logits)
+    return jnp.where(jnp.isfinite(logits) & jnp.isfinite(log_rate), log_alpha, jnp.nan)
+
+
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
-                         amplitude_scale="none", readout_scale=1.0, orders=None, gate_kernel=None, gate_bias=None):
+                         amplitude_scale="none", readout_scale=1.0, orders=None, gate_kernel=None, gate_bias=None,
+                         gate_log_rate=None):
     """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
     otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
@@ -191,10 +233,14 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     orders selects the actual monomial orders for compact diagonal tanh features;
     omitted outputs are zero, and factorial scaling uses those actual orders.
     gate_kernel U [H,D,R] and gate_bias [H,R] multiply diagonal tanh coefficients by
-    2*sigmoid(x U + gate_bias) per order: exactly 1 while both are zero.
+    2*sigmoid(x U + gate_bias) per order: exactly 1 while both are zero. With gate_log_rate
+    A_log [H,R] the multiplier is instead Gated DeltaNet's exp(-exp(A_log) softplus(x U +
+    gate_bias)), gate_bias acting as dt_bias, with no distance exponent.
     """
     if (gate_kernel is None) != (gate_bias is None):
         raise ValueError("A coefficient gate requires both its kernel and its bias")
+    if gate_log_rate is not None and (gate_kernel is None or gate_log_rate.shape != gate_bias.shape):
+        raise ValueError("The GDN coefficient gate requires its kernel, dt_bias and A_log [H,R]")
     if gate_kernel is not None and (activation != "tanh" or mixing is not None or tanh_bias is not None
                                     or orders is not None or bias is None
                                     or gate_kernel.shape != kernel.shape or gate_bias.shape != bias.shape):
@@ -247,7 +293,12 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
             if gate_kernel is not None:
                 # A separate projection leaves W's projection and the readout as they were;
                 # 2*sigmoid(0) is exactly 1, so zero U and bias reproduce the ungated values.
-                multiplier = jax.lax.optimization_barrier(2.0 * project_coefficient_gates(x, gate_kernel, gate_bias))
+                if gate_log_rate is None:
+                    multiplier = jax.lax.optimization_barrier(
+                        2.0 * project_coefficient_gates(x, gate_kernel, gate_bias))
+                else:
+                    multiplier = jax.lax.optimization_barrier(jnp.exp(gdn_gate_log_multipliers(
+                        coefficient_gate_logits(x, gate_kernel, gate_bias), gate_log_rate)))
                 coefficients = coefficients * multiplier
             return coefficients
         mixing = mixing.astype(jnp.float32)
@@ -387,6 +438,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
     exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
+    An extra order axis applies independent decay inside the polynomial sum, on the blocked
+    and Mosaic backends. These gates include the constant term.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
@@ -398,6 +451,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     if decay_mode not in ("cumulative", "query_distance"):
         raise ValueError(f"Unknown query decay mode: {decay_mode}")
     endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    per_order = ((log_decay is not None and log_decay.ndim == 4)
+                 or (query_gate_input is not None and query_gate_input.ndim == 4))
     if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
                      or log_decay is not None or decay_mode != "query_distance"):
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
@@ -429,10 +484,12 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
 
             attend = mosaic.query_polynomial_attention
             if endpoint:
-                attend = partial(mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
+                attend = partial(mosaic.per_order_endpoint_decay_attention if per_order
+                                 else mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
                                  key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
             elif log_decay is not None:
-                attend = partial(mosaic.query_decay_attention, log_decay=log_decay)
+                attend = partial(mosaic.per_order_query_decay_attention if per_order
+                                 else mosaic.query_decay_attention, log_decay=log_decay)
 
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:
@@ -461,11 +518,12 @@ def coefficient_statistics(coefficients):
     }
 
 
-def coefficient_gate_statistics(gate_logits, ungated, gated, q, k):
+def coefficient_gate_statistics(gate_logits, ungated, gated, q, k, *, gate_log_rate=None):
     """Gated query coefficients on the diagnostic sample, per head and order [H,R] (kernel: [H]).
 
-    Gates g_r = sigmoid(gate_logits) [B,T,H,R], the ungated c_r, and the order tilt
-    log g_r - mean_r log g_r, which a factor shared by all orders (cancelled by per-head
+    Gates g_r = sigmoid(gate_logits) [B,T,H,R] or, given A_log [H,R] as gate_log_rate, the GDN
+    multipliers alpha_r = exp(-exp(A_log_r) softplus(gate_logits)); the ungated c_r; and the
+    order tilt log g_r - mean_r log g_r, which a factor shared by all orders (cancelled by per-head
     output RMSNorm) leaves unchanged. Each order's contribution c~_r(x_t) s_ti^r is measured
     over causal pairs i <= t with the reference's scores s = q k^T / sqrt(d_K) (BF16 operands,
     FP32 accumulation): RMS, mean |.|, and its mean share of each row's total |.| over orders;
@@ -473,8 +531,12 @@ def coefficient_gate_statistics(gate_logits, ungated, gated, q, k):
     by coefficient_statistics. Measurements only: nothing here enters the forward pass.
     """
     logits = gate_logits.astype(jnp.float32)
-    gates = jax.nn.sigmoid(logits)
-    log_gates = jax.nn.log_sigmoid(logits)
+    if gate_log_rate is None:
+        gates = jax.nn.sigmoid(logits)
+        log_gates = jax.nn.log_sigmoid(logits)
+    else:
+        log_gates = gdn_gate_log_multipliers(logits, gate_log_rate)
+        gates = jnp.exp(log_gates)
     tilt = log_gates - jnp.mean(log_gates, axis=-1, keepdims=True)
     ungated = ungated.astype(jnp.float32)
     batch, time, heads, count = gated.shape

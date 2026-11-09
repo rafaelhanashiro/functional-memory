@@ -19,11 +19,11 @@ from scaffolds.transformer.training.optim import attention_weight_decay_mask, ma
 from scaffolds.transformer.training.state import create_state
 
 
-def _inputs(time=19, *, width=5, value_width=3, batch=2, heads=2, seed=91):
+def _inputs(time=19, *, width=5, value_width=3, batch=2, heads=2, seed=91, degree=4):
     rng = np.random.default_rng(seed)
     q, k = (rng.normal(size=(batch, time, heads, width)) for _ in range(2))
     v = rng.normal(size=(batch, time, heads, value_width))
-    c = rng.normal(size=(batch, time, heads, 5)) / np.array([math.factorial(r) for r in range(5)])
+    c = rng.normal(size=(batch, time, heads, degree + 1)) / np.array([math.factorial(r) for r in range(degree + 1)])
     query = rng.uniform(-5, -1, size=(batch, time, heads))
     key = rng.normal(size=query.shape) * .5
     rate = rng.uniform(-1, 1, size=(heads, 1))
@@ -402,8 +402,8 @@ def _mosaic(variant):
     return lambda q, k, v, c, query, rate: query_decay_attention(q, k, v, c, -jnp.exp(rate[:, 0]) * activation(query))
 
 
-def _mosaic_operands(variant, time, *, seed=103, batch=1):
-    operands, cotangent = _inputs(time, width=64, value_width=64, batch=batch, heads=2, seed=seed)
+def _mosaic_operands(variant, time, *, seed=103, batch=1, degree=4):
+    operands, cotangent = _inputs(time, width=64, value_width=64, batch=batch, heads=2, seed=seed, degree=degree)
     if variant != "query_key":
         operands = (*operands[:5], np.zeros_like(operands[5]), operands[6])  # the oracle's query-only rate
     operands = tuple(jnp.asarray(x, jnp.bfloat16 if i < 3 else jnp.float32) for i, x in enumerate(operands))
@@ -415,10 +415,13 @@ def _drop_key(variant, values):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("variant", MOSAIC_VARIANTS)
-def test_mosaic_full_context_output_and_gradients_match_host_fp64(variant):
+@pytest.mark.parametrize("variant,degree", (
+    *(pytest.param(variant, 4, id=variant) for variant in MOSAIC_VARIANTS),
+    pytest.param("query_softplus", 8, id="query_softplus-m8"),  # the shared gate of the degree-eight runs
+))
+def test_mosaic_full_context_output_and_gradients_match_host_fp64(variant, degree):
     _requires_mosaic_gpu()
-    operands, cotangent = _mosaic_operands(variant, 2048)
+    operands, cotangent = _mosaic_operands(variant, 2048, degree=degree)
     output, gradients = _numpy_vjp(operands, cotangent, activation="sigmoid" if variant == "query_sigmoid" else "softplus")
     actual = jax.jit(lambda *x: _vjp(_mosaic(variant), x, cotangent))(*_drop_key(variant, operands))
     # BF16 bounds of the Mosaic query-polynomial gates for output, dq, dk, dv; FP32 sums elsewhere.

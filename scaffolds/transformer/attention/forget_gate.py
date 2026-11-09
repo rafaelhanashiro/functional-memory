@@ -28,6 +28,7 @@ raised to the per-head power exp(A_log). It takes query conditioning and the sof
 """
 
 import math
+from dataclasses import replace
 
 import jax
 import jax.numpy as jnp
@@ -71,10 +72,15 @@ def alibi_log_rate(num_heads: int) -> jax.Array:
 
 
 def parameter_specs(*, hidden_size: int, form: str = "input", conditioning: str = "query",
-                    rate_activation: str = "softplus", constant_rate: str = "learned"):
+                    rate_activation: str = "softplus", constant_rate: str = "learned",
+                    order_count: int | None = None):
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
     names = parameter_names(form, conditioning, constant_rate)
+    if order_count is not None and (form != "input" or rate_activation != "softplus"
+                                   or isinstance(order_count, bool) or not isinstance(order_count, int)
+                                   or order_count < 2):
+        raise ValueError("Per-order gates require input-form softplus and at least two orders")
     if rate_activation not in ("softplus", "sigmoid") or (rate_activation != "softplus" and (form != "input" or conditioning != "query")):
         raise ValueError("Unsupported forget gate rate activation")
     if form == "constant":
@@ -101,6 +107,10 @@ def parameter_specs(*, hidden_size: int, form: str = "input", conditioning: str 
     if conditioning == "query_key":
         specs += (AttentionParameterSpec(name=KEY_PARAMETER, argument=KEY_PARAMETER, initial=(0.0,) * hidden_size,
                                         initial_shape=(hidden_size,), sharing="per_head", weight_decay=True),)
+    if order_count is not None:
+        specs = tuple(replace(spec, initial=spec.initial * order_count,
+                              initial_shape=(order_count, len(spec.initial)),
+                              repeat_initial_axis=-2) for spec in specs)
     return specs
 
 
@@ -122,29 +132,35 @@ def sigmoid_log_decay(x, kernel, bias):
 
 
 def log_decay(x, kernel, log_rate, dt_bias, *, rate_activation="softplus"):
-    """FP32 log alpha [batch,time,heads] from x [B,T,D], kernel [H,D], log_rate and dt_bias [H,1]."""
-    if x.ndim != 3 or kernel.shape != (log_rate.shape[0], x.shape[-1]) or log_rate.shape != dt_bias.shape:
+    """FP32 log alpha [B,T,H] or [B,T,H,R], with an optional order axis in every parameter."""
+    if (x.ndim != 3 or kernel.ndim not in (2, 3) or kernel.shape[-1] != x.shape[-1]
+            or log_rate.shape != (*kernel.shape[:-1], 1) or log_rate.shape != dt_bias.shape):
         raise ValueError("The forget gate requires x [B,T,D], kernel [H,D], log_rate and dt_bias [H,1]")
-    projected = jnp.einsum("btd,hd->bth", x.astype(jnp.float32), kernel.astype(jnp.float32),
+    projected = jnp.einsum("btd,hd->bth" if kernel.ndim == 2 else "btd,hrd->bthr",
+                           x.astype(jnp.float32), kernel.astype(jnp.float32),
                            precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
-    rate = jnp.exp(log_rate[:, 0].astype(jnp.float32))
+    rate = jnp.exp(log_rate[..., 0].astype(jnp.float32))
     if rate_activation not in ("softplus", "sigmoid"):
         raise ValueError(f"Unknown forget gate rate activation: {rate_activation}")
-    inputs = projected + dt_bias[:, 0].astype(jnp.float32)
+    inputs = projected + dt_bias[..., 0].astype(jnp.float32)
     if rate_activation == "softplus":
-        return -rate * jax.nn.softplus(inputs)
+        result = -rate * jax.nn.softplus(inputs)
+        if kernel.ndim == 3:
+            return jnp.where(jnp.isfinite(inputs) & jnp.isfinite(log_rate[..., 0]), result, jnp.nan)
+        return result
     # Saturating finite inputs may yield zero rate, but nonfinite parameters/activations
     # must not be hidden by sigmoid's finite endpoints.
-    valid = jnp.isfinite(inputs) & jnp.isfinite(log_rate[:, 0])
+    valid = jnp.isfinite(inputs) & jnp.isfinite(log_rate[..., 0])
     return jnp.where(valid, -rate * jax.nn.sigmoid(inputs), jnp.nan)
 
 
 def project_gate_inputs(x, kernel, dt_bias, key_kernel):
-    """Endpoint projections [B,T,H]; the pairwise nonlinearity is evaluated inside score blocks."""
-    if (x.ndim != 3 or kernel.shape != (dt_bias.shape[0], x.shape[-1])
-            or key_kernel.shape != kernel.shape or dt_bias.shape != (kernel.shape[0], 1)):
+    """Endpoint projections [B,T,H] or [B,T,H,R]; evaluate pair rates inside score blocks."""
+    if (x.ndim != 3 or kernel.ndim not in (2, 3) or kernel.shape[-1] != x.shape[-1]
+            or key_kernel.shape != kernel.shape or dt_bias.shape != (*kernel.shape[:-1], 1)):
         raise ValueError("Endpoint gate requires x [B,T,D], kernels [H,D], and bias [H,1]")
     def project(weight):
-        return jnp.einsum("btd,hd->bth", x.astype(jnp.float32), weight.astype(jnp.float32),
+        return jnp.einsum("btd,hd->bth" if kernel.ndim == 2 else "btd,hrd->bthr",
+                          x.astype(jnp.float32), weight.astype(jnp.float32),
                           precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
-    return project(kernel) + dt_bias[:, 0].astype(jnp.float32), project(key_kernel)
+    return project(kernel) + dt_bias[..., 0].astype(jnp.float32), project(key_kernel)

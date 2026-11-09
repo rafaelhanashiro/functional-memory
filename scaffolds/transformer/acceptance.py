@@ -70,12 +70,17 @@ COEFFICIENT_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gates.py"
 COEFFICIENT_GATE_GPU_TESTS = ("test_gated_coefficients_through_mosaic_match_fp64",
                               "test_gated_mosaic_model_matches_float32_blocked_model")
 COEFFICIENT_GATE_DEGREES = (8, 10)
+COEFFICIENT_GDN_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gdn_gates.py"
+COEFFICIENT_GDN_GATE_GPU_TESTS = ("test_gdn_gated_coefficients_through_mosaic_match_fp64",
+                                  "test_gdn_gated_mosaic_model_matches_float32_blocked_model")
+COEFFICIENT_GDN_GATE_DEGREES = (4,)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
 COEFFICIENT_RELEASE_TESTS = "scaffolds/transformer/tests/test_coefficient_release.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
 BLOCKED_STRIPS_TESTS = "scaffolds/transformer/tests/test_blocked_strips.py"
+SPLINE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_spline_attention.py"
 FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
 FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
 FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
@@ -128,6 +133,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
         paths.append(COEFFICIENT_RELEASE_TESTS)
     model = config["model"]
+    if model.get("attention_forget_gate_per_order", False):
+        paths.append("scaffolds/transformer/tests/test_per_order_decay.py")
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -159,6 +166,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             and model.get("attention_blocked_implementation", "scan") == "strips"):
         # Training on causal strips: their equivalence with the scan and their FP32 dK/dV sums.
         paths.append(BLOCKED_STRIPS_TESTS)
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        # CPU: the B-spline score function against an independent Cox-de Boor reference, its
+        # exact Taylor start, parameters, and scan/strips equivalence. GPU: production precision
+        # of the strips and the scan's forward against FP64.
+        paths.append(SPLINE_ATTENTION_TESTS)
     if (not cpu and model.get("qk_norm_head_scale", False)
             and model.get("attention_mechanism", "dot_product") == "dot_product"
             and not model.get("attention_normalization", True)
@@ -230,15 +242,19 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
             if resolved_backend == "fused" and cpu:
                 paths.append(QUERY_KEY_TILING_TESTS)
-    if model.get("attention_coefficient_gate", "none") != "none":
+    coefficient_gate = model.get("attention_coefficient_gate", "none")
+    if coefficient_gate != "none":
+        tests, gpu_tests, qualified = (
+            (COEFFICIENT_GDN_GATE_TESTS, COEFFICIENT_GDN_GATE_GPU_TESTS, COEFFICIENT_GDN_GATE_DEGREES)
+            if coefficient_gate == "gdn" else
+            (COEFFICIENT_GATE_TESTS, COEFFICIENT_GATE_GPU_TESTS, COEFFICIENT_GATE_DEGREES))
         if cpu:
-            paths.append(COEFFICIENT_GATE_TESTS)
+            paths.append(tests)
         else:
             # Every qualified degree runs together, so runs at different degrees share one GPU
             # stage; a degree without a parametrized case has no node id and fails closed.
-            degrees = sorted({*COEFFICIENT_GATE_DEGREES, int(model["attention_degree"])})
-            paths.extend(f"{COEFFICIENT_GATE_TESTS}::{test}[{degree}]"
-                         for test in COEFFICIENT_GATE_GPU_TESTS for degree in degrees)
+            degrees = sorted({*qualified, int(model["attention_degree"])})
+            paths.extend(f"{tests}::{test}[{degree}]" for test in gpu_tests for degree in degrees)
     if model.get("attention_coefficient_orders") is not None:
         paths.append("scaffolds/transformer/tests/test_coefficient_orders.py")
     if model.get("attention_coefficient_scale", "none") != "none":
@@ -688,6 +704,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_gate="none",
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
+                                           attention_forget_gate_per_order=False,
                                            attention_forget_gate_mode="cumulative",
                                            attention_forget_gate_form="input",
                                            attention_forget_gate_constant_rate="learned",
@@ -699,7 +716,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
-                                           attention_denominator_constant="fixed"))
+                                           attention_denominator_constant="fixed",
+                                           attention_kernel_basis="polynomial", attention_spline_knots=None))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -744,6 +762,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
         attention_coefficient_gate="none",
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
+        attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
         attention_forget_gate_constant_rate="learned",
         attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
@@ -752,7 +771,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
-        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False))
+        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
+        attention_kernel_basis="polynomial", attention_spline_knots=None))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):
@@ -771,7 +791,85 @@ def matches_softmax_backbone_initialization(config) -> dict:
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
                                              **({"initial_std": spec.initial_std} if spec.initial_std else {}),
                                              **({"initializer": spec.initializer} if spec.initializer else {}),
+                                             **({"repeat_initial_axis": spec.repeat_initial_axis}
+                                                if spec.repeat_initial_axis is not None else {}),
                                              "weight_decay": spec.weight_decay} for spec in specs},
+    }
+
+
+# Rounding allowance for initial logits that differ only in FP32 rounding: 2^-16, 256 units in
+# the last place, relative to the largest logit.
+GATE_START_ROUNDING = 2.0 ** -16
+
+
+def gdn_gate_start_parity(config, tokens) -> dict:
+    """Initial logits of a GDN coefficient-gate recipe against the same recipe without the gate.
+
+    Every order of a head starts with the same multiplier alpha_t, so the head's output before
+    its RMSNorm is alpha_t y_t and the norm returns g y_t / sqrt(ms(y_t) + eps / alpha_t^2):
+    the ungated output times rho = sqrt((ms + eps alpha_t^2) / (ms + eps)), with ms the gated
+    output's mean square. Hence 1 - rho <= delta_l = eps / (ms_l + eps), where ms_l, the
+    smallest ms of any head at any position of layer l, comes from training telemetry. Both
+    recipes run in FP32 on the blocked reference. With every RMSNorm epsilon at 1e-30 the norm
+    cancels alpha exactly and the logits must agree to GATE_START_ROUNDING relative to the
+    largest logit. At the recipe's epsilon they must agree within sum_l delta_l plus that
+    allowance: every head output of layer l moves by at most delta_l of itself, and the
+    tolerance lets each layer's relative change reach the logits undiminished.
+    """
+    from dataclasses import replace
+
+    import jax
+    import numpy as np
+    from flax import nnx
+
+    from scaffolds.transformer.attention.input_dependent import GDN_GATE_PARAMETERS
+    from scaffolds.transformer.models import build_model
+    from scaffolds.transformer.training import telemetry
+
+    model = config.model
+    if model.attention_coefficient_gate != "gdn" or model.attention_output_scaling != "head_rms_norm":
+        raise ValueError("GDN gate start parity applies to GDN-gated recipes with head RMSNorm output scaling")
+    rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
+
+    def run(gate, eps):
+        built = build_model(replace(model, attention_backend="blocked", attention_coefficient_gate=gate,
+                                    rms_norm_eps=eps), nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0)))
+        with telemetry.collect() as collector:
+            logits = np.asarray(built(tokens), np.float64)
+        squares = [float(value) ** 2 for key, value in sorted(collector.values.items())
+                   if key.endswith("/attention_output_head_rms_min")]
+        return built, logits, squares
+
+    gated, logits, squares = run("gdn", model.rms_norm_eps)
+    _, control, _ = run("none", model.rms_norm_eps)
+    _, epsilon_free, _ = run("gdn", 1e-30)
+    _, control_epsilon_free, _ = run("none", 1e-30)
+    if len(squares) != model.num_layers or not all(np.isfinite(values).all() for values in (
+            squares, logits, control, epsilon_free, control_epsilon_free)):
+        raise RuntimeError("Initial logits or head output telemetry are missing or nonfinite")
+    scale = float(np.max(np.abs(control)))
+    deltas = [model.rms_norm_eps / (square + model.rms_norm_eps) for square in squares]
+    difference = float(np.max(np.abs(logits - control))) / scale
+    epsilon_free_difference = float(np.max(np.abs(epsilon_free - control_epsilon_free))) / scale
+    tolerance = sum(deltas) + GATE_START_ROUNDING
+    if epsilon_free_difference > GATE_START_ROUNDING:
+        raise RuntimeError(f"Without the RMSNorm epsilon the initial logits differ by {epsilon_free_difference:.3g} "
+                           f"of the largest logit, beyond FP32 rounding ({GATE_START_ROUNDING:.3g})")
+    if difference > tolerance:
+        raise RuntimeError(f"Initial logits differ by {difference:.3g} of the largest logit, beyond the RMSNorm "
+                           f"epsilon bound {tolerance:.3g}")
+    for name in GDN_GATE_PARAMETERS:
+        values = np.asarray(getattr(gated, name)[...])
+        if not np.array_equal(values, np.broadcast_to(values[..., :1], values.shape)):
+            raise RuntimeError(f"{name} does not start as one draw repeated over the orders")
+    return {
+        "tokens": int(np.size(tokens)), "backend": "blocked", "dtype": "float32",
+        "rms_norm_eps": model.rms_norm_eps, "largest_ungated_logit": scale,
+        "head_output_relative_change_bound": deltas,
+        "logit_difference_relative_to_largest": difference, "tolerance_relative_to_largest": tolerance,
+        "epsilon_free_logit_difference_relative_to_largest": epsilon_free_difference,
+        "epsilon_free_rms_norm_eps": 1e-30, "rounding_tolerance_relative_to_largest": GATE_START_ROUNDING,
+        "gate_parameters_repeat_one_draw_over_orders": True,
     }
 
 
