@@ -348,6 +348,23 @@ sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --me
   experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml af919f3f4af1a3e647d267cf098d385bbb952941 1 H100
 ```
 
+The intercept-and-odd query run `r0bdac8e1b97b` (orders 0, 1, 3, 5 and 7, query + weight
+decay at degree seven) is hosted on ORCD and trained on one H200. It ends at 16.054
+terminal PPL, 9.8% above the even-only query run; the topic reports the comparison.
+It launched from `worktrees/odd_powers`, branch `claude/odd-powers-orcd`, after
+committing its recipe:
+
+```bash
+RUN=r0bdac8e1b97b
+sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
+  --gres=gpu:h200:1 \
+  scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H200
+```
+
+Once a run has started training, its `config.json` records the source commit, so a
+resubmission passes that original launch commit (`0c9eed33` here) rather than `HEAD`.
+
 ### Per-order coefficient gates
 
 The [order-gates topic](results/exploratory/order_gates/README.md) asks whether

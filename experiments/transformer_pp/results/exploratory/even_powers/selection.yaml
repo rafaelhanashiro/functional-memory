@@ -1,5 +1,6 @@
 question: Do even-only degree-eight polynomials improve static and query-conditioned
-  attention at the 1x budget?
+  attention at the 1x budget, and does keeping the intercept with only the odd orders
+  through seven help query attention?
 settings:
   metric: validation perplexity
   report:
@@ -17,6 +18,12 @@ settings:
   - 4
   - 6
   - 8
+  intercept_and_odd_orders:
+  - 0
+  - 1
+  - 3
+  - 5
+  - 7
   comparison_groups:
     static:
     - static_even_m8
@@ -26,6 +33,14 @@ settings:
     - query_even_m8_w_decay
     - query_full_m4_w_decay
     - query_full_m8_w_decay
+    query_w_decay_odd:
+    - query_odd_m7_w_decay
+    - query_even_m8_w_decay
+    - query_full_m4_w_decay
+    - query_full_m7_w_decay
+    - query_full_m8_w_decay
+    references:
+    - taylor_m7
 runs:
 - study: transformer_pp
   run_id: r45831d718944
@@ -141,3 +156,60 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r9c69dd7cfc8d/best_validation.json
       sha256: 7167b5c06e3836695633f652f3926ea4207438153e88b9ed1d16632b774071fb
+- study: transformer_pp
+  run_id: r0bdac8e1b97b
+  role: query_odd_m7_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0bdac8e1b97b/config.yaml
+      sha256: 9af6ed5b4d818701a6be194652b138e091e6f9ad90ecdf98f9a6b04ef73f0507
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0bdac8e1b97b/metrics.jsonl
+      sha256: 5d71b6c132ea6d091516bd10d977b8b8500164b36ef7aaba2ae7cd9ee202e4b1
+    completion.json:
+      path: experiments/transformer_pp/runs/r0bdac8e1b97b/completion.json
+      sha256: c6e82ea9fa4b8e22718779022a304bb33b2ec257344bc1505e70b0c363c36ed6
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0bdac8e1b97b/metadata.json
+      sha256: 95523b7412ed9b377f1edd150f90ade2452c69a5740ff68ee34e850af1bb85c7
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0bdac8e1b97b/best_validation.json
+      sha256: f420900ffe242320c403a19f7cd58e457e0c84f85042fcc4ddf5c29f44d14eb0
+- study: transformer_pp
+  run_id: rdb67453630c8
+  role: query_full_m7_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rdb67453630c8/config.yaml
+      sha256: 0e2020e57615d3ad7eafa802f43c25a2c5509c34e06d4329bebd4759a1b317e3
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rdb67453630c8/metrics.jsonl
+      sha256: dea6a566f9d6bf3ed8a1544a1a0c41dcdff6161e88ea67cdaaa067adaf5908af
+    completion.json:
+      path: experiments/transformer_pp/runs/rdb67453630c8/completion.json
+      sha256: f928fec8bb0ec60213d220e85cd6477094d5e6a2d4c717a7c1bbceb98cd13d1b
+    metadata.json:
+      path: experiments/transformer_pp/runs/rdb67453630c8/metadata.json
+      sha256: 389510c1f3f20e337338595942058b84fbc34dfb0223567199caa2e17d6db185
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rdb67453630c8/best_validation.json
+      sha256: 9db109a273c427be0dcdf471806fc2441d49bd7555db26d68ba352b6d7e536ae
+- study: transformer_pp
+  run_id: re12e78d1ded3
+  role: taylor_m7
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/re12e78d1ded3/config.yaml
+      sha256: 12175438fe1958edeb8e4c0486e4d43bff55286b607c87fec95f279586f21869
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/re12e78d1ded3/metrics.jsonl
+      sha256: 67ada03d7971adcb74aa7a66e6dd76bd0f58d1fdcf6514455dbc2ea405f6d23d
+    completion.json:
+      path: experiments/transformer_pp/runs/re12e78d1ded3/completion.json
+      sha256: d916dc7eefed0ece8330f9917af2bd4eb704740a52655be5b06c997450164c99
+    metadata.json:
+      path: experiments/transformer_pp/runs/re12e78d1ded3/metadata.json
+      sha256: ddaef58988547419ca296082f28f7f66b290518f4a645ca03871b5609fd99292
+    best_validation.json:
+      path: experiments/transformer_pp/runs/re12e78d1ded3/best_validation.json
+      sha256: 3366bfa1e299af221cbfe607d314479184783e29d989ec087eef5f294c409c9e

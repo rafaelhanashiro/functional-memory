@@ -182,6 +182,16 @@ and query coefficients: 50 and 70 GPU checks, respectively, including the two
 restricted-order FP64 comparisons. Both full-recipe initialization, training,
 evaluation and checkpoint-resume checks passed before production.
 
+On 2026-11-07 the order checks were parametrized over a second set, the intercept with
+the odd orders `[0, 1, 3, 5, 7]` at degree 7, so omitted orders, parity (`p(z) - p(0)`
+odd rather than even), factorials and the penalty weights (`a_1` unpenalized) follow
+each set; the two Mosaic FP64 cases run for both sets. All 32 CPU checks passed.
+[H200 qualification](selected_orders_h200.json) passed for the odd-order query recipe
+`r0bdac8e1b97b` (the first Mosaic query qualification on H200): 501 CPU and 9
+distributed CPU checks, 72 GPU checks including the two odd-order degree-seven FP64
+comparisons, and the full-recipe initialization, pilot and checkpoint-resume checks, at
+2.08 s per training update.
+
 ### FoX with PaTH polynomial attention (2026-11-01)
 
 The query-polynomial PaTH reference and its six fused polynomial kernels accept
