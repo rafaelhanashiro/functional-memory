@@ -152,6 +152,15 @@ def test_initialization_mismatch_stops_before_backbone_qualification(monkeypatch
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
+def test_initialization_checks_the_recipe_before_building_models(monkeypatch, kernel):
+    """Acceptance's initialization worker calls check_initialization on its own: the cumulative control
+    itself is refused before any model is built."""
+    monkeypatch.setattr(adapter, "initialization_facts", lambda config: pytest.fail("Built a model"))
+    with pytest.raises(ValueError, match="requires query-distance decay"):
+        adapter.check_initialization(adapter.control_config(kernel))
+
+
+@pytest.mark.parametrize("kernel", KERNELS)
 def test_matching_initialization_proceeds_to_backbone_qualification(monkeypatch, kernel):
     run, _, digest, count = adapter.CONTROLS[kernel]
     monkeypatch.setattr(adapter, "initialization_facts",

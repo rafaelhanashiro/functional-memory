@@ -78,9 +78,11 @@ no-RoPE forget-gate run on its kernel and changes only `attention_forget_gate_mo
 every score gains `(t - i) log alpha_t`, the query token's own rate times the distance, in place of
 FoX's `L_t - L_i`, the sum of `log alpha_j` over the tokens `j = i+1..t`. This is ALiBi with a learned
 slope per query token and head, `lambda_t = exp(A_log) softplus(w_alpha . x_t + b_dt)`. The gate, its
-188,580 parameters and their initialization are FoX's, so each primary starts exactly at its
-control. Softmax normalizes the decayed scores; exp keeps its per-head output RMSNorm. The primaries
-train on the causal strips and the controls trained on the scan.
+188,580 parameters and their initialization are FoX's, so each primary starts from its control's
+initial parameters, though not as its control's model: `w_alpha` starts nonzero, so `log alpha_t`
+varies by token and the two decays differ from the first step. Softmax normalizes the decayed
+scores; exp keeps its per-head output RMSNorm. The primaries train on the causal strips and the
+controls trained on the scan.
 
 | Role | Run | Label | Kernel | Score decay | Validation-best PPL |
 | --- | --- | --- | --- | --- | ---: |
