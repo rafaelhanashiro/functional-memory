@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf8fc9ab2cecc/config.yaml",
+    "sha256": "07a538bf6aeb7cc142b0c887a0235b91314fe96cc1da6243cc6a0ec63122ea93"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-per-order-forget-gate-no-rope-wdecay",
+  "name": "query-m8-per-order-forget-gate-no-rope-wdecay",
+  "record_schema_version": 1,
+  "run_id": "rf8fc9ab2cecc",
+  "status": "planned"
+}

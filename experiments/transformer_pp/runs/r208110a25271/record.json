@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r208110a25271/config.yaml",
+    "sha256": "dfe55cdef75670285188fb1e7511d79655ad5736e408a0a9f579056adfc2cc26"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-query-distance-no-rope",
+  "name": "softmax-query-distance-no-rope",
+  "record_schema_version": 1,
+  "run_id": "r208110a25271",
+  "status": "planned"
+}
