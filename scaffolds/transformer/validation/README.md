@@ -76,6 +76,27 @@ loss and gradient direction with the FP32 blocked model.
 exact initial parity with the ungated recipe, and the full-recipe pilot and
 checkpoint-resume checks. Pilot training cost 2.54 and 2.51 s per update.
 
+### Per-order query-distance gates (2026-11-07)
+
+The blocked polynomial backend supports independent softplus distance gates for
+every order, including zero, conditioned on the query or query–key endpoints.
+The focused CPU suites pass independent FP64 output and all-parameter-gradient
+checks, matched full-model starts, per-order statistics, zero-order decay,
+causality, invalid inputs, WD masks, and historical checkpoint compatibility.
+The existing shared-gate and endpoint regressions also pass. Recipes are guarded
+against unrelated changes, and full-model initialization is recovered by
+collapsing the duplicated gate axes.
+
+`tests/test_per_order_decay.py -m gpu` checks both variants at 2,048 tokens with
+64-channel BF16 Q/K/V against FP64, including every gate gradient, on the blocked
+backend and on the Mosaic per-order kernels (families `per_order_query_decay` and
+`per_order_endpoint_decay`). At commit `b38c116f` these checks passed with the shared
+decay, Mosaic query and repeatability suites (88 GPU checks, `--mosaic-precision bf16`)
+on H100 (`dogo`, job 239602) and B300 (`akita`, job 239603). Production acceptance passed
+its 113 GPU checks on both GPUs (jobs 239609 and 239610), and its pilot and resume checks
+on H100. Throughput is recorded in the query_distance_decay topic's
+`per_order_throughput.json`. Each run retains the authoritative acceptance result.
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders
@@ -2752,3 +2773,71 @@ sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01
   --output=scaffolds/transformer/validation/logs/blocked-strips/%x-%j.log \
   scaffolds/transformer/validation/qualify_blocked_strips.sbatch "$(git rev-parse HEAD)"
 ```
+
+## Per-order FoX gradient failure investigation (2026-11-07)
+
+The per-order query and query–key gate recipes stopped in GPU acceptance, before
+training, in `test_per_order_decay.py::test_gpu_per_order_forward_and_backward`.
+That test exercises both gate variants for either recipe. The recorded B300
+failure is `CUDA_ERROR_ILLEGAL_ADDRESS` while synchronizing the compiled output
+and VJP, after the explicit FP64 reference had completed. Later test failures in
+the same process follow the poisoned CUDA context.
+
+Fresh-process H100 diagnostics reproduce the query–key backward failure without
+running the reference at all. This establishes that the problem is not confined
+to B300 or caused by the reference calculation. Qualification used the unchanged
+implementation at `971b2ea6`, JAX 0.10.0, the locked CUDA 12 environment, an H100 on
+Kennel `dogo` with driver 560.35.05, and Slurm diagnostic jobs 239099, 239102 and
+239108. Inputs match the acceptance test: B=2, T=2048, H=2, dK=dV=64, degree 4,
+BF16 Q/K/V, FP32 coefficients/gates and gate input width 7.
+
+| Isolated computation | H100 outcome |
+| --- | --- |
+| Query-only output and all gradients, highest/default matmul precision | Pass |
+| Query-only output and all gradients against the FP64 reference | Pass; maximum relative L2 error 0.0025572 |
+| Query–key forward only | Pass |
+| Query–key output and all gradients, highest/default precision | Illegal address |
+| Query–key output and all gradients, CUDA command buffers disabled | Illegal address |
+| Query–key output and all gradients against FP64, priority fusion disabled | Pass; maximum relative L2 error 0.0026623 |
+
+Compute Sanitizer reports **stack overflow** in `loop_add_fusion_5`. The optimized
+HLO maps this to accumulation of the query-gate input gradient, shape
+`[2,2048,2,5]`, inside the reverse scan, with operation
+`transpose(jvp())/while/body/closed_call/add_any`. Five order-specific gradients
+are padded, repeatedly inserted into and read from the full gradient buffer, and
+added to the scan carry. This is a compiler-generated fusion failure, not a
+cuBLAS matrix multiplication failure. Disabling XLA's `priority-fusion` pass
+preserves the mathematics and removes the observed crash. The worst numerical
+errors above are BF16 gradients; the passing query–key gate/projection gradients
+have relative L2 error at most 7.56e-7.
+
+The diagnostic switch is **not** enabled in training. The targeted implementation
+fix at `4ef08db2` slices the query-gate time block once per scan iteration, before
+selecting each order. Its transpose combines order gradients locally before one
+full-buffer update. H100 qualification job **239129** passes both separately
+identified query/query–key GPU tests, including initialization and decay masks,
+with normal compiler optimizations. The independent query–key FP64 comparison
+has maximum relative L2 error 0.0026623; Compute Sanitizer reports **zero errors**
+for the fixed backward pass at training's default matmul precision. Recipes,
+runtime settings and mathematical definitions are unchanged. Full per-run
+acceptance still gates production training on its actual GPU allocation.
+The targeted CPU suite passes 73 tests covering per-order and shared endpoint
+outputs/gradients, initialization, decay masks and the experiment's recipe guard.
+The B300 diagnostic job 239100 was cancelled while pending; it produced no
+diagnostic result.
+
+Reproduce inside a correctly configured single-H100 allocation using the
+worktree's locked environment (each invocation is a fresh process):
+
+```bash
+PY=scaffolds/transformer/.venv/bin/python
+PROBE=scaffolds/transformer/validation/per_order_crash_probe.py
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase original
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase forward --endpoint
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase backward --endpoint
+XLA_FLAGS=--xla_disable_hlo_passes=priority-fusion JAX_PLATFORMS=cuda PYTHONPATH=. \
+  $PY "$PROBE" --phase original --endpoint
+```
+
+Raw logs, sanitizer output and HLO dumps are retained under the ignored
+`validation/logs/per-order-debug/H100-<job>/` directories.

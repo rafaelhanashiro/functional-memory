@@ -438,6 +438,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
     exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
+    An extra order axis applies independent decay inside the polynomial sum, on the blocked
+    and Mosaic backends. These gates include the constant term.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
@@ -449,6 +451,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     if decay_mode not in ("cumulative", "query_distance"):
         raise ValueError(f"Unknown query decay mode: {decay_mode}")
     endpoint = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    per_order = ((log_decay is not None and log_decay.ndim == 4)
+                 or (query_gate_input is not None and query_gate_input.ndim == 4))
     if endpoint and (any(value is None for value in (query_gate_input, key_gate_input, gate_log_rate))
                      or log_decay is not None or decay_mode != "query_distance"):
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
@@ -480,10 +484,12 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
 
             attend = mosaic.query_polynomial_attention
             if endpoint:
-                attend = partial(mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
+                attend = partial(mosaic.per_order_endpoint_decay_attention if per_order
+                                 else mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
                                  key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
             elif log_decay is not None:
-                attend = partial(mosaic.query_decay_attention, log_decay=log_decay)
+                attend = partial(mosaic.per_order_query_decay_attention if per_order
+                                 else mosaic.query_decay_attention, log_decay=log_decay)
 
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:

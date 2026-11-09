@@ -181,7 +181,9 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         specs += forget_gate_specs(hidden_size=config.hidden_size,
                                    form=getattr(config, "attention_forget_gate_form", "input"),
                                    conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
-                                   rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"))
+                                   rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
+                                   order_count=(config.attention_degree + 1
+                                                if getattr(config, "attention_forget_gate_per_order", False) else None))
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 

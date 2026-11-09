@@ -36,6 +36,7 @@ INDEX_COLUMNS = (
     "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_conditioning", "attention_forget_gate_rate_activation",
+    "attention_forget_gate_per_order",
     "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
@@ -530,6 +531,8 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_kernel_weight_decay": None if coefficient_table else model.get("attention_coefficient_kernel_weight_decay"),
         "coefficient_gate": None if coefficient_table else model.get("attention_coefficient_gate"),
         "attention_forget_gate": model.get("attention_forget_gate"),
+        "attention_forget_gate_per_order": model.get("attention_forget_gate_per_order", False)
+            if model.get("attention_forget_gate") else None,
         "attention_forget_gate_mode": model.get("attention_forget_gate_mode", "cumulative")
             if model.get("attention_forget_gate") else None,
         "attention_forget_gate_form": model.get("attention_forget_gate_form", "input")

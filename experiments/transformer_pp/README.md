@@ -1097,3 +1097,39 @@ scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
+
+## Per-order query-distance FoX gates
+
+The [query-distance exploratory comparison](results/exploratory/query_distance_decay/README.md)
+adds query (`r507193d47450`) and query–key (`r03be769d2069`) gates independently
+for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
+and 1× budget, on the Mosaic per-order decay kernels (`model.attention_backend:
+mosaic`), which compute the same weights as the blocked reference. Home cluster:
+Kennel. Use one H100 per run on a 24-hour `standard` or `long` allocation;
+acceptance's pilot measures the update time and stops before training if the run
+would not fit. Exclude `akita`: on B300 both per-order updates are slower than on
+either H100, and the query–key run would not fit 24 hours (see the topic's
+[attention kernels](results/exploratory/query_distance_decay/README.md#attention-kernels)).
+These jobs have no scheduling dependencies on each other.
+
+From the isolated `codex/degree-dependent-fox` worktree, after committing its
+frozen execution set:
+
+```bash
+for run in r507193d47450 r03be769d2069; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+The adapter pins each control's recipe and rejects unrelated scientific changes.
+It collapses duplicate order axes, removes the zero key projection when present,
+and verifies the full original query-control initialization fingerprint.
+Production begins only after CPU/GPU correctness, initialization, the full-recipe
+pilot and checkpoint-resume checks pass. The shared launcher records the allocated
+GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
