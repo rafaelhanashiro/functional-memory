@@ -88,20 +88,20 @@ def attention_core(
     if endpoint and query_polynomial_coefficients is None:
         raise ValueError("Endpoint decay requires query coefficients")
     if query_log_decay is not None and query_polynomial_coefficients is None:
-        # Softmax and the unnormalized exponential add the decay to every score (the Forgetting Transformer).
+        # Softmax and the unnormalized exponential add the decay to every score: L_t - L_i (the
+        # Forgetting Transformer), or (t - i) log alpha_t in the query-distance mode.
         if (attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None
                 or polynomial_coefficients is not None or polynomial_square_factors is not None or denominators
                 or key_polynomial_factors is not None):
             raise ValueError("The forget gate requires query coefficients, softmax, or the unnormalized exponential")
-        if query_decay_mode != "cumulative":
-            raise ValueError("Softmax and exponential attention take only the cumulative forget-gate decay")
         if backend != "blocked":
             raise ValueError("Softmax and exponential attention with a forget gate run on the blocked backend")
         from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
 
         return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
                                          attention_normalization=attention_normalization,
-                                         query_log_decay=query_log_decay, return_diagnostics=return_diagnostics)
+                                         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode,
+                                         return_diagnostics=return_diagnostics)
     if (query_log_decay is not None or endpoint) and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:

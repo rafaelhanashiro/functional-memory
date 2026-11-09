@@ -109,7 +109,9 @@ class ModelConfig:
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
     attention_forget_gate: bool = False
     # Cumulative FoX uses intervening gates; query_distance uses only the current query's
-    # alpha_t raised to the key distance t-i, with the identical gate parameters.
+    # alpha_t raised to the key distance t-i, with the identical gate parameters. On softmax and
+    # the unnormalized exponential (input-form softplus query gate, blocked backend) it adds
+    # (t - i) log alpha_t to every score: ALiBi with a learned, input-dependent slope per query.
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
@@ -123,7 +125,9 @@ class ModelConfig:
     # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
     attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
-    # Independent input-form query-distance gate for every polynomial order, including zero.
+    # Independent input-form gate for every polynomial order, including zero: query-distance
+    # (blocked or mosaic), or cumulative with query conditioning (blocked only), where order r's
+    # term is multiplied by exp(L_tr - L_ir) with its own L_tr = sum_(j<=t) log alpha_jr.
     # Every order starts as a copy of the corresponding shared gate.
     attention_forget_gate_per_order: bool = False
     # Apply optim.weight_decay to the coefficient projections: the query W, the coefficient
@@ -528,12 +532,17 @@ class ModelConfig:
         if self.attention_forget_gate_per_order and (
                 not self.attention_forget_gate or not polynomial
                 or self.attention_forget_gate_form != "input"
-                or self.attention_forget_gate_mode != "query_distance"
                 or self.attention_forget_gate_rate_activation != "softplus"
                 or self.positional_encoding not in ("rope", "none")
                 or self.attention_backend not in ("blocked", "mosaic")):
             raise ValueError("Per-order gates require input-form softplus query-distance polynomial "
-                             "attention with RoPE/NoPE on the blocked or mosaic backend")
+                             "attention with RoPE/NoPE on the blocked or mosaic backend, or the cumulative "
+                             "query-conditioned gate on the blocked backend")
+        if self.attention_forget_gate_per_order and self.attention_forget_gate_mode == "cumulative" and (
+                self.attention_forget_gate_conditioning != "query" or self.attention_backend != "blocked"):
+            # Each order's own cumulative sum L_tr; Mosaic has no cumulative decay kernels.
+            raise ValueError("Per-order cumulative gates take query conditioning on the blocked backend "
+                             "(scan or strips); the Mosaic decay kernels apply only the query-distance mode")
         if self.attention_forget_gate_form == "sigmoid" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
             raise ValueError("The sigmoid forget gate form is qualified as cumulative decay with RoPE or no "
@@ -575,9 +584,16 @@ class ModelConfig:
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
                              "blocked backend; PaTH supports only cumulative FoX decay")
-        if self.attention_forget_gate_mode == "query_distance" and not polynomial:
+        if self.attention_forget_gate_mode == "query_distance" and not (polynomial or exponential):
             raise ValueError("The query-distance decay mode applies to nonlinear query-conditioned polynomial "
-                             "attention; softmax and the exponential take the cumulative decay")
+                             "attention, softmax, and the unnormalized exponential")
+        if self.attention_forget_gate_mode == "query_distance" and exponential and (
+                self.attention_forget_gate_conditioning != "query"
+                or self.attention_forget_gate_rate_activation != "softplus"):
+            # Softmax and the exponential add (t - i) log alpha_t to every score: ALiBi with a learned,
+            # input-dependent slope per query token. The constant and sigmoid forms are rejected above.
+            raise ValueError("Query-distance decay of softmax and the unnormalized exponential takes the "
+                             "input-form softplus gate with query conditioning on the blocked backend")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

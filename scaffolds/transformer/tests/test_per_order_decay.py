@@ -150,9 +150,13 @@ def test_invalid_order_gate_poisoning_is_causal(bad):
     np.testing.assert_array_equal(invalid, expected)
 
 
-@pytest.mark.parametrize("changes", ({"attention_backend": "fused"}, {"attention_forget_gate_mode": "cumulative"},
+@pytest.mark.parametrize("changes", ({"attention_backend": "fused"},
+    {"attention_forget_gate_mode": "cumulative", "attention_backend": "mosaic"},
+    {"attention_forget_gate_mode": "cumulative", "attention_forget_gate_conditioning": "query_key"},
     {"attention_forget_gate": False}, {"attention_forget_gate_rate_activation": "sigmoid"}))
 def test_unsupported_per_order_recipes_rejected(changes):
+    # Cumulative per-order gates are qualified with query conditioning on the blocked backend only
+    # (test_per_order_cumulative.py).
     with pytest.raises(ValueError):
         validate_config(_config(attention_forget_gate_per_order=True, **changes))
 

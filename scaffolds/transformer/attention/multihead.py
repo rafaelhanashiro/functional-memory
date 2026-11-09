@@ -231,8 +231,9 @@ class MultiHeadAttention(nnx.Module):
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
                              "blocked backend; PaTH supports only cumulative FoX decay")
-        if attention_forget_gate_mode == "query_distance" and not polynomial_gate:
-            raise ValueError("The query-distance decay mode requires nonlinear query coefficients")
+        if attention_forget_gate_mode == "query_distance" and not (polynomial_gate or exponential_gate):
+            raise ValueError("The query-distance decay mode requires nonlinear query coefficients, softmax, or "
+                             "the unnormalized exponential")
         self.attention_forget_gate = attention_forget_gate
         self.attention_forget_gate_mode = attention_forget_gate_mode
         if attention_forget_gate_form not in ("input", "constant", "sigmoid"):
@@ -267,6 +268,11 @@ class MultiHeadAttention(nnx.Module):
                              "mosaic backend")
         if attention_forget_gate_conditioning == "query_key" and attention_forget_gate_rate_activation != "softplus":
             raise ValueError("Query-key decay is qualified only with softplus rates")
+        if exponential_gate and attention_forget_gate_mode == "query_distance" and (
+                attention_forget_gate_conditioning != "query" or attention_forget_gate_rate_activation != "softplus"):
+            # ALiBi with a learned, input-dependent slope per query token: (t - i) log alpha_t joins each score.
+            raise ValueError("Query-distance decay of softmax and the unnormalized exponential takes the "
+                             "input-form softplus gate with query conditioning on the blocked backend")
         self.attention_forget_gate_conditioning = attention_forget_gate_conditioning
         self.attention_forget_gate_rate_activation = attention_forget_gate_rate_activation
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
@@ -535,7 +541,8 @@ class MultiHeadAttention(nnx.Module):
                 log_alpha = log_decay(x, *(forget_gate[name] for name in FORGET_GATE_PARAMETERS),
                                       rate_activation=self.attention_forget_gate_rate_activation)
             # Endpoint gates keep only their token projections here; pair rates are evaluated
-            # inside score blocks. Legacy modes retain their historical arithmetic exactly.
+            # inside score blocks. Legacy modes retain their historical arithmetic exactly. The
+            # cumulative sum runs over time, so per-order gates [B,T,H,R] sum each order separately.
             if log_alpha is not None:
                 parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
                                                    if self.attention_forget_gate_mode == "cumulative" else log_alpha)
