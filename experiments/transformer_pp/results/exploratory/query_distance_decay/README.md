@@ -270,7 +270,7 @@ rounds attention weights and score gradients to BF16 (see [Attention kernels](#a
 and the blocked scan sums the K and V gradients of its 128-query blocks in BF16 (about 1.3x
 the BF16 floor under this decay; see the scaffold validation record).
 The endpoint and bounded-rate runs were preempted once and resumed from their latest
-checkpoint; both per-order runs trained without interruption on one H100 SXM each.
+checkpoint; both degree-four per-order runs trained without interruption on one H100 SXM each.
 The degree-eight pair (below) trained without interruption on one H100 PCIe each.
 
 ## Independent per-order gates
