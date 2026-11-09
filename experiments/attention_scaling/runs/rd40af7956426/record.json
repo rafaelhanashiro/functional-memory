@@ -312,7 +312,7 @@
     "sha256": "f601279fb98c50fc19b9ed60a9e95fe015d7a903c9abd53085031490292c44b1",
     "size_bytes": 1848744
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-quadratic/experiments/attention_scaling/runs/rd40af7956426/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/rd40af7956426/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/rd40af7956426/metadata.json",
     "sha256": "aedd3ac496d7c3f027a4203f28a0cf69fea3427b707ffc59007973fbe795a29e",

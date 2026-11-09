@@ -174,8 +174,3 @@ def test_rejects_wrong_cumulative_decay_shape(shape):
     with pytest.raises(ValueError, match="cumulative log decay"):
         _attend(*operands[:6], jnp.zeros(shape))
 
-
-def test_rejects_forget_gate_with_softmax():
-    operands = _inputs(time=8)
-    with pytest.raises(ValueError, match="query_polynomial"):
-        path_attention(*operands[:5], kernel="softmax", log_decay=operands[6], chunk_size=4)

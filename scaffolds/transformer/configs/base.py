@@ -51,6 +51,13 @@ class ModelConfig:
     tie_embeddings: bool = False
     remat: bool = False
     attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
+    # How the blocked backend runs dot-product attention with RoPE or no positional encoding.
+    # "scan" (historical) evaluates 128-query blocks against every key, summing dK/dV across
+    # blocks in the input dtype; "strips" evaluates the same arithmetic over causal 512-query
+    # strips with FP32 dK/dV sums (attention/backends/reference.py). Other resolved backends
+    # ignore it. Fresh runs that can train on the blocked backend use strips
+    # (fresh_recipe_uses_blocked_strips).
+    attention_blocked_implementation: Literal["scan", "strips"] = "scan"
     attention_degree: int | None = None
     attention_normalization: bool = True
     # Unnormalized dot-product attention only: rescale each head's output
@@ -104,8 +111,24 @@ class ModelConfig:
     # Cumulative FoX uses intervening gates; query_distance uses only the current query's
     # alpha_t raised to the key distance t-i, with the identical gate parameters.
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
-    # Apply optim.weight_decay to the coefficient projections: the query W and, under
-    # query_key conditioning, the key W_k. b, a, the key amplitude, and V stay excluded.
+    # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
+    # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. On softmax and the exponential
+    # it is ALiBi's score bias -lambda_h (t - i). "sigmoid": the Forgetting Transformer's
+    # original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
+    attention_forget_gate_form: Literal["input", "constant", "sigmoid"] = "input"
+    # The constant form's rate: "learned" as above, or "fixed" at ALiBi's slopes 2^(-8 h / H) in
+    # every layer, with no trainable parameter. Recipes without the field learn it.
+    attention_forget_gate_constant_rate: Literal["learned", "fixed"] = "learned"
+    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
+    attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
+    attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
+    # Independent input-form query-distance gate for every polynomial order, including zero.
+    # Every order starts as a copy of the corresponding shared gate.
+    attention_forget_gate_per_order: bool = False
+    # Apply optim.weight_decay to the coefficient projections: the query W, the coefficient
+    # gate's U, and, under query_key conditioning, the key W_k. b, a, the key amplitude, the
+    # gate bias, and V stay excluded.
     attention_coefficient_kernel_weight_decay: bool = False
     # Dense readout mixes all degree+1 tanh or sigmoid features into every output coefficient.
     # Diagonal preserves the historical one-feature-per-coefficient generator.
@@ -123,6 +146,17 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    # "sigmoid" gates every order independently per layer/head: c~_r(x_t) = 2 g_r(x_t) c_r(x_t),
+    # g_r(x_t) = sigmoid(U_r^T x_t + beta_r), with U and this gate bias beta starting at zero
+    # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
+    # multiplier 2 g_r exactly 1 at the start, so the ungated function and its derivatives in
+    # W, a and b are preserved; 2 g_r ranges over (0, 2), suppressing or amplifying an order.
+    # "gdn" multiplies instead by Gated DeltaNet's decay without a distance exponent,
+    # alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r)) in (0, 1], per
+    # layer/head/order. w, A_log and dt_bias take the input-form forget gate's draws, made
+    # once per layer/head and copied to every order: all orders start with the same alpha,
+    # which head_rms_norm output scaling cancels up to its epsilon. w decays like U.
+    attention_coefficient_gate: Literal["none", "sigmoid", "gdn"] = "none"
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -138,6 +172,17 @@ class ModelConfig:
     # bias b_r) as r! times its value, c_r = c~_r / r!, so under Adam it moves at lr/r!
     # and its gradient carries s^r / r! rather than s^r. It starts at the same values.
     attention_coefficient_scale: Literal["none", "factorial"] = "none"
+    # The score function's basis. "polynomial" (historical): monomials, sum_r c_r s^r of degree
+    # attention_degree. "bspline": f(s) = sum_j theta_j B_j(s), the fixed B-splines of degree
+    # attention_degree on the distinct attention_spline_knots, clamped (each endpoint repeated
+    # degree + 1 times), so len(knots) + degree - 1 coefficients (attention/spline.py). Outside
+    # the end knots f continues its first or last polynomial piece. Requires learned direct
+    # per_head coefficients, static or diagonal tanh query-conditioned (theta_j(x_t) =
+    # b_j + a_j tanh(w_j^T x_t)), Taylor initialization (theta starts at the exact B-spline
+    # coefficients of T_degree), no factorial scales or selected orders, unnormalized
+    # dot-product attention without a forget gate or PaTH, on the blocked backend.
+    attention_kernel_basis: Literal["polynomial", "bspline"] = "polynomial"
+    attention_spline_knots: tuple[float, ...] | None = None
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -195,6 +240,8 @@ class ModelConfig:
 
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        if getattr(self, "attention_kernel_basis", "polynomial") != "polynomial":
+            return False  # No Mosaic kernel evaluates a B-spline basis.
         taylor = (self.attention_normalization and integer_degree and degree >= 1
                   and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed"
                   and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
@@ -213,6 +260,30 @@ class ModelConfig:
                 and getattr(self, "positional_encoding", "rope") == "rope"
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
+    def mosaic_decay_supported(self) -> bool:
+        """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
+        query-conditioned unnormalized polynomial attention with an input-form query-distance
+        forget gate (query or endpoint query-key rates), with RoPE or no positional encoding.
+        Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
+        B300 refuses the per-order shapes it cannot hold when the model is traced
+        (``query_degree_supported``).
+        Only an explicit ``mosaic`` backend selects them; ``auto`` keeps its historical choice."""
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+        degree = self.attention_degree
+        integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        return (self.attention_mechanism == "dot_product" and not self.attention_normalization
+                and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial"
+                and self.attention_coefficient_conditioning == "query"
+                and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
+                and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
+                and self.attention_forget_gate_form == "input" and integer_degree
+                and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
+                                           gate=self.attention_forget_gate_conditioning,
+                                           per_order=self.attention_forget_gate_per_order)
+                and self.positional_encoding in ("rope", "none")
+                and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
     def path_fused_supported(self) -> bool:
         """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
         from scaffolds.transformer.attention.backends.fla_path_attention import HEAD_DIMS, MAX_DEGREE
@@ -226,8 +297,8 @@ class ModelConfig:
         """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
         if self.positional_encoding != "path":
             return None
-        if self.attention_normalization and self.attention_degree is None:
-            return "softmax"
+        if self.attention_degree is None:
+            return "softmax" if self.attention_normalization else "exp"
         return "query_polynomial"
 
     def __post_init__(self):
@@ -256,28 +327,37 @@ class ModelConfig:
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
+        if self.attention_blocked_implementation not in ("scan", "strips"):
+            raise ValueError(f"Unknown blocked attention implementation: {self.attention_blocked_implementation}")
+        if self.attention_blocked_implementation == "strips" and (
+                self.attention_mechanism != "dot_product" or self.positional_encoding == "path"):
+            raise ValueError("model.attention_blocked_implementation strips applies to dot-product attention with RoPE "
+                             "or no positional encoding; PaTH, GLA, and Gated DeltaNet have their own blocked code")
+        _validate_kernel_basis(self)
         for name in ("path_w_rank", "path_conv_size"):
             value = getattr(self, name)
             if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
                 raise ValueError(f"model.{name} must be a positive integer")
         if self.positional_encoding == "path":
-            softmax = (self.attention_normalization and self.attention_degree is None
-                       and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed")
+            # Softmax, or the unnormalized exponential.
+            exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                           and self.quadratic_mode == "fixed")
             query_tanh = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                           and self.attention_coefficient_activation == "tanh")
-            if self.attention_mechanism != "dot_product" or not (softmax or query_tanh):
-                raise ValueError("PaTH position encoding supports softmax and tanh query-conditioned "
-                                 "unnormalized polynomial attention")
+            if self.attention_mechanism != "dot_product" or not (exponential or query_tanh):
+                raise ValueError("PaTH position encoding supports softmax, unnormalized exponential, and tanh "
+                                 "query-conditioned unnormalized polynomial attention")
             if self.attention_backend not in ("auto", "blocked", "fused"):
                 raise ValueError("PaTH attention runs on model.attention_backend blocked (its chunked JAX "
                                  "implementation), fused (FLA's Triton kernels), or auto")
             if self.attention_backend == "fused" and not self.path_fused_supported():
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
-        if self.attention_backend == "mosaic" and not self.mosaic_supported():
+        if self.attention_backend == "mosaic" and not (self.mosaic_supported() or self.mosaic_decay_supported()):
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
-                             "degree 1-8, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64")
+                             "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
+                             "query-conditioned attention may add a query-distance forget gate")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -411,6 +491,16 @@ class ModelConfig:
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
         if self.attention_coefficient_tanh_bias and activation not in AFFINE_ACTIVATIONS:
             raise ValueError("A bias inside tanh applies to affine tanh or sigmoid coefficients only")
+        if not isinstance(self.attention_coefficient_gate, str) or self.attention_coefficient_gate not in (
+                "none", "sigmoid", "gdn"):
+            raise ValueError(f"Unknown attention coefficient gate: {self.attention_coefficient_gate!r}")
+        if self.attention_coefficient_gate != "none" and (
+                self.attention_coefficient_conditioning != "query" or activation != "tanh"
+                or self.attention_coefficient_readout != "diagonal"
+                or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
+                or self.attention_forget_gate is not False or self.positional_encoding != "rope"):
+            raise ValueError("Coefficient gates are qualified only for diagonal tanh query coefficients with RoPE, "
+                             "without selected orders, an inner tanh bias, or a forget gate")
         if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
         if (self.attention_coefficient_amplitude_scale != "none"
@@ -422,19 +512,72 @@ class ModelConfig:
             raise ValueError(f"Unknown attention forget gate mode: {self.attention_forget_gate_mode}")
         if self.attention_forget_gate_mode != "cumulative" and not self.attention_forget_gate:
             raise ValueError("A query-distance decay mode requires model.attention_forget_gate")
+        if self.attention_forget_gate_form not in ("input", "constant", "sigmoid"):
+            raise ValueError(f"Unknown forget gate form: {self.attention_forget_gate_form}")
+        if self.attention_forget_gate_form != "input" and not self.attention_forget_gate:
+            raise ValueError("A forget gate form requires the forget gate")
+        # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
+        # Transformer; with PaTH, PaTH-FoX); nonlinear query-coefficient polynomials multiply their
+        # weights by exp(L_t - L_i).
+        exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
+                       and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
+        polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
+                      and activation != "identity")
+        if not isinstance(self.attention_forget_gate_per_order, bool):
+            raise ValueError("model.attention_forget_gate_per_order must be a boolean")
+        if self.attention_forget_gate_per_order and (
+                not self.attention_forget_gate or not polynomial
+                or self.attention_forget_gate_form != "input"
+                or self.attention_forget_gate_mode != "query_distance"
+                or self.attention_forget_gate_rate_activation != "softplus"
+                or self.positional_encoding not in ("rope", "none")
+                or self.attention_backend not in ("blocked", "mosaic")):
+            raise ValueError("Per-order gates require input-form softplus query-distance polynomial "
+                             "attention with RoPE/NoPE on the blocked or mosaic backend")
+        if self.attention_forget_gate_form == "sigmoid" and (
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
+            raise ValueError("The sigmoid forget gate form is qualified as cumulative decay with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_form == "constant" and (
+                self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
+                or not (polynomial or exponential)):
+            raise ValueError("The constant forget gate form is qualified only as cumulative decay of softmax, the "
+                             "unnormalized exponential, and nonlinear query-coefficient polynomials with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_constant_rate not in ("learned", "fixed"):
+            raise ValueError(f"Unknown constant forget gate rate: {self.attention_forget_gate_constant_rate}")
+        if self.attention_forget_gate_constant_rate != "learned" and (
+                not self.attention_forget_gate or self.attention_forget_gate_form != "constant"):
+            raise ValueError("A fixed forget gate rate requires the constant forget gate form")
+        if self.attention_forget_gate_conditioning not in ("query", "query_key"):
+            raise ValueError("Unknown forget gate conditioning")
+        if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
+            raise ValueError("Unknown forget gate rate activation")
+        if (self.attention_forget_gate_conditioning != "query" or self.attention_forget_gate_rate_activation != "softplus") and (
+                not self.attention_forget_gate or self.attention_forget_gate_form != "input"
+                or self.attention_forget_gate_mode != "query_distance"
+                or self.attention_backend not in ("blocked", "mosaic")):
+            raise ValueError("Endpoint gate variants require input-form query-distance decay on the blocked or "
+                             "mosaic backend")
+        if self.attention_forget_gate_conditioning == "query_key" and self.attention_forget_gate_rate_activation != "softplus":
+            raise ValueError("Query-key decay is qualified only with softplus rates")
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
-            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
+            or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
+            or self.attention_backend == "mosaic" and self.mosaic_decay_supported())
         if self.attention_forget_gate and (
-                self.attention_mechanism != "dot_product" or self.attention_normalization
-                or self.attention_coefficient_conditioning != "query" or activation == "identity"
+                self.attention_mechanism != "dot_product" or not (exponential or polynomial)
                 or not forget_backend_supported):
-            raise ValueError("The forget gate applies to unnormalized nonlinear query-conditioned polynomial "
-                             "attention: RoPE/none on the blocked backend, or PaTH on blocked/fused/auto")
+            raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
+                             "nonlinear query-conditioned polynomial attention: RoPE/none on the blocked backend "
+                             "(query-distance decay of polynomials also on mosaic), or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
                              "blocked backend; PaTH supports only cumulative FoX decay")
+        if self.attention_forget_gate_mode == "query_distance" and not polynomial:
+            raise ValueError("The query-distance decay mode applies to nonlinear query-conditioned polynomial "
+                             "attention; softmax and the exponential take the cumulative decay")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay
@@ -589,6 +732,56 @@ class ModelConfig:
             raise ValueError("rope_theta and rms_norm_eps must be positive")
 
 
+def _validate_kernel_basis(model: ModelConfig) -> None:
+    """The score-function basis: the historical monomials, or a fixed B-spline basis."""
+    basis = model.attention_kernel_basis
+    if basis not in ("polynomial", "bspline"):
+        raise ValueError(f"Unknown attention kernel basis: {basis}")
+    if basis == "polynomial":
+        if model.attention_spline_knots is not None:
+            raise ValueError("model.attention_spline_knots applies to the bspline kernel basis only")
+        return
+    from scaffolds.transformer.attention.spline import validate_knots
+
+    degree = model.attention_degree
+    if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
+        raise ValueError("The bspline kernel basis takes its degree from model.attention_degree, an integer >= 1")
+    if model.attention_spline_knots is None:
+        raise ValueError("The bspline kernel basis requires model.attention_spline_knots")
+    # Distinct, strictly increasing knots; the endpoints are clamped (multiplicity degree + 1).
+    model.attention_spline_knots = validate_knots(model.attention_spline_knots, degree)
+    if model.attention_mechanism != "dot_product" or model.positional_encoding not in ("rope", "none"):
+        raise ValueError("The bspline kernel basis applies to dot-product attention with RoPE or no positional encoding")
+    if model.attention_backend != "blocked":
+        raise ValueError("The bspline kernel basis runs on model.attention_backend blocked (scan or strips); "
+                         "no fused, Mosaic, or cuDNN kernel implements it")
+    if model.attention_normalization:
+        raise ValueError("The bspline kernel basis is implemented for unnormalized attention only")
+    if (model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
+            or model.attention_coefficient_parameterization != "direct"
+            or model.attention_coefficient_sharing != "per_head"
+            or model.attention_fixed_coefficients is not None or model.attention_fixed_square_factors is not None):
+        raise ValueError("The bspline kernel basis requires learned direct per_head coefficients")
+    if model.attention_coefficient_initialization != "taylor":
+        raise ValueError("The bspline kernel basis starts at the exact B-spline coefficients of the Taylor "
+                         "polynomial: attention_coefficient_initialization must be taylor")
+    if (model.attention_coefficient_scale != "none" or model.attention_coefficient_amplitude_scale != "none"
+            or model.attention_coefficient_orders is not None):
+        raise ValueError("B-spline coefficients are not monomial orders: no factorial coefficient or amplitude "
+                         "scale and no attention_coefficient_orders")
+    if model.attention_forget_gate:
+        raise ValueError("The bspline kernel basis is qualified without a forget gate")
+    conditioning = model.attention_coefficient_conditioning
+    if conditioning == "query":
+        if (model.attention_coefficient_activation != "tanh" or model.attention_coefficient_readout != "diagonal"
+                or model.attention_coefficient_tanh_bias or model.attention_coefficient_feature_count is not None
+                or model.attention_coefficient_readout_scale != 1.0):
+            raise ValueError("Query-conditioned B-spline coefficients use the diagonal tanh generator "
+                             "theta_j = b_j + a_j tanh(w_j^T x_t), without an inner tanh bias")
+    elif conditioning != "static":
+        raise ValueError("B-spline coefficients are static or query-conditioned (no key factors)")
+
+
 @dataclass
 class OptimConfig:
     learning_rate: float = 1e-3
@@ -596,6 +789,19 @@ class OptimConfig:
     # Multiply only the diagonal tanh query generator's stored a and b updates.
     # The projection W and all other parameters retain the base LR schedule.
     query_coefficient_learning_rate_scale: float = 1.0
+    # Coefficient release (training/coefficient_release.py), for learned direct static or diagonal
+    # tanh query coefficients storing every order 0..m: each stored entry of order r (static c_r;
+    # query b_r, a_r, and column r of W) stays at its initial value for optimizer updates with
+    # count k < s_r and trains for k >= s_r, on the LR schedule's clock (the update logged as
+    # step k + 1). "all": s_r = coefficient_release_step for every order. "by_order": s_r =
+    # coefficient_release_step + floor(r (coefficient_release_end_step - coefficient_release_step) / m),
+    # lowest order first; requires 0 < release step < end step < total_steps. A frozen entry's
+    # gradient is zeroed before clipping and AdamW, and its update after AdamW, so weight decay
+    # cannot move it; released entries start with zero Adam moments under the global bias
+    # correction and the shared LR schedule. Null (the default) trains them from the first update.
+    coefficient_release_step: int | None = None
+    coefficient_release_schedule: Literal["all", "by_order"] | None = None
+    coefficient_release_end_step: int | None = None
     weight_decay: float = 0.1
     weight_decay_policy: Literal["exclude_embeddings_norms_biases_v1"] = "exclude_embeddings_norms_biases_v1"
     # Penalty weight lambda on learned polynomial coefficients, added to the training
@@ -663,11 +869,40 @@ class Config:
     continuation: ContinuationConfig = field(default_factory=ContinuationConfig)
 
 
+def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
+    """Whether a fresh recipe's ``model`` mapping trains on the blocked backend's causal strips
+    unless it says otherwise: dot-product attention with RoPE or no positional encoding whose
+    backend is blocked, or auto (which resolves to blocked where no kernel applies). Other
+    backends never run the field, so their recipes keep its inert default, scan. Allocation
+    (scaffolds.records create, and launchers that allocate copied recipes) applies this rule.
+    """
+    return (model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("positional_encoding", "rope") != "path"
+            and model.get("attention_backend", "auto") in ("blocked", "auto"))
+
+
 def validate_config(config: Config) -> None:
     """Validate loaded/overridden settings before allocating a model."""
     config.model.__post_init__()
     data, optim, train = config.data, config.optim, config.train
     continuation = config.continuation
+    if config.model.attention_kernel_basis == "bspline":
+        # B-spline coefficients weight basis functions, not monomial orders: the coefficient
+        # penalty (a_0^2 + sum r^2 a_r^2), the query readout LR scale (which acts on the monomial
+        # generator's arrays), and any coefficient release schedule (optim.coefficient_release_*,
+        # which indexes orders 0..m) do not apply. Continuations introduce monomial coefficients
+        # only; an identical-architecture continuation keeps every array.
+        if optim.coefficient_penalty != 0:
+            raise ValueError("optim.coefficient_penalty is defined on monomial coefficients, not a B-spline basis")
+        if optim.query_coefficient_learning_rate_scale != 1.0:
+            raise ValueError("optim.query_coefficient_learning_rate_scale applies to monomial query coefficients, "
+                             "not a B-spline basis")
+        if getattr(optim, "coefficient_release_schedule", None) is not None:
+            raise ValueError("A coefficient release schedule indexes monomial orders 0..m; "
+                             "it does not apply to a B-spline basis")
+        if continuation.parent_checkpoint and not continuation.preserve_all_parameters:
+            raise ValueError("A continuation cannot introduce B-spline coefficients; only an identical-architecture "
+                             "continuation (continuation.preserve_all_parameters) supports the bspline basis")
     if not isinstance(continuation.preserve_all_parameters, bool):
         raise ValueError("continuation.preserve_all_parameters must be a boolean")
     if continuation.parent_checkpoint:
@@ -711,6 +946,9 @@ def validate_config(config: Config) -> None:
                         and model.attention_coefficient_projection_initial_std != 0)):
                 raise ValueError("Query continuation requires exact Taylor initialization: factorial-scaled tanh "
                                  "coefficients with no inner bias and either zero amplitude or zero projection")
+        if config.model.attention_coefficient_gate != "none":
+            # Neither introducing gates nor carrying them through a continuation is qualified.
+            raise ValueError("Continuation with coefficient gates is not supported")
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
               continuation.parent_step, continuation.new_parameter_learning_rate is not None,
@@ -731,6 +969,8 @@ def validate_config(config: Config) -> None:
                 or model.attention_coefficient_readout != "diagonal"):
             raise ValueError("optim.query_coefficient_learning_rate_scale requires learned direct "
                              "query-conditioned tanh coefficients with diagonal readout")
+        if model.attention_coefficient_gate != "none":
+            raise ValueError("optim.query_coefficient_learning_rate_scale does not cover coefficient gates")
         if continuation.parent_checkpoint:
             raise ValueError("optim.query_coefficient_learning_rate_scale is not supported for "
                              "checkpoint continuations; their introduced parameters use "
@@ -812,3 +1052,45 @@ def validate_config(config: Config) -> None:
             and config.model.attention_denominator_constant != "fixed"):
         raise ValueError("The denominator penalty is defined with its constant fixed at 1; "
                          "set optim.coefficient_penalty_denominator: false for a learned constant")
+    _validate_coefficient_release(config)
+
+
+def _validate_coefficient_release(config: Config) -> None:
+    optim, model = config.optim, config.model
+    schedule, start, end = (optim.coefficient_release_schedule, optim.coefficient_release_step,
+                            optim.coefficient_release_end_step)
+    if schedule is None:
+        if start is not None or end is not None:
+            raise ValueError("optim.coefficient_release_step and coefficient_release_end_step require "
+                             "optim.coefficient_release_schedule")
+        return
+    if schedule not in ("all", "by_order"):
+        raise ValueError(f"Unknown optim.coefficient_release_schedule: {schedule!r}")
+    if start is None:
+        raise ValueError("optim.coefficient_release_schedule requires optim.coefficient_release_step")
+    if type(start) is not int or not 0 < start < optim.total_steps:
+        raise ValueError("optim.coefficient_release_step must be an integer with "
+                         "0 < coefficient_release_step < optim.total_steps")
+    if schedule == "by_order":
+        if end is None:
+            raise ValueError("The by_order coefficient release requires optim.coefficient_release_end_step")
+        if type(end) is not int or not start < end < optim.total_steps:
+            raise ValueError("optim.coefficient_release_end_step must be an integer with "
+                             "coefficient_release_step < coefficient_release_end_step < optim.total_steps")
+    elif end is not None:
+        raise ValueError("optim.coefficient_release_end_step applies to the by_order schedule only")
+    static = (model.attention_coefficient_conditioning == "static"
+              and model.attention_coefficient_parameterization == "direct")
+    query = (model.attention_coefficient_conditioning == "query"
+             and model.attention_coefficient_activation == "tanh"
+             and model.attention_coefficient_readout == "diagonal"
+             and not model.attention_coefficient_tanh_bias)
+    if (model.attention_coefficients != "learned" or not (static or query)
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_orders is not None):
+        # Every released array must store orders 0..m on its last axis, starting at Taylor.
+        raise ValueError("optim.coefficient_release_schedule requires Taylor-initialized learned direct static "
+                         "coefficients or diagonal tanh query coefficients without an inner tanh bias, "
+                         "storing every order 0..m (no attention_coefficient_orders)")
+    if config.continuation.parent_checkpoint:
+        raise ValueError("optim.coefficient_release_schedule is not supported for checkpoint continuations")

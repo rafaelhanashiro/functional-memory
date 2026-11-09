@@ -27,16 +27,22 @@ import yaml
 RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
     "run_id", "label", "status", "home_cluster", "model_id", "condition",
-    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
+    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim", "value_head_dim",
+    "num_layers", "hidden_size", "num_heads", "intermediate_size", "parameter_count",
     "gdn_erase_mode", "gdn_write_activation",
     "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
     "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "qk_norm_token_scale", "initialization",
     "coefficient_mode", "coefficient_conditioning", "coefficient_activation",
-    "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay", "attention_forget_gate", "attention_forget_gate_mode",
+    "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
+    "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
+    "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
+    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order",
     "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
-    "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens", "context_length",
+    "coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step",
+    "quadratic_mode", "weight_decay_policy", "seed", "batch_size", "peak_learning_rate", "training_steps",
+    "prediction_tokens", "context_length",
     "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
     "terminal_fit_nll", "terminal_fit_perplexity",
@@ -411,9 +417,12 @@ def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kerne
         "learned_polynomial_rational": "learned_polynomial",
         "fixed_polynomial": "polynomial", "fixed_polynomial_unnormalized": "polynomial",
         "fixed_polynomial_sum_of_squares": "polynomial",
+        "learned_spline_unnormalized": "spline", "query_spline_unnormalized": "spline",
     }
     if kernel in families:
         return families[kernel]
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        return "spline"
     if model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None:
         return "polynomial"
     if model.get("attention_coefficients") == "learned" or model.get("quadratic_mode") in {"positive", "unrestricted"}:
@@ -503,6 +512,10 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "gdn_write_activation": _first(model.get("gdn_write_activation"), get("gdn_linear_write_activation"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
+        "value_head_dim": model.get("value_head_dim"),
+        "num_layers": model.get("num_layers"), "hidden_size": model.get("hidden_size"),
+        "num_heads": model.get("num_heads"), "intermediate_size": model.get("intermediate_size"),
+        "parameter_count": metadata.get("parameter_count"),
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),
@@ -519,9 +532,22 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_feature_count": None if coefficient_table else model.get("attention_coefficient_feature_count"),
         "coefficient_readout_scale": None if coefficient_table else model.get("attention_coefficient_readout_scale"),
         "coefficient_kernel_weight_decay": None if coefficient_table else model.get("attention_coefficient_kernel_weight_decay"),
+        "coefficient_gate": None if coefficient_table else model.get("attention_coefficient_gate"),
         "attention_forget_gate": model.get("attention_forget_gate"),
+        "attention_forget_gate_per_order": model.get("attention_forget_gate_per_order", False)
+            if model.get("attention_forget_gate") else None,
         "attention_forget_gate_mode": model.get("attention_forget_gate_mode", "cumulative")
             if model.get("attention_forget_gate") else None,
+        "attention_forget_gate_form": model.get("attention_forget_gate_form", "input")
+            if model.get("attention_forget_gate") else None,
+        # Constant (ALiBi-style) decay only: its slopes learned (the default) or fixed.
+        "attention_forget_gate_constant_rate": model.get("attention_forget_gate_constant_rate", "learned")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "constant"
+            else None,
+        "attention_forget_gate_conditioning": model.get("attention_forget_gate_conditioning", "query")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
+        "attention_forget_gate_rate_activation": model.get("attention_forget_gate_rate_activation", "softplus")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
@@ -533,9 +559,14 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_penalty": optim.get("coefficient_penalty"),
         "coefficient_penalty_denominator": optim.get("coefficient_penalty_denominator"),
         "query_coefficient_learning_rate_scale": optim.get("query_coefficient_learning_rate_scale"),
+        "coefficient_release_schedule": optim.get("coefficient_release_schedule"),
+        "coefficient_release_step": optim.get("coefficient_release_step"),
+        "coefficient_release_end_step": optim.get("coefficient_release_end_step"),
         "quadratic_mode": model.get("quadratic_mode"),
         "weight_decay_policy": optim.get("weight_decay_policy"),
         "seed": _first(train.get("seed"), config.get("seed"), condition_seed, record.get("seed"), metadata.get("seed")),
+        "batch_size": data.get("batch_size") if optim.get("total_steps") is not None else None,
+        "peak_learning_rate": optim.get("learning_rate"),
         "training_steps": _first(optim.get("total_steps"), fit.get("steps")), "prediction_tokens": prediction_tokens,
         "context_length": model.get("max_seq_len") if optim.get("total_steps") is not None else None,
         "source_commit": _first(record.get("source_commit"), metadata.get("source_commit"), train.get("source_commit")),

@@ -38,16 +38,17 @@ def _parent_config(config):
         # An unnormalized exp parent continues with a polynomial kernel of an integer degree:
         # fixed Taylor as the control, or Taylor-initialized learned coefficients.
         raise ValueError("Continuing an exp parent requires an unnormalized exp parent and a polynomial degree")
-    allowed_model_changes = {"attention_coefficients", "attention_coefficient_sharing",
-                             "attention_coefficient_scale", "attention_backend",
-                             "attention_coefficient_conditioning", "attention_coefficient_activation",
-                             "attention_coefficient_amplitude_initial",
-                             "attention_coefficient_projection_initial_std",
-                             "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
-                             "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
-                             "qk_norm_token_scale", "qk_norm_token_scale_kernel_weight_decay",
-                             "attention_forget_gate",
-                             "attention_coefficient_kernel_weight_decay"}
+    # The backend and the blocked backend's implementation (scan or causal strips) are execution
+    # settings: neither changes a parameter or optimizer shape.
+    execution = {"attention_backend", "attention_blocked_implementation"}
+    allowed_model_changes = execution | {
+        "attention_coefficients", "attention_coefficient_sharing", "attention_coefficient_scale",
+        "attention_coefficient_conditioning", "attention_coefficient_activation",
+        "attention_coefficient_amplitude_initial", "attention_coefficient_projection_initial_std",
+        "attention_coefficient_amplitude_scale", "attention_coefficient_readout",
+        "attention_coefficient_feature_count", "attention_coefficient_readout_scale",
+        "qk_norm_token_scale", "qk_norm_token_scale_kernel_weight_decay",
+        "attention_forget_gate", "attention_forget_gate_form", "attention_coefficient_kernel_weight_decay"}
     if exp_parent:
         allowed_model_changes |= {"attention_degree"}
     if (parent.model.positional_encoding == "rope" and config.model.positional_encoding == "none"
@@ -57,7 +58,7 @@ def _parent_config(config):
         # parameter tree: every pretrained array and its Adam history still restore.
         allowed_model_changes.add("positional_encoding")
     if preserve:
-        allowed_model_changes = {"attention_backend"}
+        allowed_model_changes = execution
     for key, value in asdict(parent.model).items():
         if key not in allowed_model_changes and getattr(config.model, key) != value:
             raise ValueError(f"Continuation changes parent model.{key}")
@@ -87,10 +88,13 @@ def _check_taylor_initialization(config, coefficients):
     token_names = {"qk_norm_token_scale_kernel", "qk_norm_token_scale_amplitude"} if token_scale else set()
     if model.attention_forget_gate:
         # The gate starts open with Gated DeltaNet's random initialization, not at the identity.
-        from scaffolds.transformer.attention.forget_gate import PARAMETERS as FORGET_GATE_PARAMETERS
+        from scaffolds.transformer.attention.forget_gate import parameter_names
 
-        token_names |= set(FORGET_GATE_PARAMETERS)
-        if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in FORGET_GATE_PARAMETERS
+        gate_names = parameter_names(getattr(model, "attention_forget_gate_form", "input"),
+                                     getattr(model, "attention_forget_gate_conditioning", "query"),
+                                     getattr(model, "attention_forget_gate_constant_rate", "learned"))
+        token_names |= set(gate_names)
+        if not all(np.all(np.isfinite(np.asarray(coefficients[name][...]))) for name in gate_names
                    if name in coefficients):
             raise ValueError("Continuation forget gate parameters are not finite")
     if model.attention_coefficients != "learned":

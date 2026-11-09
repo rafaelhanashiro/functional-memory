@@ -11,6 +11,150 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### ALiBi on softmax and the exponential (2026-11-08)
+
+`model.attention_forget_gate_form: constant` applies to softmax and the unnormalized
+exponential as well as to query polynomials: the cumulative decay adds `-m_h (t - i)` to every
+score, which for softmax is ALiBi. `attention_forget_gate_constant_rate: fixed` holds `m_h` at
+ALiBi's slopes `2^(-8 h / H)` with no parameter; recipes without the field learn the rate as
+before ([README](../README.md#forget-gate)).
+
+All 70 CPU checks in `tests/test_constant_decay.py` passed. FP64 references cover the slopes
+(the fixed log rate is the FP32 array the learned rate's initializer stores); the fixed rate's
+empty parameter set and parameter counts; softmax and exp outputs and the Q, K, V, and log-rate
+gradients through the scan and the strips (five 8-query blocks or strips of 37 tokens, FP32
+relative error below 2e-5 against FP64 ALiBi); the attention module, from its projection
+weights, against FP64 ALiBi under both implementations; learned and fixed models agreeing at
+initialization (identical backbone, decays, logits, and shared gradients to 1e-5); historical
+recipes without the field; accepted and rejected recipes; acceptance selection and the
+softmax-backbone initialization check; diagnostics; and training updates. Halving the fixed
+log rate fails 9 of them. In FP32 the cumulative decay at 2,048 tokens and 14 heads meets
+`|L_t - L_i + m_h (t - i)| <= 2.2e-4` for `t - i <= 32`, summed sequentially or as a tree: a
+relative weight error near 1e-4, against the BF16 output rounding of 1.7e-3.
+
+`test_gpu_strips_alibi_matches_float64_at_the_production_context` (softmax and exp) runs BF16
+Q/K/V at [1, 2048, 14, 64] through the fixed decay and the strips and requires the output, dQ,
+dK, and dV each within 1.2x its BF16 rounding floor against a host FP64 oracle; the oracle
+matches FP64 autodiff to 1e-12 on CPU. At commit `93f47769` both cases passed in the production
+runs' acceptance on B300 (`akita`, job 239928) and H100 SXM (`dogo`, job 239929), with the
+full-recipe pilot and resume checks.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_constant_decay.py -m "not gpu"
+```
+
+### Architecture-aware per-order Mosaic support (2026-11-08)
+
+Per-order recipes validate for the Mosaic backend when H100's kernels fit them
+(`api.hopper_supported`). B300 refuses shapes its kernels cannot hold
+(`api.blackwell_supported`) with a `ValueError` before tracing a kernel. Every other family
+keeps its predicate: over
+degrees 0–14, all Q/K widths, and 128–8,192 tokens, shared-family support is unchanged, and
+B300's per-order acceptance equals the previous predicate (degree 7 query and degree 6
+query–key at `d_K = 64` and 2,048 tokens).
+
+`common.hopper_smem_bytes` counts each Hopper kernel's shared memory exactly. Lowered for
+cuda on a CPU host, all 288 combinations of six families, degrees 1, 4, 8, and 12, Q/K widths
+16–128, and the forward, dQ, and dK/dV kernels fit the counted bytes and fail one byte below.
+The largest, per-order query–key at degree 12 and width 128, uses 167,024 of 232,448 bytes.
+Per-order query at degree eight and width 64 uses 110,704 (forward), 86,096 (dQ), and 74,800
+(dK/dV). CPU tests lower the production per-order entry points (forward and all gradients)
+at degree eight for H100 and at B300's largest degree, and check the refusal one degree
+higher. Lowering checks shared memory only, not register allocation, numerics, or speed.
+`tests/test_per_order_decay.py -m gpu` adds degree-eight FP64 and duplicated-order cases, with
+unit-scale scores so that every order contributes and each order's coefficient and gate
+gradients compared separately, and `tests/test_endpoint_decay.py -m gpu` the shared query gate at
+degree eight. They passed on H100 (`mastiff`, job 239920: 46 GPU checks), and production
+acceptance passed its GPU checks on H100 (jobs 239930 and 239931).
+
+### Coefficient release schedule (2026-11-08)
+
+`optim.coefficient_release_schedule` (`all` or `by_order`), `coefficient_release_step`,
+and `coefficient_release_end_step` hold learned static coefficients, or the diagonal
+tanh query generator's `b`, `a`, and `W`, at their initial values per polynomial order
+until each order's release update ([README](../README.md#coefficient-release-schedule)).
+
+All 79 checks in `tests/test_coefficient_release.py` passed on CPU (one data-parallel
+case on two host devices). Before release, frozen entries stay bitwise at their
+initial values, including a weight-decayed `W`; frozen gradients leave clipping, every
+Adam moment, and every other update bitwise identical to a step without coefficient
+gradients, and the single-batch, accumulated, and data-parallel train steps log the
+masked pre-clip norm. `by_order` first moves each order at exactly its listed update;
+the masks depend only on the update count; released entries start from zero moments
+under the global bias correction; with `query_coefficient_learning_rate_scale`, released
+`b` and `a` take exactly the scaled update while `W`, frozen entries, and every other
+array match the unscaled optimizer bitwise; a checkpoint resume across a release matches
+an uninterrupted run bitwise, and each release reaches W&B at its logged step; a missing
+or renamed coefficient array is an error rather than trainable; and without a schedule
+the optimizer state, updates, and train step are bitwise unchanged, with or without the
+query learning-rate scale. Each of these changes failed at least one check: removing
+either mask, the single-batch or accumulated train step's masked gradient, or the
+signed-zero update fill; releasing one update late; dropping the release when the query
+learning-rate scale is set; scaling `W` with that scale; or logging the release one W&B
+step early. The full CPU suite passed: 2,208 single-device tests, and 23
+two-device tests with five four-device cases skipped.
+The acceptance pilot (20 updates) and its resume update end before a release at update
+455, so for such recipes the first release on a GPU happens in production.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py
+JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 \
+  scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_coefficient_release.py -k distributed
+```
+
+### Per-order coefficient gates on H200 (2026-11-07)
+
+`model.attention_coefficient_gate: sigmoid` multiplies each diagonal tanh query
+coefficient by `2 sigmoid(x_t U_r + beta_r)` per layer, head and order inside the shared
+generator, so the Mosaic query kernel receives the gated coefficients unchanged. `U` and
+the gate bias start at exact zeros, so `2 g_r = 1` reproduces the ungated model, its
+parameters and its derivatives in `W`, `a` and `b`; `U` decays with the coefficient
+kernel decay and the gate bias never does.
+
+The CPU checks in `tests/test_coefficient_gates.py` compare gated and ungated models at
+degrees 8 and 10 bitwise (parameters, logits, and the raw gradients of every shared
+parameter), require finite nonzero gate gradients for every layer, head and order, verify
+the decay masks with an actual AdamW update, compare the gated generator and all its
+gradients with an FP64 oracle, check the gate diagnostics against a NumPy oracle, and
+resume a short training run exactly. Two GPU cases per degree compare the gated
+generator through the Mosaic query kernel with FP64 at context 2,048 and width 64,
+including the gate kernel and bias gradients per order, and the gated BF16 Mosaic model's
+loss and gradient direction with the FP32 blocked model.
+
+[H200 qualification](coefficient_gates_h200.json) passed for the two production recipes
+(`r77698776d82c` at degree 8 on an H200 NVL, `r8c4a6ecdf4d2` at degree 10 on an H200):
+510 CPU and 9 distributed CPU checks, 72 GPU checks each including the four gate cases
+(the first Mosaic query qualification at degree 10 and on H200), the study adapter's
+exact initial parity with the ungated recipe, and the full-recipe pilot and
+checkpoint-resume checks. Pilot training cost 2.54 and 2.51 s per update.
+
+### Per-order query-distance gates (2026-11-07)
+
+The blocked polynomial backend supports independent softplus distance gates for
+every order, including zero, conditioned on the query or query–key endpoints.
+The focused CPU suites pass independent FP64 output and all-parameter-gradient
+checks, matched full-model starts, per-order statistics, zero-order decay,
+causality, invalid inputs, WD masks, and historical checkpoint compatibility.
+The existing shared-gate and endpoint regressions also pass. Recipes are guarded
+against unrelated changes, and full-model initialization is recovered by
+collapsing the duplicated gate axes.
+
+`tests/test_per_order_decay.py -m gpu` checks both variants at 2,048 tokens with
+64-channel BF16 Q/K/V against FP64, including every gate gradient, on the blocked
+backend and on the Mosaic per-order kernels (families `per_order_query_decay` and
+`per_order_endpoint_decay`). At commit `b38c116f` these checks passed with the shared
+decay, Mosaic query and repeatability suites (88 GPU checks, `--mosaic-precision bf16`)
+on H100 (`dogo`, job 239602) and B300 (`akita`, job 239603). Production acceptance passed
+its 113 GPU checks on both GPUs (jobs 239609 and 239610), and its pilot and resume checks
+on H100. Throughput is recorded in the query_distance_decay topic's
+`per_order_throughput.json`. Each run retains the authoritative acceptance result.
+
 ### Selected polynomial orders (2026-11-03)
 
 `model.attention_coefficient_orders` stores only the requested monomial orders
@@ -2038,6 +2182,44 @@ stores dw and dbeta in BF16. Outputs, dq, and dc repeat bitwise over 10 runs at 
 production batch on both GPUs; dk, dv, dw, and dbeta, summed with FP32 atomics, vary by up
 to 4e-5, 2e-5, and 1e-3 (relative L2).
 
+### Forget gate and the exponential
+
+The unnormalized exponential is FLA's softmax output times its row sum, and the forget gate
+(softmax and exponential, PaTH-FoX) enables FLA's own gate in six kernels with the gate
+`L sqrt(d_K)`. The JAX implementation with the decay matches FLA's PyTorch reference given
+FLA's per-token gate `log alpha sqrt(d_K)` (`test_decayed_softmax_matches_the_authors_reference`).
+On B300 (`akita`, `.venv-cuda13`, job 233303), the 63 GPU tests of `test_forget_gate_attention.py`,
+`test_path_attention.py`, and `test_path_attention_fused.py` pass: outputs and every gradient,
+including the decay's, at the production context, at lengths 128-1,536, causality, and the
+model's dispatch for softmax, exp, and both with the gate. The CPU suites pass (job 233367).
+On H100 SXM (`dogo`, `.venv`), the acceptance of `rafcf22b799ed` (job 233373) passed 117 GPU
+tests, a wider selection that includes these suites.
+
+Merged with the FoX-PaTH polynomial (merge commit `19b9cdea`: one `log_decay` for every
+kernel, which FLA's gate receives as `L sqrt(d_K)` and the polynomial fork as `L`), one H100
+SXM (`dogo`, `.venv`, job 235146) passed the 71 GPU tests of `test_forget_gate_attention.py`,
+`test_path_attention.py`, `test_path_attention_fused.py`, and `test_fox_path_attention_fused.py`
+(`test_fox_path_attention.py` and `test_fox_path_model.py` have no GPU cases). A 72nd case
+compared the fused and blocked gated-polynomial models in BF16: the fused `path_beta_bias`
+gradient's error against FP32, 0.149, exceeded twice the blocked model's (0.055), so that
+model is compared in FP32 by the interpreter only. The CPU suites of the touched mechanisms
+pass (813 tests), as do the records and study tests (180). Log:
+`validation/logs/fox-merge-qualify-235146.log` (Kennel).
+
+Relative L2 error against FP32 HIGHEST, BF16 q/k/v, B = 2, T = 2048, 4 heads, width 64,
+scores `2 cos(q, k)`, decay drawn from Gated DeltaNet's initial range (B300, job 233347):
+
+| Kernel | Implementation | Output | dq, dk | dv | dw, dbeta | dL |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Softmax | fused | 2.2e-3 | 3.6e-3 | 2.3e-3 | 6.9e-3, 7.0e-3 | |
+| | JAX | 1.6e-3 | 1.7e-3, 1.8e-3 | 1.7e-3 | 8.8e-4 | |
+| Softmax, gate | fused | 2.1e-3 | 2.8e-3 | 2.4e-3 | 4.9e-3, 5.2e-3 | 2.0e-3 |
+| | JAX | 1.7e-3 | 1.7e-3 | 1.7e-3 | 5.9e-4, 6.0e-4 | 3.0e-4 |
+| Exp | fused | 3.0e-3 | 5.8e-3, 5.7e-3 | 2.9e-3 | 8.6e-3, 8.8e-3 | |
+| | JAX | 1.7e-3 | 1.8e-3 | 1.7e-3 | 1.1e-3, 1.0e-3 | |
+| Exp, gate | fused | 2.8e-3 | 3.6e-3, 3.5e-3 | 2.9e-3 | 5.6e-3, 5.9e-3 | 1.7e-3 |
+| | JAX | 1.7e-3 | 1.7e-3 | 1.7e-3 | 5.8e-4, 5.9e-4 | 5.5e-5 |
+
 ### Speed
 
 Forward and backward per layer, B = 32, T = 2048, 16 heads, width 64, H100 SXM (job 223344):
@@ -2274,3 +2456,476 @@ query-coefficient continuations preserve the complete parent model and Adam stat
 match ordinary continued updates, and resume exactly after interruption. Model changes
 and a separate new-parameter learning rate are rejected in this mode. Full recipe GPU
 acceptance remains mandatory before training.
+
+## Blocked softmax attention at 2,048 tokens
+
+Which plain JAX/XLA (non-fused) causal softmax should become the blocked basis for the
+blocked-only mechanisms at 2,048 tokens, keeping FP32 scores and softmax arithmetic,
+production's NaN rows for nonfinite causal scores, and a 15-layer model on one 80 GB H100?
+The candidates are in [`blocked_attention_benchmark.py`](blocked_attention_benchmark.py);
+no scaffold code or default changed. Measured on 2026-11-04 on `dogo` (H100 SXM, driver
+560.35.05, JAX 0.10.0, cuDNN 9.22) at commit `8df8ce2f`, all in job 235720:
+[kernel record](runs/blocked-attention/kernel-h100-235720.json) and
+[model record](runs/blocked-attention/model-h100-235720.json).
+
+| Candidate | Design |
+| --- | --- |
+| `production-bN` | `blocked_dot_product_attention(query_block_size=N)`: checkpointed scan of N-query blocks, each against all 2,048 keys |
+| `lean-f32-scan-*-b128` | production's scan with fewer passes: a max shift without a gradient, output (P V)/l |
+| `lean-{f32,bf16}-skip-{ckpt,nockpt}-bN` | the same strips unrolled in Python, so strip b multiplies only keys [0, end_b); JAX autodiff, with or without `jax.checkpoint` per strip |
+| `lean-f32up-*` | the same on FP32-upcast Q/K/V, so the strips' dK/dV sum in FP32 |
+| `flash-{f32,bf16}-{rows,cols}-bN` | custom VJP over the unrolled strips: the forward keeps O and the row log-sum-exp; the backward recomputes S and P = exp(S - lse), dS = P (dP - rowsum(dO O)), over query strips (rows; sums dK, dV) or key strips (cols; sums dQ) |
+| `flash-{f32,bf16}-saved-bN` | the same, keeping each strip's normalized weights from the forward instead of recomputing them |
+| `dense-f32scores-bf16w` | one dense block: FP32 scores and softmax, BF16 weights, no checkpoint |
+| `dense-manual` | `softmax_attention(backend="manual")`: BF16 scores and weights, no checkpoint |
+| `cudnn` | `softmax_attention(backend="cudnn")`, the production softmax path |
+
+`f32`: FP32 softmax weights enter the products with upcast V, dO, Q and K: production's
+precision (FP32 scores and softmax, TF32 products; see below), though the candidates compute
+(P V) / l where production computes (P / l) V. `bf16`: P (and dS) are rounded to BF16 before
+the products, with FP32 accumulation, and delta = rowsum(dO O) uses O rounded to BF16, as in
+cuDNN and FlashAttention. Every blocked candidate returns NaN for any row with a nonfinite
+causal score. Two compiler behaviours shape the custom backward:
+
+- It starts with an optimization barrier on its residuals and cotangent. Without it XLA merges
+  the backward's score products with the forward's and keeps every layer's scores alive:
+  `flash-f32-rows-b512` without the barrier (commit `3782b98e`, job 235223,
+  [record](runs/blocked-attention/model-h100-235223-no-barrier.json)) ran out of memory at
+  micro-batch 16 and peaked at 34.1 GB at 8.
+- With the default `xla_allow_excess_precision`, XLA GPU removes an f32 -> bf16 -> f32
+  conversion pair when the second conversion consumes the first, so such a pair does not
+  reliably round. Residuals stored in BF16 and upcast in the backward (O for delta, saved
+  weights) are therefore rounded explicitly with `reduce_precision`, which XLA keeps; a
+  compile-only H100 test checks both.
+
+### Accuracy
+
+Relative L2 error x 1e3 against a host NumPy FP64 forward and analytic VJP, the same fixed
+reference for every candidate whatever its precision. Accuracy and nonfinite-input programs run
+at [2, 2048, 4, 64] (BF16 inputs; sharp: Q x 4, score standard deviation 4), compiled without
+GEMM autotuning (`xla_gpu_autotune_level=0`); the timed programs use XLA's defaults at
+[16, 2048, 14, 64] and are scored as well (second table). The oracle matches float64 JAX
+autodiff to 6.8e-16 ([CPU check](runs/blocked-attention/oracle-cpu.json)). The first row is the
+oracle rounded to BF16, the best a BF16 result can be.
+
+| Variant | Output | dQ | dK | dV | Sharp output | Sharp dQ | Sharp dK | Sharp dV |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Oracle rounded to BF16 | 1.61 | 1.65 | 1.65 | 1.64 | 1.66 | 1.66 | 1.66 | 1.65 |
+| `cudnn` | 2.04 | 2.48 | 2.43 | 2.30 | 1.73 | 3.50 | 3.23 | 2.27 |
+| `dense-manual` | 3.74 | 4.15 | 4.18 | 3.75 | 10.07 | 12.43 | 12.51 | 10.06 |
+| `dense-f32scores-bf16w` | 2.05 | 2.65 | 2.64 | 2.09 | 1.77 | 3.73 | 3.52 | 1.77 |
+| `production-b128` | 1.62 | 1.67 | 3.27 | 3.08 | 1.67 | 1.68 | 4.04 | 3.96 |
+| `production-b512` | 1.62 | 1.67 | 2.58 | 2.51 | 1.67 | 1.68 | 2.79 | 2.77 |
+| `production-b2048` | 1.62 | 1.67 | 1.67 | 1.65 | 1.67 | 1.68 | 1.68 | 1.66 |
+| `lean-f32-skip-ckpt-b512` | 1.62 | 1.68 | 2.59 | 2.51 | 1.66 | 1.73 | 2.81 | 2.77 |
+| `lean-f32up-skip-ckpt-b512` | 1.62 | 1.68 | 1.68 | 1.66 | 1.66 | 1.73 | 1.72 | 1.67 |
+| `lean-bf16-skip-nockpt-b512` | 2.05 | 2.65 | 3.29 | 2.81 | 1.77 | 3.73 | 4.17 | 2.83 |
+| `flash-f32-{rows,cols}`, every strip size | 1.62 | 1.67 | 1.67 | 1.65 | 1.66 | 1.68 | 1.68 | 1.66 |
+| `flash-bf16-{rows,cols}`, every strip size | 2.05 | 2.48 | 2.44 | 2.30 | 1.77 | 3.51-3.52 | 3.24 | 2.27 |
+| `flash-f32-saved-b512` | 1.62 | 1.67 | 1.67 | 1.65 | 1.67 | 1.70 | 1.69 | 1.66 |
+| `flash-bf16-saved-b512` | 2.30 | 2.89 | 2.87 | 2.30 | 2.27 | 3.96 | 3.68 | 2.27 |
+
+- Production's blocked backward sums each block's dK and dV in BF16: autodiff returns a BF16
+  cotangent for K and V in every scan iteration. The error grows with the number of blocks
+  (16 blocks: 3.3e-3, twice the floor and above cuDNN; one block: the floor). Autodiff over
+  unrolled BF16 strips inherits this; FP32-upcast operands or the custom VJP remove it.
+- The same sums apply to every kernel trained through `blocked_dot_product_attention`, whose
+  query blocks are always 128. Against an FP32 reference of the same kernel (one block,
+  `HIGHEST` matmul precision) on the same BF16 inputs at [2, 2048, 4, 64], dK and dV error
+  relative to the BF16 floor:
+
+  | Kernel | 16 blocks of 128: dK / dV | One block: dK / dV |
+  | --- | ---: | ---: |
+  | softmax | 1.96x / 1.85x | 1.01x / 1.01x |
+  | query polynomial m = 4, unnormalized | 2.79x / 2.79x | 1.01x / 1.01x |
+  | normalized learned polynomial m = 2 | 1.88x / 1.79x | 1.01x / 1.01x |
+
+  Output and dQ stay at 1.01x. These are the numerics of every BF16 run trained on the
+  blocked scan: in `attention_scaling`, the normalized learned m = 1-4 and the query or
+  query-key coefficient runs; in Transformer++, every forget-gate run (softmax, exponential and
+  query polynomials; the 4,096-token runs have 32 blocks, not measured). PaTH, GDN and GLA have
+  separate blocked code.
+- JAX's default precision runs FP32 x FP32 products as TF32 on H100: an FP32 matmul has
+  2.9e-4 relative error (2.2e-7 at `HIGHEST`), and with FP32 inputs production and every
+  FP32-weight candidate have 1.6-3.1e-4. "FP32 weights" are therefore TF32 weights; with BF16
+  outputs this stays below the output rounding (`flash-f32` is at the floor).
+- `flash-bf16` is within 2% of cuDNN's errors (output 2.05 vs 2.04, sharp output 1.77 vs
+  1.73; every gradient within 0.5%); the BF16-score textbook path is 6-8x the floor on sharp
+  inputs. `flash-bf16-saved` reuses the normalized weights rounded to BF16 in dS and is less
+  accurate than cuDNN (dQ 2.89 vs 2.48, sharp output 2.27 vs 1.73).
+
+The timed programs, scored on their first sequence (other inputs, so their own floor):
+
+| Variant | Output | dQ | dK | dV |
+| --- | ---: | ---: | ---: | ---: |
+| Oracle rounded to BF16 | 1.61 | 1.66 | 1.67 | 1.66 |
+| `cudnn` | 2.03 | 2.48 | 2.45 | 2.31 |
+| `production-b128` | 1.62 | 1.67 | 3.24 | 3.10 |
+| `flash-f32-rows-b512` | 1.61 | 1.67 | 1.68 | 1.67 |
+| `flash-bf16-rows-b512` | 2.04 | 2.48 | 2.45 | 2.31 |
+| `flash-f32-saved-b512` | 1.62 | 1.68 | 1.68 | 1.67 |
+| `flash-bf16-saved-b512` | 2.27 | 2.92 | 2.90 | 2.31 |
+| `lean-f32up-skip-ckpt-b512` | 1.61 | 1.69 | 1.70 | 1.68 |
+
+Relative to their floors, the timed programs' errors are within about 1% of the accuracy
+programs' for these variants (production's dK: 1.8%) and within 6% for all 43.
+
+### Nonfinite inputs
+
+One value injected at token 1,000 of one head, on the GPU at [2, 2048, 4, 64]
+([CPU tests](test_blocked_attention_benchmark.py) check the same against production). Entries
+are the nonfinite output rows of that head; every other head stays finite, and every variant's
+gradients are nonfinite in every case.
+
+| Injection | Production's rule | `production-*`, scans, single block | Causal-skip strips | `cudnn` | `dense-manual` |
+| --- | --- | --- | --- | --- | --- |
+| Q NaN | 1000 | 1000 | 1000 | 1000 | 1000 |
+| K NaN | >= 1000 | >= 1000 | >= 1000 | >= 1000 | >= 1000 |
+| V NaN or +inf | >= 1000 | all | >= start of its strip (896, 768, 512, 0 for 128, 256, 512, 1,024 queries) | >= 896 | all |
+| K = -inf (scores -inf) | >= 1000 | >= 1000 | >= 1000 | none | none |
+| Overflowing score (1e40/8) | 1000 | 1000 | 1000 | 1000 | 1000 |
+| Huge finite scores (1e20 in every channel) | 1000 | 1000 | 1000 | 1000 | 1000 |
+
+Masked weights are exact zeros and 0 x NaN = NaN, so a bad V value also poisons the earlier
+rows that share its product: every row when each block multiplies all keys, the rows of its
+strip with causal skipping. cuDNN and the textbook path treat a -inf score as a zero weight;
+the blocked candidates keep production's rule. On CPU, rows with huge finite scores
+(|s| ~ 1e20) also became nonfinite after a fused multiply-add rounded S x scale differently in
+two fusions, identically in production and the candidates.
+
+### Speed and compiled memory, one layer
+
+[16, 2048, 14, 64] BF16, median of 20 synchronized calls after 3 warmups. Temp is the
+compiler's estimate for one layer's forward + backward; it excludes what a model holds across
+layers (each layer's residuals until its backward). One Transformer++ update runs 240 layer
+micro-batches (15 layers x 16), so attention s/update = forward + backward ms x 0.24.
+
+| Variant | Forward ms | Fwd + bwd ms | Temp GB | Attention s/update |
+| --- | ---: | ---: | ---: | ---: |
+| `cudnn` | 0.52 | 1.59 | 0.12 | 0.38 |
+| `dense-manual` | 3.55 | 11.40 | 5.64 | 2.74 |
+| `dense-f32scores-bf16w` | 6.73 | 14.49 | 5.94 | 3.48 |
+| `production-b128` | 9.28 | 37.37 | 1.01 | 8.97 |
+| `production-b512` | 8.42 | 35.56 | 3.28 | 8.53 |
+| `production-b2048` | 7.99 | 22.76 | 12.34 | 5.46 |
+| `lean-f32-scan-ckpt-b128` | 8.14 | 31.31 | 1.01 | 7.51 |
+| `lean-f32-skip-ckpt-b256` | 4.99 | 15.46 | 2.46 | 3.71 |
+| `lean-f32-skip-nockpt-b512` | 4.94 | 11.46 | 5.17 | 2.75 |
+| `lean-f32up-skip-ckpt-b512` | 5.33 | 16.52 | 4.55 | 3.97 |
+| `lean-bf16-skip-nockpt-b512` | 3.93 | 9.53 | 3.82 | 2.29 |
+| `flash-f32-cols-b512` | 5.14 | 13.61 | 2.76 | 3.27 |
+| `flash-f32-rows-b512` | 5.06 | 13.69 | 2.44 | 3.29 |
+| `flash-f32-saved-b512` | 4.87 | 13.21 | 3.32 | 3.17 |
+| `flash-bf16-cols-b512` | 3.89 | 10.17 | 2.98 | 2.44 |
+| `flash-bf16-rows-b512` | 4.02 | 10.33 | 3.32 | 2.48 |
+| `flash-bf16-saved-b512` | 4.25 | 9.74 | 2.25 | 2.34 |
+
+- Strip size: `flash-f32-cols` takes 14.71, 13.41, 13.61, 15.17 and 19.87 ms at 128, 256,
+  512, 1,024 and 2,048 queries; `flash-bf16-cols` 11.75, 10.65, 10.17, 11.83 and 15.40 ms.
+  Small strips pay a fixed cost per strip; large ones compute more of the masked triangle.
+  Rows and cols are within 2% at 256 and 512 queries.
+- Keeping the weights (`saved`) is 1-9% faster than recomputing them (`rows`: 1.2% and 3.5% in
+  FP32 at 256 and 512 queries, 8.9% and 5.8% in BF16), but holds each strip's normalized
+  weights from a layer's forward to its backward: 2.35 GB per layer in FP32 and 1.17 GB in BF16
+  at 512 queries and micro-batch 16, which a 15-layer model keeps for every layer and this
+  temp does not show (full model below).
+- Profiles of 3 calls: the GPU idles 0.3-0.8 ms per call, and GEMMs take about half the
+  strip variants' kernel time (41-51%) and a third of production's.
+
+  | Variant | GEMM ms | Other ms | Est. GEMM GB | Est. other GB | GEMM TB/s | GEMM TFLOP/s | Other TB/s |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | `production-b128` | 12.25 | 24.46 | 34.4 | 73.0 | 2.81 | 69 | 2.99 |
+  | `flash-f32-cols-b128` | 7.13 | 6.96 | 20.4 | 19.6 | 2.87 | 63 | 2.81 |
+  | `flash-f32-rows-b512` | 6.42 | 6.47 | 18.7 | 19.4 | 2.91 | 82 | 3.00 |
+  | `flash-bf16-rows-b512` | 4.72 | 5.09 | 13.5 | 15.6 | 2.87 | 111 | 3.05 |
+  | `flash-bf16-saved-b512` | 3.81 | 5.47 | 11.0 | 15.2 | 2.88 | 118 | 2.77 |
+  | `lean-f32up-skip-ckpt-b512` | 7.94 | 8.00 | 22.0 | 24.2 | 2.77 | 76 | 3.02 |
+
+  Times are per call over all kernels, by kernel name (cuDNN's 1.27 ms are all its own fused
+  kernels). The estimate sums each kernel's operand and result bytes and its GEMM FLOPs from
+  the optimized HLO (slices and in-place updates at their size, loop bodies times their trip
+  counts); its GEMM FLOPs equal the analytic count. Both classes move about 2.8-3.1 TB/s, near
+  the H100 SXM's 3.35 TB/s, while the GEMMs run at 63-118 TFLOP/s of the TF32 and BF16 tensor
+  cores' 495 and 990: plausibly bandwidth-bound throughout (cache reuse is not modeled).
+- First compiles of a strip size, forward + backward: 102-122 s at 128 queries, 53-81 s at
+  256, 27-32 s at 512 (GEMM autotuning of each strip shape; later variants reuse it); the scans
+  and cuDNN take 10 s or less.
+- Repeated at the end of the job: cuDNN 1.49 ms (first 1.59), production 37.32 ms (37.37).
+
+### Full model
+
+The Transformer++ softmax recipe
+([`r9040f12f3d80`](../../../experiments/transformer_pp/runs/r9040f12f3d80/config.yaml), 15 layers)
+on synthetic tokens: one forward + backward micro-step of the scaffold's
+`training.loop.loss_and_grads` (no optimizer update), with softmax attention routed to each
+candidate inside the benchmark; `production-b128` and `cudnn` use the model's own backends.
+Each case runs in a fresh process. Peak is the allocator peak including the train state
+(parameters and AdamW moments), under the default allocator limit of 63.8 GB;
+s/update = micro-step x 256 / micro-batch, median of 10 after 2 warmups.
+
+| Variant | Micro-batch | Micro-step ms | s/update | Peak GB | Compile s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `cudnn` | 16 / 8 / 4 | 107.3 / 59.1 / 33.3 | 1.72 / 1.89 / 2.13 | 26.3 / 15.6 / 9.9 | 29-32 |
+| `production-b128` | 16 / 8 / 4 | 638.3 / 335.7 / 179.4 | 10.21 / 10.74 / 11.48 | 27.8 / 15.9 / 9.8 | 42-50 |
+| `flash-f32-rows-b512` | 16 / 8 / 4 | 277.2 / 147.4 / 80.5 | 4.44 / 4.72 / 5.15 | 29.1 / 17.0 / 10.5 | 60-67 |
+| `flash-bf16-rows-b512` | 16 / 8 / 4 | 232.1 / 120.9 / 67.7 | 3.71 / 3.87 / 4.33 | 27.8 / 16.4 / 10.3 | 59-65 |
+| `lean-f32up-skip-ckpt-b512` | 16 / 8 / 4 | 323.5 / 171.9 / 95.0 | 5.18 / 5.50 / 6.08 | 34.5 / 19.7 / 12.2 | 66-74 |
+| `flash-f32-saved-b512` | 16 / 8 / 4 | OOM / 145.6 / 79.4 | - / 4.66 / 5.08 | - / 34.1 / 19.1 | 61-72 |
+| `flash-bf16-saved-b512` | 16 / 8 / 4 | 221.9 / 117.9 / 64.6 | 3.55 / 3.77 / 4.14 | 44.7 / 24.9 / 14.5 | 62-70 |
+| `lean-bf16-skip-nockpt-b512` | 16 / 8 / 4 | OOM / 117.6 / 64.5 | - / 3.76 / 4.13 | - / 42.9 / 23.3 | 80-97 |
+
+Each completed routed case records the calls its candidate received while the step was
+traced: 15, one per layer. The timings agree: at micro-batch 16, each micro-step differs from
+production's by 15 times the one-layer forward + backward difference, to within 2%, and
+compile times and peaks differ from production's:
+
+| Variant | Micro-step minus production's, ms | 15 x one-layer difference, ms |
+| --- | ---: | ---: |
+| `cudnn` | -531.0 | -536.7 |
+| `flash-f32-rows-b512` | -361.1 | -355.2 |
+| `flash-bf16-rows-b512` | -406.2 | -405.5 |
+| `lean-f32up-skip-ckpt-b512` | -314.8 | -312.6 |
+| `flash-bf16-saved-b512` | -416.5 | -414.4 |
+
+Losses (10.5088 at micro-batch 16) and gradient norms (2.811) agree to four digits across
+cases, a sanity check of each candidate's correctness that would also hold without routing.
+
+Saved weights stay alive from each layer's forward to its backward. At micro-batch 8,
+`flash-f32-saved-b512` peaks 17.1 GB above `flash-f32-rows-b512` (15 layers x 1.17 GB of FP32
+weights: 17.6 GB), and at 16 it runs out of memory (52.7 GiB of temporaries);
+`flash-bf16-saved-b512` fits at 16 with 44.7 GB, 16.9 GB above `flash-bf16-rows-b512`, for 4%.
+Without checkpoints, autodiff keeps every layer's weights: at micro-batch 16 its 52.4 GiB of
+temporaries did not fit.
+
+### Recommendation
+
+- **Blocked basis: `flash-f32-rows-b512`.** The custom VJP over four unrolled 512-query
+  strips with causal key prefixes; the forward keeps O and the row log-sum-exp, and the
+  backward recomputes each strip behind the barrier and sums dK and dV in FP32. It keeps
+  production's precision (FP32 scores and softmax, TF32 products; it normalizes after the
+  product) and NaN-row rule, puts the output and every gradient at the BF16 rounding floor
+  (more accurate than production's BF16 block sums and than cuDNN), fits micro-batch 16 at
+  29.1 GB, and cuts the forward + backward of an update from 10.21 s to 4.44 s, 2.3x (cuDNN:
+  1.72 s).
+- **cuDNN numerics: `flash-bf16-rows-b512`**, the same code with BF16 weights: 3.71 s per
+  update, within 2% of cuDNN's errors.
+- 256 and 512 queries per strip are within 5% in speed; 512 compiles in about half the time.
+  Rows and cols tie; rows shares the forward's layout.
+- **Without a hand-written backward: `lean-f32up-skip-ckpt-b512`**, checkpointed autodiff over
+  the same strips on FP32-upcast operands (at the floor; 5.18 s per update, 34.5 GB at
+  micro-batch 16), for mechanisms whose derivative is impractical by hand, such as the score MLP.
+- Not recommended: production's scan at any block size (BF16 dK/dV sums; one dense block
+  avoids them at 12 GB per layer), autodiff without checkpoints (out of memory at
+  micro-batch 16), the dense paths, and saved weights (`flash-f32-saved` runs out of memory
+  at micro-batch 16 for a 1-4% gain; `flash-bf16-saved` is less accurate than cuDNN).
+- The remaining 2.0-2.6x gap to cuDNN per update is plausibly memory bandwidth: plain XLA
+  writes every [strip x keys] score, weight and score-gradient block to HBM and reads it back,
+  at an estimated 2.8-3.1 TB/s.
+
+Integration without changing historical behaviour:
+
+1. Move the strip forward and custom VJP into a scaffold backend beside
+   `blocked_dot_product_attention`, which stays unchanged, with these CPU tests and a GPU
+   FP64-oracle test at 2,048 tokens.
+2. Select it with a new recipe field whose default is the existing scan (for example
+   `model.attention_blocked_implementation: scan | strips`, with strip size and weight
+   precision). Historical recipes and resumptions keep their numerics, including the BF16
+   dK/dV sums; new runs opt in, or get it from `scaffolds.records create` once qualified.
+3. Keep `return_diagnostics=True` on the existing blocked function, as the fused paths do.
+4. Port each blocked-only mechanism into the strip template: its kernel, normalization and
+   invalid-row rules in the forward, and in the backward, behind the barrier:
+   - unnormalized kernels: dS = f'(S) dP;
+   - normalized kernels: dS = (f'(S) / l) (dP - delta), with delta = rowsum(dO O) and l the
+     row sum (softmax: P (dP - delta) with P = exp(S - lse));
+   - rational kernels p_a(S) / L with L = sum_j p_b(S_j): dS = (p_a'(S) dP - p_b'(S) delta) / L;
+
+   plus its coefficient gradients. Write each intended rounding of a value that is upcast
+   again with `reduce_precision` (`_rounded_to`). Check each port's NumPy oracle against
+   float64 `jax.vjp`, as `oracle_check` does, and the port against its oracle. Use the
+   `lean-f32up` template where the derivative is impractical.
+5. Strips assume a static sequence length, and the model compiles in 59-67 s instead of
+   42-50 s.
+6. Qualify on H100 and B300 (B300 was not measured), then acceptance and a pilot.
+
+### Tests and regeneration
+
+The 138 CPU tests in [`test_blocked_attention_benchmark.py`](test_blocked_attention_benchmark.py)
+pass. They check every candidate's output and dQ/dK/dV against the FP64 oracle in float64 (to
+1e-11) at T = 1, 32 and 37 with strips of 1, 4, 8, 16 and 64 (ragged last strips), float32
+parity with production, BF16 dtypes and rounding, causality, the nonfinite cases above
+against production, FP32 dK/dV sums, the backward's barrier, option and shape validation, and
+the model routing: a two-layer model routed to the candidates matches the scaffold's blocked
+loss and every parameter gradient, with one routed call per layer. They also check the
+explicit BF16 rounding (bitwise a conversion round trip, and kept in compile-only H100
+programs, where XLA removes a plain conversion pair), the HLO traffic and FLOP estimate (a
+synthetic module, and compile-only H100 programs against the analytic GEMM FLOPs), the
+profile's class split, and the block-sum check. The compile-only tests skip without the CUDA
+plugin.
+
+```bash
+PY=scaffolds/transformer/.venv/bin/python
+JAX_PLATFORMS=cpu PYTHONPATH=. $PY -m pytest -q -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib scaffolds/transformer/validation/test_blocked_attention_benchmark.py
+JAX_PLATFORMS=cpu PYTHONPATH=. $PY -m scaffolds.transformer.validation.blocked_attention_benchmark \
+  oracle-check --output oracle-cpu.json
+# One H100 (sbatch --partition=debug,standard --gres=gpu:h100:1 --nodelist=dogo --time=01:30:00
+# --cpus-per-task=8 --mem=120G), PYTHONPATH=$PWD JAX_PLATFORMS=cuda XLA_PYTHON_CLIENT_PREALLOCATE=false,
+# both stages in one job (the kernel stage's budget leaves the model stage its time):
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark kernel --output kernel.json \
+  --budget-minutes 52 \
+  --profile-variants cudnn production-b128 flash-f32-cols-b128 flash-f32-rows-b512 \
+    flash-bf16-rows-b512 flash-bf16-saved-b512 lean-f32up-skip-ckpt-b512 \
+  --float32-input-variants production-b128 dense-manual flash-f32-rows-b512 flash-bf16-rows-b512 \
+    flash-f32-saved-b512 lean-f32up-skip-ckpt-b512 lean-f32-skip-ckpt-b512
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark model --output model.json \
+  --variants cudnn production-b128 flash-f32-rows-b512 flash-bf16-rows-b512 \
+    lean-f32up-skip-ckpt-b512 flash-f32-saved-b512 flash-bf16-saved-b512 \
+    lean-bf16-skip-nockpt-b512 \
+  --micro-batches 16 8 4 --warmup 2 --iterations 10
+# All tables of the records, including the 43 kernel variants:
+$PY -m scaffolds.transformer.validation.blocked_attention_benchmark summarize \
+  --kernel-record kernel.json --model-record model.json --output summary.md
+```
+
+## Blocked causal strips
+
+`model.attention_blocked_implementation: strips` (scaffold README, "Blocked attention
+implementations") evaluates the blocked scan's own per-block arithmetic over causal 512-query
+strips with FP32 K/V cotangent sums: the `lean-f32up-skip-ckpt-b512` form above, generalized
+to every mechanism of `blocked_dot_product_attention` rather than hand-written per mechanism.
+The scan is unchanged (normalized jaxpr text identical to `bc3274e0` in 2,661 configurations).
+CPU checks: `tests/test_blocked_strips.py` (float64 equivalence with the scan's code across 25
+argument families at ragged strips, NaN rules, BF16 accuracy, a two-layer model, records and
+acceptance) and `tests/test_blocked_strips_h100.py` (compile-only H100: no GEMM reads an FP32
+value whose BF16 rounding XLA removed, and per-layer memory).
+
+Measured on 2026-11-08 at commit `6ea739f6` on one H100 PCIe (`mastiff`, jobs 239691 and
+239696) and one B300 (`akita`, jobs 239692 and 239695) with
+[`blocked_strips_qualification.py`](blocked_strips_qualification.py) and
+[`qualify_blocked_strips.sbatch`](qualify_blocked_strips.sbatch); records in
+[runs/blocked-strips/](runs/blocked-strips/). `test_blocked_strips_h100.py` passed on both GPUs.
+
+**Accuracy.** BF16 inputs at [2, 2048, 4, 64], relative L2 error × 1e3 against the scan's
+arithmetic in FP64; the floor is that reference rounded to BF16. The H100 and B300 values agree
+to the digits shown.
+
+| Mechanism | Floor dK / dV | Scan dK / dV | Strips dK / dV | Output and dQ (both) |
+| --- | ---: | ---: | ---: | ---: |
+| FoX softmax | 1.66 / 1.66 | 2.13 / 2.12 | 1.67 / 1.67 | 1.67 / 1.68 |
+| FoX exponential | 1.66 / 1.66 | 2.10 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| FoX query m = 4 | 1.66 / 1.66 | 2.11 / 2.12 | 1.67 / 1.67 | 1.67 / 1.67 |
+| Static m = 4, unnormalized | 1.66 / 1.66 | 4.62 / 4.63 | 1.67 / 1.67 | 1.67 / 1.67 |
+
+The strips sit at the floor (1.008×, the TF32 products); the scan's BF16 block sums give
+1.27-1.29× under the forget gate's decay and 2.8× without it. FP32 gradients of the log decay
+and the coefficients agree with FP64 to below 1e-6 for both.
+
+**Full model.** One forward and backward micro-step of the recipe's 15-layer model
+(`training.loop.loss_and_grads`, micro-batch 16, synthetic tokens), each in a fresh process;
+s/update = median micro-step × 16.
+
+| Recipe | GPU | Scan s/update | Strips s/update | Speedup | Compile s (scan / strips) | Peak GB (scan / strips) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | H100 PCIe | 17.42 | 11.67 | 1.49× | 47 / 74 | 30.1 / 30.8 |
+| FoX softmax, no RoPE (`r5adc29a91e3b`) | B300 | 6.06 | 3.83 | 1.58× | 47 / 103 | 29.5 / 30.4 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | H100 PCIe | 15.25 | 11.73 | 1.30× | 64 / 86 | 31.6 / 30.3 |
+| FoX query m = 4, no RoPE (`r82a80d3091e2`) | B300 | 5.27 | 3.91 | 1.35× | 119 / 93 | 31.0 / 30.3 |
+
+Loss (10.5163 and 10.5100) and gradient norm (3.0317 and 2.0181) agree between the
+implementations to five digits. H100 SXM (`dogo`) was fully allocated; the PCIe card is about
+1.5× slower in absolute terms, not in the ratio.
+
+### Quartic B-spline score function
+
+`model.attention_kernel_basis: bspline` (scaffold README, "B-spline score function") runs in
+the strips' shared per-block arithmetic. Qualified on 2026-11-08 at commit `927995ed` on one
+B300 (`akita`, job 239705) and one H100 SXM (`dogo`, job 239706) with the same script: the
+spline GPU precision tests (`test_spline_attention.py -m gpu`, static and query) and
+`test_blocked_strips_h100.py` passed on both, and the kernel stage puts static and query
+spline outputs and gradients at the BF16 floor (1.007-1.008×; the scan's block sums give
+2.7×). Full-model micro-steps on the strips, micro-batch 16:
+
+| Recipe | B300 s/update | H100 SXM s/update | Peak GB |
+| --- | ---: | ---: | ---: |
+| static quartic spline (`r7e4193fcafbd`) | 4.53 | 8.56 | 30.5 |
+| query quartic spline + W decay (`rf303a5f94487`) | 5.16 | 9.86 | 32.3-32.5 |
+| static m = 4 polynomial on strips (`r4339a245820e`) | 2.75 | 5.42 | 29.0 |
+| query m = 4 polynomial on strips (`rca97cc9db8f2`) | 3.32 | 6.57 | 31.0 |
+
+Compilation takes 1.4-3.1 minutes. Initial losses agree with the polynomial controls' to five
+digits (both start at T4).
+
+```bash
+# One GPU per type, from the worktree root (validation files are outside the frozen check):
+sbatch --partition=debug --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G --time=01:00:00 \
+  --output=scaffolds/transformer/validation/logs/blocked-strips/%x-%j.log \
+  scaffolds/transformer/validation/qualify_blocked_strips.sbatch "$(git rev-parse HEAD)"
+```
+
+## Per-order FoX gradient failure investigation (2026-11-07)
+
+The per-order query and query–key gate recipes stopped in GPU acceptance, before
+training, in `test_per_order_decay.py::test_gpu_per_order_forward_and_backward`.
+That test exercises both gate variants for either recipe. The recorded B300
+failure is `CUDA_ERROR_ILLEGAL_ADDRESS` while synchronizing the compiled output
+and VJP, after the explicit FP64 reference had completed. Later test failures in
+the same process follow the poisoned CUDA context.
+
+Fresh-process H100 diagnostics reproduce the query–key backward failure without
+running the reference at all. This establishes that the problem is not confined
+to B300 or caused by the reference calculation. Qualification used the unchanged
+implementation at `971b2ea6`, JAX 0.10.0, the locked CUDA 12 environment, an H100 on
+Kennel `dogo` with driver 560.35.05, and Slurm diagnostic jobs 239099, 239102 and
+239108. Inputs match the acceptance test: B=2, T=2048, H=2, dK=dV=64, degree 4,
+BF16 Q/K/V, FP32 coefficients/gates and gate input width 7.
+
+| Isolated computation | H100 outcome |
+| --- | --- |
+| Query-only output and all gradients, highest/default matmul precision | Pass |
+| Query-only output and all gradients against the FP64 reference | Pass; maximum relative L2 error 0.0025572 |
+| Query–key forward only | Pass |
+| Query–key output and all gradients, highest/default precision | Illegal address |
+| Query–key output and all gradients, CUDA command buffers disabled | Illegal address |
+| Query–key output and all gradients against FP64, priority fusion disabled | Pass; maximum relative L2 error 0.0026623 |
+
+Compute Sanitizer reports **stack overflow** in `loop_add_fusion_5`. The optimized
+HLO maps this to accumulation of the query-gate input gradient, shape
+`[2,2048,2,5]`, inside the reverse scan, with operation
+`transpose(jvp())/while/body/closed_call/add_any`. Five order-specific gradients
+are padded, repeatedly inserted into and read from the full gradient buffer, and
+added to the scan carry. This is a compiler-generated fusion failure, not a
+cuBLAS matrix multiplication failure. Disabling XLA's `priority-fusion` pass
+preserves the mathematics and removes the observed crash. The worst numerical
+errors above are BF16 gradients; the passing query–key gate/projection gradients
+have relative L2 error at most 7.56e-7.
+
+The diagnostic switch is **not** enabled in training. The targeted implementation
+fix at `4ef08db2` slices the query-gate time block once per scan iteration, before
+selecting each order. Its transpose combines order gradients locally before one
+full-buffer update. H100 qualification job **239129** passes both separately
+identified query/query–key GPU tests, including initialization and decay masks,
+with normal compiler optimizations. The independent query–key FP64 comparison
+has maximum relative L2 error 0.0026623; Compute Sanitizer reports **zero errors**
+for the fixed backward pass at training's default matmul precision. Recipes,
+runtime settings and mathematical definitions are unchanged. Full per-run
+acceptance still gates production training on its actual GPU allocation.
+The targeted CPU suite passes 73 tests covering per-order and shared endpoint
+outputs/gradients, initialization, decay masks and the experiment's recipe guard.
+The B300 diagnostic job 239100 was cancelled while pending; it produced no
+diagnostic result.
+
+Reproduce inside a correctly configured single-H100 allocation using the
+worktree's locked environment (each invocation is a fresh process):
+
+```bash
+PY=scaffolds/transformer/.venv/bin/python
+PROBE=scaffolds/transformer/validation/per_order_crash_probe.py
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase original
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase forward --endpoint
+JAX_PLATFORMS=cuda PYTHONPATH=. $PY "$PROBE" --phase backward --endpoint
+XLA_FLAGS=--xla_disable_hlo_passes=priority-fusion JAX_PLATFORMS=cuda PYTHONPATH=. \
+  $PY "$PROBE" --phase original --endpoint
+```
+
+Raw logs, sanitizer output and HLO dumps are retained under the ignored
+`validation/logs/per-order-debug/H100-<job>/` directories.

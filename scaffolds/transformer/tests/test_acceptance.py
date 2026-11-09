@@ -343,6 +343,37 @@ def test_a_requeue_onto_another_gpu_model_repeats_the_runs_own_acceptance(tmp_pa
     assert json.loads((tmp_path / "identity.json").read_text())["device_kinds"] == ["NVIDIA H100 NVL"]
 
 
+def test_returning_to_the_passed_gpu_model_reuses_its_pilot_after_the_checkpoint_was_removed(tmp_path, monkeypatch,
+                                                                                             capsys):
+    """H200 and H200 NVL share one GPU type. An attempt on the other model re-records the test stages;
+    back on the first model, its pilot and resume still pass, and their checkpoint is already gone."""
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    allocated = {"model": "NVIDIA H200"}
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": [allocated["model"]] * args.gpu_count}
+        raise RuntimeError(f"ran {name}")
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    experiment = {"identity": "launcher", "source_commit": "a" * 40, "config": config_to_dict(Config()),
+                  "gpu_type": "H200", "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="H200")
+    first = preflight.on_devices(experiment, ["NVIDIA H200"])
+    for name in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{name}.json", first)
+    for name, _, _ in preflight.TEST_STAGES:
+        preflight.record(tmp_path / f"{name}.json", preflight.on_devices(experiment, ["NVIDIA H200 NVL"]))
+    assert not (tmp_path / "pilot").exists()
+    preflight._run(spec, args, experiment)
+    output = capsys.readouterr().out
+    assert "matching_acceptance_passed=" not in output and "acceptance_success=" in output
+    assert all(preflight.passed(tmp_path / f"{name}.json", first) for name in (*preflight.CHECKS, "success"))
+
+
 def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(monkeypatch):
     monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "auto")
     with pytest.raises(ValueError, match="resolved"):
@@ -488,3 +519,49 @@ def test_mosaic_gpu_tests_cover_only_the_precision_in_use(model, backend, expect
 
 def test_test_processes_accept_the_mosaic_precision_option(pytestconfig):
     assert pytestconfig.getoption("--mosaic-precision") in (None, "bf16", "bf16x3")
+
+
+@pytest.mark.parametrize("model,backend,cpu,selected", [
+    ({"attention_blocked_implementation": "strips"}, "blocked", True, True),
+    ({"attention_blocked_implementation": "strips", "attention_forget_gate": True}, "blocked", False, False),
+    ({"attention_blocked_implementation": "strips", "attention_degree": 2}, "fused", True, False),
+    ({"attention_blocked_implementation": "scan"}, "blocked", True, False),
+    ({}, "blocked", True, False),
+])
+def test_recipes_training_on_blocked_strips_require_their_cpu_tests(model, backend, cpu, selected):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+    assert (preflight.BLOCKED_STRIPS_TESTS in paths) == selected
+
+
+@pytest.mark.parametrize("model,cpu,selected", [
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "scan"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, False, True),
+    ({"attention_kernel_basis": "polynomial"}, True, False),
+    ({"attention_kernel_basis": "polynomial"}, False, False),
+    ({}, True, False),
+])
+def test_spline_recipes_require_their_tests(model, cpu, selected):
+    """Both stages: the CPU checks, and the GPU stage's production precision."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend="blocked", cpu=cpu)
+    assert (preflight.SPLINE_ATTENTION_TESTS in paths) == selected
+
+
+def test_spline_production_recipe_selects_spline_strips_and_query_tests():
+    """The query spline recipe's shared acceptance runs the spline, strips, and generator tests on
+    CPU, and the spline's production precision on the GPU."""
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+    from scaffolds.transformer.tests.test_spline_attention import QUERY_CONTROL, spline_model
+
+    config = Config(model=ModelConfig(**spline_model(QUERY_CONTROL)))
+    config.data.sequence_length = 2049
+    spec = preflight.attention_spec(config, entry_module="unused")
+    paths = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=True)
+    for required in (preflight.SPLINE_ATTENTION_TESTS, preflight.BLOCKED_STRIPS_TESTS,
+                     preflight.INPUT_DEPENDENT_COEFFICIENT_TESTS, preflight.QUERY_TANH_POLYNOMIAL_TESTS):
+        assert required in paths
+    assert spec.required_backend == "blocked"
+    gpu = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=False)
+    assert preflight.SPLINE_ATTENTION_TESTS in gpu and preflight.BLOCKED_STRIPS_TESTS not in gpu

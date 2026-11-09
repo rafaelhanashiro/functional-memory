@@ -44,10 +44,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 - The established 10B-token shared-Transformer attention experiments belong to
   `experiments/attention_scaling/`. The user-requested Transformer++ study is isolated in
-  `experiments/transformer_pp/` (the token budget is a per-run setting with 1× Chinchilla
-  as the reference). Its name is its recipe: call it
+  `experiments/transformer_pp/`. The study is its recipe's rules, not their values: model
+  shape and token budget are per-run settings, 1× Chinchilla is defined per shape, and
+  `experiments/transformer_pp/derive_recipe.py` derives a run's recipe from a partner run.
+  Its name is its recipe: call it
   Transformer++ in READMEs, indexes, figures, and reports, never by its size or token budget
-  ("200M", "4B", "1x"). The study holds its `recipe.yaml`, run membership,
+  ("200M", "4B", "1x"), and name model shapes by structure (for example the 12-layer
+  width-640 shape). The study holds its `recipe.yaml`, run membership,
   `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
   diagnostics belong under `experiments/transformer_pp/results/exploratory/<topic>/`,
   with their runs in the same study. Add runs deliberately; do not reproduce the old
@@ -55,8 +58,9 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   Its nested results follow all selection, provenance, and regeneration rules below;
   old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
-  degree, width, coefficient parameterization, sharing, and seed distinguish runs
-  within this study; do not create a new study directory for a sweep or mechanism.
+  degree, key width, model shape (depth and width), token budget, coefficient
+  parameterization, sharing, and seed distinguish runs within this study; do not create
+  a new study directory for a sweep, mechanism, or model shape.
   `experiments/state_rank/` is a separate scientific question. Comparisons and their
   explicit primary/control run selections belong under the applicable `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
@@ -80,12 +84,14 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Four attention questions have their own canonical collections at the user's request:
+  Five attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
   static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet),
   `results/rational_polynomial/` (separate learned denominator polynomials), and the
   Transformer++ study's `experiments/transformer_pp/results/degree_scaling/`
-  (perplexity against polynomial degree for four coefficient families). Do not
+  (perplexity against polynomial degree for four coefficient families) and
+  `experiments/transformer_pp/results/model_scale/` (attention variants at a smaller
+  model shape against their reference-shape partners). Do not
   create a result directory for any other mechanism or sweep unless the user asks.
   Each canonical collection stands alone: never merge one into another, and never fold
   a newly canonical experiment into an existing collection. Learning curves and
@@ -262,6 +268,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with
   `fused` requires `--allow-triton-attention`. Historical recipes and resumptions keep
   their backend.
+- New dot-product attention experiments whose attention trains on the blocked backend
+  (RoPE or no positional encoding; PaTH, GDN and GLA keep their own code) use its causal
+  strips (`model.attention_blocked_implementation: strips`: the scan's arithmetic over
+  causal 512-query strips, with FP32 dK/dV sums) unless the user explicitly requests the
+  scan; do not inherit `scan` when copying a recipe. `scaffolds.records create` fills it in
+  for recipes on the blocked or auto backend, and fresh allocation of such a recipe with
+  `scan` requires `--allow-scan-blocked-attention`. Evaluation diagnostics and kernel
+  qualification keep using the scan. Historical recipes and resumptions keep their
+  implementation.
 - New unnormalized attention experiments use per-head RMSNorm output scaling
   (`model.attention_output_scaling: head_rms_norm`) unless the user explicitly requests
   otherwise; it improved every unnormalized kernel tested

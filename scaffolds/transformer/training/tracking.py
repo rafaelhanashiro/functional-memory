@@ -66,8 +66,12 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"coefficient_{config.model.attention_coefficient_activation}")
         if config.model.attention_coefficient_kernel_weight_decay:
             tags.append("coefficient_kernel_weight_decay")
-        if getattr(config.model, "attention_forget_gate", False):
-            tags.append("forget_gate")
+        if getattr(config.model, "attention_coefficient_gate", "none") != "none":
+            tags.append(f"coefficient_gate_{config.model.attention_coefficient_gate}")
+    if getattr(config.model, "attention_forget_gate", False):
+        tags.append("forget_gate")
+    if identity.get("coefficient_release_schedule"):
+        tags.append(f"coefficient_release_{identity['coefficient_release_schedule']}")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
     if config.model.initialization != "flax_default":
@@ -139,6 +143,17 @@ def attention_metrics(diagnostics: dict) -> dict:
                 payload[f"{prefix}/layer{layer['layer']:02d}/{key}"] = value
     for key in ("coefficients", "qk_norm_scale", "qk_norm_gains", "qk_norm_head_scales", "qk_norm_token_scales"):
         _summarize_effective_values(payload, f"{prefix}/{key}", diagnostics.get(key) or {})
+    gates = (diagnostics.get("coefficients") or {}).get("coefficient_gates") or {}
+    for section, statistic in (("gate_summary", "mean"), ("gate_log_tilt_summary", "mean"),
+                               ("contribution_summary", "row_share")):
+        # Per-order means over layers and heads; metrics.jsonl keeps every layer and head.
+        try:
+            values = np.asarray(gates[section][statistic], dtype=np.float64)
+        except (KeyError, TypeError, ValueError):
+            continue
+        for index, name in enumerate(gates.get("order_names", ())):
+            payload[f"{prefix}/coefficient_gates/{name}/{section.removesuffix('_summary')}_{statistic}"] = float(
+                np.mean(values[..., index]))
     return payload
 
 
@@ -200,6 +215,11 @@ def log_train(run, step: int, nll: float, perplexity: float, learning_rate: floa
     if telemetry is not None:
         payload.update({f"train/telemetry/{key}": value for key, value in telemetry.items()})
     _log(run, payload, step)
+
+
+def log_coefficient_release(run, step: int, trainable_orders: int) -> None:
+    """A release event: from this step's update, ``trainable_orders`` polynomial orders train."""
+    _log(run, {"train/coefficient_trainable_orders": trainable_orders}, step)
 
 
 def log_validation(run, record: dict) -> None:

@@ -12,7 +12,10 @@ from scaffolds.transformer.configs import Config, ModelConfig, load_config
 from scaffolds.transformer.models import model_parameter_count
 
 STUDY = Path(__file__).resolve().parents[1]
-RUNS = sorted((STUDY / "runs").glob("*/config.yaml"))
+# Recipes that declare an experiment_kind (sparse polynomial head distillation, fixed-input
+# coefficient oracles) are not Transformer training recipes and keep their own formats.
+RUNS = sorted(path for path in (STUDY / "runs").glob("*/config.yaml")
+              if "experiment_kind" not in yaml.safe_load(path.read_text()))
 
 
 def retained_config(path):

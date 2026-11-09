@@ -16,6 +16,18 @@ defaults to ``default_precision``.
   sum_r c_(t,r) s^r with FP32 coefficients for every query and head. A row with a
   nonfinite score or weight, or whose BF16 output overflows, is NaN; coefficient
   gradients are FP32 and stay per query.
+- ``query_decay_attention`` and ``endpoint_decay_attention`` (the blocked reference's
+  query-distance forget gates): the query polynomial times exp((t-i) l), with a per-query
+  log rate l_t <= 0 or the endpoint rate l_ti = -exp(A_h) softplus(u_t + v_i). Decay is
+  evaluated inside the causal tiles and its gradients are accumulated there: per-query sums
+  in the dQ pass, per-key sums in the dK pass. An invalid gate makes the affected causal
+  rows NaN; the diagonal is never attenuated.
+- ``per_order_query_decay_attention`` and ``per_order_endpoint_decay_attention``: the same
+  gates with an independent rate for every polynomial order r (including r = 0), as the
+  blocked reference's per-order gates: sum_r c_r s^r exp((t-i) l_r). H100 stages their
+  vectors per tile; B300 keeps every query's and key's per-order vectors in shared memory and
+  raises ValueError, before tracing a kernel, for shapes it cannot hold (``blackwell_supported``:
+  at Q/K width 64 and 2,048 tokens, degree 7 query and degree 6 query-key gates fit).
 
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
 128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
@@ -30,19 +42,66 @@ import jax
 import jax.numpy as jnp
 
 from scaffolds.transformer.attention.backends.mosaic import common
-from scaffolds.transformer.attention.backends.mosaic.common import BF16, BF16X3, PRECISIONS, QUERY, TAYLOR
+from scaffolds.transformer.attention.backends.mosaic.common import (
+    BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY, PRECISIONS, QUERY,
+    QUERY_DECAY, TAYLOR,
+)
 
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
-MAX_QUERY_DEGREE = 12  # largest qualified degree; B300 must also fit it (query_degree_supported)
+MAX_QUERY_DEGREE = 12  # largest qualified degree; the GPUs must also fit it (query_degree_supported)
 
 
-def query_degree_supported(degree, width, time):
-    """Whether the query-coefficient kernels run degree m at this key width and sequence length
-    on both GPUs: B300's dK/dV holds (m+1) FP32 coefficients for every query in shared memory."""
-    return (1 <= degree <= MAX_QUERY_DEGREE and time > 0 and common.blackwell_dkv_stages(
-        max(width, MIN_WIDTH), VALUE_WIDTH, degree + 1, time) is not None)
+# The kernel family of a forget gate, by gate conditioning (query or query_key) and whether every
+# polynomial order has its own gate.
+DECAY_FAMILY = {("query", False): QUERY_DECAY, ("query_key", False): ENDPOINT_DECAY,
+                ("query", True): PER_ORDER_QUERY_DECAY, ("query_key", True): PER_ORDER_ENDPOINT_DECAY}
+
+
+def query_degree_supported(degree, width, time, *, gate=None, per_order=False):
+    """Whether the query-coefficient kernels run degree m at this key width and sequence length.
+    Shared coefficients and gates must fit B300 (``blackwell_supported``), and so H100: B300's
+    dK/dV holds (m+1) FP32 coefficients (and a forget gate's vectors and buffers, for gate
+    conditioning ``gate``) for every query in shared memory. Per-order gates must fit H100
+    (``hopper_supported``), which stages their vectors per tile; B300 runs the per-order shapes
+    that ``blackwell_supported`` accepts and refuses the others before building a kernel."""
+    family = QUERY if gate is None else DECAY_FAMILY[gate, per_order]
+    if not (1 <= degree <= MAX_QUERY_DEGREE and time > 0):
+        return False
+    if family in common.PER_ORDER_FAMILIES:
+        return hopper_supported(family, degree, width)
+    return blackwell_supported(family, degree, width, time)
+
+
+def blackwell_supported(family, degree, width, time):
+    """Whether B300's kernels hold a family's buffers in shared memory: its dK/dV keeps every
+    query's FP32 vectors (and a decay family's per-key buffers), and a per-order family's forward
+    and dQ also keep every key's per-order vectors, for the whole sequence."""
+    width = max(width, MIN_WIDTH)
+    _, vectors, sums = common.vector_counts(family, degree)
+    if common.blackwell_dkv_stages(width, VALUE_WIDTH, vectors, time,
+                                   extra_bytes=common.dkv_extra_bytes(family, "dk", degree)) is None:
+        return False
+    return family not in common.PER_ORDER_FAMILIES or common.blackwell_query_pass_bytes(
+        width, VALUE_WIDTH, vectors, sums, common.key_counts(family, degree)[0], time,
+        head=common.head_count(family, degree) > 0) <= common.BLACKWELL_SMEM_BYTES
+
+
+def hopper_supported(family, degree, width):
+    """Whether H100's forward, dQ, and dK/dV kernels hold a family's buffers in shared memory at
+    any sequence length (``common.hopper_smem_bytes``)."""
+    sizes = common.hopper_smem_bytes(family, degree, max(width, MIN_WIDTH), VALUE_WIDTH)
+    return max(sizes.values()) <= common.HOPPER_SMEM_BYTES
+
+
+def _check_blackwell_per_order(family, degree, q, name):
+    """B300's per-order kernels hold every query's and key's per-order vectors for the whole
+    sequence, so they fit fewer degrees than H100's: refuse a shape they cannot hold before any
+    kernel is traced, rather than failing while lowering one."""
+    if _kernels()[0] == "blackwell" and not blackwell_supported(family, degree, q.shape[-1], q.shape[1]):
+        raise ValueError(f"{name}: degree {degree} at Q/K width {q.shape[-1]} and {q.shape[1]} tokens exceeds "
+                         "B300 shared memory; these per-order gates run on H100")
 
 
 def default_precision(family: str, degree: int) -> str:
@@ -94,21 +153,31 @@ def _check_precision(precision):
         raise ValueError(f"Mosaic attention precision must be one of {PRECISIONS}, got {precision!r}")
 
 
-def _backward(family, degree, precision, q, k, v, do, vectors):
-    """(dQ, per-query sums or None, dK, dV) at the unpadded width."""
+def _backward(family, degree, precision, q, k, v, do, vectors, key_vectors=None, head_constants=None):
+    """(dQ, per-query sums or None, dK, dV) at the unpadded width, and per-key sums for
+    families that have them."""
     arch, kernels = _kernels()
     width = q.shape[-1]
-    args = (_pad(q), _pad(k), v, do, vectors)
-    common = dict(family=family, degree=degree, scale=_scale(q), precision=precision)
+    args = (_pad(q), _pad(k), v, do, vectors, key_vectors, head_constants)
+    options = dict(family=family, degree=degree, scale=_scale(q), precision=precision)
+    key_sums = None
     if arch == "hopper":
-        grad_q, sums = kernels.dq(*args, **common)
-        grad_k, grad_v = kernels.dkv(*args, **common)
+        grad_q, sums = kernels.dq(*args, **options)
+        grad_k, grad_v, *key_sums = kernels.dkv(*args, **options)
     else:
         stages = 2 if width > 64 else 3  # shared memory at width 128
-        grad_q, sums = kernels.dq(*args, **common, stages=stages)
-        grad_k = kernels.dkv(*args, which="dk", **common, stages=stages)
-        grad_v = kernels.dkv(*args, which="dv", **common)
-    return grad_q[..., :width], sums, grad_k[..., :width], grad_v
+        grad_q, sums = kernels.dq(*args, **options, stages=stages)
+        dk_stages = stages
+        if family in common.DECAY_FAMILIES:  # their extra vectors and buffers may need a shallower ring
+            dk_stages = min(stages, common.blackwell_dkv_stages(
+                max(width, MIN_WIDTH), v.shape[-1], common.vector_counts(family, degree)[1], q.shape[1],
+                extra_bytes=common.dkv_extra_bytes(family, "dk", degree)))
+        grad_k = kernels.dkv(*args, which="dk", **options, stages=dk_stages)
+        if isinstance(grad_k, tuple):
+            grad_k, *key_sums = grad_k
+        grad_v = kernels.dkv(*args, which="dv", **options)
+    result = (grad_q[..., :width], sums, grad_k[..., :width], grad_v)
+    return (*result, key_sums[0]) if key_sums else result
 
 
 # ----------------------------------------------------------------------------------------
@@ -204,3 +273,235 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
         raise ValueError("Mosaic query-polynomial attention requires FP32 coefficients [batch, time, heads, m+1] "
                          f"with 1 <= m <= {MAX_QUERY_DEGREE}, got {coefficients.dtype} {coefficients.shape}")
     return _query(q, k, v, coefficients, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# Query-distance forget gates: the query polynomial times exp((t-i) l) inside each tile.
+
+def _check_query_operands(q, k, v, coefficients, name):
+    _check_operands(q, k, v, name)
+    if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.dtype != jnp.float32
+            or not 2 <= coefficients.shape[-1] <= MAX_QUERY_DEGREE + 1):
+        raise ValueError(f"{name} requires FP32 coefficients [batch, time, heads, m+1] with 1 <= m <= "
+                         f"{MAX_QUERY_DEGREE}, got {coefficients.dtype} {coefficients.shape}")
+
+
+def _token_vector(x):
+    return x.astype(jnp.float32).transpose(0, 2, 1)[None]  # [1, batch, heads, time]
+
+
+def _decay_forward(family, q, k, v, vectors, key_vectors, precision, degree, head_constants=None):
+    _, kernels = _kernels()
+    out, _ = kernels.forward(_pad(q), _pad(k), v, vectors, key_vectors, head_constants, family=family,
+                             degree=degree, scale=_scale(q), precision=precision)
+    return _cast_output(out, v.dtype)
+
+
+def _query_decay_vectors(coefficients, log_decay):
+    # Validate rates per token (the kernels never test them): an invalid one becomes NaN, which
+    # poisons every weight of its query. The kernels exponentiate in base 2.
+    rate = jnp.where(jnp.isfinite(log_decay) & (log_decay <= 0), log_decay * common.LOG2E, jnp.nan)
+    return jnp.concatenate([_coefficient_vectors(coefficients), _token_vector(rate)])
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def _query_decay(q, k, v, coefficients, log_decay, precision):
+    return _decay_forward(QUERY_DECAY, q, k, v, _query_decay_vectors(coefficients, log_decay), None, precision,
+                          coefficients.shape[-1] - 1)
+
+
+def _query_decay_fwd(q, k, v, coefficients, log_decay, precision):
+    return _query_decay(q, k, v, coefficients, log_decay, precision), (q, k, v, coefficients, log_decay)
+
+
+def _query_decay_bwd(precision, residuals, do):
+    q, k, v, coefficients, log_decay = residuals
+    degree = coefficients.shape[-1] - 1
+    grad_q, sums, grad_k, grad_v = _backward(QUERY_DECAY, degree, precision, q, k, v, do,
+                                             _query_decay_vectors(coefficients, log_decay))
+    return (grad_q, grad_k, grad_v, sums[:degree + 1].transpose(1, 3, 2, 0),
+            sums[degree + 1].transpose(0, 2, 1).astype(log_decay.dtype))
+
+
+_query_decay.defvjp(_query_decay_fwd, _query_decay_bwd)
+
+
+def query_decay_attention(q, k, v, coefficients, log_decay, *, precision: str | None = None):
+    """Unnormalized causal sum_i p_(b,t,h)(s_ti) exp((t-i) l_(b,t,h)) v_i with FP32 coefficients
+    c[B, T, H, m+1] and raw FP32 log rates l[B, T, H] (``forget_gate.log_decay``). A query whose
+    rate is nonfinite or positive is NaN."""
+    _check_query_operands(q, k, v, coefficients, "Mosaic query-decay attention")
+    if log_decay.shape != q.shape[:3] or log_decay.dtype != jnp.float32:
+        raise ValueError(f"Mosaic query-decay attention requires FP32 log rates [batch, time, heads], "
+                         f"got {log_decay.dtype} {log_decay.shape}")
+    precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
+    _check_precision(precision)
+    return _query_decay(q, k, v, coefficients, log_decay, precision)
+
+
+def _finite_or_nan(x):
+    # Validate endpoint inputs per token (the kernels never test them): a nonfinite one, even
+    # -inf whose softplus would be a valid zero rate, becomes NaN and poisons the pairs it enters.
+    return jnp.where(jnp.isfinite(x), x, jnp.nan)
+
+
+def _endpoint_vectors(coefficients, query_input, rate):
+    batch, time = query_input.shape[:2]
+    scale = jnp.broadcast_to(rate[None, None, :], (batch, time, rate.shape[0]))
+    return jnp.concatenate([_coefficient_vectors(coefficients), _token_vector(_finite_or_nan(query_input)),
+                            _token_vector(scale)])
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(7,))
+def _endpoint_decay(q, k, v, coefficients, query_input, key_input, rate, precision):
+    vectors = _endpoint_vectors(coefficients, query_input, rate)
+    return _decay_forward(ENDPOINT_DECAY, q, k, v, vectors, _token_vector(_finite_or_nan(key_input)), precision,
+                          coefficients.shape[-1] - 1)
+
+
+def _endpoint_decay_fwd(q, k, v, coefficients, query_input, key_input, rate, precision):
+    output = _endpoint_decay(q, k, v, coefficients, query_input, key_input, rate, precision)
+    return output, (q, k, v, coefficients, query_input, key_input, rate)
+
+
+def _endpoint_decay_bwd(precision, residuals, do):
+    q, k, v, coefficients, query_input, key_input, rate = residuals
+    degree = coefficients.shape[-1] - 1
+    vectors = _endpoint_vectors(coefficients, query_input, rate)
+    grad_q, sums, grad_k, grad_v, key_sums = _backward(
+        ENDPOINT_DECAY, degree, precision, q, k, v, do, vectors, _token_vector(_finite_or_nan(key_input)))
+    # l = a softplus(u + v): dl/du = dl/dv = a sigmoid(u + v), dl/da = softplus(u + v), which the
+    # kernels sum as log2(1 + e^x).
+    head_rate = rate[None, :, None]
+    return (grad_q, grad_k, grad_v, sums[:degree + 1].transpose(1, 3, 2, 0),
+            (head_rate * sums[degree + 1]).transpose(0, 2, 1), (head_rate * key_sums[0]).transpose(0, 2, 1),
+            common.LN2 * sums[degree + 2].sum(axis=(0, 2)))
+
+
+_endpoint_decay.defvjp(_endpoint_decay_fwd, _endpoint_decay_bwd)
+
+
+def endpoint_decay_attention(q, k, v, coefficients, query_gate_input, key_gate_input, gate_log_rate, *,
+                             precision: str | None = None):
+    """Unnormalized causal sum_i p_(b,t,h)(s_ti) exp(-(t-i) exp(A_h) softplus(u_t + v_i)) v_i with
+    FP32 endpoint gate inputs u, v [B, T, H] (``forget_gate.project_gate_inputs``) and log rate
+    A [H, 1]. Nonfinite gate inputs or rates make the affected causal rows NaN."""
+    _check_query_operands(q, k, v, coefficients, "Mosaic endpoint-decay attention")
+    if (query_gate_input.shape != q.shape[:3] or key_gate_input.shape != q.shape[:3]
+            or gate_log_rate.shape != (q.shape[2], 1)
+            or not query_gate_input.dtype == key_gate_input.dtype == jnp.float32):
+        raise ValueError("Mosaic endpoint-decay attention requires FP32 gate inputs [batch, time, heads] "
+                         "and a log rate [heads, 1]")
+    precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
+    _check_precision(precision)
+    log_rate = gate_log_rate[:, 0].astype(jnp.float32)
+    # A nonfinite log rate is invalid even where exp would hide it (exp(-inf) = 0).
+    rate = jnp.where(jnp.isfinite(log_rate), -jnp.exp(log_rate), jnp.nan)
+    return _endpoint_decay(q, k, v, coefficients, query_gate_input, key_gate_input, rate, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# Per-order query-distance gates: sum_r c_r s^r exp((t-i) l_r), one decay per order.
+
+def _order_vectors(x):
+    return x.astype(jnp.float32).transpose(3, 0, 2, 1)  # [orders, batch, heads, time]
+
+
+def _per_order_query_vectors(coefficients, log_decay):
+    rate = jnp.where(jnp.isfinite(log_decay) & (log_decay <= 0), log_decay * common.LOG2E, jnp.nan)
+    return jnp.concatenate([_coefficient_vectors(coefficients), _order_vectors(rate)])
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def _per_order_query_decay(q, k, v, coefficients, log_decay, precision):
+    return _decay_forward(PER_ORDER_QUERY_DECAY, q, k, v, _per_order_query_vectors(coefficients, log_decay), None,
+                          precision, coefficients.shape[-1] - 1)
+
+
+def _per_order_query_decay_fwd(q, k, v, coefficients, log_decay, precision):
+    output = _per_order_query_decay(q, k, v, coefficients, log_decay, precision)
+    return output, (q, k, v, coefficients, log_decay)
+
+
+def _per_order_query_decay_bwd(precision, residuals, do):
+    q, k, v, coefficients, log_decay = residuals
+    orders = coefficients.shape[-1]
+    grad_q, sums, grad_k, grad_v = _backward(PER_ORDER_QUERY_DECAY, orders - 1, precision, q, k, v, do,
+                                             _per_order_query_vectors(coefficients, log_decay))
+    return (grad_q, grad_k, grad_v, sums[:orders].transpose(1, 3, 2, 0),
+            sums[orders:2 * orders].transpose(1, 3, 2, 0).astype(log_decay.dtype))
+
+
+_per_order_query_decay.defvjp(_per_order_query_decay_fwd, _per_order_query_decay_bwd)
+
+
+def per_order_query_decay_attention(q, k, v, coefficients, log_decay, *, precision: str | None = None):
+    """Unnormalized causal sum_i sum_r c_(b,t,h,r) s_ti^r exp((t-i) l_(b,t,h,r)) v_i with raw FP32
+    per-order log rates l[B, T, H, m+1] (``forget_gate.log_decay`` of per-order parameters). A
+    query with any nonfinite or positive rate is NaN."""
+    _check_query_operands(q, k, v, coefficients, "Mosaic per-order query-decay attention")
+    if log_decay.shape != coefficients.shape or log_decay.dtype != jnp.float32:
+        raise ValueError("Mosaic per-order query-decay attention requires FP32 log rates [batch, time, heads, m+1], "
+                         f"got {log_decay.dtype} {log_decay.shape}")
+    _check_blackwell_per_order(PER_ORDER_QUERY_DECAY, coefficients.shape[-1] - 1, q,
+                               "Mosaic per-order query-decay attention")
+    precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
+    _check_precision(precision)
+    return _per_order_query_decay(q, k, v, coefficients, log_decay, precision)
+
+
+def _per_order_endpoint_operands(coefficients, query_input, key_input, rate):
+    orders = coefficients.shape[-1]
+    vectors = jnp.concatenate([_coefficient_vectors(coefficients), _order_vectors(_finite_or_nan(query_input))])
+    heads = jnp.pad(rate, ((0, 0), (0, common.head_width(orders) - orders)))
+    return vectors, _order_vectors(_finite_or_nan(key_input)), heads
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(7,))
+def _per_order_endpoint_decay(q, k, v, coefficients, query_input, key_input, rate, precision):
+    vectors, key_vectors, heads = _per_order_endpoint_operands(coefficients, query_input, key_input, rate)
+    return _decay_forward(PER_ORDER_ENDPOINT_DECAY, q, k, v, vectors, key_vectors, precision,
+                          coefficients.shape[-1] - 1, heads)
+
+
+def _per_order_endpoint_decay_fwd(q, k, v, coefficients, query_input, key_input, rate, precision):
+    output = _per_order_endpoint_decay(q, k, v, coefficients, query_input, key_input, rate, precision)
+    return output, (q, k, v, coefficients, query_input, key_input, rate)
+
+
+def _per_order_endpoint_decay_bwd(precision, residuals, do):
+    q, k, v, coefficients, query_input, key_input, rate = residuals
+    orders = coefficients.shape[-1]
+    vectors, key_vectors, heads = _per_order_endpoint_operands(coefficients, query_input, key_input, rate)
+    grad_q, sums, grad_k, grad_v, key_sums = _backward(PER_ORDER_ENDPOINT_DECAY, orders - 1, precision, q, k, v,
+                                                       do, vectors, key_vectors, heads)
+    # l_r = a_r softplus(u_r + v_r): dl_r/du_r = dl_r/dv_r = a_r sigmoid(u_r + v_r), dl_r/da_r = softplus,
+    # which the kernels sum as log2(1 + e^x).
+    order_rate = rate.T[:, None, :, None]  # [orders, 1, heads, 1]
+    return (grad_q, grad_k, grad_v, sums[:orders].transpose(1, 3, 2, 0),
+            (order_rate * sums[orders:2 * orders]).transpose(1, 3, 2, 0),
+            (order_rate * key_sums).transpose(1, 3, 2, 0),
+            common.LN2 * sums[2 * orders:].sum(axis=(1, 3)).T)
+
+
+_per_order_endpoint_decay.defvjp(_per_order_endpoint_decay_fwd, _per_order_endpoint_decay_bwd)
+
+
+def per_order_endpoint_decay_attention(q, k, v, coefficients, query_gate_input, key_gate_input, gate_log_rate, *,
+                                       precision: str | None = None):
+    """Unnormalized causal sum_i sum_r c_(b,t,h,r) s_ti^r exp(-(t-i) exp(A_hr) softplus(u_tr + v_ir)) v_i
+    with FP32 endpoint gate inputs u, v [B, T, H, m+1] and log rates A [H, m+1, 1]. Nonfinite
+    gate inputs or rates make the affected causal rows NaN."""
+    _check_query_operands(q, k, v, coefficients, "Mosaic per-order endpoint-decay attention")
+    orders = coefficients.shape[-1]
+    if (query_gate_input.shape != coefficients.shape or key_gate_input.shape != coefficients.shape
+            or gate_log_rate.shape != (q.shape[2], orders, 1)
+            or not query_gate_input.dtype == key_gate_input.dtype == jnp.float32):
+        raise ValueError("Mosaic per-order endpoint-decay attention requires FP32 gate inputs "
+                         "[batch, time, heads, m+1] and log rates [heads, m+1, 1]")
+    _check_blackwell_per_order(PER_ORDER_ENDPOINT_DECAY, orders - 1, q, "Mosaic per-order endpoint-decay attention")
+    precision = default_precision(QUERY, orders - 1) if precision is None else precision
+    _check_precision(precision)
+    log_rate = gate_log_rate[..., 0].astype(jnp.float32)
+    rate = jnp.where(jnp.isfinite(log_rate), -jnp.exp(log_rate), jnp.nan)  # [heads, orders]
+    return _per_order_endpoint_decay(q, k, v, coefficients, query_gate_input, key_gate_input, rate, precision)

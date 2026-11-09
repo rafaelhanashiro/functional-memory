@@ -1,0 +1,6 @@
+{
+  "finished_utc": "2026-11-03T21:07:15.644200+00:00",
+  "interpretation": "Head-averaged |w| share of the last query (position 4,096) over every key position, per layer, for query + W decay (m = 4) trained at 2,048 and at 4,096 tokens, on the first 4,097-token validation row. No gradient or optimizer update.",
+  "optimizer_updates": 0,
+  "status": "complete"
+}

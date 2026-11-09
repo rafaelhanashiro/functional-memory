@@ -1,5 +1,5 @@
-question: Does query-dependent distance decay improve on cumulative FoX with the same
-  gate and training recipe?
+question: Can endpoint dependence, bounded rates, or independent per-order decay improve
+  query-distance FoX?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -8,10 +8,20 @@ settings:
   - terminal at update 7570
   control_decay: product of alpha_j for j from i+1 through t
   query_decay: exp(-(t-i) * lambda_t)
-  allowed_mathematical_change: model.attention_forget_gate_mode
   training_steps: 7570
   training_context: 2048
   seed: 42
+  query_key_decay: exp(-(t-i)*a_h*softplus(w_q,h*x_t+w_k,h*x_i+b_h))
+  bounded_query_decay: exp(-(t-i)*a_h*sigmoid(w_q,h*x_t+b_h))
+  allowed_mathematical_changes:
+  - model.attention_forget_gate_mode
+  - model.attention_forget_gate_conditioning
+  - model.attention_forget_gate_rate_activation
+  - model.attention_forget_gate_per_order
+  - model.attention_degree
+  per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..m; duplicate
+    shared gates at initialization
+  degree: 4, except the degree-eight shared and per-order query gates (8)
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -53,3 +63,123 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
       sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r02f984133092
+  role: query_key_distance
+  label: Endpoint query-key distance decay + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r02f984133092/config.yaml
+      sha256: 3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r02f984133092/metrics.jsonl
+      sha256: 8620469d2dfe19ed600435dd77e4d65527de69af99743b789a8894fe8ab3fe1a
+    completion.json:
+      path: experiments/transformer_pp/runs/r02f984133092/completion.json
+      sha256: f8a26e3d4cb9c82436e0987506d2e6943f12556e2c19daf667886556faa7011f
+    metadata.json:
+      path: experiments/transformer_pp/runs/r02f984133092/metadata.json
+      sha256: 639a60d4d9926e9501e7d28d41a9cd0dae1eb7eaa69785ba56559de165f7c014
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r02f984133092/best_validation.json
+      sha256: 685c058daa8f4dd2c0f6a361013ce838ecfee7ff719e71dd73c30487964c16e0
+- study: transformer_pp
+  run_id: r4f169e5370da
+  role: bounded_query_distance
+  label: Bounded query rate + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4f169e5370da/config.yaml
+      sha256: cc18f6be43afb7d7e1fefb74ba18cdff680b79c59d5109307d7d3fa62aa60758
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4f169e5370da/metrics.jsonl
+      sha256: fb0c855731adcc88c4499a339b1f08aac62cecdcc9f6ed7a12909dbce7b66e97
+    completion.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/completion.json
+      sha256: 30c9da7548fa9da76cd790c8e29a566c42e39943d6a675fa3b75f6d2cbda9814
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/metadata.json
+      sha256: 1ec77b654b6811bcea0206b7933dfe8d767d8ae69df75c0aae8aea411003733e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4f169e5370da/best_validation.json
+      sha256: 8d1a590d2cadc2dd8751aea299a7a557c7635e95427d3a2dd2679bdb81c43bbc
+- study: transformer_pp
+  run_id: r507193d47450
+  role: per_order_query
+  label: Per-order query distance + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r507193d47450/config.yaml
+      sha256: be00699b0e4b01df03202bd26841c29a2657766330a2cd64ede5b96866fe709f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r507193d47450/metrics.jsonl
+      sha256: 66e6c8b52633e31725402ebaf54b01e407c097b2cefe74bd82febd5b4a94b792
+    completion.json:
+      path: experiments/transformer_pp/runs/r507193d47450/completion.json
+      sha256: f9b1cdeb79c7c21f066ca26b2d3d2a95434808204f470996efc5dac2e7ade8ed
+    metadata.json:
+      path: experiments/transformer_pp/runs/r507193d47450/metadata.json
+      sha256: e5204a0d92f949d6eacff19f7ce8b8cce5bdbb0b6332e86d3fb4d75f9d9a3264
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r507193d47450/best_validation.json
+      sha256: 34d34118a05bce178cc2ca2876d8e1be0a0befb9fd3529ccdd0c966cd2ef51a3
+- study: transformer_pp
+  run_id: r03be769d2069
+  role: per_order_query_key
+  label: Per-order query-key distance + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r03be769d2069/config.yaml
+      sha256: c48468ebbf4691922df582e347d7adc7fbcb11be951b668f31f8a3175aec265c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r03be769d2069/metrics.jsonl
+      sha256: c20309d287988a4e4ea3ef8d43319d9b49a30d794f6dea5b04da3e6297ac98f9
+    completion.json:
+      path: experiments/transformer_pp/runs/r03be769d2069/completion.json
+      sha256: dc42d966fabe23db7b3dc1d9ed83adde5cd06473af033032e642ac4965d21a5f
+    metadata.json:
+      path: experiments/transformer_pp/runs/r03be769d2069/metadata.json
+      sha256: 270228544fdc5ef9c0148892852999d5fec6e171745c41c53ce8319eb948aad0
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r03be769d2069/best_validation.json
+      sha256: 22ca1dca58772e8d82a1f35a4280c1d3f1e8b60d0d1dc061c120f72aad5a5037
+- study: transformer_pp
+  run_id: r9320e5cd3071
+  role: query_distance_m8
+  label: Query-dependent distance decay + W decay, m = 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/config.yaml
+      sha256: d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metrics.jsonl
+      sha256: 06508e879c637e2a1f90961ed36fe22aab84c23efc376125414596aff7db04b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/completion.json
+      sha256: 026cc645dbcbde05ab01d5af978d5d4239cecde9d605e38d30c9dc1a913eec45
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metadata.json
+      sha256: 9f22c4c1fd2c3af03a7e35c65259687a47e6691d179909a7dcb7f6fd94f7c77b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/best_validation.json
+      sha256: fd0b9274cbfbf38041ecd52ecc86800f7ea222886384ad9e83c87dd9a9165b7e
+- study: transformer_pp
+  run_id: r20fe6fe864bc
+  role: per_order_query_m8
+  label: Per-order query distance + W decay, m = 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml
+      sha256: 19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metrics.jsonl
+      sha256: ea368676b3285ab38ba2d35e47f49e57b6659e7e5ccf91ed7f35f1436a29744a
+    completion.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/completion.json
+      sha256: 14e4911dc897db554b4ee31d29cfdd8be7a7542f4063c955230a5d7cf94b704e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metadata.json
+      sha256: 24ce0927949acbd63717daf248bd9ad533ef01b7ea280d905202677d542df87e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/best_validation.json
+      sha256: 085eeaf1f739b0e338eb9a1234b041f05bad95058b1ef3882931e29424f635c5

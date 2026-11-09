@@ -2,8 +2,9 @@
 
 For each model and position t, L_t is the mean over sequences of -log p(x_t | x_<t). The
 training-length pass scores the model's own recorded validation set and must reproduce its
-recorded validation NLL. The evaluation-length pass scores longer packed rows cut from the
-same token stream, with the model's length limit raised; no parameter depends on it.
+recorded validation NLL. The evaluation-length pass scores longer packed rows, from
+``start_sequence`` on, with the model's length limit raised; no parameter depends on it.
+Rows of a long-document corpus must come from documents the model never trained on.
 Nothing is trained or updated.
 """
 from __future__ import annotations
@@ -34,6 +35,7 @@ from scaffolds.transformer.attention.backends.selection import resolve_attention
 from scaffolds.transformer.configs import Config
 from scaffolds.transformer.configs.base import validate_config
 from scaffolds.transformer.configs.loader import _update_dataclass
+from scaffolds.transformer.data.long_documents import first_unseen_row
 from scaffolds.transformer.data.packed import PackedBatchIterator
 from scaffolds.transformer.training.coefficient_fit import restore_parent
 
@@ -105,8 +107,35 @@ def extend_forward_length(graph, params, *, max_seq_len: int):
     return nnx.split(model, nnx.Param)
 
 
+def manifest_metadata(path) -> dict:
+    """A packed corpus's metadata, read without hashing its shards (callers pin the manifest itself)."""
+    return json.loads(Path(path).read_text()).get("metadata", {})
+
+
+def require_unseen(config: Config, manifest, start_sequence: int) -> dict:
+    """Check that a pretraining run never trained on a long-document corpus's rows from ``start_sequence``.
+
+    The corpus records the token stream it was cut from. The run must have trained on that
+    stream, directly or re-cut by ``repack``, from its start for total_steps x batch_size rows
+    of its sequence_length, so it consumed that many stream tokens and never saw the documents
+    that start at or after them.
+    """
+    source = manifest_metadata(manifest)["long_documents_from"]
+    train_path = Path(config.data.train_manifest)
+    repacked = manifest_metadata(train_path).get("repacked_from", {})
+    if source["manifest_sha256"] not in (sha256(train_path), repacked.get("manifest_sha256")):
+        raise ValueError(f"{train_path} is not the token stream of the long-document corpus {manifest}")
+    if config.continuation.parent_step:
+        raise ValueError("Unseen-row checks cover pretraining runs, not continuations")
+    consumed = config.optim.total_steps * config.data.batch_size * config.data.sequence_length
+    first = first_unseen_row(manifest, consumed)
+    if start_sequence < first:
+        raise ValueError(f"Rows from {start_sequence} include documents the run trained on; its first unseen row is {first}")
+    return {"consumed_stream_tokens": consumed, "first_unseen_row": first}
+
+
 def per_position_nll(graph, params, manifest, *, sequence_length: int, sequences: int, microbatch: int,
-                     qualification: dict | None = None, details: dict | None = None):
+                     qualification: dict | None = None, details: dict | None = None, start_sequence: int = 0):
     """Mean next-token NLL, with an optional same-input causal-prefix qualification."""
     if sequences % microbatch:
         raise ValueError("sequences must be a multiple of the microbatch")
@@ -124,7 +153,8 @@ def per_position_nll(graph, params, manifest, *, sequence_length: int, sequences
         logits = nnx.merge(graph, state)(tokens[:, :-1], deterministic=True)
         return optax.softmax_cross_entropy_with_integer_labels(logits.astype(jnp.float32), tokens[:, 1:])
 
-    batches = PackedBatchIterator(manifest, batch_size=microbatch, sequence_length=sequence_length)
+    batches = PackedBatchIterator(manifest, batch_size=microbatch, sequence_length=sequence_length,
+                                  start_sequence=start_sequence)
     total = np.zeros(sequence_length - 1, dtype=np.float64)
     batch_count = sequences // microbatch
     steady_seconds = 0.0
@@ -218,6 +248,7 @@ def main():
                 if (previous["source_run_id"] != model["run_id"] or previous["checkpoint_step"] != model["step"]
                         or previous["sequence_length"] != spec["sequence_length"]
                         or previous["sequences"] != spec["sequences"]
+                        or previous.get("start_sequence", 0) != spec.get("start_sequence", 0)
                         or len(previous["per_position_nll"]) != limit
                         or not np.isfinite(previous["per_position_nll"]).all()):
                     raise ValueError(f"Persisted measurement does not match frozen recipe: {model['role']}/{name}")
@@ -230,14 +261,18 @@ def main():
             backend = resolve_attention_backend(config.model, dtype=config.train.dtype, sequence_length=limit)
             if backend != config.model.attention_backend:
                 raise ValueError("Evaluation must retain the source checkpoint's explicit backend")
+            start = spec.get("start_sequence", 0)
+            details = {"start_sequence": start} if start else {}
+            if "long_documents_from" in manifest_metadata(spec["manifest"]):
+                details.update(require_unseen(config, spec["manifest"], start))
             graph, params = restore_parent(config, Path(model["checkpoint_path"]))
             if name != "training":
                 graph, params = extend_forward_length(graph, params, max_seq_len=limit)
             started = time.perf_counter()
-            details = {}
             curve = per_position_nll(graph, params, spec["manifest"], sequence_length=spec["sequence_length"],
                                      sequences=spec["sequences"], microbatch=spec["microbatch_size"], details=details,
-                                     qualification=None if name == "training" else evaluation.get("qualification"))
+                                     qualification=None if name == "training" else evaluation.get("qualification"),
+                                     start_sequence=start)
             nll = float(curve.mean())
             row = {"role": model["role"], "source_run_id": model["run_id"], "checkpoint_step": model["step"],
                    "length": name, "sequence_length": spec["sequence_length"], "sequences": spec["sequences"],

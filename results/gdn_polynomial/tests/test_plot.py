@@ -25,7 +25,7 @@ def _digest(path: Path) -> str:
 
 def test_committed_outcomes_and_differences():
     rows = {row["run_id"]: row for row in load_rows(ROOT, SELECTION)}
-    assert Counter(row["status"] for row in rows.values()) == {"complete": 12, "cancelled": 7}
+    assert Counter(row["status"] for row in rows.values()) == {"complete": 12, "cancelled": 5}
     assert rows["rd40af7956426"]["terminal_validation_perplexity"] == pytest.approx(13.179060532842437)
     assert rows["rd40af7956426"]["percent_vs_control"] == pytest.approx(-2.948, abs=1e-3)
     assert rows["ra79e66bd9121"]["percent_vs_tied_gdn"] == pytest.approx(-5.472, abs=1e-3)
@@ -62,12 +62,13 @@ def test_changed_inputs_and_repeated_runs_are_rejected():
         load_rows(ROOT, repeated)
 
 
-def test_heatmap_marks_cancelled_and_missing_cells():
+def test_heatmap_marks_cancelled_cells():
     figure = heatmap(load_rows(ROOT, SELECTION), SELECTION)
     try:
         gids = {text.get_gid() for axis in figure.axes for text in axis.texts}
-        assert {"cell:2:64:complete", "cell:3:64:cancelled", "cell:1:8:cancelled", "cell:4:64:not_run",
+        assert {"cell:2:64:complete", "cell:3:64:cancelled", "cell:1:8:cancelled",
                 "cell:tied:16:complete", "cell:softmax:8:complete"} <= gids
+        assert not any(gid and gid.startswith("cell:4:") for gid in gids)  # no degree-four column
         texts = {text.get_gid(): text.get_text() for axis in figure.axes for text in axis.texts}
         assert texts["cell:1:8:cancelled"] == "CANCELLED"
         assert texts["cell:3:64:cancelled"].startswith("CANCELLED\n@")

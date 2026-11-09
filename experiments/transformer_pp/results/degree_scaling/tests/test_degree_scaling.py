@@ -17,13 +17,15 @@ DERIVED = ("degree_scaling.png", "degree_scaling.pdf", "summary.csv", "README.md
 # Terminal validation perplexity at update 7,570, as quoted in the README.
 TERMINAL = {
     ("taylor", 1): 19.556, ("taylor", 2): 15.912, ("taylor", 3): 15.974, ("taylor", 4): 14.724,
-    ("taylor", 5): 14.843,
+    ("taylor", 5): 14.843, ("taylor", 6): 14.334, ("taylor", 7): 14.3095,
     ("hermite", 1): 19.513, ("hermite", 2): 16.168, ("hermite", 3): 15.732, ("hermite", 4): 14.987,
-    ("hermite", 5): 14.609,
+    ("hermite", 5): 14.609, ("hermite", 6): 14.396, ("hermite", 7): 14.271,
     ("static", 1): 19.531, ("static", 2): 15.822, ("static", 3): 16.649, ("static", 4): 14.773,
-    ("static", 5): 14.871,
+    ("static", 5): 14.871, ("static", 6): 14.408, ("static", 7): 14.427,
     ("query_w_decay", 1): 19.219, ("query_w_decay", 2): 15.832, ("query_w_decay", 3): 16.443,
-    ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080,
+    ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080, ("query_w_decay", 6): 14.641,
+    ("query_w_decay", 7): 14.384,
+    ("taylor", 8): 14.223, ("hermite", 8): 14.231, ("static", 8): 14.2985, ("query_w_decay", 8): 14.328,
 }
 
 
@@ -34,7 +36,7 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 22 and set(cells) == set(TERMINAL)
+    assert len(rows) == 34 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
@@ -47,6 +49,23 @@ def test_committed_runs_and_quoted_values():
     assert cells["query_w_decay", 5]["change_from_previous_degree_percent"] == pytest.approx(2.49, abs=5e-3)
     assert cells["hermite", 5]["change_from_previous_degree_percent"] == pytest.approx(-2.53, abs=5e-3)
     assert cells["hermite", 5]["percent_above_softmax"] == pytest.approx(0.43, abs=5e-3)
+    # m = 6: every family improves; Taylor, Hermite, and static end below softmax.
+    assert cells["taylor", 6]["change_from_previous_degree_percent"] == pytest.approx(-3.43, abs=5e-3)
+    assert cells["taylor", 6]["percent_above_softmax"] == pytest.approx(-1.46, abs=5e-3)
+    assert cells["taylor", 6]["percent_above_exp"] == pytest.approx(0.51, abs=5e-3)
+    assert cells["query_w_decay", 6]["percent_above_softmax"] == pytest.approx(0.65, abs=5e-3)
+    # m = 7: Taylor and static stay level with m = 6; Hermite comes within 0.07% of exp.
+    assert cells["taylor", 7]["change_from_previous_degree_percent"] == pytest.approx(-0.17, abs=5e-3)
+    assert cells["static", 7]["change_from_previous_degree_percent"] == pytest.approx(0.13, abs=5e-3)
+    assert cells["query_w_decay", 7]["change_from_previous_degree_percent"] == pytest.approx(-1.75, abs=5e-3)
+    assert cells["hermite", 7]["percent_above_exp"] == pytest.approx(0.07, abs=5e-3)
+    # m = 8: every family improves; the fixed families end 0.2-0.3% below exp.
+    assert cells["taylor", 8]["change_from_previous_degree_percent"] == pytest.approx(-0.60, abs=5e-3)
+    assert cells["static", 8]["change_from_previous_degree_percent"] == pytest.approx(-0.89, abs=5e-3)
+    assert cells["taylor", 8]["percent_above_exp"] == pytest.approx(-0.27, abs=5e-3)
+    assert cells["hermite", 8]["percent_above_exp"] == pytest.approx(-0.21, abs=5e-3)
+    assert cells["query_w_decay", 8]["percent_above_exp"] == pytest.approx(0.46, abs=5e-3)
+    assert cells["taylor", 8]["percent_above_softmax"] == pytest.approx(-2.22, abs=5e-3)
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
@@ -82,6 +101,10 @@ def test_recipes_differ_only_in_the_compared_settings():
         (ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"] / "config.yaml").read_text())
         for entry in SELECTION["runs"]}
     check_recipes(SELECTION["runs"], configs, SELECTION["settings"])
+    # The blocked backend's implementation (scan or causal strips) is execution, not a compared setting.
+    executed = copy.deepcopy(configs)
+    executed["r81fad1755b11"]["model"]["attention_blocked_implementation"] = "strips"
+    check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
     # (run, section, key, value, expected message): settings outside the comparison.
     mutations = [
         ("r81fad1755b11", "model", "attention_forget_gate", True, "attention_forget_gate"),
