@@ -534,10 +534,9 @@ def _blackwell_refuses(degree, time):
 
 
 def _mosaic_operands(time, degree, *, per_order):
-    # Degree four keeps the score scale the decay kernels were qualified with; higher degrees use
-    # unit-scale scores, as QK RMSNorm gives, so that every order contributes.
+    # Unit-scale scores, as QK RMSNorm gives, so that every order contributes at every degree.
     operands, cotangent = inputs(time, degree, per_order=per_order, width=64, value_width=64, batch=1,
-                                 seed=67, scale=.4 if degree <= 4 else 1.0)
+                                 seed=67, scale=1.0)
     operands = tuple(jnp.asarray(x, jnp.bfloat16 if i < 3 else jnp.float32) for i, x in enumerate(operands))
     return operands, jnp.asarray(cotangent, jnp.bfloat16)
 
@@ -557,10 +556,10 @@ def test_mosaic_output_and_every_gradient_match_float64(degree, per_order):
         expected = _vjp(dense, tuple(x.astype(jnp.float64) for x in operands), cotangent.astype(jnp.float64))
         expected = jax.tree.map(np.asarray, expected)
     actual = run(*operands)
-    # Output, dq, dk, dv at the Mosaic BF16 bounds; c, A_log and dt_bias through FP32 sums. Above degree
-    # four each order's coefficient (and per-order gate) gradient is compared on its own.
+    # Output, dq, dk, dv at the Mosaic BF16 bounds; c, A_log and dt_bias through FP32 sums, each order's
+    # coefficient (and per-order gate) gradient compared on its own.
     tolerances = (.006, .025, .025, .015, .01, .01, .01)
-    _compare(actual, expected, tolerances, order_axes=ORDER_AXES[per_order] if degree > 4 else None)
+    _compare(actual, expected, tolerances, order_axes=ORDER_AXES[per_order])
 
 
 @pytest.mark.gpu
