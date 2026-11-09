@@ -362,3 +362,19 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/reeb92d46a95d/best_validation.json
       sha256: b145bb65cecc879dbb9b0acb5a8224b339d1359394b8facb03237c23e2616007
+- study: transformer_pp
+  run_id: r319b83140040
+  label: query-m4-per-order-forget-gate-no-rope-w-decay
+  role: per_order_forget_gate_no_rope_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r319b83140040/config.yaml
+      sha256: 50065b8726fa2b7f5c5689dca9b0336ee27e70a8cf759c91d2bab5321ee90bd5
+- study: transformer_pp
+  run_id: rf8fc9ab2cecc
+  label: query-m8-per-order-forget-gate-no-rope-wdecay
+  role: per_order_forget_gate_no_rope_w_decay_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/config.yaml
+      sha256: 07a538bf6aeb7cc142b0c887a0235b91314fe96cc1da6243cc6a0ec63122ea93

@@ -2,7 +2,9 @@ schema_version: 1
 opened: '2026-10-29'
 question: 'Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent
   forget gate without RoPE in 1× pretraining: with learned slopes on degree-four tanh
-  query attention, and as ALiBi with fixed slopes on softmax and exp?'
+  query attention, and as ALiBi with fixed slopes on softmax and exp? How much of
+  the gap does an input-dependent slope per query token (query-distance gates) close
+  on softmax and exp?'
 settings:
   metric: validation_perplexity
   primary_comparison: terminal held-out PPL at update 7,570; validation-best reported
@@ -20,6 +22,10 @@ settings:
     fixed (score bias -m_h (t - i), m_h = 2^(-8 h / 14) in every layer, no parameters)
     against input (Gated DeltaNet's gate); the primaries train on the causal strips,
     the controls trained on the scan
+  difference_query_distance: attention_forget_gate_mode query_distance (score bias
+    (t - i) log alpha_t, the query token's own rate times the distance) against cumulative
+    (L_t - L_i), with the same gate parameters and initialization; the primaries train
+    on the causal strips, the controls trained on the scan
 runs:
 - study: transformer_pp
   run_id: r8d4fc24ef537
@@ -211,3 +217,74 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
       sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r208110a25271
+  role: primary_softmax_query_distance_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r208110a25271/config.yaml
+      sha256: dfe55cdef75670285188fb1e7511d79655ad5736e408a0a9f579056adfc2cc26
+- study: transformer_pp
+  run_id: r17444ad0f60e
+  role: primary_exp_query_distance_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/config.yaml
+      sha256: e4a75274fe59bb149a91a2e4c4d53720ac667342c7c14fa7e7c9e450bc18f0f2
+- study: transformer_pp
+  run_id: r3e26412b2811
+  role: reference_query_m4_query_distance_no_rope_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3e26412b2811/config.yaml
+      sha256: 3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metrics.jsonl
+      sha256: 998c8c5b25496c388eca8c290d1f0a77998e120c11931011e3a95da9324bfdf6
+    completion.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/completion.json
+      sha256: 2d36a3387d7ab02cb9c70057327882b66334e68866cd0f3195ec9bd1e4a3325e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/metadata.json
+      sha256: c0480d51994baabd4bcf9b11f770165e8e2e505120ef029619346e88e17f5a6b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3e26412b2811/best_validation.json
+      sha256: cd9b8c7f00af3f1578547b7a061a70bccbce8b19ac5d2fdf6ef3ea7736534260
+- study: transformer_pp
+  run_id: r9320e5cd3071
+  role: reference_query_m8_query_distance_no_rope_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/config.yaml
+      sha256: d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metrics.jsonl
+      sha256: 06508e879c637e2a1f90961ed36fe22aab84c23efc376125414596aff7db04b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/completion.json
+      sha256: 026cc645dbcbde05ab01d5af978d5d4239cecde9d605e38d30c9dc1a913eec45
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metadata.json
+      sha256: 9f22c4c1fd2c3af03a7e35c65259687a47e6691d179909a7dcb7f6fd94f7c77b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/best_validation.json
+      sha256: fd0b9274cbfbf38041ecd52ecc86800f7ea222886384ad9e83c87dd9a9165b7e
+- study: transformer_pp
+  run_id: r20fe6fe864bc
+  role: reference_query_m8_per_order_query_distance_no_rope_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml
+      sha256: 19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metrics.jsonl
+      sha256: ea368676b3285ab38ba2d35e47f49e57b6659e7e5ccf91ed7f35f1436a29744a
+    completion.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/completion.json
+      sha256: 14e4911dc897db554b4ee31d29cfdd8be7a7542f4063c955230a5d7cf94b704e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metadata.json
+      sha256: 24ce0927949acbd63717daf248bd9ad533ef01b7ea280d905202677d542df87e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/best_validation.json
+      sha256: 085eeaf1f739b0e338eb9a1234b041f05bad95058b1ef3882931e29424f635c5
