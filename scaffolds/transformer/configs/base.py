@@ -368,7 +368,9 @@ class ModelConfig:
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
                              "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
-                             "query-conditioned attention may add a query-distance forget gate")
+                             "query-conditioned attention may add a query-distance forget gate, and learned "
+                             "static coefficients the input-free one (attention_forget_gate_conditioning: none), "
+                             "where the decay kernels fit the degree and width")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):

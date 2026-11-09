@@ -180,7 +180,8 @@ preemption. Validation-best PPL; each comparison covers all 28 evaluations.
   above it at 27 of 28 evaluations; the gap narrows from 4.4% at update 1,000 to 0.9% without
   closing, and the run is above its RoPE control from update 1,300 to 5,000. Its early gradient
   spikes (pre-clip norms up to 103 before update 1,500) subside: from update 3,000 on its
-  largest norm is 44 and 0.7% of updates clip, against 53 and 1.8% for the shared gate.
+  largest norm is 44 and 0.8% of updates clip (36 of 4,570), against 53 and 1.6% (71 of 4,570)
+  for the shared gate.
 - **Static runs trail the query-coefficient gate runs at every evaluation**: shared gates by
   0.75% (m = 4) and 1.41% (m = 8), per-order gates by 2.83% and 3.49%. These pairs differ in
   the coefficients' and the gate's input dependence together. With query coefficients and query
