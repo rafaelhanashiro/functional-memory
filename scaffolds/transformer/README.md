@@ -131,7 +131,8 @@ and rejected. Gate diagnostics report endpoint rates over causal pairs when
 key-conditioned, otherwise over query tokens.
 
 `attention_forget_gate_per_order: true` gives every order, including zero, its
-own softplus query-distance gate on the blocked backend. With query-only
+own softplus query-distance gate on the blocked backend or the Mosaic decay kernels
+(see `attention_backend: mosaic` below for their GPU limits). With query-only
 coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
 The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
 `query_key` adds `wk_r·x_i` inside softplus. Gate arrays add an order axis
@@ -1069,7 +1070,14 @@ shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 1
 2,048 tokens), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
-shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
+shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
+sigmoid query polynomials run on the Mosaic decay kernels only when `mosaic` is requested
+(`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
+kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
+(`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
+per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel
+for shapes `api.blackwell_supported` rejects: above degree 7 (query) or 6 (query–key) at
+`d_K = 64` and 2,048 tokens. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the

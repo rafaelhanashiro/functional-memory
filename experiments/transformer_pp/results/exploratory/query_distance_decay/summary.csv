@@ -5,3 +5,5 @@ query_key_distance,Endpoint query-key distance decay + W decay,r02f984133092,com
 bounded_query_distance,Bounded query rate + W decay,r4f169e5370da,complete,7500,2.653022188,14.196880,7570,2.653261691,14.200280,-0.000819,-0.005766,-0.002252,-0.015858
 per_order_query,Per-order query distance + W decay,r507193d47450,complete,7500,2.631299898,13.891816,7570,2.631467108,13.894139,-0.305882,-2.154448,-0.308393,-2.171396
 per_order_query_key,Per-order query-key distance + W decay,r03be769d2069,complete,7500,2.618011526,13.708438,7570,2.618303946,13.712447,-0.318047,-2.267475,-0.319495,-2.276910
+query_distance_m8,"Query-dependent distance decay + W decay, m = 8",r9320e5cd3071,complete,7500,2.634676524,13.938803,7570,2.634848003,13.941193,-0.258895,-1.823502,-0.261339,-1.840088
+per_order_query_m8,"Per-order query distance + W decay, m = 8",r20fe6fe864bc,complete,7500,2.623186776,13.779566,7570,2.623602005,13.785289,-0.159237,-1.142399,-0.155904,-1.118300

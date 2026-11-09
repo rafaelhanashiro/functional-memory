@@ -18,8 +18,10 @@ settings:
   - model.attention_forget_gate_conditioning
   - model.attention_forget_gate_rate_activation
   - model.attention_forget_gate_per_order
-  per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..4; duplicate
+  - model.attention_degree
+  per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..m; duplicate
     shared gates at initialization
+  degree: 4, except the degree-eight shared and per-order query gates (8)
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -141,3 +143,43 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r03be769d2069/best_validation.json
       sha256: 22ca1dca58772e8d82a1f35a4280c1d3f1e8b60d0d1dc061c120f72aad5a5037
+- study: transformer_pp
+  run_id: r9320e5cd3071
+  role: query_distance_m8
+  label: Query-dependent distance decay + W decay, m = 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/config.yaml
+      sha256: d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metrics.jsonl
+      sha256: 06508e879c637e2a1f90961ed36fe22aab84c23efc376125414596aff7db04b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/completion.json
+      sha256: 026cc645dbcbde05ab01d5af978d5d4239cecde9d605e38d30c9dc1a913eec45
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/metadata.json
+      sha256: 9f22c4c1fd2c3af03a7e35c65259687a47e6691d179909a7dcb7f6fd94f7c77b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9320e5cd3071/best_validation.json
+      sha256: fd0b9274cbfbf38041ecd52ecc86800f7ea222886384ad9e83c87dd9a9165b7e
+- study: transformer_pp
+  run_id: r20fe6fe864bc
+  role: per_order_query_m8
+  label: Per-order query distance + W decay, m = 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml
+      sha256: 19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metrics.jsonl
+      sha256: ea368676b3285ab38ba2d35e47f49e57b6659e7e5ccf91ed7f35f1436a29744a
+    completion.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/completion.json
+      sha256: 14e4911dc897db554b4ee31d29cfdd8be7a7542f4063c955230a5d7cf94b704e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/metadata.json
+      sha256: 24ce0927949acbd63717daf248bd9ad533ef01b7ea280d905202677d542df87e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r20fe6fe864bc/best_validation.json
+      sha256: 085eeaf1f739b0e338eb9a1234b041f05bad95058b1ef3882931e29424f635c5
