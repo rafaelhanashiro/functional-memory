@@ -205,7 +205,7 @@ dV 3.11 and 6.14 ms. The shared endpoint gate's dQ pass also takes 5.26 ms on B3
 
 ## Results
 
-The selection pins all eight runs explicitly. Best PPL is the lowest validation PPL
+The selection pins all ten runs explicitly. Best PPL is the lowest validation PPL
 over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
@@ -219,13 +219,16 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Per-order query-key distance + W decay | `r03be769d2069` | complete | 13.7084 | 7500 | 13.7124 |
 | Query-dependent distance decay + W decay, m = 8 | `r9320e5cd3071` | planned | — | — | — |
 | Per-order query distance + W decay, m = 8 | `r20fe6fe864bc` | planned | — | — | — |
+| Query-dependent distance decay + W decay, m = 12 | `r47bfe39ce9b4` | planned | — | — | — |
+| Per-order query distance + W decay, m = 12 | `rfe140c073b2f` | planned | — | — | — |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 
 Endpoint query–key and bounded-rate variants compare against the query-dependent control.
 Each per-order variant compares against its corresponding shared-gate control.
-The degree-eight shared gate compares against the degree-four query-dependent run.
+The degree-eight shared gate compares against the degree-four query-dependent run,
+and the degree-twelve shared gate against the degree-eight one.
 Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
 <!-- END GENERATED RESULTS -->
 
@@ -271,7 +274,7 @@ and the blocked scan sums the K and V gradients of its 128-query blocks in BF16 
 the BF16 floor under this decay; see the scaffold validation record).
 The endpoint and bounded-rate runs were preempted once and resumed from their latest
 checkpoint; both per-order runs trained without interruption on one H100 SXM each.
-The degree-eight pair below is pending.
+The degree-eight and degree-twelve pairs below are pending.
 
 ## Independent per-order gates
 
@@ -334,13 +337,41 @@ against FP64, with unit-scale scores so that every order contributes and each or
 coefficient and gate gradients compared separately, and duplicated orders against the
 shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate against FP64.
 
+### Degree twelve
+
+Added 2026-11-09. The same query-gate comparison at degree twelve, where the per-order run
+gives each of thirteen orders its own gate:
+
+| Variant | Run | Recipe |
+| --- | --- | --- |
+| Shared query gate | `r47bfe39ce9b4` | `r9320e5cd3071` (`r3e26412b2811`) at degree twelve |
+| Per-order query gates | `rfe140c073b2f` | `r47bfe39ce9b4` with per-order gates |
+
+Everything else is the degree-four recipe, as at degree eight. No cumulative FoX run exists
+at degree twelve: the shared-gate run starts from exactly the parameters of the FoX recipe
+`r9353f554b917` at degree twelve, built at the same seed (201,093,706). The per-order run
+copies that gate to all thirteen orders (203,356,666 parameters). The shared-gate run
+compares against the degree-eight shared gate, and the per-order run against the shared-gate
+run. The closest completed degree-twelve run, the query polynomial + W decay with RoPE and no
+forget gate (`r0fceea0627c8`, [query_width_degree](../query_width_degree/README.md)), reached
+best PPL 14.226.
+
+Both use the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) on one H100 each.
+B300 cannot hold the per-order gates at degree twelve either; it could run the shared gate,
+which uses H100 too so that the pair trains on the same GPU type. GPU qualification adds
+degree twelve to the degree-eight checks: `test_per_order_decay.py` checks the per-order
+output and every gradient against FP64, order by order, and duplicated orders against the
+shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate against FP64 and,
+above degree four, compares its coefficient gradient order by order, since the highest
+orders dominate its norm.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
 FoX, and the bounded rate changes nothing. Per-order rates improve both gates by
 about 2.2%, and the per-order query–key gate beats cumulative FoX by 1.2%. Evaluate the
-degree-eight pair against its shared gate, then decide whether to confirm with additional
-seeds and promote the topic as its own collection, or discard it.
+degree-eight and degree-twelve pairs against their shared gates, then decide whether to
+confirm with additional seeds and promote the topic as its own collection, or discard it.
 
 ## Regeneration
 

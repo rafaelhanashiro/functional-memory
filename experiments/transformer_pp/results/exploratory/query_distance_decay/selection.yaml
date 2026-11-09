@@ -21,7 +21,8 @@ settings:
   - model.attention_degree
   per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..m; duplicate
     shared gates at initialization
-  degree: 4, except the degree-eight shared and per-order query gates (8)
+  degree: 4, except the degree-eight (8) and degree-twelve (12) shared and per-order
+    query gates
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -159,3 +160,19 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r20fe6fe864bc/config.yaml
       sha256: 19a581a314632a929dccdaa318e4bf65ecf1691f3d85cd7d3bce7434c392a205
+- study: transformer_pp
+  run_id: r47bfe39ce9b4
+  role: query_distance_m12
+  label: Query-dependent distance decay + W decay, m = 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r47bfe39ce9b4/config.yaml
+      sha256: bd1078341f708ae52b4efaba766a6c6a98133df01aee36f539a166d2df31be3a
+- study: transformer_pp
+  run_id: rfe140c073b2f
+  role: per_order_query_m12
+  label: Per-order query distance + W decay, m = 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rfe140c073b2f/config.yaml
+      sha256: 0f95c799deb7b59e58cbc46c654280af415df5c6e5c24e30adfbb09657ed64df

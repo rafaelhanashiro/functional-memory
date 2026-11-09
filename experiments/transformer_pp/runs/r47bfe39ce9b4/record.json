@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r47bfe39ce9b4/config.yaml",
+    "sha256": "bd1078341f708ae52b4efaba766a6c6a98133df01aee36f539a166d2df31be3a"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-query-distance-no-rope-w-decay",
+  "name": "query-m12-query-distance-no-rope-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r47bfe39ce9b4",
+  "status": "planned"
+}

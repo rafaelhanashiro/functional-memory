@@ -7,3 +7,5 @@ per_order_query,Per-order query distance + W decay,r507193d47450,complete,7500,2
 per_order_query_key,Per-order query-key distance + W decay,r03be769d2069,complete,7500,2.618011526,13.708438,7570,2.618303946,13.712447,-0.318047,-2.267475,-0.319495,-2.276910
 query_distance_m8,"Query-dependent distance decay + W decay, m = 8",r9320e5cd3071,planned,,,,,,,,,,
 per_order_query_m8,"Per-order query distance + W decay, m = 8",r20fe6fe864bc,planned,,,,,,,,,,
+query_distance_m12,"Query-dependent distance decay + W decay, m = 12",r47bfe39ce9b4,planned,,,,,,,,,,
+per_order_query_m12,"Per-order query distance + W decay, m = 12",rfe140c073b2f,planned,,,,,,,,,,
