@@ -20,7 +20,7 @@ promotion into a maintained collection or by discarding its results and runs.
 | [forget_gate_continuation](forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? | 2026-10-28 |
 | [learned_coefficient_continuation](learned_coefficient_continuation/README.md) | How does introducing learned static/query coefficients after Taylor or exp pretraining compare with continuing models whose coefficients were learned from the start? | 2026-10-29 |
 | [dense_readout_scale](dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale under the canonical QK setup? | 2026-10-29 |
-| [alibi_decay](alibi_decay/README.md) | Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent forget gate without RoPE in pretraining? | 2026-10-29 |
+| [alibi_decay](alibi_decay/README.md) | Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent forget gate without RoPE in pretraining? ALiBi's fixed slopes on softmax (13.899) and exp (13.901) beat RoPE by 4.4% and 2.5% but trail the forget gate by 1.6% and 2.0%. | 2026-10-29 |
 | [query_width_degree](query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` (2, 4, 8) shape validation PPL for decayed-W tanh query coefficients? | 2026-10-31 |
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |

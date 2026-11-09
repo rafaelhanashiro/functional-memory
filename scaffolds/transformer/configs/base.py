@@ -113,9 +113,13 @@ class ModelConfig:
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
-    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. "sigmoid": the Forgetting
-    # Transformer's original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. On softmax and the exponential
+    # it is ALiBi's score bias -lambda_h (t - i). "sigmoid": the Forgetting Transformer's
+    # original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
     attention_forget_gate_form: Literal["input", "constant", "sigmoid"] = "input"
+    # The constant form's rate: "learned" as above, or "fixed" at ALiBi's slopes 2^(-8 h / H) in
+    # every layer, with no trainable parameter. Recipes without the field learn it.
+    attention_forget_gate_constant_rate: Literal["learned", "fixed"] = "learned"
     # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
     attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
@@ -536,10 +540,15 @@ class ModelConfig:
                              "positional encoding on the blocked backend")
         if self.attention_forget_gate_form == "constant" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
-                or not polynomial):
-            raise ValueError("The constant forget gate form is qualified only as cumulative decay of nonlinear "
-                             "query-coefficient polynomials with RoPE or no positional encoding on the blocked "
-                             "backend")
+                or not (polynomial or exponential)):
+            raise ValueError("The constant forget gate form is qualified only as cumulative decay of softmax, the "
+                             "unnormalized exponential, and nonlinear query-coefficient polynomials with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_constant_rate not in ("learned", "fixed"):
+            raise ValueError(f"Unknown constant forget gate rate: {self.attention_forget_gate_constant_rate}")
+        if self.attention_forget_gate_constant_rate != "learned" and (
+                not self.attention_forget_gate or self.attention_forget_gate_form != "constant"):
+            raise ValueError("A fixed forget gate rate requires the constant forget gate form")
         if self.attention_forget_gate_conditioning not in ("query", "query_key"):
             raise ValueError("Unknown forget gate conditioning")
         if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):

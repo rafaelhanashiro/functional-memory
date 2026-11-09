@@ -58,13 +58,14 @@ def _uniform_fan_in(key, shape):
 
 
 def _alibi_log_slope(key, shape):
-    """Deterministic: log 2^(-8 h / H) for head h of H, the same in every layer; [L, H, 1]."""
-    from scaffolds.transformer.attention.forget_gate import alibi_log_slopes
+    """Deterministic: log 2^(-8 h / H) for head h of H, the same in every layer; [L, H, 1].
+
+    The same FP32 values as the constant forget gate's fixed rate (forget_gate.alibi_log_rate)."""
+    from scaffolds.transformer.attention.forget_gate import alibi_log_rate
 
     if len(shape) != 3 or shape[-1] != 1:
         raise ValueError("ALiBi slopes initialize a per-head [layers, heads, 1] parameter")
-    slopes = jnp.asarray(alibi_log_slopes(shape[1]), jnp.float32).reshape(1, shape[1], 1)
-    return jnp.broadcast_to(slopes, shape)
+    return jnp.broadcast_to(alibi_log_rate(shape[1])[None], shape)
 
 
 # Gated DeltaNet's decay-gate draws: a PyTorch-default Linear row over the last axis,
@@ -193,6 +194,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                                    form=getattr(config, "attention_forget_gate_form", "input"),
                                    conditioning=getattr(config, "attention_forget_gate_conditioning", "query"),
                                    rate_activation=getattr(config, "attention_forget_gate_rate_activation", "softplus"),
+                                   constant_rate=getattr(config, "attention_forget_gate_constant_rate", "learned"),
                                    order_count=(config.attention_degree + 1
                                                 if getattr(config, "attention_forget_gate_per_order", False) else None))
     if getattr(config, "positional_encoding", "rope") == "path":

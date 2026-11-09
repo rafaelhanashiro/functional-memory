@@ -35,8 +35,8 @@ INDEX_COLUMNS = (
     "coefficient_mode", "coefficient_conditioning", "coefficient_activation",
     "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
-    "attention_forget_gate_form", "attention_forget_gate_conditioning", "attention_forget_gate_rate_activation",
-    "attention_forget_gate_per_order",
+    "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
+    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order",
     "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
@@ -540,6 +540,10 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
             if model.get("attention_forget_gate") else None,
         "attention_forget_gate_form": model.get("attention_forget_gate_form", "input")
             if model.get("attention_forget_gate") else None,
+        # Constant (ALiBi-style) decay only: its slopes learned (the default) or fixed.
+        "attention_forget_gate_constant_rate": model.get("attention_forget_gate_constant_rate", "learned")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "constant"
+            else None,
         "attention_forget_gate_conditioning": model.get("attention_forget_gate_conditioning", "query")
             if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
         "attention_forget_gate_rate_activation": model.get("attention_forget_gate_rate_activation", "softplus")

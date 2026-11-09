@@ -11,6 +11,40 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### ALiBi on softmax and the exponential (2026-11-08)
+
+`model.attention_forget_gate_form: constant` applies to softmax and the unnormalized
+exponential as well as to query polynomials: the cumulative decay adds `-m_h (t - i)` to every
+score, which for softmax is ALiBi. `attention_forget_gate_constant_rate: fixed` holds `m_h` at
+ALiBi's slopes `2^(-8 h / H)` with no parameter; recipes without the field learn the rate as
+before ([README](../README.md#forget-gate)).
+
+All 70 CPU checks in `tests/test_constant_decay.py` passed. FP64 references cover the slopes
+(the fixed log rate is the FP32 array the learned rate's initializer stores); the fixed rate's
+empty parameter set and parameter counts; softmax and exp outputs and the Q, K, V, and log-rate
+gradients through the scan and the strips (five 8-query blocks or strips of 37 tokens, FP32
+relative error below 2e-5 against FP64 ALiBi); the attention module, from its projection
+weights, against FP64 ALiBi under both implementations; learned and fixed models agreeing at
+initialization (identical backbone, decays, logits, and shared gradients to 1e-5); historical
+recipes without the field; accepted and rejected recipes; acceptance selection and the
+softmax-backbone initialization check; diagnostics; and training updates. Halving the fixed
+log rate fails 9 of them. In FP32 the cumulative decay at 2,048 tokens and 14 heads meets
+`|L_t - L_i + m_h (t - i)| <= 2.2e-4` for `t - i <= 32`, summed sequentially or as a tree: a
+relative weight error near 1e-4, against the BF16 output rounding of 1.7e-3.
+
+`test_gpu_strips_alibi_matches_float64_at_the_production_context` (softmax and exp) runs BF16
+Q/K/V at [1, 2048, 14, 64] through the fixed decay and the strips and requires the output, dQ,
+dK, and dV each within 1.2x its BF16 rounding floor against a host FP64 oracle; the oracle
+matches FP64 autodiff to 1e-12 on CPU. At commit `93f47769` both cases passed in the production
+runs' acceptance on B300 (`akita`, job 239928) and H100 SXM (`dogo`, job 239929), with the
+full-recipe pilot and resume checks.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_constant_decay.py -m "not gpu"
+```
+
 ### Architecture-aware per-order Mosaic support (2026-11-08)
 
 Per-order recipes validate for the Mosaic backend when H100's kernels fit them

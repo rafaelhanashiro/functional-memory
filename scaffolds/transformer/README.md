@@ -145,11 +145,16 @@ other backends reject this option. Existing recipes default to a shared gate.
 `attention_forget_gate_form: input` (the default) is that gate. The `constant` form
 drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
-ALiBi's linear bias in log space. Rates start at ALiBi's slopes `2^(-8h/H)` for heads
-`h = 1..H`, identically in each layer, and are exempt from weight decay. The constant
-form is qualified only for query polynomials with the cumulative mode under RoPE or no
-positional encoding on the blocked backend; configuration rejects it with `query_distance`,
-PaTH, softmax, or the exponential. The `sigmoid` form is the Forgetting Transformer's original
+ALiBi's linear bias in log space; softmax and the exponential add `-exp(A_log) * (t - i)`
+to every score, which for softmax is ALiBi. Rates start at ALiBi's slopes `2^(-8h/H)` for
+heads `h = 1..H`, identically in each layer, and are exempt from weight decay.
+`attention_forget_gate_constant_rate: fixed` holds them at those slopes with no trainable
+parameter (`learned`, the default and the meaning of recipes without the field, trains them);
+the fixed rate and the learned rate's start are one FP32 array, `forget_gate.alibi_log_rate`.
+The constant form is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend (scan or strips);
+configuration rejects it with `query_distance` or PaTH, and a fixed rate with any other form.
+The `sigmoid` form is the Forgetting Transformer's original
 gate, `alpha_t = sigmoid(x_t w_f + b_f)`, with the paper's initialization (`w_f ~ N(0, 0.02^2)`,
 `b_f = 0`) and weight decay on `w_f` only; it equals the input form with `exp(A_log) = 1` and the
 projection negated. It is qualified for softmax, the exponential, and query polynomials with the
@@ -726,11 +731,20 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
 paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
 1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
-Softmax and the exponential take the cumulative mode with the input or sigmoid gate form; the
-sigmoid form needs RoPE or no positional encoding.
+Softmax and the exponential take the cumulative mode with the input, sigmoid, or constant gate
+form; the sigmoid and constant forms need RoPE or no positional encoding.
+`attention_forget_gate_form: constant` gives every head one rate, `log alpha_t = -m_h` at every
+token, so `L_t - L_i = -m_h (t - i)`: softmax with this decay is ALiBi (Press et al., 2022) and the
+exponential gains ALiBi's bias. `m_h = exp(A_log)` is learned from ALiBi's slopes `2^(-8 h / H)`,
+or, with `attention_forget_gate_constant_rate: fixed`, held at those slopes in every layer with no
+parameter. This geometric rule is the paper's for every `H`; ALiBi's code uses it only when `H` is a
+power of two (for 14 heads it takes `2^-1..2^-8` and `2^-0.5, 2^-1.5, ..., 2^-5.5`). `tests/test_constant_decay.py` checks both kernels against FP64 ALiBi through the scan
+and the strips; acceptance runs it for every constant-form recipe on CPU and, for softmax and the
+exponential, its 2,048-token BF16 strips case on the GPU.
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
-parameters.
+parameters (for a fixed rate, the slopes); `runs.csv` has an `attention_forget_gate_constant_rate`
+column, empty without the constant form.
 
 ### PaTH position encoding
 

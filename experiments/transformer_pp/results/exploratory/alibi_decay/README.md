@@ -1,4 +1,4 @@
-# ALiBi-style constant decay without RoPE (m = 4)
+# ALiBi-style constant decay without RoPE
 
 Opened: **2026-10-29**. Home cluster: **Kennel**.
 
@@ -11,10 +11,11 @@ do the same? This topic replaces the gate by a constant per layer and head,
 `log alpha_t = -lambda_h`, so every weight is multiplied by `exp(-lambda_h (t - i))`: ALiBi's
 linear bias in log space, with `lambda_h` learned. Like the forget-gate run it compares
 with, it uses **no positional encoding**, so the decay is the only source of position.
-The runs live in the [Transformer++ study](../../../README.md) and enter no canonical
-comparison.
+A [second part](#softmax-and-exp-with-alibis-fixed-slopes) asks the same of softmax and exp
+with ALiBi itself: the slopes fixed, as in the original. The runs live in the
+[Transformer++ study](../../../README.md) and enter no canonical comparison.
 
-## Runs
+## Runs (degree-four query polynomial)
 
 | Role | Run | Label | Position |
 | --- | --- | --- | --- |
@@ -37,10 +38,63 @@ standard initialization (188,580 parameters).
 
 Launch commands are in the [study README](../../../README.md#alibi-style-constant-decay-without-rope).
 
+## Softmax and exp with ALiBi's fixed slopes
+
+Added 2026-11-08. Does ALiBi, with its fixed slopes and no positional encoding, match the
+token-dependent forget gate on the exponential kernels? Each primary copies the no-RoPE
+forget-gate run on its kernel ([forget gate topic](../forget_gate/README.md#softmax-and-exp-with-the-forget-gate))
+and changes only the gate: `attention_forget_gate_form: constant` with
+`attention_forget_gate_constant_rate: fixed`, so every score gains `-m_h (t - i)`,
+`m_h = 2^(-8 h / 14)` for heads `h = 1..14` in every layer, with **no parameters** (the gate
+controls carry 188,580). Softmax with this bias is ALiBi (Press et al., 2022); exp keeps its
+per-head output RMSNorm. These are the paper's geometric slopes, which the learned-slope run
+starts from, 0.67 down to 1/256; ALiBi's code would give 14 heads `2^-1..2^-8` and
+`2^-0.5, 2^-1.5, ..., 2^-5.5` instead (its rule for a head count that is not a power of two),
+0.71 down to 1/256. The primaries train on the blocked backend's causal strips and the controls
+trained on its scan: the same arithmetic, with FP32 rather than BF16 sums of the K and V gradients
+across blocks.
+
+| Role | Run | Label | Kernel | Position | Validation-best PPL (terminal) |
+| --- | --- | --- | --- | --- | --- |
+| Primary: softmax ALiBi | `ref652c257797` | `softmax-alibi-fixed-no-rope` | softmax | ALiBi only | 13.899 (13.904) |
+| Primary: exp ALiBi | `r7820049184ef` | `exp-alibi-fixed-no-rope` | exp | ALiBi only | 13.901 (13.904) |
+| Control: softmax forget gate | `r5adc29a91e3b` | `softmax-forget-gate-no-rope` | softmax | gate only | 13.680 (13.680) |
+| Control: exp forget gate | `r183f08346ddc` | `exp-forget-gate-no-rope` | exp | gate only | 13.628 (13.630) |
+| Reference: softmax | `r9040f12f3d80` | `softmax-head-scale` | softmax | RoPE | 14.543 (14.546) |
+| Reference: exp | `r6a76e7fbde45` | `exp-head-scale` | exp | RoPE | 14.257 (14.262) |
+
+Both primaries completed 7,570 updates in one attempt each, after acceptance (including ALiBi's
+GPU tests on the strips) passed: softmax on one B300 (`akita`, `standard`, job 239928,
+8 h 55 min), exp on one H100 SXM (`dogo`, `long`, job 239929, 11 h 16 min). Launch commands are
+in the [study README](../../../README.md#alibi-on-softmax-and-exp).
+
 ## Findings and open decision
 
-The primary completed its 7,570 updates on one B300 (Kennel `akita`, `long`; job 229720,
-11 h 26 min). The control completed on the same node.
+### Softmax and exp with ALiBi's fixed slopes
+
+Validation-best PPL is at update 7,500 for all six runs; each has 28 evaluations.
+
+- **Fixed-slope ALiBi beats RoPE on both kernels**: softmax 13.899 vs 14.543 (−4.43%) and exp
+  13.901 vs 14.257 (−2.50%), lower at all 28 evaluations and by 4.3–4.6% and 2.5–2.7% from
+  update 3,000 on.
+- **It trails the forget gate on both**: softmax +1.60% against 13.680 and exp +2.00% against
+  13.628, behind at all 28 evaluations and by 1.6–2.0% and 2.0–2.6% from update 3,000 on. As
+  with the degree-four polynomial below, a decay with distance alone does not reach the
+  token-dependent gate.
+- **With ALiBi, softmax and exp tie**: 13.899 vs 13.901 (−0.01%). Softmax is lower at all 28
+  evaluations, by at most 0.5% from update 3,000 on. Exp leads by 2.0% with RoPE and by 0.4%
+  with the forget gate.
+- **The degree-eight per-order query-distance polynomial beats both** (`r20fe6fe864bc`, 13.780,
+  pinned in [query_distance_decay](../query_distance_decay/README.md#degree-eight)): −0.86%
+  against softmax ALiBi, lower from update 3,000 on (11 of 28 evaluations) by 0.4–0.9%, and
+  −0.87% against exp ALiBi, lower at 26 of 28. Its decay is learned and query-dependent, so
+  this is not a matched comparison.
+
+### Degree-four query polynomial
+
+The primary
+completed its 7,570 updates on one B300 (Kennel `akita`, `long`; job 229720, 11 h 26 min). The
+control completed on the same node.
 
 | Run | Position | Terminal PPL | Validation-best PPL / step | vs fixed Taylor |
 | --- | --- | ---: | --- | ---: |
