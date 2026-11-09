@@ -28,6 +28,9 @@ def attention_core(
     query_gate_input: jax.Array | None = None,
     key_gate_input: jax.Array | None = None,
     gate_log_rate: jax.Array | None = None,
+    spline_knots: tuple[float, ...] | None = None,
+    spline_coefficients: jax.Array | None = None,
+    query_spline_coefficients: jax.Array | None = None,
     attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
@@ -42,6 +45,8 @@ def attention_core(
     ``denominators`` holds at most one rational-kernel denominator array, named as in
     ``rational_polynomial.DENOMINATOR_KINDS``. ``blocked_implementation`` selects the blocked
     backend's execution ("scan" or "strips"; see ``backends.reference``); other backends ignore it.
+    ``spline_knots`` with static ``spline_coefficients`` or ``query_spline_coefficients`` selects
+    the B-spline score function (``spline``), which defines the kernel alone.
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
@@ -56,6 +61,20 @@ def attention_core(
     denominators = {name: array for name, array in denominators.items() if array is not None}
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    if spline_knots is not None or spline_coefficients is not None or query_spline_coefficients is not None:
+        from scaffolds.transformer.attention.spline import spline_attention
+
+        if (attention_normalization or quadratic_mode != "fixed" or coefficients is not None
+                or polynomial_coefficients is not None or polynomial_square_factors is not None
+                or query_polynomial_coefficients is not None or key_polynomial_factors is not None
+                or query_log_decay is not None or query_decay_mode != "cumulative"
+                or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+                or denominators):
+            raise ValueError("B-spline coefficients define an unnormalized kernel alone, without decay")
+        return spline_attention(q, k, v, attention_degree=attention_degree, spline_knots=spline_knots,
+                                spline_coefficients=spline_coefficients,
+                                query_spline_coefficients=query_spline_coefficients, backend=backend,
+                                return_diagnostics=return_diagnostics, blocked_implementation=blocked_implementation)
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
     if query_decay_mode not in ("cumulative", "query_distance"):

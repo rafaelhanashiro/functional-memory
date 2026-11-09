@@ -80,6 +80,7 @@ PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
 FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
 BLOCKED_STRIPS_TESTS = "scaffolds/transformer/tests/test_blocked_strips.py"
+SPLINE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_spline_attention.py"
 FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
 FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
 FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
@@ -163,6 +164,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             and model.get("attention_blocked_implementation", "scan") == "strips"):
         # Training on causal strips: their equivalence with the scan and their FP32 dK/dV sums.
         paths.append(BLOCKED_STRIPS_TESTS)
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        # CPU: the B-spline score function against an independent Cox-de Boor reference, its
+        # exact Taylor start, parameters, and scan/strips equivalence. GPU: production precision
+        # of the strips and the scan's forward against FP64.
+        paths.append(SPLINE_ATTENTION_TESTS)
     if (not cpu and model.get("qk_norm_head_scale", False)
             and model.get("attention_mechanism", "dot_product") == "dot_product"
             and not model.get("attention_normalization", True)
@@ -707,7 +713,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
-                                           attention_denominator_constant="fixed"))
+                                           attention_denominator_constant="fixed",
+                                           attention_kernel_basis="polynomial", attention_spline_knots=None))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -760,7 +767,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
-        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False))
+        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
+        attention_kernel_basis="polynomial", attention_spline_knots=None))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

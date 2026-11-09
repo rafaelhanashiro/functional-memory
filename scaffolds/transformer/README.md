@@ -158,7 +158,7 @@ cumulative mode under RoPE or no positional encoding on the blocked backend.
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
 and dtype. Mechanisms live in `softmax.py`, `taylor.py`,
-`learned_quadratic.py`, `learned_polynomial.py`, and `unnormalized.py`. Their implementations live under `attention/backends/`.
+`learned_quadratic.py`, `learned_polynomial.py`, `unnormalized.py`, and `spline.py`. Their implementations live under `attention/backends/`.
 Fused kernels consume Q/K/V directly and retain their custom backward passes.
 The interface does not require a materialized attention matrix.
 
@@ -171,6 +171,7 @@ The existing scientific configuration fields remain supported:
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | The preceding settings plus `attention_coefficient_conditioning: query`, `attention_coefficient_activation: tanh`, `attention_coefficient_sharing: per_head` | Query-dependent signed coefficients `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)`, independently per layer and head; direct parameterization, fused or blocked |
+| `attention_degree: p >= 1`, `attention_normalization: false`, `attention_coefficients: learned`, `attention_kernel_basis: bspline`, `attention_spline_knots: [u_0, ..., u_K]` | Unnormalized `sum_j theta_j B_j(QKᵀ / sqrt(d_K)) V` on a fixed degree-`p` B-spline basis with `K + p` functions, static or tanh query-conditioned `theta`; blocked only ([B-spline score function](#b-spline-score-function)) |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator with constant 1 of degree `attention_denominator_degree` (default `m`): signed `1 + sum_r b_r s^r`, or nonnegative `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2` (`attention_denominator_parameterization: sum_of_squares`); fused or blocked |
@@ -610,6 +611,100 @@ and formula, recorded in metrics and metadata, include the schedule and every
 `coefficient_release_schedule`, `coefficient_release_step`, and
 `coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
 `tests/test_coefficient_release.py` for every recipe with a schedule.
+
+### B-spline score function
+
+`attention_kernel_basis: bspline` (default `polynomial`, the monomials above) replaces the
+score polynomial by a fixed B-spline basis (`attention/spline.py`). The attention output is
+`sum_(i<=t) f(s_ti) v_i` with `f(s) = sum_j theta_j B_j(s)` and the usual scores `s_ti`
+(after QK normalization, head scale, and RoPE), unnormalized and signed; per-head output
+RMSNorm remains a separate option.
+
+- Basis: `B_j` are the B-splines of degree `p = attention_degree` on the distinct knots
+  `attention_spline_knots` (`u_0 < ... < u_K`, strictly increasing), clamped: the knot
+  vector repeats each endpoint `p + 1` times. There are `K + p = len(knots) + degree - 1`
+  coefficients, never `degree + 1`: degree 4 on `[-32, -6, 0, 6, 32]` (knot vector
+  `[-32 x5, -6, 0, 6, 32 x5]`) has eight, `B_0..B_7`. `f` is a degree-`p` polynomial on each
+  interval with `p - 1` continuous derivatives at the simple interior knots. The same basis
+  serves every layer, head, and token; knots are not learned.
+- Extrapolation: outside `[u_0, u_K]` `f` continues its first or last polynomial piece. Scores
+  are never clipped and `f` is never zeroed.
+- Coefficients (FP32, never factorial-scaled):
+
+  | Conditioning | Arrays (per layer and head) | Weight decay |
+  | --- | --- | --- |
+  | `static` | `spline_coefficients` `[layers, heads, K + p]`: `theta` | none |
+  | `query`, `attention_coefficient_activation: tanh` | `query_spline_bias` `b` and `query_spline_amplitude` `a`, `[layers, heads, K + p]`; `query_spline_kernel` `W`, `[layers, heads, hidden_size, K + p]` | `W` only, with `attention_coefficient_kernel_weight_decay: true` |
+
+  The query form is the monomial diagonal tanh generator with `K + p` outputs,
+  `theta_j(x_t) = b_j + a_j tanh(w_j^T x_t)` from the pre-attention RMSNorm activation, with
+  no inner tanh bias and no key factors; `attention_coefficient_amplitude_initial` and
+  `attention_coefficient_projection_initial_std` set `a` and the `N(0, std^2)` draw of `W` from
+  the mechanism stream, as for monomial coefficients.
+- Initialization (`attention_coefficient_initialization: taylor`, the only start): `theta`
+  (or `b`) holds the exact B-spline coefficients of `T_p(s) = sum_(r<=p) s^r / r!`, derived by
+  blossoming in rationals (`spline.taylor_coefficients`, which checks every piece) and rounded
+  once to FP32, so `f = T_p` on the whole line, extrapolation included. Degree 4 on the knots
+  above gives `[116131/3, 38029/6, -931/6, 38, -42, 2351/6, 63935/6, 49697]`; with `a = 0` the
+  query form starts at the same function. The tests require the FP32 start to reproduce `T_4`
+  within 5e-6 relative inside the knots and 1e-6 outside; the error is largest near `T_4`'s
+  minimum (0.27 at `s = -1.6`), where the B-spline terms cancel: `sum_j |theta_j B_j(s)|` is
+  166 times `T_4` there.
+- FP32 storage quantizes updates: a step changes a stored coefficient only when it exceeds half
+  the coefficient's FP32 spacing. Wide knots make the end coefficients large: above, `theta_0`
+  and `theta_7` (or `b_0` and `b_7`) start at `T_4(-32) = 38710.33` and `T_4(32) = 49697`,
+  spacing `2^-8`. Adam steps are at most about 1.17 times the learning rate with betas
+  (0.9, 0.95), so at learning rates below about 1.7e-3 these coefficients never move and the
+  static `f(±32)` stays `T_4(±32)`; `theta_1` and `theta_6` (spacing 4.9e-4 and 9.8e-4) move by
+  whole spacings, only while steps exceed half of one. Even in exact arithmetic Adam moves a
+  coefficient by at most about 1.17 times the summed learning rate.
+- Evaluation: a fixed linear map (`spline.piece_matrix`, exact in rationals, then rounded to
+  the compute dtype) takes `theta` to each piece's local polynomial
+  `sum_r P_jr (s - c_j)^r`, once per head (static) or per query token and head (query), before
+  any per-score work. The centre `c_j` is the point of the piece nearest zero (`-6, 0, 0, 6`
+  above), where scores concentrate, so most evaluations use a small local variable; at the
+  Taylor start each piece's local polynomial is `T_p` expanded at `c_j`, the two central ones
+  `T_p` itself. A score selects its piece by comparison with the interior
+  knots (`s < u_1`, ..., `s >= u_(K-1)`; a NaN score stays NaN) and is evaluated by Horner's
+  rule in FP32.
+- Backends: the blocked backend only (`attention_backend: blocked`), with either
+  implementation: the spline is a kernel branch of the per-block arithmetic that the scan and
+  the causal strips share, so diagnostics (from the scan) and training (strips) run one copy.
+  Invalid rows follow the signed learned polynomial's rules: a nonfinite score or kernel
+  poisons its row. No fused, Mosaic, or cuDNN kernel implements the basis, and configuration
+  rejects them and `auto`. Per score the spline costs more than a monomial kernel (piece
+  selection and a select per Horner coefficient in the forward, per-piece coefficient sums in
+  the backward), so its throughput and memory come from measurement, not from monomial runs:
+  qualify it on each GPU type before production with
+  `validation/blocked_strips_qualification.py` (the kernel stage has static and query spline
+  cases; the model stage times a recipe's full micro-step), and the acceptance pilot projects
+  each run's runtime.
+- Restrictions: unnormalized dot-product attention with RoPE or no positional encoding;
+  learned direct `per_head` coefficients; no forget gate, PaTH, fixed coefficients,
+  `attention_coefficient_orders`, factorial coefficient or amplitude scales, coefficient
+  penalty, query readout LR scale, coefficient release schedule, or coefficient override and
+  capture (all defined on monomial orders); continuations only with
+  `continuation.preserve_all_parameters`. Historical recipes, which lack both fields, keep
+  the monomial basis and resume unchanged.
+- Diagnostics: each layer records the pooled fractions of measured causal scores that each
+  piece evaluates (`spline_piece_<j>_fraction`) and that lie below `u_0` or above `u_K`
+  (`spline_below_range_fraction`, `spline_above_range_fraction`, the polynomial
+  continuation), beside the usual score and kernel extrema. `spline_score_coverage` holds the
+  same fractions and the score extrema per layer and head; `coefficients` reports static
+  `theta` (`B0..B7`), or the query generator's `b`, `a`, the column norms of `W`, and the
+  generated `theta` on the diagnostic sample. Run metadata records the basis, knots, knot
+  vector, piece centres, the exact initial coefficients, and the formula
+  (`attention_kernel: learned_spline_unnormalized` or `query_spline_unnormalized`); the run
+  index names the family `spline`.
+- Acceptance adds `tests/test_spline_attention.py` to both test stages of spline recipes. CPU:
+  values and gradients against an independent Cox-de Boor reference, the exact Taylor start and
+  its FP32 reproduction, continuity at the knots, both end knots and extrapolation, attention
+  and gradients of Q, K, V, `theta`, and the generator against a dense float64 reference
+  through the scan and the strips, parameter ownership, initialization, weight decay, and
+  scan/strips model equivalence. GPU: production precision with BF16 Q/K/V at 2,048 tokens and
+  width 64, scores in every piece and both continuations, against the scan's arithmetic in
+  FP64: the strips' output and Q/K/V gradients and the scan's output within 1.25 times the
+  BF16 rounding floor, and the coefficient gradients within 1e-4.
 
 ### Forget gate
 

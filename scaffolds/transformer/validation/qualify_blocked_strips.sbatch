@@ -27,6 +27,7 @@ STAGES="${STAGES:-tests kernel model}"
 RECIPES="${RECIPES:-experiments/transformer_pp/runs/r5adc29a91e3b/config.yaml experiments/transformer_pp/runs/r82a80d3091e2/config.yaml}"
 if [[ " $STAGES " == *" tests "* ]]; then
   "$PYTHON" -m pytest -q -rA scaffolds/transformer/tests/test_blocked_strips_h100.py
+  "$PYTHON" -m pytest -q -rA -m gpu scaffolds/transformer/tests/test_spline_attention.py
 fi
 if [[ " $STAGES " == *" kernel "* ]]; then
   "$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification kernel \
@@ -35,5 +36,5 @@ fi
 if [[ " $STAGES " == *" model "* ]]; then
   # shellcheck disable=SC2086
   "$PYTHON" -m scaffolds.transformer.validation.blocked_strips_qualification model --micro-batch 16 \
-    --recipes $RECIPES --output "$OUT/model-$GPU-$SLURM_JOB_ID.json"
+    --recipes $RECIPES --implementations ${IMPLEMENTATIONS:-scan strips} --output "$OUT/model-$GPU-$SLURM_JOB_ID.json"
 fi

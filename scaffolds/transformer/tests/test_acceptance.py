@@ -532,3 +532,36 @@ def test_recipes_training_on_blocked_strips_require_their_cpu_tests(model, backe
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     paths = preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
     assert (preflight.BLOCKED_STRIPS_TESTS in paths) == selected
+
+
+@pytest.mark.parametrize("model,cpu,selected", [
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "scan"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, False, True),
+    ({"attention_kernel_basis": "polynomial"}, True, False),
+    ({"attention_kernel_basis": "polynomial"}, False, False),
+    ({}, True, False),
+])
+def test_spline_recipes_require_their_tests(model, cpu, selected):
+    """Both stages: the CPU checks, and the GPU stage's production precision."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend="blocked", cpu=cpu)
+    assert (preflight.SPLINE_ATTENTION_TESTS in paths) == selected
+
+
+def test_spline_production_recipe_selects_spline_strips_and_query_tests():
+    """The query spline recipe's shared acceptance runs the spline, strips, and generator tests on
+    CPU, and the spline's production precision on the GPU."""
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+    from scaffolds.transformer.tests.test_spline_attention import QUERY_CONTROL, spline_model
+
+    config = Config(model=ModelConfig(**spline_model(QUERY_CONTROL)))
+    config.data.sequence_length = 2049
+    spec = preflight.attention_spec(config, entry_module="unused")
+    paths = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=True)
+    for required in (preflight.SPLINE_ATTENTION_TESTS, preflight.BLOCKED_STRIPS_TESTS,
+                     preflight.INPUT_DEPENDENT_COEFFICIENT_TESTS, preflight.QUERY_TANH_POLYNOMIAL_TESTS):
+        assert required in paths
+    assert spec.required_backend == "blocked"
+    gpu = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=False)
+    assert preflight.SPLINE_ATTENTION_TESTS in gpu and preflight.BLOCKED_STRIPS_TESTS not in gpu
