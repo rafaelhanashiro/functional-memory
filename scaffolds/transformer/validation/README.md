@@ -11,6 +11,69 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Data-dependent decay: query-distance gates on softmax and the exponential, per-order cumulative gates (2026-11-09)
+
+`model.attention_forget_gate_mode: query_distance` applies to softmax and the unnormalized
+exponential with the input-form softplus gate: every score gains `(t - i) log alpha_t`, ALiBi with a
+learned, input-dependent slope per query token. `attention_forget_gate_per_order: true` takes the
+cumulative mode for nonlinear query-coefficient polynomials: each order has its own gate and sum,
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`. Both run on the blocked backend, scan or strips
+([README](../README.md#forget-gate)).
+
+All 114 CPU checks in `tests/test_exponential_query_distance.py` passed. FP64 all-pairs references
+cover softmax and exp at ragged sizes (37 tokens in 8-query blocks and 16-query strips; 5 tokens; one
+token): the output and the Q, K, V, and raw log-alpha gradients through the scan's code and the
+strips in FP64 (to 1e-10) and through the public FP32 functions (relative L2 below 3e-5); the gate
+projection (every gate parameter, 4e-5); and the attention module from its weights. Further checks:
+an invalid rate (NaN, ±inf, positive) poisons only its query's row, every other row bitwise
+unchanged; open and closed gates stay finite; the gate is query-local; a constant per-head rate
+reproduces the cumulative ALiBi decay (FP32 to 2e-6, FP64 to 1e-12); the parameters, their initial
+values, and the Transformer++ count are cumulative FoX's; with `w_alpha = 0` the model equals
+cumulative FoX (logits, and every gradient but `w_alpha`'s, to 2e-5); plus the accepted and rejected
+recipes, identity, diagnostics, training updates, and acceptance selection.
+
+All 79 CPU checks in `tests/test_per_order_cumulative.py` passed, at degrees 4 and 8 with unit-scale
+scores and the coefficient and cumulative-sum gradients compared order by order. FP64 references
+cover the scan and strips in FP64 (1e-10) and FP32 (3e-5), and the module's route through
+`forget_gate.log_decay` and the cumulative sum (every gate parameter, 5e-5). Duplicated orders
+reproduce shared cumulative FoX (FP32 to 2e-6, FP64 to 1e-12), with each shared parameter's gradient
+the sum over its copies. Constant gates reproduce per-order query-distance gates (FP32 to 2e-5, FP64
+to 1e-11). A nonfinite `log alpha` poisons the rows from its token on. Orders stay isolated, and the
+degree-zero term gives the decay matrix `exp(L_t0 - L_i0)` with an exact diagonal. At
+initialization the model equals shared cumulative FoX, and with `w_alpha = 0` it equals the
+per-order query-distance model. Each extra order adds 188,580 parameters in the Transformer++
+shape. The suite also checks weight-decay masks, training updates of every layer, head, and order,
+diagnostics (per-order half-lives), and acceptance selection.
+`tests/test_blocked_strips.py` adds both families and the per-order query-distance family to its
+scan/strips equivalence checks (161 passed). Its FP64 model check compares the forget gate's own
+parameters to 2e-6: the gate projects in FP32 by design, and the two programs order its FP32 sums
+over tokens differently (every other gradient still agrees to 1e-11).
+
+Existing mechanisms are unchanged against `e6ed4e58`. The jaxprs of
+`blocked_dot_product_attention` and `strip_dot_product_attention` are identical for 37 existing
+argument families (666 programs: forward, VJP, and the scan's diagnostics, with FP32 and BF16
+Q/K/V, at two block and strip sizes). Validation, recipe, attention identity, acceptance test
+selection, and parameter count are identical for all 442 run recipes (388 valid). The
+loss-and-gradient programs, values, and diagnostics of 20 small kernel and forget-gate models are
+identical.
+
+`test_gpu_strips_query_distance_matches_float64_at_the_production_context` (softmax, exp) and
+`test_gpu_strips_per_order_cumulative_matches_float64_at_the_production_context` (degrees 4, 8) run
+BF16 Q/K/V at [1, 2048, 14, 64] through the strips against host FP64 oracles, which match FP64
+autodiff on CPU. They require the output, dQ, dK, and dV within 1.2x their BF16 rounding floor, and
+the FP32 log-decay gradients (with the coefficient gradients, per order) within 1e-4. Run on CPU,
+these cases measure 1.00x the floor and FP32 gradient errors of 1.4e-7 to 5.1e-7. GPU qualification
+runs in each production run's acceptance on H100 and B300; acceptance selects these files for the
+recipes that use either mechanism.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m "not gpu" \
+  scaffolds/transformer/tests/test_exponential_query_distance.py \
+  scaffolds/transformer/tests/test_per_order_cumulative.py \
+  scaffolds/transformer/tests/test_blocked_strips.py
+```
+
 ### ALiBi on softmax and the exponential (2026-11-08)
 
 `model.attention_forget_gate_form: constant` applies to softmax and the unnormalized
