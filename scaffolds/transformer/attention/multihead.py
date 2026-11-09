@@ -214,10 +214,17 @@ class MultiHeadAttention(nnx.Module):
         # query-coefficient polynomials multiply their weights by it. Each runs with RoPE or no
         # positional encoding on the blocked backend, or with PaTH on either PaTH backend; the
         # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic.
+        # Static coefficients take only the input-free query-distance gate (conditioning none),
+        # whose rate reads no token; they then run the query-coefficient decay operation.
+        input_free_gate = attention_forget_gate_conditioning == "none"
         exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
-                            and attention_coefficient_conditioning == "static")
-        polynomial_gate = (attention_coefficient_conditioning == "query"
-                           and attention_coefficient_activation != "identity")
+                            and attention_coefficient_conditioning == "static" and not input_free_gate)
+        polynomial_gate = ((attention_coefficient_conditioning == "query"
+                            and attention_coefficient_activation != "identity") if not input_free_gate else
+                           (attention_coefficient_conditioning == "static" and not attention_normalization
+                            and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
+                            and attention_fixed_coefficients is None and attention_fixed_square_factors is None
+                            and attention_coefficient_orders is None and attention_kernel_basis == "polynomial"))
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and (
@@ -225,8 +232,9 @@ class MultiHeadAttention(nnx.Module):
                 and attention_forget_gate_mode == "query_distance" and attention_forget_gate_form == "input"))
         if attention_forget_gate and not ((exponential_gate or polynomial_gate) and forget_backend_supported):
             raise ValueError("The forget gate requires softmax, the unnormalized exponential, or nonlinear query "
-                             "coefficients: RoPE/none on the blocked backend (query-distance decay of polynomials "
-                             "also on mosaic), or PaTH on blocked/fused/auto")
+                             "coefficients (unnormalized static coefficients take the input-free gate): RoPE/none "
+                             "on the blocked backend (query-distance decay of polynomials also on mosaic), or "
+                             "PaTH on blocked/fused/auto")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
@@ -256,10 +264,13 @@ class MultiHeadAttention(nnx.Module):
                 not attention_forget_gate or attention_forget_gate_form != "constant"):
             raise ValueError("A fixed forget gate rate requires the constant forget gate form")
         self.attention_forget_gate_constant_rate = attention_forget_gate_constant_rate
-        if attention_forget_gate_conditioning not in ("query", "query_key"):
+        if attention_forget_gate_conditioning not in ("query", "query_key", "none"):
             raise ValueError("Unknown forget gate conditioning")
         if attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
             raise ValueError("Unknown forget gate rate activation")
+        if input_free_gate and (not attention_forget_gate or attention_forget_gate_rate_activation != "softplus"
+                                or attention_coefficient_conditioning != "static"):
+            raise ValueError("The input-free gate is the softplus query-distance gate of static coefficients")
         if (attention_forget_gate_conditioning != "query" or attention_forget_gate_rate_activation != "softplus") and (
                 not attention_forget_gate or attention_forget_gate_form != "input"
                 or attention_forget_gate_mode != "query_distance" or backend not in ("blocked", "mosaic")):
@@ -505,7 +516,8 @@ class MultiHeadAttention(nnx.Module):
                                                  key_kernel, key_amplitude, gate_kernel, gate_bias, gate_log_rate)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
         from scaffolds.transformer.attention.forget_gate import (
-            PARAMETERS as FORGET_GATE_PARAMETERS, ALL_PARAMETERS, alibi_log_rate, constant_log_decay, log_decay,
+            PARAMETERS as FORGET_GATE_PARAMETERS, ALL_PARAMETERS, alibi_log_rate, constant_log_decay,
+            input_free_log_decay, log_decay,
             parameter_names, project_gate_inputs, sigmoid_log_decay,
         )
 
@@ -518,11 +530,14 @@ class MultiHeadAttention(nnx.Module):
         log_alpha = None
         if self.attention_forget_gate:
             # The constant form's log alpha is -exp(A_log) at every token, A_log learned or fixed at
-            # ALiBi's slopes (the learned rate's start); the input and sigmoid forms read x_t.
+            # ALiBi's slopes (the learned rate's start); the input-free gate's is
+            # -exp(A_log) softplus(dt_bias); the other input and sigmoid forms read x_t.
             if self.attention_forget_gate_form == "constant":
                 log_alpha = constant_log_decay(x, alibi_log_rate(self.num_heads)
                                                if self.attention_forget_gate_constant_rate == "fixed"
                                                else forget_gate["forget_gate_log_rate"])
+            elif self.attention_forget_gate_conditioning == "none":
+                log_alpha = input_free_log_decay(x, forget_gate["forget_gate_log_rate"], forget_gate["forget_gate_dt_bias"])
             elif self.attention_forget_gate_form == "sigmoid":
                 log_alpha = sigmoid_log_decay(x, forget_gate["forget_gate_kernel"], forget_gate["forget_gate_bias"])
             elif self.attention_forget_gate_conditioning == "query_key":
@@ -568,6 +583,16 @@ class MultiHeadAttention(nnx.Module):
                 kernel_coefficient_activation = "tanh"
                 if key_factors is not None:
                     parameters["key_polynomial_factors"] = key_factors
+        if self.attention_forget_gate and self.attention_forget_gate_conditioning == "none" and query_coefficients is None:
+            # Static coefficients under the input-free gate run the query-coefficient decay operation
+            # with every query's coefficients equal; broadcasting sums the per-query gradients back to
+            # the per-head coefficients, as the log decay's broadcast does to A_log and dt_bias.
+            represented = parameters.pop("polynomial_coefficients", None)
+            if represented is None:
+                raise ValueError("The input-free gate requires learned static coefficients")
+            parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
+                represented.astype(jnp.float32), (batch, seq_len, self.num_heads, self.attention_degree + 1))
+            kernel_coefficient_activation = "tanh"
         from scaffolds.transformer.attention.path import PATH_ARGUMENTS
 
         path_parameters = {name: parameters.pop(name, None) for name in PATH_ARGUMENTS}

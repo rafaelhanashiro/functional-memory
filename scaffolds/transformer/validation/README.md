@@ -11,6 +11,27 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Input-free distance gate for static coefficients (2026-11-09)
+
+`model.attention_forget_gate_conditioning: none` gives learned static polynomial coefficients
+a learned rate that reads no token, `lambda = exp(A_log) softplus(dt_bias)` per layer and head,
+or per layer, head and order with `attention_forget_gate_per_order: true`; each weight is
+multiplied by `exp(-(t - i) lambda)`. The coefficients and the negated rates are broadcast to
+every query and run through the existing query-coefficient decay operation: the blocked scan or
+strips, or the Mosaic `query_decay` and `per_order_query_decay` kernels.
+
+`tests/test_input_free_gate.py` checks on CPU the output and the gradients of q, k, v, the
+coefficients, `A_log` and `dt_bias` against FP64 through the scan and the strips at degrees 4
+and 8, shared and per order; duplicated per-order gates against the shared gate; the
+parameters and their initialization, the weight-decay exemptions, training steps,
+diagnostics, and the accept and reject rules; and that historical recipes are unchanged. Its
+GPU cases compare the Mosaic path with FP64 at 2,048 tokens and width 64 with unit-scale scores,
+each order's coefficient and gate gradients compared separately, plus duplicated orders against
+the shared kernels and a two-layer model against the FP32 blocked model. At commit `cc36a392`
+the GPU cases passed on H100 (`dogo`, job 240451: 8 GPU checks), and production acceptance
+passed its GPU checks on H100 SXM (`dogo`, jobs 240497–240500). B300 refuses the degree-eight
+per-order gate before building a kernel.
+
 ### ALiBi on softmax and the exponential (2026-11-08)
 
 `model.attention_forget_gate_form: constant` applies to softmax and the unnormalized

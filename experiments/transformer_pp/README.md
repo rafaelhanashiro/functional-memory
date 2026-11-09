@@ -1240,3 +1240,41 @@ submit() {  # run ID, acceptance adapter
 submit r9320e5cd3071 query_distance_degree_acceptance
 submit r20fe6fe864bc per_order_decay_acceptance
 ```
+
+## Learned input-free gates for static coefficients
+
+The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
+pretrains the static controls `r4339a245820e` (m = 4) and `r9c69dd7cfc8d` (m = 8) with RoPE
+replaced by the input-free query-distance gate (`model.attention_forget_gate_conditioning:
+none`, `lambda = exp(A_log) softplus(dt_bias)`): `r0e76396bdee5` and `rc60345dfcff7` with one
+gate per layer and head, and `r527a30ff7ed1` and `re253a5f1b03e` with one per layer, head and
+order. They train on the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a
+24-hour `standard` or `long` allocation; acceptance's pilot measures the update time and stops
+before training if the run would not fit. B300 cannot hold the degree-eight per-order gates;
+the other runs use H100 too, so that all four train on one GPU type. These jobs have
+no scheduling dependencies on each other.
+
+[`static_distance_gate_acceptance`](static_distance_gate_acceptance.py) pins each shared-gate
+run's static control by SHA256 and rejects any scientific difference except
+`positional_encoding: none` and the gate fields; a per-order run's pinned control is its
+shared-gate run, and only `attention_forget_gate_per_order` may differ. At initialization every
+parameter other than the gate must equal the control's seed-42 start (state hash), `A_log` and
+`dt_bias` must be the query-distance gates' draws (`r3e26412b2811`, `r9320e5cd3071`), and
+per-order gates must repeat one draw over the orders, whose collapse recovers the shared-gate
+run's start. Acceptance then runs the gate's CPU and GPU tests (`tests/test_input_free_gate.py`
+with the Mosaic decay-kernel and per-order qualifications), the full-recipe pilot and the
+fresh-process resume.
+
+From the isolated `claude/static-distance-gates` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+for run in r0e76396bdee5 r527a30ff7ed1 rc60345dfcff7 re253a5f1b03e; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_distance_gate_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```

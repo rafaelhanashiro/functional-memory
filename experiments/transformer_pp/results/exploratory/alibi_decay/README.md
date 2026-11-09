@@ -1,4 +1,4 @@
-# ALiBi-style constant decay without RoPE
+# ALiBi-style distance decay without RoPE
 
 Opened: **2026-10-29**. Home cluster: **Kennel**.
 
@@ -12,8 +12,10 @@ do the same? This topic replaces the gate by a constant per layer and head,
 linear bias in log space, with `lambda_h` learned. Like the forget-gate run it compares
 with, it uses **no positional encoding**, so the decay is the only source of position.
 A [second part](#softmax-and-exp-with-alibis-fixed-slopes) asks the same of softmax and exp
-with ALiBi itself: the slopes fixed, as in the original. The runs live in the
-[Transformer++ study](../../../README.md) and enter no canonical comparison.
+with ALiBi itself: the slopes fixed, as in the original. A
+[third](#learned-input-free-gates-for-static-coefficients) gives learned static coefficients a
+learned decay that reads no token, shared or per polynomial order, at degrees four and eight.
+The runs live in the [Transformer++ study](../../../README.md) and enter no canonical comparison.
 
 ## Runs (degree-four query polynomial)
 
@@ -68,6 +70,74 @@ GPU tests on the strips) passed: softmax on one B300 (`akita`, `standard`, job 2
 8 h 55 min), exp on one H100 SXM (`dogo`, `long`, job 239929, 11 h 16 min). Launch commands are
 in the [study README](../../../README.md#alibi-on-softmax-and-exp).
 
+## Learned input-free gates for static coefficients
+
+Added 2026-11-09. Does a learned distance decay help learned static coefficients without RoPE,
+as the query-distance gates help query coefficients (degree-four query + W decay: validation-best
+PPL 14.709 with RoPE, `rca97cc9db8f2`, against 14.198 with the gate and no positional encoding,
+`r3e26412b2811`)? Four runs replace RoPE in the static controls by the query-distance gate of
+`r3e26412b2811` (shared) and `r507193d47450` (per order) with its input projection removed. The
+rate reads no token:
+
+`lambda = exp(A_log) softplus(dt_bias)` per layer and head (shared gate), or per layer, head
+and order (per-order gates), and the weight from key `i` to query `t` is
+`sum_r c_r s_ti^r exp(-(t-i) lambda)` (per order: `exp(-(t-i) lambda_r)`), with
+`s_ti = q_t·k_i / sqrt(d_K)` and the static coefficients `c_r` per layer and head.
+
+For a rate that reads no token, the cumulative product of FoX and the query's rate to the
+power `t - i` coincide. `A_log` and `dt_bias` keep the query gate's Gated DeltaNet
+initialization (`exp(A_log)` uniform on (0, 16), `softplus(dt_bias)` log-uniform on
+[0.001, 0.1]) and its seed-42 draws, and are exempt from weight decay. At the start, half-lives
+`ln 2 / lambda` over the 210 layer-heads are 1.3 / 9.2 / 62 tokens (10th / 50th / 90th
+percentiles). Per-order gates start as copies of the shared draw, so each per-order run starts
+equal to its shared-gate run. Static coefficients have no input projection, so no coefficient
+weight decay applies.
+
+| Role | Run | Label | m | Gate | Position |
+| --- | --- | --- | ---: | --- | --- |
+| Primary: shared gate | `r0e76396bdee5` | `static-m4-learned-alibi-gate-no-rope` | 4 | input-free | gate only |
+| Primary: per-order gates | `r527a30ff7ed1` | `static-m4-per-order-learned-alibi-gate-no-rope` | 4 | input-free, per order | gate only |
+| Primary: shared gate | `rc60345dfcff7` | `static-m8-learned-alibi-gate-no-rope` | 8 | input-free | gate only |
+| Primary: per-order gates | `re253a5f1b03e` | `static-m8-per-order-learned-alibi-gate-no-rope` | 8 | input-free, per order | gate only |
+| Control: static | `r4339a245820e` | `static-m4-head-scale` | 4 | none | RoPE |
+| Control: static | `r9c69dd7cfc8d` | `static-m8-head-scale` | 8 | none | RoPE |
+| Reference: query, no gate | `rca97cc9db8f2` | `query-m4-w-decay` | 4 | none | RoPE |
+| Reference: query gate | `r3e26412b2811` | `query-m4-query-distance-no-rope-w-decay` | 4 | reads `x_t` | gate only |
+| Reference: query gates | `r507193d47450` | `query-m4-per-order-query-gate-nope-wd` | 4 | reads `x_t`, per order | gate only |
+| Reference: query gate | `r9320e5cd3071` | `query-m8-query-distance-no-rope-w-decay` | 8 | reads `x_t` | gate only |
+| Reference: query gates | `r20fe6fe864bc` | `query-m8-per-order-query-gate-nope-wd` | 8 | reads `x_t`, per order | gate only |
+
+Each shared-gate run is its static control's recipe with `positional_encoding: none` and the
+gate (`attention_forget_gate: true`, `attention_forget_gate_mode: query_distance`,
+`attention_forget_gate_conditioning: none`); each per-order run adds
+`attention_forget_gate_per_order: true` to its shared-gate run. Everything else is the
+control's: learned static per-head coefficients stored factorial-scaled (`c_r = c~_r / r!`,
+Taylor start), canonical QK RMSNorm with per-head scaling, head RMSNorm output scaling, the
+Mosaic kernels, seed 42, 2,048 tokens, batch 256, 7,570 updates, learning rate 0.001 with 455
+warmup updates and cosine decay to 0.0001, and weight decay 0.1. Every parameter other than
+the gate starts at its control's start, and the gate at the query-distance gate's draws.
+
+| Run | Parameters |
+| --- | ---: |
+| Static control, m = 4 / 8 | 198,454,636 / 198,455,476 |
+| Shared input-free gate, m = 4 / 8 | 198,455,056 / 198,455,896 |
+| Per-order input-free gates, m = 4 / 8 | 198,456,736 / 198,459,256 |
+
+The runs train on the Mosaic decay kernels (`query_decay`, `per_order_query_decay`) with every
+query's coefficients and rates equal, on one H100 each: B300 cannot hold the degree-eight
+per-order gates, and the other three runs use H100 too, so that all four train on one GPU
+type. Qualification (the scaffold's `tests/test_input_free_gate.py` and the study adapter
+`static_distance_gate_acceptance.py`) checks the output and every gradient against FP64 on the
+blocked scan and strips and, on the allocated GPU, on the Mosaic kernels at 2,048 tokens; that
+duplicated orders reproduce the shared gate; the initialization against the pinned controls;
+the weight-decay masks; and the shared full-recipe pilot and resume. Launch commands are in the
+[study README](../../../README.md#learned-input-free-gates-for-static-coefficients).
+
+Each shared gate compares with its RoPE static control, each per-order run with its shared-gate
+run, and each static gate with its query-distance counterpart at the same degree and gate
+sharing. Best PPL is the lowest validation PPL over all evaluations; terminal PPL is at update
+7,570.
+
 ## Findings and open decision
 
 ### Softmax and exp with ALiBi's fixed slopes
@@ -89,6 +159,40 @@ Validation-best PPL is at update 7,500 for all six runs; each has 28 evaluations
   against softmax ALiBi, lower from update 3,000 on (11 of 28 evaluations) by 0.4–0.9%, and
   −0.87% against exp ALiBi, lower at 26 of 28. Its decay is learned and query-dependent, so
   this is not a matched comparison.
+
+### Learned input-free gates for static coefficients
+
+All four completed 7,570 updates on one H100 SXM each (`dogo`, jobs 240497–240500) without
+preemption. Validation-best PPL; each comparison covers all 28 evaluations.
+
+| Run | m | Gate | Validation-best PPL / update | Terminal | vs RoPE static | vs query-coefficient gate run |
+| --- | ---: | --- | --- | ---: | ---: | ---: |
+| `r0e76396bdee5` | 4 | shared | 14.304 / 7,570 | 14.304 | −3.14% (14.767) | +0.75% (14.198) |
+| `r527a30ff7ed1` | 4 | per order | 14.285 / 7,500 | 14.288 | −3.26% (14.767) | +2.83% (13.892) |
+| `rc60345dfcff7` | 8 | shared | 14.135 / 7,500 | 14.138 | −1.11% (14.294) | +1.41% (13.939) |
+| `re253a5f1b03e` | 8 | per order | 14.261 / 7,500 | 14.266 | −0.23% (14.294) | +3.49% (13.780) |
+
+- **A learned decay replaces RoPE for static coefficients.** Both shared gates are below their
+  RoPE controls at all 28 evaluations: by 3.14% at degree four and 1.11% at degree eight at the
+  best update, and by 2.6–3.2% and 0.8–1.1% from update 3,000 on.
+- **Per-order gates do not help static coefficients.** At degree four they tie the shared gate
+  (−0.13%; within 0.3% from update 3,000 on). At degree eight they trail it by 0.89% and are
+  above it at 27 of 28 evaluations; the gap narrows from 4.4% at update 1,000 to 0.9% without
+  closing, and the run is above its RoPE control from update 1,300 to 5,000. Its early gradient
+  spikes (pre-clip norms up to 103 before update 1,500) subside: from update 3,000 on its
+  largest norm is 44 and 0.8% of updates clip (36 of 4,570), against 53 and 1.6% (71 of 4,570)
+  for the shared gate.
+- **Static runs trail the query-coefficient gate runs at every evaluation**: shared gates by
+  0.75% (m = 4) and 1.41% (m = 8), per-order gates by 2.83% and 3.49%. These pairs differ in
+  the coefficients' and the gate's input dependence together. With query coefficients and query
+  gates, per-order gating gained 2.2% (m = 4) and 1.1% (m = 8); here it gains nothing.
+- The degree-eight static shared gate trails fixed ALiBi on softmax (13.899) and exp (13.901)
+  by 1.7%.
+- **What the gates learned.** At update 7,570 the median half-life over the 210 layer-heads is
+  9.8 tokens for both shared gates and 6.7–9.1 (m = 4) and 6.9–10.7 (m = 8) for the orders of
+  the per-order gates, longer than the query gates' 0.9–5.0. As with the query gates, the top
+  orders hold the most long-range heads: above 100 tokens, 41 and 51 of 210 for orders 3 and 4
+  at m = 4 and 50 and 45 for orders 7 and 8 at m = 8, against 12–27 for the other orders.
 
 ### Degree-four query polynomial
 
