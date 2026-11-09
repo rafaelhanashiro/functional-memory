@@ -348,6 +348,23 @@ sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --me
   experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml af919f3f4af1a3e647d267cf098d385bbb952941 1 H100
 ```
 
+The intercept-and-odd query run `r0bdac8e1b97b` (orders 0, 1, 3, 5 and 7, query + weight
+decay at degree seven) is hosted on ORCD and trained on one H200. It ends at 16.054
+terminal PPL, 9.8% above the even-only query run; the topic reports the comparison.
+It launched from `worktrees/odd_powers`, branch `claude/odd-powers-orcd`, after
+committing its recipe:
+
+```bash
+RUN=r0bdac8e1b97b
+sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
+  --gres=gpu:h200:1 \
+  scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H200
+```
+
+Once a run has started training, its `config.json` records the source commit, so a
+resubmission passes that original launch commit (`0c9eed33` here) rather than `HEAD`.
+
 ### Per-order coefficient gates
 
 The [order-gates topic](results/exploratory/order_gates/README.md) asks whether
@@ -956,6 +973,40 @@ sbatch --parsable --nice=0 --partition=long --gres=gpu:b300:1 --cpus-per-task=16
   --error=experiments/transformer_pp/runs/r8d4fc24ef537/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
   experiments/transformer_pp/runs/r8d4fc24ef537/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
+## ALiBi on softmax and exp
+
+Two runs put ALiBi with its fixed slopes on the exponential kernels without RoPE. Each copies
+the no-RoPE forget-gate run on its kernel and changes the gate to
+`attention_forget_gate_form: constant` with `attention_forget_gate_constant_rate: fixed`:
+every score gains `-m_h (t - i)`, `m_h = 2^(-8 h / 14)` for heads `h = 1..14` in every layer,
+with no trainable parameter. `softmax(s - m_h (t - i))` is ALiBi; exp keeps its per-head output
+RMSNorm. `records create` set the causal strips (`attention_blocked_implementation: strips`),
+where the sources trained on the scan. See the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md).
+
+| Run | Label | Source | Kernel | Parameters |
+| --- | --- | --- | --- | ---: |
+| `ref652c257797` | softmax-alibi-fixed-no-rope | `r5adc29a91e3b` | softmax | 198,440,146 |
+| `r7820049184ef` | exp-alibi-fixed-no-rope | `r183f08346ddc` | unnormalized exp | 198,453,586 |
+
+Home cluster: **Kennel**. GPU acceptance runs `tests/test_constant_decay.py`'s 2,048-token
+BF16 strips cases against FP64 ALiBi before training. From the isolated
+`claude/alibi-softmax-exp` worktree, after committing the inputs, submit each on one B300 or
+H100 SXM, excluding the H100 PCIe node `mastiff` (the strips' FoX softmax ran 11.7 s per update
+there, past 24 hours for 7,570 updates) and the B200 node `shiba`, with the partition
+(`standard` or `long`) chosen from the live allowance:
+
+```bash
+for run in ref652c257797 r7820049184ef; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
 ```
 
 ## Query-dependent distance decay

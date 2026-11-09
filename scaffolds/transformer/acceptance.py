@@ -144,8 +144,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and config.get("continuation", {}).get("parent_checkpoint")):
         paths.append("scaffolds/transformer/tests/test_forget_gate_continuation.py")
-    if (cpu and model.get("attention_forget_gate", False)
-            and model.get("attention_forget_gate_form", "input") == "constant"):
+    if (model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "constant"
+            and (cpu or model.get("attention_degree") is None)):
+        # On GPU, the softmax and exponential ALiBi cases at the production context.
         paths.append(CONSTANT_DECAY_TESTS)
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "sigmoid"):
@@ -710,6 +712,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_forget_gate_per_order=False,
                                            attention_forget_gate_mode="cumulative",
                                            attention_forget_gate_form="input",
+                                           attention_forget_gate_constant_rate="learned",
                                            attention_forget_gate_conditioning="query",
                                            attention_forget_gate_rate_activation="softplus",
                                            positional_encoding="rope",
@@ -766,6 +769,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
+        attention_forget_gate_constant_rate="learned",
         attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
         positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",

@@ -19,8 +19,11 @@ draws (and names) as the query gate. For such a rate the cumulative product and 
 alpha ** (t-i) coincide; it is the query-distance gate of learned static coefficients.
 
 The ``constant`` form drops the token dependence: log alpha_t = -exp(A_log) per layer and
-head, so every weight decays as exp(-lambda_h (t - i)), ALiBi's linear bias in log space.
-lambda_h starts at ALiBi's geometric slopes 2^(-8 h / H), h = 1..H, in every layer.
+head, so every weight decays as exp(-lambda_h (t - i)), ALiBi's linear bias in log space; on
+softmax and the exponential the decay adds -lambda_h (t - i) to every score, ALiBi itself.
+lambda_h starts at ALiBi's geometric slopes 2^(-8 h / H), h = 1..H, in every layer. With the
+``fixed`` constant rate lambda_h stays at those slopes and the form has no parameter: the
+fixed log rate and the learned rate's start are the same FP32 array (``alibi_log_rate``).
 
 The ``sigmoid`` form is the Forgetting Transformer's original gate (Lin et al., 2025):
 alpha_t = sigmoid(x_t w_f + b_f) per layer and head, so log alpha_t = -softplus(-(x_t w_f + b_f)).
@@ -44,17 +47,25 @@ ALL_PARAMETERS = (*PARAMETERS, KEY_PARAMETER, "forget_gate_bias")
 FORMS = ("input", "constant", "sigmoid")
 # The tokens an input-form rate reads: the query, both endpoints, or none.
 CONDITIONINGS = ("query", "query_key", "none")
+# The constant form's rate: one learned log rate per layer and head, or ALiBi's slopes fixed.
+CONSTANT_RATES = ("learned", "fixed")
 # The Forgetting Transformer's N(0, 0.02^2) draw for w_f (HuggingFace LLaMA's initializer_range).
 SIGMOID_KERNEL_STD = 0.02
 
 
-def parameter_names(form: str = "input", conditioning: str = "query") -> tuple[str, ...]:
+def parameter_names(form: str = "input", conditioning: str = "query",
+                    constant_rate: str = "learned") -> tuple[str, ...]:
     if form not in FORMS:
         raise ValueError(f"Unknown forget gate form: {form}")
     if conditioning not in CONDITIONINGS or (form != "input" and conditioning != "query"):
         raise ValueError("Unsupported forget gate conditioning")
+    if constant_rate not in CONSTANT_RATES:
+        raise ValueError(f"Unknown constant forget gate rate: {constant_rate}")
+    if constant_rate != "learned" and form != "constant":
+        raise ValueError("A fixed forget gate rate requires the constant forget gate form")
     if form != "input":
-        return {"constant": CONSTANT_PARAMETERS, "sigmoid": SIGMOID_PARAMETERS}[form]
+        return {"constant": CONSTANT_PARAMETERS if constant_rate == "learned" else (),
+                "sigmoid": SIGMOID_PARAMETERS}[form]
     if conditioning == "none":
         return INPUT_FREE_PARAMETERS
     return (*PARAMETERS, KEY_PARAMETER) if conditioning == "query_key" else PARAMETERS
@@ -65,11 +76,17 @@ def alibi_log_slopes(num_heads: int) -> list[float]:
     return [-8.0 * (head + 1) / num_heads * math.log(2.0) for head in range(num_heads)]
 
 
+def alibi_log_rate(num_heads: int) -> jax.Array:
+    """FP32 log rates [heads, 1] at ALiBi's slopes: the fixed constant rate and the learned one's start."""
+    return jnp.asarray(alibi_log_slopes(num_heads), jnp.float32).reshape(num_heads, 1)
+
+
 def parameter_specs(*, hidden_size: int, form: str = "input", conditioning: str = "query",
-                    rate_activation: str = "softplus", order_count: int | None = None):
+                    rate_activation: str = "softplus", constant_rate: str = "learned",
+                    order_count: int | None = None):
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
-    parameter_names(form, conditioning)
+    names = parameter_names(form, conditioning, constant_rate)
     if order_count is not None and (form != "input" or rate_activation != "softplus"
                                    or isinstance(order_count, bool) or not isinstance(order_count, int)
                                    or order_count < 2):
@@ -77,8 +94,9 @@ def parameter_specs(*, hidden_size: int, form: str = "input", conditioning: str 
     if rate_activation not in ("softplus", "sigmoid") or (rate_activation != "softplus" and (form != "input" or conditioning != "query")):
         raise ValueError("Unsupported forget gate rate activation")
     if form == "constant":
-        return (AttentionParameterSpec(name="forget_gate_log_rate", argument="forget_gate_log_rate", initial=(0.0,),
-                                       sharing="per_head", weight_decay=False, initializer="alibi_log_slope"),)
+        # A fixed rate is ALiBi's slopes themselves (alibi_log_rate): nothing is trained.
+        return tuple(AttentionParameterSpec(name=name, argument=name, initial=(0.0,), sharing="per_head",
+                                            weight_decay=False, initializer="alibi_log_slope") for name in names)
     if form == "sigmoid":
         return (
             AttentionParameterSpec(name="forget_gate_kernel", argument="forget_gate_kernel",

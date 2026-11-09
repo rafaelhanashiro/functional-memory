@@ -217,8 +217,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Bounded query rate + W decay | `r4f169e5370da` | complete | 14.1969 | 7500 | 14.2003 |
 | Per-order query distance + W decay | `r507193d47450` | complete | 13.8918 | 7500 | 13.8941 |
 | Per-order query-key distance + W decay | `r03be769d2069` | complete | 13.7084 | 7500 | 13.7124 |
-| Query-dependent distance decay + W decay, m = 8 | `r9320e5cd3071` | planned | — | — | — |
-| Per-order query distance + W decay, m = 8 | `r20fe6fe864bc` | planned | — | — | — |
+| Query-dependent distance decay + W decay, m = 8 | `r9320e5cd3071` | complete | 13.9388 | 7500 | 13.9412 |
+| Per-order query distance + W decay, m = 8 | `r20fe6fe864bc` | complete | 13.7796 | 7500 | 13.7853 |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
@@ -263,15 +263,15 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
   start equal (median 4.7–5.6 tokens at update 100); the split forms by update 900.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
-The six runs differ in their decay rule, without separately tuned optimization.
-The endpoint, bounded-rate and per-order runs use the Mosaic kernels; the FoX and
+The eight runs differ in their decay rule or degree, without separately tuned optimization.
+The endpoint, bounded-rate, per-order and degree-eight runs use the Mosaic kernels; the FoX and
 query-only runs use the blocked reference. They differ numerically in two ways: Mosaic
 rounds attention weights and score gradients to BF16 (see [Attention kernels](#attention-kernels)),
 and the blocked scan sums the K and V gradients of its 128-query blocks in BF16 (about 1.3x
 the BF16 floor under this decay; see the scaffold validation record).
 The endpoint and bounded-rate runs were preempted once and resumed from their latest
-checkpoint; both per-order runs trained without interruption on one H100 SXM each.
-The degree-eight pair below is pending.
+checkpoint; both degree-four per-order runs trained without interruption on one H100 SXM each.
+The degree-eight pair (below) trained without interruption on one H100 PCIe each.
 
 ## Independent per-order gates
 
@@ -334,13 +334,34 @@ against FP64, with unit-scale scores so that every order contributes and each or
 coefficient and gate gradients compared separately, and duplicated orders against the
 shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate against FP64.
 
+- Per-order gates still help at degree eight, about half as much as at degree four. The
+  per-order query gate ends at 13.780 vs 13.939 for the shared gate (best; −1.14%, terminal
+  −1.12%), lower at 27 of 28 evaluations (not at update 700) and by 1.1–1.5% from update
+  3,000 on.
+- Degree eight improves the shared gate by 1.8% but does not reach cumulative FoX at the same
+  degree. The shared gate ends at 13.939 vs 14.198 at degree four (lower at 27 of 28, by
+  1.8–2.0% from update 3,000 on) and 0.23% above degree-eight FoX (`r9353f554b917`, 13.907,
+  pinned in the [forget_gate](../forget_gate/README.md) topic), above it at 26 of 28
+  evaluations and by 0.2–0.4% from update 3,000 on.
+- The degree-eight per-order query gate beats both FoX runs but not the degree-four per-order
+  query–key gate: −0.91% against degree-eight FoX (lower at 25 of 28), −0.68% against
+  degree-four FoX (13.873), and −0.81% against the degree-four per-order query gate (13.892,
+  lower at 26 of 28), but +0.52% against the per-order query–key gate (13.708, above it at 26
+  of 28).
+- Low orders learn short ranges; the two highest orders learn the longest. At update 7,570
+  the median half-life over the 210 layer-heads is 1.43 tokens for order 0 (96 heads below
+  one token), 1.85, 1.52 and 1.37 for orders 1–3, 2.02–2.49 for orders 4–6, 5.04 for order 7
+  (41 heads above 100 tokens) and 4.49 for order 8 (49 heads above 100 tokens). The shared
+  gate's median is 2.99 tokens (43 heads above 100). All orders start equal (5.2–6.2 tokens
+  at update 100); the split forms within the first 1,000 updates.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
 FoX, and the bounded rate changes nothing. Per-order rates improve both gates by
-about 2.2%, and the per-order query–key gate beats cumulative FoX by 1.2%. Evaluate the
-degree-eight pair against its shared gate, then decide whether to confirm with additional
-seeds and promote the topic as its own collection, or discard it.
+about 2.2% at degree four and the query gate by 1.1% at degree eight. The degree-four
+per-order query–key gate remains the best run, 1.2% below cumulative FoX. Decide whether to
+confirm with additional seeds and promote the topic as its own collection, or discard it.
 
 ## Regeneration
 
