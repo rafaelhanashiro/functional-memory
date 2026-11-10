@@ -105,6 +105,9 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         specs = spline_specs(
             hidden_size=config.hidden_size, degree=config.attention_degree, knots=config.attention_spline_knots,
             conditioning=config.attention_coefficient_conditioning,
+            initialization=config.attention_coefficient_initialization,
+            initial_intercept=getattr(config, "attention_spline_initial_intercept", None),
+            initial_slope=getattr(config, "attention_spline_initial_slope", None),
             amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
             projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
             kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False))

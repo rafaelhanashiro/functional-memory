@@ -1,0 +1,16 @@
+{
+  "comparison": {
+    "control_run_id": "rf303a5f94487",
+    "intended_change": "Spline initialization: f(score) = 1 + score / 4; all other scientific settings preserved"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml",
+    "sha256": "a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee"
+  },
+  "home_cluster": "kennel",
+  "label": "spline-query-m4-affine-init-w-decay",
+  "name": "spline-query-m4-affine-init-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r2de7f1f4c9ce",
+  "status": "planned"
+}

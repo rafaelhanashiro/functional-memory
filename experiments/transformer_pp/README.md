@@ -1132,16 +1132,23 @@ polynomials of `r4339a245820e` and `rca97cc9db8f2` by quartic B-splines on the f
 Question, recipe, controls and results are in the
 [spline topic](results/exploratory/spline_attention/README.md).
 
-Home cluster: Kennel. Branch `claude/spline-attention`, worktree `worktrees/spline-attention`.
-B300 updates project about 10-11 hours, so both use `standard` on one B300:
+The affine-initialization comparison uses `r325f7d64b940` (static) and
+`r2de7f1f4c9ce` (query + W decay), starting from f(s) = 1 + s/4 while preserving
+the paired spline recipes. See the topic above for the exact coefficients, controls
+and validation checks.
+
+Home cluster: Kennel. Branch `codex/spline-affine-init`, worktree
+`worktrees/spline-affine-init`. Each independent one-B300 run is expected to fit
+`standard`'s 24-hour limit (source runs took about 11 and 12 hours). Check live
+standard/long allowances before submission and commit all frozen inputs first:
 
 ```bash
-for run in r7e4193fcafbd rf303a5f94487; do
+for run in r325f7d64b940 r2de7f1f4c9ce; do
   sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
     --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_affine_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
 done
 ```

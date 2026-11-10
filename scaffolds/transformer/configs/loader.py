@@ -108,6 +108,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         spline_knots = value["model"].setdefault("attention_spline_knots", None)
         if isinstance(spline_knots, (tuple, list)):
             value["model"]["attention_spline_knots"] = [float(knot) for knot in spline_knots]
+        value["model"].setdefault("attention_spline_initial_intercept", None)
+        value["model"].setdefault("attention_spline_initial_slope", None)
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_denominator_degree", None)
