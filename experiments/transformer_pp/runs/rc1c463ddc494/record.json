@@ -1,0 +1,18 @@
+{
+  "checkpoint_retention": {
+    "policy": "conditional_diagnostic_parameters",
+    "reason": "If a clipped event is observed, preserve its exact pre-update parameters for frozen derivative comparisons without trajectory drift; no optimizer state is retained."
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/config.yaml",
+    "sha256": "b0088eae55c27f6dcfb456d033f089bc0b2b9b05bfe05fa65bff73a1a0c741fa"
+  },
+  "home_cluster": "kennel",
+  "label": "per-order-query-key-gradient-tail-replay-h100",
+  "name": "per-order-query-key-gradient-tail-replay-h100",
+  "parent_run_id": "r03be769d2069",
+  "record_schema_version": 1,
+  "run_id": "rc1c463ddc494",
+  "seed": 42,
+  "status": "planned"
+}

@@ -68,6 +68,28 @@ def write_json(path, value):
     path.write_text(json.dumps(serializable(value), indent=2, sort_keys=True, allow_nan=False) + "\n")
 
 
+def retain_spike_parameters(output, worst, clip_threshold):
+    """Keep only the frozen parameters needed to remeasure an observed clipped update."""
+    row, state = worst["row"], worst["state"]
+    if row["gradient_norm_pre_clip"] <= clip_threshold:
+        return None
+    step = int(state.step)
+    if step != row["step"] - 1:
+        raise ValueError("Worst-update snapshot is not its pre-update state")
+    path = output / "checkpoints" / str(step) / "default"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with ocp.StandardCheckpointer() as checkpointer:
+        checkpointer.save(path, {"params": state.params, "step": state.step})
+    return {
+        "format": "frozen-spike-parameters", "version": 1, "path": str(path),
+        "relative_directory": str(path.parent.relative_to(output)),
+        "step": step, "observed_update": row["step"],
+        "gradient_norm_pre_clip": row["gradient_norm_pre_clip"],
+        "contents": ["params", "step"], "resumable_training_state": False,
+        "purpose": "Compare frozen derivatives at the native replay's exact pre-spike parameters.",
+    }
+
+
 def gradient_statistics(grads, layers):
     """Device reductions, including root-owned arrays with an explicit layer axis."""
     grouped = {}
@@ -145,6 +167,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--checkpoint", type=int, default=7500)
     parser.add_argument("--end-step", type=int, default=7570)
+    parser.add_argument("--retain-spike-state", action="store_true",
+                        help="Retain worst pre-update parameters only if its native gradient exceeds the clipping threshold")
     args = parser.parse_args()
     run, output = args.parent_run.resolve(), args.output.resolve()
     if output == run or output.is_relative_to(run):
@@ -240,6 +264,9 @@ def main():
             expected = float(matching[0]["train_gradient_norm_max"])
             report["native_replay"]["historical_window_max"] = expected
             report["native_replay"]["historical_window_max_absolute_error"] = abs(expected - report["native_replay"]["max_gradient_norm"])
+        if args.retain_spike_state:
+            report["diagnostic_checkpoint"] = retain_spike_parameters(
+                output, worst, config.optim.grad_clip_norm)
         write_json(summary_path, report)
         del state, before, batches, micro_rngs
         probe_state = jax.device_put(worst["state"])

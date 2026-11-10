@@ -43,13 +43,18 @@ update_record(run, {'status':'running', 'source_commit':commit,
 (run/'data_identity.json').write_text(json.dumps(identity,indent=2,sort_keys=True)+'\n')
 PY
 
-PARENT_RUN="$($PYTHON - "$RUN_DIR/config.yaml" <<'PY'
+mapfile -t REPLAY_SETTINGS < <("$PYTHON" - "$RUN_DIR/config.yaml" <<'PY'
 import sys,yaml
-print(yaml.safe_load(open(sys.argv[1]))['diagnostic']['parent_run_path'])
+diagnostic=yaml.safe_load(open(sys.argv[1]))['diagnostic']
+print(diagnostic['parent_run_path'])
+print('1' if diagnostic.get('retain_spike_state',False) else '0')
 PY
-)"
+)
+PARENT_RUN="${REPLAY_SETTINGS[0]}"
+REPLAY_OPTIONS=()
+if [[ "${REPLAY_SETTINGS[1]}" == 1 ]]; then REPLAY_OPTIONS+=(--retain-spike-state); fi
 set +e
-"$PYTHON" -m experiments.transformer_pp.diagnose_gate_spikes --parent-run "$PARENT_RUN" --output "$RUN_DIR" --checkpoint 7500 --end-step 7570
+"$PYTHON" -m experiments.transformer_pp.diagnose_gate_spikes --parent-run "$PARENT_RUN" --output "$RUN_DIR" --checkpoint 7500 --end-step 7570 "${REPLAY_OPTIONS[@]}"
 RESULT=$?
 set -e
 "$PYTHON" - "$RUN_DIR" "$RESULT" <<'PY'
@@ -60,8 +65,12 @@ from scaffolds.records import capture_artifacts,load_run,update_record
 run, code = Path(sys.argv[1]), int(sys.argv[2])
 attempts=load_run(run)['attempts']
 attempts[-1].update(exit_code=code,finished_utc=datetime.now(UTC).isoformat())
+summary_path=run/'summary.json'
+summary=json.loads(summary_path.read_text()) if summary_path.exists() else {}
+checkpoint=summary.get('diagnostic_checkpoint')
+checkpoint_path=run/checkpoint['relative_directory'] if checkpoint else None
 update_record(run,{'status':'complete' if code == 0 else 'failed', 'attempts':attempts,
                    'error':None if code == 0 else f'Diagnostic process exited {code}',
-                   **capture_artifacts(run)})
+                   **capture_artifacts(run,checkpoint_directory=checkpoint_path)})
 PY
 exit "$RESULT"
