@@ -565,3 +565,61 @@ def test_spline_production_recipe_selects_spline_strips_and_query_tests():
     assert spec.required_backend == "blocked"
     gpu = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=False)
     assert preflight.SPLINE_ATTENTION_TESTS in gpu and preflight.BLOCKED_STRIPS_TESTS not in gpu
+
+
+@pytest.mark.parametrize("hook_result", ("absent", "pass", "fail"))
+def test_experiment_pilot_check_precedes_success_and_records_its_facts(tmp_path, monkeypatch, hook_result):
+    import json
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    config = Config()
+    experiment = {"identity": "launcher", "source_commit": "a" * 40, "config": config_to_dict(config),
+                  "gpu_type": "H100", "dependency_lock_sha256": "b" * 64, "runtime": {},
+                  "allocation_seconds": 24 * 3600}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="H100")
+    on_device = preflight.on_devices(experiment, ["NVIDIA H100"])
+    for name in ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization"):
+        preflight.record(tmp_path / f"{name}.json", on_device)
+    validation = {"step": 20, "validation_nll": 2.0, "attention_diagnostics": {"valid": True,
+                  "coefficients": {"effective": [1.001]}}}
+    outcome = {"final_step": 20, "data_parallel_devices": 1, "start_step": 0,
+               "attention_backend": "blocked", "timing": {}}
+    calls = []
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "blocked", "device_kinds": ["NVIDIA H100"]}
+        if name == "pilot" and output.name == "pilot-result.json":
+            (tmp_path / "pilot").mkdir()
+            (tmp_path / "pilot/metrics.jsonl").write_text(json.dumps(validation) + "\n")
+            return dict(outcome)
+        raise RuntimeError("stop at resume")
+
+    def check_pilot(loaded, observed_outcome, observed_validation):
+        assert loaded is config
+        assert observed_outcome == outcome and observed_validation == validation
+        assert not (tmp_path / "pilot.json").exists()
+        calls.append("check_pilot")
+        if hook_result == "fail":
+            raise RuntimeError("coefficient pilot failed")
+        return {"coefficient_delta": 0.001}
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "project_runtime", lambda timing, recipe: {"projected_seconds": 60})
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(),
+                                    check_pilot=None if hook_result == "absent" else check_pilot)
+    with pytest.raises(RuntimeError, match="coefficient pilot failed" if hook_result == "fail" else "stop at resume"):
+        preflight._run(spec, args, experiment)
+    assert calls == ([] if hook_result == "absent" else ["check_pilot"])
+    if hook_result == "fail":
+        assert not (tmp_path / "pilot.json").exists()
+        assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "pilot"
+    else:
+        result = json.loads((tmp_path / "pilot.json").read_text())
+        assert preflight.passed(tmp_path / "pilot.json", on_device)
+        if hook_result == "pass":
+            assert result["outcome"]["experiment_check"] == {"coefficient_delta": 0.001}
+        else:
+            assert "experiment_check" not in result["outcome"]

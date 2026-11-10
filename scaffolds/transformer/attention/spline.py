@@ -27,6 +27,10 @@ or per query token and head before any per-score work.
 ``taylor_coefficients`` gives the exact B-spline coefficients of the Taylor polynomial
 T_p(s) = sum_(r<=p) s^r / r! by blossoming; the spline then equals T_p on the whole real
 line, extrapolation included, and starts as the degree-p Taylor kernel.
+``initial_coefficients(..., initialization="affine", intercept=u, slope=v)`` instead
+starts at u + v*s, using that affine function's values at the Greville abscissae.
+``initial_coefficients(..., initialization="polynomial", power_coefficients=(c_0, ..., c_k))``
+starts at sum_r c_r*s^r for k <= p, represented exactly in the full degree-p basis.
 """
 
 from fractions import Fraction
@@ -141,36 +145,82 @@ def piece_matrix(knots, degree: int, dtype=jnp.float32) -> np.ndarray:
 
 
 @lru_cache(maxsize=None)
-def taylor_coefficients(knots: tuple[float, ...], degree: int) -> tuple[Fraction, ...]:
-    """Exact B-spline coefficients of T_p(s) = sum_(r<=p) s^r / r! by blossoming.
+def _polynomial_coefficients(knots: tuple[float, ...], degree: int,
+                            powers: tuple[Fraction, ...]) -> tuple[Fraction, ...]:
+    """Blossom a degree-at-most-p polynomial into the full degree-p B-spline basis.
 
-    theta_i is the blossom of T_p at the knots t_(i+1)..t_(i+p): the blossom of s^r is the
-    elementary symmetric polynomial e_r of those knots divided by C(p, r). The result is
-    checked exactly: every piece of sum_i theta_i B_i is T_p.
+    The blossom of s^r is the elementary symmetric polynomial e_r of the p knot
+    arguments divided by C(p, r). Verify every piece exactly, including the end pieces
+    that continue beyond the knot interval.
     """
     knots = validate_knots(knots, degree)
     t = clamped_knot_vector(knots, degree)
-    taylor = tuple(Fraction(1, math.factorial(order)) for order in range(degree + 1))
+    powers = powers + (Fraction(0),) * (degree + 1 - len(powers))
     coefficients = []
     for index in range(basis_count(knots, degree)):
         arguments = t[index + 1:index + degree + 1]
-        coefficients.append(sum((taylor[order] * sum((math.prod(subset, start=Fraction(1))
+        coefficients.append(sum((powers[order] * sum((math.prod(subset, start=Fraction(1))
                                                       for subset in combinations(arguments, order)), Fraction(0))
                                  / math.comb(degree, order) for order in range(degree + 1)), Fraction(0)))
     for piece in _monomial_pieces(knots, degree):
         represented = tuple(sum((theta * function[power] for theta, function in zip(coefficients, piece)), Fraction(0))
                             for power in range(degree + 1))
-        if represented != taylor:
-            raise AssertionError("Blossoming did not reproduce the Taylor polynomial")
+        if represented != powers:
+            raise AssertionError("Blossoming did not reproduce the initial polynomial")
     return tuple(coefficients)
+
+
+@lru_cache(maxsize=None)
+def taylor_coefficients(knots: tuple[float, ...], degree: int) -> tuple[Fraction, ...]:
+    """Exact B-spline coefficients of T_p(s) = sum_(r<=p) s^r / r!."""
+    return _polynomial_coefficients(knots, degree, tuple(Fraction(1, math.factorial(r)) for r in range(degree + 1)))
+
+
+def initial_coefficients(knots, degree: int, initialization: str = "taylor", *,
+                         intercept: float | None = None, slope: float | None = None,
+                         power_coefficients: tuple[float, ...] | list[float] | None = None) -> tuple[Fraction, ...]:
+    """Exact initial coefficients, including the polynomial extensions of the end pieces.
+
+    An affine function is reproduced by setting theta_i = intercept + slope*g_i, where
+    g_i is the mean of the degree knots t_(i+1)..t_(i+degree) (the Greville abscissa).
+    The affine settings are explicit, finite numbers; they never change Taylor starts.
+    Polynomial starts use explicit ascending power coefficients, with degree no greater
+    than the basis degree, and preserve every trainable spline coordinate.
+    """
+    knots = validate_knots(knots, degree)
+    if initialization != "affine" and (intercept is not None or slope is not None):
+        raise ValueError("Spline initial intercept and slope apply only to affine initialization")
+    if initialization != "polynomial" and power_coefficients is not None:
+        raise ValueError("Spline initial power coefficients apply only to polynomial initialization")
+    if initialization == "polynomial":
+        if (not isinstance(power_coefficients, (tuple, list)) or not power_coefficients
+                or len(power_coefficients) > degree + 1
+                or any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+                       for value in power_coefficients)):
+            raise ValueError("Polynomial spline initialization requires a nonempty list of finite power coefficients "
+                             "of degree at most the spline degree")
+        return _polynomial_coefficients(knots, degree, tuple(Fraction(value) for value in power_coefficients))
+    if initialization == "taylor":
+        return taylor_coefficients(knots, degree)
+    if initialization != "affine":
+        raise ValueError("B-spline coefficient initialization must be taylor, affine, or polynomial")
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+           for value in (intercept, slope)):
+        raise ValueError("Affine spline initialization requires a finite initial intercept and slope")
+    t = clamped_knot_vector(knots, degree)
+    intercept, slope = Fraction(intercept), Fraction(slope)
+    return tuple(intercept + slope * sum(t[index + 1:index + degree + 1], Fraction(0)) / degree
+                 for index in range(basis_count(knots, degree)))
 
 
 def parameter_specs(*, hidden_size: int, degree: int, knots, conditioning: str = "static",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
-                    kernel_weight_decay: bool = False):
-    """Per layer/head FP32 arrays, starting f at T_degree: static theta, or the query generator.
+                    kernel_weight_decay: bool = False, initialization: str = "taylor",
+                    initial_intercept: float | None = None, initial_slope: float | None = None,
+                    initial_power_coefficients: tuple[float, ...] | None = None):
+    """Per layer/head FP32 arrays, starting at the selected function: static theta or query generator.
 
-    Static: ``spline_coefficients`` [basis], the Taylor B-spline coefficients, without weight
+    Static: ``spline_coefficients`` [basis], the initial B-spline coefficients, without weight
     decay. Query: ``query_spline_bias`` b (those coefficients) and ``query_spline_amplitude`` a
     (amplitude_initial) [basis], without weight decay, and ``query_spline_kernel`` W
     [hidden_size, basis], N(0, projection_initial_std^2) from the mechanism stream, decayed only
@@ -178,7 +228,9 @@ def parameter_specs(*, hidden_size: int, degree: int, knots, conditioning: str =
     """
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
-    initial = tuple(float(value) for value in taylor_coefficients(validate_knots(knots, degree), degree))
+    initial = tuple(float(value) for value in initial_coefficients(
+        knots, degree, initialization, intercept=initial_intercept, slope=initial_slope,
+        power_coefficients=initial_power_coefficients))
     if conditioning == "static":
         return (AttentionParameterSpec(name="spline_coefficients", argument="spline_coefficients",
                                        initial=initial, sharing="per_head", weight_decay=False),)

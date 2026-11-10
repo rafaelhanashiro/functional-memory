@@ -123,6 +123,8 @@ class AcceptanceSpec:
     """Qualification horizon; launchers that require one allocation can override it at runtime."""
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
+    check_pilot: Callable | None = None
+    """Called as (config, outcome, terminal_validation) before pilot success; returns extra facts."""
 
 
 def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool,
@@ -746,7 +748,9 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
                                            attention_denominator_constant="fixed",
-                                           attention_kernel_basis="polynomial", attention_spline_knots=None))
+                                           attention_kernel_basis="polynomial", attention_spline_knots=None,
+                                           attention_spline_initial_intercept=None, attention_spline_initial_slope=None,
+                                           attention_spline_initial_power_coefficients=None))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -801,7 +805,9 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
         qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
-        attention_kernel_basis="polynomial", attention_spline_knots=None))
+        attention_kernel_basis="polynomial", attention_spline_knots=None,
+        attention_spline_initial_intercept=None, attention_spline_initial_slope=None,
+        attention_spline_initial_power_coefficients=None))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):
@@ -1034,6 +1040,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             validation = next(row for row in records if row["step"] == pilot_stop)
             if not math.isfinite(validation["validation_nll"]) or not validation["attention_diagnostics"]["valid"]:
                 raise RuntimeError("Pilot validation or attention diagnostics failed")
+            if spec.check_pilot is not None:
+                outcome["experiment_check"] = spec.check_pilot(load_config(args.config), outcome, validation)
             projection = project_runtime(outcome["timing"], load_config(args.config))
             # Keep the component costs even when the budget gate rejects the allocation.
             write_json(directory / "runtime-projection.json", projection)

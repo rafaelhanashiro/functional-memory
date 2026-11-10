@@ -188,11 +188,17 @@ class ModelConfig:
     # degree + 1 times), so len(knots) + degree - 1 coefficients (attention/spline.py). Outside
     # the end knots f continues its first or last polynomial piece. Requires learned direct
     # per_head coefficients, static or diagonal tanh query-conditioned (theta_j(x_t) =
-    # b_j + a_j tanh(w_j^T x_t)), Taylor initialization (theta starts at the exact B-spline
-    # coefficients of T_degree), no factorial scales or selected orders, unnormalized
-    # dot-product attention without a forget gate or PaTH, on the blocked backend.
+    # b_j + a_j tanh(w_j^T x_t)), Taylor, affine, or polynomial initialization, no factorial scales or selected
+    # orders, unnormalized dot-product attention without a forget gate or PaTH, on the blocked backend.
     attention_kernel_basis: Literal["polynomial", "bspline"] = "polynomial"
     attention_spline_knots: tuple[float, ...] | None = None
+    # With coefficient initialization "affine", start the spline at intercept + slope*s.
+    # Both must be specified; null preserves historical Taylor starts.
+    attention_spline_initial_intercept: float | None = None
+    attention_spline_initial_slope: float | None = None
+    # With coefficient initialization "polynomial", ascending powers of the initial function,
+    # of degree <= attention_degree. These initialize the full learned B-spline basis.
+    attention_spline_initial_power_coefficients: tuple[float, ...] | None = None
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
     # (even m, row-normalized only), so the kernel is nonnegative by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
@@ -203,7 +209,9 @@ class ModelConfig:
     # "linear" starts the numerator at s and the denominator at 1 (a_1 = 1, b_0 = 1,
     # all other coefficients 0), so a rational kernel starts at linear attention
     # divided by the number of visible keys. Not available with sum_of_squares.
-    attention_coefficient_initialization: Literal["taylor", "linear"] = "taylor"
+    # "affine" and "polynomial" are B-spline only, using the corresponding explicit
+    # attention_spline_initial_* fields above.
+    attention_coefficient_initialization: Literal["taylor", "linear", "affine", "polynomial"] = "taylor"
     # Rational kernels only: the denominator's degree (null: attention_degree) and form.
     # "direct" learns b_1..b_d of 1 + sum_r b_r s^r; "sum_of_squares" (even d) learns
     # u_1..u_k, w_1..w_k of (1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2, a nonnegative
@@ -488,9 +496,11 @@ class ModelConfig:
                     or self.attention_coefficient_parameterization != "direct"
                     or self.attention_coefficient_sharing != "per_head"
                     or self.attention_degree is None or self.attention_degree < 1 or self.attention_normalization
-                    or self.attention_coefficient_initialization != "taylor"):
+                    or (self.attention_coefficient_initialization != "taylor"
+                        and not (self.attention_kernel_basis == "bspline"
+                                 and self.attention_coefficient_initialization in ("affine", "polynomial")))):
                 raise ValueError("Query-conditioned coefficients require unnormalized learned/direct "
-                                 "per_head polynomial attention with Taylor initialization")
+                                 "per_head attention with Taylor initialization (or an affine/polynomial B-spline start)")
             if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
                 raise ValueError("Query-conditioned identity coefficients require degree-one attention")
         amplitude, spread = self.attention_coefficient_amplitude_initial, self.attention_coefficient_projection_initial_std
@@ -668,7 +678,7 @@ class ModelConfig:
             self.attention_coefficient_orders = tuple(orders)
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
-        if self.attention_coefficient_initialization not in ("taylor", "linear"):
+        if self.attention_coefficient_initialization not in ("taylor", "linear", "affine", "polynomial"):
             raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
         if self.attention_coefficient_initialization != "taylor":
             if self.attention_coefficients != "learned":
@@ -794,8 +804,13 @@ def _validate_kernel_basis(model: ModelConfig) -> None:
     if basis == "polynomial":
         if model.attention_spline_knots is not None:
             raise ValueError("model.attention_spline_knots applies to the bspline kernel basis only")
+        if (model.attention_coefficient_initialization in ("affine", "polynomial")
+                or model.attention_spline_initial_intercept is not None
+                or model.attention_spline_initial_slope is not None
+                or model.attention_spline_initial_power_coefficients is not None):
+            raise ValueError("Spline initialization applies to the bspline kernel basis only")
         return
-    from scaffolds.transformer.attention.spline import validate_knots
+    from scaffolds.transformer.attention.spline import initial_coefficients, validate_knots
 
     degree = model.attention_degree
     if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
@@ -816,9 +831,13 @@ def _validate_kernel_basis(model: ModelConfig) -> None:
             or model.attention_coefficient_sharing != "per_head"
             or model.attention_fixed_coefficients is not None or model.attention_fixed_square_factors is not None):
         raise ValueError("The bspline kernel basis requires learned direct per_head coefficients")
-    if model.attention_coefficient_initialization != "taylor":
-        raise ValueError("The bspline kernel basis starts at the exact B-spline coefficients of the Taylor "
-                         "polynomial: attention_coefficient_initialization must be taylor")
+    initial_coefficients(model.attention_spline_knots, degree, model.attention_coefficient_initialization,
+                         intercept=model.attention_spline_initial_intercept,
+                         slope=model.attention_spline_initial_slope,
+                         power_coefficients=model.attention_spline_initial_power_coefficients)
+    if model.attention_spline_initial_power_coefficients is not None:
+        model.attention_spline_initial_power_coefficients = tuple(
+            float(value) for value in model.attention_spline_initial_power_coefficients)
     if (model.attention_coefficient_scale != "none" or model.attention_coefficient_amplitude_scale != "none"
             or model.attention_coefficient_orders is not None):
         raise ValueError("B-spline coefficients are not monomial orders: no factorial coefficient or amplitude "
