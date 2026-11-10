@@ -32,7 +32,7 @@ FIELDS = (
     "metrics_sha256", "completion_sha256",
 )
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#ffffff"
-# The validated categorical palette's first seven slots, one per variant. Fixed Taylor, static and
+# The validated categorical palette's eight slots, one per variant. Fixed Taylor, static and
 # query keep their degree-scaling hues; marker shapes repeat the hue, and every point carries its
 # value because aqua, yellow and magenta sit below 3:1 contrast on the surface.
 VARIANTS = {
@@ -41,6 +41,7 @@ VARIANTS = {
     "fixed_taylor_m4": ("Fixed Taylor m = 4", "Fixed Taylor", "#2a78d6", "o"),
     "static_m4": ("Static m = 4", "Static", "#1baf7a", "D"),
     "query_m4_w_decay": ("Query m = 4 + W decay", "Query + W decay", "#eda100", "s"),
+    "query_m8_w_decay": ("Query m = 8 + W decay", "Query m = 8 + W decay", "#e34948", "X"),
     "fox_no_pe_query_m4_w_decay": ("FoX query m = 4 + W decay", "FoX query + W decay", "#008300", "p"),
     "fox_no_pe_exp": ("FoX exp", "FoX exp", "#6250d6", "^"),
 }
@@ -78,6 +79,8 @@ SPEC = {variant: {f"model.{key}": value for key, value in spec.items()} for vari
                   "attention_coefficient_scale": "factorial", "attention_coefficient_sharing": "per_head",
                   "attention_forget_gate": False, "positional_encoding": "rope"},
     "query_m4_w_decay": {**_QUERY, **_UNNORMALIZED, "attention_forget_gate": False, "positional_encoding": "rope"},
+    "query_m8_w_decay": {**_QUERY, **_UNNORMALIZED, "attention_degree": 8, "attention_forget_gate": False,
+                         "positional_encoding": "rope"},
     "fox_no_pe_query_m4_w_decay": {**_QUERY, **_UNNORMALIZED, "attention_forget_gate": True,
                                    "positional_encoding": "none"},
     "fox_no_pe_exp": {**_FIXED, **_UNNORMALIZED, "attention_degree": None, "attention_forget_gate": True,
@@ -106,6 +109,10 @@ ABSENT = {
     "model.attention_forget_gate_form": "input", "model.attention_forget_gate_mode": "cumulative",
     "model.attention_forget_gate_rate_activation": "softplus", "model.qk_norm_token_scale": "none",
     "model.qk_norm_token_scale_kernel_weight_decay": False, "optim.query_coefficient_learning_rate_scale": 1.0,
+    "model.attention_coefficient_gate": "none", "model.attention_forget_gate_constant_rate": "learned",
+    "model.attention_forget_gate_per_order": False, "model.attention_kernel_basis": "polynomial",
+    "model.attention_spline_knots": None, "optim.coefficient_release_step": None,
+    "optim.coefficient_release_schedule": None, "optim.coefficient_release_end_step": None,
 }
 
 
@@ -122,9 +129,15 @@ def variant_of(model: dict) -> str:
         if model.get("attention_coefficients", "fixed") == "fixed":
             return "fox_no_pe_exp" if gate else "exp"
         raise ValueError("Unnormalized attention without a polynomial degree must be exp")
-    if degree != 4:
-        raise ValueError(f"The polynomial variants here have degree 4, not {degree}")
+    if degree not in (4, 8):
+        raise ValueError(f"The polynomial variants here have degree 4 (or 8 for query + W decay), not {degree}")
     coefficients = model.get("attention_coefficients")
+    if degree == 8:
+        if (coefficients == "learned" and model.get("attention_coefficient_conditioning") == "query"
+                and model.get("attention_coefficient_activation") == "tanh"
+                and model.get("attention_coefficient_kernel_weight_decay") and not gate):
+            return "query_m8_w_decay"
+        raise ValueError("Degree 8 appears here only as query + W decay without a forget gate")
     if coefficients == "fixed" and model.get("attention_fixed_coefficients") is None and not gate:
         return "fixed_taylor_m4"
     if coefficients == "learned":
@@ -348,9 +361,9 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         sizes = {row["shape"]: row["parameter_count"] for row in rows if row["variant"] == "softmax"}
         figure.text(0.07, 0.905, f"Transformer++ at 1× Chinchilla for each shape ({sizes['reference'] / 1e6:.1f}M "
                     f"and {sizes['l12_d640'] / 1e6:.1f}M parameters), validation-best perplexity, one run (seed 42) "
-                    "per point.\nPolynomial variants have degree m = 4; FoX variants use the Gated DeltaNet gate and no "
-                    "positional encoding. The 12-layer runs\nhalve the batch, hold the update count within 0.3%, and "
-                    "keep the validation set and everything else of their partner.",
+                    "per point.\nPolynomial variants have degree m = 4 unless labeled m = 8; FoX variants use the "
+                    "Gated DeltaNet gate and no positional encoding.\nThe 12-layer runs halve the batch, hold the "
+                    "update count within 0.3%, and keep the validation set and everything else of their partner.",
                     fontsize=8.5, color=MUTED, va="top", linespacing=1.35)
         figure.savefig(output / "model_scale.png", dpi=180, metadata={"Software": "Matplotlib"})
         figure.savefig(output / "model_scale.pdf", metadata={"CreationDate": None, "ModDate": None,
