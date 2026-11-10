@@ -1,4 +1,22 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init/experiments/transformer_pp/runs/r2c5883395415/.runtime/acceptance/B300-1",
+      "allocation": "JobId=241604 JobName=r2c5883395415 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-10T11:16:03 EligibleTime=2026-11-10T11:16:03 AccrueTime=2026-11-10T11:16:03 StartTime=2026-11-10T11:16:25 EndTime=2026-11-11T11:16:25 Deadline=N/A PreemptEligibleTime=2026-11-10T11:16:25 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-10T11:16:25 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:1731452 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init/experiments/transformer_pp/runs/r2c5883395415/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init/experiments/transformer_pp/runs/r2c5883395415/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r2c5883395415/config.yaml",
+      "config_sha256": "cfecf2e9b53069dee5e98b42e63a66b5ff338a9af5190ea99503bf5a80f4f248",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "a62a4bcd53384de2fa66a99ba88bc3bb7f1b2b16",
+      "slurm_job_id": "241604",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T16:16:30.188567+00:00",
+      "stop_after_step": null
+    }
+  ],
   "comparison": {
     "control_run_id": "rf303a5f94487",
     "intended_change": "Spline initialization: f(score) = 1 + score + score**2 / 2; all other scientific settings preserved"
@@ -7,10 +25,38 @@
     "path": "experiments/transformer_pp/runs/r2c5883395415/config.yaml",
     "sha256": "cfecf2e9b53069dee5e98b42e63a66b5ff338a9af5190ea99503bf5a80f4f248"
   },
+  "frozen_execution_sha256": "7b23c29ec3a8a53984c1c00edaa0be23bd69502607ee575a4792b364c8498a7e",
   "home_cluster": "kennel",
   "label": "spline-query-m4-quadratic-init-w-decay",
+  "log_path": "experiments/transformer_pp/runs/r2c5883395415/training.log",
+  "monitoring": {
+    "acceptance_stall_seconds": 3600,
+    "config_path": "/data/cl/u/rafah/home/.codex/run-monitors/spline-quadratic-01a0b28f/config.json",
+    "delivery": "verified_durable_thread_queue_and_resume_requested",
+    "end_utc": "2026-11-17T16:16:33.620174+00:00",
+    "observer": "scaffolds.launch.run_monitor",
+    "poll_seconds": 300,
+    "read_only": true,
+    "source_commit": "d168bebeb418fca2180a84cfb21aba3b8608977f",
+    "source_sha256": "5317331b901bf819edbe45c6d0802649d309af9b93e6915c79e2465b1da30096",
+    "state_path": "/data/cl/u/rafah/home/.codex/run-monitors/spline-quadratic-01a0b28f/state.json",
+    "summary_seconds": 21600,
+    "thread_id": "01a0b28f-d9dd-7603-ba63-651c38090595",
+    "training_stall_seconds": 1200
+  },
   "name": "spline-query-m4-quadratic-init-w-decay",
   "record_schema_version": 1,
   "run_id": "r2c5883395415",
-  "status": "planned"
+  "source_commit": "a62a4bcd53384de2fa66a99ba88bc3bb7f1b2b16",
+  "status": "acceptance",
+  "submission": {
+    "command": "sbatch --parsable --partition=long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r2c5883395415 --output=experiments/transformer_pp/runs/r2c5883395415/training.log --error=experiments/transformer_pp/runs/r2c5883395415/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_quadratic_acceptance experiments/transformer_pp/runs/r2c5883395415/config.yaml a62a4bcd53384de2fa66a99ba88bc3bb7f1b2b16 1 B300",
+    "gpu_count": 1,
+    "gpu_type": "B300",
+    "launch_commit": "a62a4bcd53384de2fa66a99ba88bc3bb7f1b2b16",
+    "partition": "long",
+    "slurm_job_id": "241604",
+    "submitted_utc": "2026-11-10T16:16:03.921344+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-quadratic-init"
+  }
 }
