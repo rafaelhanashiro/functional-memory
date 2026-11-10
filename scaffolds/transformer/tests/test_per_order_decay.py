@@ -188,11 +188,12 @@ def _lowers_for_cuda(function, *operands):
     jax.jit(lambda *arguments: function(*arguments)).trace(*operands).lower(lowering_platforms=("cuda",))
 
 
-@pytest.mark.parametrize("degree,width", ((8, 64), (12, 128)), ids=("m8-dk64", "m12-dk128"))
+@pytest.mark.parametrize("degree,width", ((8, 64), (12, 64), (12, 128)), ids=("m8-dk64", "m12-dk64", "m12-dk128"))
 @pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
 def test_mosaic_per_order_hopper_kernels_lower_in_exactly_their_counted_shared_memory(endpoint, degree, width):
     """H100's forward, dQ and dK/dV lower at 2,048 tokens in exactly the bytes hopper_smem_bytes counts
-    (one byte less fails), below H100's limit up to the largest degree and width a recipe may use."""
+    (one byte less fails), below H100's limit at the runs' degrees eight and twelve (d_K = 64) and up
+    to the largest degree and width a recipe may use."""
     from jax.experimental.mosaic.gpu.core import artificial_shared_memory_limit
     from scaffolds.transformer.attention.backends.mosaic import common, hopper
 
@@ -220,8 +221,8 @@ def test_mosaic_per_order_hopper_kernels_lower_in_exactly_their_counted_shared_m
 @pytest.mark.parametrize("endpoint,fits", ((False, 7), (True, 6)), ids=("query", "query_key"))
 def test_mosaic_per_order_entry_points_lower_on_h100_and_refuse_what_b300_cannot_hold(monkeypatch, endpoint, fits):
     """At d_K = 64 and 2,048 tokens, through the production entry point (forward, dQ, dK and dV):
-    H100 lowers degree eight; B300 lowers its largest per-order degree, and the next degree raises
-    before any kernel is traced."""
+    H100 lowers the runs' degrees eight and twelve; B300 lowers its largest per-order degree, and the
+    next degree and degree twelve raise before any kernel is traced."""
     from scaffolds.transformer.attention.backends.mosaic import api, blackwell, hopper
 
     def operands(degree):
@@ -234,17 +235,20 @@ def test_mosaic_per_order_entry_points_lower_on_h100_and_refuse_what_b300_cannot
     attention = api.per_order_endpoint_decay_attention if endpoint else api.per_order_query_decay_attention
     gradients = lambda *a: jax.vjp(attention, *a)[1](jnp.ones(a[2].shape, a[2].dtype))
     monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
-    _lowers_for_cuda(gradients, *operands(8))
+    for degree in (8, 12):
+        _lowers_for_cuda(gradients, *operands(degree))
     monkeypatch.setattr(api, "_kernels", lambda: ("blackwell", blackwell))
     _lowers_for_cuda(gradients, *operands(fits))
     monkeypatch.setattr(api, "_kernels", lambda: ("blackwell", None))  # no kernel may be reached
-    with pytest.raises(ValueError, match=f"degree {fits + 1} .* exceeds B300 shared memory"):
-        _lowers_for_cuda(gradients, *operands(fits + 1))
+    for degree in (fits + 1, 12):
+        with pytest.raises(ValueError, match=f"degree {degree} .* exceeds B300 shared memory"):
+            _lowers_for_cuda(gradients, *operands(degree))
 
 
 @pytest.mark.parametrize("conditioning", ("query", "query_key"))
 def test_mosaic_accepts_per_order_recipes_that_fit_h100(conditioning):
-    """The degree-eight per-order runs validate for the Mosaic backend; the degree cap still applies."""
+    """The degree-eight and degree-twelve per-order runs validate for the Mosaic backend; the degree
+    cap still applies."""
     settings = dict(attention_backend="mosaic", attention_forget_gate_per_order=True,
                     attention_forget_gate_conditioning=conditioning, max_seq_len=2048, hidden_size=128,
                     qk_head_dim=64, value_head_dim=64, intermediate_size=256)
@@ -295,7 +299,7 @@ def test_gpu_per_order_forward_and_backward(endpoint):
 
 
 # Mosaic GPU kernels for per-order gates: the same mathematics fused into the causal tiles.
-MOSAIC_DEGREES = (4, 8)  # the per-order runs' degrees
+MOSAIC_DEGREES = (4, 8, 12)  # the per-order runs' degrees
 
 
 def _requires_mosaic_gpu():
@@ -327,13 +331,17 @@ def mosaic_operation(q, k, v, c, x, wq, wk, rate, bias, *, endpoint, per_order=T
                           query_decay_mode="query_distance", **gate)
 
 
-def _mosaic_inputs(time=2048, *, key=True, degree=4):
+def _mosaic_inputs(time=2048, *, key=True, degree=4, top=False):
+    """``top`` keeps only the four highest orders' coefficients, so that they dominate the output
+    and the q, k and v gradients, which every kernel computes, instead of hardly moving them."""
     arrays = list(inputs(time, degree, width=64, value_width=64))
     if degree > 4:
         # Unit-scale scores, as QK RMSNorm gives, so that every order up to the degree
         # contributes; the degree-4 checks keep the score scale they were qualified with.
         arrays[:2] = [a / .4 for a in arrays[:2]]
     arrays[3] = arrays[3] / jnp.asarray([math.factorial(r) for r in range(degree + 1)], jnp.float32)
+    if top:
+        arrays[3] = arrays[3] * (jnp.arange(degree + 1) > degree - 4)
     if not key:
         arrays[6] = jnp.zeros_like(arrays[6])
     arrays[:3] = [a.astype(jnp.bfloat16) for a in arrays[:3]]
@@ -342,11 +350,14 @@ def _mosaic_inputs(time=2048, *, key=True, degree=4):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", MOSAIC_DEGREES)
+@pytest.mark.parametrize("degree,top", (*((degree, False) for degree in MOSAIC_DEGREES), (12, True)),
+                         ids=(*map(str, MOSAIC_DEGREES), "12-top"))
 @pytest.mark.parametrize("endpoint", (False, True), ids=("query", "query_key"))
-def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degree):
+def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degree, top):
+    """At degree 12 the top orders barely move the output and the q, k, v gradients, so a second
+    case keeps only orders 9-12; the zeroed orders' gate gradients are then exactly zero."""
     _requires_mosaic_gpu()
-    arrays, cotangent = _mosaic_inputs(key=endpoint, degree=degree)
+    arrays, cotangent = _mosaic_inputs(key=endpoint, degree=degree, top=top)
     def evaluate(*args):
         out, backward = jax.vjp(partial(mosaic_operation, endpoint=endpoint), *args)
         return out, backward(cotangent)
@@ -374,6 +385,9 @@ def test_mosaic_per_order_output_and_every_gradient_match_float64(endpoint, degr
         parts = ([(got, want)] if axis is None else
                  [(np.take(got, r, axis), np.take(want, r, axis)) for r in range(want.shape[axis])])
         for order, (part, reference) in enumerate(parts):
+            if not np.linalg.norm(reference):  # a zeroed order's gate gradients
+                np.testing.assert_array_equal(part, 0)
+                continue
             error = np.linalg.norm(part - reference) / np.linalg.norm(reference)
             assert error < tolerances[i], (endpoint, i, order, error)
 
@@ -385,7 +399,7 @@ def test_mosaic_duplicated_orders_reproduce_the_shared_gate_kernel(endpoint, deg
     """Every order a copy of one gate (the runs' initialization): the per-order kernels equal the
     shared-gate kernels, and each shared parameter's gradient is the sum over its copies."""
     _requires_mosaic_gpu()
-    if _blackwell_refuses(endpoint, degree, 1024):  # B300 holds both degrees at 1,024 tokens
+    if _blackwell_refuses(endpoint, degree, 1024):  # B300 holds every case at 1,024 tokens but query-key m = 12
         pytest.skip("B300 cannot hold this per-order shape")
     arrays, cotangent = _mosaic_inputs(1024, key=endpoint, degree=degree)
     q, k, v, c, x, wq, wk, rate, bias = arrays

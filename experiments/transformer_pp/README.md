@@ -1220,8 +1220,8 @@ per-order gates at degree eight at this shape; it could run the shared gate, but
 uses H100 too, so that the pair trains on the same GPU type. These jobs have no
 scheduling dependencies on each other.
 
-`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
-eight on the Mosaic backend, and requires every initial parameter to equal those of
+`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows degrees eight
+and twelve on the Mosaic backend, and requires every initial parameter to equal those of
 cumulative FoX `r9353f554b917` at the same seed. `per_order_decay_acceptance` pins
 `r9320e5cd3071` as the per-order run's shared-gate control, collapses the nine duplicated
 order axes, and verifies the control's initialization fingerprint.
@@ -1264,9 +1264,8 @@ control's at seed 42: the adapter pins the control recipe's initialization finge
 on CPU. Acceptance runs `tests/test_exponential_query_distance.py` on CPU, and its 2,048-token BF16
 strips cases against FP64 on the GPU, before training.
 
-Home cluster: **Kennel**. Branch `claude/data-dependent-gates`, worktree
-`worktrees/data-dependent-gates`. Both are allocated and not yet submitted. After committing the
-inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
+Home cluster: **Kennel**. From the isolated `claude/data-dependent-gates` worktree, after committing
+the inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
 are too slow there) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen
 from the live allowance. The ALiBi pair trained on the same strips in 8.9 h (B300) and 11.3 h
 (H100 SXM); the pilot projects each run's time and refuses an allocation it would not fit.
@@ -1308,8 +1307,7 @@ parameter the control's; collapsing the order axes must recover the control's in
 fingerprint. Acceptance runs `tests/test_per_order_cumulative.py` on CPU, and its degree-four and
 degree-eight 2,048-token BF16 strips cases against FP64 on the GPU, before training.
 
-Home cluster: **Kennel**, same branch and worktree; allocated and not yet submitted. Submit each on
-one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
+Home cluster: **Kennel**, from the same branch and worktree. Submit each on one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
 5.3 s per update at degree four (B300) and 9.8 s at degree eight (ORCD H100), and per-order gates
 add one decay factor per order. The degree-four run requests 24 hours, on `standard` or `long`
 from the live allowance; the degree-eight run requests 72 hours on `long`, since on an H100 it may
@@ -1327,4 +1325,77 @@ submit() {  # run ID, partition, time limit
 }
 submit r319b83140040 '<standard|long>' 24:00:00
 submit rf8fc9ab2cecc long 72:00:00
+```
+
+### Degree twelve
+
+The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
+trains the shared query gate (`r47bfe39ce9b4`: the recipe of `r9320e5cd3071` at degree
+twelve) and per-order query gates (`rfe140c073b2f`: `r47bfe39ce9b4` with per-order gates) on
+the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour allocation,
+in the partition chosen at launch from the live `standard` and `long` allowances
+([CLUSTERS.md](../../CLUSTERS.md)); acceptance's pilot measures the update time and stops
+before training if the run would not fit. Both runs accept only H100: B300 cannot hold the
+per-order gates at degree twelve, and the shared-gate run uses H100 too, so that the pair
+trains on the same GPU type. These jobs have no scheduling dependencies on each other.
+
+`query_distance_degree_acceptance` also allows degree twelve; no FoX run exists at that
+degree, so it requires every initial parameter to equal those of the cumulative FoX recipe
+`r9353f554b917` at degree twelve, built at the same seed. `per_order_decay_acceptance` pins
+`r47bfe39ce9b4` as the per-order run's shared-gate control, collapses the thirteen duplicated
+order axes, and verifies the control's initialization fingerprint.
+
+From the isolated `claude/per-order-m12` worktree, after committing its frozen execution set
+and setting the partition:
+
+```bash
+PARTITION=standard,long  # chosen at launch from the live allowances
+submit() {  # run ID, acceptance adapter
+  sbatch --parsable --partition="$PARTITION" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit r47bfe39ce9b4 query_distance_degree_acceptance
+submit rfe140c073b2f per_order_decay_acceptance
+```
+
+## Learned input-free gates for static coefficients
+
+The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
+pretrains the static controls `r4339a245820e` (m = 4) and `r9c69dd7cfc8d` (m = 8) with RoPE
+replaced by the input-free query-distance gate (`model.attention_forget_gate_conditioning:
+none`, `lambda = exp(A_log) softplus(dt_bias)`): `r0e76396bdee5` and `rc60345dfcff7` with one
+gate per layer and head, and `r527a30ff7ed1` and `re253a5f1b03e` with one per layer, head and
+order. They train on the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a
+24-hour `standard` or `long` allocation; acceptance's pilot measures the update time and stops
+before training if the run would not fit. B300 cannot hold the degree-eight per-order gates;
+the other runs use H100 too, so that all four train on one GPU type. These jobs have
+no scheduling dependencies on each other.
+
+[`static_distance_gate_acceptance`](static_distance_gate_acceptance.py) pins each shared-gate
+run's static control by SHA256 and rejects any scientific difference except
+`positional_encoding: none` and the gate fields; a per-order run's pinned control is its
+shared-gate run, and only `attention_forget_gate_per_order` may differ. At initialization every
+parameter other than the gate must equal the control's seed-42 start (state hash), `A_log` and
+`dt_bias` must be the query-distance gates' draws (`r3e26412b2811`, `r9320e5cd3071`), and
+per-order gates must repeat one draw over the orders, whose collapse recovers the shared-gate
+run's start. Acceptance then runs the gate's CPU and GPU tests (`tests/test_input_free_gate.py`
+with the Mosaic decay-kernel and per-order qualifications), the full-recipe pilot and the
+fresh-process resume.
+
+From the isolated `claude/static-distance-gates` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+for run in r0e76396bdee5 r527a30ff7ed1 rc60345dfcff7 re253a5f1b03e; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_distance_gate_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
 ```

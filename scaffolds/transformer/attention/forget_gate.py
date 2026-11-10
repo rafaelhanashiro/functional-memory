@@ -16,6 +16,11 @@ inside softplus; its pairwise input uses just the two endpoints. The query-only 
 rate option bounds lambda by exp(A_log), initializing sigmoid(dt_bias) to the same legacy dt
 draw. Its rate agrees at zero input; tokenwise rates and derivatives are not identical.
 
+``none`` conditioning removes the projection: lambda = exp(A_log) softplus(dt_bias) per layer
+and head (and order), a learned rate that reads no token, with the same A_log and dt_bias
+draws (and names) as the query gate. For such a rate the cumulative product and the query's
+alpha ** (t-i) coincide; it is the query-distance gate of learned static coefficients.
+
 The ``constant`` form drops the token dependence: log alpha_t = -exp(A_log) per layer and
 head, so every weight decays as exp(-lambda_h (t - i)), ALiBi's linear bias in log space; on
 softmax and the exponential the decay adds -lambda_h (t - i) to every score, ALiBi itself.
@@ -38,10 +43,13 @@ import jax.numpy as jnp
 
 PARAMETERS = ("forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias")
 KEY_PARAMETER = "forget_gate_key_kernel"
+INPUT_FREE_PARAMETERS = ("forget_gate_log_rate", "forget_gate_dt_bias")
 CONSTANT_PARAMETERS = ("forget_gate_log_rate",)
 SIGMOID_PARAMETERS = ("forget_gate_kernel", "forget_gate_bias")
 ALL_PARAMETERS = (*PARAMETERS, KEY_PARAMETER, "forget_gate_bias")
 FORMS = ("input", "constant", "sigmoid")
+# The tokens an input-form rate reads: the query, both endpoints, or none.
+CONDITIONINGS = ("query", "query_key", "none")
 # The constant form's rate: one learned log rate per layer and head, or ALiBi's slopes fixed.
 CONSTANT_RATES = ("learned", "fixed")
 # The Forgetting Transformer's N(0, 0.02^2) draw for w_f (HuggingFace LLaMA's initializer_range).
@@ -52,7 +60,7 @@ def parameter_names(form: str = "input", conditioning: str = "query",
                     constant_rate: str = "learned") -> tuple[str, ...]:
     if form not in FORMS:
         raise ValueError(f"Unknown forget gate form: {form}")
-    if conditioning not in ("query", "query_key") or (form != "input" and conditioning != "query"):
+    if conditioning not in CONDITIONINGS or (form != "input" and conditioning != "query"):
         raise ValueError("Unsupported forget gate conditioning")
     if constant_rate not in CONSTANT_RATES:
         raise ValueError(f"Unknown constant forget gate rate: {constant_rate}")
@@ -61,6 +69,8 @@ def parameter_names(form: str = "input", conditioning: str = "query",
     if form != "input":
         return {"constant": CONSTANT_PARAMETERS if constant_rate == "learned" else (),
                 "sigmoid": SIGMOID_PARAMETERS}[form]
+    if conditioning == "none":
+        return INPUT_FREE_PARAMETERS
     return (*PARAMETERS, KEY_PARAMETER) if conditioning == "query_key" else PARAMETERS
 
 
@@ -110,6 +120,8 @@ def parameter_specs(*, hidden_size: int, form: str = "input", conditioning: str 
     if conditioning == "query_key":
         specs += (AttentionParameterSpec(name=KEY_PARAMETER, argument=KEY_PARAMETER, initial=(0.0,) * hidden_size,
                                         initial_shape=(hidden_size,), sharing="per_head", weight_decay=True),)
+    elif conditioning == "none":
+        specs = specs[1:]  # A_log and dt_bias alone, with the query gate's draws
     if order_count is not None:
         specs = tuple(replace(spec, initial=spec.initial * order_count,
                               initial_shape=(order_count, len(spec.initial)),
@@ -123,6 +135,19 @@ def constant_log_decay(x, log_rate):
         raise ValueError("The constant forget gate requires x [B,T,D] and log_rate [H,1]")
     rate = jnp.exp(log_rate[:, 0].astype(jnp.float32))
     return jnp.broadcast_to(-rate, (x.shape[0], x.shape[1], log_rate.shape[0]))
+
+
+def input_free_log_decay(x, log_rate, dt_bias):
+    """FP32 log alpha [B,T,H] or [B,T,H,R] = -exp(A_log) softplus(dt_bias) for every token, from x [B,T,D]
+    (its batch and time only), log_rate and dt_bias [H,1] or, with an order axis, [H,R,1]. A nonfinite
+    parameter gives NaN rather than a rate saturated at zero."""
+    if (x.ndim != 3 or log_rate.ndim not in (2, 3) or log_rate.shape[-1] != 1
+            or dt_bias.shape != log_rate.shape):
+        raise ValueError("The input-free forget gate requires x [B,T,D] and log_rate, dt_bias [H,1] or [H,R,1]")
+    log_rate, dt_bias = log_rate[..., 0].astype(jnp.float32), dt_bias[..., 0].astype(jnp.float32)
+    log_alpha = jnp.where(jnp.isfinite(log_rate) & jnp.isfinite(dt_bias),
+                          -jnp.exp(log_rate) * jax.nn.softplus(dt_bias), jnp.nan)
+    return jnp.broadcast_to(log_alpha, (x.shape[0], x.shape[1], *log_alpha.shape))
 
 
 def sigmoid_log_decay(x, kernel, bias):

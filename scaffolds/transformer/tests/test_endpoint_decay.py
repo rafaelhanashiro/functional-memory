@@ -418,10 +418,17 @@ def _drop_key(variant, values):
 @pytest.mark.parametrize("variant,degree", (
     *(pytest.param(variant, 4, id=variant) for variant in MOSAIC_VARIANTS),
     pytest.param("query_softplus", 8, id="query_softplus-m8"),  # the shared gate of the degree-eight runs
+    pytest.param("query_softplus", 12, id="query_softplus-m12"),  # and of the degree-twelve runs
+    pytest.param("query_softplus", -12, id="query_softplus-m12-top"),  # its orders 9-12 alone
 ))
 def test_mosaic_full_context_output_and_gradients_match_host_fp64(variant, degree):
+    """Degree -12 is degree 12 with only orders 9-12 kept: at degree 12 the top orders barely move
+    the output and the q, k, v gradients, which the forward and dK/dV kernels compute."""
     _requires_mosaic_gpu()
+    top, degree = degree < 0, abs(degree)
     operands, cotangent = _mosaic_operands(variant, 2048, degree=degree)
+    if top:
+        operands = (*operands[:3], operands[3] * (jnp.arange(degree + 1) > degree - 4), *operands[4:])
     output, gradients = _numpy_vjp(operands, cotangent, activation="sigmoid" if variant == "query_sigmoid" else "softplus")
     actual = jax.jit(lambda *x: _vjp(_mosaic(variant), x, cotangent))(*_drop_key(variant, operands))
     # BF16 bounds of the Mosaic query-polynomial gates for output, dq, dk, dv; FP32 sums elsewhere.
@@ -430,8 +437,13 @@ def test_mosaic_full_context_output_and_gradients_match_host_fp64(variant, degre
     for i, (observed, wanted) in enumerate(zip(jax.tree.leaves(actual), expected, strict=True)):
         observed, wanted = np.asarray(observed, np.float64), np.asarray(wanted, np.float64)
         assert observed.shape == wanted.shape and np.isfinite(observed).all(), i
-        error = np.linalg.norm(observed - wanted) / np.linalg.norm(wanted)
-        assert error < tolerances[i], (variant, i, error)
+        # Above degree four the highest orders dominate the coefficient gradient's norm (at degree
+        # twelve, orders 0-8 each hold under 0.2% of it), so each order's is compared separately.
+        parts = ([(observed[..., r], wanted[..., r]) for r in range(degree + 1)] if i == 4 and degree > 4
+                 else [(observed, wanted)])
+        for order, (part, reference) in enumerate(parts):
+            error = np.linalg.norm(part - reference) / np.linalg.norm(reference)
+            assert error < tolerances[i], (variant, i, order, error)
 
 
 @pytest.mark.gpu

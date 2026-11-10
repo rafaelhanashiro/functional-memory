@@ -7,3 +7,5 @@ per_order_query,Per-order query distance + W decay,r507193d47450,complete,7500,2
 per_order_query_key,Per-order query-key distance + W decay,r03be769d2069,complete,7500,2.618011526,13.708438,7570,2.618303946,13.712447,-0.318047,-2.267475,-0.319495,-2.276910
 query_distance_m8,"Query-dependent distance decay + W decay, m = 8",r9320e5cd3071,complete,7500,2.634676524,13.938803,7570,2.634848003,13.941193,-0.258895,-1.823502,-0.261339,-1.840088
 per_order_query_m8,"Per-order query distance + W decay, m = 8",r20fe6fe864bc,complete,7500,2.623186776,13.779566,7570,2.623602005,13.785289,-0.159237,-1.142399,-0.155904,-1.118300
+query_distance_m12,"Query-dependent distance decay + W decay, m = 12",r47bfe39ce9b4,complete,7500,2.628373141,13.851218,7570,2.628751859,13.856464,-0.087585,-0.628356,-0.084729,-0.607760
+per_order_query_m12,"Per-order query distance + W decay, m = 12",rfe140c073b2f,complete,7500,2.621028212,13.749854,7570,2.621060069,13.750292,-0.101364,-0.731802,-0.106172,-0.766228

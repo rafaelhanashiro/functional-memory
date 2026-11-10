@@ -62,6 +62,7 @@ QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_de
 PER_ORDER_DECAY_TESTS = "scaffolds/transformer/tests/test_per_order_decay.py"
 PER_ORDER_CUMULATIVE_TESTS = "scaffolds/transformer/tests/test_per_order_cumulative.py"
 EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential_query_distance.py"
+INPUT_FREE_GATE_TESTS = "scaffolds/transformer/tests/test_input_free_gate.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
@@ -166,6 +167,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
         # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate.
         paths.append("scaffolds/transformer/tests/test_endpoint_decay.py")
+    if model.get("attention_forget_gate", False) and model.get("attention_forget_gate_conditioning", "query") == "none":
+        # Static coefficients under the input-free gate: CPU references through the blocked scan and
+        # strips, and on the GPU the Mosaic decay kernels through the production dispatch.
+        paths.append(INPUT_FREE_GATE_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):

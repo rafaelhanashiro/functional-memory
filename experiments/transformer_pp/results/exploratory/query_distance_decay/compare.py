@@ -17,12 +17,14 @@ ROOT = HERE.parents[4]
 BEGIN = "<!-- BEGIN GENERATED RESULTS -->"
 END = "<!-- END GENERATED RESULTS -->"
 ROLES = ("control", "query_distance", "query_key_distance", "bounded_query_distance",
-         "per_order_query", "per_order_query_key", "query_distance_m8", "per_order_query_m8")
+         "per_order_query", "per_order_query_key", "query_distance_m8", "per_order_query_m8",
+         "query_distance_m12", "per_order_query_m12")
 # The reference of each role's PPL deltas: the run it differs from by one gate change, by
-# per-order gating, or by degree eight.
+# per-order gating, or by degree (four to eight, eight to twelve).
 REFERENCES = (("query_key_distance", "query_distance"), ("bounded_query_distance", "query_distance"),
               ("per_order_query", "query_distance"), ("per_order_query_key", "query_key_distance"),
-              ("query_distance_m8", "query_distance"), ("per_order_query_m8", "query_distance_m8"))
+              ("query_distance_m8", "query_distance"), ("per_order_query_m8", "query_distance_m8"),
+              ("query_distance_m12", "query_distance_m8"), ("per_order_query_m12", "query_distance_m12"))
 STEPS = 7570
 
 
@@ -51,6 +53,11 @@ def scientific_recipe(recipe: dict) -> dict:
     model.setdefault("attention_forget_gate_conditioning", "query")
     model.setdefault("attention_forget_gate_rate_activation", "softplus")
     model.setdefault("attention_forget_gate_per_order", False)
+    model.setdefault("attention_coefficient_gate", "none")
+    model.setdefault("attention_kernel_basis", "polynomial")
+    model.setdefault("attention_spline_knots", None)
+    for key in ("coefficient_release_step", "coefficient_release_schedule", "coefficient_release_end_step"):
+        recipe["optim"].setdefault(key, None)
     recipe["continuation"].setdefault("preserve_all_parameters", False)
     for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir"):
         recipe["train"].pop(key, None)
@@ -82,14 +89,16 @@ def check_recipes(runs: dict) -> None:
             or control["model"]["max_seq_len"] != 2048 or control["model"]["attention_degree"] != 4
             or control["model"]["positional_encoding"] != "none"):
         raise ValueError("The selected control does not match this comparison's declared recipe")
-    degree_eight = scientific_recipe(runs["query_distance_m8"]["config"])
-    expected = scientific_recipe(runs["query_distance"]["config"])
-    expected["model"]["attention_degree"] = 8
-    if degree_eight != expected:
-        raise ValueError("query_distance_m8 differs from the query-dependent run beyond degree eight")
+    for role, degree in (("query_distance_m8", 8), ("query_distance_m12", 12)):
+        candidate = scientific_recipe(runs[role]["config"])
+        expected = scientific_recipe(runs["query_distance"]["config"])
+        expected["model"]["attention_degree"] = degree
+        if candidate != expected:
+            raise ValueError(f"{role} differs from the query-dependent run beyond degree {degree}")
     for role, reference in (("per_order_query", "query_distance"),
                             ("per_order_query_key", "query_key_distance"),
-                            ("per_order_query_m8", "query_distance_m8")):
+                            ("per_order_query_m8", "query_distance_m8"),
+                            ("per_order_query_m12", "query_distance_m12")):
         candidate = scientific_recipe(runs[role]["config"])
         expected = scientific_recipe(runs[reference]["config"])
         expected["model"]["attention_forget_gate_per_order"] = True
@@ -202,7 +211,8 @@ def main() -> None:
         lines.extend(["", "The query-dependent run is not complete; a final PPL comparison is pending."])
     lines.extend(["", "Endpoint query–key and bounded-rate variants compare against the query-dependent control.",
                   "Each per-order variant compares against its corresponding shared-gate control.",
-                  "The degree-eight shared gate compares against the degree-four query-dependent run.",
+                  "The degree-eight shared gate compares against the degree-four query-dependent run,",
+                  "and the degree-twelve shared gate against the degree-eight one.",
                   "Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison."])
     path = HERE / "README.md"
     text = path.read_text()
