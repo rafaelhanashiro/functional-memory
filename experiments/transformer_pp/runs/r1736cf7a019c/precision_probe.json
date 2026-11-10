@@ -1,0 +1,14 @@
+{
+  "finished_utc": "2026-11-10T20:51:17.469728+00:00",
+  "format": "frozen_attention_vjp",
+  "limitations": [
+    "Selected rows are informed candidates, not an attribution of the entire global gradient.",
+    "Arithmetic comparisons use identical operands and cotangent; no model is retrained."
+  ],
+  "reason": "Scan did not exceed its native gradient threshold",
+  "scan_summary_sha256": "f678c6ad4d0e39d77bf9aad14e76fb0529a36124bc4cb901eeaabdca00872efd",
+  "source_commit": "b3a85fe39043f0cc7f640783c339ff55fc0e024c",
+  "started_utc": "2026-11-10T20:51:16.921610+00:00",
+  "status": "skipped",
+  "version": 1
+}
