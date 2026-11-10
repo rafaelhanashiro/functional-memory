@@ -1,4 +1,22 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init/experiments/transformer_pp/runs/r78fa0d682f44/.runtime/acceptance/B300-1",
+      "allocation": "JobId=241805 JobName=r78fa0d682f44 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:14 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-10T17:13:44 EligibleTime=2026-11-10T17:13:44 AccrueTime=2026-11-10T17:13:44 StartTime=2026-11-10T17:13:45 EndTime=2026-11-11T17:13:45 Deadline=N/A PreemptEligibleTime=2026-11-10T19:13:45 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-10T17:13:45 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1156849 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init/experiments/transformer_pp/runs/r78fa0d682f44/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init/experiments/transformer_pp/runs/r78fa0d682f44/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r78fa0d682f44/config.yaml",
+      "config_sha256": "9bc5997ddd71b15b1603fbdbb2d41acffb6d08f29755a7b0553ec1d8041a060b",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "87c6a91a9f63d6f986d3bb1cccad79232dab81af",
+      "slurm_job_id": "241805",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T22:13:59.393191+00:00",
+      "stop_after_step": null
+    }
+  ],
   "comparison": {
     "control_run_id": "rf303a5f94487",
     "intended_change": "Spline initialization: f(score) = (1 + score / 4)**4 / 16; all other scientific settings preserved"
@@ -7,10 +25,38 @@
     "path": "experiments/transformer_pp/runs/r78fa0d682f44/config.yaml",
     "sha256": "9bc5997ddd71b15b1603fbdbb2d41acffb6d08f29755a7b0553ec1d8041a060b"
   },
+  "frozen_execution_sha256": "96145141c035557979ec5e96bf664a7e5c7a8246d5382a852d57924f1ae60d84",
   "home_cluster": "kennel",
   "label": "spline-query-m4-binomial-init-w-decay",
+  "log_path": "experiments/transformer_pp/runs/r78fa0d682f44/training.log",
+  "monitoring": {
+    "acceptance_stall_seconds": 3600,
+    "config_path": "/data/cl/u/rafah/home/.codex/run-monitors/spline-binomial-01a0b28f/config.json",
+    "delivery": "verified_durable_thread_queue_and_resume_requested",
+    "end_utc": "2026-11-17T22:13:59.908483+00:00",
+    "observer": "scaffolds.launch.run_monitor",
+    "poll_seconds": 300,
+    "read_only": true,
+    "source_commit": "832fc41ff68474f2a5296c2f8da021357f2932b9",
+    "source_sha256": "5317331b901bf819edbe45c6d0802649d309af9b93e6915c79e2465b1da30096",
+    "state_path": "/data/cl/u/rafah/home/.codex/run-monitors/spline-binomial-01a0b28f/state.json",
+    "summary_seconds": 21600,
+    "thread_id": "01a0b28f-d9dd-7603-ba63-651c38090595",
+    "training_stall_seconds": 1200
+  },
   "name": "spline-query-m4-binomial-init-w-decay",
   "record_schema_version": 1,
   "run_id": "r78fa0d682f44",
-  "status": "planned"
+  "source_commit": "87c6a91a9f63d6f986d3bb1cccad79232dab81af",
+  "status": "acceptance",
+  "submission": {
+    "command": "sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r78fa0d682f44 --output=experiments/transformer_pp/runs/r78fa0d682f44/training.log --error=experiments/transformer_pp/runs/r78fa0d682f44/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_binomial_acceptance experiments/transformer_pp/runs/r78fa0d682f44/config.yaml 87c6a91a9f63d6f986d3bb1cccad79232dab81af 1 B300",
+    "gpu_count": 1,
+    "gpu_type": "B300",
+    "launch_commit": "87c6a91a9f63d6f986d3bb1cccad79232dab81af",
+    "partition": "standard",
+    "slurm_job_id": "241805",
+    "submitted_utc": "2026-11-10T22:13:44.359580+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-binomial-init"
+  }
 }
