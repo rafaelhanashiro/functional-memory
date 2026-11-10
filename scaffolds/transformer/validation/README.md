@@ -19,7 +19,7 @@ softmax and the unnormalized exponential: each pair's rate reads both of its tok
 `(t - i) log alpha_ti` joins its score. It runs on the blocked backend, scan or strips, with RoPE
 or no positional encoding ([README](../README.md#forget-gate)).
 
-All 145 CPU checks in `tests/test_exponential_query_key.py` passed. FP64 all-pairs references
+All 159 CPU checks in `tests/test_exponential_query_key.py` passed. FP64 all-pairs references
 cover softmax and exp at ragged sizes (37 tokens in 8-query blocks and 16-query strips; 5 tokens;
 one token): the output and the Q, K, V, query-input, key-input, and log-rate gradients through the
 scan's code and the strips in FP64 (to 1e-10) and through the public FP32 functions (relative L2
@@ -28,18 +28,26 @@ module from its weights. Further checks: the pair rate reads only its endpoints,
 diagonal; a query input moves its own row and a key input the later rows; a nonfinite query input,
 key input, or log rate poisons exactly its row, the rows from its token on, or its head's rows,
 every other row bitwise unchanged; open and closed gates stay finite with exactly zero gate
-gradients; the scan's gate statistics cover every causal pair; a zero key input reproduces the
-query-distance gate (FP32 to 2e-6, FP64 to 1e-12); constant pair rates at ALiBi's slopes reproduce
-the cumulative ALiBi decay (FP32 to 5e-6, FP64 to 1e-12); at initialization (`w_key = 0`) the
-model's logits equal its query-gate counterpart's bitwise and every shared gradient agrees to
-2e-5; the key projection is the only added parameter (188,160 in the Transformer++ shape) and takes
-weight decay; plus the accepted and rejected recipes, identity, diagnostics, training updates,
-acceptance selection, and the softmax-backbone initialization check. Mutations that drop the key
-input from the pair rate, or stop invalid endpoint rates from poisoning, fail 39 and 36 of them.
+gradients; raw scores far outside FP32's exp range never reach the exponential (a masked future
+key's raw score of 200 beside causal scores of 0 or an own score of -100, a causal raw score of 200
+that a closed gate decays to -1,800, and for softmax scores of 100 under an open gate), with the
+output and every gradient finite and equal to FP64 through two-query blocks and strips; the scan's
+gate statistics cover every causal pair; a zero key input reproduces the query-distance gate (FP32
+to 2e-6, FP64 to 1e-12); constant pair rates at ALiBi's slopes reproduce the cumulative ALiBi decay
+(FP32 to 5e-6, FP64 to 1e-12); at initialization (`w_key = 0`) the model's logits equal its
+query-gate counterpart's bitwise and every shared gradient agrees to 2e-5; the key projection is the
+only added parameter (188,160 in the Transformer++ shape) and takes weight decay; plus the accepted
+and rejected recipes, identity, diagnostics, training updates, acceptance selection, and the
+softmax-backbone initialization check. Mutations that drop the key input from the pair rate, or stop
+invalid endpoint rates from poisoning, fail 53 and 36 of them. Mutations that exponentiate the
+endpoint kernels' masked logits, take softmax's row maximum over raw or masked scores, or drop its
+shift each fail 2 to 6 of the extreme-score checks, on the scan and the strips alike.
 `tests/test_blocked_strips.py` adds both kernels' query-key families to its scan/strips equivalence
 checks, invalid-row cases, core routing, and FP64 two-layer models (175 passed).
-`tests/test_exponential_query_distance.py` (112) and `tests/test_forget_gate_attention.py` no longer
-expect this conditioning to be rejected.
+`tests/test_exponential_query_distance.py` (126) and `tests/test_forget_gate_attention.py` no longer
+expect this conditioning to be rejected. The former gains the same 14 extreme-score checks for the
+query gate, which those mutations also fail when applied to every exponential and every decayed
+softmax.
 
 Existing mechanisms are unchanged against `e29277ba`. The jaxprs are identical for 808 programs:
 `blocked_dot_product_attention` and `strip_dot_product_attention` for that commit's 29 argument

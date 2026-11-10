@@ -346,6 +346,55 @@ def test_open_and_closed_gates_stay_finite(kernel, implementation, value):
         np.testing.assert_array_equal(gradients[3], np.zeros_like(log_alpha))
 
 
+# Raw scores far outside FP32's exp range (exp(88.8) overflows, exp(-104) underflows) where neither kernel
+# exponentiates them: one head and three tokens, Q and K of width one so that s_ti = q_t k_i, given as
+# (q, k, raw log alpha). test_exponential_query_key.py checks the same scores under pair rates.
+EXTREME_SCORES = {
+    # Key 1 lies in query 0's future with raw score 200; every causal score is zero.
+    "masked_future_key": ((20, 0, 0), (0, 10, 0), (-0.3, -0.5, -0.2)),
+    # The same masked score beside query 0's own score of -100.
+    "masked_future_key_low_own_score": ((20, 0, 0), (-5, 10, 0), (-0.3, -0.5, -0.2)),
+    # Query 2's raw score to key 0 is 200, but its closed gate (log alpha -1,000) decays it to -1,800; its
+    # own score is -100.
+    "decayed_away_key": ((0, 0, 20), (10, 0, -5), (0, 0, -1000)),
+    # Every score 100 under an open gate: softmax alone, whose row shift keeps it finite.
+    "large_scores_open_gate": ((10, 10, 10), (10, 10, 10), (0, 0, 0)),
+}
+
+
+@pytest.mark.parametrize("implementation", IMPLEMENTATIONS)
+@pytest.mark.parametrize("kernel,scenario", [(kernel, scenario) for kernel in KERNELS for scenario in EXTREME_SCORES
+                                             if kernel == "softmax" or scenario != "large_scores_open_gate"])
+def test_extreme_raw_scores_never_reach_the_exponential(kernel, scenario, implementation):
+    """Masked future keys never reach the exponential, and softmax shifts each row by its maximum over the
+    decayed causal logits alone: with raw scores far outside FP32's exp range, through two-query blocks and
+    strips, the output and the gradients of Q, K, V, and log alpha are finite and equal the FP64 all-pairs
+    reference to rounding. A masked logit of 200 that reached exp would be infinite, and its zero cotangent
+    would turn every gradient but dV into NaN; a maximum over raw or masked scores would shift every causal
+    weight of a row to zero, and no shift would overflow scores of 100."""
+    q, k, log_alpha = EXTREME_SCORES[scenario]
+    rng = np.random.default_rng(7)
+    v, cotangent = (rng.standard_normal((1, 3, 1, 2)) for _ in range(2))
+    arrays = (np.reshape(q, (1, 3, 1, 1)), np.reshape(k, (1, 3, 1, 1)), v, np.reshape(log_alpha, (1, 3, 1)))
+    normalized = kernel == "softmax"
+    with jax.enable_x64():
+        expected = _vjp(partial(_dense, normalized=normalized), tuple(jnp.asarray(x, jnp.float64) for x in arrays),
+                        jnp.asarray(cotangent))
+        expected = jax.tree.map(np.asarray, expected)
+    production = _production(implementation, normalized=normalized, block=2, strip=2)
+    with jax.default_matmul_precision("highest"):
+        actual = jax.jit(lambda *x: _vjp(production, x, jnp.asarray(cotangent, jnp.float32)))(
+            *(jnp.asarray(x, jnp.float32) for x in arrays))
+    names = ("output", "q", "k", "v", "log_alpha")
+    for name, got, want in zip(names, (actual[0], *actual[1]), (expected[0], *expected[1]), strict=True):
+        got = np.asarray(got, np.float64)
+        assert np.isfinite(got).all(), name
+        np.testing.assert_allclose(got, want, rtol=1e-5, atol=1e-6 * max(np.abs(want).max(), 1.0), err_msg=name)
+    if normalized and scenario == "decayed_away_key":
+        # Query 2's decayed logits are -1,800, -1,000, and its own -100: the row is v_2 exactly.
+        np.testing.assert_array_equal(actual[0][0, 2], jnp.asarray(v[0, 2], jnp.float32))
+
+
 @pytest.mark.parametrize("kernel", KERNELS)
 def test_a_varying_gate_is_query_local_unlike_the_cumulative_decay(kernel):
     """Changing log alpha_j changes row j alone, where the cumulative decay changes every later row;
