@@ -167,7 +167,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Model scale
 
-The [model scale collection](results/model_scale/README.md) repeats seven attention
+The [model scale collection](results/model_scale/README.md) repeats eight attention
 variants at the 12-layer width-640 shape. Each recipe is its reference-shape partner's,
 derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 `scaffolds.records create`:
@@ -181,13 +181,14 @@ derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 | `r4cce9a985a70` | query-m4-w-decay-l12-d640 | `rca97cc9db8f2` | Mosaic |
 | `r3d14b598d88f` | query-m4-forget-gate-no-rope-w-decay-l12-d640 | `r4a80e28ce0a7` | blocked |
 | `ra5dfd978d3bd` | exp-forget-gate-no-rope-l12-d640 | `r183f08346ddc` | blocked |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 | `r25fffc16c2f3` | Mosaic |
 
-Home cluster: **Kennel**. All seven are complete; each record holds its launch commit.
+Home cluster: **Kennel**. The first seven are complete; each record holds its launch commit.
 After committing the inputs, submit each on one B300 or H100, choosing the partition
 (`standard` or `long`) from the live allowance:
 
 ```bash
-for run in rf81c96f76a1d r3e2fa2532c23 r2c432bd3a2a4 r94e0f2b8cff9 r4cce9a985a70 r3d14b598d88f ra5dfd978d3bd; do
+for run in rf81c96f76a1d r3e2fa2532c23 r2c432bd3a2a4 r94e0f2b8cff9 r4cce9a985a70 r3d14b598d88f ra5dfd978d3bd r95a5691d293f; do
   sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
     --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \

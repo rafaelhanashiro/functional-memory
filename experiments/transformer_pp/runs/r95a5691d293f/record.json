@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r95a5691d293f/config.yaml",
+    "sha256": "e27c5364bfb1a47c6fde45598a3c31da8ad6c8c4402d29b873d76b0a7571f458"
+  },
+  "label": "query-m8-w-decay-l12-d640",
+  "name": "query-m8-w-decay-l12-d640",
+  "record_schema_version": 1,
+  "run_id": "r95a5691d293f",
+  "status": "planned"
+}
