@@ -113,11 +113,18 @@ class ModelConfig:
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
-    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. "sigmoid": the Forgetting
-    # Transformer's original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
+    # ALiBi's slopes 2^(-8 h / H); only the log rate is learned. On softmax and the exponential
+    # it is ALiBi's score bias -lambda_h (t - i). "sigmoid": the Forgetting Transformer's
+    # original alpha_t = sigmoid(x_t w_f + b_f), w_f ~ N(0, 0.02^2) and b_f = 0.
     attention_forget_gate_form: Literal["input", "constant", "sigmoid"] = "input"
-    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate.
-    attention_forget_gate_conditioning: Literal["query", "query_key"] = "query"
+    # The constant form's rate: "learned" as above, or "fixed" at ALiBi's slopes 2^(-8 h / H) in
+    # every layer, with no trainable parameter. Recipes without the field learn it.
+    attention_forget_gate_constant_rate: Literal["learned", "fixed"] = "learned"
+    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate. "none"
+    # reads no token: lambda = exp(A_log) softplus(dt_bias) per layer/head (and order), the input
+    # form without its projection and with the same draws, the query-distance gate of learned
+    # static coefficients.
+    attention_forget_gate_conditioning: Literal["query", "query_key", "none"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
     # Independent input-form query-distance gate for every polynomial order, including zero.
     # Every order starts as a copy of the corresponding shared gate.
@@ -247,10 +254,12 @@ class ModelConfig:
                  and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
                  and integer_degree and not self.attention_forget_gate
                  and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
-        # Static coefficients run on the query-coefficient kernel with every query's coefficients equal.
+        # Static coefficients run on the query-coefficient kernel with every query's coefficients equal;
+        # with a distance gate they run on the decay kernels instead (mosaic_decay_supported).
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
                   and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
                   and self.attention_fixed_square_factors is None and integer_degree
+                  and not self.attention_forget_gate
                   and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
         return (self.attention_mechanism == "dot_product" and (taylor or query or static)
                 and getattr(self, "positional_encoding", "rope") == "rope"
@@ -259,7 +268,9 @@ class ModelConfig:
     def mosaic_decay_supported(self) -> bool:
         """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
         query-conditioned unnormalized polynomial attention with an input-form query-distance
-        forget gate (query or endpoint query-key rates), with RoPE or no positional encoding.
+        forget gate (query or endpoint query-key rates), or learned static coefficients with an
+        input-free gate (the query-gate kernels with every query's coefficients and rates equal),
+        with RoPE or no positional encoding.
         Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
         B300 refuses the per-order shapes it cannot hold when the model is traced
         (``query_degree_supported``).
@@ -268,14 +279,18 @@ class ModelConfig:
 
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        input_free = self.attention_forget_gate_conditioning == "none"
+        coefficients = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
+                        and self.attention_coefficient_parameterization == "direct" if input_free else
+                        self.attention_coefficient_conditioning == "query"
+                        and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS))
         return (self.attention_mechanism == "dot_product" and not self.attention_normalization
                 and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial"
-                and self.attention_coefficient_conditioning == "query"
-                and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)
+                and coefficients
                 and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
                 and self.attention_forget_gate_form == "input" and integer_degree
                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
-                                           gate=self.attention_forget_gate_conditioning,
+                                           gate="query" if input_free else self.attention_forget_gate_conditioning,
                                            per_order=self.attention_forget_gate_per_order)
                 and self.positional_encoding in ("rope", "none")
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
@@ -353,7 +368,9 @@ class ModelConfig:
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
                              "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
-                             "query-conditioned attention may add a query-distance forget gate")
+                             "query-conditioned attention may add a query-distance forget gate, and learned "
+                             "static coefficients the input-free one (attention_forget_gate_conditioning: none), "
+                             "where the decay kernels fit the degree and width")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -514,15 +531,25 @@ class ModelConfig:
             raise ValueError("A forget gate form requires the forget gate")
         # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
         # Transformer; with PaTH, PaTH-FoX); nonlinear query-coefficient polynomials multiply their
-        # weights by exp(L_t - L_i).
+        # weights by exp(L_t - L_i). Learned static coefficients take only the input-free
+        # query-distance gate (conditioning none), on the query-coefficient decay kernels.
         exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
                       and activation != "identity")
+        input_free = self.attention_forget_gate_conditioning == "none"
+        static_polynomial = (not self.attention_normalization and self.attention_coefficients == "learned"
+                             and self.attention_coefficient_conditioning == "static"
+                             and self.attention_coefficient_parameterization == "direct"
+                             and self.attention_coefficient_sharing == "per_head"
+                             and self.attention_coefficient_initialization == "taylor"
+                             and self.attention_coefficient_orders is None
+                             and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial")
+        gated_polynomial = static_polynomial if input_free else polynomial
         if not isinstance(self.attention_forget_gate_per_order, bool):
             raise ValueError("model.attention_forget_gate_per_order must be a boolean")
         if self.attention_forget_gate_per_order and (
-                not self.attention_forget_gate or not polynomial
+                not self.attention_forget_gate or not gated_polynomial
                 or self.attention_forget_gate_form != "input"
                 or self.attention_forget_gate_mode != "query_distance"
                 or self.attention_forget_gate_rate_activation != "softplus"
@@ -536,14 +563,29 @@ class ModelConfig:
                              "positional encoding on the blocked backend")
         if self.attention_forget_gate_form == "constant" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
-                or not polynomial):
-            raise ValueError("The constant forget gate form is qualified only as cumulative decay of nonlinear "
-                             "query-coefficient polynomials with RoPE or no positional encoding on the blocked "
-                             "backend")
-        if self.attention_forget_gate_conditioning not in ("query", "query_key"):
+                or not (polynomial or exponential)):
+            raise ValueError("The constant forget gate form is qualified only as cumulative decay of softmax, the "
+                             "unnormalized exponential, and nonlinear query-coefficient polynomials with RoPE or no "
+                             "positional encoding on the blocked backend")
+        if self.attention_forget_gate_constant_rate not in ("learned", "fixed"):
+            raise ValueError(f"Unknown constant forget gate rate: {self.attention_forget_gate_constant_rate}")
+        if self.attention_forget_gate_constant_rate != "learned" and (
+                not self.attention_forget_gate or self.attention_forget_gate_form != "constant"):
+            raise ValueError("A fixed forget gate rate requires the constant forget gate form")
+        if self.attention_forget_gate_conditioning not in ("query", "query_key", "none"):
             raise ValueError("Unknown forget gate conditioning")
         if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
             raise ValueError("Unknown forget gate rate activation")
+        if input_free and not (
+                self.attention_forget_gate and static_polynomial and self.attention_forget_gate_form == "input"
+                and self.attention_forget_gate_mode == "query_distance"
+                and self.attention_forget_gate_rate_activation == "softplus"
+                and self.positional_encoding in ("rope", "none")
+                and self.attention_backend in ("blocked", "mosaic")):
+            raise ValueError("The input-free gate (attention_forget_gate_conditioning: none) is qualified as the "
+                             "softplus input form's query-distance decay of learned direct per_head static "
+                             "coefficients (Taylor start, every order), with RoPE or no positional encoding on "
+                             "the blocked or mosaic backend")
         if (self.attention_forget_gate_conditioning != "query" or self.attention_forget_gate_rate_activation != "softplus") and (
                 not self.attention_forget_gate or self.attention_forget_gate_form != "input"
                 or self.attention_forget_gate_mode != "query_distance"
@@ -557,16 +599,17 @@ class ModelConfig:
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
             or self.attention_backend == "mosaic" and self.mosaic_decay_supported())
         if self.attention_forget_gate and (
-                self.attention_mechanism != "dot_product" or not (exponential or polynomial)
+                self.attention_mechanism != "dot_product" or not (exponential or gated_polynomial)
                 or not forget_backend_supported):
             raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
-                             "nonlinear query-conditioned polynomial attention: RoPE/none on the blocked backend "
-                             "(query-distance decay of polynomials also on mosaic), or PaTH on blocked/fused/auto")
+                             "nonlinear query-conditioned polynomial attention (learned static coefficients take "
+                             "the input-free gate): RoPE/none on the blocked backend (query-distance decay of "
+                             "polynomials also on mosaic), or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "
                              "blocked backend; PaTH supports only cumulative FoX decay")
-        if self.attention_forget_gate_mode == "query_distance" and not polynomial:
+        if self.attention_forget_gate_mode == "query_distance" and not gated_polynomial:
             raise ValueError("The query-distance decay mode applies to nonlinear query-conditioned polynomial "
                              "attention; softmax and the exponential take the cumulative decay")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):

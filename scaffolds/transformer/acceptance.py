@@ -59,6 +59,7 @@ DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readou
 SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
+INPUT_FREE_GATE_TESTS = "scaffolds/transformer/tests/test_input_free_gate.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
@@ -143,8 +144,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and config.get("continuation", {}).get("parent_checkpoint")):
         paths.append("scaffolds/transformer/tests/test_forget_gate_continuation.py")
-    if (cpu and model.get("attention_forget_gate", False)
-            and model.get("attention_forget_gate_form", "input") == "constant"):
+    if (model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "constant"
+            and (cpu or model.get("attention_degree") is None)):
+        # On GPU, the softmax and exponential ALiBi cases at the production context.
         paths.append(CONSTANT_DECAY_TESTS)
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "sigmoid"):
@@ -154,6 +157,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
         # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate.
         paths.append("scaffolds/transformer/tests/test_endpoint_decay.py")
+    if model.get("attention_forget_gate", False) and model.get("attention_forget_gate_conditioning", "query") == "none":
+        # Static coefficients under the input-free gate: CPU references through the blocked scan and
+        # strips, and on the GPU the Mosaic decay kernels through the production dispatch.
+        paths.append(INPUT_FREE_GATE_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):
@@ -705,6 +712,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_forget_gate_per_order=False,
                                            attention_forget_gate_mode="cumulative",
                                            attention_forget_gate_form="input",
+                                           attention_forget_gate_constant_rate="learned",
                                            attention_forget_gate_conditioning="query",
                                            attention_forget_gate_rate_activation="softplus",
                                            positional_encoding="rope",
@@ -761,6 +769,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
+        attention_forget_gate_constant_rate="learned",
         attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
         positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",

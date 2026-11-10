@@ -1,7 +1,9 @@
 # Even polynomial powers
 
 Opened: 2026-11-03. Do even-only degree-eight polynomials improve static or
-query-conditioned attention at the 1× Chinchilla budget?
+query-conditioned attention at the 1× Chinchilla budget? A third run asks the
+mirror question for query coefficients: keep the intercept and only the odd orders
+through seven ([below](#intercept-and-odd-orders)).
 
 The two even-only Transformer++ runs use orders `R = {0, 2, 4, 6, 8}`:
 
@@ -63,6 +65,58 @@ models trail their full degree-eight controls by about 2% (static 2.25%, query 2
 decision is whether either even-only parameterization merits further study;
 these single-seed results remain exploratory.
 
+## Intercept and odd orders
+
+The query + weight decay run `r0bdac8e1b97b` (`query-odd-m7-w-decay`) keeps orders
+`R = {0, 1, 3, 5, 7}` and is otherwise the even-only query run's recipe: the same
+`p_t(z)` with five coefficient channels and weight decay on the five projection
+columns, and orders 2, 4 and 6 fixed at exactly zero. It initializes to
+`1 + z + z^3/3! + z^5/5! + z^7/7!`, the intercept plus the odd part of the Taylor
+polynomial. That polynomial increases monotonically, like `exp`, and turns negative
+for scores below about -0.88, whereas an even-only polynomial gives a score and its
+negation the same weight. Coefficients are otherwise unconstrained, so the learned
+polynomial need not stay monotonic. The run uses the even-only runs' source code.
+
+Its comparisons are the even-only query run (five channels), the full degree-four
+query control (five channels), the full degree-seven query control `rdb67453630c8`
+(same highest power, also on ORCD), the full degree-eight control, and fixed Taylor at
+degree seven `re12e78d1ded3`.
+
+It completed all 7,570 updates on an ORCD H200 without numerical failure, after a
+preemption and two restarts that were not scientific (an acceptance cleanup error, and a
+resubmission at a newer launch commit that the trainer refused). It is clearly worse than
+every comparison:
+
+| Run | Orders | Terminal PPL | Best PPL | Intercept-and-odd vs this (terminal) |
+| --- | --- | ---: | ---: | ---: |
+| Intercept and odd `r0bdac8e1b97b` | 0, 1, 3, 5, 7 | 16.054 | 16.044 | – |
+| Even-only query `r698f9a157a94` | 0, 2, 4, 6, 8 | 14.618 | 14.615 | +9.83% |
+| Full degree four `rca97cc9db8f2` | 0–4 | 14.714 | 14.709 | +9.11% |
+| Full degree seven `rdb67453630c8` | 0–7 | 14.384 | 14.379 | +11.61% |
+| Full degree eight `r25fffc16c2f3` | 0–8 | 14.328 | 14.323 | +12.05% |
+| Fixed Taylor degree seven `re12e78d1ded3` | 0–7, fixed | 14.309 | 14.304 | +12.19% |
+
+- **The deficit appears at the first evaluation and does not close.** Against the
+  even-only run it is +31% at update 100, briefly −3.7% at update 400, and then +8–10%
+  from update 1,000 on, widening slowly to +9.8%. Against full degree seven it stays
+  between +11% and +16% from update 400 to the end.
+- **The learned polynomials stay monotone, so monotonicity alone is not enough.** At
+  update 7,570 the token-mean polynomial increases over `|s| <= 12` in 189 of the 210
+  heads, and every head keeps a positive `s^7` coefficient (median `r! c~_r` 0.89,
+  0.85, 0.68, 0.77 and 1.31 for orders 0, 1, 3, 5 and 7). An intercept plus odd powers
+  satisfies `p(s) + p(-s) = 2 c_0`, so strongly anti-aligned keys receive large
+  negative weights. Exp gives them almost no weight, and even powers keep large `|s|`
+  positive. The initial polynomial is already negative below `s ≈ -0.88`, which may
+  explain the early deficit; this run cannot separate that from the basis itself.
+- **Removing the even orders costs far more than removing the odd ones.** The
+  intercept-and-odd model trails full degree seven by 11.6%; the even-only models trail
+  full degree eight by about 2%.
+
+The odd run shares its source code with the even-only runs but ran on an ORCD H200
+rather than a Kennel H100. On this evidence the intercept-and-odd basis is not a
+candidate for further study; the open decision above concerns the even-only
+parameterizations.
+
 ## Regeneration
 
 The [summary](summary.csv) reads only the explicit [selection](selection.yaml),
@@ -83,6 +137,14 @@ the existing degree-eight Mosaic kernel, one GPU each, with no scheduling
 dependencies. See the [study launch instructions](../../../README.md#even-polynomial-powers)
 for the exact commands.
 
+The intercept-and-odd run `r0bdac8e1b97b` is hosted on ORCD and trained on one H200
+(Hopper, sm90, the H100's kernels) with the existing degree-seven Mosaic kernel; the
+[study launch instructions](../../../README.md#even-polynomial-powers) give its command
+too. Its [H200 qualification](../../../../../scaffolds/transformer/validation/selected_orders_h200.json)
+passed every acceptance stage. Its validation-best checkpoint and log are retained under
+`/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r0bdac8e1b97b/`.
+
 Acceptance checks retained orders, gradients, kernel correctness, backbone
 initialization, production-shaped throughput and checkpoint resume before
-training. Actual submissions and allocations live in each run's record.
+training; its order tests cover both the even and the intercept-and-odd sets.
+Actual submissions and allocations live in each run's record.

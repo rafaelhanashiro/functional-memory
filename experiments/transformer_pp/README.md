@@ -348,6 +348,23 @@ sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --me
   experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml af919f3f4af1a3e647d267cf098d385bbb952941 1 H100
 ```
 
+The intercept-and-odd query run `r0bdac8e1b97b` (orders 0, 1, 3, 5 and 7, query + weight
+decay at degree seven) is hosted on ORCD and trained on one H200. It ends at 16.054
+terminal PPL, 9.8% above the even-only query run; the topic reports the comparison.
+It launched from `worktrees/odd_powers`, branch `claude/odd-powers-orcd`, after
+committing its recipe:
+
+```bash
+RUN=r0bdac8e1b97b
+sbatch --parsable --job-name="$RUN" --output="experiments/transformer_pp/runs/$RUN/training.log" \
+  --gres=gpu:h200:1 \
+  scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H200
+```
+
+Once a run has started training, its `config.json` records the source commit, so a
+resubmission passes that original launch commit (`0c9eed33` here) rather than `HEAD`.
+
 ### Per-order coefficient gates
 
 The [order-gates topic](results/exploratory/order_gates/README.md) asks whether
@@ -958,6 +975,40 @@ sbatch --parsable --nice=0 --partition=long --gres=gpu:b300:1 --cpus-per-task=16
   experiments/transformer_pp/runs/r8d4fc24ef537/config.yaml "$(git rev-parse HEAD)" 1 B300
 ```
 
+## ALiBi on softmax and exp
+
+Two runs put ALiBi with its fixed slopes on the exponential kernels without RoPE. Each copies
+the no-RoPE forget-gate run on its kernel and changes the gate to
+`attention_forget_gate_form: constant` with `attention_forget_gate_constant_rate: fixed`:
+every score gains `-m_h (t - i)`, `m_h = 2^(-8 h / 14)` for heads `h = 1..14` in every layer,
+with no trainable parameter. `softmax(s - m_h (t - i))` is ALiBi; exp keeps its per-head output
+RMSNorm. `records create` set the causal strips (`attention_blocked_implementation: strips`),
+where the sources trained on the scan. See the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md).
+
+| Run | Label | Source | Kernel | Parameters |
+| --- | --- | --- | --- | ---: |
+| `ref652c257797` | softmax-alibi-fixed-no-rope | `r5adc29a91e3b` | softmax | 198,440,146 |
+| `r7820049184ef` | exp-alibi-fixed-no-rope | `r183f08346ddc` | unnormalized exp | 198,453,586 |
+
+Home cluster: **Kennel**. GPU acceptance runs `tests/test_constant_decay.py`'s 2,048-token
+BF16 strips cases against FP64 ALiBi before training. From the isolated
+`claude/alibi-softmax-exp` worktree, after committing the inputs, submit each on one B300 or
+H100 SXM, excluding the H100 PCIe node `mastiff` (the strips' FoX softmax ran 11.7 s per update
+there, past 24 hours for 7,570 updates) and the B200 node `shiba`, with the partition
+(`standard` or `long`) chosen from the live allowance:
+
+```bash
+for run in ref652c257797 r7820049184ef; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
 ## Query-dependent distance decay
 
 `r3e26412b2811` is one from-scratch ablation of FoX NoPE + W decay control
@@ -1223,4 +1274,42 @@ submit() {  # run ID, acceptance adapter
 }
 submit r47bfe39ce9b4 query_distance_degree_acceptance
 submit rfe140c073b2f per_order_decay_acceptance
+```
+
+## Learned input-free gates for static coefficients
+
+The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
+pretrains the static controls `r4339a245820e` (m = 4) and `r9c69dd7cfc8d` (m = 8) with RoPE
+replaced by the input-free query-distance gate (`model.attention_forget_gate_conditioning:
+none`, `lambda = exp(A_log) softplus(dt_bias)`): `r0e76396bdee5` and `rc60345dfcff7` with one
+gate per layer and head, and `r527a30ff7ed1` and `re253a5f1b03e` with one per layer, head and
+order. They train on the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a
+24-hour `standard` or `long` allocation; acceptance's pilot measures the update time and stops
+before training if the run would not fit. B300 cannot hold the degree-eight per-order gates;
+the other runs use H100 too, so that all four train on one GPU type. These jobs have
+no scheduling dependencies on each other.
+
+[`static_distance_gate_acceptance`](static_distance_gate_acceptance.py) pins each shared-gate
+run's static control by SHA256 and rejects any scientific difference except
+`positional_encoding: none` and the gate fields; a per-order run's pinned control is its
+shared-gate run, and only `attention_forget_gate_per_order` may differ. At initialization every
+parameter other than the gate must equal the control's seed-42 start (state hash), `A_log` and
+`dt_bias` must be the query-distance gates' draws (`r3e26412b2811`, `r9320e5cd3071`), and
+per-order gates must repeat one draw over the orders, whose collapse recovers the shared-gate
+run's start. Acceptance then runs the gate's CPU and GPU tests (`tests/test_input_free_gate.py`
+with the Mosaic decay-kernel and per-order qualifications), the full-recipe pilot and the
+fresh-process resume.
+
+From the isolated `claude/static-distance-gates` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+for run in r0e76396bdee5 r527a30ff7ed1 rc60345dfcff7 re253a5f1b03e; do
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_distance_gate_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
 ```

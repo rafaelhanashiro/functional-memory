@@ -37,6 +37,62 @@ forward and dK/dV kernels also compute, barely move with the top orders at degre
 both tests add a case that keeps only orders 9–12: there, dropping order 12 moves them by
 8.6–40 (per-order gates) and 1.9–6.7 (shared gate) times their tolerances.
 At commit `41f33aa9` both files passed on H100 (`dogo`, job 240451: 54 GPU checks).
+Production acceptance passed its GPU checks on H100 SXM (`dogo`, jobs 240470 and 240471).
+
+### Input-free distance gate for static coefficients (2026-11-09)
+
+`model.attention_forget_gate_conditioning: none` gives learned static polynomial coefficients
+a learned rate that reads no token, `lambda = exp(A_log) softplus(dt_bias)` per layer and head,
+or per layer, head and order with `attention_forget_gate_per_order: true`; each weight is
+multiplied by `exp(-(t - i) lambda)`. The coefficients and the negated rates are broadcast to
+every query and run through the existing query-coefficient decay operation: the blocked scan or
+strips, or the Mosaic `query_decay` and `per_order_query_decay` kernels.
+
+`tests/test_input_free_gate.py` checks on CPU the output and the gradients of q, k, v, the
+coefficients, `A_log` and `dt_bias` against FP64 through the scan and the strips at degrees 4
+and 8, shared and per order; duplicated per-order gates against the shared gate; the
+parameters and their initialization, the weight-decay exemptions, training steps,
+diagnostics, and the accept and reject rules; and that historical recipes are unchanged. Its
+GPU cases compare the Mosaic path with FP64 at 2,048 tokens and width 64 with unit-scale scores,
+each order's coefficient and gate gradients compared separately, plus duplicated orders against
+the shared kernels and a two-layer model against the FP32 blocked model. At commit `cc36a392`
+the GPU cases passed on H100 (`dogo`, job 240451: 8 GPU checks), and production acceptance
+passed its GPU checks on H100 SXM (`dogo`, jobs 240497–240500). B300 refuses the degree-eight
+per-order gate before building a kernel.
+
+### ALiBi on softmax and the exponential (2026-11-08)
+
+`model.attention_forget_gate_form: constant` applies to softmax and the unnormalized
+exponential as well as to query polynomials: the cumulative decay adds `-m_h (t - i)` to every
+score, which for softmax is ALiBi. `attention_forget_gate_constant_rate: fixed` holds `m_h` at
+ALiBi's slopes `2^(-8 h / H)` with no parameter; recipes without the field learn the rate as
+before ([README](../README.md#forget-gate)).
+
+All 70 CPU checks in `tests/test_constant_decay.py` passed. FP64 references cover the slopes
+(the fixed log rate is the FP32 array the learned rate's initializer stores); the fixed rate's
+empty parameter set and parameter counts; softmax and exp outputs and the Q, K, V, and log-rate
+gradients through the scan and the strips (five 8-query blocks or strips of 37 tokens, FP32
+relative error below 2e-5 against FP64 ALiBi); the attention module, from its projection
+weights, against FP64 ALiBi under both implementations; learned and fixed models agreeing at
+initialization (identical backbone, decays, logits, and shared gradients to 1e-5); historical
+recipes without the field; accepted and rejected recipes; acceptance selection and the
+softmax-backbone initialization check; diagnostics; and training updates. Halving the fixed
+log rate fails 9 of them. In FP32 the cumulative decay at 2,048 tokens and 14 heads meets
+`|L_t - L_i + m_h (t - i)| <= 2.2e-4` for `t - i <= 32`, summed sequentially or as a tree: a
+relative weight error near 1e-4, against the BF16 output rounding of 1.7e-3.
+
+`test_gpu_strips_alibi_matches_float64_at_the_production_context` (softmax and exp) runs BF16
+Q/K/V at [1, 2048, 14, 64] through the fixed decay and the strips and requires the output, dQ,
+dK, and dV each within 1.2x its BF16 rounding floor against a host FP64 oracle; the oracle
+matches FP64 autodiff to 1e-12 on CPU. At commit `93f47769` both cases passed in the production
+runs' acceptance on B300 (`akita`, job 239928) and H100 SXM (`dogo`, job 239929), with the
+full-recipe pilot and resume checks.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  scaffolds/transformer/tests/test_constant_decay.py -m "not gpu"
+```
 
 ### Architecture-aware per-order Mosaic support (2026-11-08)
 
@@ -174,6 +230,16 @@ passed. [H100 qualification](selected_orders_h100.json) passed for both static
 and query coefficients: 50 and 70 GPU checks, respectively, including the two
 restricted-order FP64 comparisons. Both full-recipe initialization, training,
 evaluation and checkpoint-resume checks passed before production.
+
+On 2026-11-07 the order checks were parametrized over a second set, the intercept with
+the odd orders `[0, 1, 3, 5, 7]` at degree 7, so omitted orders, parity (`p(z) - p(0)`
+odd rather than even), factorials and the penalty weights (`a_1` unpenalized) follow
+each set; the two Mosaic FP64 cases run for both sets. All 32 CPU checks passed.
+[H200 qualification](selected_orders_h200.json) passed for the odd-order query recipe
+`r0bdac8e1b97b` (the first Mosaic query qualification on H200): 501 CPU and 9
+distributed CPU checks, 72 GPU checks including the two odd-order degree-seven FP64
+comparisons, and the full-recipe initialization, pilot and checkpoint-resume checks, at
+2.08 s per training update.
 
 ### FoX with PaTH polynomial attention (2026-11-01)
 
