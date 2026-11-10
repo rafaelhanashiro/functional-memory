@@ -62,6 +62,8 @@ QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_de
 PER_ORDER_DECAY_TESTS = "scaffolds/transformer/tests/test_per_order_decay.py"
 PER_ORDER_CUMULATIVE_TESTS = "scaffolds/transformer/tests/test_per_order_cumulative.py"
 EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential_query_distance.py"
+EXPONENTIAL_QUERY_KEY_TESTS = "scaffolds/transformer/tests/test_exponential_query_key.py"
+ENDPOINT_DECAY_TESTS = "scaffolds/transformer/tests/test_endpoint_decay.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
 DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
@@ -161,11 +163,16 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "sigmoid"):
         paths.append(SIGMOID_GATE_TESTS)
-    if (model.get("attention_forget_gate_conditioning", "query") != "query"
+    exponential_endpoint = (model.get("attention_degree") is None
+                            and model.get("attention_forget_gate_conditioning", "query") == "query_key")
+    if ((model.get("attention_forget_gate_conditioning", "query") != "query"
             or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
-            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
-        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate.
-        paths.append("scaffolds/transformer/tests/test_endpoint_decay.py")
+            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False))
+            and (cpu or not exponential_endpoint)):
+        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate. Its GPU
+        # cases are the query polynomials' kernels, so softmax and the exponential, whose query-key gate
+        # shares only the blocked endpoint arithmetic checked here on CPU, take their own GPU cases below.
+        paths.append(ENDPOINT_DECAY_TESTS)
     if (model.get("attention_coefficient_readout", "diagonal") == "dense"
             and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
             and (cpu or resolved_backend == "mosaic")):
@@ -212,6 +219,9 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # (t - i) log alpha_t on every score: FP64 references on CPU, and the strips'
             # production precision on the GPU.
             paths.append(EXPONENTIAL_QUERY_DISTANCE_TESTS)
+            if model.get("attention_forget_gate_conditioning", "query") == "query_key":
+                # The pair rate (t - i) log alpha_ti: likewise on CPU and on the GPU.
+                paths.append(EXPONENTIAL_QUERY_KEY_TESTS)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

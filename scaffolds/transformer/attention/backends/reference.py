@@ -161,12 +161,12 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     if query_decay_mode != "cumulative" and not decayed:
         raise ValueError("A query-distance decay mode requires query_log_decay")
     exponential = attention_degree is None and quadratic_mode == "fixed"
+    # Endpoint operands, like a log decay, apply to query coefficients alone, softmax, or the
+    # unnormalized exponential; only query coefficients take per-order gates (above).
     if decayed and (key_conditioned or not (query_conditioned or exponential)
                     or (not endpoint and query_log_decay.shape != gate_shape)):
         raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone, "
                          "softmax, or the unnormalized exponential")
-    if endpoint and not query_conditioned:
-        raise ValueError("Endpoint decay requires query coefficients")
     if query_decay_mode != "cumulative" and not (query_conditioned or exponential):
         raise ValueError("The query-distance decay mode requires query coefficients, softmax, or the "
                          "unnormalized exponential")
@@ -236,9 +236,11 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
             valid_decay = jnp.isfinite(query_decay) & (query_decay <= 0)
             safe_decay = jnp.where(valid_decay, query_decay, 0.0)
             gap = safe_decay * distance.astype(compute)
-    # The exponential kernels see the decayed logits s_ti + L_t - L_i, or s_ti + (t - i) log alpha_t.
+    # The exponential kernels see the decayed logits s_ti + L_t - L_i, or s_ti + (t - i) log alpha_t, or
+    # with endpoint operands s_ti + (t - i) log alpha_ti, the pair rate computed above.
     logits = scores + gap if m.decayed and m.attention_degree is None else scores
-    # A nonfinite or positive raw log alpha_t poisons its query's row, as for the polynomials.
+    # As for the polynomials, a nonfinite or positive raw log alpha_t poisons its query's row, and a
+    # nonfinite endpoint input or log rate every causal pair it enters (and so those pairs' rows).
     poison_invalid_rate = m.decayed and m.attention_degree is None and m.query_decay_mode == "query_distance"
     if not m.attention_normalization and m.attention_degree is None:
         # A row shift changes the unnormalized operator. Underflow to zero
@@ -480,9 +482,12 @@ def blocked_dot_product_attention(
     unnormalized exponential add (t-i)*log alpha_t to every score (softmax's row maximum is
     taken over the decayed logits). Gates from intervening tokens are unused. A nonfinite or
     positive raw log alpha poisons its query.
-    Alternatively, with query coefficients, endpoint operands query_gate_input/key_gate_input
-    [B,T,H] and gate_log_rate [H,1] replace query_log_decay and yield
-    -exp(gate_log_rate) softplus(query_input_t + key_input_i).
+    Alternatively, with query coefficients, softmax, or the unnormalized exponential, endpoint operands
+    query_gate_input/key_gate_input [B,T,H] and gate_log_rate [H,1] replace query_log_decay in the
+    query-distance mode and yield the pair's log alpha_ti = -exp(gate_log_rate) softplus(query_input_t
+    + key_input_i): each polynomial weight is multiplied by exp((t-i)*log alpha_ti), and softmax and the
+    unnormalized exponential add (t-i)*log alpha_ti to every score (softmax's row maximum again over the
+    decayed logits). A nonfinite input or log rate poisons the rows of the causal pairs it enters.
     Only token projections are stored; pair rates and their causal diagnostics are computed in blocks.
     Per-order gates add an R=m+1 axis for query coefficients, so that each coefficient term gets
     its own decay before the polynomial sum: the endpoint operands (rates [H,R,1]) or the raw log

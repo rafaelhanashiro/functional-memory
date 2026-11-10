@@ -12,7 +12,8 @@ Per-order gates (``order_count``) give every polynomial order its own input-form
 copies of the shared draw at initialization, in either mode.
 
 For query-distance gates, ``query_key`` conditioning adds a zero-initialized key projection
-inside softplus; its pairwise input uses just the two endpoints. The query-only ``sigmoid``
+inside softplus; its pairwise input uses just the two endpoints, and on softmax and the exponential
+the pair's (t-i) log alpha_ti joins its score. The query-only ``sigmoid``
 rate option bounds lambda by exp(A_log), initializing sigmoid(dt_bias) to the same legacy dt
 draw. Its rate agrees at zero input; tokenwise rates and derivatives are not identical.
 

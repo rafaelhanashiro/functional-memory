@@ -213,7 +213,8 @@ class MultiHeadAttention(nnx.Module):
         # Softmax and the unnormalized exponential add the decay to their scores; nonlinear
         # query-coefficient polynomials multiply their weights by it. Each runs with RoPE or no
         # positional encoding on the blocked backend, or with PaTH on either PaTH backend; the
-        # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic.
+        # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic. The
+        # query-key endpoint gate applies to all three, in the query-distance mode.
         exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
                             and attention_coefficient_conditioning == "static")
         polynomial_gate = (attention_coefficient_conditioning == "query"
@@ -269,10 +270,12 @@ class MultiHeadAttention(nnx.Module):
         if attention_forget_gate_conditioning == "query_key" and attention_forget_gate_rate_activation != "softplus":
             raise ValueError("Query-key decay is qualified only with softplus rates")
         if exponential_gate and attention_forget_gate_mode == "query_distance" and (
-                attention_forget_gate_conditioning != "query" or attention_forget_gate_rate_activation != "softplus"):
-            # ALiBi with a learned, input-dependent slope per query token: (t - i) log alpha_t joins each score.
+                attention_forget_gate_rate_activation != "softplus"):
+            # ALiBi with a learned, input-dependent slope per query token: (t - i) log alpha_t joins each
+            # score; query_key conditioning gives each pair its own rate, (t - i) log alpha_ti.
             raise ValueError("Query-distance decay of softmax and the unnormalized exponential takes the "
-                             "input-form softplus gate with query conditioning on the blocked backend")
+                             "input-form softplus gate with query conditioning, or its query-key endpoint "
+                             "form, on the blocked backend")
         self.attention_forget_gate_conditioning = attention_forget_gate_conditioning
         self.attention_forget_gate_rate_activation = attention_forget_gate_rate_activation
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":

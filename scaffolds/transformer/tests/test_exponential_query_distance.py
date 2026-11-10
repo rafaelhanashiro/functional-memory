@@ -5,7 +5,8 @@ ALiBi with a learned, input-dependent slope per query token. Softmax normalizes 
 (its row maximum is taken over them); the exponential exponentiates them. A nonfinite or positive
 raw log alpha_t poisons its query's row, as for the query polynomials' query-distance gate. The
 mechanism takes the input-form softplus gate with query conditioning, RoPE or no positional
-encoding, on the blocked backend (scan or causal strips).
+encoding, on the blocked backend (scan or causal strips); its query-key conditioned form, a rate per
+query-key pair, is checked in test_exponential_query_key.py.
 """
 from functools import partial
 import math
@@ -422,7 +423,6 @@ def test_accepted_recipes_and_the_routing(kernel):
 PATH = {"positional_encoding": "path", "qk_head_dim": 16, "value_head_dim": 16,
         "attention_blocked_implementation": "scan"}
 INVALID = (
-    ({"attention_forget_gate_conditioning": "query_key"}, "softplus gate with query conditioning"),
     ({"attention_forget_gate_rate_activation": "sigmoid"}, "softplus gate with query conditioning"),
     ({"attention_forget_gate_per_order": True}, "Per-order gates"),
     ({"attention_forget_gate_form": "constant"}, "constant forget gate form"),
@@ -442,8 +442,8 @@ INVALID = (
                          ids=[",".join(f"{k}={v}" for k, v in c.items()) for c, _ in INVALID])
 @pytest.mark.parametrize("kernel", KERNELS)
 def test_unqualified_recipes_are_rejected(kernel, change, message):
-    """Endpoint or bounded rates, per-order gates, other gate forms, PaTH, Taylor kernels, and other
-    backends; the module rejects them too when configuration validation is bypassed."""
+    """Bounded rates, per-order gates, other gate forms, PaTH, Taylor kernels, and other backends; the
+    module rejects them too when configuration validation is bypassed."""
     with pytest.raises(ValueError, match=message):
         _config(kernel, **change)
     model = _config(kernel).model
@@ -461,17 +461,10 @@ def test_unqualified_recipes_are_rejected(kernel, change, message):
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
-def test_the_operation_rejects_endpoint_operands_and_other_backends(kernel):
+def test_the_operation_rejects_other_backends_and_malformed_decay(kernel):
+    """Endpoint operands are test_exponential_query_key.py's."""
     q = jnp.zeros((1, 4, 2, 4))
     normalized = kernel == "softmax"
-    with pytest.raises(ValueError, match="Endpoint decay requires query coefficients"):
-        attention_core(q, q, q, attention_normalization=normalized, query_gate_input=jnp.zeros((1, 4, 2)),
-                       key_gate_input=jnp.zeros((1, 4, 2)), gate_log_rate=jnp.zeros((2, 1)),
-                       query_decay_mode="query_distance")
-    with pytest.raises(ValueError, match="Endpoint decay requires query coefficients"):
-        blocked_dot_product_attention(q, q, q, attention_normalization=normalized,
-                                      query_gate_input=jnp.zeros((1, 4, 2)), key_gate_input=jnp.zeros((1, 4, 2)),
-                                      gate_log_rate=jnp.zeros((2, 1)), query_decay_mode="query_distance")
     for backend in ("fused", "mosaic", "cudnn"):
         with pytest.raises(ValueError, match="blocked backend"):
             attention_core(q, q, q, backend=backend, attention_normalization=normalized,

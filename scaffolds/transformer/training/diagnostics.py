@@ -431,22 +431,30 @@ def attention_identity(config) -> dict:
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
         # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
-        # in the query-distance mode, (t - i) log alpha_t of the input gate.
+        # in the query-distance mode, (t - i) log alpha_t of the input gate, or with query_key
+        # conditioning (t - i) log alpha_ti, the pair's rate reading both tokens.
         sigmoid_gate = forget_gate_form == "sigmoid"
         constant = forget_gate_form == "constant"
+        endpoint = gate_conditioning == "query_key"
         identity.update(
             attention_forget_gate=True,
             attention_forget_gate_mode=gate_mode,
             **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),
             **({"attention_forget_gate_constant_rate": "fixed"} if fixed_rate else {}),
+            **({"attention_forget_gate_conditioning": gate_conditioning} if endpoint else {}),
             forget_gate_parameter_count=(0 if fixed_rate else 1 if constant else
-                                         config.model.hidden_size + (1 if sigmoid_gate else 2))
+                                         (2 if endpoint else 1) * config.model.hidden_size + (1 if sigmoid_gate else 2))
             * config.model.num_layers * config.model.num_heads,
             attention_formula=(("causal_softmax" if normalized else "causal_exp")
                                + "(QK^T / sqrt(d_k) + D) V, D_ti = "
                                + ("-m_h (t - i), " + FIXED_ALIBI_TEXT if fixed_rate else
                                   "-exp(A_log) (t - i) per layer/head, A_log starting at ALiBi's log slopes"
                                   if constant else
+                                  "(t - i) log alpha_ti, log alpha_ti = -exp(A_log) softplus(x_t w_query + x_i w_key "
+                                  "+ dt_bias) per layer/head, w_key initialized zero and the other gate parameters "
+                                  "with Gated DeltaNet's initialization; x_t and x_i are the query and key tokens' "
+                                  "activations after the block input RMSNorm"
+                                  if endpoint else
                                   ("(t - i) log alpha_t, log alpha_t = " if gate_mode == "query_distance"
                                    else "sum_(j=i+1..t) log alpha_j, log alpha_t = ")
                                   + (SIGMOID_GATE_TEXT if sigmoid_gate else
@@ -561,7 +569,8 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
         if model.attention_forget_gate:
             identity["attention_implementation"] += "_forget_gate"
-    if forget_gate and (gate_conditioning != "query" or gate_rate_activation != "softplus"):
+    if forget_gate and query_conditioned and (gate_conditioning != "query" or gate_rate_activation != "softplus"):
+        # Query polynomials' endpoint variants; softmax and the exponential state theirs above.
         prefix = identity["attention_formula"].split("; each weight is multiplied")[0]
         if gate_conditioning == "query_key":
             gate_formula = ("exp(-(t-i) exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)) per layer/head; "
@@ -1329,9 +1338,12 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
     if getattr(config.model, "attention_forget_gate", False) and coefficient_report is None:
-        # Softmax and the exponential have no coefficients; their forget gate is reported alone.
+        # Softmax and the exponential have no coefficients; their forget gate is reported alone (a
+        # query-key gate over every causal pair, with its key projection).
         coefficient_report = {"forget_gate": forget_gate_report(
             params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"),
+            conditioning=getattr(config.model, "attention_forget_gate_conditioning", "query"),
+            rate_activation=getattr(config.model, "attention_forget_gate_rate_activation", "softplus"),
             constant_rate=getattr(config.model, "attention_forget_gate_constant_rate", "learned"),
             mode=getattr(config.model, "attention_forget_gate_mode", "cumulative"))}
         if not coefficient_report["forget_gate"]["finite"]:

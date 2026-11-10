@@ -63,6 +63,10 @@ CASES = {
                                     ("query_polynomial_coefficients", "query_log_decay_per_order")),
     "fox_softmax_distance": ({"query_decay_mode": "query_distance"}, ("query_log_alpha",)),
     "fox_exp_distance": ({"query_decay_mode": "query_distance", **UNNORMALIZED}, ("query_log_alpha",)),
+    "fox_softmax_endpoint": ({"query_decay_mode": "query_distance"},
+                             ("query_gate_input", "key_gate_input", "gate_log_rate")),
+    "fox_exp_endpoint": ({"query_decay_mode": "query_distance", **UNNORMALIZED},
+                         ("query_gate_input", "key_gate_input", "gate_log_rate")),
 }
 
 
@@ -228,6 +232,10 @@ def _inject(name, case):
         arrays["query_log_decay"][0, POSITION, 1] = np.nan
     elif case == "nan_cumulative_sum":
         arrays["query_log_decay"][0, POSITION:, 1, 2] = np.nan  # order two's sum, from a NaN log alpha on
+    elif case == "nan_key_gate_input":
+        arrays["key_gate_input"][0, POSITION, 1] = np.nan       # every causal pair (t >= POSITION, POSITION)
+    elif case == "inf_query_gate_input":
+        arrays["query_gate_input"][0, POSITION, 1] = np.inf     # every pair of query POSITION
     elif case == "q_nan":
         q[0, POSITION, 1, 0] = np.nan
     elif case == "k_nan":
@@ -258,6 +266,8 @@ FAILURES = [
     ("fox_softmax_distance", "positive_log_alpha", ROWS == POSITION, {}),
     ("fox_exp_distance", "nan_log_alpha", ROWS == POSITION, {}),
     ("query4_per_order_cumulative", "nan_cumulative_sum", ROWS >= POSITION, {}),
+    ("fox_softmax_endpoint", "nan_key_gate_input", ROWS >= POSITION, {}),
+    ("fox_exp_endpoint", "inf_query_gate_input", ROWS == POSITION, {}),
 ]
 
 
@@ -394,7 +404,8 @@ CORE_FAMILIES = {"softmax": {}, "taylor2": {}, "exp": {}, "learned2_unnormalized
                  "rational_squares_constant": {}, "quadratic_unrestricted": {}, "query1": {}, "query4": TANH,
                  "query_key3": TANH, "query4_cumulative": TANH, "query4_endpoint": TANH, "fox_softmax": {},
                  "fox_exp": {}, "query4_per_order_distance": TANH, "query4_per_order_cumulative": TANH,
-                 "fox_softmax_distance": {}, "fox_exp_distance": {}}
+                 "fox_softmax_distance": {}, "fox_exp_distance": {}, "fox_softmax_endpoint": {},
+                 "fox_exp_endpoint": {}}
 
 
 @pytest.mark.parametrize("family", list(CORE_FAMILIES))
@@ -486,6 +497,11 @@ MODEL_RECIPES = {
                                         attention_coefficient_activation="tanh", attention_forget_gate=True,
                                         attention_forget_gate_per_order=True, qk_norm=False,
                                         attention_coefficient_projection_initial_std=0.1),
+    "fox_softmax_endpoint": dict(attention_forget_gate=True, attention_forget_gate_mode="query_distance",
+                                 attention_forget_gate_conditioning="query_key", qk_norm=False),
+    "fox_exp_endpoint": dict(attention_forget_gate=True, attention_forget_gate_mode="query_distance",
+                             attention_forget_gate_conditioning="query_key", attention_normalization=False,
+                             qk_norm=False),
 }
 
 
