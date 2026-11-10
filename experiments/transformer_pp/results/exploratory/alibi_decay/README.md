@@ -99,7 +99,7 @@ primary; `w_alpha`, `A_log` and `b_dt` keep FoX's initialization. It compares wi
 
 | Role | Run | Label | Kernel | Score decay | Validation-best PPL |
 | --- | --- | --- | --- | --- | ---: |
-| Primary: softmax query distance | `r208110a25271` | `softmax-query-distance-no-rope` | softmax | `(t - i) log alpha_t` | |
+| Primary: softmax query distance | `r208110a25271` | `softmax-query-distance-no-rope` | softmax | `(t - i) log alpha_t` | 13.701 |
 | Primary: exp query distance | `r17444ad0f60e` | `exp-query-distance-no-rope` | exp | `(t - i) log alpha_t` | |
 | Primary: exp query–key distance | `rd3501a40e020` | `exp-query-key-distance-no-rope` | exp | `(t - i) log alpha_ti` | |
 | Control: softmax forget gate | `r5adc29a91e3b` | `softmax-forget-gate-no-rope` | softmax | `L_t - L_i` | 13.680 |
@@ -111,11 +111,12 @@ primary; `w_alpha`, `A_log` and `b_dt` keep FoX's initialization. It compares wi
 | Reference: query m = 8, per order | `r20fe6fe864bc` | `query-m8-per-order-query-gate-nope-wd` | query polynomial | `(t - i) log alpha_tr` for order `r` | 13.780 |
 | Reference: query m = 4, per order, query–key | `r03be769d2069` | `query-m4-per-order-query-key-gate-nope-wd` | query polynomial | `(t - i) log alpha_tir` for order `r` | 13.708 |
 
-The softmax query-distance primary has completed and the exp one is training; their results are
-pending. The query–key primary is allocated and not yet trained. The polynomial references come
-from [query_distance_decay](../query_distance_decay/README.md), where the same gate in
-query-distance mode trails cumulative FoX by 2.3% at degree four (14.198 against 13.873). Launch
-commands are in the study README for the
+The softmax query-distance primary completed its 7,570 updates, with validation-best PPL 13.701 at
+update 7,500. The exp query-distance primary's result is pending, and the query–key primary is
+allocated and not yet trained. The polynomial references come from
+[query_distance_decay](../query_distance_decay/README.md), where the same gate in query-distance
+mode trails cumulative FoX by 2.3% at degree four (14.198 against 13.873). Launch commands are in
+the study README for the
 [query-distance pair](../../../README.md#query-distance-gates-on-softmax-and-exp) and the
 [query–key gate](../../../README.md#query-key-gate-on-exp).
 

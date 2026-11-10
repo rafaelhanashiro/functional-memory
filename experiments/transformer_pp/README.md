@@ -1265,11 +1265,12 @@ on CPU. Acceptance runs `tests/test_exponential_query_distance.py` on CPU, and i
 strips cases against FP64 on the GPU, before training.
 
 Home cluster: **Kennel**. Branch `claude/data-dependent-gates`, worktree
-`worktrees/data-dependent-gates`. Both are allocated and not yet submitted. After committing the
-inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
-are too slow there) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen
-from the live allowance. The ALiBi pair trained on the same strips in 8.9 h (B300) and 11.3 h
-(H100 SXM); the pilot projects each run's time and refuses an allocation it would not fit.
+`worktrees/data-dependent-gates`. Both were submitted on 2026-11-09, each on one B300 or H100 SXM,
+excluding the H100 PCIe node `mastiff` (the strips are too slow there) and the B200 node `shiba`,
+with the partition (`standard` or `long`) chosen from the live allowance. The softmax run has
+completed, and the exp run's result is pending. The ALiBi pair trained on the same strips in 8.9 h
+(B300) and 11.3 h (H100 SXM); the pilot projects each run's time and refuses an allocation it would
+not fit.
 
 ```bash
 for run in r208110a25271 r17444ad0f60e; do
