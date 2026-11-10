@@ -1,0 +1,18 @@
+{
+  "checkpoint_retention": {
+    "policy": "none",
+    "reason": "Every tested parameter state is the already retained parent checkpoint at step 7500."
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1736cf7a019c/config.yaml",
+    "sha256": "5556f780dc1b6a95b18f102744fd509468e106046201d9f81c1a377bbdc20f34"
+  },
+  "home_cluster": "kennel",
+  "label": "per-order-query-key-fixed-checkpoint-gradient-scan",
+  "name": "per-order-query-key-fixed-checkpoint-gradient-scan",
+  "parent_run_id": "r03be769d2069",
+  "record_schema_version": 1,
+  "run_id": "r1736cf7a019c",
+  "seed": 42,
+  "status": "planned"
+}

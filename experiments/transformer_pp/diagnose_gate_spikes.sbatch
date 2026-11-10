@@ -48,14 +48,28 @@ import sys,yaml
 diagnostic=yaml.safe_load(open(sys.argv[1]))['diagnostic']
 print(diagnostic['parent_run_path'])
 print('1' if diagnostic.get('retain_spike_state',False) else '0')
+print(diagnostic.get('mode','replay'))
+print(diagnostic.get('start_step',7500))
+print(diagnostic.get('first_batch_update',7501))
+print(diagnostic.get('max_batches',256))
+print(diagnostic.get('threshold',1.0))
 PY
 )
 PARENT_RUN="${REPLAY_SETTINGS[0]}"
 REPLAY_OPTIONS=()
 if [[ "${REPLAY_SETTINGS[1]}" == 1 ]]; then REPLAY_OPTIONS+=(--retain-spike-state); fi
 set +e
-"$PYTHON" -m experiments.transformer_pp.diagnose_gate_spikes --parent-run "$PARENT_RUN" --output "$RUN_DIR" --checkpoint 7500 --end-step 7570 "${REPLAY_OPTIONS[@]}"
-RESULT=$?
+if [[ "${REPLAY_SETTINGS[2]}" == frozen_batches ]]; then
+  "$PYTHON" -m experiments.transformer_pp.diagnose_frozen_gate_batches --parent-run "$PARENT_RUN" --output "$RUN_DIR" --checkpoint "${REPLAY_SETTINGS[3]}" --first-batch-update "${REPLAY_SETTINGS[4]}" --max-batches "${REPLAY_SETTINGS[5]}" --threshold "${REPLAY_SETTINGS[6]}"
+  RESULT=$?
+  if [[ "$RESULT" == 0 ]]; then
+    "$PYTHON" -m experiments.transformer_pp.diagnose_gate_vjp --run-dir "$RUN_DIR"
+    RESULT=$?
+  fi
+else
+  "$PYTHON" -m experiments.transformer_pp.diagnose_gate_spikes --parent-run "$PARENT_RUN" --output "$RUN_DIR" --checkpoint 7500 --end-step 7570 "${REPLAY_OPTIONS[@]}"
+  RESULT=$?
+fi
 set -e
 "$PYTHON" - "$RUN_DIR" "$RESULT" <<'PY'
 from pathlib import Path
