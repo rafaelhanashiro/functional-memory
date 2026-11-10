@@ -117,3 +117,19 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml
       sha256: a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee
+- study: transformer_pp
+  run_id: r3ba9a42b7abd
+  role: static_spline_quadratic
+  label: Static spline, quadratic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/config.yaml
+      sha256: fb9daf2dbdfa1f8c8c78406e28fa3f8ef48738d0f26751311da4b155c0927e5a
+- study: transformer_pp
+  run_id: r2c5883395415
+  role: query_spline_quadratic
+  label: Query spline + W decay, quadratic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2c5883395415/config.yaml
+      sha256: cfecf2e9b53069dee5e98b42e63a66b5ff338a9af5190ea99503bf5a80f4f248

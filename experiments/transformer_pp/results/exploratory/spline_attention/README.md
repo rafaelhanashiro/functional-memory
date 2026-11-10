@@ -182,9 +182,9 @@ and 239723).
 
 ![Spline training against the controls and score coverage](training.png)
 
-**Open decision.** Whether changing the initial function to an affine function lets
-these splines learn useful departures from it and match the degree-four polynomial
-controls. The fixed grid and polynomial continuation remain unchanged.
+**Open decision.** How the initial function affects spline learning: compare Taylor,
+affine, and quadratic starts while retaining the full quartic spline capacity.
+The fixed grid and polynomial continuation remain unchanged.
 
 Regenerate `training_summary.csv` and `training.png` with
 `scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.exploratory.spline_attention.plot_training`.
@@ -222,3 +222,47 @@ hold acceptance outcomes, exact submission commands and scheduler IDs. Monitorin
 checks scheduler state and run outputs for failures, inactivity and completion;
 completed results will distinguish validation-best and terminal PPL against both
 the same-family Taylor-initialized spline and the global-polynomial control.
+
+## Quadratic-initialized comparison
+
+`r3ba9a42b7abd` (static) and `r2c5883395415` (query + W decay) start from
+**f(s) = 1 + s + s²/2**. Their paired source recipes and primary controls are
+`r7e4193fcafbd` and `rf303a5f94487`. Only the initial spline function changes;
+the quartic basis, knots [-32, -6, 0, 6, 32], polynomial continuation, all eight
+trainable coefficients per layer/head, and all other scientific settings remain
+those of the source recipes. These are fresh seed-42 executions with 2,048-token
+contexts and 7,570 updates, with RoPE and no FoX gate.
+
+The exact initial B-spline coefficients are
+`[481, 559/2, 605/6, -10, 6, 815/6, 661/2, 545]`, rounded once to FP32.
+The query generator starts with these offsets, zero amplitudes, and the same
+random W draw as its source. W receives decay 0.1; amplitudes and offsets remain
+exempt. Static coefficients remain exempt. There is no factorial coefficient
+scaling. The initial function is positive everywhere, with minimum 1/2, but
+training does not impose positivity or restrict the spline to a quadratic.
+
+This start preserves Taylor's value, slope, and curvature at zero. The largest
+FP32 coefficient spacing is 0.00006103515625, 64 times finer than the original
+T4 start. That improves the resolution of stored updates; it does not guarantee
+that every coefficient moves on every step. The outer basis functions can be
+inactive on early batches. The existing score calibration supports substantial
+curvature near zero (initial score standard deviation about 1), while its trained
+score tails motivate keeping the same grid and continuation.
+
+The adapter `experiments.transformer_pp.spline_quadratic_acceptance` checks the
+pinned source recipes, actual initialization, unchanged backbone and W draws,
+parameter counts, and optimizer decay masks. Shared tests check the computation
+and gradients and Adam updates with every basis function active. Full acceptance
+then checks GPU precision, a production-shape pilot, validation, and exact
+checkpoint resumption. An additional pilot check requires central coefficients
+to move and query amplitudes to leave zero, recording movement separately for
+all eight coefficients before production training is allowed.
+
+Both use the optimized blocked JAX causal strips, with no fused spline kernel.
+Each requests one B300 independently, using available `standard` and `long`
+allowances before `sweep`. Expected allocation runtime is about 10–12 hours,
+excluding queue wait, based on the paired spline runs; acceptance measures the
+new recipe's runtime. Exact jobs, partition choices, source commit, acceptance
+outcomes, and monitoring state are execution provenance. Report validation-best
+and terminal PPL separately against the paired T4 spline, with affine starts and
+global-polynomial controls retained as additional comparisons.

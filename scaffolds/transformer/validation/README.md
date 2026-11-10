@@ -3071,3 +3071,28 @@ moves, task gradients reach the query projection. Existing output/gradient check
 against independent Cox–de Boor/de Boor references also pass. The attention backend
 computation is unchanged. GPU acceptance for the new initialization is pending
 and remains required on the actual training allocation.
+
+## Polynomial B-spline initialization (2026-11-10)
+
+The locked CPU environment passes **126 spline tests** and **120 shared acceptance
+tests**. The spline command above now includes exact polynomial-to-B-spline
+blossoming for several degrees and knot vectors, independent Cox–de Boor values,
+FP32/FP64 values and score derivatives at knots and in the tails, model-logit parity
+with the matching fixed monomial kernel, and unchanged Taylor/affine starts,
+backbone draws, decay masks and historical config loading.
+
+For a degree-four basis on `[-32, -6, 0, 6, 32]`, initializing from `[1, 1, 0.5]`
+produces `[481, 559/2, 605/6, -10, 6, 815/6, 661/2, 545]` before FP32 rounding.
+With all eight basis functions active, actual static and query Adam updates at
+`1e-4` change every coefficient. Query amplitudes move from zero and subsequently
+pass finite task gradients to their projection. The production pilot callback
+can check finite updates from its real validation diagnostics before acceptance
+passes; shared tests verify its recorded facts, fail-before-success behavior, and
+backward compatibility for adapters without a callback.
+
+GPU qualification now selects four production-precision cases: static/query
+coefficients near the Taylor/quadratic starts, at 2,048 tokens and width 64,
+comparing outputs and Q/K/V/coefficient gradients against FP64. This new
+initialization still requires those GPU checks, full-recipe initialization,
+pilot coefficient-update evidence, runtime projection, and exact checkpoint
+resume on each production allocation. No new kernel arithmetic is introduced.

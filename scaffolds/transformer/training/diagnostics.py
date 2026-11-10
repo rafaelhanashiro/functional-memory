@@ -630,8 +630,12 @@ def spline_identity(model) -> dict:
     start = f"the exact B-spline coefficients of T_{degree}(s) = sum_(r<={degree}) s^r / r!, so f = T_{degree}"
     initialization = model.attention_coefficient_initialization
     intercept, slope = model.attention_spline_initial_intercept, model.attention_spline_initial_slope
+    powers = model.attention_spline_initial_power_coefficients
     if initialization == "affine":
         start = f"the exact B-spline coefficients of the affine function f(s) = {intercept:g} + ({slope:g})*s"
+    if initialization == "polynomial":
+        terms = " + ".join(f"({coefficient:g})*s^{r}" for r, coefficient in enumerate(powers))
+        start = f"the exact B-spline coefficients of the polynomial f(s) = {terms}"
     if query:
         spread = model.attention_coefficient_projection_initial_std
         amplitude = model.attention_coefficient_amplitude_initial
@@ -660,7 +664,7 @@ def spline_identity(model) -> dict:
                                         "linear map of theta, Horner's rule in the compute dtype (FP32)"),
         "attention_spline_piece_centres": [float(centre) for centre in piece_centres(knots)],
         "attention_spline_initial_coefficients": [str(value) for value in initial_coefficients(
-            knots, degree, initialization, intercept=intercept, slope=slope)],
+            knots, degree, initialization, intercept=intercept, slope=slope, power_coefficients=powers)],
         "attention_coefficients": "learned",
         "attention_coefficient_parameterization": "direct",
         "attention_coefficient_initialization": initialization,
@@ -669,6 +673,8 @@ def spline_identity(model) -> dict:
         "attention_coefficient_conditioning": model.attention_coefficient_conditioning,
         "coefficient_penalty": 0.0,
     }
+    if initialization == "polynomial":
+        identity["attention_spline_initial_power_coefficients"] = list(powers)
     if initialization == "affine":
         identity.update(attention_spline_initial_intercept=intercept, attention_spline_initial_slope=slope)
     if query:

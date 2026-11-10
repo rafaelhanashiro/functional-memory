@@ -108,6 +108,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
             initialization=config.attention_coefficient_initialization,
             initial_intercept=getattr(config, "attention_spline_initial_intercept", None),
             initial_slope=getattr(config, "attention_spline_initial_slope", None),
+            initial_power_coefficients=getattr(config, "attention_spline_initial_power_coefficients", None),
             amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
             projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
             kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False))

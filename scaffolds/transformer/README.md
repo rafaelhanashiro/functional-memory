@@ -691,6 +691,15 @@ RMSNorm remains a separate option.
   polynomial extrapolation. With query amplitude initialized to zero, the query form starts
   at the same function. The degree, knots, trainable coefficient count, generator, and
   production evaluation remain unchanged.
+- Polynomial initialization (`attention_coefficient_initialization: polynomial`) uses explicit
+  ascending monomial coefficients `attention_spline_initial_power_coefficients`, a nonempty
+  finite list of length at most `p + 1` (default `null`, valid only for this initialization).
+  Exact blossoming converts this function to the full B-spline basis. For example `[1, 1, 0.5]`
+  starts at `1 + s + s²/2` even with a degree-four basis; with the knots above its eight
+  coefficients are `[481, 559/2, 605/6, -10, 6, 815/6, 661/2, 545]`. All eight coefficients
+  remain independently learned, with polynomial continuation outside the endpoint knots.
+  A query generator with zero initial amplitude starts at the same quadratic. This changes
+  initialization only, including no change to coefficient scaling, decay or the backend.
 - FP32 storage quantizes updates: a step changes a stored coefficient only when it exceeds half
   the coefficient's FP32 spacing. Wide knots make the end coefficients large: above, `theta_0`
   and `theta_7` (or `b_0` and `b_7`) start at `T_4(-32) = 38710.33` and `T_4(32) = 49697`,
@@ -1461,6 +1470,10 @@ Studies configure these shared modules with execution modules at their root
   H100 80GB HBM3 or H100 NVL rather than the launcher's `H100`; the
   reusing run copies the report into its own acceptance directory and records its
   origin in `success.json` under `reused_tests`.
+- The optional acceptance callback `check_pilot(config, outcome, terminal_validation)`
+  checks experiment-specific behavior after finite pilot validation and before the stage
+  passes. Its facts are recorded under `pilot.json` → `outcome.experiment_check`; raising
+  an exception blocks production. Existing adapters omit the callback.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection.
 

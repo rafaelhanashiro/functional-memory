@@ -1153,6 +1153,28 @@ for run in r325f7d64b940 r2de7f1f4c9ce; do
 done
 ```
 
+The quadratic-initialization comparison uses `r3ba9a42b7abd` (static) and
+`r2c5883395415` (query + W decay), starting from f(s) = 1 + s + s²/2 while
+preserving the paired spline recipes. The same topic records the exact initial
+coefficients and the additional pilot check for actual coefficient movement.
+Home cluster: Kennel. Branch `codex/spline-quadratic-init`, worktree
+`worktrees/spline-quadratic-init`. After checking the live allowances and
+committing frozen inputs, submit each independently (the second entry uses
+`long` while the four-GPU `standard` allowance is committed):
+
+```bash
+for allocation in r3ba9a42b7abd:standard r2c5883395415:long; do
+  run=${allocation%:*}
+  partition=${allocation#*:}
+  sbatch --parsable --partition="$partition" --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_quadratic_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
