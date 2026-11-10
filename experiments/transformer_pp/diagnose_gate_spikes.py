@@ -193,7 +193,7 @@ def main():
         state = create_state(config, rng)
         with ocp.StandardCheckpointer() as checkpointer:
             state = checkpointer.restore(checkpoint / "default",
-                                         args=ocp.args.StandardRestore({"state": state}))["state"]
+                                         target={"state": state})["state"]
         if int(state.step) != args.checkpoint:
             raise ValueError("Restored step differs from requested checkpoint")
         accumulation = config.data.batch_size // config.train.micro_batch_size
