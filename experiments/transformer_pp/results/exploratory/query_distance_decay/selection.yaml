@@ -22,7 +22,7 @@ settings:
   per_order_decay: sum_r c_r(x_t)*s_ti^r*exp(-(t-i)*lambda_tir), r=0..m; duplicate
     shared gates at initialization
   degree: 4, except the degree-eight (8) and degree-twelve (12) shared and per-order
-    query gates
+    query gates and per-order query-key gates
 runs:
 - study: transformer_pp
   run_id: r4a80e28ce0a7
@@ -224,3 +224,19 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rfe140c073b2f/best_validation.json
       sha256: 5cf168200e796b5499d6b4f65e4de6440e1d6012cf4faa536d42b8acf42b9289
+- study: transformer_pp
+  run_id: r227b0ed7c605
+  role: per_order_query_key_m8
+  label: Per-order query-key distance + W decay, m = 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/config.yaml
+      sha256: 799d743ade4f155bc2cae7c697812e870826bb6738ad25408ad13ddae420f1b7
+- study: transformer_pp
+  run_id: rc2f9273c49cc
+  role: per_order_query_key_m12
+  label: Per-order query-key distance + W decay, m = 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc2f9273c49cc/config.yaml
+      sha256: da52337cf8a4e2b5fec2e5ffbe2a22dd67bb2a197b0eea88407976e315e7e0e9
