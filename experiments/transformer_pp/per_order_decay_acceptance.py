@@ -14,13 +14,16 @@ CONTROLS = {
     (4, "query"): ("r3e26412b2811", "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"),
     (4, "query_key"): ("r02f984133092", "3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131"),
     (8, "query"): ("r9320e5cd3071", "d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f"),
+    (12, "query"): ("r47bfe39ce9b4", "bd1078341f708ae52b4efaba766a6c6a98133df01aee36f539a166d2df31be3a"),
 }
 # Initialization fingerprint and parameter count of each degree's query-gate control: degree four's
-# verified by query_distance_decay_acceptance at launch, degree eight's computed on CPU from its recipe
-# (query_distance_degree_acceptance requires it to equal cumulative FoX r9353f554b917's).
+# verified by query_distance_decay_acceptance at launch, degree eight's and twelve's computed on CPU from
+# their recipes (query_distance_degree_acceptance requires each to equal that of cumulative FoX
+# r9353f554b917's recipe at the same degree).
 INITIALIZATION_SHA256 = {4: "41222e5822311b7c7828965e5f4e03b72e820cc14f0928d6af073c8649a7b7d7",
-                         8: "d2f533debb5896ecf1e2d456b1e2a962de3f62934fb42ad43fd3eacca189241e"}
-PARAMETER_COUNT = {4: 199585066, 8: 200339386}
+                         8: "d2f533debb5896ecf1e2d456b1e2a962de3f62934fb42ad43fd3eacca189241e",
+                         12: "1045f57c64e45b0534c327493c9539671a664ecaa53f85a0dc55a5298f6c5e2c"}
+PARAMETER_COUNT = {4: 199585066, 8: 200339386, 12: 201093706}
 
 
 def control_config(conditioning="query", degree=4):

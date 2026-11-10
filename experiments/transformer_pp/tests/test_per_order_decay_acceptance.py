@@ -17,7 +17,7 @@ def variant(conditioning="query", degree=4):
     return config
 
 
-@pytest.mark.parametrize("conditioning,degree", (("query", 4), ("query_key", 4), ("query", 8)))
+@pytest.mark.parametrize("conditioning,degree", (("query", 4), ("query_key", 4), ("query", 8), ("query", 12)))
 def test_approved_recipe_and_required_gpu_checks(conditioning, degree):
     config = variant(conditioning, degree)
     adapter.check_recipe(config)
@@ -28,19 +28,23 @@ def test_approved_recipe_and_required_gpu_checks(conditioning, degree):
     assert spec.check_initialization is adapter.check_initialization
 
 
-def test_frozen_degree_eight_run_is_its_shared_gate_control_with_per_order_gates():
-    run = load_config(Path(adapter.__file__).parent / "runs/r20fe6fe864bc/config.yaml")
+@pytest.mark.parametrize("degree,run_id", ((8, "r20fe6fe864bc"), (12, "rfe140c073b2f")))
+def test_frozen_higher_degree_runs_are_their_shared_gate_controls_with_per_order_gates(degree, run_id):
+    from scaffolds.transformer.models import model_parameter_count
+
+    run = load_config(Path(adapter.__file__).parent / f"runs/{run_id}/config.yaml")
     adapter.check_recipe(run)
-    control = adapter.control_config("query", 8)
-    assert run.model.attention_degree == control.model.attention_degree == 8
+    control = adapter.control_config("query", degree)
+    assert run.model.attention_degree == control.model.attention_degree == degree
     assert run.model.attention_backend == control.model.attention_backend == "mosaic"
     assert control.model.attention_forget_gate_mode == "query_distance" and not control.model.attention_forget_gate_per_order
-    for degree in (4, 8):
-        record = json.loads((adapter.ROOT / "runs" / adapter.CONTROLS[degree, "query"][0] / "record.json").read_text())
-        assert record["config"]["sha256"] == adapter.CONTROLS[degree, "query"][1]
+    assert model_parameter_count(control.model) == adapter.PARAMETER_COUNT[degree]
+    for pinned in (4, 8, 12):
+        record = json.loads((adapter.ROOT / "runs" / adapter.CONTROLS[pinned, "query"][0] / "record.json").read_text())
+        assert record["config"]["sha256"] == adapter.CONTROLS[pinned, "query"][1]
 
 
-@pytest.mark.parametrize("conditioning,degree", (("query_key", 8), ("query", 6), ("query", 12)))
+@pytest.mark.parametrize("conditioning,degree", (("query_key", 8), ("query_key", 12), ("query", 6), ("query", 10)))
 def test_degrees_without_a_shared_gate_control_are_rejected(conditioning, degree):
     config = variant()
     config.model.attention_forget_gate_conditioning = conditioning
@@ -55,7 +59,7 @@ def test_degrees_without_a_shared_gate_control_are_rejected(conditioning, degree
     ("model", "qk_norm_head_scale", False), ("model", "attention_coefficient_kernel_weight_decay", False),
     ("optim", "weight_decay", 0.), ("optim", "total_steps", 3000), ("train", "seed", 43),
 ))
-@pytest.mark.parametrize("degree", (4, 8))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_unrelated_changes_are_rejected(degree, section, key, value):
     config = variant(degree=degree)
     setattr(getattr(config, section), key, value)
@@ -63,7 +67,7 @@ def test_unrelated_changes_are_rejected(degree, section, key, value):
         adapter.check_recipe(config)
 
 
-@pytest.mark.parametrize("conditioning,degree", (("query", 4), ("query_key", 4), ("query", 8)))
+@pytest.mark.parametrize("conditioning,degree", (("query", 4), ("query_key", 4), ("query", 8), ("query", 12)))
 def test_initialization_guard_recovers_control_and_rejects_changed_order(monkeypatch, conditioning, degree):
     import jax
     import jax.numpy as jnp

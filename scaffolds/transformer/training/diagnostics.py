@@ -412,22 +412,39 @@ def attention_identity(config) -> dict:
                                       "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
                                       "DeltaNet's initialization")) if forget_gate else "")),
         )
+    input_free_gate = forget_gate and gate_conditioning == "none"
+    if input_free_gate:
+        # Learned static coefficients with the input-free query-distance gate (one rate per layer/head).
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            attention_forget_gate_conditioning="none",
+            forget_gate_parameter_count=2 * config.model.num_layers * config.model.num_heads,
+            attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r s_ti^r exp(-(t-i) lambda) v_i, "
+                               f"s_ti = Q_t K_i^T / sqrt(d_k); learned c ({sharing}) initialized at {initialized}; "
+                               "lambda = exp(A_log) softplus(dt_bias) per layer/head, read from no token, with Gated "
+                               "DeltaNet's initialization"),
+        )
     if gate_per_order:
         identity["attention_forget_gate_per_order"] = True
         identity["forget_gate_parameter_count"] *= degree + 1
         identity["attention_formula"] = (
-            # Each order's own cumulative decay, prod_(j=i+1..t) alpha_jr = exp(L_tr - L_ir).
-            f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r prod_(j=i+1..t) alpha_jr v_i; "
-            "log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r)"
-            if gate_mode == "cumulative" else
-            f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r exp(-(t-i) lambda_tir) v_i; "
-            "lambda_tir = exp(A_log_r) softplus(x_t w_query_r + "
-            + ("x_i w_key_r + " if gate_conditioning == "query_key" else "")
-            + "dt_bias_r)") + (
-            "; c_r uses the configured query-only coefficient generator and factorial scales; "
-            "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
-            "by duplicating the shared gate; x is the pre-attention RMSNorm activation")
-    if forget_gate and not query_conditioned:
+            f"sum_(i<=t) sum_(r=0..{degree}) c_r s_ti^r exp(-(t-i) lambda_r) v_i; lambda_r = exp(A_log_r) "
+            f"softplus(dt_bias_r), read from no token; learned c ({sharing}) initialized at {initialized}; "
+            "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized by duplicating "
+            "the shared gate" if input_free_gate else (
+                # Each order's own cumulative decay, prod_(j=i+1..t) alpha_jr = exp(L_tr - L_ir).
+                f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r prod_(j=i+1..t) alpha_jr v_i; "
+                "log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r)"
+                if gate_mode == "cumulative" else
+                f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r exp(-(t-i) lambda_tir) v_i; "
+                "lambda_tir = exp(A_log_r) softplus(x_t w_query_r + "
+                + ("x_i w_key_r + " if gate_conditioning == "query_key" else "")
+                + "dt_bias_r)") + (
+                "; c_r uses the configured query-only coefficient generator and factorial scales; "
+                "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
+                "by duplicating the shared gate; x is the pre-attention RMSNorm activation"))
+    if forget_gate and not query_conditioned and not input_free_gate:
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
         # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
@@ -569,8 +586,10 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
         if model.attention_forget_gate:
             identity["attention_implementation"] += "_forget_gate"
-    if forget_gate and query_conditioned and (gate_conditioning != "query" or gate_rate_activation != "softplus"):
-        # Query polynomials' endpoint variants; softmax and the exponential state theirs above.
+    if (forget_gate and query_conditioned and not input_free_gate
+            and (gate_conditioning != "query" or gate_rate_activation != "softplus")):
+        # Query polynomials' endpoint variants; softmax, the exponential and the input-free gate state
+        # theirs above.
         prefix = identity["attention_formula"].split("; each weight is multiplied")[0]
         if gate_conditioning == "query_key":
             gate_formula = ("exp(-(t-i) exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)) per layer/head; "
@@ -1063,6 +1082,28 @@ def forget_gate_report(params, raw_layers, *, form: str = "input", conditioning:
             "mean_half_life_tokens": _serializable(half_life),
             "finite": bool(all(np.isfinite(values).all() for values in sample.values())),
         }
+    if conditioning == "none":
+        # One rate per layer and head (and order) that reads no token: the parameters give it exactly.
+        rate = np.exp(get("forget_gate_log_rate")[..., 0])
+        dt = np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0])
+        decay = rate * dt
+        with np.errstate(divide="ignore"):
+            half_lives = np.log(2.0) / decay
+        per_order = decay.ndim == 3
+        return {
+            "formula": ("log alpha_r = -exp(A_log_r) softplus(dt_bias_r), read from no token; degree-r weight "
+                        "multiplied by exp(-(t-i) lambda_r)" if per_order else
+                        "log alpha = -exp(A_log) softplus(dt_bias), read from no token; weights multiplied by "
+                        "exp(-(t-i) lambda)"),
+            **({"axes": ["layer", "head", "polynomial_order"]} if per_order else {}),
+            "rate_exp_A_log": _serializable(rate),
+            "softplus_dt_bias": _serializable(dt),
+            "decay_rate": _serializable(decay),
+            "half_life_tokens": _serializable(half_lives),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(decay).all() and all(np.isfinite(values).all() for values in sample.values())),
+        }
     if form == "sigmoid":
         bias, kernel = get("forget_gate_bias")[..., 0], get("forget_gate_kernel")
         return {
@@ -1310,6 +1351,11 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
+        if getattr(config.model, "attention_forget_gate", False):
+            # Static coefficients take only the input-free gate: its rates and half-lives per layer, head (and order).
+            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers, conditioning="none")
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
     elif has_fixed_polynomial(config.model):
         values = np.asarray(config.model.attention_fixed_coefficients, dtype=np.float32)
         coefficient_report = {

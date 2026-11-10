@@ -150,6 +150,26 @@ Diagnostics retain the layer, head, and order axes. Sigmoid rates, other gate
 forms, and other backends reject this option, and Mosaic rejects cumulative
 per-order gates. Existing recipes default to a shared gate.
 
+`attention_forget_gate_conditioning: none` is the input-free gate of learned static
+coefficients: `lambda = exp(A_log) * softplus(b_dt)` per layer and head reads no token,
+so every weight is `sum_r c_r s_ti^r exp(-(t-i) lambda)`. It keeps the query gate's
+`A_log` and `b_dt` arrays, names and Gated DeltaNet draws (both exempt from weight decay)
+and drops its projection; with a rate that reads no token, cumulative and query-distance
+decay coincide. It requires learned direct `per_head` static coefficients with the Taylor
+start and every order, the input form with softplus rates in `query_distance` mode, RoPE or
+no positional encoding, and the blocked (scan or strips) or Mosaic backend;
+`attention_forget_gate_per_order: true` gives each order its own copy of the gate. The model
+passes the represented coefficients and `-lambda` to the query-coefficient decay operation,
+broadcast to every query and token, so their gradients sum back to `c`, `A_log` and `b_dt`;
+on Mosaic these are the `query_decay` and `per_order_query_decay` kernels. Diagnostics report
+each layer's, head's (and order's) rate and half-life `ln 2 / lambda` beside the coefficients.
+Static coefficients reject every gate that reads tokens, and query coefficients reject this one.
+Acceptance adds `tests/test_input_free_gate.py` to both test stages of these recipes: on CPU,
+outputs and every gradient against FP64 through the scan and the strips, the model's operands,
+initialization, masks, diagnostics, recipe rules, and H100 kernel lowering at 2,048 tokens; on
+the GPU, the Mosaic path against FP64 at 2,048 tokens, duplicated orders against the shared
+kernels, and a two-layer model against the FP32 blocked model.
+
 `attention_forget_gate_form: input` (the default) is that gate. The `constant` form
 drops its token dependence: one learned log rate per layer and head,
 `log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
@@ -734,6 +754,7 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | softmax | `softmax_i(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
+| learned static coefficients, input-free gate | `p(s_ti) exp(-(t-i) lambda)` | RoPE or none | `blocked`, `mosaic` |
 
 `attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
 original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
@@ -1131,8 +1152,9 @@ shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 1
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
-sigmoid query polynomials run on the Mosaic decay kernels only when `mosaic` is requested
-(`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
+sigmoid query polynomials, and the input-free gate of learned static coefficients (on the same
+query-decay kernels, every query's coefficients and rates equal), run on the Mosaic decay
+kernels only when `mosaic` is requested (`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
 kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
 (`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
 per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel
