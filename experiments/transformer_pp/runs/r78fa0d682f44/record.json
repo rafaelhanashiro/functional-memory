@@ -1,0 +1,16 @@
+{
+  "comparison": {
+    "control_run_id": "rf303a5f94487",
+    "intended_change": "Spline initialization: f(score) = (1 + score / 4)**4 / 16; all other scientific settings preserved"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r78fa0d682f44/config.yaml",
+    "sha256": "9bc5997ddd71b15b1603fbdbb2d41acffb6d08f29755a7b0553ec1d8041a060b"
+  },
+  "home_cluster": "kennel",
+  "label": "spline-query-m4-binomial-init-w-decay",
+  "name": "spline-query-m4-binomial-init-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r78fa0d682f44",
+  "status": "planned"
+}

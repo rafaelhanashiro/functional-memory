@@ -1176,6 +1176,25 @@ for allocation in r3ba9a42b7abd:standard r2c5883395415:long; do
 done
 ```
 
+The scaled binomial-quartic comparison uses `ra4c3ada624af` (static) and
+`r78fa0d682f44` (query + W decay), starting from f(s) = (1 + s/4)⁴ / 16.
+The [spline topic](results/exploratory/spline_attention/README.md) records its
+exact coefficients, controls, unchanged scientific settings, and qualification.
+Home cluster: Kennel. Branch `codex/spline-binomial-init`, worktree
+`worktrees/spline-binomial-init`. After checking live allowances and committing
+frozen inputs, each independent one-B300 job uses an available `standard` slot:
+
+```bash
+for run in ra4c3ada624af r78fa0d682f44; do
+  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_binomial_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
 ## Execution and records
 
 Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs

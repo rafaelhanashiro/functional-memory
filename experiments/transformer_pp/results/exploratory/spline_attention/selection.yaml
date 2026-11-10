@@ -133,3 +133,19 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r2c5883395415/config.yaml
       sha256: cfecf2e9b53069dee5e98b42e63a66b5ff338a9af5190ea99503bf5a80f4f248
+- study: transformer_pp
+  run_id: ra4c3ada624af
+  role: static_spline_binomial
+  label: Static spline, scaled binomial-quartic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/config.yaml
+      sha256: a97790ccf38ed5c953c44c7b872b9bb27a47065f34c344ffb5ea1be5d3c11707
+- study: transformer_pp
+  run_id: r78fa0d682f44
+  role: query_spline_binomial
+  label: Query spline + W decay, scaled binomial-quartic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/config.yaml
+      sha256: 9bc5997ddd71b15b1603fbdbb2d41acffb6d08f29755a7b0553ec1d8041a060b

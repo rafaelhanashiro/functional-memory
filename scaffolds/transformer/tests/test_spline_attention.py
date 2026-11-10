@@ -33,8 +33,15 @@ QUADRATIC_SETTINGS = dict(attention_coefficient_initialization="polynomial",
                           attention_spline_initial_power_coefficients=(1.0, 1.0, 0.5))
 QUADRATIC_INIT = tuple(map(Fraction, (481, Fraction(559, 2), Fraction(605, 6), -10, 6,
                                      Fraction(815, 6), Fraction(661, 2), 545)))
-INIT_SETTINGS = {"taylor": {}, "affine": AFFINE_SETTINGS, "polynomial": QUADRATIC_SETTINGS}
-INIT_COEFFICIENTS = {"taylor": QUARTIC_INIT, "affine": AFFINE_INIT, "polynomial": QUADRATIC_INIT}
+BINOMIAL_POWERS = (1 / 16, 1 / 16, 3 / 128, 1 / 256, 1 / 4096)
+BINOMIAL_SETTINGS = dict(attention_coefficient_initialization="polynomial",
+                         attention_spline_initial_power_coefficients=BINOMIAL_POWERS)
+BINOMIAL_INIT = tuple(Fraction(*value) for value in (
+    (2401, 16), (343, 32), (-49, 32), (35, 64), (-45, 64), (405, 32), (3645, 32), (6561, 16)))
+INIT_SETTINGS = {"taylor": {}, "affine": AFFINE_SETTINGS, "polynomial": QUADRATIC_SETTINGS,
+                 "binomial": BINOMIAL_SETTINGS}
+INIT_COEFFICIENTS = {"taylor": QUARTIC_INIT, "affine": AFFINE_INIT, "polynomial": QUADRATIC_INIT,
+                     "binomial": BINOMIAL_INIT}
 
 
 SPECIAL = np.asarray([-50, -32 - 1e-9, -32, -32 + 1e-9, -6 - 1e-9, -6, -6 + 1e-9, -1e-9, 0, 1e-9,
@@ -514,10 +521,10 @@ def test_score_coverage_counts_every_measured_score_once():
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("query", (False, True), ids=("static", "query"))
-@pytest.mark.parametrize("initialization", ("taylor", "polynomial"))
+@pytest.mark.parametrize("initialization", ("taylor", "polynomial", "binomial"))
 def test_gpu_production_precision_against_float64(query, initialization):
     """Production precision on the allocated GPU: BF16 Q/K/V at the recipe's width and context
-    with FP32 coefficients near the Taylor or quadratic start, queries scaled so scores reach every piece
+    with FP32 coefficients near each polynomial start, queries scaled so scores reach every piece
     and both continuations. Against the scan's arithmetic in FP64, the strips' output and Q/K/V
     gradients (training and evaluation) and the scan's output (the diagnostics' forward) stay
     within 1.25 times the BF16 rounding floor, the strips' coefficient gradients within 1e-4,
@@ -635,11 +642,12 @@ def test_production_recipes_validate_and_round_trip(tmp_path, initialization):
         save_config(config, saved)
         assert config_dicts_equal(config_to_dict(load_config(saved)), config_to_dict(config))
         assert yaml.safe_load(saved.read_text())["model"]["attention_spline_knots"] == list(KNOTS)
-        if initialization == "polynomial":
-            assert config.model.attention_spline_initial_power_coefficients == (1.0, 1.0, 0.5)
-            assert config_to_dict(config)["model"]["attention_spline_initial_power_coefficients"] == [1.0, 1.0, 0.5]
+        powers = INIT_SETTINGS[initialization].get("attention_spline_initial_power_coefficients")
+        if powers is not None:
+            assert config.model.attention_spline_initial_power_coefficients == powers
+            assert config_to_dict(config)["model"]["attention_spline_initial_power_coefficients"] == list(powers)
             as_tuple = config_to_dict(config)
-            as_tuple["model"]["attention_spline_initial_power_coefficients"] = (1.0, 1.0, 0.5)
+            as_tuple["model"]["attention_spline_initial_power_coefficients"] = powers
             assert config_dicts_equal(as_tuple, config_to_dict(config))
 
 
@@ -867,7 +875,7 @@ def test_weight_decay_reaches_only_the_projection(query, kernel_decay, initializ
 
 
 @pytest.mark.parametrize("query", (False, True), ids=("static", "query"))
-@pytest.mark.parametrize("initialization", ("affine", "polynomial"))
+@pytest.mark.parametrize("initialization", ("affine", "polynomial", "binomial"))
 def test_initial_coefficients_take_adam_steps_when_their_basis_is_active(query, initialization):
     """Fitting an offset initial function across the knot range moves every FP32 coefficient at a small
     LR. For query conditioning a starts at zero, then opens a task-gradient path to W."""
@@ -891,7 +899,10 @@ def test_initial_coefficients_take_adam_steps_when_their_basis_is_active(query, 
             theta = jnp.broadcast_to(params["spline_coefficients"][...][:, :, None, :], (2, 2, 65, 8))
         pieces = spline.to_pieces(theta, KNOTS, DEGREE, jnp.float32)
         values = spline.evaluate(scores, lambda piece, order: pieces[..., piece, order], knots=KNOTS, degree=DEGREE)
-        target = 1.5 + (scores / 4 if initialization == "affine" else scores + scores**2 / 2)
+        initial_function = (1 + scores / 4 if initialization == "affine"
+                            else (1 + scores / 4) ** 4 / 16 if initialization == "binomial"
+                            else 1 + scores + scores**2 / 2)
+        target = initial_function + 0.5
         return jnp.mean((values - target) ** 2)
 
     gradients = jax.grad(loss)(state.params)
@@ -920,7 +931,8 @@ def test_initial_spline_networks_compute_the_declared_polynomial(initialization)
     taylor_config = tiny_model(False, attention_coefficients="fixed", attention_kernel_basis="polynomial",
                                attention_spline_knots=None,
                                attention_fixed_coefficients={"taylor": None, "affine": (1.0, 0.25, 0.0, 0.0, 0.0),
-                                                             "polynomial": (1.0, 1.0, 0.5, 0.0, 0.0)}[initialization])
+                                                             "polynomial": (1.0, 1.0, 0.5, 0.0, 0.0),
+                                                             "binomial": BINOMIAL_POWERS}[initialization])
     settings = INIT_SETTINGS[initialization]
     networks = {name: build_model(config, nnx.Rngs(params=jax.random.PRNGKey(3), dropout=jax.random.PRNGKey(4)))
                 for name, config in (("taylor", taylor_config), ("static", tiny_model(False, **settings)),
@@ -1016,13 +1028,16 @@ def test_metadata_and_diagnostics_describe_the_spline(query, initialization):
     assert identity["attention_spline_knots"] == list(KNOTS)
     assert identity["attention_spline_knot_vector"] == list(knot_vector())
     assert identity["attention_spline_initial_coefficients"] == [str(value) for value in INIT_COEFFICIENTS[initialization]]
-    assert identity["attention_coefficient_initialization"] == initialization
+    assert identity["attention_coefficient_initialization"] == INIT_SETTINGS[initialization].get(
+        "attention_coefficient_initialization", "taylor")
     if initialization == "affine":
         assert identity["attention_spline_initial_intercept"] == 1.0
         assert identity["attention_spline_initial_slope"] == 0.25
-    if initialization == "polynomial":
-        assert identity["attention_spline_initial_power_coefficients"] == [1.0, 1.0, 0.5]
-        assert "polynomial f(s) = (1)*s^0 + (1)*s^1 + (0.5)*s^2" in identity["attention_formula"]
+    powers = INIT_SETTINGS[initialization].get("attention_spline_initial_power_coefficients")
+    if powers is not None:
+        assert identity["attention_spline_initial_power_coefficients"] == list(powers)
+        terms = " + ".join(f"({coefficient:g})*s^{r}" for r, coefficient in enumerate(powers))
+        assert f"polynomial f(s) = {terms}" in identity["attention_formula"]
     assert identity["attention_implementation"] == "blocked_causal_strips" and identity["attention_signed"]
     assert identity["attention_coefficient_count"] == 2 * 2 * 8 * (32 + 2 if query else 1)
     assert "B-splines on the knots [-32, -6, 0, 6, 32]" in identity["attention_formula"]
@@ -1085,6 +1100,7 @@ def test_attention_layers_take_exactly_their_own_coefficient_arrays():
 
 @pytest.mark.parametrize("knots,degree,powers", (
     (KNOTS, 4, (1.0, 1.0, 0.5)),
+    (KNOTS, 4, BINOMIAL_POWERS),
     ((-3.0, -0.5, 1.5, 4.0), 3, (2.0, -0.25, 0.5)),
     ((-2.0, 0.0, 1.0), 5, (-0.75, 0.125, 0.0, -0.5, 0.25)),
     ((-1.0, 2.0), 1, (3.0,)),
@@ -1092,7 +1108,7 @@ def test_attention_layers_take_exactly_their_own_coefficient_arrays():
 def test_polynomial_start_has_exact_coefficients_on_every_piece(knots, degree, powers):
     coefficients = spline.initial_coefficients(knots, degree, "polynomial", power_coefficients=powers)
     if knots == KNOTS:
-        assert coefficients == QUADRATIC_INIT
+        assert coefficients == (BINOMIAL_INIT if powers == BINOMIAL_POWERS else QUADRATIC_INIT)
     powers = tuple(Fraction(value) for value in powers) + (Fraction(0),) * (degree + 1 - len(powers))
     for matrix, centre in zip(spline.exact_piece_matrix(knots, degree), spline.piece_centres(knots)):
         actual = tuple(sum(a * b for a, b in zip(row, coefficients)) for row in matrix)
@@ -1118,3 +1134,46 @@ def test_quadratic_values_and_derivatives_at_knots_and_tails(dtype):
     np.testing.assert_allclose(values, 1 + points + points**2 / 2, rtol=tolerance, atol=tolerance)
     np.testing.assert_allclose(first, 1 + points, rtol=tolerance, atol=tolerance)
     np.testing.assert_allclose(second, np.ones_like(points), rtol=tolerance, atol=tolerance)
+
+
+@pytest.mark.parametrize("dtype", (jnp.float32, jnp.float64))
+def test_binomial_values_and_derivatives_at_knots_zero_and_tails(dtype):
+    """The exact fourth power has a fourth-order zero at -4 and continues unchanged in both tails."""
+    points = np.concatenate([np.linspace(-50, 50, 1001), SPECIAL, [-4 - 1e-5, -4, -4 + 1e-5]])
+    theta = np.asarray([float(value) for value in BINOMIAL_INIT])
+    tolerance = 2e-5 if dtype == jnp.float32 else 1e-12
+    with jax.enable_x64():
+        function = lambda score: module_values(score, theta, dtype)
+        for order in range(5):
+            observed = np.asarray(jax.vmap(function)(jnp.asarray(points, dtype)))
+            expected = (math.factorial(4) / math.factorial(4 - order)
+                        / (16 * 4**order) * (1 + points / 4) ** (4 - order))
+            np.testing.assert_allclose(observed, expected, rtol=tolerance, atol=tolerance)
+            if order < 4:
+                # Near a root use an absolute bound, not a relative error divided by zero.
+                assert abs(float(function(jnp.asarray(-4.0, dtype)))) <= tolerance
+                function = jax.grad(function)
+
+
+def test_binomial_output_scale_preserves_the_declared_rms_epsilon_effect():
+    """Scaling the raw attention sum by 1/16 changes the effective RMS epsilon by 256.
+
+    It is not exact scale invariance: a low-energy row may be attenuated substantially.
+    Compare the production RMSNorm against the analytic identity, including zero/tiny rows,
+    rather than changing epsilon or requiring scaled and unscaled outputs to be identical.
+    """
+    from scaffolds.transformer.attention.output_scaling import scale_attention_output
+
+    epsilon = 1e-6
+    rms = jnp.asarray([0, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0], jnp.float32)
+    y = rms[None, :, None, None] * jnp.asarray([-1, 1, -1, 1], jnp.float32)
+    gains = jnp.ones((1, 4), jnp.float32)
+    scaled = scale_attention_output(y / 16, "head_rms_norm", output_norm_scale=gains, eps=epsilon)
+    effective = scale_attention_output(y, "head_rms_norm", output_norm_scale=gains, eps=256 * epsilon)
+    ordinary = scale_attention_output(y, "head_rms_norm", output_norm_scale=gains, eps=epsilon)
+    np.testing.assert_allclose(scaled, effective, rtol=1e-6, atol=1e-7)
+    expected = np.asarray(y, np.float64) / np.sqrt(np.asarray(rms, np.float64)[None, :, None, None]**2
+                                                 + 256 * epsilon)
+    np.testing.assert_allclose(scaled, expected, rtol=1e-6, atol=1e-7)
+    np.testing.assert_array_equal(scaled[:, 0], 0)
+    assert not np.allclose(scaled, ordinary, rtol=1e-2, atol=1e-4)

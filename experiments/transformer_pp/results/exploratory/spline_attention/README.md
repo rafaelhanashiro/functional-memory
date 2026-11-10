@@ -183,7 +183,7 @@ and 239723).
 ![Spline training against the controls and score coverage](training.png)
 
 **Open decision.** How the initial function affects spline learning: compare Taylor,
-affine, and quadratic starts while retaining the full quartic spline capacity.
+affine, quadratic, and scaled binomial-quartic starts while retaining the full quartic spline capacity.
 The fixed grid and polynomial continuation remain unchanged.
 
 Regenerate `training_summary.csv` and `training.png` with
@@ -266,3 +266,53 @@ new recipe's runtime. Exact jobs, partition choices, source commit, acceptance
 outcomes, and monitoring state are execution provenance. Report validation-best
 and terminal PPL separately against the paired T4 spline, with affine starts and
 global-polynomial controls retained as additional comparisons.
+
+## Scaled binomial-quartic initialization
+
+`ra4c3ada624af` (static) and `r78fa0d682f44` (query + W decay) start from
+**f(s) = (1 + s/4)⁴ / 16**. The primary controls are the Taylor-initialized splines
+`r7e4193fcafbd` and `rf303a5f94487`; the affine and quadratic pairs above remain
+additional initialization comparisons. This changes the starting function and
+coefficient scale, not the spline's trainable capacity.
+
+The ascending power coefficients are `[1/16, 1/16, 3/128, 1/256, 1/4096]`.
+On the same clamped quartic basis and knots [-32, -6, 0, 6, 32], the exact eight
+initial spline coefficients are
+`[2401/16, 343/32, -49/32, 35/64, -45/64, 405/32, 3645/32, 6561/16]`.
+All are exactly representable in FP32. The maximum magnitude is 410.0625 and
+maximum FP32 spacing is 0.000030517578125. The initial function is nonnegative
+and zero at score -4; no positive floor or positivity constraint is added.
+Polynomial continuation applies outside the knot range, as in the controls.
+
+Only the initial function changes from each primary control: the same eight
+trainable coefficients per layer/head, RoPE, no FoX, QK RMSNorm with learned head
+scale, attention-output head RMSNorm, truncated backbone initialization, seed 42,
+data order, 2,048-token context, global batch 256 and 7,570 updates are preserved.
+Peak/minimum learning rates are 0.001/0.0001 with 455 warmup updates. Query offsets
+start at the vector above, amplitudes at zero, and W at the same random draw as
+the control. Only W receives the extra coefficient-generator decay of 0.1;
+offsets, amplitudes, and static coefficients remain exempt. There is no factorial
+scaling of spline coefficients.
+
+Output RMSNorm largely removes a common positive weight scale, but its epsilon
+prevents exact scale invariance: RMSNorm(y/16; epsilon) equals
+RMSNorm(y; 256 epsilon) in exact arithmetic. The recipe keeps the existing epsilon
+unchanged. Qualification checks this relation, including small-output rows, and
+checks initial full-model outputs against the exact scaled polynomial at that
+same epsilon. This experiment therefore does not assume identical logits to the
+unscaled binomial polynomial or to the Taylor control.
+
+The adapter `experiments.transformer_pp.spline_binomial_acceptance` pins complete
+source recipes and verifies actual initial arrays, unchanged backbone and W,
+parameter counts, and decay masks. Shared tests cover the zero at -4, knots and
+tails, derivatives, actual Adam updates with every basis function active, and
+static/query GPU forward and backward precision. Full acceptance includes the
+production-shape pilot, observed central coefficient and query-amplitude updates,
+validation, and exact checkpoint resumption before training starts.
+
+Home cluster: Kennel. Execution uses optimized blocked JAX causal strips with
+one B300 per independent run. Expected total runtime is about 10 hours static
+and 11–12 hours query, excluding queue wait, based on the same-shape spline runs.
+Submission uses available `standard`/`long` allowances before `sweep`; the records
+hold exact jobs, frozen source, acceptance outcomes, and monitoring provenance.
+Compare validation-best and terminal PPL separately on completion.

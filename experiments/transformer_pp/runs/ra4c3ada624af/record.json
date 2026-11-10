@@ -1,0 +1,16 @@
+{
+  "comparison": {
+    "control_run_id": "r7e4193fcafbd",
+    "intended_change": "Spline initialization: f(score) = (1 + score / 4)**4 / 16; all other scientific settings preserved"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra4c3ada624af/config.yaml",
+    "sha256": "a97790ccf38ed5c953c44c7b872b9bb27a47065f34c344ffb5ea1be5d3c11707"
+  },
+  "home_cluster": "kennel",
+  "label": "spline-static-m4-binomial-init",
+  "name": "spline-static-m4-binomial-init",
+  "record_schema_version": 1,
+  "run_id": "ra4c3ada624af",
+  "status": "planned"
+}
