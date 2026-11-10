@@ -11,6 +11,34 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Degree-twelve query-distance gates on Mosaic (2026-11-09)
+
+At degree twelve, `d_K = 64`, and 2,048 tokens, H100's per-order kernels lower for cuda on a
+CPU host in exactly their counted shared memory (one byte less fails): 114,800 (forward),
+94,288 (dQ), and 78,896 (dK/dV) bytes for query gates, and 126,064, 109,648, and 96,304 for
+query–key gates, of 232,448. CPU tests lower the production per-order entry points (forward
+and all gradients) at degree twelve for H100 and check that B300 refuses degree twelve before
+tracing a kernel. The shared query-decay entry point at degree twelve lowers the same way for
+both H100 and B300 (checked once on a CPU host; lowering checks shared memory only).
+
+`tests/test_per_order_decay.py -m gpu` adds degree-twelve FP64 and duplicated-order cases with
+the degree-eight conventions; on B300 the FP64 cases expect the refusal, and the query–key
+duplicated-order case at 1,024 tokens skips. `tests/test_endpoint_decay.py -m gpu` adds the
+shared query gate at degree twelve and, above degree four (the degree-eight case too),
+compares the coefficient gradient order by order: in its FP64 reference the highest order
+holds 97% (degree eight) and 98% (degree twelve) of that gradient's norm, and at degree twelve
+orders 0–8 each hold under 0.13%. On CPU, with the FP64 reference at the degree-twelve
+per-order test inputs, dropping order 12, giving order 12 order 0's gate, or dropping orders
+9–12 each fails that test's checks for both gates: the affected orders' coefficient and gate
+gradients miss by 100–450× their tolerance, and dropping orders 9–12 also moves the output by
+0.0082–0.0083 against its 0.006 bound (dropping order 12 alone moves it by 3.3e-4–3.7e-4).
+Those per-order sums come from the dQ kernel. The output and the q, k and v gradients, which the
+forward and dK/dV kernels also compute, barely move with the top orders at degree twelve, so
+both tests add a case that keeps only orders 9–12: there, dropping order 12 moves them by
+1.4–7.6 (per-order gates) and 4.8–15 (shared gate) times their tolerances.
+At commit `41f33aa9` both files passed on H100 (`dogo`, job 240451: 54 GPU checks).
+Production acceptance passed its GPU checks on H100 SXM (`dogo`, jobs 240470 and 240471).
+
 ### Input-free distance gate for static coefficients (2026-11-09)
 
 `model.attention_forget_gate_conditioning: none` gives learned static polynomial coefficients

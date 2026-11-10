@@ -1220,8 +1220,8 @@ per-order gates at degree eight at this shape; it could run the shared gate, but
 uses H100 too, so that the pair trains on the same GPU type. These jobs have no
 scheduling dependencies on each other.
 
-`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows only degree
-eight on the Mosaic backend, and requires every initial parameter to equal those of
+`query_distance_degree_acceptance` pins the recipe of `r3e26412b2811`, allows degrees eight
+and twelve on the Mosaic backend, and requires every initial parameter to equal those of
 cumulative FoX `r9353f554b917` at the same seed. `per_order_decay_acceptance` pins
 `r9320e5cd3071` as the per-order run's shared-gate control, collapses the nine duplicated
 order axes, and verifies the control's initialization fingerprint.
@@ -1239,6 +1239,41 @@ submit() {  # run ID, acceptance adapter
 }
 submit r9320e5cd3071 query_distance_degree_acceptance
 submit r20fe6fe864bc per_order_decay_acceptance
+```
+
+### Degree twelve
+
+The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
+trains the shared query gate (`r47bfe39ce9b4`: the recipe of `r9320e5cd3071` at degree
+twelve) and per-order query gates (`rfe140c073b2f`: `r47bfe39ce9b4` with per-order gates) on
+the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour allocation,
+in the partition chosen at launch from the live `standard` and `long` allowances
+([CLUSTERS.md](../../CLUSTERS.md)); acceptance's pilot measures the update time and stops
+before training if the run would not fit. Both runs accept only H100: B300 cannot hold the
+per-order gates at degree twelve, and the shared-gate run uses H100 too, so that the pair
+trains on the same GPU type. These jobs have no scheduling dependencies on each other.
+
+`query_distance_degree_acceptance` also allows degree twelve; no FoX run exists at that
+degree, so it requires every initial parameter to equal those of the cumulative FoX recipe
+`r9353f554b917` at degree twelve, built at the same seed. `per_order_decay_acceptance` pins
+`r47bfe39ce9b4` as the per-order run's shared-gate control, collapses the thirteen duplicated
+order axes, and verifies the control's initialization fingerprint.
+
+From the isolated `claude/per-order-m12` worktree, after committing its frozen execution set
+and setting the partition:
+
+```bash
+PARTITION=standard,long  # chosen at launch from the live allowances
+submit() {  # run ID, acceptance adapter
+  sbatch --parsable --partition="$PARTITION" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit r47bfe39ce9b4 query_distance_degree_acceptance
+submit rfe140c073b2f per_order_decay_acceptance
 ```
 
 ## Learned input-free gates for static coefficients
