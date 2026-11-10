@@ -907,3 +907,31 @@ and verifies the full original query-control initialization fingerprint.
 Production begins only after CPU/GPU correctness, initialization, the full-recipe
 pilot and checkpoint-resume checks pass. The shared launcher records the allocated
 GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
+
+## Gated polynomial gradient-spike replay
+
+`re0db53b7b704` is a bounded diagnostic of the completed per-order query–key
+distance-gate run `r03be769d2069`, on its home cluster Kennel. It restores the
+parent's complete update-7,500 checkpoint, including Adam state, and replays
+updates 7,501–7,570 with the same data, microbatches, RNG clock, learning-rate
+schedule, and native update function. It retains no new training checkpoint.
+The original model and kernel source is `b38c116f`; the diagnostic adds only a
+study-level observer. The parent checkpoint and manifests are checked inputs.
+
+The diagnostic records every native update before recomputing the worst update
+at its frozen pre-update state. Plain and instrumented gradient calculations
+must be compared before interpreting parameter-group, layer, order, and
+pre-output-RMSNorm activation statistics. It writes only its own run directory.
+Historical findings and the replay's limits belong to the
+[exploratory topic](results/exploratory/gated_gradient_spikes/README.md).
+
+From the isolated diagnostic worktree, sync the locked CUDA environment and
+commit the execution inputs. The original run used an H100 SXM on `dogo`:
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+sbatch --partition=standard --nodelist=dogo --gres=gpu:1 --cpus-per-task=4 --mem=64G \
+  --time=01:00:00 --job-name=gate-spike-replay --open-mode=append \
+  --output=experiments/transformer_pp/runs/re0db53b7b704/training.log \
+  experiments/transformer_pp/diagnose_gate_spikes.sbatch re0db53b7b704 "$(git rev-parse HEAD)"
+```

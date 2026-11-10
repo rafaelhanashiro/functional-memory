@@ -1,0 +1,18 @@
+{
+  "checkpoint_retention": {
+    "policy": "none",
+    "reason": "Deterministic replay from retained parent checkpoint; no new checkpoint needed."
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/re0db53b7b704/config.yaml",
+    "sha256": "1bfb2ed718e14b0beaf28e456ba3a5da15a3940ea945a1597ace1c2a0287ef87"
+  },
+  "home_cluster": "kennel",
+  "label": "per-order-query-key-gradient-tail-replay",
+  "name": "per-order-query-key-gradient-tail-replay",
+  "parent_run_id": "r03be769d2069",
+  "record_schema_version": 1,
+  "run_id": "re0db53b7b704",
+  "seed": 42,
+  "status": "planned"
+}

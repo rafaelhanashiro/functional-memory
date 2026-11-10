@@ -22,3 +22,4 @@ promotion into a maintained collection or by discarding its results and runs.
 | [context_length](context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? | 2026-11-01 |
 | [fixed_linear](fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? | 2026-11-02 |
 | [query_distance_decay](query_distance_decay/README.md) | Can endpoint dependence, bounded rates, or independent per-order gates improve query-distance decay? Two per-order ablations added 2026-11-07. | 2026-11-02 |
+| [gated_gradient_spikes](gated_gradient_spikes/README.md) | What causes rare gradient spikes in gated polynomial attention? Historical windows and a bounded replay of the per-order query–key run separate clipping, numerical precision, and normalization sensitivity. | 2026-11-10 |
