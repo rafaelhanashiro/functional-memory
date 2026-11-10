@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd3501a40e020/config.yaml",
+    "sha256": "eed91b4504727591c1bdc03ed7f03b5268d2ed26c1c011bc95217fa0cd33b954"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-query-key-distance-no-rope",
+  "name": "exp-query-key-distance-no-rope",
+  "record_schema_version": 1,
+  "run_id": "rd3501a40e020",
+  "status": "planned"
+}
