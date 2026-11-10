@@ -35,7 +35,7 @@ gradients miss by 100–450× their tolerance, and dropping orders 9–12 also m
 Those per-order sums come from the dQ kernel. The output and the q, k and v gradients, which the
 forward and dK/dV kernels also compute, barely move with the top orders at degree twelve, so
 both tests add a case that keeps only orders 9–12: there, dropping order 12 moves them by
-8.6–40 (per-order gates) and 1.9–6.7 (shared gate) times their tolerances.
+1.4–7.6 (per-order gates) and 4.8–15 (shared gate) times their tolerances.
 At commit `41f33aa9` both files passed on H100 (`dogo`, job 240451: 54 GPU checks).
 Production acceptance passed its GPU checks on H100 SXM (`dogo`, jobs 240470 and 240471).
 

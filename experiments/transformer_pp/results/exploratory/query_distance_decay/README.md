@@ -266,10 +266,11 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
   start equal (median 4.7–5.6 tokens at update 100); the split forms by update 900.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
-The eight runs differ in their decay rule or degree, without separately tuned optimization.
-The endpoint, bounded-rate, per-order and degree-eight runs use the Mosaic kernels; the FoX and
-query-only runs use the blocked reference. They differ numerically in two ways: Mosaic
-rounds attention weights and score gradients to BF16 (see [Attention kernels](#attention-kernels)),
+The ten runs differ in their decay rule or degree, without separately tuned optimization.
+The endpoint, bounded-rate, per-order, degree-eight and degree-twelve runs use the Mosaic
+kernels; the FoX run and the degree-four query-only control use the blocked reference. They
+differ numerically in two ways: Mosaic rounds attention weights and score gradients to BF16
+(see [Attention kernels](#attention-kernels)),
 and the blocked scan sums the K and V gradients of its 128-query blocks in BF16 (about 1.3x
 the BF16 floor under this decay; see the scaffold validation record).
 The endpoint and bounded-rate runs were preempted once and resumed from their latest
@@ -388,7 +389,7 @@ whole arrays and each order's coefficient and gate gradients separately, and dup
 orders against the shared-gate kernels; `test_endpoint_decay.py` checks the shared query gate
 against FP64, with its coefficient gradient compared order by order. At degree twelve the
 highest orders barely move the output and the q, k and v gradients, so both tests add a case
-that keeps only orders 9-12: dropping order 12 there moves those arrays by 2-40 times their
+that keeps only orders 9-12: dropping order 12 there moves those arrays by 1.4–15 times their
 tolerances.
 
 - Per-order gates still help at degree twelve, less than at lower degrees: 13.750 vs 13.851
@@ -400,7 +401,7 @@ tolerances.
   The shared gate is 0.40% below degree-eight cumulative FoX (`r9353f554b917`, 13.907).
 - The degree-twelve per-order query gate is 3.34% below the RoPE query run at the same degree
   (`r0fceea0627c8`, 14.226), 1.13% and 0.89% below cumulative FoX at degrees eight and four,
-  and below fixed ALiBi on softmax (−1.07%, from update 1,400 on) and exp (−1.09%, at all 28
+  and below fixed ALiBi on softmax (−1.07%, from update 1,500 on) and exp (−1.09%, at all 28
   evaluations; both pinned in [alibi_decay](../alibi_decay/README.md)). It stays 0.89% above
   exp with the forget gate (`r183f08346ddc`, 13.628, at all 28 evaluations) and 0.30% above
   the degree-four per-order query–key gate (13.708).
