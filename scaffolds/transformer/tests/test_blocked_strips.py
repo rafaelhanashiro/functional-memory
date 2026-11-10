@@ -56,6 +56,13 @@ CASES = {
                         ("query_polynomial_coefficients", "query_gate_input", "key_gate_input", "gate_log_rate")),
     "fox_softmax": ({}, ("query_log_decay",)),
     "fox_exp": (UNNORMALIZED, ("query_log_decay",)),
+    # Appended families leave the earlier families' seeds (case_arrays seeds by position) unchanged.
+    "query4_per_order_distance": ({"attention_degree": 4, "query_decay_mode": "query_distance", **UNNORMALIZED},
+                                  ("query_polynomial_coefficients", "query_log_alpha_per_order")),
+    "query4_per_order_cumulative": ({"attention_degree": 4, **UNNORMALIZED},
+                                    ("query_polynomial_coefficients", "query_log_decay_per_order")),
+    "fox_softmax_distance": ({"query_decay_mode": "query_distance"}, ("query_log_alpha",)),
+    "fox_exp_distance": ({"query_decay_mode": "query_distance", **UNNORMALIZED}, ("query_log_alpha",)),
 }
 
 
@@ -97,6 +104,11 @@ def case_arrays(name, *, batch=2, time=37, heads=2, width=8, value_width=5, seed
             arrays[key] = np.cumsum(-rng.uniform(0.005, 0.05, (batch, time, heads)), axis=1)
         elif key == "query_log_alpha":
             arrays["query_log_decay"] = -rng.uniform(0.005, 0.1, (batch, time, heads))
+        elif key == "query_log_decay_per_order":
+            # Each order's own cumulative sum, decaying at its own rates.
+            arrays["query_log_decay"] = np.cumsum(-rng.uniform(0.005, 0.05, (batch, time, heads, degree + 1)), axis=1)
+        elif key == "query_log_alpha_per_order":
+            arrays["query_log_decay"] = -rng.uniform(0.005, 0.1, (batch, time, heads, degree + 1))
         elif key in ("query_gate_input", "key_gate_input"):
             arrays[key] = rng.standard_normal((batch, time, heads))
         elif key == "gate_log_rate":
@@ -212,6 +224,10 @@ def _inject(name, case):
         q[0, POSITION, 1] = 0.0                 # every score of the row is zero: p(s) = s sums to zero
     elif case == "positive_log_alpha":
         arrays["query_log_decay"][0, POSITION, 1] = 0.1
+    elif case == "nan_log_alpha":
+        arrays["query_log_decay"][0, POSITION, 1] = np.nan
+    elif case == "nan_cumulative_sum":
+        arrays["query_log_decay"][0, POSITION:, 1, 2] = np.nan  # order two's sum, from a NaN log alpha on
     elif case == "q_nan":
         q[0, POSITION, 1, 0] = np.nan
     elif case == "k_nan":
@@ -239,6 +255,9 @@ FAILURES = [
     ("query4_cumulative", "q_nan", ROWS == POSITION, {}),
     ("fox_softmax", "k_nan", ROWS >= POSITION, {}),
     ("rational_direct", "k_negative_infinity", ROWS >= POSITION, {}),
+    ("fox_softmax_distance", "positive_log_alpha", ROWS == POSITION, {}),
+    ("fox_exp_distance", "nan_log_alpha", ROWS == POSITION, {}),
+    ("query4_per_order_cumulative", "nan_cumulative_sum", ROWS >= POSITION, {}),
 ]
 
 
@@ -374,7 +393,8 @@ TANH = {"attention_coefficient_activation": "tanh"}
 CORE_FAMILIES = {"softmax": {}, "taylor2": {}, "exp": {}, "learned2_unnormalized": {}, "learned2": {}, "square4": {},
                  "rational_squares_constant": {}, "quadratic_unrestricted": {}, "query1": {}, "query4": TANH,
                  "query_key3": TANH, "query4_cumulative": TANH, "query4_endpoint": TANH, "fox_softmax": {},
-                 "fox_exp": {}}
+                 "fox_exp": {}, "query4_per_order_distance": TANH, "query4_per_order_cumulative": TANH,
+                 "fox_softmax_distance": {}, "fox_exp_distance": {}}
 
 
 @pytest.mark.parametrize("family", list(CORE_FAMILIES))
@@ -457,6 +477,15 @@ MODEL_RECIPES = {
                               attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                               attention_coefficient_activation="tanh", attention_forget_gate=True, qk_norm=False,
                               attention_coefficient_projection_initial_std=0.1),
+    # Without head RMSNorm, which normalizes in FP32 like QK RMSNorm.
+    "fox_exp_distance": dict(attention_forget_gate=True, attention_forget_gate_mode="query_distance",
+                             attention_normalization=False, qk_norm=False),
+    "query4_per_order_cumulative": dict(attention_degree=4, attention_normalization=False,
+                                        attention_coefficients="learned", attention_coefficient_sharing="per_head",
+                                        attention_coefficient_conditioning="query",
+                                        attention_coefficient_activation="tanh", attention_forget_gate=True,
+                                        attention_forget_gate_per_order=True, qk_norm=False,
+                                        attention_coefficient_projection_initial_std=0.1),
 }
 
 
@@ -484,9 +513,20 @@ def test_model_strips_match_the_scan(recipe, monkeypatch):
                                          tokens)
             assert len(calls) == 2  # one trace, two layers
         np.testing.assert_allclose(strips[0], scan[0], rtol=1e-11)
-        for observed, wanted in zip(jax.tree.leaves(strips[1]), jax.tree.leaves(scan[1]), strict=True):
+        for (path, observed), wanted in zip(jax.tree_util.tree_leaves_with_path(strips[1]),
+                                            jax.tree.leaves(scan[1]), strict=True):
             assert observed.dtype == jnp.float64
-            np.testing.assert_allclose(observed, wanted, rtol=1e-11, atol=1e-11 * max(np.max(np.abs(wanted)), 1.0))
+            if recipe == "fox_exp_distance" and "forget_gate" in jax.tree_util.keystr(path):
+                # The gate computes in FP32 by design (forget_gate.log_decay). Both programs give it the
+                # same FP32 cotangent of the raw log alpha, but XLA orders this recipe's FP32 sums over
+                # the tokens differently (2 ulps in dt_bias's gradient here; the sums cancel up to 14x):
+                # one FP32 epsilon per summed token, at the leaf's scale.
+                np.testing.assert_allclose(
+                    observed, wanted, rtol=0,
+                    atol=tokens[:, :-1].size * np.finfo(np.float32).eps * np.max(np.abs(wanted)), err_msg=str(path))
+            else:
+                np.testing.assert_allclose(observed, wanted, rtol=1e-11,
+                                           atol=1e-11 * max(np.max(np.abs(wanted)), 1.0), err_msg=str(path))
     calls.clear()
     scan = _loss_and_gradients(*_model(MODEL_RECIPES[recipe], implementation="scan", dtype=jnp.float32), tokens)
     strips = _loss_and_gradients(*_model(MODEL_RECIPES[recipe], implementation="strips", dtype=jnp.float32), tokens)

@@ -362,3 +362,43 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/reeb92d46a95d/best_validation.json
       sha256: b145bb65cecc879dbb9b0acb5a8224b339d1359394b8facb03237c23e2616007
+- study: transformer_pp
+  run_id: r319b83140040
+  label: query-m4-per-order-forget-gate-no-rope-w-decay
+  role: per_order_forget_gate_no_rope_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r319b83140040/config.yaml
+      sha256: 50065b8726fa2b7f5c5689dca9b0336ee27e70a8cf759c91d2bab5321ee90bd5
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r319b83140040/metrics.jsonl
+      sha256: 464b0a07ed4ca5ad4f7b90c406b9036bce70c0ac420cd67486c4ca10af135781
+    completion.json:
+      path: experiments/transformer_pp/runs/r319b83140040/completion.json
+      sha256: 0de919bb44aae4b87b36fd3e19e3ee922429a4240db2d641207d030ef5a94bd7
+    metadata.json:
+      path: experiments/transformer_pp/runs/r319b83140040/metadata.json
+      sha256: febbc9b337edf60db49490bc9abe4fa004eddbe9e0fc02a9d2dc9b10154ed140
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r319b83140040/best_validation.json
+      sha256: 7d6b9d82065e8d7cf6e040e09e5b5f927df50e264893a6e0b36926f84157d8e2
+- study: transformer_pp
+  run_id: rf8fc9ab2cecc
+  label: query-m8-per-order-forget-gate-no-rope-wdecay
+  role: per_order_forget_gate_no_rope_w_decay_m8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/config.yaml
+      sha256: 07a538bf6aeb7cc142b0c887a0235b91314fe96cc1da6243cc6a0ec63122ea93
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/metrics.jsonl
+      sha256: d78d2c5ae3b1eb84bceea254922dbf3bfd0bfca11665070e5e54c335a5b5d143
+    completion.json:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/completion.json
+      sha256: ba9eb8ae2ac7b44408aab2e611109dca4ee6ba9145c7bc7cb83e1c3a38da0ba9
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/metadata.json
+      sha256: 0d787fe1939ce92302fc0524561c2164c0e3780b3c4ef266ecb2cfb257dd8903
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf8fc9ab2cecc/best_validation.json
+      sha256: 47ac21907e57c03dba695c5f43bf284cc24044b76fe8c2879295afc5a3967d16

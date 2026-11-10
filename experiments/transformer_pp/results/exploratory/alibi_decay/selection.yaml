@@ -2,9 +2,10 @@ schema_version: 1
 opened: '2026-10-29'
 question: 'Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent
   forget gate without RoPE in 1× pretraining: with learned slopes on degree-four tanh
-  query attention, and as ALiBi with fixed slopes on softmax and exp? Does a learned
-  input-free distance gate, shared or per order, help learned static coefficients
-  without RoPE at degrees four and eight?'
+  query attention, and as ALiBi with fixed slopes on softmax and exp? How much of
+  the gap does an input-dependent slope per query token (query-distance gates) close
+  on softmax and exp? Does a learned input-free distance gate, shared or per order,
+  help learned static coefficients without RoPE at degrees four and eight?'
 settings:
   metric: validation_perplexity
   primary_comparison: terminal held-out PPL at update 7,570; validation-best reported
@@ -32,6 +33,10 @@ settings:
     fixed (score bias -m_h (t - i), m_h = 2^(-8 h / 14) in every layer, no parameters)
     against input (Gated DeltaNet's gate); the primaries train on the causal strips,
     the controls trained on the scan
+  difference_query_distance: attention_forget_gate_mode query_distance (score bias
+    (t - i) log alpha_t, the query token's own rate times the distance) against cumulative
+    (L_t - L_i), with the same gate parameters and initialization; the primaries train
+    on the causal strips, the controls trained on the scan
 runs:
 - study: transformer_pp
   run_id: r8d4fc24ef537
@@ -432,3 +437,41 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
       sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r208110a25271
+  role: primary_softmax_query_distance_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r208110a25271/config.yaml
+      sha256: dfe55cdef75670285188fb1e7511d79655ad5736e408a0a9f579056adfc2cc26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r208110a25271/metrics.jsonl
+      sha256: ea9d662fbcabd6768dcdfaa4634a8ada9505a70c1f2f877983998be2637e4330
+    completion.json:
+      path: experiments/transformer_pp/runs/r208110a25271/completion.json
+      sha256: 9baf1b015f90cf537ca7205feaa51839d00a5f29609d432d56393a528724e586
+    metadata.json:
+      path: experiments/transformer_pp/runs/r208110a25271/metadata.json
+      sha256: ad87e96f0eb66aaebff2fc7f52e7318514064bc92baf46d8e0c8c5a3f9c60297
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r208110a25271/best_validation.json
+      sha256: 7c3e0d6a27892ad19ed16a15ef1374a474911783bab37fda9c20de6f6bc4aa26
+- study: transformer_pp
+  run_id: r17444ad0f60e
+  role: primary_exp_query_distance_no_rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/config.yaml
+      sha256: e4a75274fe59bb149a91a2e4c4d53720ac667342c7c14fa7e7c9e450bc18f0f2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/metrics.jsonl
+      sha256: 24d5f332c26ace5afbb9cc4c88b0cc812bcd86aabfa47c629bdaba5d872fa5ac
+    completion.json:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/completion.json
+      sha256: 24b2cc677bdcb9eb03450bff23aebdb2616f2ef6eb46a8a5095d8549d2612a46
+    metadata.json:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/metadata.json
+      sha256: 8c29b72432ea5dbec4229dbe60e278750259cd76c88b4625dc6338a880e214dd
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r17444ad0f60e/best_validation.json
+      sha256: 7aaacd8fb523093049ae267d339b2f40e6732ebbe3df645368fdeb4c55a0394f

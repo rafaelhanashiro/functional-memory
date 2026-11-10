@@ -13,9 +13,11 @@ linear bias in log space, with `lambda_h` learned. Like the forget-gate run it c
 with, it uses **no positional encoding**, so the decay is the only source of position.
 A [second part](#softmax-and-exp-with-alibis-fixed-slopes) asks the same of softmax and exp
 with ALiBi itself: the slopes fixed, as in the original. A
-[third](#learned-input-free-gates-for-static-coefficients) gives learned static coefficients a
-learned decay that reads no token, shared or per polynomial order, at degrees four and eight.
-The runs live in the [Transformer++ study](../../../README.md) and enter no canonical comparison.
+[third part](#softmax-and-exp-with-query-distance-gates) makes that slope input-dependent: the
+query token's own forget-gate rate. A [fourth](#learned-input-free-gates-for-static-coefficients)
+gives learned static coefficients a learned decay that reads no token, shared or per polynomial
+order, at degrees four and eight. The runs live in the [Transformer++ study](../../../README.md)
+and enter no canonical comparison.
 
 ## Runs (degree-four query polynomial)
 
@@ -69,6 +71,37 @@ Both primaries completed 7,570 updates in one attempt each, after acceptance (in
 GPU tests on the strips) passed: softmax on one B300 (`akita`, `standard`, job 239928,
 8 h 55 min), exp on one H100 SXM (`dogo`, `long`, job 239929, 11 h 16 min). Launch commands are
 in the [study README](../../../README.md#alibi-on-softmax-and-exp).
+
+## Softmax and exp with query-distance gates
+
+Added 2026-11-09. How much is the input dependence of the slope worth on the exponential kernels?
+Fixed-slope ALiBi trails the forget gate by 1.6% (softmax) and 2.0% (exp). Each primary copies the
+no-RoPE forget-gate run on its kernel and changes only `attention_forget_gate_mode: query_distance`:
+every score gains `(t - i) log alpha_t`, the query token's own rate times the distance, in place of
+FoX's `L_t - L_i`, the sum of `log alpha_j` over the tokens `j = i+1..t`. This is ALiBi with a learned
+slope per query token and head, `lambda_t = exp(A_log) softplus(w_alpha . x_t + b_dt)`. The gate, its
+188,580 parameters and their initialization are FoX's, so each primary starts from its control's
+initial parameters, though not as its control's model: `w_alpha` starts nonzero, so `log alpha_t`
+varies by token and the two decays differ from the first step. Softmax normalizes the decayed
+scores; exp keeps its per-head output RMSNorm. The primaries train on the causal strips and the
+controls trained on the scan.
+
+| Role | Run | Label | Kernel | Score decay | Validation-best PPL |
+| --- | --- | --- | --- | --- | ---: |
+| Primary: softmax query distance | `r208110a25271` | `softmax-query-distance-no-rope` | softmax | `(t - i) log alpha_t` | 13.701 |
+| Primary: exp query distance | `r17444ad0f60e` | `exp-query-distance-no-rope` | exp | `(t - i) log alpha_t` | 13.638 |
+| Control: softmax forget gate | `r5adc29a91e3b` | `softmax-forget-gate-no-rope` | softmax | `L_t - L_i` | 13.680 |
+| Control: exp forget gate | `r183f08346ddc` | `exp-forget-gate-no-rope` | exp | `L_t - L_i` | 13.628 |
+| Reference: softmax ALiBi | `ref652c257797` | `softmax-alibi-fixed-no-rope` | softmax | `-m_h (t - i)` | 13.899 |
+| Reference: exp ALiBi | `r7820049184ef` | `exp-alibi-fixed-no-rope` | exp | `-m_h (t - i)` | 13.901 |
+| Reference: query m = 4 | `r3e26412b2811` | `query-m4-query-distance-no-rope-w-decay` | query polynomial | `(t - i) log alpha_t` | 14.198 |
+| Reference: query m = 8 | `r9320e5cd3071` | `query-m8-query-distance-no-rope-w-decay` | query polynomial | `(t - i) log alpha_t` | 13.939 |
+| Reference: query m = 8, per order | `r20fe6fe864bc` | `query-m8-per-order-query-gate-nope-wd` | query polynomial | `(t - i) log alpha_tr` for order `r` | 13.780 |
+
+Both completed 7,570 updates: softmax on one B300 (`akita`, job 240747, 8 h 35 min) and exp on one
+H100 SXM (`dogo`, job 240749, 10 h 56 min). The polynomial references come from [query_distance_decay](../query_distance_decay/README.md), where the same gate
+in query-distance mode trails cumulative FoX by 2.3% at degree four (14.198 against 13.873). Launch
+commands are in the [study README](../../../README.md#query-distance-gates-on-softmax-and-exp).
 
 ## Learned input-free gates for static coefficients
 
@@ -139,6 +172,22 @@ sharing. Best PPL is the lowest validation PPL over all evaluations; terminal PP
 7,570.
 
 ## Findings and open decision
+
+### Softmax and exp with query-distance gates
+
+Validation-best PPL; each comparison covers all 28 evaluations.
+
+- **An input-dependent slope recovers nearly all of the forget gate's gain over ALiBi.** Softmax
+  (13.701) and exp (13.638) end 1.43% and 1.89% below fixed ALiBi and 0.15% and 0.07% above the
+  forget gate: 90% and 96% of the ALiBi-to-FoX gap. From update 3,000 on, exp stays within −0.02%
+  to +0.27% of FoX and softmax 0.15–0.29% above it. Against RoPE they are 5.8% and 4.3% lower.
+- **For the exponential kernels the decay rule barely matters; for the query polynomial it does.**
+  Query-distance decay costs exp 0.07% against FoX, but the degree-four query polynomial 2.3%
+  (14.198 against 13.873).
+- **The polynomial query-distance runs trail exp under the same gate** (pinned in
+  [query_distance_decay](../query_distance_decay/README.md)): per-order query–key gates at m = 4
+  (13.708) by 0.52%, per-order query gates at m = 12 (13.750) by 0.82% and at m = 8 by 1.04%, and
+  the shared m = 12 gate by 1.56%; none is lower at more than 5 of 28 evaluations.
 
 ### Softmax and exp with ALiBi's fixed slopes
 

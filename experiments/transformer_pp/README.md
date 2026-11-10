@@ -1241,6 +1241,92 @@ submit r9320e5cd3071 query_distance_degree_acceptance
 submit r20fe6fe864bc per_order_decay_acceptance
 ```
 
+## Query-distance gates on softmax and exp
+
+How much is the input dependence of the decay slope worth on the exponential kernels? Two runs
+copy the no-RoPE forget-gate run on their kernel and change only
+`attention_forget_gate_mode: query_distance`: every score gains `(t - i) log alpha_t`, the
+query token's own rate times the distance (ALiBi with a learned, input-dependent slope per query
+token), in place of FoX's `L_t - L_i`. Softmax normalizes the decayed scores; exp keeps its
+per-head output RMSNorm. The gate, its 188,580 parameters and their initialization are FoX's.
+`records create` set the causal strips (`attention_blocked_implementation: strips`), where the
+controls trained on the scan. Question, comparators and results are in the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md#softmax-and-exp-with-query-distance-gates).
+
+| Run | Label | Control | Kernel | Parameters |
+| --- | --- | --- | --- | ---: |
+| `r208110a25271` | softmax-query-distance-no-rope | `r5adc29a91e3b` | softmax | 198,628,726 |
+| `r17444ad0f60e` | exp-query-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,642,166 |
+
+`exponential_query_distance_acceptance` pins each control's recipe by SHA256 and allows only the
+decay mode, the strips, and execution locations and labels. Every initial parameter must equal the
+control's at seed 42: the adapter pins the control recipe's initialization fingerprint, computed
+on CPU. Acceptance runs `tests/test_exponential_query_distance.py` on CPU, and its 2,048-token BF16
+strips cases against FP64 on the GPU, before training.
+
+Home cluster: **Kennel**. From the isolated `claude/data-dependent-gates` worktree, after committing
+the inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
+are too slow there) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen
+from the live allowance. The ALiBi pair trained on the same strips in 8.9 h (B300) and 11.3 h
+(H100 SXM); the pilot projects each run's time and refuses an allocation it would not fit.
+
+```bash
+for run in r208110a25271 r17444ad0f60e; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.exponential_query_distance_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+## Per-order cumulative FoX gates
+
+Do independent per-order gates improve cumulative FoX, as they improved query-distance decay? Two
+runs copy the no-RoPE FoX + W decay runs and change only `attention_forget_gate_per_order: true`:
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, where `L_tr = sum_(j<=t) log alpha_jr` and each
+order `r = 0..m` has its own gate (`w_alpha`, `A_log`, `b_dt` per layer and head). Each order's
+gate starts as a copy of the control's shared draw, so each run starts exactly at its control.
+`records create` set the causal strips; Mosaic has no cumulative decay kernels. The degree-eight
+control trained on ORCD; its copy reads Kennel's manifests, which hash identically. Question,
+controls and results are in the
+[forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
+
+| Run | Label | Control | Degree | Parameters (added gates) |
+| --- | --- | --- | ---: | ---: |
+| `r319b83140040` | query-m4-per-order-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | 4 | 200,339,386 (754,320) |
+| `rf8fc9ab2cecc` | query-m8-per-order-forget-gate-no-rope-wdecay | `r9353f554b917` | 8 | 201,848,026 (1,508,640) |
+
+`per_order_cumulative_acceptance` pins each control's recipe by SHA256. It drops the degree-four
+control's retired key `attention_coefficient_key_kernel_weight_decay` only if it is `false`. It
+allows only per-order gates, the strips, execution locations and labels, and manifest copies that
+hash like the controls'. Every order's gate must equal the control's shared draw and every other
+parameter the control's; collapsing the order axes must recover the control's initialization
+fingerprint. Acceptance runs `tests/test_per_order_cumulative.py` on CPU, and its degree-four and
+degree-eight 2,048-token BF16 strips cases against FP64 on the GPU, before training.
+
+Home cluster: **Kennel**, from the same branch and worktree. Submit each on one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
+5.3 s per update at degree four (B300) and 9.8 s at degree eight (ORCD H100), and per-order gates
+add one decay factor per order. The degree-four run requests 24 hours, on `standard` or `long`
+from the live allowance; the degree-eight run requests 72 hours on `long`, since on an H100 it may
+need more than 24 hours. The pilot projects each run's time and refuses an allocation it would not
+fit.
+
+```bash
+submit() {  # run ID, partition, time limit
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_cumulative_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+}
+submit r319b83140040 '<standard|long>' 24:00:00
+submit rf8fc9ab2cecc long 72:00:00
+```
+
 ### Degree twelve
 
 The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
