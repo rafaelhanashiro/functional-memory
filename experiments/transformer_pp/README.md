@@ -908,30 +908,38 @@ Production begins only after CPU/GPU correctness, initialization, the full-recip
 pilot and checkpoint-resume checks pass. The shared launcher records the allocated
 GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
 
-## Gated polynomial gradient-spike replay
+## Gated polynomial gradient-spike diagnostics
 
-`re0db53b7b704` is a bounded diagnostic of the completed per-order query–key
-distance-gate run `r03be769d2069`, on its home cluster Kennel. It restores the
-parent's complete update-7,500 checkpoint, including Adam state, and replays
+`re0db53b7b704` (B300) and `rc1c463ddc494` (H100 SXM) are bounded diagnostics of
+the completed per-order query–key distance-gate run `r03be769d2069`, on its home
+cluster Kennel. Each restores the complete update-7,500 checkpoint, including
+Adam state, and replays
 updates 7,501–7,570 with the same data, microbatches, RNG clock, learning-rate
-schedule, and native update function. It retains no new training checkpoint.
+schedule, and native update function. Neither retained a new checkpoint.
 The original model and kernel source is `b38c116f`; the diagnostic adds only a
 study-level observer. The parent checkpoint and manifests are checked inputs.
 
-The diagnostic records every native update before recomputing the worst update
+Each replay records every native update before recomputing the worst update
 at its frozen pre-update state. Plain and instrumented gradient calculations
 must be compared before interpreting parameter-group, layer, order, and
 pre-output-RMSNorm activation statistics. It writes only its own run directory.
+Run `r1736cf7a019c` instead holds the update-7,500 state fixed, scans at most 256
+global batches, and stops at the first gradient norm above one. It retains no
+optimizer update. A threshold event triggers a frozen attention VJP comparison
+against independent FP64 arithmetic, using the same inputs and cotangent and
+all causal keys. Full-state hashes and gradient-parity checks qualify the probes.
 Historical findings and the replay's limits belong to the
 [exploratory topic](results/exploratory/gated_gradient_spikes/README.md).
 
-From the isolated diagnostic worktree, sync the locked CUDA environment and
-commit the execution inputs. The original run used an H100 SXM on `dogo`:
+These diagnostics use their recorded source commits built on the original
+scaffold, rather than an unrelated current runtime. A fresh execution needs a
+fresh run ID and committed recipe. From the prepared isolated diagnostic
+worktree, the fixed-state scan's launch is:
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-sbatch --partition=standard --nodelist=dogo --gres=gpu:1 --cpus-per-task=4 --mem=64G \
-  --time=01:00:00 --job-name=gate-spike-replay --open-mode=append \
-  --output=experiments/transformer_pp/runs/re0db53b7b704/training.log \
-  experiments/transformer_pp/diagnose_gate_spikes.sbatch re0db53b7b704 "$(git rev-parse HEAD)"
+sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 --mem=64G \
+  --time=01:00:00 --job-name=gate-fixed-scan --open-mode=append \
+  --output=experiments/transformer_pp/runs/r1736cf7a019c/training.log \
+  experiments/transformer_pp/diagnose_gate_spikes.sbatch r1736cf7a019c "$(git rev-parse HEAD)"
 ```

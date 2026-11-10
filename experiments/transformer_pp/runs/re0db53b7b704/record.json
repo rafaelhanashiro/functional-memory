@@ -1,18 +1,116 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/re0db53b7b704/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re0db53b7b704/metrics.jsonl",
+      "sha256": "aa655104ea42e7173ed07286dfb59d4eeb0d02bee518288e35dfa6a129cc6782",
+      "size_bytes": 11195
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re0db53b7b704/summary.json",
+      "sha256": "dccc832fa538bb07e73dfd7b8fd68a1e1472ccd8c6504af37dfafb68906966a9",
+      "size_bytes": 136371
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re0db53b7b704/training.log",
+      "sha256": "5d1f0aa3046e2c2409b8a90d275ace1346513ec5d7a2972e1c0cd1073d840e44",
+      "size_bytes": 13074
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 1,
+      "finished_utc": "2026-11-10T19:43:50.332131+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "home_cluster": "kennel",
+      "launch_commit": "09585512aa0bcd16c3125e6cce47e6474c816755",
+      "slurm_job_id": "241740",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T19:43:31.948575+00:00"
+    },
+    {
+      "exit_code": 1,
+      "finished_utc": "2026-11-10T19:45:16.098657+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "home_cluster": "kennel",
+      "launch_commit": "09585512aa0bcd16c3125e6cce47e6474c816755",
+      "slurm_job_id": "241741",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T19:44:27.728156+00:00"
+    },
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-10T20:02:10.257751+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "home_cluster": "kennel",
+      "launch_commit": "6f884b0b0f1927a723c28b1d90f06b7c653f73f8",
+      "slurm_job_id": "241742",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T19:45:42.378009+00:00"
+    }
+  ],
   "checkpoint_retention": {
     "policy": "none",
-    "reason": "Deterministic replay from retained parent checkpoint; no new checkpoint needed."
+    "reason": "Replay observed no clipped event; no new checkpoint retained."
   },
   "config": {
     "path": "experiments/transformer_pp/runs/re0db53b7b704/config.yaml",
     "sha256": "1bfb2ed718e14b0beaf28e456ba3a5da15a3940ea945a1597ace1c2a0287ef87"
   },
+  "data_identity": {
+    "path": "experiments/transformer_pp/runs/re0db53b7b704/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "diagnostic_summary": {
+    "path": "experiments/transformer_pp/runs/re0db53b7b704/summary.json",
+    "sha256": "dccc832fa538bb07e73dfd7b8fd68a1e1472ccd8c6504af37dfafb68906966a9",
+    "size_bytes": 136371
+  },
+  "error": null,
+  "execution": {
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gated-gradient-diagnostic/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B300 SXM6 AC",
+    "native_scaffold_source_commit": "b38c116f5aad182df158c14e62c0bbb4e730524c",
+    "node": "akita",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "241742"
+  },
+  "frozen_execution_sha256": "b0529d9a77f413903a7ee9c80eabb94cb263c16bf3c1cdbbaedb674067a41375",
   "home_cluster": "kennel",
   "label": "per-order-query-key-gradient-tail-replay",
+  "log": {
+    "path": "experiments/transformer_pp/runs/re0db53b7b704/training.log",
+    "sha256": "5d1f0aa3046e2c2409b8a90d275ace1346513ec5d7a2972e1c0cd1073d840e44",
+    "size_bytes": 13074
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/re0db53b7b704/training.log",
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/re0db53b7b704/metrics.jsonl",
+    "sha256": "aa655104ea42e7173ed07286dfb59d4eeb0d02bee518288e35dfa6a129cc6782",
+    "size_bytes": 11195
+  },
   "name": "per-order-query-key-gradient-tail-replay",
   "parent_run_id": "r03be769d2069",
   "record_schema_version": 1,
   "run_id": "re0db53b7b704",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "6f884b0b0f1927a723c28b1d90f06b7c653f73f8",
+  "status": "complete"
 }

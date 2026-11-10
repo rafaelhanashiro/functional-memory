@@ -1,4 +1,45 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r1736cf7a019c/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1736cf7a019c/metrics.jsonl",
+      "sha256": "0510bf48797f4a6ee4b28437d86fd052ed0d052ad060e9ac1629e4ed729b841f",
+      "size_bytes": 60761
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1736cf7a019c/precision_probe.json",
+      "sha256": "dd1bcda3bb74448b2d02612d0377451c7489c7dd66dcab4a48dc1b6107975537",
+      "size_bytes": 616
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1736cf7a019c/summary.json",
+      "sha256": "f678c6ad4d0e39d77bf9aad14e76fb0529a36124bc4cb901eeaabdca00872efd",
+      "size_bytes": 133879
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1736cf7a019c/training.log",
+      "sha256": "f526ca0ca252985fc0afe56cd094b4afae625685bbf115f3cdebdb8bc3603ce3",
+      "size_bytes": 65289
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-10T20:51:18.874946+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "home_cluster": "kennel",
+      "launch_commit": "b3a85fe39043f0cc7f640783c339ff55fc0e024c",
+      "slurm_job_id": "241762",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T20:23:54.919825+00:00"
+    }
+  ],
   "checkpoint_retention": {
     "policy": "none",
     "reason": "Every tested parameter state is the already retained parent checkpoint at step 7500."
@@ -7,12 +48,50 @@
     "path": "experiments/transformer_pp/runs/r1736cf7a019c/config.yaml",
     "sha256": "5556f780dc1b6a95b18f102744fd509468e106046201d9f81c1a377bbdc20f34"
   },
+  "data_identity": {
+    "path": "experiments/transformer_pp/runs/r1736cf7a019c/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "diagnostic_summary": {
+    "path": "experiments/transformer_pp/runs/r1736cf7a019c/summary.json",
+    "sha256": "f678c6ad4d0e39d77bf9aad14e76fb0529a36124bc4cb901eeaabdca00872efd",
+    "size_bytes": 133879
+  },
+  "error": null,
+  "execution": {
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gated-gradient-diagnostic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "native_scaffold_source_commit": "b38c116f5aad182df158c14e62c0bbb4e730524c",
+    "node": "dogo",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "241762"
+  },
+  "frozen_execution_sha256": "646c2035cf29b0e1b95fad67b82cedbce92fb0faa314a70ac55f0b89e46b2c86",
   "home_cluster": "kennel",
   "label": "per-order-query-key-fixed-checkpoint-gradient-scan",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r1736cf7a019c/training.log",
+    "sha256": "f526ca0ca252985fc0afe56cd094b4afae625685bbf115f3cdebdb8bc3603ce3",
+    "size_bytes": 65289
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1736cf7a019c/training.log",
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r1736cf7a019c/metrics.jsonl",
+    "sha256": "0510bf48797f4a6ee4b28437d86fd052ed0d052ad060e9ac1629e4ed729b841f",
+    "size_bytes": 60761
+  },
   "name": "per-order-query-key-fixed-checkpoint-gradient-scan",
   "parent_run_id": "r03be769d2069",
   "record_schema_version": 1,
   "run_id": "r1736cf7a019c",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "b3a85fe39043f0cc7f640783c339ff55fc0e024c",
+  "status": "complete"
 }
