@@ -1282,6 +1282,49 @@ for run in r208110a25271 r17444ad0f60e; do
 done
 ```
 
+### Query-key gate on exp
+
+Added 2026-11-10. `rd3501a40e020` is the exp baseline matched to the per-order query–key polynomial
+gates (`r03be769d2069` at degree four; degrees eight and twelve in training). It copies the exp
+query-distance run `r17444ad0f60e` and changes only `attention_forget_gate_conditioning: query_key`:
+each pair's rate reads both of its tokens,
+`lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
+`(t - i) log alpha_ti = -(t - i) lambda_ti`. This is the polynomials' query–key gate with one gate per
+layer and head, since exp has no orders. The key projection `w_k` (`forget_gate_key_kernel`) starts at
+zero and takes weight decay, so the run starts exactly as `r17444ad0f60e`; `w_alpha`, `A_log` and
+`b_dt` keep FoX's (Gated DeltaNet's) initialization. No softmax counterpart is planned. Question,
+comparators and results are in the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md#exp-with-a-query-key-gate).
+
+| Run | Label | Control | Kernel | Parameters (key projection) |
+| --- | --- | --- | --- | ---: |
+| `rd3501a40e020` | exp-query-key-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,830,326 (188,160) |
+
+`exponential_query_distance_acceptance` allows only the decay mode, the conditioning, the strips, and
+execution locations and labels to differ from the FoX control `r183f08346ddc`. The key projection
+(15 layers × 14 heads × 896) must start at exactly zero, and the remaining initial parameters must hash
+as the control's pinned fingerprint at seed 42. Before training, acceptance runs
+`tests/test_exponential_query_key.py` and `tests/test_exponential_query_distance.py` on CPU and their
+2,048-token BF16 strips cases against FP64 on the GPU, `tests/test_forget_gate_attention.py` on both,
+and `tests/test_endpoint_decay.py` and `tests/test_blocked_strips.py` on CPU.
+
+Home cluster: **Kennel**. From the isolated `claude/exp-query-key-gate` worktree, after committing the
+inputs, submit it on one B300 or H100 SXM on the blocked backend's causal strips, excluding the H100 PCIe node `mastiff` (the strips are too slow there)
+and the B200 node `shiba`, on `standard` with 24 hours. The exp query-distance run trains at about
+4.8 s per update on an H100 SXM, about 10 h for 7,570 updates; the pilot projects this run's time and
+refuses an allocation it would not fit.
+
+```bash
+run=rd3501a40e020
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.transformer_pp.exponential_query_distance_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
 ## Per-order cumulative FoX gates
 
 Do independent per-order gates improve cumulative FoX, as they improved query-distance decay? Two

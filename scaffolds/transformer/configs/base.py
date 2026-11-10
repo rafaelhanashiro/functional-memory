@@ -110,8 +110,9 @@ class ModelConfig:
     attention_forget_gate: bool = False
     # Cumulative FoX uses intervening gates; query_distance uses only the current query's
     # alpha_t raised to the key distance t-i, with the identical gate parameters. On softmax and
-    # the unnormalized exponential (input-form softplus query gate, blocked backend) it adds
-    # (t - i) log alpha_t to every score: ALiBi with a learned, input-dependent slope per query.
+    # the unnormalized exponential (input-form softplus gate, blocked backend) it adds
+    # (t - i) log alpha_t to every score: ALiBi with a learned, input-dependent slope per query
+    # (with query_key conditioning, per query-key pair: (t - i) log alpha_ti).
     attention_forget_gate_mode: Literal["cumulative", "query_distance"] = "cumulative"
     # "input": Gated DeltaNet's token-dependent gate above. "constant": log alpha_t = -exp(A_log)
     # per layer/head, an ALiBi-style decay exp(-lambda_h (t - i)) with lambda_h starting at
@@ -122,10 +123,12 @@ class ModelConfig:
     # The constant form's rate: "learned" as above, or "fixed" at ALiBi's slopes 2^(-8 h / H) in
     # every layer, with no trainable parameter. Recipes without the field learn it.
     attention_forget_gate_constant_rate: Literal["learned", "fixed"] = "learned"
-    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate. "none"
-    # reads no token: lambda = exp(A_log) softplus(dt_bias) per layer/head (and order), the input
-    # form without its projection and with the same draws, the query-distance gate of learned
-    # static coefficients.
+    # Endpoint-only distance gates can read both endpoints, or bound the query-only rate. "query_key"
+    # (input-form query_distance gates of query polynomials, softmax, and the exponential) gives each
+    # pair log alpha_ti = -exp(A_log) softplus(x_t w_alpha + x_i w_key + dt_bias), w_key starting at
+    # zero; the bounded sigmoid rate is qualified for query polynomials only. "none" reads no token:
+    # lambda = exp(A_log) softplus(dt_bias) per layer/head (and order), the input form without its
+    # projection and with the same draws, the query-distance gate of learned static coefficients.
     attention_forget_gate_conditioning: Literal["query", "query_key", "none"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
     # Independent input-form gate for every polynomial order, including zero: query-distance
@@ -622,12 +625,13 @@ class ModelConfig:
             raise ValueError("The query-distance decay mode applies to nonlinear query-conditioned polynomial "
                              "attention, softmax, and the unnormalized exponential")
         if self.attention_forget_gate_mode == "query_distance" and exponential and (
-                self.attention_forget_gate_conditioning != "query"
-                or self.attention_forget_gate_rate_activation != "softplus"):
+                self.attention_forget_gate_rate_activation != "softplus"):
             # Softmax and the exponential add (t - i) log alpha_t to every score: ALiBi with a learned,
-            # input-dependent slope per query token. The constant and sigmoid forms are rejected above.
+            # input-dependent slope per query token; query_key conditioning gives each pair its own rate,
+            # (t - i) log alpha_ti. The constant and sigmoid forms are rejected above.
             raise ValueError("Query-distance decay of softmax and the unnormalized exponential takes the "
-                             "input-form softplus gate with query conditioning on the blocked backend")
+                             "input-form softplus gate with query conditioning, or its query-key endpoint "
+                             "form, on the blocked backend")
         if not isinstance(self.attention_coefficient_kernel_weight_decay, bool):
             raise ValueError("model.attention_coefficient_kernel_weight_decay must be a boolean")
         if (self.attention_coefficient_kernel_weight_decay

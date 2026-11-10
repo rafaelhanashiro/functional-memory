@@ -121,7 +121,9 @@ blocked backend. `attention_forget_gate_conditioning: query_key` adds
 and takes weight decay, exactly recovering the query-only control initially.
 Compact query/key projections pass to the attention core; pair rates and causal
 statistics are evaluated within query blocks. Polynomial coefficients stay
-query-conditioned.
+query-conditioned. On softmax and the unnormalized exponential the same query-key rate
+adds `(t-i) * log(alpha_ti)` to every score ([Forget gate](#forget-gate)); the bounded
+sigmoid rate below stays with the query polynomials.
 
 With query-only gating, `attention_forget_gate_rate_activation: sigmoid` replaces
 softplus by sigmoid, giving a positive rate bounded by learned `exp(A_log)`.
@@ -773,13 +775,27 @@ exponential, its 2,048-token BF16 strips case on the GPU.
 `attention_forget_gate_mode: query_distance` with the input gate replaces `L_t - L_i` by
 `(t - i) log alpha_t`, the query's own rate times the key distance: softmax and the unnormalized
 exponential add it to every score, ALiBi with a learned, input-dependent slope per query token
-(softmax's row maximum is taken over the decayed logits). It takes query conditioning and the
-softplus rate, RoPE or no positional encoding, and the blocked backend (scan or strips); PaTH,
-endpoint and bounded rates, per-order gates, the other gate forms, and other backends are rejected.
-A nonfinite or positive raw `log alpha_t` poisons its query's row. Its parameters and their
-initialization are cumulative FoX's. `tests/test_exponential_query_distance.py` checks both
+(softmax's row maximum is taken over the decayed logits). It takes the softplus rate with query
+conditioning or its query-key form (below), RoPE or no positional encoding, and the blocked backend
+(scan or strips); PaTH, bounded rates, per-order gates, the other gate forms, and other backends
+are rejected. A nonfinite or positive raw `log alpha_t` poisons its query's row. Its parameters and
+their initialization are cumulative FoX's. `tests/test_exponential_query_distance.py` checks both
 kernels against FP64 all-pairs references through the scan and the strips; acceptance runs it for
 these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+
+`attention_forget_gate_conditioning: query_key` gives that gate the query polynomials' endpoint
+rate: each pair reads both of its tokens, `log alpha_ti = -exp(A_log) softplus(x_t w_query +
+x_i w_key + dt_bias)`, and softmax and the exponential add `(t - i) log alpha_ti` to its score.
+Only the token projections reach the attention core; pair rates are evaluated inside the score
+blocks, and a nonfinite projection or log rate poisons the rows of the causal pairs it enters (its
+query's row, the rows from a key's token on, or every row of a rate's head). The key projection
+`w_key` (`forget_gate_key_kernel`, per layer and head) starts at zero and takes weight decay, so the
+model starts exactly as its query-gate counterpart; it adds `num_layers * num_heads * hidden_size`
+parameters (188,160 in the Transformer++ shape). Diagnostics report `log alpha_ti` over every
+causal pair. `tests/test_exponential_query_key.py` checks both kernels against FP64 all-pairs
+references through the scan and the strips; acceptance runs it for these recipes on CPU and its
+2,048-token BF16 strips cases on the GPU, and `tests/test_endpoint_decay.py` on CPU only (its GPU
+cases qualify the query polynomials' kernels).
 
 `attention_forget_gate_per_order: true` with the cumulative mode gives every order `r` of
 nonlinear query coefficients (including zero) its own input gate and sum `L_tr`:
