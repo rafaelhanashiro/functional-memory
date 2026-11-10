@@ -183,7 +183,7 @@ derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 | `ra5dfd978d3bd` | exp-forget-gate-no-rope-l12-d640 | `r183f08346ddc` | blocked |
 | `r95a5691d293f` | query-m8-w-decay-l12-d640 | `r25fffc16c2f3` | Mosaic |
 
-Home cluster: **Kennel**. The first seven are complete; each record holds its launch commit.
+Home cluster: **Kennel**. All eight are complete; each record holds its launch commit.
 After committing the inputs, submit each on one B300 or H100, choosing the partition
 (`standard` or `long`) from the live allowance:
 

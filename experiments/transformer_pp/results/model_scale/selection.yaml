@@ -1,5 +1,5 @@
 question: Do the attention-variant comparisons of the Transformer++ recipe hold at
-  a smaller model shape? Seven variants at the 12-layer width-640 shape, each against
+  a smaller model shape? Eight variants at the 12-layer width-640 shape, each against
   its partner at the 15-layer width-896 reference shape, both at 1x Chinchilla.
 study: experiments/transformer_pp
 settings:
@@ -326,3 +326,45 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r183f08346ddc/best_validation.json
       sha256: 1046fd31b5fb1204e046646ea7c538cbfd8f4c4df4e3365e86c7b17d24309c5d
+- study: transformer_pp
+  run_id: r95a5691d293f
+  role: primary
+  variant: query_m8_w_decay
+  shape: l12_d640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r95a5691d293f/config.yaml
+      sha256: e27c5364bfb1a47c6fde45598a3c31da8ad6c8c4402d29b873d76b0a7571f458
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metrics.jsonl
+      sha256: c64c39221cf9a9cc2028c74aadf41b0e9b7826c42701f1fc02e1db0b2793a0fd
+    completion.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/completion.json
+      sha256: c0a10c85d9d102f048783a25b4c83e0c178e50292d41c5a07f1b2fb69a85ffce
+    metadata.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metadata.json
+      sha256: 09b2dce817e820a82400816bc1cbe3bed0087bc71bae748078d8e06f8def1a3b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/best_validation.json
+      sha256: 41a966c09777b5656698fd8a2c63e764a7387b1d2a9e8f6918d1bb158efcd969
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: control
+  variant: query_m8_w_decay
+  shape: reference
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
