@@ -27,6 +27,8 @@ or per query token and head before any per-score work.
 ``taylor_coefficients`` gives the exact B-spline coefficients of the Taylor polynomial
 T_p(s) = sum_(r<=p) s^r / r! by blossoming; the spline then equals T_p on the whole real
 line, extrapolation included, and starts as the degree-p Taylor kernel.
+``initial_coefficients(..., initialization="affine", intercept=u, slope=v)`` instead
+starts at u + v*s, using that affine function's values at the Greville abscissae.
 """
 
 from fractions import Fraction
@@ -165,12 +167,37 @@ def taylor_coefficients(knots: tuple[float, ...], degree: int) -> tuple[Fraction
     return tuple(coefficients)
 
 
+def initial_coefficients(knots, degree: int, initialization: str = "taylor", *,
+                         intercept: float | None = None, slope: float | None = None) -> tuple[Fraction, ...]:
+    """Exact initial coefficients, including the polynomial extensions of the end pieces.
+
+    An affine function is reproduced by setting theta_i = intercept + slope*g_i, where
+    g_i is the mean of the degree knots t_(i+1)..t_(i+degree) (the Greville abscissa).
+    The affine settings are explicit, finite numbers; they never change Taylor starts.
+    """
+    knots = validate_knots(knots, degree)
+    if initialization == "taylor":
+        if intercept is not None or slope is not None:
+            raise ValueError("Spline initial intercept and slope apply only to affine initialization")
+        return taylor_coefficients(knots, degree)
+    if initialization != "affine":
+        raise ValueError("B-spline coefficient initialization must be taylor or affine")
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+           for value in (intercept, slope)):
+        raise ValueError("Affine spline initialization requires a finite initial intercept and slope")
+    t = clamped_knot_vector(knots, degree)
+    intercept, slope = Fraction(intercept), Fraction(slope)
+    return tuple(intercept + slope * sum(t[index + 1:index + degree + 1], Fraction(0)) / degree
+                 for index in range(basis_count(knots, degree)))
+
+
 def parameter_specs(*, hidden_size: int, degree: int, knots, conditioning: str = "static",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
-                    kernel_weight_decay: bool = False):
-    """Per layer/head FP32 arrays, starting f at T_degree: static theta, or the query generator.
+                    kernel_weight_decay: bool = False, initialization: str = "taylor",
+                    initial_intercept: float | None = None, initial_slope: float | None = None):
+    """Per layer/head FP32 arrays, starting at the selected function: static theta or query generator.
 
-    Static: ``spline_coefficients`` [basis], the Taylor B-spline coefficients, without weight
+    Static: ``spline_coefficients`` [basis], the initial B-spline coefficients, without weight
     decay. Query: ``query_spline_bias`` b (those coefficients) and ``query_spline_amplitude`` a
     (amplitude_initial) [basis], without weight decay, and ``query_spline_kernel`` W
     [hidden_size, basis], N(0, projection_initial_std^2) from the mechanism stream, decayed only
@@ -178,7 +205,8 @@ def parameter_specs(*, hidden_size: int, degree: int, knots, conditioning: str =
     """
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
-    initial = tuple(float(value) for value in taylor_coefficients(validate_knots(knots, degree), degree))
+    initial = tuple(float(value) for value in initial_coefficients(
+        knots, degree, initialization, intercept=initial_intercept, slope=initial_slope))
     if conditioning == "static":
         return (AttentionParameterSpec(name="spline_coefficients", argument="spline_coefficients",
                                        initial=initial, sharing="per_head", weight_decay=False),)

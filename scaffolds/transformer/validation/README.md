@@ -3049,3 +3049,25 @@ XLA_FLAGS=--xla_disable_hlo_passes=priority-fusion JAX_PLATFORMS=cuda PYTHONPATH
 
 Raw logs, sanitizer output and HLO dumps are retained under the ignored
 `validation/logs/per-order-debug/H100-<job>/` directories.
+
+## Affine B-spline initialization (2026-11-10)
+
+The CPU spline suite passes **98 tests** (two GPU tests deselected) with the locked
+environment:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+  scaffolds/transformer/tests/test_spline_attention.py -q -m 'not gpu' --maxfail=1
+```
+
+Affine initialization computes exact coefficients from Greville abscissae for any
+supported degree and knot vector. Checks cover exact polynomial reproduction on
+every piece; FP32/FP64 values and derivatives at knots and in the polynomial tails;
+static and query model logits against the equivalent fixed monomial function;
+backbone initialization, FP32 parameter storage, decay masks, serialization and
+historical Taylor compatibility. An Adam update at learning rate `1e-4` moves every
+coefficient when its basis is active; after the initially zero query amplitude
+moves, task gradients reach the query projection. Existing output/gradient checks
+against independent Cox–de Boor/de Boor references also pass. The attention backend
+computation is unchanged. GPU acceptance for the new initialization is pending
+and remains required on the actual training allocation.

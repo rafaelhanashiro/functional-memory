@@ -736,7 +736,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
                                            attention_denominator_constant="fixed",
-                                           attention_kernel_basis="polynomial", attention_spline_knots=None))
+                                           attention_kernel_basis="polynomial", attention_spline_knots=None,
+                                           attention_spline_initial_intercept=None, attention_spline_initial_slope=None))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -791,7 +792,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
         attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
         qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
-        attention_kernel_basis="polynomial", attention_spline_knots=None))
+        attention_kernel_basis="polynomial", attention_spline_knots=None,
+        attention_spline_initial_intercept=None, attention_spline_initial_slope=None))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):

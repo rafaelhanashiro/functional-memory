@@ -146,11 +146,12 @@ gradients are at the rounding floor (1.008×). One full-model update on the stri
 the degree-four polynomial on the same strips, with peak memory 30.5 and 32.5 GB (compile
 2-3 minutes). The initial loss matches the controls' to five digits.
 
-**Coefficient scale under Adam.** Adam moves each stored coefficient by at most about the
-learning rate per update, so over the whole schedule a coefficient can change by about 4.
-The outer coefficients (about 4e4 to 5e4) are therefore effectively fixed: in FP32 their
-spacing (2^-8) exceeds twice the peak step, so θ_0 and θ_7 do not move at all. The tails of
-f stay at T4 to within about 1e-4; learning is concentrated in the central coefficients.
+**Coefficient scale under Adam.** The outer stored coefficients are about 4e4 to 5e4, with FP32
+spacing 2^-8, larger than twice the peak learning rate. The static θ_0 and θ_7 and
+query offsets b_0 and b_7 stayed unchanged in the recorded evaluations. This is an
+observed optimization limitation, not a hard bound on every Adam update. Query
+amplitudes remain trainable, so unchanged offsets do not imply fixed effective
+query coefficients or exactly fixed tails.
 
 **Monitoring.** Evaluation diagnostics record, per layer and head, the fraction of causal
 scores in each piece and beyond ±32 (polynomial continuation), with score extrema.
@@ -167,22 +168,57 @@ and 239723).
   starts behind (+2.6 PPL at update 500), crosses its control at update 3,500 and ends
   0.02 ahead; the query spline closes to +0.04. Both differences are within the
   same-recipe rerun spread recorded elsewhere (up to 0.074).
-- **The learned functions stay near T4.** The outer coefficients θ_0 and θ_7 never moved
-  (see the coefficient-scale note above); θ_1-θ_6 moved by at most 2.7 (mean 0.1-0.9),
-  under 2% of their values, and the query amplitudes stay below 0.07. These runs therefore
-  test T4 with small central adjustments, not a freely shaped spline.
+- **Large initial coordinates limit learning.** The outer static coefficients and
+  query offsets did not move in the recorded evaluations. Query amplitudes did learn;
+  the effective query coefficients must be assessed separately from their offsets.
+  This motivates the affine initialization below before drawing broader conclusions
+  about spline attention.
 - **Scores leave the calibrated range.** At update 100 every score lies within ±8 (the
   trained m = 4 controls reach about ±30). By the end the static model's scores span
   −117 to +157 and the query model's −92 to +149: 15% and 8% of causal scores fall in the
   outer pieces (|s| ≥ 6), 0.16% and 0.06% beyond ±32, and in the most extreme head 13% and
   7% are evaluated by the polynomial continuation. 11 and 6 of the 210 heads have most of
-  their scores in the outer pieces, where f is still T4.
+  their scores in the outer pieces.
 
 ![Spline training against the controls and score coverage](training.png)
 
-**Open decision.** Discard the spline line, or test a parameterization whose coefficients
-can move (for example per-coefficient scaling of the stored values) before drawing a
-conclusion about splines.
+**Open decision.** Whether changing the initial function to an affine function lets
+these splines learn useful departures from it and match the degree-four polynomial
+controls. The fixed grid and polynomial continuation remain unchanged.
 
 Regenerate `training_summary.csv` and `training.png` with
 `scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.exploratory.spline_attention.plot_training`.
+
+
+## Affine initialization comparison
+
+`r325f7d64b940` (static) and `r2de7f1f4c9ce` (query + W decay) start from
+**f(s) = 1 + s/4**, with exact B-spline coefficients
+**[-7, -5.375, -3.375, -1, 3, 5.375, 7.375, 9]**. All eight remain trainable.
+The query generator starts with b equal to this vector, a = 0, and the same random
+W initialization as `rf303a5f94487`. W receives decay 0.1; a and b do not. Static
+coefficients receive no decay. The coefficients have no factorial scaling.
+
+Their paired source recipes are `r7e4193fcafbd` and `rf303a5f94487`, respectively.
+Only the initial spline function changes: the quartic basis, knots, polynomial
+continuation, RoPE, absence of FoX gates, QK RMSNorm and learned head scale, output
+head RMSNorm, seed 42, backbone initialization, data, 2,048-token context, global
+batch 256, 7,570 updates and learning-rate schedule all match those sources. Signed
+weights are allowed; the initial affine function is negative below score -4.
+This is an initialization comparison, not a claim that the affine function matches
+Taylor at initialization.
+
+Execution uses the optimized blocked JAX causal strips, with no fused spline kernel.
+The source B300 jobs took 10 h 50 min (static) and 12 h 13 min (query), including
+acceptance and evaluation; these are estimates for the new runs, excluding queue
+wait. Each new run requests one B300 in `standard` independently.
+
+The adapter `experiments.transformer_pp.spline_affine_acceptance` pins the source
+recipes and checks actual initial coefficient arrays, unchanged backbone and query
+projection draws, parameter counts and the optimizer decay mask. Shared acceptance
+also checks the spline computation and gradients, a full-recipe pilot, validation,
+and exact fresh-process checkpoint resumption before training starts. Run records
+hold acceptance outcomes, exact submission commands and scheduler IDs. Monitoring
+checks scheduler state and run outputs for failures, inactivity and completion;
+completed results will distinguish validation-best and terminal PPL against both
+the same-family Taylor-initialized spline and the global-polynomial control.

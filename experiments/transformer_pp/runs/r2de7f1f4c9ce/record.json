@@ -1,0 +1,47 @@
+{
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init/experiments/transformer_pp/runs/r2de7f1f4c9ce/.runtime/acceptance/B300-1",
+      "allocation": "JobId=241317 JobName=r2de7f1f4c9ce UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-10T00:19:03 EligibleTime=2026-11-10T00:19:03 AccrueTime=2026-11-10T00:19:03 StartTime=2026-11-10T00:20:28 EndTime=2026-11-11T00:20:28 Deadline=N/A PreemptEligibleTime=2026-11-10T02:20:28 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-10T00:20:28 Scheduler=Main Partition=standard AllocNode:Sid=kennel:4180930 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init/experiments/transformer_pp/runs/r2de7f1f4c9ce/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init/experiments/transformer_pp/runs/r2de7f1f4c9ce/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml",
+      "config_sha256": "a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "6dbd9beff154ee8b31e6c522aeaf80aa5b6dd53a",
+      "slurm_job_id": "241317",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T05:20:33.504244+00:00",
+      "stop_after_step": null
+    }
+  ],
+  "comparison": {
+    "control_run_id": "rf303a5f94487",
+    "intended_change": "Spline initialization: f(score) = 1 + score / 4; all other scientific settings preserved"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml",
+    "sha256": "a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee"
+  },
+  "frozen_execution_sha256": "b6640ecbb8fcd0f6ceb3cd0fe3012ca1b4e20559149c34ff8b5ae001e6e75148",
+  "home_cluster": "kennel",
+  "label": "spline-query-m4-affine-init-w-decay",
+  "log_path": "experiments/transformer_pp/runs/r2de7f1f4c9ce/training.log",
+  "name": "spline-query-m4-affine-init-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r2de7f1f4c9ce",
+  "source_commit": "6dbd9beff154ee8b31e6c522aeaf80aa5b6dd53a",
+  "status": "acceptance",
+  "submission": {
+    "command": "sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name=r2de7f1f4c9ce --output=experiments/transformer_pp/runs/r2de7f1f4c9ce/training.log --error=experiments/transformer_pp/runs/r2de7f1f4c9ce/training.log scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_affine_acceptance experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml 6dbd9beff154ee8b31e6c522aeaf80aa5b6dd53a 1 B300",
+    "gpu_count": 1,
+    "gpu_type": "B300",
+    "launch_commit": "6dbd9beff154ee8b31e6c522aeaf80aa5b6dd53a",
+    "partition": "standard",
+    "slurm_job_id": "241317",
+    "submitted_utc": "2026-11-10T05:19:03.246032+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/spline-affine-init"
+  }
+}

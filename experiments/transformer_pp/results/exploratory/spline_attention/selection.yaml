@@ -1,5 +1,5 @@
-question: Where should fixed spline knots lie for a static versus query-dependent
-  attention comparison?
+question: How do static and query-dependent quartic splines compare with global polynomials,
+  and how does their initialization affect learning?
 settings:
   metric: score distributions and absolute-weight coverage
   spline_tail_policy: polynomial_continuation
@@ -101,3 +101,19 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
       sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r325f7d64b940
+  role: static_spline_affine
+  label: Static spline, affine initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r325f7d64b940/config.yaml
+      sha256: a2f8a745477ceb5c48aaa4cda9c8665b0e769cb1beb00ee0596cc832bcfcf887
+- study: transformer_pp
+  run_id: r2de7f1f4c9ce
+  role: query_spline_affine
+  label: Query spline + W decay, affine initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml
+      sha256: a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee
