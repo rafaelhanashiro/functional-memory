@@ -1,6 +1,7 @@
 """The degree-dependent gates preserve their controls' full training recipes."""
 from copy import deepcopy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +12,11 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 APPROVED = (("query", 4), ("query_key", 4), ("query", 8), ("query", 12), ("query_key", 8), ("query_key", 12))
 # The per-order query-key runs at degrees eight and twelve and their per-order query twins.
 QUERY_KEY_RUNS = ((8, "r227b0ed7c605", "r20fe6fe864bc"), (12, "rc2f9273c49cc", "rfe140c073b2f"))
+# This file, which acceptance runs on CPU: the frozen-run, twin, pinned-control and field checks.
+OWN_TESTS = "experiments/transformer_pp/tests/test_per_order_decay_acceptance.py"
+# Settings the comparison ignores: the run's paths and names and its W&B transport.
+EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir",
+                  "wandb_mode")
 
 
 def variant(conditioning="query", degree=4):
@@ -36,6 +42,9 @@ def test_approved_recipe_and_required_gpu_checks(conditioning, degree):
         paths = selected_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=cpu)
         assert {"scaffolds/transformer/tests/test_per_order_decay.py",
                 "scaffolds/transformer/tests/test_endpoint_decay.py"} <= set(paths)
+        if cpu:  # The shared selection adds those two whatever the adapter declares; this one only the adapter.
+            assert OWN_TESTS in paths
+    assert adapter.ROOT.parents[1] / OWN_TESTS == Path(__file__).resolve()
     assert spec.check_initialization is adapter.check_initialization
 
 
@@ -111,6 +120,31 @@ def test_altered_query_key_recipes_are_rejected(monkeypatch, degree, run_id, twi
         adapter.check_recipe(config)
 
 
+@pytest.mark.parametrize("degree,run_id,twin", QUERY_KEY_RUNS)
+def test_the_control_comparison_covers_every_other_field(monkeypatch, degree, run_id, twin):
+    """Every field but the execution settings and the per-order switch, changed alone, is rejected by
+    name (the degree and gate conditioning by having no control), with validation bypassed so that the
+    comparison alone must reject it."""
+    monkeypatch.setattr(adapter, "validate_config", lambda config: None)
+    frozen, missed = run_config(run_id), []
+    for section, values in config_to_dict(frozen).items():
+        for key, value in values.items():
+            if (section == "train" and key in EXECUTION_KEYS) or key == "attention_forget_gate_per_order":
+                continue
+            config = deepcopy(frozen)
+            setattr(getattr(config, section), key, ("changed", value))
+            reason = ("No shared-gate control" if key in ("attention_degree", "attention_forget_gate_conditioning")
+                      else f"['{section}.{key}']")
+            try:
+                adapter.check_recipe(config)
+            except ValueError as error:
+                if reason not in str(error):
+                    missed.append(f"{section}.{key}: {error}")
+            else:
+                missed.append(f"{section}.{key}: accepted")
+    assert not missed
+
+
 @pytest.mark.parametrize("conditioning,degree", (("query_key", 6), ("query_key", 10), ("query", 6), ("query", 10)))
 def test_degrees_without_a_shared_gate_control_are_rejected(conditioning, degree):
     config = variant()
@@ -118,6 +152,19 @@ def test_degrees_without_a_shared_gate_control_are_rejected(conditioning, degree
     config.model.attention_degree = degree
     with pytest.raises(ValueError, match="No shared-gate control"):
         adapter.check_recipe(config)
+
+
+@pytest.mark.parametrize("conditioning,degree", APPROVED)
+def test_an_edited_control_recipe_is_refused(monkeypatch, tmp_path, conditioning, degree):
+    """Any byte change to a pinned control recipe, even a comment, stops the comparison."""
+    config, run = variant(conditioning, degree), adapter.CONTROLS[degree, conditioning][0]
+    edited = tmp_path / "runs" / run / "config.yaml"
+    edited.parent.mkdir(parents=True)
+    edited.write_bytes((adapter.ROOT / "runs" / run / "config.yaml").read_bytes() + b"# edited\n")
+    monkeypatch.setattr(adapter, "ROOT", tmp_path)
+    for check in (lambda: adapter.control_config(conditioning, degree), lambda: adapter.check_recipe(config)):
+        with pytest.raises(ValueError, match="pinned shared-gate control recipe changed"):
+            check()
 
 
 @pytest.mark.parametrize("conditioning,degree", APPROVED)
@@ -160,7 +207,10 @@ def test_initialization_guard_recovers_control_and_rejects_changed_order(monkeyp
         current.model.num_layers = 2
         current.model.num_heads = current.model.num_kv_heads = 2
         current.model.qk_head_dim = current.model.value_head_dim = 4
-    monkeypatch.setattr(adapter, "control_config", lambda conditioning="query", degree=4: deepcopy(control))
+    # Whatever the gate's conditioning, the guard may read only the query control at the run's degree.
+    pinned = {("query", degree): control}
+    monkeypatch.setattr(adapter, "control_config",
+                        lambda conditioning="query", degree=4: deepcopy(pinned[conditioning, degree]))
     def state(current):
         values = initial_attention_parameter_values(attention_parameter_specs(current.model),
             num_layers=2, num_heads=2, key=mechanism_key(jax.random.PRNGKey(42)))
@@ -172,7 +222,15 @@ def test_initialization_guard_recovers_control_and_rejects_changed_order(monkeyp
     expected = state(control)
     monkeypatch.setattr(adapter, "INITIALIZATION_SHA256", {degree: state_sha256(expected)})
     monkeypatch.setattr(adapter, "PARAMETER_COUNT", {degree: sum(x.size for x in jax.tree.leaves(expected))})
-    assert adapter._check_initialized_parameters(state(config), config)["all_order_gates_match_shared_control"]
+    # The recorded facts: the run's own count and fingerprint (taken before the guard collapses the
+    # orders), its control, and the recovered query-control fingerprint.
+    initial = state(config)
+    facts = dict(parameter_count=sum(x.size for x in jax.tree.leaves(initial)), parameter_sha256=state_sha256(initial),
+                 matched_control_run_id=adapter.CONTROLS[degree, conditioning][0],
+                 recovered_query_control_parameter_sha256=state_sha256(expected))
+    assert adapter._check_initialized_parameters(initial, config) == dict(
+        facts, unchanged_parameters_match_control=True, all_order_gates_match_shared_control=True,
+        initialization="duplicate the shared gate across orders, including order zero")
     # Another draw for one order of any gate parameter, including the top order.
     for name, order in (("forget_gate_kernel", 3), ("forget_gate_kernel", degree),
                         ("forget_gate_log_rate", degree), ("forget_gate_dt_bias", degree)):
@@ -191,3 +249,13 @@ def test_initialization_guard_recovers_control_and_rejects_changed_order(monkeyp
     broken["backbone"] = broken["backbone"].replace(value=jnp.ones(17))
     with pytest.raises(RuntimeError, match="Restored initialization"):
         adapter._check_initialized_parameters(broken, config)
+
+
+@pytest.mark.parametrize("degree", sorted(adapter.INITIALIZATION_SHA256))
+def test_pinned_fingerprints_are_the_query_controls_initialization(degree):
+    """At full size on CPU (seconds per degree), each pinned fingerprint and count is its query
+    control's own initialization: what the guard must recover from every per-order run."""
+    from scaffolds.transformer.acceptance import initialization_facts
+
+    assert initialization_facts(adapter.control_config("query", degree)) == {
+        "parameter_count": adapter.PARAMETER_COUNT[degree], "parameter_sha256": adapter.INITIALIZATION_SHA256[degree]}
