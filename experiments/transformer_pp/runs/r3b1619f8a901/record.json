@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3b1619f8a901/config.yaml",
+    "sha256": "d757bc1ffb2835d1e7a0b3d5566ed05f55082054186bf3f2a272041f1b5c08da"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-dk64-w-decay-score-bias-query-key",
+  "name": "query-m8-dk64-w-decay-score-bias-query-key",
+  "record_schema_version": 1,
+  "run_id": "r3b1619f8a901",
+  "status": "planned"
+}

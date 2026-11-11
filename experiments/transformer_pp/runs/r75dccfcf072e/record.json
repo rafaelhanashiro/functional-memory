@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r75dccfcf072e/config.yaml",
+    "sha256": "b6aab15fcb8770465f450f6cda0d6913e45d852e0f39ebcb5301041bcb4a63b7"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key",
+  "name": "query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key",
+  "record_schema_version": 1,
+  "run_id": "r75dccfcf072e",
+  "status": "planned"
+}
