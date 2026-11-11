@@ -1356,8 +1356,9 @@ The default saved workspace from `views.experiment_workspace` includes gradient
 norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
 Historical runs without these measurements retain unknown gradient diagnostics.
 
-Training telemetry (`training/telemetry.py`) is standard for data-parallel training
-with `model.remat: false`. Every update returns, in one packed vector:
+Training telemetry (`training/telemetry.py`) is standard for training with
+`model.remat: false`, on one GPU or several. Every update's statistics reach the host
+in one packed vector:
 
 | Statistic | Reduction over microbatches and GPUs |
 | --- | --- |
@@ -1373,8 +1374,10 @@ projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
 attention coefficients, and other. `update_norm` is the actual parameter change
 after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
 statistics only. Recording never changes the update: on CPU the update is
-bit-identical with and without it, and on GPU the differences match GPU
-nondeterminism between identical updates.
+bit-identical with and without it, on one device and on two, and on GPU the
+differences match GPU nondeterminism between identical updates. Statistics of one
+batch are the same whether its equal-sized microbatches run on one device or split
+across several.
 
 Each log line adds the smallest `attention_output_head_rms_min`, largest
 `head_rms_norm_gain_max`, and largest `residual_max_abs` over layers; W&B receives
