@@ -1630,17 +1630,31 @@ the Mosaic kernels; the blocked backend never trains these runs.
 **Hardware.** H100 only: the Mosaic score-bias kernels exist for H100, and B300 refuses them before
 tracing a kernel. The RoPE control `r25fffc16c2f3` trained on B300 (`akita`), so runs 1–3 compare
 across GPU types and kernel implementations; the gated control `r227b0ed7c605` trained on an H100
-SXM (`dogo`). The jobs exclude the H100 PCIe node `mastiff` (about 1.5× slower) with the B300, A100,
-A6000 and B200 nodes. Home cluster: **Kennel**. These jobs have no scheduling dependencies on each
-other.
+SXM (`dogo`). The jobs exclude the H100 PCIe node `mastiff` (the gated control's update takes 1.35×
+as long there) with the B300, A100, A6000 and B200 nodes. Home cluster: **Kennel**. These jobs have
+no scheduling dependencies on each other.
 
-All six train on `long`: 48 hours for the RoPE runs and 72 hours for the gated runs, whose control
-alone trained at 8.7 s per update on an H100 SXM (about 18 hours for 7,570 updates). Acceptance's
-pilot refuses an allocation whose projected run exceeds its limit less two hours, so the H100
-benchmark must project each RoPE run under 46 hours and each gated run under 70. From the isolated
-`claude/score-biases` worktree, after committing the frozen execution set, recording the H100
-kernel qualification and benchmark in the [scaffold validation record](../../scaffolds/transformer/validation/README.md),
-and checking live allowances:
+All six train on `long`: 48 hours for the RoPE runs and 72 hours for the gated runs. Acceptance's
+pilot refuses an allocation whose projected run exceeds its limit less two hours. The H100
+qualification ([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11))
+ran acceptance's 20-update pilot of every recipe on an H100 PCIe (`mastiff`) and projected 7,570
+updates as acceptance does; the SXM estimates divide by 1.35, the gated control's ratio (11.72 s per
+update there; 8.71 s in its production on `dogo`, a 19.5-hour job with acceptance):
+
+| Run | Mode | s/update, PCIe | Projected hours, PCIe | SXM estimate, hours |
+| --- | --- | ---: | ---: | ---: |
+| `rb70f9e57190f` | RoPE static | 5.50 | 12.1 | 9.0 |
+| `r891870ef80e9` | RoPE query | 5.75 | 12.6 | 9.4 |
+| `r3b1619f8a901` | RoPE query_key | 10.20 | 22.2 | 16.5 |
+| `ra2edcdc5ab60` | gated static | 12.34 | 26.7 | 19.8 |
+| `rbf5d3bd6059c` | gated query | 12.54 | 27.2 | 20.1 |
+| `r75dccfcf072e` | gated query_key | 20.18 | 43.5 | 32.2 |
+
+Every projection clears its limit on either GPU. A 24-hour `standard` allocation would clear the
+two-hour reserve for the RoPE static and query runs on either GPU, for the RoPE query_key run only on
+an SXM, and for the gated static and query runs only by the SXM estimate (1.9–2.2 hours to spare);
+the gated query_key run needs `long`. From the isolated `claude/score-biases` worktree, after
+committing the frozen execution set and checking live allowances:
 
 ```bash
 submit() {  # run ID, time limit

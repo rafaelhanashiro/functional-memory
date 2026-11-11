@@ -1,0 +1,182 @@
+{
+ "format": "score-bias-attention-benchmark",
+ "mode": "registers",
+ "device": "NVIDIA H100 PCIe",
+ "slurm_job_id": "242565",
+ "node": "mastiff",
+ "jax": "0.10.0",
+ "toolkit": {
+  "cuda_home": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-biases/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+  "cuda_home_ptxas_version": "12.9.86"
+ },
+ "shape": {
+  "batch": 16,
+  "time": 2048,
+  "heads": 14,
+  "width": 64,
+  "value_width": 64,
+  "degree": 8
+ },
+ "precision": "bf16",
+ "source_commit": "e068dd94b66e05e2379695e7da55ee5677024c17",
+ "source_dirty": false,
+ "ptxas": {
+  "query": {
+   "forward": {
+    "report": "kernel_0.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 0,
+    "spill_store_bytes": 0,
+    "spill_load_bytes": 0,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_1.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 0,
+    "spill_store_bytes": 0,
+    "spill_load_bytes": 0,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_2.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 144,
+    "spill_store_bytes": 140,
+    "spill_load_bytes": 140,
+    "registers": 168
+   }
+  },
+  "per_order_endpoint_decay": {
+   "forward": {
+    "report": "kernel_3.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 0,
+    "spill_store_bytes": 0,
+    "spill_load_bytes": 0,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_4.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 992,
+    "spill_store_bytes": 2316,
+    "spill_load_bytes": 2184,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_5.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 688,
+    "spill_store_bytes": 1400,
+    "spill_load_bytes": 1636,
+    "registers": 168
+   }
+  },
+  "score_bias_row": {
+   "forward": {
+    "report": "kernel_6.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 0,
+    "spill_store_bytes": 0,
+    "spill_load_bytes": 0,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_7.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 32,
+    "spill_store_bytes": 32,
+    "spill_load_bytes": 36,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_8.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 144,
+    "spill_store_bytes": 260,
+    "spill_load_bytes": 188,
+    "registers": 168
+   }
+  },
+  "score_bias_pair": {
+   "forward": {
+    "report": "kernel_9.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 0,
+    "spill_store_bytes": 0,
+    "spill_load_bytes": 0,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_10.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 288,
+    "spill_store_bytes": 564,
+    "spill_load_bytes": 472,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_11.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 336,
+    "spill_store_bytes": 668,
+    "spill_load_bytes": 600,
+    "registers": 168
+   }
+  },
+  "score_bias_endpoint_row": {
+   "forward": {
+    "report": "kernel_12.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 104,
+    "spill_store_bytes": 132,
+    "spill_load_bytes": 120,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_13.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 280,
+    "spill_store_bytes": 584,
+    "spill_load_bytes": 484,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_14.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 600,
+    "spill_store_bytes": 1168,
+    "spill_load_bytes": 1128,
+    "registers": 168
+   }
+  },
+  "score_bias_endpoint_pair": {
+   "forward": {
+    "report": "kernel_15.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 72,
+    "spill_store_bytes": 104,
+    "spill_load_bytes": 96,
+    "registers": 168
+   },
+   "dq": {
+    "report": "kernel_16.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 640,
+    "spill_store_bytes": 1416,
+    "spill_load_bytes": 1376,
+    "registers": 168
+   },
+   "dkv": {
+    "report": "kernel_17.ptxas",
+    "ptx_isa": "8.8",
+    "stack_bytes": 960,
+    "spill_store_bytes": 2400,
+    "spill_load_bytes": 2224,
+    "registers": 168
+   }
+  }
+ },
+ "note": "registers is the launch allocation (384 threads); compute warpgroups raise theirs to 232 with setmaxnreg"
+}

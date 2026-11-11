@@ -11,6 +11,202 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Score-bias Mosaic kernels on H100 (2026-11-11)
+
+`model.attention_score_bias` (`static`, `query`, `query_key`) shifts every order `r = 1..m` of the
+tanh query polynomial by its own signed bias, `(s_ti + beta_r(t,i))^r`, without a gate or under the
+per-order query–key endpoint gate ([README](../README.md#per-degree-score-biases)). Four H100
+Mosaic families (`attention/backends/mosaic/score_bias.py`) form each shifted power by repeated
+multiplication inside the causal tiles, never expanding it into powers of `s` and never dividing by
+the shifted score. B300 has no score-bias kernel: every entry point raises `ValueError` before
+tracing one. Every kernel below was assembled with the locked toolkit's ptxas (CUDA 12.9.86, PTX ISA
+8.8). The compact record is [runs/score-bias-kernels/](runs/score-bias-kernels/): `tests.json`
+(source, lock, toolkit and its probe, GPU, JUnit SHA256, measured errors), the benchmark's
+`kernels.json` and `registers.json`, and `training.json` (the training qualification's summary, with
+the SHA256 of every report it reads).
+
+**Families** at `m = 8`, `d_K = 64` and 2,048 tokens. Per batch and head, the vectors are `c` (9),
+the gate's query inputs (9), and `beta` or `p` (8); the key vectors are the gate's key inputs (9) and
+`q` (8); the head scalars are the gate's rates (9) and `b` and `a` (8 each), padded to 32. The dQ
+kernel sums `dc` (9), the two gate gradients (18), and one (row) or three (pair) shift gradients of
+8; the dK kernel sums the gate's (9) and `q`'s (8). On a CPU host each kernel lowers in exactly the
+shared memory `common.hopper_smem_bytes` counts (of 232,448 bytes) and fails one byte below (degrees
+4 and 8).
+
+| Family (recipes) | Implementation | Vectors / keys / heads | dQ / dK sums | Shared memory, fwd / dQ / dK/dV (bytes) |
+| --- | --- | --- | --- | --- |
+| Row shift (RoPE static, query) | `pallas_mosaic_gpu_query_polynomial_row_score_bias` | 17 / 0 / 0 | 17 / 0 | 110,704 / 86,096 / 74,800 |
+| Pair shift (RoPE query_key) | `pallas_mosaic_gpu_query_polynomial_pair_score_bias` | 17 / 8 / 16 | 33 / 8 | 117,872 / 99,408 / 86,064 |
+| Gate + row shift (gated static, query) | `pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_row_score_bias` | 26 / 9 / 9 | 35 / 9 | 122,992 / 105,552 / 92,208 |
+| Gate + pair shift (gated query_key) | `pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_pair_score_bias` | 26 / 17 / 25 | 51 / 17 | 129,136 / 117,840 / 100,400 |
+
+**Speed and registers** (`benchmarks/benchmark_score_bias.py`, job 242565 on `mastiff`, one H100
+PCIe, GPU-cae52cf1 at bus E1:00.0; BF16 at the production per-GPU micro-batch of 16 × 2,048 tokens
+and 14 heads; medians of 30). "× 240" is the three kernels' time for an update's 15 layers × 16
+micro-batches. Spills are ptxas's spill stores/loads in bytes. Every kernel launches with 168
+registers per thread (384 threads); its compute warpgroups raise theirs to 232 with `setmaxnreg`.
+
+| Family | Forward ms | dQ ms | dK/dV ms | × 240 s | Spills, fwd · dQ · dK/dV |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Query polynomial (RoPE control) | 0.83 | 1.71 | 1.39 | 0.94 | 0/0 · 0/0 · 140/140 |
+| Per-order endpoint gate (gated control) | 5.95 | 15.81 | 15.45 | 8.93 | 0/0 · 2,316/2,184 · 1,400/1,636 |
+| Row shift | 2.38 | 3.78 | 5.24 | 2.74 | 0/0 · 32/36 · 260/188 |
+| Pair shift | 5.64 | 10.60 | 10.98 | 6.53 | 0/0 · 564/472 · 668/600 |
+| Gate + row shift | 8.24 | 15.69 | 15.76 | 9.53 | 132/120 · 584/484 · 1,168/1,128 |
+| Gate + pair shift | 11.24 | 23.54 | 35.11 | 16.77 | 104/96 · 1,416/1,376 · 2,400/2,224 |
+
+The training qualification's run of the same benchmark on another of `mastiff`'s GPUs (job 242484,
+commit `6ea6e210`) gave identical ptxas reports and times within 2.5%, except the row and pair dK/dV
+kernels (10% and 7% slower there).
+
+**Toolkit.** Without `CUDA_HOME`, Mosaic assembles with the node's `/usr/local/cuda` (CUDA 12.6 on
+`mastiff`), giving PTX ISA 8.5 and other machine code: the unchanged per-order endpoint dQ kernel
+spills 2,580/2,412 bytes instead of 2,316/2,184, the gate + pair-shift forward kernel 212/200 instead
+of 104/96 (`tests.json`, job 242565). `kennel.sbatch` pins `CUDA_HOME` to the locked toolkit, so
+acceptance and training assemble with CUDA 12.9, as every check here did. `benchmark_score_bias`
+records `CUDA_HOME`, its ptxas version and each kernel's PTX ISA.
+
+**Tests.**
+
+- CPU, commit `e068dd94`: `tests/test_score_bias.py` 97 passed (its 4 GPU cases deselected),
+  `tests/test_score_bias_lowering.py` 43, `tests/test_benchmark_score_bias.py` 3.
+- GPU, job 242565 at commit `e068dd94` on `mastiff` (one H100 PCIe, GPU-cae52cf1 at bus E1:00.0),
+  under the launcher's runtime (CUDA 12.9.86 ptxas, `JAX_PLATFORMS=cuda,cpu`, empty compilation
+  cache): the gated runs' acceptance GPU stage, `-m gpu --mosaic-precision bf16` over its 11 modules
+  in acceptance's order (the RoPE runs' 7 are a subset). 187 passed, none skipped or failed, 382
+  deselected, in 809 s (JUnit SHA256
+  `fd67fc13dc3c4247fdfbea23ea48d5bf216d4f7cfd287dee175d1b5963995936`): `mosaic_query` 44,
+  `mosaic_repeatability` 3, `per_order_decay` 24, `mosaic_score_bias` 57, `score_bias` 4,
+  `endpoint_decay` 30, `input_dependent_coefficients` 5, `query_tanh_polynomial` 16,
+  `coefficient_forms` 3, `query_distance_decay` 1; `coefficient_scale` has no GPU case. The 4
+  FP32-precision (`bf16x3`) cases, which BF16 deselects, passed separately (JUnit SHA256
+  `72713b80287bbb26fc5f243c9179c36bfa4529a4ee09b39de6a9d17f71c54083`).
+
+**Accuracy** against an independent FP64 all-pairs reference on the host
+(`tests/test_mosaic_score_bias.py`: explicit `(s + beta_r)^r`, every gradient, each order's sums
+separately). Largest relative L2 over its 16 BF16 cases: the four families at 512 tokens and
+`m = 4`, at 2,048 tokens and `m = 8`, and with only orders 5–8; exactly zero and negative shifted
+scores; pair offsets near −1.5.
+
+| Quantity | Largest relative L2 | Bound | Share of bound | `bf16x3` (`m = 4`, 512 tokens) |
+| --- | ---: | ---: | ---: | ---: |
+| Output | 2.41e-3 | .006 | 0.40 | 1.66e-3 |
+| dV | 2.44e-3 | .015 | 0.16 | 1.67e-3 |
+| dQ, dK | 2.41e-3 | .025 | 0.096 | 1.66e-3 |
+| Per-order sums (largest: `dlog_rate`) | 9.48e-6 | .01 | 9.5e-4 | 4.30e-6 |
+
+- Exact zeros: 5.4% of the shifted scores are exactly zero and 47.4–47.5% negative.
+- Zero shift (`b = 0`, `a = 1`, `p = q = 0`, or zero rows) against the existing kernels at `m = 8`
+  and 2,048 tokens, bound `2e-4` relative L2: without the gate, against
+  `api.query_polynomial_attention`, output 4.1e-5, dQ 9.0e-5, dK 8.8e-5, dV 6.6e-5, and `dc`
+  bitwise equal; with it, against `api.per_order_endpoint_decay_attention`, dQ, dK and `dc` bitwise
+  equal, output 3.6e-5, dV 7.1e-6, and the gate gradients at most 1.8e-7.
+- Bitwise: changing every input of later tokens leaves earlier outputs and every gradient unchanged;
+  a nonfinite shift or gate input makes exactly its causal rows NaN; 20 forward and backward
+  evaluations at the production shape are identical.
+
+**Full-shape training** (`benchmarks/qualify_training.py`: acceptance's pilot and resume workers on a
+copy of each recipe with its own directory and W&B off; the production batch, 20 updates, validation
+and a checkpoint at update 20; projection by acceptance's `project_runtime` for 7,570 updates). H100
+PCIe on `mastiff`, jobs 242444, 242445, 242484, 242495 and 242557, pinned toolkit. The SXM estimate
+divides by 1.35, the gated control's ratio (11.72 s per update here, 8.71 s in its production on an
+H100 SXM).
+
+| Run | Mode | Implementation | s/update (median, updates 2–20) | Projected hours | SXM estimate, hours | Allocator peak, GiB |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `rb70f9e57190f` | RoPE static | row shift | 5.50 | 12.13 | 9.0 | 30.6 |
+| `r891870ef80e9` | RoPE query | row shift | 5.75 | 12.63 | 9.4 | 30.9 |
+| `r3b1619f8a901` | RoPE query_key | pair shift | 10.20 | 22.23 | 16.5 | 31.0 |
+| `ra2edcdc5ab60` | gated static | gate + row shift | 12.34 | 26.75 | 19.8 | 31.0 |
+| `rbf5d3bd6059c` | gated query | gate + row shift | 12.54 | 27.16 | 20.1 | 31.5 |
+| `r75dccfcf072e` | gated query_key | gate + pair shift | 20.18 | 43.48 | 32.2 | 31.8 |
+| `r25fffc16c2f3` | RoPE control | query polynomial | 3.52 | 7.83 | – | 30.3 |
+| `r227b0ed7c605` | gated control | per-order endpoint gate | 11.72 | 25.42 | – | 30.7 |
+
+- Every pilot resolved the Mosaic backend and its implementation; every update's loss and gradient
+  norm, the validation, and the attention diagnostics with the score-bias statistics were finite and
+  valid. The allocator's limit is 59.4 GiB.
+- The gated pilots (GPU at bus E1:00.0, 43–65 °C) held their update time within 1%. The RoPE pilots
+  (bus 81:00.0) slowed as they ran: static 5.23 to 5.61 s, query 5.45 to 5.89 s, query_key 9.28 to
+  11.36 s. Of the 20-update pilots on that GPU, only the RoPE control's (3.38 to 3.56 s) has
+  telemetry: its 350 W power cap was active in every busy sample, with SM clocks of 1,185–1,515 MHz
+  (1,755 maximum) and 58 to 82 °C. That the score-bias RoPE pilots were slowed the same way is an
+  inference; if so, their projections overstate.
+- The gated pilots' update times are the gated control's plus the kernels' difference (× 240, same
+  GPU): static 12.34 s against 11.72 + (9.53 − 8.93) = 12.32 s, query_key 20.18 s against 19.56 s.
+
+**Resume and determinism.**
+
+- Acceptance's resume audit passed for all six in a fresh process: the restored state equals the
+  saved one, and the next batch and RNG are equal.
+- Under production XLA settings the same executable, on the same state and batch, is not bitwise
+  reproducible. In the RoPE and gated query_key pilots, against an uninterrupted rerun in the same
+  process, update 1 has the same loss and gradient norms 6.5e-7 and 3.1e-7 relative apart, and over
+  updates 1–20 the loss differs by up to 2.1e-5 and 1.6e-3 and the gradient norm by up to 6.5e-3 and
+  0.41. A fresh process's resume against the in-process continuation of the same checkpoint: update
+  21 has the same loss and gradient norms 1 and 2 ulp apart; at update 22 the losses differ by 5.7e-6
+  and 3.8e-6 and the gradient norms by 5.2e-6 and 3.2e-3. With an empty compilation cache, the
+  gradient norms are 5 and 210 ulp apart at update 21, and at update 22 the losses differ by 2.9e-6
+  and 9.5e-7 and the gradient norms by 6.2e-4 and 4.1e-3.
+- With `XLA_FLAGS=--xla_gpu_deterministic_ops=true` (4-update pilots) all six are exact: the pilot
+  equals an uninterrupted rerun bitwise, and both the in-process continuation and the fresh-process
+  resume reproduce updates 5 and 6 and the final state's SHA256. The kernels, restore, data cursor
+  and RNG are therefore exact; the differences above come from XLA's default arithmetic.
+  Deterministic ops add 46.6–50.4 s per update (55.5–67.9 s against 5.5–20.2 s, 3.4–10.1×).
+
+**Instrumentation parity** (`r3b1619f8a901` and `r75dccfcf072e`, 10 updates, every arm in one
+process): gradient-event capture off; capture as the recipe sets it; capture forced from update 2 (a
+copy whose only changes are `gradient_event_factor: 1.0001`, `gradient_event_min_norm: 0` and
+`gradient_event_min_history: 1`, with the rule's warmup gate and factor then set to zero in the
+capture code alone, so the optimizer's warmup is unchanged); and validation with attention
+diagnostics every 2 updates.
+
+- Deterministic ops: every arm's losses, update numerics, state hashes and final state equal the
+  capture-off arm's bitwise. All 9 events' recorded pre-update hashes equal the capture-off states,
+  the 3 kept captures (updates 2–4) restore to exactly those states, and all 5 diagnostic
+  validations are valid and report the score-bias statistics.
+- Production settings: every arm, including capture as the recipe sets it (which changes nothing on
+  the device in 10 updates), differs from the capture-off arm from update 1 by the noise above:
+  losses by at most 1.7–2.1e-5 (RoPE query_key) and 0.9–1.0e-4 (gated query_key). Kept captures
+  restore exactly to their recorded hashes.
+- A kept capture's synchronous save took 20.9–35.2 s (21.2–25.0 s with deterministic ops).
+
+Replaying a captured event under production settings therefore reproduces its update only to FP32
+rounding, which then grows; with deterministic ops, replays agree with each other bitwise (a
+different program from the production update).
+
+**B300.** On the CPU host, `tests/test_score_bias_lowering.py` presents B300's kernel set (and a GPU
+without Mosaic kernels): every entry point raises before tracing a kernel, and B300's own forward,
+dQ and dK/dV kernels refuse the four families. `test_b300_refuses_before_tracing_a_kernel` checks
+the same on the H100 (4 cases, in the GPU stage above). No B300 allocation was used.
+
+**Open.** Kernel times and pilots on an H100 SXM (`dogo` was fully allocated throughout).
+
+```bash
+# Inside one H100 allocation, from the worktree root, under the launcher's runtime:
+source scaffolds/transformer/launchers/kennel_runtime.sh
+PY=scaffolds/transformer/.venv/bin/python
+CUDA_HOME="$(transformer_cuda_home "$PY")"
+export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" PYTHONPATH="$PWD"
+T=scaffolds/transformer/tests
+JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -rA -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib -m gpu --mosaic-precision bf16 $T/test_mosaic_query.py \
+  $T/test_mosaic_repeatability.py $T/test_per_order_decay.py $T/test_mosaic_score_bias.py \
+  $T/test_score_bias.py $T/test_endpoint_decay.py $T/test_input_dependent_coefficients.py \
+  $T/test_query_tanh_polynomial.py $T/test_coefficient_forms.py $T/test_query_distance_decay.py \
+  $T/test_coefficient_scale.py
+B=scaffolds.transformer.benchmarks.benchmark_score_bias
+JAX_PLATFORMS=cuda "$PY" -m $B kernels --output kernels.json --repeats 30
+JAX_PLATFORMS=cuda "$PY" -m $B registers --output registers.json
+# Each recipe; a resume is its own process. Add XLA_FLAGS=--xla_gpu_deterministic_ops=true and
+# --pilot-steps 4 for the exact checks, and the parity mode for the instrumentation arms.
+Q=(experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> --experiment transformer_pp
+   --adapter experiments.transformer_pp.score_bias_acceptance --limit-hours 24 36 48 72)
+QT=scaffolds.transformer.benchmarks.qualify_training
+JAX_PLATFORMS=cuda "$PY" -m $QT pilot "${Q[@]}" --no-references
+JAX_PLATFORMS=cuda "$PY" -m $QT resume "${Q[@]}"
+```
+
 ### Query-key gates on softmax and the exponential (2026-11-10)
 
 `model.attention_forget_gate_conditioning: query_key` now applies to the query-distance gate of
