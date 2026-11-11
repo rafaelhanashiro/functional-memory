@@ -154,10 +154,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
     if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked" and not cpu:
-        # Per-degree score biases on the blocked backend train on its causal strips, plain JAX on any GPU.
-        # The GPU stage qualifies exactly that computation: the strips with every score-bias mode on both
+        # Per-degree score biases on the blocked backend: fresh recipes train on its causal strips, plain JAX
+        # on any GPU. The GPU stage qualifies that computation: the strips with every score-bias mode on both
         # backbones at production precision against host FP64. The backbone's other GPU cases qualify
-        # kernels these runs never execute (the fused Triton and Mosaic kernels, and the scan), and some
+        # kernels these runs never train on (the fused Triton and Mosaic kernels, and the scan), and some
         # refuse or skip on GPUs those kernels are not qualified on, which would fail acceptance.
         return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
     if model.get("attention_forget_gate_per_order", False):
