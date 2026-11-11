@@ -1593,8 +1593,9 @@ policy; with the mode set to `none` and the capture fields and execution locatio
 removed, the recipe must equal its control's. At initialization each mode's arrays must have their
 shapes and exact FP32 starts (`b = 0`, `a = 1`, `u = v = 0`), the count must be the control's plus
 the mode's additions, and removing the arrays must leave the control's fingerprint; the shared check
-then compares every backbone array with the softmax control. Acceptance refuses any allocation but
-H100 before it starts, and its pilot must resolve the Mosaic backend. Before training it runs
+then requires the backbone to equal the softmax control's and every attention array to hold its
+declared start. Acceptance refuses any allocation but H100 before it starts, and its pilot must
+resolve the Mosaic backend. Before training it runs
 `tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
 the adapter's tests on CPU, and `tests/test_mosaic_score_bias.py` with the GPU case of
 `tests/test_score_bias.py` on the GPU at BF16, beside the backbone's query (and per-order gate)
@@ -1618,13 +1619,13 @@ fixed in the recipes before launch:
   and whether it was kept. Kept captures are retained with the run and listed in `record.json` under
   `diagnostic_checkpoints`, each with its SHA256 and justification.
 
-**Diagnostics.** Validation-time statistics per layer, head and order (the bias parameters; shift and
-shifted-score moments, extremes, negative and near-zero fractions; shifted-score histograms on
-[-16, 16]; each order's term magnitude and the cancellation across orders) come from the
-forward-only JAX reference of the same shifted kernel, on the first held-out sequence, outside the
-validation loss and without gradients (`coefficients.score_biases` in each validation's
-`attention_diagnostics`). Training and the acceptance pilots run only the Mosaic kernels; the blocked
-backend never trains these runs.
+**Diagnostics.** Validation-time statistics come from the forward-only JAX reference of the same
+shifted kernel, on the first held-out sequence, outside the validation loss and without gradients
+(`coefficients.score_biases` in each validation's `attention_diagnostics`): the bias parameters;
+shift and shifted-score moments, extremes, and negative and near-zero fractions, and each order's
+term magnitude, per layer, head and order; shifted-score histograms on [-16, 16] per layer and order;
+and the cancellation across orders per layer and head. Training and the acceptance pilots run only
+the Mosaic kernels; the blocked backend never trains these runs.
 
 **Hardware.** H100 only: the Mosaic score-bias kernels exist for H100, and B300 refuses them before
 tracing a kernel. The RoPE control `r25fffc16c2f3` trained on B300 (`akita`), so runs 1–3 compare

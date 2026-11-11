@@ -52,13 +52,14 @@ event and the two largest later ones), and every event is logged in the run's
 `gradient_events.jsonl`. Details: [study README](../../../README.md#per-degree-score-biases).
 
 **Diagnostics.** At each validation the forward-only JAX reference of the same shifted kernel, on the
-first held-out sequence and without gradients, records per layer, head and order: the bias
-parameters; the shifts' and shifted scores' moments and extremes; the fractions of shifted scores
-below zero and within `1e-3` of zero; their histograms on [-16, 16]; each order's term
-`T_r = c_r G_r (s + beta_r)^r`; and how much the orders cancel, per pair (`sum_r |T_r| / |sum_r T_r|`)
-and per output (`sum_r ||o_r|| / ||o||`). Training and the acceptance pilots use only the Mosaic
-kernels. Positive shifted scores do not imply positive weights: the coefficients `c_r` are signed, so
-an order's term can be negative with a positive shifted score.
+first held-out sequence and without gradients, records the bias parameters; per layer, head and
+order, the shifts' and shifted scores' moments and extremes, the fractions of shifted scores below
+zero and within `1e-3` of zero, and each order's term `T_r = c_r G_r (s + beta_r)^r`; per layer and
+order, shifted-score histograms on [-16, 16] pooled over heads; and per layer and head, how much the
+orders cancel, per pair (`sum_r |T_r| / |sum_r T_r|`) and per output (`sum_r ||o_r|| / ||o||`).
+Training and the acceptance pilots use only the Mosaic kernels. Positive shifted scores do not imply
+positive weights: the coefficients `c_r` are signed, so an order's term can be negative with a
+positive shifted score.
 
 ## Limits
 
