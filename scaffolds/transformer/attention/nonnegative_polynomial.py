@@ -86,6 +86,23 @@ def effective_coefficients_numpy(factors, degree: int | None = None) -> np.ndarr
     return out
 
 
+def query_square_coefficients(generated: jax.Array, degree: int) -> jax.Array:
+    """Per-query c_0..c_m of q1^2 + q2^2 from generated values g = b + a tanh(W x) [..., m + 1].
+
+    Factor k is f_k (1 + g_k) / 2 for the Taylor square factors f, so g = 1 is T_m and b and a keep
+    the direct form's first-order effect on the polynomial: a step in g_k moves q_k half as far
+    in relative terms, and squaring doubles it. The kernels evaluate the expanded coefficients
+    in FP32, as they do every other per-query polynomial.
+    """
+    factors = jnp.asarray(taylor_square_factors(degree), jnp.float32) * (1.0 + generated.astype(jnp.float32)) / 2.0
+    terms = [jnp.zeros(factors.shape[:-1], jnp.float32) for _ in range(degree + 1)]
+    for part in split_factors(factors, degree):
+        for i in range(part.shape[-1]):
+            for j in range(part.shape[-1]):
+                terms[i + j] = terms[i + j] + part[..., i] * part[..., j]
+    return jnp.stack(terms, axis=-1)
+
+
 def _horner(scores: jax.Array, coefficients: jax.Array) -> jax.Array:
     """Evaluate ascending per-head coefficients [heads, n] over [batch, heads, queries, keys] scores."""
     value = jnp.broadcast_to(coefficients[:, -1][None, :, None, None], scores.shape)

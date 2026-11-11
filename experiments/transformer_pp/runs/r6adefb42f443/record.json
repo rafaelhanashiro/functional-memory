@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r6adefb42f443/config.yaml",
+    "sha256": "b914fb14fdd29c210fe1a28fbba131d597ba531d390f85bf43bf41afb3ec4a20"
+  },
+  "label": "query-m8-hermite-start-w-decay",
+  "name": "query-m8-hermite-start-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r6adefb42f443",
+  "status": "planned"
+}

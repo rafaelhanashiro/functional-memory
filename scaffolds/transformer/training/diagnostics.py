@@ -425,6 +425,16 @@ def attention_identity(config) -> dict:
                                "lambda = exp(A_log) softplus(dt_bias) per layer/head, read from no token, with Gated "
                                "DeltaNet's initialization"),
         )
+    static_query_key_gate = forget_gate and gate_conditioning == "query_key" and has_learned_polynomial(config.model)
+    if static_query_key_gate:
+        # Learned static coefficients with the per-order query-key gate: only the rates read tokens.
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            attention_forget_gate_conditioning="query_key",
+            forget_gate_parameter_count=((2 * config.model.hidden_size + 2)
+                                         * config.model.num_layers * config.model.num_heads),
+        )
     if gate_per_order:
         identity["attention_forget_gate_per_order"] = True
         identity["forget_gate_parameter_count"] *= degree + 1
@@ -432,7 +442,11 @@ def attention_identity(config) -> dict:
             f"sum_(i<=t) sum_(r=0..{degree}) c_r s_ti^r exp(-(t-i) lambda_r) v_i; lambda_r = exp(A_log_r) "
             f"softplus(dt_bias_r), read from no token; learned c ({sharing}) initialized at {initialized}; "
             "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized by duplicating "
-            "the shared gate" if input_free_gate else (
+            "the shared gate" if input_free_gate else
+            f"sum_(i<=t) sum_(r=0..{degree}) c_r s_ti^r exp(-(t-i) lambda_tir) v_i; lambda_tir = exp(A_log_r) "
+            f"softplus(x_t w_query_r + x_i w_key_r + dt_bias_r); learned c ({sharing}) initialized at {initialized}; "
+            "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized by duplicating "
+            "the shared gate; x is the pre-attention RMSNorm activation" if static_query_key_gate else (
                 # Each order's own cumulative decay, prod_(j=i+1..t) alpha_jr = exp(L_tr - L_ir).
                 f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r prod_(j=i+1..t) alpha_jr v_i; "
                 "log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r)"
@@ -444,7 +458,7 @@ def attention_identity(config) -> dict:
                 "; c_r uses the configured query-only coefficient generator and factorial scales; "
                 "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
                 "by duplicating the shared gate; x is the pre-attention RMSNorm activation"))
-    if forget_gate and not query_conditioned and not input_free_gate:
+    if forget_gate and not query_conditioned and not input_free_gate and not static_query_key_gate:
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
         # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
@@ -1352,8 +1366,13 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
         if getattr(config.model, "attention_forget_gate", False):
-            # Static coefficients take only the input-free gate: its rates and half-lives per layer, head (and order).
-            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers, conditioning="none")
+            # Static coefficients take the input-free gate, or the per-order query-key gate: rates and half-lives
+            # per layer, head and order.
+            gate_conditioning = getattr(config.model, "attention_forget_gate_conditioning", "query")
+            coefficient_report["forget_gate"] = (
+                forget_gate_report(params, raw_layers, conditioning="none") if gate_conditioning == "none" else
+                forget_gate_report(params, raw_layers, conditioning=gate_conditioning,
+                                   mode=getattr(config.model, "attention_forget_gate_mode", "cumulative")))
             if not coefficient_report["forget_gate"]["finite"]:
                 issues.append("Nonfinite forget gate parameters or decay")
     elif has_fixed_polynomial(config.model):

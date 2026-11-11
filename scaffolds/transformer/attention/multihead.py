@@ -56,6 +56,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_normalization=config.attention_normalization,
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
+        attention_coefficient_parameterization=config.attention_coefficient_parameterization,
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
@@ -103,6 +104,7 @@ class MultiHeadAttention(nnx.Module):
         attention_fixed_square_factors: tuple[float, ...] | None = None,
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
+        attention_coefficient_parameterization: str = "direct",
         attention_coefficient_activation: str = "identity",
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
@@ -215,17 +217,18 @@ class MultiHeadAttention(nnx.Module):
         # positional encoding on the blocked backend, or with PaTH on either PaTH backend; the
         # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic. The
         # query-key endpoint gate applies to all three, in the query-distance mode. Static
-        # coefficients take only the input-free query-distance gate (conditioning none), whose rate
-        # reads no token; they then run the query-coefficient decay operation.
+        # coefficients take the input-free query-distance gate (conditioning none), whose rate reads
+        # no token, or the per-order query-key gate; they then run the query-coefficient decay operation.
         input_free_gate = attention_forget_gate_conditioning == "none"
         exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
                             and attention_coefficient_conditioning == "static" and not input_free_gate)
-        polynomial_gate = ((attention_coefficient_conditioning == "query"
-                            and attention_coefficient_activation != "identity") if not input_free_gate else
-                           (attention_coefficient_conditioning == "static" and not attention_normalization
-                            and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
-                            and attention_fixed_coefficients is None and attention_fixed_square_factors is None
-                            and attention_coefficient_orders is None and attention_kernel_basis == "polynomial"))
+        static_gate_polynomial = (attention_coefficient_conditioning == "static" and not attention_normalization
+                                  and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
+                                  and attention_fixed_coefficients is None and attention_fixed_square_factors is None
+                                  and attention_coefficient_orders is None and attention_kernel_basis == "polynomial")
+        polynomial_gate = (static_gate_polynomial if input_free_gate else
+                           (attention_coefficient_conditioning == "query" and attention_coefficient_activation != "identity")
+                           or (static_gate_polynomial and attention_forget_gate_conditioning == "query_key"))
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and (
@@ -315,6 +318,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_orders = attention_coefficient_orders
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
+        self.attention_coefficient_parameterization = attention_coefficient_parameterization
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
         if (attention_coefficient_amplitude_scale != "none"
@@ -514,6 +518,10 @@ class MultiHeadAttention(nnx.Module):
                     readout_scale=self.attention_coefficient_readout_scale,
                     orders=self.attention_coefficient_orders, gate_kernel=gate_kernel, gate_bias=gate_bias,
                     gate_log_rate=gate_log_rate)
+                if self.attention_coefficient_parameterization == "sum_of_squares":
+                    from scaffolds.transformer.attention.nonnegative_polynomial import query_square_coefficients
+
+                    effective_coefficients = query_square_coefficients(effective_coefficients, self.attention_degree)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
@@ -593,13 +601,15 @@ class MultiHeadAttention(nnx.Module):
                 kernel_coefficient_activation = "tanh"
                 if key_factors is not None:
                     parameters["key_polynomial_factors"] = key_factors
-        if self.attention_forget_gate and self.attention_forget_gate_conditioning == "none" and query_coefficients is None:
-            # Static coefficients under the input-free gate run the query-coefficient decay operation
+        if (self.attention_forget_gate and query_coefficients is None and self.attention_degree is not None
+                and self.attention_coefficient_conditioning == "static"
+                and self.attention_forget_gate_conditioning in ("none", "query_key")):
+            # Static coefficients under the input-free or query-key gate run the query-coefficient decay operation
             # with every query's coefficients equal; broadcasting sums the per-query gradients back to
             # the per-head coefficients, as the log decay's broadcast does to A_log and dt_bias.
             represented = parameters.pop("polynomial_coefficients", None)
             if represented is None:
-                raise ValueError("The input-free gate requires learned static coefficients")
+                raise ValueError("A static-coefficient gate requires learned static coefficients")
             parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
                 represented.astype(jnp.float32), (batch, seq_len, self.num_heads, self.attention_degree + 1))
             kernel_coefficient_activation = "tanh"

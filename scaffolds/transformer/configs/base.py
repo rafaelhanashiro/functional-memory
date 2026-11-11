@@ -194,7 +194,9 @@ class ModelConfig:
     attention_kernel_basis: Literal["polynomial", "bspline"] = "polynomial"
     attention_spline_knots: tuple[float, ...] | None = None
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
-    # (even m, row-normalized only), so the kernel is nonnegative by construction;
+    # (even m; normalized static coefficients, or unnormalized tanh query coefficients, whose
+    # factors are generated per query and expanded to c_r(x_t)), so the kernel is nonnegative
+    # by construction;
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
     # 1 + b_1 s + ... + b_m s^m, so the weights are p_a(s) / sum_j p_b(s_j).
     attention_coefficient_parameterization: Literal["direct", "sum_of_squares", "rational"] = "direct"
@@ -203,7 +205,8 @@ class ModelConfig:
     # "linear" starts the numerator at s and the denominator at 1 (a_1 = 1, b_0 = 1,
     # all other coefficients 0), so a rational kernel starts at linear attention
     # divided by the number of visible keys. Not available with sum_of_squares.
-    attention_coefficient_initialization: Literal["taylor", "linear"] = "taylor"
+    # "hermite" starts tanh query coefficients at exp(1/2) sum_{n<=m} He_n(s) / n!.
+    attention_coefficient_initialization: Literal["taylor", "linear", "hermite"] = "taylor"
     # Rational kernels only: the denominator's degree (null: attention_degree) and form.
     # "direct" learns b_1..b_d of 1 + sum_r b_r s^r; "sum_of_squares" (even d) learns
     # u_1..u_k, w_1..w_k of (1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2, a nonnegative
@@ -276,8 +279,9 @@ class ModelConfig:
         """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
         query-conditioned unnormalized polynomial attention with an input-form query-distance
         forget gate (query or endpoint query-key rates), or learned static coefficients with an
-        input-free gate (the query-gate kernels with every query's coefficients and rates equal),
-        with RoPE or no positional encoding.
+        input-free gate (the query-gate kernels with every query's coefficients and rates equal)
+        or the per-order query-key gate (every query's coefficients equal), with RoPE or no
+        positional encoding.
         Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
         B300 refuses the per-order shapes it cannot hold when the model is traced
         (``query_degree_supported``).
@@ -287,10 +291,11 @@ class ModelConfig:
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
         input_free = self.attention_forget_gate_conditioning == "none"
-        coefficients = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
-                        and self.attention_coefficient_parameterization == "direct" if input_free else
-                        self.attention_coefficient_conditioning == "query"
-                        and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS))
+        static = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
+                  and self.attention_coefficient_parameterization == "direct")
+        query = (self.attention_coefficient_conditioning == "query"
+                 and self.attention_coefficient_activation in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS))
+        coefficients = static if input_free else query or (static and self.attention_forget_gate_conditioning == "query_key")
         return (self.attention_mechanism == "dot_product" and not self.attention_normalization
                 and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial"
                 and coefficients
@@ -484,13 +489,25 @@ class ModelConfig:
         if self.attention_coefficient_conditioning == "query_key" and self.attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if self.attention_coefficient_conditioning in ("query", "query_key"):
+            square_factors = self.attention_coefficient_parameterization == "sum_of_squares"
+            hermite_start = self.attention_coefficient_initialization == "hermite"
             if (self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
-                    or self.attention_coefficient_parameterization != "direct"
+                    or self.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
                     or self.attention_coefficient_sharing != "per_head"
                     or self.attention_degree is None or self.attention_degree < 1 or self.attention_normalization
-                    or self.attention_coefficient_initialization != "taylor"):
-                raise ValueError("Query-conditioned coefficients require unnormalized learned/direct "
-                                 "per_head polynomial attention with Taylor initialization")
+                    or self.attention_coefficient_initialization not in ("taylor", "hermite")):
+                raise ValueError("Query-conditioned coefficients require unnormalized learned per_head polynomial "
+                                 "attention, direct or sum-of-squares, with Taylor or Hermite initialization")
+            if (square_factors or hermite_start) and (
+                    self.attention_coefficient_conditioning != "query" or self.attention_coefficient_activation != "tanh"
+                    or self.attention_coefficient_readout != "diagonal" or self.attention_coefficient_orders is not None
+                    or self.attention_coefficient_gate != "none" or self.attention_coefficient_tanh_bias):
+                raise ValueError("Sum-of-squares factors and the Hermite start apply to diagonal tanh query coefficients "
+                                 "without selected orders, a coefficient gate, or an inner tanh bias")
+            if square_factors and (hermite_start or self.attention_degree % 2 or self.attention_coefficient_scale != "none"
+                                   or self.attention_coefficient_amplitude_scale != "none"):
+                raise ValueError("Sum-of-squares query coefficients require an even degree, a Taylor start, and no "
+                                 "factorial scale (b and a are relative to the Taylor factors)")
             if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
                 raise ValueError("Query-conditioned identity coefficients require degree-one attention")
         amplitude, spread = self.attention_coefficient_amplitude_initial, self.attention_coefficient_projection_initial_std
@@ -552,7 +569,10 @@ class ModelConfig:
                              and self.attention_coefficient_initialization == "taylor"
                              and self.attention_coefficient_orders is None
                              and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial")
-        gated_polynomial = static_polynomial if input_free else polynomial
+        # Learned static coefficients also take the per-order query-key gate, whose rates alone read the tokens.
+        query_key_static = (static_polynomial and self.attention_forget_gate_conditioning == "query_key"
+                            and self.attention_forget_gate_per_order is True)
+        gated_polynomial = static_polynomial if input_free else polynomial or query_key_static
         if not isinstance(self.attention_forget_gate_per_order, bool):
             raise ValueError("model.attention_forget_gate_per_order must be a boolean")
         if self.attention_forget_gate_per_order and (
@@ -668,13 +688,15 @@ class ModelConfig:
             self.attention_coefficient_orders = tuple(orders)
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
-        if self.attention_coefficient_initialization not in ("taylor", "linear"):
+        if self.attention_coefficient_initialization not in ("taylor", "linear", "hermite"):
             raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
         if self.attention_coefficient_initialization != "taylor":
             if self.attention_coefficients != "learned":
                 raise ValueError("model.attention_coefficient_initialization applies to learned polynomial coefficients only")
             if self.attention_coefficient_parameterization == "sum_of_squares":
                 raise ValueError("A sum-of-squares kernel cannot start at linear attention; use the taylor initialization")
+            if self.attention_coefficient_initialization == "hermite" and self.attention_coefficient_conditioning != "query":
+                raise ValueError("The Hermite start applies to tanh query-conditioned coefficients")
         if self.attention_coefficient_parameterization == "rational":
             if self.attention_coefficients != "learned":
                 raise ValueError("A rational kernel requires learned polynomial coefficients")
@@ -734,7 +756,7 @@ class ModelConfig:
                 raise ValueError("A sum-of-squares kernel requires learned polynomial coefficients or fixed square factors")
             if self.attention_degree is None or self.attention_degree < 2 or self.attention_degree % 2:
                 raise ValueError("A sum-of-squares kernel requires an even attention_degree >= 2")
-            if not self.attention_normalization:
+            if not self.attention_normalization and self.attention_coefficient_conditioning != "query":
                 raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0

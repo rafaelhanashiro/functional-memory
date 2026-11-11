@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2e25140c75db/config.yaml",
+    "sha256": "065c7297f2bb4af40710c13de5666fe4ddaa6d5b75ed6c5c76af6bf08a2e9e4e"
+  },
+  "label": "static-m8-per-order-query-key-gate-nope",
+  "name": "static-m8-per-order-query-key-gate-nope",
+  "record_schema_version": 1,
+  "run_id": "r2e25140c75db",
+  "status": "planned"
+}
