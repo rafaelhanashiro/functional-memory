@@ -311,8 +311,10 @@ production-shape pilot, observed central coefficient and query-amplitude updates
 validation, and exact checkpoint resumption before training starts.
 
 Home cluster: Kennel. Execution uses optimized blocked JAX causal strips with
-one B300 per independent run. Expected total runtime is about 10 hours static
-and 11–12 hours query, excluding queue wait, based on the same-shape spline runs.
+one B300 or H100 per independent run. H100 allocations receive their own acceptance
+before resuming an existing checkpoint. Expected full-run runtime on B300 is about
+10 hours static and 11–12 hours query, excluding queue wait; the matching spline
+backend benchmarks on H100 SXM are approximately 1.9 times slower.
 Submission uses available `standard`/`long` allowances before `sweep`; the records
 hold exact jobs, frozen source, acceptance outcomes, and monitoring provenance.
 Compare validation-best and terminal PPL separately on completion.

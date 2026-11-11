@@ -1181,17 +1181,20 @@ The scaled binomial-quartic comparison uses `ra4c3ada624af` (static) and
 The [spline topic](results/exploratory/spline_attention/README.md) records its
 exact coefficients, controls, unchanged scientific settings, and qualification.
 Home cluster: Kennel. Branch `codex/spline-binomial-init`, worktree
-`worktrees/spline-binomial-init`. After checking live allowances and committing
-frozen inputs, each independent one-B300 job uses an available `standard` slot:
+`worktrees/spline-binomial-init`. Each independent job accepts one B300 or H100
+and uses an available `standard` slot after checking live allowances. Resumptions
+use the frozen launch commit below and the existing checkpoint; acceptance runs
+on the allocated GPU type before training resumes. Follow `CLUSTERS.md` for
+unavailable nodes and hardware exclusions.
 
 ```bash
 for run in ra4c3ada624af r78fa0d682f44; do
-  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba,mastiff --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_binomial_acceptance \
-    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+    "experiments/transformer_pp/runs/$run/config.yaml" 87c6a91a9f63d6f986d3bb1cccad79232dab81af 1 B300,H100
 done
 ```
 
