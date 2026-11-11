@@ -678,6 +678,21 @@ def test_blocked_score_bias_recipes_qualify_the_strips_and_no_kernel(mode, gated
     assert "pytestmark = pytest.mark.gpu" in module and "mosaic" not in module.lower()
 
 
+@pytest.mark.parametrize("cpu", (True, False), ids=("cpu", "gpu"))
+@pytest.mark.parametrize("implementation", ("scan", None), ids=("scan", "unset"))
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+def test_blocked_score_bias_recipes_on_the_scan_are_refused(cpu, implementation, gated):
+    """The scan, the score biases' reference and the field's default, has no GPU qualification for training
+    them: both stages refuse such a recipe instead of qualifying the strips, which it would not run."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    model = {**_score_bias_model("query_key", gated), "attention_backend": "blocked"}
+    if implementation is not None:
+        model["attention_blocked_implementation"] = implementation
+    with pytest.raises(ValueError, match="train on its causal strips.*attention_blocked_implementation: scan"):
+        preflight.test_paths(spec, {"model": model, "train": {"gradient_event_capture": True}},
+                             resolved_backend="blocked", cpu=cpu)
+
+
 @pytest.mark.parametrize("capture", (False, True))
 def test_gradient_event_capture_requires_its_cpu_tests(capture):
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())

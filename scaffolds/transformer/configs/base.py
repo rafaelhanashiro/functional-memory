@@ -172,9 +172,9 @@ class ModelConfig:
     # b_r + a_r tanh(x_t u_r), "query_key" b_r + a_r tanh(x_t u_r + x_i v_r), per layer/head/order,
     # starting at b = 0, a = 1, u = v = 0 (no random draws); u and v decay. With no forget gate or
     # the per-order query-key endpoint gate (each order's gate multiplies its own shifted power).
-    # Trains on H100's Mosaic score-bias kernels or on the blocked backend (its causal strips for
-    # fresh recipes, which run on any GPU); the blocked scan is also their reference for tests and
-    # diagnostics. Every other backend rejects them.
+    # Trains on H100's Mosaic score-bias kernels or on the blocked backend's causal strips, which run
+    # on any GPU; the blocked scan is their reference for tests and diagnostics, and allocation and
+    # acceptance refuse it for training. Every other backend rejects them.
     attention_score_bias: Literal["none", "static", "query", "query_key"] = "none"
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
@@ -925,9 +925,10 @@ def _score_bias_problem(model) -> str | None:
 
 def _validate_score_bias(model: ModelConfig) -> None:
     """Per-degree score biases (attention/score_bias.py) train on H100's Mosaic score-bias kernels or on the
-    blocked backend, scan or causal strips (allocation gives fresh blocked recipes the strips,
-    fresh_recipe_uses_blocked_strips); the blocked scan is also their reference for tests and diagnostics.
-    No other backend evaluates the shifted powers, so every other backend is rejected."""
+    blocked backend's causal strips (allocation gives fresh blocked recipes the strips,
+    fresh_recipe_uses_blocked_strips). The blocked scan stays valid here as their reference for tests and
+    diagnostics; allocation and acceptance refuse it for training, since only the strips have a GPU
+    qualification. No other backend evaluates the shifted powers, so every other backend is rejected."""
     from scaffolds.transformer.attention.score_bias import MODES
 
     mode = model.attention_score_bias

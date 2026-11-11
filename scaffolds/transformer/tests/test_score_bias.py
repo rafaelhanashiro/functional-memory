@@ -746,8 +746,9 @@ def test_backend_resolution_never_falls_back():
 def test_records_create_allocates_score_biases_on_mosaic_or_the_strips(tmp_path, monkeypatch, capsys, backend,
                                                                        implementation):
     """A fresh score-bias recipe trains on the Mosaic kernels or the blocked backend's causal strips, which a
-    blocked recipe that leaves the implementation unset receives; the blocked scan needs its explicit opt-out
-    flag, and validation refuses every other backend before allocation."""
+    blocked recipe that leaves the implementation unset receives; the blocked scan, which acceptance refuses
+    for score biases, is refused even with the scan's opt-out flag, and validation refuses every other backend
+    before allocation."""
     from scaffolds.records.__main__ import main
 
     recipe = yaml.safe_load((RUNS / "r25fffc16c2f3" / "config.yaml").read_text())
@@ -764,10 +765,14 @@ def test_records_create_allocates_score_biases_on_mosaic_or_the_strips(tmp_path,
             main()
         assert not study.exists()
     elif (backend, implementation) == ("blocked", "scan"):
-        with pytest.raises(SystemExit) as failure:
-            main()
-        assert failure.value.code == 2 and "causal strips" in capsys.readouterr().err
-        assert not study.exists()
+        for flags in ((), ("--allow-scan-blocked-attention",)):
+            monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source),
+                                             *flags])
+            with pytest.raises(SystemExit) as failure:
+                main()
+            error = capsys.readouterr().err
+            assert failure.value.code == 2 and "the only blocked computation with a GPU qualification" in error
+            assert not study.exists()
     else:
         main()
         run = Path(capsys.readouterr().out.strip())

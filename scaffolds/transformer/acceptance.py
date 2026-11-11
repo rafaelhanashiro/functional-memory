@@ -153,13 +153,20 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # requeue restoration; its data-parallel case runs in the two-device stage.
         paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
-    if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked" and not cpu:
-        # Per-degree score biases on the blocked backend: fresh recipes train on its causal strips, plain JAX
-        # on any GPU. The GPU stage qualifies that computation: the strips with every score-bias mode on both
-        # backbones at production precision against host FP64. The backbone's other GPU cases qualify
-        # kernels these runs never train on (the fused Triton and Mosaic kernels, and the scan), and some
-        # refuse or skip on GPUs those kernels are not qualified on, which would fail acceptance.
-        return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
+    if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked":
+        implementation = model.get("attention_blocked_implementation", "scan")
+        if implementation != "strips":
+            # The scan is the score biases' reference; no GPU test qualifies it for training them, so neither
+            # stage may pass a recipe that would train on it.
+            raise ValueError("Per-degree score biases on the blocked backend train on its causal strips, the only "
+                             "blocked computation with a GPU qualification for them; this recipe sets "
+                             f"attention_blocked_implementation: {implementation}")
+        if not cpu:
+            # The GPU stage qualifies the strips, plain JAX on any GPU: every score-bias mode on both backbones
+            # at production precision against host FP64. The backbone's other GPU cases qualify kernels these
+            # runs never train on (the fused Triton and Mosaic kernels, and the scan), and some refuse or skip
+            # on GPUs those kernels are not qualified on, which would fail acceptance.
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
     if model.get("attention_forget_gate_per_order", False):
         cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
         if cpu or not cumulative:

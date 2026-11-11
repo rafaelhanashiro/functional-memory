@@ -681,9 +681,10 @@ own shift:
   or the endpoint gate, with a row shift for `static` and `query` or a pair shift for `query_key`).
   Every other GPU refuses those kernels before tracing one, and `ModelConfig.mosaic_score_bias_problem`
   names a shape H100's shared memory cannot hold. `blocked` (`backends/reference.py`) trains them on any
-  GPU with its causal strips, which `scaffolds.records create` gives a fresh blocked recipe (the scan
-  only with `--allow-scan-blocked-attention`); the scan is also their reference for CPU tests,
-  acceptance's initialization check, and diagnostics. Both form each shifted power directly (the
+  GPU with its causal strips, which `scaffolds.records create` gives a fresh blocked recipe. The scan is
+  their reference for CPU tests and diagnostics, but no GPU test qualifies it for training them:
+  `scaffolds.records create` (also with `--allow-scan-blocked-attention`) and acceptance's test
+  selection refuse a score-bias recipe on the scan. Both form each shifted power directly (the
   kernels inside their causal tiles, the blocked backend one `[batch, heads, queries, keys]` block per
   order), never expanding it into powers of `s`, which would change how the orders cancel. `auto`,
   `fused`, and the other backends reject these recipes, and every other attention path raises on
