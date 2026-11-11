@@ -322,7 +322,9 @@ class ModelConfig:
 
     def mosaic_score_bias_problem(self) -> str | None:
         """Why the Mosaic score-bias kernels cannot run this recipe, or None. They take Q/K widths 8-128,
-        value width 64, and degree 1-12 on H100; their entry points refuse other GPUs before tracing."""
+        value width 64, and degree 1-12 on H100, where their forward, dQ and dK/dV kernels must fit in
+        shared memory (``score_bias_supported``); their entry points refuse other GPUs before tracing.
+        Backend resolution checks the sequence length (a multiple of 128 rows)."""
         from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS
 
         if getattr(self, "attention_score_bias", "none") == "none":
@@ -332,6 +334,20 @@ class ModelConfig:
             problem = f"Q/K width {self.qk_head_dim} is not one of {WIDTHS}"
         if problem is None and self.value_head_dim != VALUE_WIDTH:
             problem = f"value width {self.value_head_dim} is not {VALUE_WIDTH}"
+        if problem is None:
+            from scaffolds.transformer.attention.backends.mosaic.score_bias import (
+                HOPPER_TIME_MULTIPLE, SHIFT_OF_MODE, implementation_name, score_bias_supported,
+            )
+
+            gate = "endpoint" if self.attention_forget_gate else "none"  # the per-order query-key gate
+            shift = SHIFT_OF_MODE.get(self.attention_score_bias)  # row (static, query) or pair (query_key)
+            # Shared memory does not depend on the length; ask at the recipe's length in whole 128-row tiles.
+            rows = -(-self.max_seq_len // HOPPER_TIME_MULTIPLE) * HOPPER_TIME_MULTIPLE
+            if shift is None:
+                problem = f"no kernel takes score bias {self.attention_score_bias!r}"
+            elif not score_bias_supported(self.attention_degree, self.qk_head_dim, rows, gate=gate, shift=shift):
+                problem = (f"H100's {implementation_name(gate, shift)} kernels do not hold degree "
+                           f"{self.attention_degree} at Q/K width {self.qk_head_dim} in shared memory")
         return problem
 
     def path_fused_supported(self) -> bool:

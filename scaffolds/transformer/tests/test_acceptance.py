@@ -565,3 +565,61 @@ def test_spline_production_recipe_selects_spline_strips_and_query_tests():
     assert spec.required_backend == "blocked"
     gpu = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=False)
     assert preflight.SPLINE_ATTENTION_TESTS in gpu and preflight.BLOCKED_STRIPS_TESTS not in gpu
+
+
+def _score_bias_model(mode, gated):
+    model = {"attention_degree": 8, "attention_normalization": False, "attention_coefficients": "learned",
+             "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh",
+             "attention_score_bias": mode}
+    if gated:
+        model.update(attention_forget_gate=True, attention_forget_gate_mode="query_distance",
+                     attention_forget_gate_conditioning="query_key", attention_forget_gate_per_order=True,
+                     positional_encoding="none")
+    return model
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("mode", ("static", "query", "query_key"))
+def test_score_bias_recipes_require_their_checks_beside_the_backbones(mode, gated):
+    """CPU: the score-bias reference, model and lowering checks and, with capture on, the gradient-event
+    checks; GPU: the H100 kernels and attention_core's dispatch to them. The backbone keeps its query and
+    per-order kernel checks."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    config = {"model": _score_bias_model(mode, gated), "train": {"gradient_event_capture": True}}
+    cpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    gpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False)
+    assert {preflight.SCORE_BIAS_TESTS, preflight.SCORE_BIAS_LOWERING_TESTS, preflight.GRADIENT_EVENT_TESTS} <= set(cpu)
+    assert preflight.MOSAIC_SCORE_BIAS_TESTS not in cpu
+    assert {preflight.MOSAIC_SCORE_BIAS_TESTS, preflight.SCORE_BIAS_TESTS} <= set(gpu)
+    assert preflight.SCORE_BIAS_LOWERING_TESTS not in gpu and preflight.GRADIENT_EVENT_TESTS not in gpu
+    for paths in (cpu, gpu):
+        assert preflight.QUERY_TANH_POLYNOMIAL_TESTS in paths
+        assert (preflight.PER_ORDER_DECAY_TESTS in paths) is gated
+    without = {"model": _score_bias_model("none", gated), "train": {"gradient_event_capture": False}}
+    for on_cpu in (True, False):
+        paths = preflight.test_paths(spec, without, resolved_backend="mosaic", cpu=on_cpu)
+        assert not {preflight.SCORE_BIAS_TESTS, preflight.SCORE_BIAS_LOWERING_TESTS, preflight.MOSAIC_SCORE_BIAS_TESTS,
+                    preflight.GRADIENT_EVENT_TESTS} & set(paths)
+
+
+@pytest.mark.parametrize("capture", (False, True))
+def test_gradient_event_capture_requires_its_cpu_tests(capture):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    config = {"model": {}, "train": {"gradient_event_capture": capture}}
+    cpu, gpu = (preflight.test_paths(spec, config, resolved_backend="blocked", cpu=on_cpu) for on_cpu in (True, False))
+    assert (preflight.GRADIENT_EVENT_TESTS in cpu) is capture and preflight.GRADIENT_EVENT_TESTS not in gpu
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("mode,shift", (("static", "row"), ("query", "row"), ("query_key", "pair")))
+def test_score_bias_gpu_tests_run_at_their_kernels_precision(monkeypatch, mode, shift, gated):
+    """The precision comes from the score-bias kernel family that trains (gate and shift), as its entry points
+    choose it."""
+    from scaffolds.transformer.attention.backends.mosaic import api, score_bias
+
+    config = {"model": _score_bias_model(mode, gated)}
+    assert preflight.mosaic_test_options(config, "mosaic") == ("--mosaic-precision", "bf16")
+    asked = []
+    monkeypatch.setattr(api, "default_precision", lambda family, degree: asked.append((family, degree)) or "bf16x3")
+    assert preflight.mosaic_test_options(config, "mosaic") == ("--mosaic-precision", "bf16x3")
+    assert asked == [(score_bias.score_bias_family("endpoint" if gated else "none", shift), 8)]

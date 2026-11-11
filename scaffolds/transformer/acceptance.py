@@ -100,6 +100,10 @@ POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_
 POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
 CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
 CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
+SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_score_bias.py"
+SCORE_BIAS_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_bias_lowering.py"
+MOSAIC_SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_mosaic_score_bias.py"
+GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
 @dataclass(frozen=True)
@@ -138,6 +142,10 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
     if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
         paths.append(COEFFICIENT_RELEASE_TESTS)
+    if cpu and config.get("train", {}).get("gradient_event_capture", False):
+        # The capture rule, exact pre-update states with training unchanged, the retention cap, and
+        # requeue restoration; its data-parallel case runs in the two-device stage.
+        paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
     if model.get("attention_forget_gate_per_order", False):
         cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
@@ -148,6 +156,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # Each order's own cumulative decay on the blocked backend: FP64 references on CPU, and
             # the strips' production precision at degrees four and eight on the GPU.
             paths.append(PER_ORDER_CUMULATIVE_TESTS)
+    if model.get("attention_score_bias", "none") != "none":
+        # Per-degree score biases train only on the H100 Mosaic score-bias kernels. CPU: the FP64 reference
+        # with every gradient, model operands, starts, refusals and diagnostics, and those kernels' exact
+        # shared memory and tile mathematics lowered on the host. GPU: the kernels against dense FP64, and
+        # attention_core's dispatch to them (the GPU case of test_score_bias.py).
+        paths.extend((SCORE_BIAS_TESTS, SCORE_BIAS_LOWERING_TESTS) if cpu else
+                     (MOSAIC_SCORE_BIAS_TESTS, SCORE_BIAS_TESTS))
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -400,7 +415,15 @@ def mosaic_test_options(config: dict, resolved_backend: str) -> tuple[str, ...]:
         return ()
     from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 
-    family = "taylor" if model.get("attention_normalization", True) else "query"
+    if model.get("attention_score_bias", "none") != "none":
+        # The score-bias kernel family that trains: no gate or the per-order endpoint gate, with a row
+        # shift (static and query biases) or a pair shift (query-key biases).
+        from scaffolds.transformer.attention.backends.mosaic.score_bias import SHIFT_OF_MODE, score_bias_family
+
+        family = score_bias_family("endpoint" if model.get("attention_forget_gate", False) else "none",
+                                   SHIFT_OF_MODE[model["attention_score_bias"]])
+    else:
+        family = "taylor" if model.get("attention_normalization", True) else "query"
     return ("--mosaic-precision", default_precision(family, model["attention_degree"]))
 
 

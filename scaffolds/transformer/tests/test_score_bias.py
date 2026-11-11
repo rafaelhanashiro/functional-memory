@@ -570,6 +570,29 @@ def test_gated_mosaic_recipes_name_their_score_bias_problem(changes, reason):
     assert reason in str(failure.value)
 
 
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("mode", MODES)
+def test_mosaic_recipes_must_fit_their_kernels_shared_memory(mode, gated, monkeypatch):
+    """A Mosaic recipe asks the H100 kernels of its gate and shift whether they hold its degree and width in
+    shared memory (at its length in whole 128-row tiles), and one they cannot hold is rejected by name."""
+    fits, calls = [True], []
+
+    def supported(degree, width, time, *, gate, shift):
+        calls.append((degree, width, time, gate, shift))
+        return fits[0]
+
+    monkeypatch.setattr(mosaic_score_bias, "score_bias_supported", supported)
+    gate, shift = "endpoint" if gated else "none", "pair" if mode == "query_key" else "row"
+    config = _config(mode, gated=gated, attention_backend="mosaic", qk_head_dim=64, value_head_dim=64)
+    assert config.model.mosaic_score_bias_supported() and calls[-1] == (4, 64, 128, gate, shift)
+    fits[0] = False
+    with pytest.raises(ValueError, match="score bias") as failure:
+        _config(mode, gated=gated, attention_backend="mosaic", qk_head_dim=64, value_head_dim=64)
+    assert (f"H100's {mosaic_score_bias.implementation_name(gate, shift)} kernels do not hold degree 4 at Q/K "
+            "width 64 in shared memory") in str(failure.value)
+    validate_config(_config(mode, gated=gated))  # the blocked reference has no shared-memory bound
+
+
 def test_rejected_training_options_and_accepted_backbones():
     for gated in (False, True):
         for mode in MODES:
