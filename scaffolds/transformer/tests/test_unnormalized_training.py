@@ -194,8 +194,8 @@ def test_nonfinite_loss_between_log_events_persists_failure(tmp_path, monkeypatc
     actual_step = loop.accumulated_train_step
 
     def nonfinite_second_step(*args, **kwargs):
-        state, loss, norm = actual_step(*args, **kwargs)
-        return state, jnp.nan if int(state.step) == 2 else loss, norm
+        state, loss, *rest = actual_step(*args, **kwargs)
+        return state, jnp.nan if int(state.step) == 2 else loss, *rest
 
     monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_second_step)
     with pytest.raises(FloatingPointError, match="at step 2"):
@@ -213,8 +213,8 @@ def test_nonfinite_gradient_with_finite_loss_persists_failure(tmp_path, monkeypa
     actual_loss_and_grads = loop.loss_and_grads
 
     def nonfinite_gradient(*args, **kwargs):
-        loss, grads = actual_loss_and_grads(*args, **kwargs)
-        return loss, jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), grads)
+        loss, grads, *statistics = actual_loss_and_grads(*args, **kwargs)
+        return loss, jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), grads), *statistics
 
     monkeypatch.setattr(loop, "loss_and_grads", nonfinite_gradient)
     with pytest.raises(FloatingPointError, match="optimizer update"):
