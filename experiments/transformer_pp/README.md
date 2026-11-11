@@ -1536,3 +1536,124 @@ sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 
   --output=experiments/transformer_pp/runs/r1736cf7a019c/training.log \
   experiments/transformer_pp/diagnose_gate_spikes.sbatch r1736cf7a019c "$(git rev-parse HEAD)"
 ```
+
+## Per-degree score biases
+
+Added 2026-11-11. Does giving each polynomial order its own signed shift of the score improve the
+degree-eight tanh query polynomial, with RoPE and with per-order query–key distance gates? The
+question, controls and results are in the
+[score_biases topic](results/exploratory/score_biases/README.md).
+
+With `s_ti = Q_t K_i^T / sqrt(d_K)` and the controls' coefficient generator `c_r(x_t)` (its
+factorial scales unchanged), every order `r = 1..8` reads its own biased score; order zero is
+unchanged:
+
+    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..8) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+    o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
+
+`G_r = 1` with RoPE (control `r25fffc16c2f3`), or each order's endpoint gate
+`exp(-(t - i) exp(A_r) softplus(w_q,r . x_t + w_k,r . x_i + dt_bias_r))` without positional encoding
+(control `r227b0ed7c605`). `x_t` is the block's attention input after its RMSNorm. Each layer, head
+and order has its own shift:
+
+| Mode | `beta_r(t,i)` | Added arrays | Added parameters |
+| --- | --- | --- | ---: |
+| static | `b_r` | `b` [15, 14, 8] | 1,680 |
+| query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [15, 14, 8]; `u` [15, 14, 8, 896] | 1,508,640 |
+| query_key | `b_r + a_r tanh(u_r . x_t + v_r . x_i)` | `b`, `a`; `u`, `v` [15, 14, 8, 896] | 3,013,920 |
+
+`b` starts at 0, `a` at 1, and `u` and `v` at 0, so every shift starts at exactly zero: each run
+starts as its control's function, and `u` and `v` receive gradients from the first update. Nothing is
+drawn for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to
+`u` and `v` only, never to `b` or `a`; every other optimizer group, the coefficient-`W` and gate decay,
+and the output RMSNorm are the controls'. The shifts are signed, and so are the coefficients: a
+positive shifted score does not imply a positive weight. The kernels form each shifted power directly
+in the causal tiles, never by expanding it into powers of `s`, which would change how the orders
+cancel.
+
+| Run | Label | Control | Mode | Parameters |
+| --- | --- | --- | --- | ---: |
+| `rb70f9e57190f` | query-m8-dk64-w-decay-score-bias-static | `r25fffc16c2f3` | static | 200,152,486 |
+| `r891870ef80e9` | query-m8-dk64-w-decay-score-bias-query | `r25fffc16c2f3` | query | 201,659,446 |
+| `r3b1619f8a901` | query-m8-dk64-w-decay-score-bias-query-key | `r25fffc16c2f3` | query_key | 203,164,726 |
+| `ra2edcdc5ab60` | query-m8-per-order-query-key-gate-nope-wd-score-bias-static | `r227b0ed7c605` | static | 203,543,146 |
+| `rbf5d3bd6059c` | query-m8-per-order-query-key-gate-nope-wd-score-bias-query | `r227b0ed7c605` | query | 205,050,106 |
+| `r75dccfcf072e` | query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key | `r227b0ed7c605` | query_key | 206,555,386 |
+
+The controls have 200,150,806 and 203,541,466 parameters. Each recipe is its control's loaded recipe
+with `model.attention_score_bias` set and `train.gradient_event_capture: true` (the other capture
+fields explicit at their defaults), and its own labels and paths. Everything else is the control's:
+the 1× budget (7,570 updates of 256 × 2,048 tokens), seed 42, warmup and cosine schedule, QK
+RMSNorm with per-head scales, initialization, and `model.attention_backend: mosaic`.
+
+[`score_bias_acceptance`](score_bias_acceptance.py) chooses the control by the recipe's forget gate
+and pins each control's recipe by SHA256 and its seed-42 initialization by fingerprint and parameter
+count. It requires a score-bias mode, `attention_backend: mosaic`, and capture on with the default
+policy; with the mode set to `none` and the capture fields and execution locations and labels
+removed, the recipe must equal its control's. At initialization each mode's arrays must have their
+shapes and exact FP32 starts (`b = 0`, `a = 1`, `u = v = 0`), the count must be the control's plus
+the mode's additions, and removing the arrays must leave the control's fingerprint; the shared check
+then compares every backbone array with the softmax control. Acceptance refuses any allocation but
+H100 before it starts, and its pilot must resolve the Mosaic backend. Before training it runs
+`tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
+the adapter's tests on CPU, and `tests/test_mosaic_score_bias.py` with the GPU case of
+`tests/test_score_bias.py` on the GPU at BF16, beside the backbone's query (and per-order gate)
+kernel checks; a skipped test fails acceptance.
+
+**Gradient-event capture** ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)),
+fixed in the recipes before launch:
+
+- Rule: update `k > 455` (after warmup) is an event when its pre-clip global gradient norm `g` is
+  finite, at least 20 earlier norms are known, and `g > max(1, 5 × median)` of the previous (up to)
+  100 norms. The history includes warmup updates and earlier events and resumes with the checkpoint.
+- Capture: the exact state the update started from (parameters, Adam moments, step `k - 1`), saved
+  synchronously at `runs/<run>/checkpoints/gradient_events/<k>/<k-1>/default`, with the event's record
+  as `<k>/event.json`. A nonfinite update also keeps its pre-update state, outside the cap.
+- Retention: at most three states per run: the first event and the two largest later events by norm
+  (a larger later event replaces the smaller kept one). Every trigger is still logged.
+- Log: `runs/<run>/gradient_events.jsonl` records each event's update and pre-update step, loss,
+  pre-clip norm, clip scale, running median and threshold, learning rate, sequence range and
+  microbatch layout, batch and RNG SHA256, seed and RNG derivation, telemetry, device, backend and
+  kernel implementation, source commit, frozen-execution hash, attempt, the pre-update state's SHA256,
+  and whether it was kept. Kept captures are retained with the run and listed in `record.json` under
+  `diagnostic_checkpoints`, each with its SHA256 and justification.
+
+**Diagnostics.** Validation-time statistics per layer, head and order (the bias parameters; shift and
+shifted-score moments, extremes, negative and near-zero fractions; shifted-score histograms on
+[-16, 16]; each order's term magnitude and the cancellation across orders) come from the
+forward-only JAX reference of the same shifted kernel, on the first held-out sequence, outside the
+validation loss and without gradients (`coefficients.score_biases` in each validation's
+`attention_diagnostics`). Training and the acceptance pilots run only the Mosaic kernels; the blocked
+backend never trains these runs.
+
+**Hardware.** H100 only: the Mosaic score-bias kernels exist for H100, and B300 refuses them before
+tracing a kernel. The RoPE control `r25fffc16c2f3` trained on B300 (`akita`), so runs 1–3 compare
+across GPU types and kernel implementations; the gated control `r227b0ed7c605` trained on an H100
+SXM (`dogo`). The jobs exclude the H100 PCIe node `mastiff` (about 1.5× slower) with the B300, A100,
+A6000 and B200 nodes. Home cluster: **Kennel**. These jobs have no scheduling dependencies on each
+other.
+
+The partition and time limit are not fixed here: they are chosen at submission from each run's
+measured H100 projection (the kernel benchmark, then acceptance's pilot, which refuses an
+allocation whose projected run exceeds its limit less two hours). For scale, the gated control
+trained at about 8.7 s per update on an H100 SXM (its logged throughput), about 18 hours for 7,570
+updates before evaluation and checkpoints, so its biased runs may need `long`. From the isolated
+`claude/score-biases` worktree, after committing the frozen execution set and recording the H100
+kernel qualification and benchmark, and checking live allowances:
+
+```bash
+submit() {  # run ID, partition, time limit (both from the measured projection)
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude=akita,mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit rb70f9e57190f '<partition>' '<time limit>'
+submit r891870ef80e9 '<partition>' '<time limit>'
+submit r3b1619f8a901 '<partition>' '<time limit>'
+submit ra2edcdc5ab60 '<partition>' '<time limit>'
+submit rbf5d3bd6059c '<partition>' '<time limit>'
+submit r75dccfcf072e '<partition>' '<time limit>'
+```

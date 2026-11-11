@@ -1,0 +1,128 @@
+question: Do per-degree signed score biases, (s_ti + beta_r)^r for orders r = 1..8,
+  improve the degree-eight tanh query polynomial with RoPE and with per-order query-key
+  distance gates?
+study: transformer_pp
+settings:
+  metric: held-out validation perplexity
+  report:
+  - validation-best
+  - terminal at update 7570
+  training_steps: 7570
+  training_context: 2048
+  global_batch_size: 256
+  seed: 42
+  degree: 8
+  kernel: W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..8) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+  gate: G_r = 1 (RoPE control) or exp(-(t-i) exp(A_r) softplus(w_q,r x_t + w_k,r x_i
+    + dt_bias_r)) (per-order query-key gate control, no positional encoding)
+  score_bias_modes:
+    static: beta_r = b_r
+    query: beta_r = b_r + a_r tanh(u_r x_t)
+    query_key: beta_r = b_r + a_r tanh(u_r x_t + v_r x_i)
+  initialization: b = 0, a = 1, u = v = 0 (zero shift); u and v decay, b and a do
+    not
+  allowed_differences:
+  - model.attention_score_bias
+  - train.gradient_event_capture and its policy fields (defaults)
+  backend: mosaic (H100 score-bias kernels); diagnostics on the forward-only blocked
+    reference
+  comparison_groups:
+    rope_w_decay:
+    - control_query_m8_rope_w_decay
+    - primary_query_m8_rope_w_decay_static_biases
+    - primary_query_m8_rope_w_decay_query_biases
+    - primary_query_m8_rope_w_decay_query_key_biases
+    per_order_query_key_gate_nope_w_decay:
+    - control_query_m8_per_order_query_key_gate_nope_w_decay
+    - primary_query_m8_per_order_query_key_gate_nope_w_decay_static_biases
+    - primary_query_m8_per_order_query_key_gate_nope_w_decay_query_biases
+    - primary_query_m8_per_order_query_key_gate_nope_w_decay_query_key_biases
+runs:
+- study: transformer_pp
+  run_id: rb70f9e57190f
+  role: primary_query_m8_rope_w_decay_static_biases
+  label: static score biases, query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb70f9e57190f/config.yaml
+      sha256: 37b5e0909095efba845a4793631193121dad9f7c3cf1b27d2e6d829e352c0486
+- study: transformer_pp
+  run_id: r891870ef80e9
+  role: primary_query_m8_rope_w_decay_query_biases
+  label: query score biases, query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r891870ef80e9/config.yaml
+      sha256: 580dc9acce5eacfa3d62f3768df826fef12d8492785f51656d26078d3dd617c5
+- study: transformer_pp
+  run_id: r3b1619f8a901
+  role: primary_query_m8_rope_w_decay_query_key_biases
+  label: query-key score biases, query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3b1619f8a901/config.yaml
+      sha256: d757bc1ffb2835d1e7a0b3d5566ed05f55082054186bf3f2a272041f1b5c08da
+- study: transformer_pp
+  run_id: ra2edcdc5ab60
+  role: primary_query_m8_per_order_query_key_gate_nope_w_decay_static_biases
+  label: static score biases, per-order query-key gate m = 8, NoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra2edcdc5ab60/config.yaml
+      sha256: 2a65552dd6376197cd556bb804ec1ab7b26153c1ff90d382fe73fac72dc66d78
+- study: transformer_pp
+  run_id: rbf5d3bd6059c
+  role: primary_query_m8_per_order_query_key_gate_nope_w_decay_query_biases
+  label: query score biases, per-order query-key gate m = 8, NoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rbf5d3bd6059c/config.yaml
+      sha256: 3eeaf3a9e0259a0c0684be3f7726794c862f45dff5bf584326b8e0bc9204727a
+- study: transformer_pp
+  run_id: r75dccfcf072e
+  role: primary_query_m8_per_order_query_key_gate_nope_w_decay_query_key_biases
+  label: query-key score biases, per-order query-key gate m = 8, NoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r75dccfcf072e/config.yaml
+      sha256: b6aab15fcb8770465f450f6cda0d6913e45d852e0f39ebcb5301041bcb4a63b7
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: control_query_m8_rope_w_decay
+  label: query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: r227b0ed7c605
+  role: control_query_m8_per_order_query_key_gate_nope_w_decay
+  label: per-order query-key gate m = 8, NoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/config.yaml
+      sha256: 799d743ade4f155bc2cae7c697812e870826bb6738ad25408ad13ddae420f1b7
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/metrics.jsonl
+      sha256: e8f8c35324cd8851eda67dd35e361f8ff1115c664a2f0210da1d637c2ba87202
+    completion.json:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/completion.json
+      sha256: c675072e59a5bf2abd57e9553cb39a9fff13f55df262ca820b00964d31f42f14
+    metadata.json:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/metadata.json
+      sha256: 3dd2233323487939520eaf23492d83b5196fca36e241c2bcf55629bb98c9ac90
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r227b0ed7c605/best_validation.json
+      sha256: 188d8356a6860ef972e64c6215886506404e7512553f0d9b854d5ca16aa4b57e
