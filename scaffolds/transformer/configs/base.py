@@ -896,6 +896,16 @@ class TrainConfig:
     wandb_group: str | None = None
     wandb_dir: Path | None = None
     wandb_mode: Literal["online", "offline", "disabled"] = "disabled"
+    # Event-triggered capture of the exact pre-update state when a post-warmup update's pre-clip
+    # gradient norm exceeds max(min_norm, factor x median of the previous `history` norms, once at
+    # least `min_history` exist). At most `max_states` states are retained: the first event and the
+    # largest later ones. Every trigger is logged (training/gradient_events.py).
+    gradient_event_capture: bool = False
+    gradient_event_factor: float = 5.0
+    gradient_event_min_norm: float = 1.0
+    gradient_event_history: int = 100
+    gradient_event_min_history: int = 20
+    gradient_event_max_states: int = 3
 
 
 @dataclass
@@ -957,6 +967,19 @@ def validate_config(config: Config) -> None:
         if continuation.parent_checkpoint and not continuation.preserve_all_parameters:
             raise ValueError("A continuation cannot introduce B-spline coefficients; only an identical-architecture "
                              "continuation (continuation.preserve_all_parameters) supports the bspline basis")
+    if not isinstance(train.gradient_event_capture, bool):
+        raise ValueError("train.gradient_event_capture must be a boolean")
+    if train.gradient_event_capture:
+        if not (math.isfinite(train.gradient_event_factor) and train.gradient_event_factor > 1.0):
+            raise ValueError("train.gradient_event_factor must be finite and greater than 1")
+        if not (math.isfinite(train.gradient_event_min_norm) and train.gradient_event_min_norm >= 0.0):
+            raise ValueError("train.gradient_event_min_norm must be finite and non-negative")
+        for name in ("gradient_event_history", "gradient_event_min_history", "gradient_event_max_states"):
+            value = getattr(train, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"train.{name} must be a positive integer")
+        if train.gradient_event_min_history > train.gradient_event_history:
+            raise ValueError("train.gradient_event_min_history cannot exceed train.gradient_event_history")
     if not isinstance(continuation.preserve_all_parameters, bool):
         raise ValueError("continuation.preserve_all_parameters must be a boolean")
     if continuation.parent_checkpoint:
