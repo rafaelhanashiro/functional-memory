@@ -712,7 +712,11 @@ def regenerate_index(study: str | Path) -> Path:
     """Write a byte-stable CSV from registered configs, records, and raw metrics.
 
     Missing legacy settings stay empty. No current model defaults are silently
-    applied to historical runs.
+    applied to historical runs, except in columns of settings that a later option
+    added to a mechanism, where a recipe without the field can only mean the
+    behavior that predates the option: the forget-gate mode, form, constant
+    rate, conditioning, rate activation, and per-order gates of gated recipes,
+    and ``attention_score_bias`` (``none``) of every model recipe.
     """
     study = _study_path(study)
     with _locked(study):
