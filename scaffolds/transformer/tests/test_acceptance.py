@@ -242,8 +242,55 @@ def test_production_acceptance_runs_required_gpu_tests_with_an_empty_adapter_lis
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     with pytest.raises(RuntimeError, match="stop after testing"):
         preflight._run(spec, args, experiment)
-    gpu_calls = [command for command, options in calls if options["env"]["JAX_PLATFORMS"] == "cuda"]
+    gpu_calls = [command for command, options in calls if options["env"]["JAX_PLATFORMS"] != "cpu"]
     assert len(gpu_calls) == 1 and preflight.NORMALIZED_POLYNOMIAL_TESTS in gpu_calls[0]
+    # The GPU stage runs on CUDA with the host CPU listed after it, for the kernel tests' FP64 references;
+    # the CPU stages see the CPU alone.
+    assert [options["env"]["JAX_PLATFORMS"] for _, options in calls] == ["cpu"] * (len(calls) - 1) + ["cuda,cpu"]
+
+
+# This host may have no GPU: the cuda platform gets a CPU client, registered exactly as JAX registers each
+# platform JAX_PLATFORMS lists (the GPU test stage's list, or a single "cuda"). The probe then asks for the host
+# CPU as test_mosaic_score_bias's FP64 reference does.
+_PLATFORM_PROBE = """
+import json
+from jax._src import hardware_utils, xla_bridge
+hardware_utils.has_visible_nvidia_gpu = lambda: True
+initialize = xla_bridge._init_backend
+xla_bridge._init_backend = lambda platform: initialize("cpu" if platform == "cuda" else platform)
+import jax
+import jax.numpy as jnp
+backends = xla_bridge.backends()
+probe = {"platforms": list(backends), "cuda_is_default": xla_bridge.get_backend() is backends.get("cuda")}
+try:
+    host = jax.devices("cpu")[0]
+    with jax.enable_x64(), jax.default_device(host):
+        probe["host_dtype"] = str(jax.jit(jnp.sum)(jax.device_put(jnp.arange(3.0, dtype=jnp.float64), host)).dtype)
+except RuntimeError as error:
+    probe["error"] = str(error)
+print(json.dumps(probe))
+"""
+
+
+def test_gpu_test_stage_lists_the_host_cpu_after_cuda_for_float64_references():
+    """With JAX_PLATFORMS=cuda alone, jax.devices("cpu") raises "Unknown backend cpu" in the GPU stage, so every
+    GPU test whose FP64 reference runs on the host (test_mosaic_score_bias.py) would fail in production
+    acceptance; the stage's platform list keeps CUDA the default and gives those references the CPU."""
+    import json
+    import os
+    import subprocess
+    import sys
+
+    def probe(platforms):
+        result = subprocess.run([sys.executable, "-c", _PLATFORM_PROBE], capture_output=True, text=True, check=True,
+                                env=dict(os.environ, JAX_PLATFORMS=platforms))
+        return json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert probe(preflight.GPU_TEST_PLATFORMS) == {"platforms": ["cuda", "cpu"], "cuda_is_default": True,
+                                                   "host_dtype": "float64"}
+    alone = probe("cuda")
+    assert alone["platforms"] == ["cuda"] and alone["cuda_is_default"]
+    assert "Unknown backend cpu" in alone["error"]
 
 
 def test_runs_selecting_the_same_tests_share_passed_stages(tmp_path, monkeypatch):

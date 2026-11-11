@@ -49,6 +49,11 @@ TEST_STAGES = (
     ("cpu-distributed-tests", ("-m", "not gpu", "-k", "distributed"), True),
     ("gpu-tests", ("-m", "gpu"), False),
 )
+# JAX platforms of the GPU test stage's pytest process: CUDA, the default because it is listed first, and the
+# host CPU, on which kernel tests compute their FP64 references (jax.devices("cpu") exists only when "cpu" is
+# listed). On a GPU node a listed platform that fails to start raises, so the tests never fall back to the CPU.
+# Workers, like production training, list CUDA alone.
+GPU_TEST_PLATFORMS = "cuda,cpu"
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT")
@@ -1021,7 +1026,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 record(path, experiment, tests_passed=require_passing_tests(junit), reused_from=origin)
                 print(f"acceptance_reused={stage} from={origin['acceptance_directory']}", flush=True)
                 continue
-            env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
+            env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else GPU_TEST_PLATFORMS)
             if stage == "cpu-distributed-tests":
                 env["XLA_FLAGS"] = f"{env.get('XLA_FLAGS', '')} --xla_force_host_platform_device_count=2".strip()
             if not cpu:
