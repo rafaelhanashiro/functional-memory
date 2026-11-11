@@ -32,6 +32,13 @@ what acceptance does not keep:
 
 Modes may be chained in one process (``pilot,parity``), reusing the pilot's compiled update.
 
+Bitwise comparisons need deterministic arithmetic. On H100 the same compiled update, given the same
+state and batch, can differ in the last bits from one execution to the next (XLA may combine partial
+sums with atomics), so production settings measure how large the differences are, and
+``XLA_FLAGS=--xla_gpu_deterministic_ops=true`` (a separate compiled program) tests the resume and
+the instrumentation for exact equality. ``--pilot-steps`` shortens such checks; ``--no-references``
+keeps a pilot to acceptance's timing, memory and checks (its resume then checks the audit alone).
+
     python -m scaffolds.transformer.benchmarks.qualify_training pilot,parity RECIPE \\
         --adapter experiments.transformer_pp.score_bias_acceptance --directory DIR
     python -m scaffolds.transformer.benchmarks.qualify_training resume RECIPE \\
@@ -348,10 +355,12 @@ def run_pilot(args, spec, experiment) -> dict:
     )
     if not finite:
         raise FloatingPointError("Nonfinite pilot loss or update numerics")
-    if not args.continue_updates:  # timing, memory and acceptance's pilot checks only
-        report["compile_cache"] = {"pilot": CACHE_LOG.summary("pilot")}
-        return report
     end = stop + args.continue_updates
+    if not args.continue_updates or not args.references:
+        # Timing, memory and acceptance's pilot checks; a later resume runs to ``end`` with its audit alone.
+        report.update(continuation_end=end if args.continue_updates else None,
+                      compile_cache={"pilot": CACHE_LOG.summary("pilot")})
+        return report
     # The uninterrupted reference: a fresh run through the pilot's validation and checkpoint and on, in
     # this process, so its update is the pilot's program for a freshly initialized state.
     print(f"qualify uninterrupted run updates {start + 1}-{end}", flush=True)
@@ -408,6 +417,8 @@ def run_resume(args, spec, experiment) -> dict:
     root = args.directory / "acceptance"
     pilot = json.loads((args.directory / "pilot.json").read_text())["pilot"]
     stop, end = pilot["pilot_stop"], pilot["continuation_end"]
+    if end is None:
+        raise ValueError("The pilot set no resume horizon (--continue-updates 0)")
     batch_size = experiment["config"]["data"]["batch_size"]
     pilot_outcome = json.loads((root / "pilot-result.json").read_text())
     shutil.copytree(root / PILOT, root / AT_STOP, symlinks=True)
@@ -427,6 +438,10 @@ def run_resume(args, spec, experiment) -> dict:
     report["acceptance_resume_audit"] = "passed"
     audit = resumed["checkpoint_audit"]
     report["compared"] = {}
+    if "continuation_audit" not in pilot:  # the pilot made no references (--no-references)
+        _replace_directory(root / PILOT, root / f"pilot.resumed-{args.tag}")
+        os.rename(root / AT_STOP, root / PILOT)
+        return report
     for name in ("uninterrupted", "continuation"):
         reference = pilot[f"{name}_audit"]
         report["compared"][f"resume_vs_{name}"] = {
@@ -582,7 +597,12 @@ def main(argv=None) -> None:
     parser.add_argument("--allow-dirty", action="store_true", help="skip the frozen-execution check (CPU smoke tests)")
     parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--continue-updates", type=int, default=2,
-                        help="pilot: updates after its stop for the references (0: pilot alone, no resume)")
+                        help="pilot: updates after its stop for the references and the resume (0: no resume)")
+    parser.add_argument("--no-references", dest="references", action="store_false",
+                        help="pilot: skip the uninterrupted run and the continuation (a resume then checks "
+                             "acceptance's audit alone)")
+    parser.add_argument("--pilot-steps", type=int,
+                        help="replace the acceptance spec's pilot length (for short deterministic checks)")
     parser.add_argument("--parity-updates", type=int, default=10)
     parser.add_argument("--diagnostic-interval", type=int, default=2)
     parser.add_argument("--limit-hours", type=float, nargs="+", default=(24, 48, 72))
@@ -596,7 +616,16 @@ def main(argv=None) -> None:
     args.directory.mkdir(parents=True, exist_ok=True)
     args.copy, copy_facts = qualification_copy(args.recipe, args.directory)
     spec, experiment = acceptance_context(args.adapter, args.copy, args.gpu_type)
+    if "resume" in modes:
+        # A resume repeats its pilot's worker settings (the validation cadence follows the pilot's length).
+        recorded = json.loads((args.directory / "pilot.json").read_text())
+        if args.pilot_steps not in (None, recorded["pilot_steps"]):
+            parser.error(f"The pilot ran {recorded['pilot_steps']} updates")
+        args.pilot_steps, args.references = recorded["pilot_steps"], recorded["references"]
+    if args.pilot_steps is not None:
+        spec = dataclasses.replace(spec, pilot_steps=args.pilot_steps)
     common = {"format": "training-qualification", "version": 1, "recipe": copy_facts,
+              "pilot_steps": spec.pilot_steps, "references": args.references,
               "adapter": args.adapter, "provenance": provenance(args.experiment, args.allow_dirty),
               "experiment_identity": experiment["identity"], "device_kinds": experiment["device_kinds"],
               "started_utc": datetime.now(UTC).isoformat()}
