@@ -23,7 +23,9 @@ def prepare(run: Path, checkpoint: int, scratch: Path) -> Path:
         shutil.rmtree(scratch)
     (scratch / "checkpoints").mkdir(parents=True)
     recipe = yaml.safe_load((run / "config.yaml").read_text())
-    recipe["train"].update(workdir=str(scratch), checkpoint_dir=str(scratch / "checkpoints"), wandb_mode="disabled")
+    # A replay repeats updates; gradient-event capture's trigger state and kept states belong to the run.
+    recipe["train"].update(workdir=str(scratch), checkpoint_dir=str(scratch / "checkpoints"), wandb_mode="disabled",
+                           gradient_event_capture=False)
     (scratch / "config.yaml").write_text(yaml.safe_dump(recipe, sort_keys=False))
     shutil.copy2(run / "data_identity.json", scratch / "data_identity.json")
     # A run that failed before its first validation has no validation history yet.

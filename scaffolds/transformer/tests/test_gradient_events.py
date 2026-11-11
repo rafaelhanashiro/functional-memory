@@ -466,6 +466,23 @@ def test_a_retraining_lists_no_capture_until_it_reaches_its_own_outcome(tmp_path
     assert listed_captures(cfg) == ("complete", [3, 7])
 
 
+def test_replay_tool_continues_a_capture_enabled_run_without_capture(tmp_path, monkeypatch):
+    # The tool copies one checkpoint without the capture root, and capture cannot change the replay.
+    from scaffolds.transformer.validation.replay_checkpoint import prepare
+
+    single_device(monkeypatch)
+    cfg = capture_config(tmp_path / "run")
+    loop.run_training(cfg, stop_after_step=8)
+    (cfg.train.workdir / "data_identity.json").write_text("{}")  # Synthetic data has none; the tool copies it.
+    replay = load_config(prepare(cfg.train.workdir, 8, tmp_path / "scratch"))
+    assert replay.train.gradient_event_capture is False
+    result = loop.run_training(replay, resume=True, stop_after_step=10, audit_checkpoint=True)
+    assert (result["restored_step"], result["final_step"]) == (8, 10)
+    assert not gradient_event_directory(replay).exists() and not (tmp_path / "scratch/gradient_events.jsonl").exists()
+    continued = loop.run_training(cfg, stop_after_step=10, audit_checkpoint=True)
+    assert result["checkpoint_audit"]["final_state_sha256"] == continued["checkpoint_audit"]["final_state_sha256"]
+
+
 def test_finalization_keeps_and_records_only_the_kept_captures(tmp_path, monkeypatch):
     from scaffolds.records import capture_artifacts, create_run, update_record, validate_record
     from scaffolds.transformer.retention import finalize_run
