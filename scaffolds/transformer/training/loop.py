@@ -93,81 +93,122 @@ def _penalty_arguments(coefficient_penalty: float, coefficient_penalty_denominat
 
 
 def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0,
-                   coefficient_penalty_denominator: bool = True):
+                   coefficient_penalty_denominator: bool = True, telemetry_reductions: dict[str, str] | None = None):
     """The batch's NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum.
 
-    The returned loss is the task NLL alone; the penalty enters only the gradient.
+    The returned loss is the task NLL alone; the penalty enters only the gradient. With
+    ``telemetry_reductions`` (a dict filled at trace time with each statistic's reduction),
+    also return the forward pass's recorded activation statistics.
     """
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
     def loss_fn(params):
         model = nnx.merge(state.graphdef, params)
-        logits = model(
-            inputs,
-            deterministic=False,
-            rngs=model_forward_rngs(rng),
-        )
+        statistics = None
+        if telemetry_reductions is None:
+            logits = model(
+                inputs,
+                deterministic=False,
+                rngs=model_forward_rngs(rng),
+            )
+        else:
+            with telemetry.collect() as collector:
+                logits = model(
+                    inputs,
+                    deterministic=False,
+                    rngs=model_forward_rngs(rng),
+                )
+            telemetry_reductions.update(collector.reductions)
+            statistics = collector.values
         nll = cross_entropy_loss(logits, targets)
         if coefficient_penalty:
             penalty = coefficient_penalty_sum(params, model.config, include_denominator=coefficient_penalty_denominator)
-            return nll + coefficient_penalty * penalty, nll
-        return nll, nll
+            return nll + coefficient_penalty * penalty, (nll, statistics)
+        return nll, (nll, statistics)
 
     # ``state.params`` is a pure NNX State pytree, so the base JAX transform also
     # traces inside the accumulation scan (an NNX transform rejects the outer trace's Params).
-    (_, nll), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
-    return nll, grads
+    (_, (nll, statistics)), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
+    if telemetry_reductions is None:
+        return nll, grads
+    return nll, grads, statistics
 
 
-@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator"))
+def _telemetry_options(collect_telemetry: bool) -> tuple[dict[str, str] | None, dict]:
+    """A step's trace-time reduction record and the keyword that enables recording."""
+    reductions = {} if collect_telemetry else None
+    return reductions, ({"telemetry_reductions": reductions} if collect_telemetry else {})
+
+
+@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
+                                   "collect_telemetry"))
 def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False,
-               coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True):
-    loss, grads = loss_and_grads(state, batch, rng,
-                                 **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+               coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
+               collect_telemetry: bool = False):
+    """One update. With ``collect_telemetry``, also return, last, the update's named statistics."""
+    reductions, recording = _telemetry_options(collect_telemetry)
+    loss, grads, *statistics = loss_and_grads(state, batch, rng, **recording,
+                                              **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
     grads = mask_frozen_gradients(state, grads)
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
+    outputs = (updated, checked_loss)
     if check_all_gradients:
-        return updated, checked_loss, update_numerics(grads, updated.params, loss)
-    return updated, checked_loss
+        outputs += (update_numerics(grads, updated.params, loss),)
+    if collect_telemetry:
+        outputs += (telemetry.single_device_statistics(statistics[0], reductions, state.params, grads, updated.params),)
+    return outputs
 
 
 def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0,
-                              coefficient_penalty_denominator: bool = True):
+                              coefficient_penalty_denominator: bool = True,
+                              telemetry_reductions: dict[str, str] | None = None):
     """One microbatch of ``accumulated_train_step``; traced inside its scan, so not jitted itself."""
-    return loss_and_grads(state, batch, rng, **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+    recording = {"telemetry_reductions": telemetry_reductions} if telemetry_reductions is not None else {}
+    return loss_and_grads(state, batch, rng, **recording,
+                          **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
 
 
-@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator"))
+@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
+                                   "collect_telemetry"))
 def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False,
-                           coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True):
+                           coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
+                           collect_telemetry: bool = False):
     """One compiled update over ``batches`` (``[microbatches, sequences, tokens]``) and their ``rngs``.
 
     A scan accumulates the microbatch gradients on the device, so the host dispatches one
     program per update. Dispatching one program per microbatch, plus one addition per
     parameter for every partial sum, left a single GPU idle for about 40% of each update.
+    With ``collect_telemetry``, also return, last, the update's named statistics.
     """
     penalty = _penalty_arguments(coefficient_penalty, coefficient_penalty_denominator)
+    reductions, recording = _telemetry_options(collect_telemetry)
 
     def accumulate(carry, values):
         loss_sum, grad_sum = carry
         batch, rng = values
-        loss, grads = microbatch_loss_and_grads(state, batch, rng, **penalty)
-        return (loss_sum + loss.astype(loss_sum.dtype), jax.tree_util.tree_map(jnp.add, grad_sum, grads)), None
+        loss, grads, *statistics = microbatch_loss_and_grads(state, batch, rng, **penalty, **recording)
+        return ((loss_sum + loss.astype(loss_sum.dtype), jax.tree_util.tree_map(jnp.add, grad_sum, grads)),
+                statistics[0] if collect_telemetry else None)
 
     zero_grads = jax.tree_util.tree_map(jnp.zeros_like, state.params)
-    (loss_sum, grad_sum), _ = jax.lax.scan(accumulate, (jnp.zeros((), dtype=jnp.float32), zero_grads), (batches, rngs))
+    (loss_sum, grad_sum), stacked_statistics = jax.lax.scan(
+        accumulate, (jnp.zeros((), dtype=jnp.float32), zero_grads), (batches, rngs))
     scale = jnp.asarray(1.0 / batches.shape[0], dtype=loss_sum.dtype)
     grads = mask_frozen_gradients(state, jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum))
     loss = loss_sum * scale
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
+    outputs = (updated, checked_loss)
     if check_all_gradients:
-        return updated, checked_loss, update_numerics(grads, updated.params, loss)
-    return updated, checked_loss
+        outputs += (update_numerics(grads, updated.params, loss),)
+    if collect_telemetry:
+        outputs += (telemetry.single_device_statistics(stacked_statistics, reductions, state.params, grads,
+                                                       updated.params),)
+    return outputs
 
 
 @nnx.jit
@@ -693,12 +734,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                    if penalty_weight else None)
     penalty_value = None
     data_parallel = None
-    # Telemetry is standard for data-parallel training; recording cannot cross remat.
-    collect_telemetry = layout.device_count > 1 and not config.model.remat
+    # Telemetry is standard on one GPU and several; recording cannot cross remat.
+    collect_telemetry = not config.model.remat
+    telemetry_options = {"collect_telemetry": True} if collect_telemetry else {}
+    telemetry_keys: list[str] = []
     if layout.device_count > 1:
         data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients,
                                                     collect_telemetry=collect_telemetry, **penalty_options)
         state = put_replicated(state, data_parallel.replicated_sharding)
+        telemetry_keys = data_parallel.telemetry_keys
     train_iter = make_train_iterator(
         replace(config.data, batch_size=layout.global_micro_batch_size),
         start_sequence=start_sequence, validated_manifest=validated_train_manifest,
@@ -847,19 +891,24 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batch[None], step_rng)
                 step_result = (train_step(state, batch, step_rng, check_all_gradients=True,
-                                          **penalty_options) if check_all_gradients
-                               else train_step(state, batch, step_rng, **penalty_options))
+                                          **penalty_options, **telemetry_options) if check_all_gradients
+                               else train_step(state, batch, step_rng, **penalty_options, **telemetry_options))
             else:
                 batches = jnp.asarray(np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)]))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batches, step_rng)
                 micro_rngs = jax.random.split(step_rng, layout.grad_accum_steps)
                 step_result = (accumulated_train_step(state, batches, micro_rngs, check_all_gradients=True,
-                                                      **penalty_options)
+                                                      **penalty_options, **telemetry_options)
                                if check_all_gradients
-                               else accumulated_train_step(state, batches, micro_rngs, **penalty_options))
+                               else accumulated_train_step(state, batches, micro_rngs, **penalty_options,
+                                                           **telemetry_options))
             state, loss, *numerical_metrics = step_result
             telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
+            if telemetry_vector is not None and data_parallel is None:
+                # The single-device step returns its statistics by name; pack them for one transfer.
+                telemetry_keys = sorted(telemetry_vector)
+                telemetry_vector = telemetry.pack(telemetry_vector)
             is_log = step == start_step + 1 or step % config.train.log_every == 0
             is_eval = evaluation_due(config, step)
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
@@ -871,7 +920,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if telemetry_vector is not None:
                 previous_telemetry = telemetry_values
-                telemetry_values = dict(zip(data_parallel.telemetry_keys,
+                telemetry_values = dict(zip(telemetry_keys,
                                             np.asarray(jax.device_get(telemetry_vector)).tolist(), strict=True))
             if not math.isfinite(loss_value):
                 _fail_numerics(config, state, step,
@@ -891,7 +940,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             clipped = gradient_norm is not None and gradient_norm > config.optim.grad_clip_norm
             clip_scale = config.optim.grad_clip_norm / gradient_norm if clipped else 1.0
             if telemetry_values is not None:
-                spike = telemetry_window.add(step, data_parallel.telemetry_keys,
+                spike = telemetry_window.add(step, telemetry_keys,
                                              list(telemetry_values.values()), gradient_norm)
                 if spike is not None:
                     print(f"gradient_spike step={step} gradient_norm={gradient_norm:.6f} "
@@ -964,7 +1013,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                         "gradient_clip_norm": config.optim.grad_clip_norm,
                     } if gradient_norms else {}),
                     **({"train_coefficient_penalty": penalty_value} if penalty_value is not None else {}),
-                    **(telemetry_window.summary(data_parallel.telemetry_keys) if collect_telemetry else {}),
+                    **(telemetry_window.summary(telemetry_keys) if collect_telemetry else {}),
                     "learning_rate": float(schedule(step - 1)), "tokens_per_second": throughput,
                     "tokens_per_second_per_device": throughput / layout.device_count,
                     "training_interval_seconds": interval_seconds, "parameter_count": parameter_count,

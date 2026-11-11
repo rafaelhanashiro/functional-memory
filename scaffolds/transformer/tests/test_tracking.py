@@ -80,8 +80,8 @@ def test_gradient_windows_include_updates_between_log_steps(tmp_path, monkeypatc
     norms = {1: 0.5, 2: 1.5, 3: 5.0, 4: 0.0}
 
     def step_with_known_norm(*args, **kwargs):
-        state, loss, numerics = actual_step(*args, **kwargs)
-        return state, loss, numerics.at[1].set(jnp.asarray(norms[int(state.step)]))
+        state, loss, numerics, *telemetry_statistics = actual_step(*args, **kwargs)
+        return state, loss, numerics.at[1].set(jnp.asarray(norms[int(state.step)])), *telemetry_statistics
 
     monkeypatch.setattr(loop, "accumulated_train_step", step_with_known_norm)
     logged = []

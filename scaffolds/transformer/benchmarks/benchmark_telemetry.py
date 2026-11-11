@@ -7,6 +7,7 @@ parameters and optimizer state with the same tokens and update RNGs. Every updat
 synchronizes the loss and the update numerics as the training loop does; telemetry
 trials also fetch the packed statistics every update, as the loop does. Compilation and warmup
 updates are excluded from the timings. Run this in an allocation, never on the login node.
+With ``--device-count 1`` it times the single-device step the loop runs on one GPU.
 
   python -m scaffolds.transformer.benchmarks.benchmark_telemetry \\
     --config experiments/attention_scaling/runs/<run_id>/config.yaml \\
@@ -15,11 +16,13 @@ updates are excluded from the timings. Run this in an allocation, never on the l
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import hashlib
 import math
 from pathlib import Path
 import time
+from typing import Callable
 
 import jax
 import numpy as np
@@ -29,8 +32,39 @@ from scaffolds.transformer.benchmarks.benchmark_train_step import (
     fresh_replicated_state, immutable_host_state, parameter_digest,
 )
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.training import loop, telemetry
 from scaffolds.transformer.training.distributed import make_data_parallel_functions, put_train_batches
 from scaffolds.transformer.training.state import create_state
+
+
+@dataclass
+class SingleDeviceFunctions:
+    """The single-device update with the data-parallel functions' benchmark interface."""
+    replicated_sharding: jax.sharding.Sharding
+    train_batch_sharding: jax.sharding.Sharding
+    train_step: Callable
+    telemetry_keys: list[str] = field(default_factory=list)
+
+
+def make_single_device_functions(device, *, collect_telemetry: bool) -> SingleDeviceFunctions:
+    """Call the loop's single-device steps as it does, packing the statistics like the loop."""
+    sharding = jax.sharding.SingleDeviceSharding(device)
+    recording = {"collect_telemetry": True} if collect_telemetry else {}
+    functions = SingleDeviceFunctions(sharding, sharding, None)
+
+    def train_step(state, batches, rng):
+        if batches.shape[0] == 1:
+            outputs = loop.train_step(state, batches[0], rng, check_all_gradients=True, **recording)
+        else:
+            outputs = loop.accumulated_train_step(state, batches, jax.random.split(rng, batches.shape[0]),
+                                                  check_all_gradients=True, **recording)
+        if not collect_telemetry:
+            return outputs
+        functions.telemetry_keys[:] = sorted(outputs[3])
+        return (*outputs[:3], telemetry.pack(outputs[3]))
+
+    functions.train_step = train_step
+    return functions
 
 
 def run_trial(state, functions, batches, rngs, *, collect: bool, warmup: int, iterations: int, log_every: int):
@@ -88,8 +122,9 @@ def benchmark(args) -> dict:
             "devices": [{"id": device.id, "kind": device.device_kind} for device in devices],
             "token_shape": list(token_shape), "token_sha256": hashlib.sha256(tokens.tobytes()).hexdigest(),
             "warmup": args.warmup, "iterations": args.iterations, "trials": args.trials, "log_every": args.log_every,
-            "timing": ("one update: compiled data-parallel step, loss and update-numerics synchronization, and "
-                       "(telemetry trials) the packed statistics fetch"),
+            "timing": (f"one update: compiled {'single-device' if args.device_count == 1 else 'data-parallel'} "
+                       "step, loss and update-numerics synchronization, and (telemetry trials) the packed "
+                       "statistics fetch"),
             "order": "trials alternate which variant runs first",
         },
         "trials": [],
@@ -103,8 +138,10 @@ def benchmark(args) -> dict:
             del initialized
         digest, parameter_count = parameter_digest(reference.params)
         report["initialization"] = {"parameter_sha256": digest, "parameter_count": parameter_count}
-        functions = {collect: make_data_parallel_functions(reference, devices, check_all_gradients=True,
-                                                           collect_telemetry=collect)
+        functions = {collect: (make_single_device_functions(devices[0], collect_telemetry=collect)
+                               if args.device_count == 1 else
+                               make_data_parallel_functions(reference, devices, check_all_gradients=True,
+                                                            collect_telemetry=collect))
                      for collect in (False, True)}
         master = jax.random.PRNGKey(args.seed)
         for trial in range(args.trials):
@@ -157,7 +194,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--config", type=Path, required=True, help="A frozen run recipe")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--device-count", type=int, choices=(2, 4), default=4)
+    parser.add_argument("--device-count", type=int, choices=(1, 2, 4), default=4)
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--iterations", type=int, default=60)
     parser.add_argument("--trials", type=int, default=4)

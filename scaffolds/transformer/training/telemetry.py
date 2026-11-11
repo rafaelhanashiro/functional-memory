@@ -142,6 +142,26 @@ def reduce_devices(values: dict[str, jax.Array], reductions: dict[str, str],
     return reduced
 
 
+def single_device_statistics(statistics: dict[str, jax.Array], reductions: dict[str, str], params, grads,
+                             updated_params) -> dict[str, jax.Array]:
+    """One device's update statistics, keyed as in data-parallel training.
+
+    ``statistics`` holds the recorded values, stacked over microbatches when the update
+    accumulates them. Mean squares become RMS after the microbatch reduction, as
+    ``reduce_devices`` does after its cross-device mean.
+    """
+    reduced = reduce_microbatches(statistics, reductions)
+    values = {key: jnp.sqrt(value) if reductions[key] == "rms" else value for key, value in reduced.items()}
+    values.update(update_statistics(params, grads, updated_params))
+    return values
+
+
+@jax.jit
+def pack(statistics: dict[str, jax.Array]) -> jax.Array:
+    """Named statistics as one vector in sorted key order, fetched by the host in one transfer."""
+    return jnp.stack([statistics[key] for key in sorted(statistics)])
+
+
 _GROUP_RULES = (
     ("embedding", re.compile(r"token_embedding")),
     ("output_head", re.compile(r"lm_head")),
