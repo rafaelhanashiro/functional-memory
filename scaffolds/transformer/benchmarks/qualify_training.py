@@ -615,13 +615,20 @@ def main(argv=None) -> None:
     args.recipe, args.directory = args.recipe.resolve(), args.directory.resolve()
     args.directory.mkdir(parents=True, exist_ok=True)
     args.copy, copy_facts = qualification_copy(args.recipe, args.directory)
+    if "resume" in modes:
+        # As a production resume does, run under the pilot's source commit (its recorded config compares
+        # equal only then), whatever the checkout's HEAD is now.
+        pilot_config = json.loads((args.directory / "acceptance" / PILOT / "config.json").read_text())
+        os.environ.setdefault("SHARED_TRANSFORMER_SOURCE_COMMIT", pilot_config["train"]["source_commit"])
     spec, experiment = acceptance_context(args.adapter, args.copy, args.gpu_type)
     if "resume" in modes:
         # A resume repeats its pilot's worker settings (the validation cadence follows the pilot's length).
         recorded = json.loads((args.directory / "pilot.json").read_text())
-        if args.pilot_steps not in (None, recorded["pilot_steps"]):
-            parser.error(f"The pilot ran {recorded['pilot_steps']} updates")
-        args.pilot_steps, args.references = recorded["pilot_steps"], recorded["references"]
+        steps = recorded.get("pilot_steps", spec.pilot_steps)
+        if args.pilot_steps not in (None, steps):
+            parser.error(f"The pilot ran {steps} updates")
+        args.pilot_steps = steps
+        args.references = recorded.get("references", "continuation_audit" in recorded["pilot"])
     if args.pilot_steps is not None:
         spec = dataclasses.replace(spec, pilot_steps=args.pilot_steps)
     common = {"format": "training-qualification", "version": 1, "recipe": copy_facts,
