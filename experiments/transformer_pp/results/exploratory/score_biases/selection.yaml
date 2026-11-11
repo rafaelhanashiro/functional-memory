@@ -6,10 +6,23 @@ settings:
   metric: held-out validation perplexity
   report:
   - validation-best
-  - terminal at update 7570
-  training_steps: 7570
+  - terminal at the last update
+  shapes:
+    reference:
+      layers: 15
+      width: 896
+      heads: 14
+      training_steps: 7570
+      warmup_steps: 455
+      global_batch_size: 256
+    12-layer width-640:
+      layers: 12
+      width: 640
+      heads: 10
+      training_steps: 7551
+      warmup_steps: 454
+      global_batch_size: 128
   training_context: 2048
-  global_batch_size: 256
   seed: 42
   degree: 8
   kernel: W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..8) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
@@ -24,10 +37,15 @@ settings:
   allowed_differences:
   - model.attention_score_bias
   - train.gradient_event_capture and its policy fields (defaults)
-  - model.attention_backend (blocked; controls mosaic) and model.attention_blocked_implementation
-    (strips; controls scan)
-  backend: primaries on the blocked backend's causal strips; both controls on the
-    Mosaic kernels; diagnostics on the forward-only blocked scan
+  - at the reference shape only, model.attention_backend (blocked; controls mosaic)
+    and model.attention_blocked_implementation (strips; controls scan)
+  backend: reference-shape primaries on the blocked backend's causal strips; the trial
+    on the H100 Mosaic score-bias kernels (row shift); all three controls on the Mosaic
+    kernels (r25fffc16c2f3 and r95a5691d293f on B300, r227b0ed7c605 on H100 SXM);
+    diagnostics on the forward-only blocked scan
+  decision: submit the reference-shape primaries only if the trial's validation-best
+    perplexity beats its control's 17.592 by clearly more than seed noise, taken as
+    about 0.25% (below about 17.548)
   comparison_groups:
     rope_w_decay:
     - control_query_m8_rope_w_decay
@@ -39,6 +57,9 @@ settings:
     - primary_query_m8_per_order_query_key_gate_nope_w_decay_static_biases
     - primary_query_m8_per_order_query_key_gate_nope_w_decay_query_biases
     - primary_query_m8_per_order_query_key_gate_nope_w_decay_query_key_biases
+    trial_rope_w_decay_l12_d640:
+    - control_query_m8_rope_w_decay_l12_d640
+    - trial_query_m8_rope_w_decay_l12_d640_query_biases
 runs:
 - study: transformer_pp
   run_id: rb70f9e57190f
@@ -128,3 +149,31 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r227b0ed7c605/best_validation.json
       sha256: 188d8356a6860ef972e64c6215886506404e7512553f0d9b854d5ca16aa4b57e
+- study: transformer_pp
+  run_id: r8dc6e147601c
+  role: trial_query_m8_rope_w_decay_l12_d640_query_biases
+  label: query score biases, query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/config.yaml
+      sha256: edb4c519a19dc42bd3d3f9388583d68f52c3f492a6bfd656d005ab9cf0f80ec9
+- study: transformer_pp
+  run_id: r95a5691d293f
+  role: control_query_m8_rope_w_decay_l12_d640
+  label: query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r95a5691d293f/config.yaml
+      sha256: e27c5364bfb1a47c6fde45598a3c31da8ad6c8c4402d29b873d76b0a7571f458
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metrics.jsonl
+      sha256: c64c39221cf9a9cc2028c74aadf41b0e9b7826c42701f1fc02e1db0b2793a0fd
+    completion.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/completion.json
+      sha256: c0a10c85d9d102f048783a25b4c83e0c178e50292d41c5a07f1b2fb69a85ffce
+    metadata.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metadata.json
+      sha256: 09b2dce817e820a82400816bc1cbe3bed0087bc71bae748078d8e06f8def1a3b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/best_validation.json
+      sha256: 41a966c09777b5656698fd8a2c63e764a7387b1d2a9e8f6918d1bb158efcd969
