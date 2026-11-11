@@ -45,6 +45,13 @@ def _inputs(*arrays):
     return [x for x in arrays if x is not None]
 
 
+def _refuse_h100_only(family):
+    """Score-bias families keep their per-order and shift vectors per tile, which only H100's kernels
+    do; their entry points refuse B300 first, and these kernels never build them."""
+    if family in common.SCORE_BIAS_FAMILIES:
+        raise ValueError(f"Mosaic family {family!r} runs on H100 only; B300 has no kernel for it")
+
+
 def _params(family):
     return plgpu.CompilerParams(approx_math=True) if common.approx_math(family) else None
 
@@ -78,6 +85,7 @@ def _transforms(cols, dtype):
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
 def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
             block_k=64, stages=3):
+    _refuse_h100_only(family)
     BQ = 128
     n_parts = common.part_count(precision)
     batch, time, heads, dq = q.shape
@@ -279,6 +287,7 @@ def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, 
 def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
        block_k=64, stages=3):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
+    _refuse_h100_only(family)
     BQ = 128
     n_parts = common.part_count(precision)
     batch, time, heads, dqk = q.shape
@@ -485,6 +494,7 @@ def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, which, f
     Transposed tiles: lanes are keys, so per-query vectors broadcast along columns. Each
     warpgroup stages its output in its own K (dK) or V (dV) buffer once its MMAs are done.
     """
+    _refuse_h100_only(family)
     BK = 128
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
