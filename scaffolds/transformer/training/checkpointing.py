@@ -11,6 +11,7 @@ from scaffolds.transformer.training.state import TrainState
 
 
 VALIDATION_NLL_METRIC = "validation_nll"
+GRADIENT_EVENT_DIRECTORY = "gradient_events"
 
 
 def checkpoint_directory(config: Config):
@@ -20,6 +21,36 @@ def checkpoint_directory(config: Config):
     if config.train.checkpoint_dir is not None:
         return Path(config.train.checkpoint_dir)
     return config.train.workdir / "checkpoints"
+
+
+def gradient_event_directory(config: Config):
+    """Captured pre-update states (``training/gradient_events.py``) inside the run's checkpoint storage.
+
+    The checkpoint manager tracks numeric step directories only, so it never lists, restores,
+    or prunes this root; it moves with the checkpoints and is ignored by Git with them.
+    """
+    return checkpoint_directory(config) / GRADIENT_EVENT_DIRECTORY
+
+
+def save_state_now(directory, state: TrainState) -> None:
+    """Write ``state`` to ``directory/default`` in the manager's ``{"state": state}`` item layout and wait.
+
+    ``restore_state(directory, template)``, or a ``StandardCheckpointer`` restore of
+    ``directory/default``, reads it back like a step directory of the checkpoint manager.
+    """
+    from pathlib import Path
+
+    with ocp.StandardCheckpointer() as checkpointer:
+        checkpointer.save(Path(directory) / "default", {"state": state})
+        checkpointer.wait_until_finished()
+
+
+def restore_state(directory, template: TrainState) -> TrainState:
+    """Read a state written by ``save_state_now`` (or a manager step directory) into ``template``'s structure."""
+    from pathlib import Path
+
+    with ocp.StandardCheckpointer() as checkpointer:
+        return checkpointer.restore(Path(directory) / "default", target={"state": template})["state"]
 
 
 def validate_resume_progress(config: Config, latest_checkpoint_step: int | None) -> None:

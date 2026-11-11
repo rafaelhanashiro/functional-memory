@@ -1395,6 +1395,57 @@ submitting to change it), and acceptance pilots never log. Saved workspace views
 results code built with the `views` dependency group
 (`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
+### Gradient-event capture
+
+`train.gradient_event_capture: true` saves the exact state an update started from when its
+pre-clip gradient norm spikes after warmup (`training/gradient_events.py`). The rule and
+retention are recipe fields, fixed before launch:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `gradient_event_factor` | 5.0 | multiple of the running median the norm must exceed |
+| `gradient_event_min_norm` | 1.0 | floor of the threshold |
+| `gradient_event_history` | 100 | finite pre-clip norms of earlier updates in the median |
+| `gradient_event_min_history` | 20 | earlier norms required before any event |
+| `gradient_event_max_states` | 3 | kept states: the first event and the largest later ones |
+
+- Rule: update *k* is an event when *k* > `optim.warmup_steps`, its norm *g* is finite, at
+  least `min_history` earlier norms are known, and *g* > max(`min_norm`, `factor` × median).
+  The history includes warmup updates and events, and resumes with the checkpoint.
+- Capture: the pre-update state (parameters, Adam moments, `step` *k* − 1) is saved
+  synchronously in the checkpoint manager's `{"state": state}` layout at
+  `<checkpoints>/gradient_events/<k>/default`, with the event's record as `event.json`.
+  `checkpointing.restore_state(directory, template)`, or a `StandardCheckpointer` restore of
+  `<k>/default`, reads it back. The step manager ignores this non-numeric root, and Git
+  ignores it with the checkpoints.
+- Log: every event, kept or not, is appended to the run's `gradient_events.jsonl` and printed
+  as `gradient_event`. A record holds the update and pre-update step, loss, pre-clip norm,
+  clip scale, running median and threshold, learning rate, sequence range and microbatch
+  layout, batch and RNG SHA256 (as the checkpoint audit hashes them), seed and RNG
+  derivation, the update's and preceding update's telemetry, device kind and count, backend
+  and implementation, source commit, frozen-execution hash, attempt ID, the pre-update
+  state's SHA256, and whether it was kept and which capture it replaced.
+- Retention: a larger later event replaces the smallest kept later event (the first is never
+  replaced); the replaced directory is deleted once no restorable checkpoint references it.
+  A nonfinite update also keeps its pre-update state, outside the cap, before its numerical
+  failure is recorded.
+- Resumption: `gradient_events/state.json` records the history and kept list of each
+  checkpoint a resume may restore, written before that checkpoint's save. A resume restores
+  its checkpoint's snapshot, and deletes and logs (`capture_discarded`) captures made after
+  that checkpoint, whose updates it repeats, and the capture of a superseded numerical failure.
+- Records: a completed run and a numerical failure list their kept captures in `record.json`
+  under `diagnostic_checkpoints`: directory descriptors with SHA256 and a justification
+  ("pre-update state of gradient event at update *k*, norm *g*"). `retention.py` keeps them
+  and nothing else of the capture root, and lists them in `retention.json`
+  (`retained_gradient_event_updates`). `validate_record` checks them like checkpoints and
+  reports them unavailable on other clusters.
+- Cost: capture never changes training; on CPU losses, gradient norms, and states are
+  bit-identical with and without it, on one device and on two. One-device steps do not
+  donate their input, so holding the pre-update state across the update costs no device
+  memory. The data-parallel step donates it, so each of its updates first copies the state
+  (one more state per device: 2.4 GB for the 15-layer width-896 recipes). An event costs a
+  state hash, and a kept one a synchronous save comparable to a checkpoint save.
+
 ## Launch, acceptance, retention, and analysis
 
 Both shared launchers default to one GPU. Independent training runs are submitted
@@ -1472,7 +1523,8 @@ Studies configure these shared modules with execution modules at their root
   reusing run copies the report into its own acceptance directory and records its
   origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
-  the selection.
+  the selection, keeping a capturing run's kept gradient-event states as recorded
+  diagnostic checkpoints.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

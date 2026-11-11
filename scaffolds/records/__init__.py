@@ -274,8 +274,18 @@ def _tree_descriptor(directory: Path) -> dict[str, Any]:
     }
 
 
+def _checkpoint_tree(run: Path, directory: str | Path, role: str) -> dict[str, Any]:
+    checkpoint = Path(directory)
+    if not checkpoint.is_absolute() and not checkpoint.is_dir():
+        checkpoint = _artifact_path(run, str(checkpoint))
+    if not checkpoint.is_dir():
+        raise ValueError(f"{role} is unavailable: {checkpoint}")
+    return _tree_descriptor(checkpoint)
+
+
 def capture_artifacts(
     path: str | Path, checkpoint_directory: str | Path | None = None, include_log: bool = False,
+    diagnostic_checkpoints: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Hash present raw outputs and return updates for ``update_record``.
 
@@ -285,6 +295,11 @@ def capture_artifacts(
     never substitutes the latest checkpoint for the validation best. Call with
     ``include_log=True`` after training exits and the launcher has flushed its
     final output. ``record.json`` is excluded to avoid a checksum cycle.
+
+    ``diagnostic_checkpoints`` lists other retained checkpoint directories, each a mapping
+    with its ``path``, a nonempty ``justification``, and optional descriptive fields; they
+    become ``diagnostic_checkpoints`` directory descriptors (an empty list records that none
+    are kept). None leaves the record's entry unchanged.
     """
     run = _run_path(path)
     artifacts = []
@@ -298,12 +313,18 @@ def capture_artifacts(
         if artifact.name in {"metrics.jsonl", "metadata.json", "completion.json", "best_validation.json", "retention.json", "data_identity.json", "wandb_run.json"}:
             updates[artifact.stem] = descriptor
     if checkpoint_directory is not None:
-        checkpoint = Path(checkpoint_directory)
-        if not checkpoint.is_absolute() and not checkpoint.is_dir():
-            checkpoint = _artifact_path(run, str(checkpoint))
-        if not checkpoint.is_dir():
-            raise ValueError(f"Selected checkpoint is unavailable: {checkpoint}")
-        updates["selected_checkpoint"] = _tree_descriptor(checkpoint)
+        updates["selected_checkpoint"] = _checkpoint_tree(run, checkpoint_directory, "Selected checkpoint")
+    if diagnostic_checkpoints is not None:
+        descriptors = []
+        for item in diagnostic_checkpoints:
+            if not isinstance(item.get("justification"), str) or not item["justification"].strip():
+                raise ValueError(f"A diagnostic checkpoint requires a justification: {item.get('path')}")
+            tree = _checkpoint_tree(run, item["path"], "Diagnostic checkpoint")
+            fields = {key: value for key, value in item.items() if key != "path"}
+            if overlap := sorted(set(fields) & set(tree)):
+                raise ValueError(f"Diagnostic checkpoint fields {overlap} would replace its directory descriptor")
+            descriptors.append({**fields, **tree})
+        updates["diagnostic_checkpoints"] = descriptors
     if include_log and (run / "training.log").is_file():
         log = run / "training.log"
         updates["log"] = {"path": _stored_path(log), "sha256": _sha256(log), "size_bytes": log.stat().st_size}
@@ -356,6 +377,13 @@ def validate_record(path: str | Path, verify_hashes: bool = True, checkpoint_has
     if not (run / "config.yaml").is_file():
         raise ValueError(f"Missing canonical recipe in {run}")
     _check_outcome(run, record)
+    diagnostics = record.get("diagnostic_checkpoints", [])
+    if not isinstance(diagnostics, list) or any(
+            not isinstance(item, dict) or item.get("kind") != "directory"
+            or not isinstance(item.get("justification"), str) or not item["justification"].strip()
+            for item in diagnostics):
+        raise ValueError(f"{record['run_id']} keeps a diagnostic checkpoint without a directory descriptor "
+                         "and justification")
     result: dict[str, Any] = {"run_id": record["run_id"], "verified": [], "size_checked": [], "unavailable": []}
     if not verify_hashes:
         return result
