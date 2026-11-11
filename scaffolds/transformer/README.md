@@ -646,6 +646,65 @@ and formula, recorded in metrics and metadata, include the schedule and every
 `coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
 `tests/test_coefficient_release.py` for every recipe with a schedule.
 
+### Per-degree score biases
+
+`attention_score_bias` (default `none`) gives every order `r = 1..m` of diagonal tanh query
+coefficients its own signed shift of the score (`attention/score_bias.py`); order zero is unchanged:
+
+    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..m) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+
+`c_r` keeps its generator and factorial scales. `G_r = 1`, or each order's endpoint gate
+`exp(-(t-i) exp(A_r) softplus(x_t w_query_r + x_i w_key_r + dt_bias_r))` (the per-order query–key
+gate above). `x` is the attention input after the block's RMSNorm. Each layer, head, and order has its
+own shift:
+
+| Mode | `beta_r(t,i)` | Arrays | Added parameters (15 layers, 14 heads, width 896, `m = 8`) |
+| --- | --- | --- | ---: |
+| `static` | `b_r` | `score_bias_offset` (`b`) | 1,680 |
+| `query` | `b_r + a_r tanh(x_t u_r)` | `b`, `score_bias_amplitude` (`a`), `score_bias_query_kernel` (`u`) | 1,508,640 |
+| `query_key` | `b_r + a_r tanh(x_t u_r + x_i v_r)` | the query mode's and `score_bias_key_kernel` (`v`) | 3,013,920 |
+
+- Arrays: FP32, `[layers, heads, m]` (`b`, `a`) and `[layers, heads, m, hidden_size]` (`u`, `v`). `b`
+  starts at 0, `a` at 1, `u` and `v` at 0, with no random draw, so every shift starts at exactly zero,
+  every other array keeps its initialization, and `u` and `v` receive gradients from the first update.
+  AdamW decays `u` and `v`; `b` and `a` never decay. Telemetry reports them as the `score_bias` group.
+- Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized
+  diagonal tanh query coefficients of degree 1-12, without selected orders, a coefficient gate, or a
+  B-spline basis; RoPE or no positional encoding; and no forget gate or the per-order query–key
+  endpoint gate (input form, `query_distance`, softplus rates). Configuration rejects every other
+  recipe, coefficient release, `optim.query_coefficient_learning_rate_scale` other than 1, and
+  continuations; the model rejects coefficient capture and override.
+- Backends: `mosaic` trains them on H100's score-bias kernels (`backends/mosaic/score_bias.py`; no gate
+  or the endpoint gate, with a row shift for `static` and `query` or a pair shift for `query_key`).
+  The kernels form each shifted power inside the causal tiles, never expanding it into powers of `s`,
+  which would change how the orders cancel. Every other GPU refuses before tracing a kernel, and
+  `ModelConfig.mosaic_score_bias_problem` names a shape H100's shared memory cannot hold. `blocked`
+  (`backends/reference.py`) is their reference for CPU tests, acceptance's initialization check, and
+  diagnostics; `scaffolds.records create` refuses a fresh recipe on any backend but `mosaic`. `auto`,
+  `fused`, and the other backends reject these recipes, and every other attention path raises on
+  score-bias operands rather than ignoring them.
+- Operands: `static` and `query` pass the row shift `beta_r(t)` `[batch, time, heads, m]`, whose gradient
+  autodiff carries to `b`, `a`, and `u`; `query_key` passes the projections `x u` and `x v`
+  `[batch, time, heads, m]` with `b` and `a` `[heads, m]`, and each pair's shift is formed in its tile.
+- Records: the attention identity records the mode, `score_bias_parameter_count`,
+  `score_bias_weight_decay`, and the formula with `(s_ti + beta_r(t,i))^r`; `attention_implementation`
+  names the kernels (for example `pallas_mosaic_gpu_query_polynomial_pair_score_bias`); W&B tags the run
+  `score_bias_<mode>`. `runs.csv` has an `attention_score_bias` column (`none` for every model recipe
+  that predates it).
+- Diagnostics: at each validation, the blocked reference of the same shifted kernel, forward only on the
+  fixed diagnostic sample, reports `coefficients.score_biases`: the parameters; per layer, head, and
+  order, the moments and extremes of the shifted scores (and of the query or query–key shifts), the
+  fractions of shifted scores below zero and within `1e-3` of zero, and each order's term
+  `T_r = c_r G_r (s + beta_r)^r`; shifted-score histograms on [-16, 16] per layer and order, pooled
+  over heads; and the cancellation across orders per layer and head (`sum_r |T_r| / |sum_r T_r|` per
+  pair, `sum_r ||o_r|| / ||o||` per row). Nonfinite parameters are its only issue. A positive shifted
+  score does not imply a positive weight: the coefficients are signed.
+- Acceptance adds `tests/test_score_bias.py` and `tests/test_score_bias_lowering.py` to the CPU tests of
+  these recipes (FP64 references with every gradient, operands, starts, refusals, diagnostics, and the
+  H100 kernels' shared memory and tile mathematics lowered on the host), and
+  `tests/test_mosaic_score_bias.py` with the GPU case of `tests/test_score_bias.py` to the GPU tests,
+  at the kernel family's precision, beside the backbone's query and per-order gate checks.
+
 ### B-spline score function
 
 `attention_kernel_basis: bspline` (default `polynomial`, the monomials above) replaces the
@@ -1452,6 +1511,8 @@ retention are recipe fields, fixed before launch:
   memory. The data-parallel step donates it, so each of its updates first copies the state
   (one more state per device: 2.4 GB for the 15-layer width-896 recipes). An event costs a
   state hash, and a kept one a synchronous save comparable to a checkpoint save.
+- Acceptance adds `tests/test_gradient_events.py` to the CPU tests of every recipe with capture on
+  (its data-parallel case runs in the two-device stage).
 
 ## Launch, acceptance, retention, and analysis
 
@@ -1516,7 +1577,9 @@ Studies configure these shared modules with execution modules at their root
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. The identity includes the allocated GPU model, so a requeue onto another
+  resume. The kernel tests run with `JAX_PLATFORMS=cuda,cpu`: CUDA is the default, and
+  the host CPU is there for FP64 references; the workers and training list CUDA alone.
+  The identity includes the allocated GPU model, so a requeue onto another
   model under the same launcher GPU type (H100 NVL after H100 80GB HBM3) repeats
   them. `attention_spec(config, entry_module=...)` selects correctness and kernel
   tests from the recipe and resolved backend, plus the initialization check and
