@@ -46,7 +46,7 @@ class SingleDeviceFunctions:
     telemetry_keys: list[str] = field(default_factory=list)
 
 
-def make_single_device_functions(device, *, collect_telemetry: bool) -> SingleDeviceFunctions:
+def make_single_device_functions(device, *, collect_telemetry: bool, **penalty_options) -> SingleDeviceFunctions:
     """Call the loop's single-device steps as it does, packing the statistics like the loop."""
     sharding = jax.sharding.SingleDeviceSharding(device)
     recording = {"collect_telemetry": True} if collect_telemetry else {}
@@ -54,10 +54,11 @@ def make_single_device_functions(device, *, collect_telemetry: bool) -> SingleDe
 
     def train_step(state, batches, rng):
         if batches.shape[0] == 1:
-            outputs = loop.train_step(state, batches[0], rng, check_all_gradients=True, **recording)
+            outputs = loop.train_step(state, batches[0], rng, check_all_gradients=True, **penalty_options,
+                                      **recording)
         else:
             outputs = loop.accumulated_train_step(state, batches, jax.random.split(rng, batches.shape[0]),
-                                                  check_all_gradients=True, **recording)
+                                                  check_all_gradients=True, **penalty_options, **recording)
         if not collect_telemetry:
             return outputs
         functions.telemetry_keys[:] = sorted(outputs[3])
@@ -138,10 +139,13 @@ def benchmark(args) -> dict:
             del initialized
         digest, parameter_count = parameter_digest(reference.params)
         report["initialization"] = {"parameter_sha256": digest, "parameter_count": parameter_count}
-        functions = {collect: (make_single_device_functions(devices[0], collect_telemetry=collect)
+        # The recipe's coefficient penalty, passed as the training loop passes it.
+        penalty = loop._penalty_arguments(config.optim.coefficient_penalty,
+                                          config.optim.coefficient_penalty_denominator)
+        functions = {collect: (make_single_device_functions(devices[0], collect_telemetry=collect, **penalty)
                                if args.device_count == 1 else
                                make_data_parallel_functions(reference, devices, check_all_gradients=True,
-                                                            collect_telemetry=collect))
+                                                            collect_telemetry=collect, **penalty))
                      for collect in (False, True)}
         master = jax.random.PRNGKey(args.seed)
         for trial in range(args.trials):
