@@ -53,7 +53,7 @@ is reset. `mastiff`'s H100 at bus `41:00.0` did this on 2026-11-05; the node's r
 2026-11-06 restored it (no uncorrected ECC errors or pending row remaps). On 2026-11-10
 two jobs failed within seconds on a `mastiff` H100 with `CUDA_ERROR_ECC_UNCORRECTABLE`
 when JAX opened the device (UUID `GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5`); Slurm keeps
-granting the idle GPU, so exclude `mastiff` until it is reset.
+granting the idle GPU, so a job that lands on it fails at start-up until the admins reset it.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
