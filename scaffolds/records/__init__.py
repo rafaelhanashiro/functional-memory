@@ -36,7 +36,7 @@ INDEX_COLUMNS = (
     "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
-    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order",
+    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
     "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
@@ -576,6 +576,9 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
             if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
         "attention_forget_gate_rate_activation": model.get("attention_forget_gate_rate_activation", "softplus")
             if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
+        # Per-degree score biases postdate every recipe that lacks the field, so a model recipe without it
+        # has none; runs without a model recipe (analyses of other runs or pretrained models) leave it empty.
+        "attention_score_bias": model.get("attention_score_bias", "none") if model else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
