@@ -18,13 +18,15 @@ BEGIN = "<!-- BEGIN GENERATED RESULTS -->"
 END = "<!-- END GENERATED RESULTS -->"
 ROLES = ("control", "query_distance", "query_key_distance", "bounded_query_distance",
          "per_order_query", "per_order_query_key", "query_distance_m8", "per_order_query_m8",
-         "query_distance_m12", "per_order_query_m12")
+         "query_distance_m12", "per_order_query_m12", "per_order_query_key_m8", "per_order_query_key_m12")
 # The reference of each role's PPL deltas: the run it differs from by one gate change, by
 # per-order gating, or by degree (four to eight, eight to twelve).
 REFERENCES = (("query_key_distance", "query_distance"), ("bounded_query_distance", "query_distance"),
               ("per_order_query", "query_distance"), ("per_order_query_key", "query_key_distance"),
               ("query_distance_m8", "query_distance"), ("per_order_query_m8", "query_distance_m8"),
-              ("query_distance_m12", "query_distance_m8"), ("per_order_query_m12", "query_distance_m12"))
+              ("query_distance_m12", "query_distance_m8"), ("per_order_query_m12", "query_distance_m12"),
+              ("per_order_query_key_m8", "per_order_query_m8"),
+              ("per_order_query_key_m12", "per_order_query_m12"))
 STEPS = 7570
 
 
@@ -53,6 +55,7 @@ def scientific_recipe(recipe: dict) -> dict:
     model.setdefault("attention_forget_gate_conditioning", "query")
     model.setdefault("attention_forget_gate_rate_activation", "softplus")
     model.setdefault("attention_forget_gate_per_order", False)
+    model.setdefault("attention_forget_gate_constant_rate", "learned")
     model.setdefault("attention_coefficient_gate", "none")
     model.setdefault("attention_kernel_basis", "polynomial")
     model.setdefault("attention_spline_knots", None)
@@ -104,6 +107,13 @@ def check_recipes(runs: dict) -> None:
         expected["model"]["attention_forget_gate_per_order"] = True
         if candidate != expected:
             raise ValueError(f"{role} differs beyond independent per-order gating")
+    for role, twin in (("per_order_query_key_m8", "per_order_query_m8"),
+                       ("per_order_query_key_m12", "per_order_query_m12")):
+        candidate = scientific_recipe(runs[role]["config"])
+        expected = scientific_recipe(runs[twin]["config"])
+        expected["model"]["attention_forget_gate_conditioning"] = "query_key"
+        if candidate != expected:
+            raise ValueError(f"{role} differs from its per-order query twin beyond query-key gates")
 
 
 def measurement(row: dict) -> tuple[float, float]:
@@ -210,7 +220,9 @@ def main() -> None:
     else:
         lines.extend(["", "The query-dependent run is not complete; a final PPL comparison is pending."])
     lines.extend(["", "Endpoint query–key and bounded-rate variants compare against the query-dependent control.",
-                  "Each per-order variant compares against its corresponding shared-gate control.",
+                  "Each per-order query gate and the degree-four per-order query–key gate compare against",
+                  "their shared-gate controls; the degree-eight and degree-twelve per-order query–key gates",
+                  "against their per-order query twins.",
                   "The degree-eight shared gate compares against the degree-four query-dependent run,",
                   "and the degree-twelve shared gate against the degree-eight one.",
                   "Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison."])

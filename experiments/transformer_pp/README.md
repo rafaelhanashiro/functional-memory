@@ -1406,6 +1406,63 @@ submit r47bfe39ce9b4 query_distance_degree_acceptance
 submit rfe140c073b2f per_order_decay_acceptance
 ```
 
+### Query–key gates at degrees eight and twelve
+
+The [per-order query–key pair](results/exploratory/query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)
+gives the per-order query runs the per-order query–key gates of `r03be769d2069`. Each run
+changes only its twin's `model.attention_forget_gate_conditioning` to `query_key`; the key
+projections start at zero, so it starts exactly as the twin.
+
+| Run | Twin | Degree | Parameters | Allocation |
+| --- | --- | ---: | ---: | --- |
+| `r227b0ed7c605` | `r20fe6fe864bc` | 8 | 203,541,466 | `standard`, 24 hours, H100 SXM only (`mastiff` excluded) |
+| `rc2f9273c49cc` | `rfe140c073b2f` | 12 | 205,802,746 | `long`, 48 hours, either H100 |
+
+Home cluster: Kennel. Use one H100 per run: B300 holds per-order query–key gates only up to
+degree six at `d_K = 64` and 2,048 tokens. Key dependence makes every order's rate a function of
+each query–key pair, so its extra cost grows with the number of orders. At degree four (five
+orders), per-order query–key updates take 2.43 s longer than per-order query updates on H100
+SXM (5.19 vs 2.76 s) and 3.33 s longer on H100 PCIe (7.70 vs 4.38 s). Adding that cost per
+order to the twins' measured updates (5.70 s at degree eight on PCIe, 5.15 s at degree twelve
+on SXM, converted to the other GPU by degree four's per-order query ratio) gives, for the 7,570
+training updates:
+
+| Degree | H100 SXM (`dogo`) | H100 PCIe (`mastiff`) |
+| ---: | ---: | ---: |
+| 8 | 8.0 s/update, about 17 hours | 11.7 s/update, about 25 hours |
+| 12 | 11.5 s/update, about 24 hours | 16.8 s/update, about 35 hours |
+
+Acceptance's pilot stops before training when its projection of the whole run exceeds the
+allocation less a 2-hour reserve: 22 hours of a 24-hour allocation, 46 of a 48-hour one. Degree
+eight therefore trains on `standard` with `mastiff` excluded, and degree twelve on `long` on
+either H100. These jobs have no scheduling dependencies on each other.
+
+`per_order_decay_acceptance` pins the shared query gates `r9320e5cd3071` and `r47bfe39ce9b4`
+as the controls (no shared query–key gate runs at these degrees) and allows exactly two
+differences from them: per-order gates and query–key conditioning. A Mosaic control's
+variant must also train on the Mosaic kernels. At initialization it collapses the duplicated
+order axes to the control's gate, requires every per-order key projection to be exactly zero,
+removes it, and verifies the control's fingerprint (passing on CPU for both recipes).
+Acceptance runs all of `test_per_order_decay.py`, whose GPU cases include query–key gates at
+degrees eight and twelve and twelve's top orders alone, and `test_endpoint_decay.py`.
+
+From the isolated `claude/per-order-query-key` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+submit() {  # run ID, partition, time limit, excluded nodes
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude="$4" --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+NOT_H100=akita,collie,samoyed,doodle,terrier,shiba
+submit r227b0ed7c605 standard 24:00:00 "$NOT_H100,mastiff"  # about 25 hours on H100 PCIe
+submit rc2f9273c49cc long 48:00:00 "$NOT_H100"
+```
+
 ## Learned input-free gates for static coefficients
 
 The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
