@@ -7,8 +7,10 @@ gradient-event capture under the default policy: order r = 1..8 of the tanh quer
 (``r227b0ed7c605``); the recipe's forget gate selects its control. The biases add b [L, H, m] at zero
 (every mode), a [L, H, m] at one (query, query_key), u (query, query_key) and v (query_key) [L, H, m, D]
 at zero. Nothing is drawn for them, so every other initial array is the control's and removing them
-recovers the control's pinned initialization fingerprint. Training runs only on the H100 Mosaic
-score-bias kernels: the backend must be mosaic and the allocation H100.
+recovers the control's pinned initialization fingerprint. The runs train on the blocked backend's causal
+strips (plain JAX, on B200, B300 or H100), while both controls trained on the Mosaic kernels: the recipe
+must be blocked with strips, the only execution settings beyond locations and labels that differ from
+the control's.
 """
 import argparse
 from dataclasses import replace
@@ -54,8 +56,10 @@ CAPTURE_POLICY = {"gradient_event_capture": True, "gradient_event_factor": 5.0, 
                   "gradient_event_history": 100, "gradient_event_min_history": 20, "gradient_event_max_states": 3}
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir",
                   "wandb_mode")
-# Only H100 has score-bias kernels; B300 refuses them before tracing.
-GPU_TYPES = ("H100",)
+# The attention implementation, required here and the controls' own (Mosaic) in the comparison.
+BACKEND = {"attention_backend": "blocked", "attention_blocked_implementation": "strips"}
+# The strips are plain JAX; their GPU tests run on each of these.
+GPU_TYPES = ("B200", "B300", "H100")
 OWN_TESTS = "experiments/transformer_pp/tests/test_score_bias_acceptance.py"
 
 
@@ -75,22 +79,24 @@ def control_config(name: str) -> Config:
 
 
 def check_recipe(config: Config) -> None:
-    """Only the score biases, gradient-event capture, and execution locations and labels differ from the
-    control; the backend is Mosaic."""
+    """Only the score biases, gradient-event capture, the attention implementation (the blocked strips
+    against the controls' Mosaic kernels), and execution locations and labels differ from the control."""
     validate_config(config)
     model = config.model
     if model.attention_score_bias not in MODES:
         raise ValueError(f"This experiment requires per-degree score biases ({', '.join(MODES)}), not "
                          f"{model.attention_score_bias!r}")
-    if model.attention_backend != "mosaic":
-        raise ValueError("Per-degree score biases train on the H100 Mosaic kernels: model.attention_backend must be "
-                         f"mosaic, not {model.attention_backend!r}")
+    backend = {key: getattr(model, key) for key in BACKEND}
+    if backend != BACKEND:
+        raise ValueError(f"Per-degree score biases train on the blocked backend's causal strips: the recipe must set "
+                         f"{BACKEND}, not {backend}")
     policy = {key: getattr(config.train, key) for key in CAPTURE_POLICY}
     if policy != CAPTURE_POLICY:
         raise ValueError(f"Gradient-event capture must be on with the default policy {CAPTURE_POLICY}, not {policy}")
     run = CONTROLS[control_name(config)][0]
     actual, expected = config_to_dict(config), config_to_dict(control_config(control_name(config)))
     actual["model"]["attention_score_bias"] = "none"
+    actual["model"].update({key: expected["model"][key] for key in BACKEND})
     for recipe in (actual, expected):
         for key in (*EXECUTION_KEYS, *CAPTURE_POLICY):
             recipe["train"].pop(key, None)
@@ -116,7 +122,8 @@ def initial_parameters(config: Config):
     from scaffolds.transformer.models import build_model
 
     rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
-    # Initialization does not depend on the attention backend.
+    # Initialization does not depend on the attention backend; built on the blocked backend, as
+    # acceptance's initialization check builds every recipe.
     model = build_model(replace(config.model, attention_backend="blocked"),
                         nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0)))
     return nnx.state(model, nnx.Param)
@@ -167,17 +174,17 @@ def experiment_spec(config: Config, *, entry_module: str):
     check_recipe(config)
     shared = attention_spec(config, entry_module=entry_module)
     return replace(shared, cpu_tests=(*shared.cpu_tests, OWN_TESTS), check_config=check_recipe,
-                   required_backend="mosaic", check_initialization=check_initialization)
+                   required_backend="blocked", check_initialization=check_initialization)
 
 
 def require_gpu_type(argv) -> None:
-    """Refuse an allocation of any GPU type but H100 before acceptance starts."""
+    """Refuse an allocation of any GPU type but B200, B300 and H100 before acceptance starts."""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--gpu-type", default="H100")  # acceptance's own default
     gpu_type = parser.parse_known_args(argv)[0].gpu_type
     if gpu_type.upper() not in GPU_TYPES:
-        raise ValueError(f"Per-degree score biases train only on {', '.join(GPU_TYPES)}: the Mosaic score-bias "
-                         f"kernels exist for H100 alone, and {gpu_type} refuses them. Submit with GPU types H100.")
+        raise ValueError(f"Per-degree score biases train only on {', '.join(GPU_TYPES)}, where the causal strips' GPU "
+                         f"tests run, not on {gpu_type}. Submit with GPU types {','.join(GPU_TYPES)}.")
 
 
 def main(argv=None) -> None:

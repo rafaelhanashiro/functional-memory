@@ -1567,9 +1567,9 @@ starts as its control's function, and `u` and `v` receive gradients from the fir
 drawn for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to
 `u` and `v` only, never to `b` or `a`; every other optimizer group, the coefficient-`W` and gate decay,
 and the output RMSNorm are the controls'. The shifts are signed, and so are the coefficients: a
-positive shifted score does not imply a positive weight. The kernels form each shifted power directly
-in the causal tiles, never by expanding it into powers of `s`, which would change how the orders
-cancel.
+positive shifted score does not imply a positive weight. The blocked backend's causal strips form each
+shifted power directly, one block per order, never by expanding it into powers of `s`, which would
+change how the orders cancel.
 
 | Run | Label | Control | Mode | Parameters |
 | --- | --- | --- | --- | ---: |
@@ -1581,25 +1581,27 @@ cancel.
 | `r75dccfcf072e` | query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key | `r227b0ed7c605` | query_key | 206,555,386 |
 
 The controls have 200,150,806 and 203,541,466 parameters. Each recipe is its control's loaded recipe
-with `model.attention_score_bias` set and `train.gradient_event_capture: true` (the other capture
-fields explicit at their defaults), and its own labels and paths. Everything else is the control's:
-the 1× budget (7,570 updates of 256 × 2,048 tokens), seed 42, warmup and cosine schedule, QK
-RMSNorm with per-head scales, initialization, and `model.attention_backend: mosaic`.
+with `model.attention_score_bias` set, `train.gradient_event_capture: true` (the other capture
+fields explicit at their defaults), the blocked backend's causal strips (`model.attention_backend:
+blocked`, `model.attention_blocked_implementation: strips`) where both controls trained on the Mosaic
+kernels, and its own labels and paths. Everything else is the control's: the 1× budget (7,570 updates
+of 256 × 2,048 tokens), seed 42, warmup and cosine schedule, QK RMSNorm with per-head scales, and
+initialization.
 
 [`score_bias_acceptance`](score_bias_acceptance.py) chooses the control by the recipe's forget gate
 and pins each control's recipe by SHA256 and its seed-42 initialization by fingerprint and parameter
-count. It requires a score-bias mode, `attention_backend: mosaic`, and capture on with the default
-policy; with the mode set to `none` and the capture fields and execution locations and labels
-removed, the recipe must equal its control's. At initialization each mode's arrays must have their
-shapes and exact FP32 starts (`b = 0`, `a = 1`, `u = v = 0`), the count must be the control's plus
-the mode's additions, and removing the arrays must leave the control's fingerprint; the shared check
-then requires the backbone to equal the softmax control's and every attention array to hold its
-declared start. Acceptance refuses any allocation but H100 before it starts, and its pilot must
-resolve the Mosaic backend. Before training it runs
-`tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
-the adapter's tests on CPU, and `tests/test_mosaic_score_bias.py` with the GPU case of
-`tests/test_score_bias.py` on the GPU at BF16, beside the backbone's query (and per-order gate)
-kernel checks; a skipped test fails acceptance.
+count. It requires a score-bias mode, the blocked strips, and capture on with the default policy;
+with the mode set to `none`, the backend fields set to the control's (`mosaic`, `scan`), and the
+capture fields and execution locations and labels removed, the recipe must equal its control's. At
+initialization each mode's arrays must have their shapes and exact FP32 starts (`b = 0`, `a = 1`,
+`u = v = 0`), the count must be the control's plus the mode's additions, and removing the arrays must
+leave the control's fingerprint; the shared check then requires the backbone to equal the softmax
+control's and every attention array to hold its declared start. Acceptance refuses any allocation but B200, B300 or H100 before it starts, and its
+pilot must resolve the blocked backend. Before training it runs `tests/test_score_bias.py`,
+`tests/test_blocked_strips.py`, `tests/test_gradient_events.py` and the adapter's tests on CPU,
+beside the backbone's CPU checks, and on the GPU `tests/test_score_bias_strips.py` alone: the strips
+through `attention_core` at production precision for every mode on both backbones, with negative and
+exactly zero shifted scores, against host FP64. A skipped test fails acceptance.
 
 **Gradient-event capture** ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)),
 fixed in the recipes before launch:
@@ -1624,51 +1626,32 @@ shifted kernel, on the first held-out sequence, outside the validation loss and 
 (`coefficients.score_biases` in each validation's `attention_diagnostics`): the bias parameters;
 shift and shifted-score moments, extremes, and negative and near-zero fractions, and each order's
 term magnitude, per layer, head and order; shifted-score histograms on [-16, 16] per layer and order;
-and the cancellation across orders per layer and head. Training and the acceptance pilots run only
-the Mosaic kernels; the blocked backend never trains these runs.
+and the cancellation across orders per layer and head. Training and the acceptance pilots run the
+causal strips; the diagnostics run the scan of the same arithmetic.
 
-**Hardware.** H100 only: the Mosaic score-bias kernels exist for H100, and B300 refuses them before
-tracing a kernel. The RoPE control `r25fffc16c2f3` trained on B300 (`akita`), so runs 1–3 compare
-across GPU types and kernel implementations; the gated control `r227b0ed7c605` trained on an H100
-SXM (`dogo`). The jobs exclude the H100 PCIe node `mastiff` (the gated control's update takes 1.35×
-as long there) with the B300, A100, A6000 and B200 nodes. Home cluster: **Kennel**. These jobs have
-no scheduling dependencies on each other.
+**Hardware.** One B200 (`shiba`), B300 (`akita`) or H100 SXM (`dogo`) per run: the strips are plain
+JAX, and their GPU tests passed on a B200
+([validation record](../../scaffolds/transformer/validation/README.md#score-bias-causal-strips-on-b200-2026-11-11)).
+The jobs exclude `mastiff`, whose failing H100 Slurm grants to one-GPU jobs first, and the A100 and
+A6000 nodes. Both controls trained on the Mosaic kernels, the RoPE control `r25fffc16c2f3` on a B300
+and the gated control `r227b0ed7c605` on an H100 SXM, so every comparison also crosses attention
+implementations: the Mosaic kernels round the weights and score gradients to BF16 for their products,
+and the strips keep both in FP32. Home cluster: **Kennel**. These jobs have no scheduling
+dependencies on each other.
 
-All six train on `long`: 48 hours for the RoPE runs and 72 hours for the gated runs. Acceptance's
-pilot refuses an allocation whose projected run exceeds its limit less two hours. The H100
-qualification ([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11))
-ran acceptance's 20-update pilot of every recipe on an H100 PCIe (`mastiff`) and projected 7,570
-updates as acceptance does; the SXM estimates divide by 1.35, the gated control's ratio (11.72 s per
-update there; 8.71 s in its production on `dogo`, a 19.5-hour job with acceptance):
-
-| Run | Mode | s/update, PCIe | Projected hours, PCIe | SXM estimate, hours |
-| --- | --- | ---: | ---: | ---: |
-| `rb70f9e57190f` | RoPE static | 5.50 | 12.1 | 9.0 |
-| `r891870ef80e9` | RoPE query | 5.75 | 12.6 | 9.4 |
-| `r3b1619f8a901` | RoPE query_key | 10.20 | 22.2 | 16.5 |
-| `ra2edcdc5ab60` | gated static | 12.34 | 26.7 | 19.8 |
-| `rbf5d3bd6059c` | gated query | 12.54 | 27.2 | 20.1 |
-| `r75dccfcf072e` | gated query_key | 20.18 | 43.5 | 32.2 |
-
-Every projection clears its limit on either GPU. A 24-hour `standard` allocation would clear the
-two-hour reserve for the RoPE static and query runs on either GPU, for the RoPE query_key run only on
-an SXM, and for the gated static and query runs only by the SXM estimate (1.9–2.2 hours to spare);
-the gated query_key run needs `long`. From the isolated `claude/score-biases` worktree, after
-committing the frozen execution set and checking live allowances:
+The strips' memory and update time at the full recipe (micro-batches of 16 × 2,048 tokens, 14 heads,
+degree eight) are not yet measured; that qualification sets each job's time limit, and acceptance's
+pilot refuses an allocation whose projected run exceeds its limit less two hours. From the isolated
+`claude/score-biases` worktree, after committing the frozen execution set and checking live
+allowances, each run is submitted with its limit:
 
 ```bash
 submit() {  # run ID, time limit
   sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time="$2" --exclude=akita,mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --time="$2" --exclude=mastiff,collie,samoyed,doodle,terrier --job-name="$1" \
     --output="experiments/transformer_pp/runs/$1/training.log" \
     --error="experiments/transformer_pp/runs/$1/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
-    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
 }
-submit rb70f9e57190f 48:00:00
-submit r891870ef80e9 48:00:00
-submit r3b1619f8a901 48:00:00
-submit ra2edcdc5ab60 72:00:00
-submit rbf5d3bd6059c 72:00:00
-submit r75dccfcf072e 72:00:00
 ```

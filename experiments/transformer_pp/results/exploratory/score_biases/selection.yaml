@@ -24,8 +24,10 @@ settings:
   allowed_differences:
   - model.attention_score_bias
   - train.gradient_event_capture and its policy fields (defaults)
-  backend: mosaic (H100 score-bias kernels); diagnostics on the forward-only blocked
-    reference
+  - model.attention_backend (blocked; controls mosaic) and model.attention_blocked_implementation
+    (strips; controls scan)
+  backend: primaries on the blocked backend's causal strips; both controls on the
+    Mosaic kernels; diagnostics on the forward-only blocked scan
   comparison_groups:
     rope_w_decay:
     - control_query_m8_rope_w_decay
@@ -45,7 +47,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/rb70f9e57190f/config.yaml
-      sha256: 37b5e0909095efba845a4793631193121dad9f7c3cf1b27d2e6d829e352c0486
+      sha256: 3de80129c7c18ef1fcc98bea355b2702521d6be1b848087a724a1b9c1a808ff7
 - study: transformer_pp
   run_id: r891870ef80e9
   role: primary_query_m8_rope_w_decay_query_biases
@@ -53,7 +55,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/r891870ef80e9/config.yaml
-      sha256: 580dc9acce5eacfa3d62f3768df826fef12d8492785f51656d26078d3dd617c5
+      sha256: 8b3ef638dc0cb902080c9b582891d94f22aa2587dd4b4b39c3ce4702fc2b11d1
 - study: transformer_pp
   run_id: r3b1619f8a901
   role: primary_query_m8_rope_w_decay_query_key_biases
@@ -61,7 +63,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/r3b1619f8a901/config.yaml
-      sha256: d757bc1ffb2835d1e7a0b3d5566ed05f55082054186bf3f2a272041f1b5c08da
+      sha256: 5ccb5855bede0eff11e0aa192b80cf9d2f9759c8c8eba4ea396825977b6602ad
 - study: transformer_pp
   run_id: ra2edcdc5ab60
   role: primary_query_m8_per_order_query_key_gate_nope_w_decay_static_biases
@@ -69,7 +71,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/ra2edcdc5ab60/config.yaml
-      sha256: 2a65552dd6376197cd556bb804ec1ab7b26153c1ff90d382fe73fac72dc66d78
+      sha256: deb5937e113a47c367725d86063cabdc3a40c1a9714b5f7ad7d7f58c9940f26e
 - study: transformer_pp
   run_id: rbf5d3bd6059c
   role: primary_query_m8_per_order_query_key_gate_nope_w_decay_query_biases
@@ -77,7 +79,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/rbf5d3bd6059c/config.yaml
-      sha256: 3eeaf3a9e0259a0c0684be3f7726794c862f45dff5bf584326b8e0bc9204727a
+      sha256: 6980568bdafef11417ce443f647131134aef39605ee9cba266def7f4d8e6bcc2
 - study: transformer_pp
   run_id: r75dccfcf072e
   role: primary_query_m8_per_order_query_key_gate_nope_w_decay_query_key_biases
@@ -85,7 +87,7 @@ runs:
   sources:
     config.yaml:
       path: experiments/transformer_pp/runs/r75dccfcf072e/config.yaml
-      sha256: b6aab15fcb8770465f450f6cda0d6913e45d852e0f39ebcb5301041bcb4a63b7
+      sha256: 7331b5e8c2d665840c775aadd1fb000d4c1f286ce2cd7c914cd8e497c62d0fe4
 - study: transformer_pp
   run_id: r25fffc16c2f3
   role: control_query_m8_rope_w_decay

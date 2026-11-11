@@ -41,9 +41,10 @@ They start at `b = 0`, `a = 1`, `u = v = 0`, so every run starts as its control'
 `u`, `v` receive gradients from the first update; nothing else in the initialization changes.
 AdamW decays `u` and `v` (0.1), never `b` or `a`. The shifts are unconstrained in sign. Each run is
 its control's recipe with only the shift added and gradient-event capture on, at the 1× budget
-(7,570 updates), on the H100 Mosaic score-bias kernels, which evaluate each shifted power directly
-rather than expanding it in powers of `s`. Recipe, parameter counts, acceptance checks and launch
-commands: [study README](../../../README.md#per-degree-score-biases).
+(7,570 updates), on the blocked backend's causal strips, which evaluate each shifted power directly
+rather than expanding it in powers of `s`; both controls trained on the Mosaic kernels. Recipe,
+parameter counts, acceptance checks and launch commands:
+[study README](../../../README.md#per-degree-score-biases).
 
 **Gradient-event capture.** After warmup (update 455), an update whose finite pre-clip gradient norm
 exceeds `max(1, 5 × median)` of the previous 100 norms (once 20 exist) saves the exact state it
@@ -57,16 +58,18 @@ order, the shifts' and shifted scores' moments and extremes, the fractions of sh
 zero and within `1e-3` of zero, and each order's term `T_r = c_r G_r (s + beta_r)^r`; per layer and
 order, shifted-score histograms on [-16, 16] pooled over heads; and per layer and head, how much the
 orders cancel, per pair (`sum_r |T_r| / |sum_r T_r|`) and per output (`sum_r ||o_r|| / ||o||`).
-Training and the acceptance pilots use only the Mosaic kernels. Positive shifted scores do not imply
+Training and the acceptance pilots use the causal strips. Positive shifted scores do not imply
 positive weights: the coefficients `c_r` are signed, so an order's term can be negative with a
 positive shifted score.
 
 ## Limits
 
 - One seed per configuration.
-- The RoPE control trained on B300, while every primary trains on H100 (the score-bias kernels exist
-  only there), so the three RoPE comparisons also cross GPU types and kernel implementations. The
-  gated control trained on an H100 SXM, as its primaries will.
+- Both controls trained on the Mosaic kernels (the RoPE control on a B300, the gated control on an
+  H100 SXM), and the primaries train on the blocked backend's causal strips (on a B200, B300 or H100),
+  so every comparison also crosses attention implementations and possibly GPU types: the Mosaic
+  kernels round the weights and score gradients to BF16 for their products, and the strips keep both
+  in FP32. No control was retrained on the strips, so this difference is not measured here.
 
 ## Open decision
 

@@ -1,7 +1,7 @@
 {
   "config": {
     "path": "experiments/transformer_pp/runs/r3b1619f8a901/config.yaml",
-    "sha256": "d757bc1ffb2835d1e7a0b3d5566ed05f55082054186bf3f2a272041f1b5c08da"
+    "sha256": "5ccb5855bede0eff11e0aa192b80cf9d2f9759c8c8eba4ea396825977b6602ad"
   },
   "home_cluster": "kennel",
   "label": "query-m8-dk64-w-decay-score-bias-query-key",

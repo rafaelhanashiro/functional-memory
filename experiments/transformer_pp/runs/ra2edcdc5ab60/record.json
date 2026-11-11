@@ -1,7 +1,7 @@
 {
   "config": {
     "path": "experiments/transformer_pp/runs/ra2edcdc5ab60/config.yaml",
-    "sha256": "2a65552dd6376197cd556bb804ec1ab7b26153c1ff90d382fe73fac72dc66d78"
+    "sha256": "deb5937e113a47c367725d86063cabdc3a40c1a9714b5f7ad7d7f58c9940f26e"
   },
   "home_cluster": "kennel",
   "label": "query-m8-per-order-query-key-gate-nope-wd-score-bias-static",

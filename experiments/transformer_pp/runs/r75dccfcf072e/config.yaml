@@ -28,8 +28,8 @@ model:
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: mosaic
-  attention_blocked_implementation: scan
+  attention_backend: blocked
+  attention_blocked_implementation: strips
   attention_degree: 8
   attention_normalization: false
   attention_output_scaling: head_rms_norm

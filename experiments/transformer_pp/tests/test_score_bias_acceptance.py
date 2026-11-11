@@ -1,5 +1,6 @@
 """The per-degree score-bias runs remain their pinned controls with only the score biases and gradient-event
-capture added, train on the H100 Mosaic kernels, and start from the controls' exact initialization."""
+capture added, train on the blocked backend's causal strips (the controls trained on the Mosaic kernels),
+and start from the controls' exact initialization."""
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
@@ -34,10 +35,13 @@ def run_config(run_id):
 
 
 def variant(name="query", mode="query_key"):
+    """The control's recipe as the runs change it: score biases, capture, and the blocked strips."""
     config = adapter.control_config(name)
     config.model.attention_score_bias = mode
     for key, value in adapter.CAPTURE_POLICY.items():
         setattr(config.train, key, value)
+    for key, value in adapter.BACKEND.items():
+        setattr(config.model, key, value)
     return config
 
 
@@ -80,11 +84,13 @@ def test_allocated_runs_are_their_controls_with_score_biases_and_capture(run_id)
     config = run_config(run_id)
     adapter.check_recipe(config)
     assert adapter.control_name(config) == name and config.model.attention_score_bias == mode
-    assert config.model.attention_backend == "mosaic"
+    assert (config.model.attention_backend, config.model.attention_blocked_implementation) == ("blocked", "strips")
     assert {key: getattr(config.train, key) for key in CAPTURE_FIELDS} == adapter.CAPTURE_POLICY
-    # The capture policy's other fields hold their defaults, so only the switch differs in the recipe.
+    # The capture policy's other fields hold their defaults, so only the switch differs in the recipe; the
+    # attention implementation is the blocked strips, where both controls trained on the Mosaic kernels.
     assert scientific_differences(config, adapter.control_config(name)) == {
-        "model.attention_score_bias", "train.gradient_event_capture"}
+        "model.attention_score_bias", "train.gradient_event_capture", "model.attention_backend",
+        "model.attention_blocked_implementation"}
     _, _, _, count = adapter.CONTROLS[name]
     assert model_parameter_count(config.model) == count + adapter.ADDED_PARAMETERS[mode]
     record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
@@ -120,8 +126,8 @@ def test_added_arrays_are_the_scaffolds_declared_score_biases(name, mode):
 @pytest.mark.parametrize("run_id", ("rb70f9e57190f", "r75dccfcf072e"))
 def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
     """Every field but the execution settings and the score-bias mode, changed alone, is rejected by name, with
-    validation bypassed so that the adapter's own checks must reject it: the backend and capture policy by
-    their own checks, everything else by the control comparison."""
+    validation bypassed so that the adapter's own checks must reject it: the attention implementation and
+    capture policy by their own checks, everything else by the control comparison."""
     monkeypatch.setattr(adapter, "validate_config", lambda config: None)
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
@@ -130,7 +136,7 @@ def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
                 continue
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))
-            reason = ("must be mosaic" if key == "attention_backend" else
+            reason = ("causal strips" if key in adapter.BACKEND else
                       "default policy" if key in CAPTURE_FIELDS else f"'{section}.{key}'")
             try:
                 adapter.check_recipe(config)
@@ -181,15 +187,27 @@ def test_only_execution_locations_and_labels_may_differ(name, mode):
     adapter.check_recipe(config)
 
 
-@pytest.mark.parametrize("backend", ("blocked", "auto", "fused", "xla", "cudnn", "manual"))
+@pytest.mark.parametrize("backend,implementation", (
+    ("mosaic", "strips"), ("mosaic", "scan"), ("blocked", "scan"), ("auto", "strips"), ("fused", "scan"),
+    ("xla", "scan"), ("cudnn", "scan"), ("manual", "scan"),
+))
 @pytest.mark.parametrize("name", BACKBONES)
-def test_only_the_mosaic_backend_is_accepted(name, backend):
-    """The blocked reference is valid for tests and diagnostics, so the adapter refuses it itself; validation
-    refuses the others."""
+def test_only_the_blocked_strips_are_accepted(name, backend, implementation):
+    """The Mosaic kernels (the controls' backend) and the blocked scan are valid score-bias recipes, so the
+    adapter refuses them itself; validation refuses the other backends, which never run score biases."""
+    from scaffolds.transformer.configs.base import validate_config
+
     config = variant(name)
     config.model.attention_backend = backend
-    with pytest.raises(ValueError, match="must be mosaic" if backend == "blocked" else "mosaic"):
-        adapter.check_recipe(config)
+    config.model.attention_blocked_implementation = implementation
+    if backend in ("mosaic", "blocked"):
+        validate_config(config)
+        with pytest.raises(ValueError, match="causal strips"):
+            adapter.check_recipe(config)
+    else:
+        for check in (validate_config, adapter.check_recipe):
+            with pytest.raises(ValueError):
+                check(config)
 
 
 @pytest.mark.parametrize(("field", "value"), (
@@ -335,8 +353,8 @@ def test_initialization_checks_the_recipe_before_building_models(monkeypatch, na
     with pytest.raises(ValueError, match="requires per-degree score biases"):
         adapter.check_initialization(adapter.control_config(name))
     config = variant(name)
-    config.model.attention_backend = "blocked"
-    with pytest.raises(ValueError, match="must be mosaic"):
+    config.model.attention_backend = "mosaic"
+    with pytest.raises(ValueError, match="causal strips"):
         adapter.check_initialization(config)
 
 
@@ -346,37 +364,38 @@ def test_adapter_installs_its_guards_and_the_score_bias_checks(run_id):
     gated = FROZEN_RUNS[run_id][0] == "per_order_query_key_gate"
     spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
     assert spec.check_config is adapter.check_recipe and spec.check_initialization is adapter.check_initialization
-    assert spec.required_backend == "mosaic"
+    assert spec.required_backend == "blocked"
     assert adapter.RUNS.parent.parents[1] / adapter.OWN_TESTS == Path(__file__).resolve()
     recipe = config_to_dict(config)
-    cpu = acceptance.test_paths(spec, recipe, resolved_backend="mosaic", cpu=True)
-    gpu = acceptance.test_paths(spec, recipe, resolved_backend="mosaic", cpu=False)
-    assert {adapter.OWN_TESTS, acceptance.SCORE_BIAS_TESTS, acceptance.SCORE_BIAS_LOWERING_TESTS,
+    cpu = acceptance.test_paths(spec, recipe, resolved_backend="blocked", cpu=True)
+    gpu = acceptance.test_paths(spec, recipe, resolved_backend="blocked", cpu=False)
+    # CPU: the score-bias reference and model checks, the strips' own checks, capture, and this adapter,
+    # beside the backbone's CPU checks; no Mosaic module.
+    assert {adapter.OWN_TESTS, acceptance.SCORE_BIAS_TESTS, acceptance.BLOCKED_STRIPS_TESTS,
             acceptance.GRADIENT_EVENT_TESTS} <= set(cpu)
-    assert {acceptance.MOSAIC_SCORE_BIAS_TESTS, acceptance.SCORE_BIAS_TESTS,
-            "scaffolds/transformer/tests/test_mosaic_query.py",
-            "scaffolds/transformer/tests/test_mosaic_repeatability.py"} <= set(gpu)
-    for paths in (cpu, gpu):
-        assert ({acceptance.PER_ORDER_DECAY_TESTS, acceptance.ENDPOINT_DECAY_TESTS} <= set(paths)) is gated
-    assert acceptance.mosaic_test_options(recipe, "mosaic") == ("--mosaic-precision", "bf16")
+    assert not {acceptance.SCORE_BIAS_LOWERING_TESTS, acceptance.MOSAIC_SCORE_BIAS_TESTS} & set(cpu)
+    assert ({acceptance.PER_ORDER_DECAY_TESTS, acceptance.ENDPOINT_DECAY_TESTS} <= set(cpu)) is gated
+    # GPU: the strips with score biases at production precision, and nothing that could skip or refuse there.
+    assert gpu == (acceptance.SCORE_BIAS_STRIPS_TESTS,)
+    assert acceptance.mosaic_test_options(recipe, "blocked") == ()
     with pytest.raises(ValueError):
         adapter.experiment_spec(adapter.control_config(FROZEN_RUNS[run_id][0]), entry_module=adapter.__name__)
 
 
 @pytest.mark.parametrize("resolved", ("blocked", "fused", "mosaic"))
-def test_the_pilot_must_train_on_the_mosaic_kernels(monkeypatch, tmp_path, resolved):
-    """Acceptance's own pilot check, with this adapter's spec: a pilot that resolved any backend but Mosaic
-    fails the allocation before training; a Mosaic pilot proceeds to its validation checks."""
+def test_the_pilot_must_train_on_the_blocked_strips(monkeypatch, tmp_path, resolved):
+    """Acceptance's own pilot check, with this adapter's spec: a pilot that resolved any backend but the
+    blocked one fails the allocation before training; a blocked pilot proceeds to its validation checks."""
     from types import SimpleNamespace
 
     config = run_config("r75dccfcf072e")
     spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
     experiment = {"identity": "test", "source_commit": "a" * 40, "config": config_to_dict(config)}
-    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "config.yaml", gpu_count=1, gpu_type="H100")
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "config.yaml", gpu_count=1, gpu_type="B200")
 
     def worker(spec, args, name, output, **unused):
         if name == "hardware":
-            return {"attention_backend": "mosaic", "device_kinds": ["NVIDIA H100 80GB HBM3"]}
+            return {"attention_backend": "blocked", "device_kinds": ["NVIDIA B200"]}
         if name == "initialization":
             return {"checked": True}
         metrics = args.directory / "pilot" / "metrics.jsonl"
@@ -391,27 +410,27 @@ def test_the_pilot_must_train_on_the_mosaic_kernels(monkeypatch, tmp_path, resol
 
     monkeypatch.setattr(acceptance, "_run_worker", worker)
     monkeypatch.setattr(acceptance.subprocess, "run", run)
-    reason = ("attention diagnostics failed" if resolved == "mosaic"
-              else f"requires backend 'mosaic'; resolved '{resolved}'")
+    reason = ("attention diagnostics failed" if resolved == "blocked"
+              else f"requires backend 'blocked'; resolved '{resolved}'")
     with pytest.raises(RuntimeError, match=reason):
         acceptance._run(spec, args, experiment)
     assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "pilot"
 
 
 @pytest.mark.parametrize("argv", (
-    ["config.yaml", "--gpu-type", "B300"], ["config.yaml", "--gpu-type=B300"], ["config.yaml", "--gpu-type", "A100"],
+    ["config.yaml", "--gpu-type", "A100"], ["config.yaml", "--gpu-type=A6000"], ["config.yaml", "--gpu-type", "H200"],
 ))
-def test_allocations_other_than_h100_are_refused_before_acceptance(monkeypatch, argv):
+def test_other_gpu_types_are_refused_before_acceptance(monkeypatch, argv):
     monkeypatch.setattr(adapter, "run_acceptance", lambda *args: pytest.fail("Acceptance started"))
-    with pytest.raises(ValueError, match="train only on H100"):
+    with pytest.raises(ValueError, match="train only on B200, B300, H100"):
         adapter.main(argv)
 
 
 @pytest.mark.parametrize("argv", (
     ["config.yaml", "--gpu-type", "H100", "--gpu-count", "1"], ["config.yaml", "--gpu-type=h100"],
-    ["config.yaml", "--runtime-env"],
+    ["config.yaml", "--gpu-type", "B200"], ["config.yaml", "--gpu-type=B300"], ["config.yaml", "--runtime-env"],
 ))
-def test_h100_allocations_reach_acceptance(monkeypatch, argv):
+def test_b200_b300_and_h100_allocations_reach_acceptance(monkeypatch, argv):
     calls = []
     monkeypatch.setattr(adapter, "run_acceptance", lambda spec, arguments: calls.append(arguments))
     adapter.main(argv)
