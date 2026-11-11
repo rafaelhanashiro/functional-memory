@@ -348,6 +348,9 @@ def run_pilot(args, spec, experiment) -> dict:
     )
     if not finite:
         raise FloatingPointError("Nonfinite pilot loss or update numerics")
+    if not args.continue_updates:  # timing, memory and acceptance's pilot checks only
+        report["compile_cache"] = {"pilot": CACHE_LOG.summary("pilot")}
+        return report
     end = stop + args.continue_updates
     # The uninterrupted reference: a fresh run through the pilot's validation and checkpoint and on, in
     # this process, so its update is the pilot's program for a freshly initialized state.
@@ -578,7 +581,8 @@ def main(argv=None) -> None:
     parser.add_argument("--experiment", help="study name for the frozen-execution check (e.g. transformer_pp)")
     parser.add_argument("--allow-dirty", action="store_true", help="skip the frozen-execution check (CPU smoke tests)")
     parser.add_argument("--gpu-type", default="H100")
-    parser.add_argument("--continue-updates", type=int, default=2)
+    parser.add_argument("--continue-updates", type=int, default=2,
+                        help="pilot: updates after its stop for the references (0: pilot alone, no resume)")
     parser.add_argument("--parity-updates", type=int, default=10)
     parser.add_argument("--diagnostic-interval", type=int, default=2)
     parser.add_argument("--limit-hours", type=float, nargs="+", default=(24, 48, 72))
@@ -607,8 +611,8 @@ def main(argv=None) -> None:
         pilot = run_pilot(args, spec, experiment)
         report = {**common, "pilot": pilot, "finished_utc": datetime.now(UTC).isoformat()}
         _write(args.directory / "pilot.json", report)
-        print(json.dumps({key: pilot[key] for key in ("timing_summary", "projected_hours", "budget_gate",
-                                                      "training_peak_bytes", "attention_backend", "compared")},
+        print(json.dumps({key: pilot.get(key) for key in ("timing_summary", "projected_hours", "budget_gate",
+                                                          "training_peak_bytes", "attention_backend", "compared")},
                          indent=1), flush=True)
     if "parity" in modes:
         parity = run_parity(args, spec, experiment, pilot_updates=pilot["updates"] if pilot else None)
