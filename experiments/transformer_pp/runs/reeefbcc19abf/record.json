@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/reeefbcc19abf/config.yaml",
+    "sha256": "7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326"
+  },
+  "label": "query-m8-sum-of-squares-w-decay",
+  "name": "query-m8-sum-of-squares-w-decay",
+  "record_schema_version": 1,
+  "run_id": "reeefbcc19abf",
+  "status": "planned"
+}

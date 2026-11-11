@@ -15,6 +15,7 @@ from scaffolds.transformer.attention.unnormalized import initial_coefficients
 from scaffolds.transformer.configs import Config, ModelConfig, validate_config
 from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.training import loop
+from scaffolds.transformer.training.numerics import is_signed_kernel
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity
 from scaffolds.transformer.training.state import create_state
 
@@ -177,3 +178,17 @@ def test_training_diagnostics_and_identity_run(changes):
         assert "c_r s_ti^r exp(-(t-i) lambda_tir)" in identity["attention_formula"]
     else:
         assert identity["attention_coefficient_conditioning"] == "query"
+
+
+def test_expanded_sum_of_squares_kernels_may_round_below_zero():
+    """The kernels evaluate the expanded c_r(x_t), so values near a double root of q1^2 + q2^2 round to
+    either sign; the normalized static form evaluates q1^2 + q2^2 itself and stays nonnegative."""
+    assert is_signed_kernel(_config(**SQUARES).model)
+    assert not is_signed_kernel(_config(attention_coefficient_conditioning="static", attention_coefficient_activation="identity",
+                                        attention_coefficient_kernel_weight_decay=False,
+                                        attention_coefficient_amplitude_initial=1.0,
+                                        attention_coefficient_projection_initial_std=0.0,
+                                        attention_normalization=True, attention_output_scaling="none",
+                                        attention_coefficient_parameterization="sum_of_squares",
+                                        attention_coefficient_scale="none",
+                                        attention_coefficient_amplitude_scale="none").model)
