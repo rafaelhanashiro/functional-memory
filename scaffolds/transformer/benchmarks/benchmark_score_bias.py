@@ -6,8 +6,12 @@ polynomial and the per-order endpoint gate without shifts) at the production per
 sequences of 2,048 tokens, 14 heads, Q/K and value widths 64, degree 8 (``--degree``).
 ``attention`` times the attention operation alone through the public entry points (warmed forward,
 and forward plus the VJP of every operand). ``registers`` compiles every kernel once with ptxas's
-verbose report (``MOSAIC_GPU_DUMP_PTXAS``) and records its registers and spill bytes; run it in its
-own process, since a kernel compiled earlier in the process is not compiled (or reported) again.
+verbose report (``MOSAIC_GPU_DUMP_PTXAS``) and records its registers, spill bytes and PTX ISA
+version; run it in its own process, since a kernel compiled earlier in the process is not compiled
+(or reported) again. The toolkit that assembles the kernels changes their code: without
+``CUDA_HOME`` Mosaic uses the node's CUDA, so run under the launcher's runtime, which pins
+``CUDA_HOME`` to the locked toolkit (``launchers/kennel_runtime.sh``); every report records
+``CUDA_HOME`` and its ptxas version, and only reports with the same toolkit compare.
 
     python -m scaffolds.transformer.benchmarks.benchmark_score_bias kernels --output k.json
     python -m scaffolds.transformer.benchmarks.benchmark_score_bias attention --output a.json
@@ -168,7 +172,7 @@ def registers(degree, dump=None):
             reports = sorted(set(dump.glob("*.ptxas")) - before)
             if len(reports) != 1:
                 raise RuntimeError(f"{family} {name}: expected one new ptxas report, found {len(reports)}")
-            stats = {"report": reports[0].name}
+            stats = {"report": reports[0].name, "ptx_isa": _ptx_isa(reports[0])}
             for match in pattern.finditer(reports[0].read_text()):
                 if match.group(4):
                     stats["registers"] = int(match.group(4))
@@ -179,6 +183,27 @@ def registers(degree, dump=None):
         print(family, results[family], flush=True)
     return {"ptxas": results, "note": "registers is the launch allocation (384 threads); compute warpgroups "
                                       "raise theirs to 232 with setmaxnreg"}
+
+
+def _ptx_isa(report):
+    """The PTX ISA version (``.version``) of the dumped PTX beside a kernel's ptxas report."""
+    found = re.search(r"^\.version\s+(\S+)", report.with_suffix(".ptx").read_text(), re.MULTILINE)
+    return found and found.group(1)
+
+
+def _toolkit():
+    """``CUDA_HOME`` (the launcher's pinned toolkit, or None) and the version of its ptxas."""
+    home = os.environ.get("CUDA_HOME")
+    version = None
+    if home:
+        try:
+            text = subprocess.run([str(Path(home) / "bin" / "ptxas"), "--version"], capture_output=True, text=True,
+                                  timeout=60).stdout
+        except (OSError, subprocess.SubprocessError):
+            text = ""
+        found = re.search(r"release \S+ V(\S+)", text)
+        version = found and found.group(1)
+    return {"cuda_home": home, "cuda_home_ptxas_version": version}
 
 
 def main():
@@ -194,7 +219,8 @@ def main():
     device = jax.local_devices()[0]
     report = {"format": "score-bias-attention-benchmark", "mode": args.mode, "device": device.device_kind,
               "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "node": os.environ.get("SLURMD_NODENAME"),
-              "jax": jax.__version__, "shape": {**SHAPE, "degree": args.degree}, "precision": "bf16",
+              "jax": jax.__version__, "toolkit": _toolkit(), "shape": {**SHAPE, "degree": args.degree},
+              "precision": "bf16",
               "source_commit": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
               "source_dirty": bool(subprocess.run(["git", "status", "--porcelain", "scaffolds"], capture_output=True,
                                                   text=True).stdout.strip())}
