@@ -1596,12 +1596,14 @@ capture fields and execution locations and labels removed, the recipe must equal
 initialization each mode's arrays must have their shapes and exact FP32 starts (`b = 0`, `a = 1`,
 `u = v = 0`), the count must be the control's plus the mode's additions, and removing the arrays must
 leave the control's fingerprint; the shared check then requires the backbone to equal the softmax
-control's and every attention array to hold its declared start. Acceptance refuses any allocation but B200, B300 or H100 before it starts, and its
-pilot must resolve the blocked backend. Before training it runs `tests/test_score_bias.py`,
-`tests/test_blocked_strips.py`, `tests/test_gradient_events.py` and the adapter's tests on CPU,
-beside the backbone's CPU checks, and on the GPU `tests/test_score_bias_strips.py` alone: the strips
-through `attention_core` at production precision for every mode on both backbones, with negative and
-exactly zero shifted scores, against host FP64. A skipped test fails acceptance.
+control's and every attention array to hold its declared start. Before acceptance starts, the adapter
+refuses an allocation of a GPU type the recipe does not train on (B200, B300 or H100; B200 or B300 for
+the gated query_key recipe), and acceptance's pilot must resolve the blocked backend. Before training
+acceptance runs `tests/test_score_bias.py`, `tests/test_blocked_strips.py`,
+`tests/test_gradient_events.py` and the adapter's tests on CPU, beside the backbone's CPU checks, and
+on the GPU `tests/test_score_bias_strips.py` alone: the strips through `attention_core` at production
+precision for every mode on both backbones, with negative and exactly zero shifted scores, against host
+FP64. A skipped test fails acceptance.
 
 **Gradient-event capture** ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)),
 fixed in the recipes before launch:
@@ -1629,29 +1631,64 @@ term magnitude, per layer, head and order; shifted-score histograms on [-16, 16]
 and the cancellation across orders per layer and head. Training and the acceptance pilots run the
 causal strips; the diagnostics run the scan of the same arithmetic.
 
-**Hardware.** One B200 (`shiba`), B300 (`akita`) or H100 SXM (`dogo`) per run: the strips are plain
-JAX, and their GPU tests passed on a B200
-([validation record](../../scaffolds/transformer/validation/README.md#score-bias-causal-strips-on-b200-2026-11-11)).
-The jobs exclude `mastiff`, whose failing H100 Slurm grants to one-GPU jobs first, and the A100 and
-A6000 nodes. Both controls trained on the Mosaic kernels, the RoPE control `r25fffc16c2f3` on a B300
-and the gated control `r227b0ed7c605` on an H100 SXM, so every comparison also crosses attention
-implementations: the Mosaic kernels round the weights and score gradients to BF16 for their products,
-and the strips keep both in FP32. Home cluster: **Kennel**. These jobs have no scheduling
-dependencies on each other.
+**Backend and hardware.** The runs train on the blocked backend's causal strips, plain JAX that runs
+on B200, B300 and H100 alike, so they can take whichever of these GPUs is free. The Mosaic score-bias
+kernels run only on H100; they stay qualified
+([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11))
+but these runs do not use them. Both controls trained on the Mosaic kernels (the RoPE control
+`r25fffc16c2f3` on a B300, the gated control `r227b0ed7c605` on an H100 SXM) and are not retrained on
+the strips, so each comparison also changes the attention implementation: the Mosaic kernels round the
+weights and score gradients to BF16 (7 stored mantissa bits) for their products, while the strips keep
+them as FP32 values whose products run as TF32 (10 stored mantissa bits) under JAX's default
+precision. Home cluster: **Kennel**. One GPU per run; the jobs have no scheduling dependencies on each
+other.
 
-The strips' memory and update time at the full recipe (micro-batches of 16 × 2,048 tokens, 14 heads,
-degree eight) are not yet measured; that qualification sets each job's time limit, and acceptance's
-pilot refuses an allocation whose projected run exceeds its limit less two hours. From the isolated
-`claude/score-biases` worktree, after committing the frozen execution set and checking live
-allowances, each run is submitted with its limit:
+Each recipe's pilot (20 updates of the production batch at micro-batch 16, with validation, the
+score-bias diagnostics and a checkpoint) and fresh-process resume passed on one B200 and, except the
+gated query_key recipe, on one H100 PCIe
+([validation record](../../scaffolds/transformer/validation/README.md#b200-and-the-score-bias-causal-strips-2026-11-11)).
+The gated query_key update needs 147 GiB, more than an 80 GB H100 holds, so that run trains on a B200
+or B300 only. XLA's allocator takes 0.75 of the device by default; the adapter exports
+`XLA_PYTHON_CLIENT_MEM_FRACTION=0.95` for the three gated runs, which the gated query_key run needs on
+a B200 and the gated query run on an H100 (the gated static run has 3 GiB to spare there at 0.75), and
+acceptance records it. Hours are acceptance's projection for 7,570 updates. No H100 SXM or B300 was
+measured: the H100 SXM column divides the H100 PCIe projection by 1.35, the gated control's ratio of
+PCIe to SXM update time, and the limits assume a B300 update takes no longer than a B200 update.
+
+| Run | Recipe | B200 peak GiB | B200 s/update | B200 hours | H100 SXM hours | GPU types | Allocator share | Limit | Limit on B200, B300 |
+| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
+| `rb70f9e57190f` | RoPE static | 32.0 | 4.29 | 9.5 | 18.4 | B200, B300, H100 | 0.75 | 24 h | 13 h |
+| `r891870ef80e9` | RoPE query | 32.5 | 4.43 | 9.7 | 19.0 | B200, B300, H100 | 0.75 | 24 h | 13 h |
+| `r3b1619f8a901` | RoPE query_key | 49.1 | 13.15 | 28.3 | 58.2 | B200, B300, H100 | 0.75 | 67 h | 34 h |
+| `ra2edcdc5ab60` | gated static | 66.9 | 20.24 | 43.6 | 74.1 | B200, B300, H100 | 0.95 | 84 h | 51 h |
+| `rbf5d3bd6059c` | gated query | 67.3 | 20.47 | 44.1 | 74.1 | B200, B300, H100 | 0.95 | 84 h | 51 h |
+| `r75dccfcf072e` | gated query_key | 147.1 | 36.82 | 79.0 | – | B200, B300 | 0.95 | 90 h | 90 h |
+
+Acceptance refuses an allocation whose projection exceeds its time limit less two hours, so each limit
+covers the slowest GPU type its job may land on: that projection plus two hours plus 10%, rounded up
+(the RoPE static and query runs take `standard`'s 24 hours). A run submitted without H100 needs only
+the last column's limit. The jobs exclude `mastiff`: Slurm grants its failing H100 to one-GPU jobs
+first, and its PCIe H100s would exceed the limits (the RoPE static and query runs project 24.8 and
+25.7 hours there). From the isolated `claude/score-biases` worktree, after committing the frozen
+execution set, each run is submitted with its GPU types and limit; partitions are chosen from the live
+allowances at submission ([CLUSTERS.md](../../CLUSTERS.md)): `standard` or `long` for the RoPE static
+and query runs, `long` for the others.
 
 ```bash
-submit() {  # run ID, time limit
-  sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time="$2" --exclude=mastiff,collie,samoyed,doodle,terrier --job-name="$1" \
+submit() {  # run ID, partition(s), time limit, GPU types
+  local exclude=mastiff,collie,samoyed,doodle,terrier
+  [[ $4 == *H100* ]] || exclude=dogo,$exclude
+  sbatch --parsable --partition="$2" --time="$3" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude="$exclude" --job-name="$1" \
     --output="experiments/transformer_pp/runs/$1/training.log" \
     --error="experiments/transformer_pp/runs/$1/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
-    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
+submit rb70f9e57190f standard,long 24:00:00 B200,B300,H100
+submit r891870ef80e9 standard,long 24:00:00 B200,B300,H100
+submit r3b1619f8a901 long 67:00:00 B200,B300,H100  # on B200, B300 only: long 34:00:00 B200,B300
+submit ra2edcdc5ab60 long 84:00:00 B200,B300,H100  # on B200, B300 only: long 51:00:00 B200,B300
+submit rbf5d3bd6059c long 84:00:00 B200,B300,H100  # on B200, B300 only: long 51:00:00 B200,B300
+submit r75dccfcf072e long 90:00:00 B200,B300
 ```

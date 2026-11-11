@@ -43,7 +43,10 @@ other types' nodes; A6000 training is markedly slower in this project's tests. T
 transformer launcher's `GPU_TYPES` argument defaults to `B300,H100` and its default
 `--exclude` lists `shiba`, so a job granted a B200 exits within seconds unless its submission
 lists `B200` in `GPU_TYPES` and drops `shiba` from `--exclude`. B200 runs in the CUDA 13
-environment, like B300 (below). General priority is `debug > standard > long > sweep`.
+environment, like B300 (below); on B200 only the blocked backend's causal strips with per-degree score
+biases are qualified
+([validation](scaffolds/transformer/validation/README.md#b200-and-the-score-bias-causal-strips-2026-11-11)).
+General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
 node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps

@@ -42,8 +42,10 @@ They start at `b = 0`, `a = 1`, `u = v = 0`, so every run starts as its control'
 AdamW decays `u` and `v` (0.1), never `b` or `a`. The shifts are unconstrained in sign. Each run is
 its control's recipe with only the shift added and gradient-event capture on, at the 1× budget
 (7,570 updates), on the blocked backend's causal strips, which evaluate each shifted power directly
-rather than expanding it in powers of `s`; both controls trained on the Mosaic kernels. Recipe,
-parameter counts, acceptance checks and launch commands:
+rather than expanding it in powers of `s`; both controls trained on the Mosaic kernels. Each run
+trains on one B200, B300 or H100 SXM, the gated query–key run on a B200 or B300 only (its update needs
+147 GiB); on a B200 the six runs project 9.5–79 hours. Recipe, parameter counts, acceptance checks,
+measured update times and launch commands:
 [study README](../../../README.md#per-degree-score-biases).
 
 **Gradient-event capture.** After warmup (update 455), an update whose finite pre-clip gradient norm
@@ -66,10 +68,12 @@ positive shifted score.
 
 - One seed per configuration.
 - Both controls trained on the Mosaic kernels (the RoPE control on a B300, the gated control on an
-  H100 SXM), and the primaries train on the blocked backend's causal strips (on a B200, B300 or H100),
-  so every comparison also crosses attention implementations and possibly GPU types: the Mosaic
-  kernels round the weights and score gradients to BF16 for their products, and the strips keep both
-  in FP32. No control was retrained on the strips, so this difference is not measured here.
+  H100 SXM), and the primaries train on the blocked backend's causal strips (on a B200, B300 or H100
+  SXM; the gated query–key run on a B200 or B300), so every comparison also crosses attention
+  implementations and possibly GPU types: the Mosaic kernels round the weights and score gradients to
+  BF16 (7 stored mantissa bits) for their products, while the strips keep them as FP32 values whose
+  products run as TF32 (10 stored mantissa bits) under JAX's default precision. No control is
+  retrained on the strips, so this difference is not measured here.
 
 ## Open decision
 
