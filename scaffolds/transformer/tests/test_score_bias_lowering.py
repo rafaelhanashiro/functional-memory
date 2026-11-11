@@ -57,7 +57,7 @@ def test_support_predicate_names_and_families():
             assert not score_bias.score_bias_supported(8, width, time, gate=gate, shift=shift)
         assert not score_bias.score_bias_supported(True, 64, 2048, gate=gate, shift=shift)
         name = score_bias.implementation_name(gate, shift)
-        assert name.startswith("pallas_mosaic_gpu_query_polynomial") and name.endswith(f"score_bias_{shift}")
+        assert name.startswith("pallas_mosaic_gpu_query_polynomial") and name.endswith(f"{shift}_score_bias")
         assert ("per_order_endpoint_decay" in name) == (gate == "endpoint")
     assert len({score_bias.implementation_name(*f) for f in FAMILIES}) == 4
     assert score_bias.SHIFT_OF_MODE == {"static": "row", "query": "row", "query_key": "pair"}

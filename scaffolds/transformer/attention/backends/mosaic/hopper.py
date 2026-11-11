@@ -98,7 +98,8 @@ def _smem(shape):
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
 def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-            block_k=64, stages=3):
+            block_k=None, stages=3):
+    block_k = common.hopper_blocks(family, degree)["forward"] if block_k is None else block_k
     BQ = B
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
@@ -251,8 +252,9 @@ def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, 
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
 def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-       block_k=64, stages=2):
+       block_k=None, stages=2):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
+    block_k = common.hopper_blocks(family, degree)["dq"] if block_k is None else block_k
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     tiles_per_cta = B * WGS // block_k
@@ -413,9 +415,10 @@ def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, d
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_q", "stages"))
 def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-        block_q=64, stages=2):
+        block_q=None, stages=2):
     """(dK, dV) in the input dtypes, and for families with per-key sums those sums
     [n, batch, heads, time]. Lanes are keys; per-query vectors stream with each query tile."""
+    block_q = common.hopper_blocks(family, degree)["dkv"] if block_q is None else block_q
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     per_wg = B // block_q

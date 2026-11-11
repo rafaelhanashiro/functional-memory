@@ -214,6 +214,22 @@ def test_output_and_every_gradient_match_float64(gate, shift, time, degree, top)
           " ".join(f"{name}={error:.2e}" for name, error in measured.items()))
 
 
+@pytest.mark.parametrize("precision", ("bf16x3",))
+@pytest.mark.parametrize("gate,shift", FAMILIES, ids=FAMILY_IDS)
+def test_fp32_precision_weights_match_float64(gate, shift, precision):
+    """Weights and score gradients as three BF16 components (the kernels' other precision): the
+    same bounds, degree four, 512 tokens."""
+    operands, cotangent = _inputs(gate, shift, 4, 512, seed=7)
+    attend = jax.jit(partial(_vjp, _mosaic(gate, shift, precision=precision)))
+    if not _hopper():
+        with _refuses_here():
+            attend(operands, cotangent)
+        return
+    measured = _compare(gate, shift, attend(operands, cotangent), _float64(gate, shift, operands, cotangent),
+                        label=f"{gate}-{shift} {precision}")
+    print(f"\n{gate}-{shift} {precision}:", " ".join(f"{name}={error:.2e}" for name, error in measured.items()))
+
+
 @pytest.mark.parametrize("gate", ("none", "endpoint"))
 def test_negative_and_exactly_zero_shifted_scores_match_float64(gate):
     """Integer-valued q, k make every score exact; beta_r(t) = -s(t, i_r) then gives exactly zero
@@ -375,8 +391,9 @@ def test_nonfinite_inputs_poison_only_their_causal_rows(family, operand, kind, b
 
 @pytest.mark.parametrize("gate,shift", FAMILIES, ids=FAMILY_IDS)
 def test_production_shape_is_bitwise_repeatable(gate, shift):
-    """16 sequences of 2,048 tokens, 14 heads, d_K = 64, degree eight: five forward and backward
-    evaluations give bitwise identical outputs and gradients."""
+    """16 sequences of 2,048 tokens, 14 heads, d_K = 64, degree eight: twenty forward and backward
+    evaluations give bitwise identical outputs and gradients (the per-order sums are read, added,
+    and written back in shared memory, by every lane that holds a row)."""
     operands, cotangent = _inputs(gate, shift, 8, 2048, seed=29, batch=16, heads=14)
     attend = jax.jit(partial(_vjp, _mosaic(gate, shift)))
     if not _hopper():
@@ -385,7 +402,7 @@ def test_production_shape_is_bitwise_repeatable(gate, shift):
         return
     first = jax.tree.map(np.asarray, attend(operands, cotangent))
     assert all(np.isfinite(np.asarray(x, np.float32)).all() for x in jax.tree.leaves(first))
-    for _ in range(4):
+    for _ in range(19):
         again = jax.tree.map(np.asarray, attend(operands, cotangent))
         for a, b in zip(jax.tree.leaves(first), jax.tree.leaves(again), strict=True):
             np.testing.assert_array_equal(a, b)

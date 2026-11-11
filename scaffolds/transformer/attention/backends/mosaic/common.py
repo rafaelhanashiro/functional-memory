@@ -57,31 +57,40 @@ def blackwell_query_pass_bytes(width, value_width, vector_count, sum_count, key_
 HOPPER_SMEM_BYTES = 232448
 
 
-def hopper_smem_bytes(family, degree, width, value_width, *, rows=64, block=64, warpgroups=2):
+def hopper_blocks(family, degree):
+    """Tile width of each Hopper kernel for a family: the key tiles of the forward and dQ kernels
+    and the query tiles of the dK/dV kernel."""
+    return {"forward": 64, "dq": 64, "dkv": 64}
+
+
+def hopper_smem_bytes(family, degree, width, value_width, *, rows=64, block=None, warpgroups=2):
     """Shared memory of each Hopper kernel for a family ({"forward", "dq", "dkv"}), as Mosaic GPU
     lowering allocates it: every scratch buffer rounded up to 1 KiB (the BF16 Q/K/V/dO tiles of a
     CTA and their rings, three stages forward and two backward; the FP32 per-query and per-key
     vectors, sums and head scalars of a CTA or a tile; the forward's FP32 output and statistic), the
     2 KiB reduction scratch of a kernel that reduces, and 8-byte barriers. Vectors are staged per
-    tile or per CTA, never for the whole sequence, so the sequence length does not enter."""
+    tile or per CTA, never for the whole sequence, so the sequence length does not enter. Tiles
+    have the family's widths (``hopper_blocks``) unless ``block`` overrides them."""
     def aligned(count, size):
         return -(-count * size // 1024) * 1024
+
+    blocks = hopper_blocks(family, degree) if block is None else dict.fromkeys(("forward", "dq", "dkv"), block)
 
     n_forward, n_backward, n_sums = vector_counts(family, degree)
     n_key, n_key_sums = key_counts(family, degree)
     n_head = head_count(family, degree)
     # A CTA's BF16 rows at the Q/K and value widths, and the BF16 tiles of a K/V or Q/dO ring.
     cta_qk, cta_v = aligned(warpgroups * rows * width, 2), aligned(warpgroups * rows * value_width, 2)
-    ring = lambda stages: aligned(stages * block * width, 2) + aligned(stages * block * value_width, 2)
+    ring = lambda stages, block: aligned(stages * block * width, 2) + aligned(stages * block * value_width, 2)
     per_cta = lambda count: aligned(warpgroups * count * rows, 4)  # FP32 vectors or sums of a CTA's rows
-    per_tile = lambda stages, count: aligned(stages * count * block, 4)  # FP32 vectors of each ring tile
+    per_tile = lambda stages, count, block: aligned(stages * count * block, 4)  # FP32 vectors of each ring tile
     heads = aligned(warpgroups * head_width(n_head), 4) if n_head else 0
-    forward = (cta_qk + ring(3) + per_cta(max(n_forward, 1)) + per_tile(3, n_key) + heads
-               + aligned(warpgroups * rows * value_width, 4) + per_cta(1) + 2048 + 8 * (warpgroups + 4 * 3))
-    dq = (cta_qk + cta_v + ring(2) + per_cta(n_backward) + per_cta(max(n_sums, 1)) + per_tile(2, n_key) + heads
-          + (2048 if n_sums else 0) + 8 * (warpgroups + 4 * 2))
-    dkv = (cta_qk + cta_v + ring(2) + per_tile(2, n_backward) + per_cta(n_key) + per_cta(n_key_sums) + heads
-           + (2048 if n_key_sums else 0) + 8 * (warpgroups + 2 * 2))
+    forward = (cta_qk + ring(3, blocks["forward"]) + per_cta(max(n_forward, 1)) + per_tile(3, n_key, blocks["forward"])
+               + heads + aligned(warpgroups * rows * value_width, 4) + per_cta(1) + 2048 + 8 * (warpgroups + 4 * 3))
+    dq = (cta_qk + cta_v + ring(2, blocks["dq"]) + per_cta(n_backward) + per_cta(max(n_sums, 1))
+          + per_tile(2, n_key, blocks["dq"]) + heads + (2048 if n_sums else 0) + 8 * (warpgroups + 4 * 2))
+    dkv = (cta_qk + cta_v + ring(2, blocks["dkv"]) + per_tile(2, n_backward, blocks["dkv"]) + per_cta(n_key)
+           + per_cta(n_key_sums) + heads + (2048 if n_key_sums else 0) + 8 * (warpgroups + 2 * 2))
     return {"forward": forward, "dq": dq, "dkv": dkv}
 
 
@@ -422,9 +431,9 @@ def _shift_operands(family, degree):
 def _order_shift(family, degree, vectors, pair, order, *, slopes=False):
     """(beta_r, tau_r, 1 - tau_r^2) of order r >= 1 in a score-bias tile (tau terms None for a row
     shift; 1 - tau^2 only with ``slopes``). tau = sign(h) (1 - e) / (1 + e) with e = 2^(-2 log2(e) |h|),
-    h = p_r(t) + q_r(i), so 1 - tau^2 = 4 e / (1 + e)^2: stable for every h, exactly zero at h = 0 and
-    +-1 once e underflows, and NaN for a NaN input. On masked entries every term is zero, so z = s
-    = 0 there and a future token's shift input never reaches a sum."""
+    h = p_r(t) + q_r(i), and 1 - tau^2 = 4 e / (1 + e)^2 are stable for every h: tau is exactly zero
+    at h = 0 and +-1 once e underflows, and NaN for a NaN input. On masked entries every term is
+    zero, so z = s = 0 there and a future token's shift input never reaches a sum."""
     vector, key, head = _shift_operands(family, degree)
     tau = sech2 = None
     if family in PAIR_SHIFT_FAMILIES:

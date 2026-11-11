@@ -46,10 +46,10 @@ HOPPER_TIME_MULTIPLE = 128  # rows per H100 CTA
 FAMILY = {("none", "row"): common.SCORE_BIAS_ROW, ("none", "pair"): common.SCORE_BIAS_PAIR,
           ("endpoint", "row"): common.SCORE_BIAS_ENDPOINT_ROW, ("endpoint", "pair"): common.SCORE_BIAS_ENDPOINT_PAIR}
 IMPLEMENTATION = {
-    ("none", "row"): "pallas_mosaic_gpu_query_polynomial_score_bias_row",
-    ("none", "pair"): "pallas_mosaic_gpu_query_polynomial_score_bias_pair",
-    ("endpoint", "row"): "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_score_bias_row",
-    ("endpoint", "pair"): "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_score_bias_pair",
+    ("none", "row"): "pallas_mosaic_gpu_query_polynomial_row_score_bias",
+    ("none", "pair"): "pallas_mosaic_gpu_query_polynomial_pair_score_bias",
+    ("endpoint", "row"): "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_row_score_bias",
+    ("endpoint", "pair"): "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_pair_score_bias",
 }
 
 
