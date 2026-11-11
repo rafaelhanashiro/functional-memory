@@ -20,7 +20,8 @@ FROZEN_RUNS = {
     "r3b1619f8a901": ("query", "query_key", "query-m8-dk64-w-decay-score-bias-query-key"),
     "ra2edcdc5ab60": ("per_order_query_key_gate", "static",
                       "query-m8-per-order-query-key-gate-nope-wd-score-bias-static"),
-    "rbf5d3bd6059c": ("per_order_query_key_gate", "query", "query-m8-per-order-query-key-gate-nope-wd-score-bias-query"),
+    "rbf5d3bd6059c": ("per_order_query_key_gate", "query",
+                      "query-m8-per-order-query-key-gate-nope-wd-score-bias-query"),
     "r75dccfcf072e": ("per_order_query_key_gate", "query_key",
                       "query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key"),
 }
@@ -88,7 +89,8 @@ def test_allocated_runs_are_their_controls_with_score_biases_and_capture(run_id)
     assert model_parameter_count(config.model) == count + adapter.ADDED_PARAMETERS[mode]
     record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
     assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
-    assert record["config"]["sha256"] == hashlib.sha256((adapter.RUNS / run_id / "config.yaml").read_bytes()).hexdigest()
+    recipe = (adapter.RUNS / run_id / "config.yaml").read_bytes()
+    assert record["config"]["sha256"] == hashlib.sha256(recipe).hexdigest()
     assert config.optim.total_steps == 7570 and config.optim.warmup_steps == 455 and config.train.seed == 42
     assert config.data.batch_size == 256 and config.data.sequence_length == 2049 and config.model.max_seq_len == 2048
 
@@ -359,6 +361,41 @@ def test_adapter_installs_its_guards_and_the_score_bias_checks(run_id):
     assert acceptance.mosaic_test_options(recipe, "mosaic") == ("--mosaic-precision", "bf16")
     with pytest.raises(ValueError):
         adapter.experiment_spec(adapter.control_config(FROZEN_RUNS[run_id][0]), entry_module=adapter.__name__)
+
+
+@pytest.mark.parametrize("resolved", ("blocked", "fused", "mosaic"))
+def test_the_pilot_must_train_on_the_mosaic_kernels(monkeypatch, tmp_path, resolved):
+    """Acceptance's own pilot check, with this adapter's spec: a pilot that resolved any backend but Mosaic
+    fails the allocation before training; a Mosaic pilot proceeds to its validation checks."""
+    from types import SimpleNamespace
+
+    config = run_config("r75dccfcf072e")
+    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
+    experiment = {"identity": "test", "source_commit": "a" * 40, "config": config_to_dict(config)}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "config.yaml", gpu_count=1, gpu_type="H100")
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "mosaic", "device_kinds": ["NVIDIA H100 80GB HBM3"]}
+        if name == "initialization":
+            return {"checked": True}
+        metrics = args.directory / "pilot" / "metrics.jsonl"
+        metrics.parent.mkdir(parents=True, exist_ok=True)
+        metrics.write_text(json.dumps({"step": 20, "validation_nll": 3.0, "attention_diagnostics": {"valid": False}}))
+        return {"final_step": 20, "data_parallel_devices": 1, "start_step": 0, "attention_backend": resolved}
+
+    def run(command, **options):
+        junit = next(value.split("=", 1)[1] for value in command if value.startswith("--junitxml="))
+        Path(junit).write_text('<testsuite><testcase name="check"/></testsuite>')
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(acceptance, "_run_worker", worker)
+    monkeypatch.setattr(acceptance.subprocess, "run", run)
+    reason = ("attention diagnostics failed" if resolved == "mosaic"
+              else f"requires backend 'mosaic'; resolved '{resolved}'")
+    with pytest.raises(RuntimeError, match=reason):
+        acceptance._run(spec, args, experiment)
+    assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "pilot"
 
 
 @pytest.mark.parametrize("argv", (
