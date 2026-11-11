@@ -632,7 +632,6 @@ checkpoints and logs are in their run directories here.
 | Run | Variant | d_K | Status |
 | --- | --- | ---: | --- |
 | `rd40af7956426` | quadratic | 64 | complete |
-| `r83c3394eb730` | cubic | 64 | cancelled |
 | `ra79e66bd9121` | cubic | 16 | complete |
 | `ra98612db06d4` | cubic | 8 | complete |
 | `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | cancelled before training |

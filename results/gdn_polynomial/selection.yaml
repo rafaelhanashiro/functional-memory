@@ -328,28 +328,6 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/ra79e66bd9121/best_validation.json
       sha256: f009f32629431a3e7410a509a7dce15ae1ae910371170359d7ada30967e2d936
-- run_id: r83c3394eb730
-  role: primary
-  label: polynomial, m=3
-  mechanism: gated_deltanet
-  d_k: 64
-  erase: independent
-  write: sigmoid
-  degree: 3
-  control: rf7341031e3d5
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r83c3394eb730/config.yaml
-      sha256: 11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/r83c3394eb730/metrics.jsonl
-      sha256: ceef6ba5d0a06231bc6aa4a426a616b329de2265a468f368809bc458992ad078
-    metadata.json:
-      path: experiments/attention_scaling/runs/r83c3394eb730/metadata.json
-      sha256: d346f2d529fa872cc366764ce50f5fcedfabdfdf4c1bb776b5673feb460281e1
-    best_validation.json:
-      path: experiments/attention_scaling/runs/r83c3394eb730/best_validation.json
-      sha256: bd5a2c35ed07fab2217a52db7435d2ac5ace5b848fdb07d6b893d818f0ec2264
 - run_id: rf65d38ec0552
   role: variant
   label: independent erase, tanh write, m=1

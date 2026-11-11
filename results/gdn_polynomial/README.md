@@ -126,7 +126,7 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
 <!-- BEGIN GENERATED RESULTS -->
 ### Terminal perplexity
 
-15 cells: 10 complete, 0 incomplete, 0 pending, 5 cancelled, 0 not run, 0 failed.
+15 cells: 10 complete, 0 incomplete, 0 pending, 4 cancelled, 1 not run, 0 failed.
 
 ![Terminal perplexity by key width](terminal_ppl.png)
 
@@ -136,7 +136,7 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
 | ---: | ---: | ---: | ---: | ---: | ---: |
 | 8 | 15.732 | 14.816 | cancelled | cancelled | 13.817 |
 | 16 | 14.470 | 14.217 | cancelled | cancelled | 13.439 |
-| 64 | 13.731 | 13.594 | 13.579 | 13.179 | cancelled (update 7,000: 15.64) |
+| 64 | 13.731 | 13.594 | 13.579 | 13.179 | — |
 
 ### Against tied Gated DeltaNet
 
@@ -166,15 +166,14 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
   (15.732). The width-matched independent-erase controls were cancelled before training; at `d_K = 64`
   independent and tied erase differ by 0.1%.
 - **The polynomial gain holds through training.** Against tied GDN, quadratic
-  `d_K = 64` stays between -2.3% and -3.1% from update 1,000 onward. Cubic `d_K = 64`
-  tracks it: -3.2% at update 7,000, against -3.1% for quadratic at the same update.
+  `d_K = 64` stays between -2.3% and -3.1% from update 1,000 onward.
 - **Independent erase is a near-tie with tied erase:** 13.579 against 13.594 and
   13.583, two tied runs of one recipe on H200 and B300.
 - **A tanh linear write hurts:** 13.927, 2.6% above the sigmoid control. Against tied
   GDN it starts 9% behind at update 1,000 and ends 2.4% behind.
 - **The order-0 write dominates the gradient.** Polynomial runs clip far more often
   than linear ones (at most 0.5% of updates): quadratic `d_K = 64` 95.6% of updates,
-  cubic `d_K = 64` 92.8% through update 7,000, cubic `d_K = 16` 27.4%, and cubic
+  cubic `d_K = 16` 27.4%, and cubic
   `d_K = 8` 1.8%. In every polynomial run the order-0 write projection carries almost
   all of the gradient norm (1.76 of 1.77 in quadratic's final window). With clipping
   at norm 1, this scales every other parameter's update down by the same factor.
@@ -183,9 +182,7 @@ of complete recipes, not controlled tests of the scaffold or decay policy.
 
 No polynomial GDN runs remain queued. The width-matched controls at `d_K = 8`
 and 16 (independent erase `m = 1`, quadratic `m = 2`) were cancelled before training.
-Cubic `d_K = 64` was also cancelled; this collection retains its pinned measurements
-through update 7,000, not a terminal result. All five runs remain selected, with their
-recipes and retained artifacts.
+All four remain selected with their recipes.
 
 ## Limits
 
@@ -194,10 +191,10 @@ recipes and retained artifacts.
 - Arithmetic differs by mechanism: tied GDN uses FLA's `chunk_gated_delta_rule`,
   independent erase and tanh writes use FLA chunks with local independent-gate WY
   kernels, and polynomial runs use local transported-score Triton kernels. Hardware
-  differs too (H200, B300, H100, and A100 for early cubic attempts); each record lists
+  differs too (H200, B300, and H100); each record lists
   its attempts.
-- Each added order adds 163,840 parameters: cubic `d_K = 64` has 211.5M against
-  210.8M for tied GDN (+0.3%). At `d_K = 8` and 16 the models have 192.4–195.7M.
+- Each added order adds 163,840 parameters: quadratic `d_K = 64` has 211.3M against
+  210.8M for tied GDN (+0.2%). At `d_K = 8` and 16 the models have 192.4–195.7M.
 - The `d_K = 8` and 16 comparisons use tied GDN; their independent-erase
   controls were cancelled before training.
 - The order-0 gradient also inflates clipping, so polynomial and linear runs train
