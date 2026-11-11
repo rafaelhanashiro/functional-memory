@@ -628,25 +628,54 @@ def _score_bias_model(mode, gated):
 @pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
 @pytest.mark.parametrize("mode", ("static", "query", "query_key"))
 def test_score_bias_recipes_require_their_checks_beside_the_backbones(mode, gated):
-    """CPU: the score-bias reference, model and lowering checks and, with capture on, the gradient-event
-    checks; GPU: the H100 kernels and attention_core's dispatch to them. The backbone keeps its query and
-    per-order kernel checks."""
+    """On Mosaic, CPU: the score-bias reference, model and lowering checks and, with capture on, the
+    gradient-event checks; GPU: the H100 kernels and attention_core's dispatch to them. The backbone keeps
+    its query and per-order kernel checks."""
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     config = {"model": _score_bias_model(mode, gated), "train": {"gradient_event_capture": True}}
     cpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
     gpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False)
     assert {preflight.SCORE_BIAS_TESTS, preflight.SCORE_BIAS_LOWERING_TESTS, preflight.GRADIENT_EVENT_TESTS} <= set(cpu)
-    assert preflight.MOSAIC_SCORE_BIAS_TESTS not in cpu
+    assert preflight.MOSAIC_SCORE_BIAS_TESTS not in cpu and preflight.SCORE_BIAS_STRIPS_TESTS not in cpu
     assert {preflight.MOSAIC_SCORE_BIAS_TESTS, preflight.SCORE_BIAS_TESTS} <= set(gpu)
     assert preflight.SCORE_BIAS_LOWERING_TESTS not in gpu and preflight.GRADIENT_EVENT_TESTS not in gpu
+    assert preflight.SCORE_BIAS_STRIPS_TESTS not in gpu
     for paths in (cpu, gpu):
         assert preflight.QUERY_TANH_POLYNOMIAL_TESTS in paths
         assert (preflight.PER_ORDER_DECAY_TESTS in paths) is gated
     without = {"model": _score_bias_model("none", gated), "train": {"gradient_event_capture": False}}
     for on_cpu in (True, False):
-        paths = preflight.test_paths(spec, without, resolved_backend="mosaic", cpu=on_cpu)
-        assert not {preflight.SCORE_BIAS_TESTS, preflight.SCORE_BIAS_LOWERING_TESTS, preflight.MOSAIC_SCORE_BIAS_TESTS,
-                    preflight.GRADIENT_EVENT_TESTS} & set(paths)
+        for backend in ("mosaic", "blocked"):
+            paths = preflight.test_paths(spec, without, resolved_backend=backend, cpu=on_cpu)
+            assert not {preflight.SCORE_BIAS_TESTS, preflight.SCORE_BIAS_LOWERING_TESTS,
+                        preflight.MOSAIC_SCORE_BIAS_TESTS, preflight.SCORE_BIAS_STRIPS_TESTS,
+                        preflight.GRADIENT_EVENT_TESTS} & set(paths)
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("mode", ("static", "query", "query_key"))
+def test_blocked_score_bias_recipes_qualify_the_strips_and_no_kernel(mode, gated):
+    """On the blocked strips, CPU: the score-bias reference and model checks, the strips' own checks, and
+    the gradient-event checks, beside the backbone's CPU checks; no Mosaic module. GPU: the strips with
+    score biases at production precision and nothing else, so that no other kernel's GPU case can skip
+    or refuse on a GPU that kernel is not qualified on; an adapter's own GPU tests are kept."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    config = {"model": {**_score_bias_model(mode, gated), "attention_backend": "blocked",
+                        "attention_blocked_implementation": "strips"},
+              "train": {"gradient_event_capture": True}}
+    cpu = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=True)
+    gpu = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=False)
+    assert {preflight.SCORE_BIAS_TESTS, preflight.BLOCKED_STRIPS_TESTS, preflight.GRADIENT_EVENT_TESTS} <= set(cpu)
+    assert not {preflight.SCORE_BIAS_LOWERING_TESTS, preflight.MOSAIC_SCORE_BIAS_TESTS,
+                preflight.SCORE_BIAS_STRIPS_TESTS} & set(cpu)
+    assert preflight.QUERY_TANH_POLYNOMIAL_TESTS in cpu and (preflight.PER_ORDER_DECAY_TESTS in cpu) is gated
+    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS,)
+    own = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
+    assert preflight.test_paths(own, config, resolved_backend="blocked", cpu=False) == (
+        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS)
+    assert preflight.mosaic_test_options(config, "blocked") == ()
+    module = (preflight.ROOT / preflight.SCORE_BIAS_STRIPS_TESTS).read_text()
+    assert "pytestmark = pytest.mark.gpu" in module and "mosaic" not in module.lower()
 
 
 @pytest.mark.parametrize("capture", (False, True))

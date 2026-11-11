@@ -108,6 +108,7 @@ CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
 SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_score_bias.py"
 SCORE_BIAS_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_bias_lowering.py"
 MOSAIC_SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_mosaic_score_bias.py"
+SCORE_BIAS_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_bias_strips.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -152,6 +153,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # requeue restoration; its data-parallel case runs in the two-device stage.
         paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
+    if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked" and not cpu:
+        # Per-degree score biases on the blocked backend train on its causal strips, plain JAX on any GPU.
+        # The GPU stage qualifies exactly that computation: the strips with every score-bias mode on both
+        # backbones at production precision against host FP64. The backbone's other GPU cases qualify
+        # kernels these runs never execute (the fused Triton and Mosaic kernels, and the scan), and some
+        # refuse or skip on GPUs those kernels are not qualified on, which would fail acceptance.
+        return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
     if model.get("attention_forget_gate_per_order", False):
         cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
         if cpu or not cumulative:
@@ -162,12 +170,16 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # the strips' production precision at degrees four and eight on the GPU.
             paths.append(PER_ORDER_CUMULATIVE_TESTS)
     if model.get("attention_score_bias", "none") != "none":
-        # Per-degree score biases train only on the H100 Mosaic score-bias kernels. CPU: the FP64 reference
-        # with every gradient, model operands, starts, refusals and diagnostics, and those kernels' exact
-        # shared memory and tile mathematics lowered on the host. GPU: the kernels against dense FP64, and
-        # attention_core's dispatch to them (the GPU case of test_score_bias.py).
-        paths.extend((SCORE_BIAS_TESTS, SCORE_BIAS_LOWERING_TESTS) if cpu else
-                     (MOSAIC_SCORE_BIAS_TESTS, SCORE_BIAS_TESTS))
+        # Per-degree score biases. CPU: the FP64 reference through the scan and the strips with every
+        # gradient, model operands, starts, refusals and diagnostics; on the blocked backend that is all
+        # (its GPU stage returned above). On the H100 Mosaic score-bias kernels, also those kernels' exact
+        # shared memory and tile mathematics lowered on the host, and on the GPU the kernels against dense
+        # FP64 and attention_core's dispatch to them (the GPU case of test_score_bias.py).
+        if resolved_backend == "blocked":
+            paths.append(SCORE_BIAS_TESTS)
+        else:
+            paths.extend((SCORE_BIAS_TESTS, SCORE_BIAS_LOWERING_TESTS) if cpu else
+                         (MOSAIC_SCORE_BIAS_TESTS, SCORE_BIAS_TESTS))
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))

@@ -39,8 +39,8 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     score_bias = getattr(model_config, "attention_score_bias", "none") != "none"
     if score_bias and request not in ("mosaic", "blocked"):
         # Nothing may resolve them to a kernel that ignores the biases.
-        raise ValueError("Per-degree score biases run on an explicit mosaic backend, with blocked as their "
-                         f"reference; {request!r} never selects them")
+        raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
+                         f"{request!r} never selects them")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if getattr(model_config, "positional_encoding", "rope") == "path":

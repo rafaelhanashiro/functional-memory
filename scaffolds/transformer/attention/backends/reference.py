@@ -658,8 +658,9 @@ def blocked_dot_product_attention(
     from ``score_bias_query_input`` p and ``score_bias_key_input`` q [batch,time,heads,m] with
     ``score_bias_offset`` b and ``score_bias_amplitude`` a [heads,m]. Each order's power is evaluated
     explicitly in its own [batch, heads, query_block, keys] block; masked entries enter with zero shift.
-    This is the score biases' reference (tests, acceptance, and the diagnostics of their Mosaic runs),
-    never their training path. Its diagnostics add per-head, per-order measurements (``score_bias_*``):
+    The causal strips train score-bias recipes on the blocked backend with this arithmetic, and the scan
+    is their reference (tests, acceptance, and every score-bias run's diagnostics). Its diagnostics
+    add per-head, per-order measurements (``score_bias_*``):
     shifts, shifted scores and their histogram, order terms, and cancellation across orders.
     Diagnostics exclude padded queries and masked future entries.
     """

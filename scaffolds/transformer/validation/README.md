@@ -11,6 +11,47 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Score-bias causal strips on B200 (2026-11-11)
+
+The blocked backend's causal strips (`strip_dot_product_attention`, plain JAX) train the per-degree
+score-bias runs ([README](../README.md#per-degree-score-biases)). `tests/test_score_bias_strips.py`,
+acceptance's whole GPU stage for blocked score-bias recipes, runs the production dispatch
+(`attention_core` on the blocked backend, `blocked_implementation="strips"`, the strips' calls counted)
+at production precision: Q, K and V rounded to BF16 inside the program, FP32 coefficients, gate inputs
+and shift operands, a BF16 cotangent, degree eight, 2,048 tokens in four 512-query strips,
+`d_K = d_V = 64`, one sequence and two heads. Its oracle is an independent all-pairs FP64 reference
+(explicit `(s_ti + beta_r)^r`, JAX FP64 autodiff on the host CPU) from the same rounded inputs; every
+FP32 gradient is compared order by order. Ten cases: each mode's shift operands formed by
+`score_bias.attention_operands` from nonzero `b`, `a`, `u`, `v`, on both backbones (no gate, and
+per-order query–key endpoint gates with rates from about 3e-4 to 2 per token); and on both backbones,
+row and pair shifts with integer Q and K, which make 5.4% (row) and 3.0% (pair) of the shifted scores
+exactly zero and 47% and 73–74% negative.
+
+Job 242636 on `shiba` (one B200, compute capability 10.0, driver 580.196.07; `.venv-cuda13`: jax
+0.10.0 with the CUDA 13 plugin and cuBLAS 13.2.2.2; `JAX_PLATFORMS=cuda,cpu`), at commit `338568f2`
+with the test file as committed (SHA256 `172bf704055ff6b94c1205eba84e96457e6579142596e94964e7a11358d29cc9`):
+10 passed, none skipped, in 217 s (8.6–35.0 s per case, compilation and host reference included).
+
+| Quantity | Bound | Largest, B200 | Largest, CPU host |
+| --- | ---: | ---: | ---: |
+| Output, dQ, dK, dV: relative L2 over the BF16 rounding floor | 1.2 | 1.009 | 1.000 |
+| Output, dQ, dK, dV: largest element error over `2^-8` times the largest magnitude | 2.0 | 0.94 | 0.94 |
+| FP32 gradients (`c`, gate inputs and rates, shift operands), relative L2 per order | 1e-4 | 5.3e-6 (`damplitude`) | 1.2e-5 (`dgate_log_rate`) |
+
+The bounds are the earlier strips GPU tests' (1.2 times the floor, 1e-4 per order) plus the element
+bound; the CPU column calls the same test functions on the host. Open: memory, update time and resume
+at the full recipe (micro-batches of 16 × 2,048 tokens, 14 heads) on B200, B300 and H100.
+
+```bash
+# Inside one GPU allocation, from the worktree root, under the launcher's runtime:
+source scaffolds/transformer/launchers/kennel_runtime.sh
+PY=scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python
+CUDA_HOME="$(transformer_cuda_home "$PY")"
+export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" PYTHONPATH="$PWD"
+JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib -m gpu scaffolds/transformer/tests/test_score_bias_strips.py
+```
+
 ### Score-bias Mosaic kernels on H100 (2026-11-11)
 
 `model.attention_score_bias` (`static`, `query`, `query_key`) shifts every order `r = 1..m` of the

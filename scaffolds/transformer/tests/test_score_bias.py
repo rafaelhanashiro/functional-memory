@@ -254,16 +254,19 @@ def test_model_operands_chain_rule_reaches_every_bias_parameter(mode, gated):
         assert np.linalg.norm(gradient) > 0, name
 
 
+@pytest.mark.parametrize("implementation", ("scan", "strips"))
 @pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
 @pytest.mark.parametrize("bad", (float("nan"), float("inf")))
 @pytest.mark.parametrize("operand", ("score_bias_row_shift", "score_bias_query_input", "score_bias_key_input"))
-def test_invalid_shift_inputs_poison_only_their_causal_rows(operand, bad, gated):
+def test_invalid_shift_inputs_poison_only_their_causal_rows(operand, bad, gated, implementation):
+    """Through the scan's 4-query blocks and through 4-query strips (the bad token in the second strip)."""
     kind = "row" if operand == "score_bias_row_shift" else "pair"
     arrays = [jnp.asarray(array, jnp.float32) for array in _operands(kind, time=9, gated=gated)]
     position = 4 + SHIFT_NAMES[kind].index(operand)
     token = 5
     arrays[position] = arrays[position].at[0, token, 1, 2].set(bad)
-    output = _reference(kind, gated, *arrays)
+    attend = partial(_reference, kind, gated, implementation=implementation)
+    output = attend(*arrays)
     key_side = operand == "score_bias_key_input"
     expected = np.zeros(output.shape[:3], bool)
     expected[0, token:, 1] = True
@@ -274,7 +277,7 @@ def test_invalid_shift_inputs_poison_only_their_causal_rows(operand, bad, gated)
     # the tokens the invalid entry never reaches (earlier tokens for a key input, later ones otherwise) is
     # finite, so no NaN crosses the causal mask.
     cotangent = jnp.broadcast_to(jnp.where(jnp.asarray(expected)[..., None], 0., 1.), output.shape).astype(jnp.float32)
-    _, gradients = _vjp(partial(_reference, kind, gated), arrays, cotangent)
+    _, gradients = _vjp(attend, arrays, cotangent)
     untouched = slice(0, token) if key_side else slice(token + 1, None)
     for index, gradient in enumerate(gradients):
         if gradient.ndim == 4:  # per-token operands [batch, time, heads, channels]
@@ -295,6 +298,101 @@ def test_zero_shift_reproduces_the_unshifted_kernels():
             score_bias_offset=jnp.zeros((2, 4)), score_bias_amplitude=jnp.zeros((2, 4)))
         for shifted in (zero_row, zero_pair):
             np.testing.assert_allclose(shifted, control, rtol=1e-5, atol=1e-5)
+
+
+def _counted_strips(monkeypatch, strip_size):
+    """Count the causal strips' calls, run with ``strip_size``-query strips."""
+    calls, strips = [], reference.strip_dot_product_attention
+
+    def counted(*args, **kwargs):
+        calls.append(True)
+        return strips(*args, **{**kwargs, "strip_size": strip_size})
+
+    monkeypatch.setattr(reference, "strip_dot_product_attention", counted)
+    return calls, strips
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("kind", ("row", "pair"))
+def test_attention_core_trains_on_the_strips_and_diagnoses_with_the_scan(kind, gated, monkeypatch):
+    """The blocked backend's strips take every score-bias operand from attention_core (counted; three
+    4-query strips of 9 tokens): the output and every gradient equal a direct call of the strips bitwise
+    and the scan's to FP32 rounding, and the diagnostics, from the scan, are the scan's own."""
+    arrays = [jnp.asarray(array, jnp.float32) for array in _operands(kind, time=9, gated=gated)]
+    calls, strips = _counted_strips(monkeypatch, 4)
+
+    def direct(q, k, v, c, *rest):
+        """The strips' own function, called directly with this module's operand names."""
+        shift, gate = _split(kind, rest)
+        arguments = dict(zip(SHIFT_NAMES[kind], shift))
+        if gated:
+            arguments.update(dict(zip(GATE_NAMES, gate)), query_decay_mode="query_distance")
+        return strips(q, k, v, strip_size=4, attention_degree=c.shape[-1] - 1, attention_normalization=False,
+                      query_polynomial_coefficients=c, **arguments)
+
+    def core(implementation, diagnostics=False):
+        def attend(*operands):
+            (q, k, v, c), rest = operands[:4], operands[4:]
+            shift, gate = _split(kind, rest)
+            return attention_core(q, k, v, backend="blocked", blocked_implementation=implementation,
+                                  attention_degree=c.shape[-1] - 1, attention_normalization=False,
+                                  query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
+                                  return_diagnostics=diagnostics,
+                                  **_model_path_keywords(kind, gated, shift, gate, "query_decay_mode"))
+        return attend
+
+    cotangent = jnp.asarray(np.random.default_rng(9).normal(size=arrays[2].shape), jnp.float32)
+    actual = jax.jit(lambda *a: _vjp(core("strips"), a, cotangent))(*arrays)
+    assert len(calls) == 1
+    expected = jax.jit(lambda *a: _vjp(direct, a, cotangent))(*arrays)
+    for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+        np.testing.assert_array_equal(got, want)
+    scan = jax.jit(lambda *a: _vjp(core("scan"), a, cotangent))(*arrays)
+    assert len(calls) == 1
+    for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(scan), strict=True):
+        _assert_close(got, want, 3e-5, "strips against the scan")
+    output, diagnostics = jax.jit(core("strips", diagnostics=True))(*arrays)
+    _, expected = jax.jit(core("scan", diagnostics=True))(*arrays)
+    np.testing.assert_array_equal(output, actual[0])
+    assert "score_bias_z_sum" in expected and diagnostics.keys() == expected.keys()
+    for name in expected:
+        np.testing.assert_array_equal(diagnostics[name], expected[name], err_msg=name)
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("mode", MODES)
+def test_model_layers_train_on_the_strips(mode, gated, monkeypatch):
+    """A two-layer score-bias model with nonzero b, a, u, v: on the strips (counted, 4-query strips of 16
+    tokens) every layer's attention runs there, and the loss and every parameter gradient match the scan's
+    in FP32."""
+    calls, _ = _counted_strips(monkeypatch, 4)
+    tokens = jnp.asarray(np.random.default_rng(5).integers(0, 32, (2, 17)), jnp.int32)
+    rng = np.random.default_rng(6)
+    values = {OFFSET: (.5, 0.), AMPLITUDE: (.3, 1.), QUERY_KERNEL: (.3, 0.), KEY_KERNEL: (.3, 0.)}
+    results = {}
+    for implementation in ("scan", "strips"):
+        model = build_model(_config(mode, gated=gated, attention_blocked_implementation=implementation).model, 0)
+        if not results:
+            draws = {name: rng.normal(size=getattr(model, name)[...].shape) * scale + offset
+                     for name, (scale, offset) in values.items() if name in score_bias.parameter_names(mode)}
+        for name, draw in draws.items():
+            getattr(model, name)[...] = jnp.asarray(draw, jnp.float32)
+        graphdef, params = nnx.split(model, nnx.Param)
+
+        def loss(params):
+            logits = nnx.merge(graphdef, params)(tokens[:, :-1]).astype(jnp.float32)
+            return -jnp.mean(jnp.take_along_axis(jax.nn.log_softmax(logits), tokens[:, 1:, None], axis=-1))
+
+        results[implementation] = jax.jit(jax.value_and_grad(loss))(params)
+    assert len(calls) == 2  # one trace, two layers
+    (scan_loss, scan_gradients), (strips_loss, strips_gradients) = results["scan"], results["strips"]
+    np.testing.assert_allclose(strips_loss, scan_loss, rtol=1e-6)
+    for (path, got), want in zip(jax.tree_util.tree_leaves_with_path(strips_gradients),
+                                 jax.tree.leaves(scan_gradients), strict=True):
+        error = np.linalg.norm(np.asarray(got) - np.asarray(want)) / max(np.linalg.norm(np.asarray(want)), 1e-30)
+        assert error < 5e-5, (jax.tree_util.keystr(path), error)
+    for name in score_bias.parameter_names(mode):
+        assert np.linalg.norm(np.asarray(strips_gradients[name][...])) > 0, name
 
 
 def test_dispatch_reaches_the_mosaic_score_bias_entry_points(monkeypatch):
@@ -642,26 +740,40 @@ def test_backend_resolution_never_falls_back():
     assert mosaic_config.mosaic_score_bias_supported()
 
 
-@pytest.mark.parametrize("backend", ("blocked", "mosaic"))
-def test_records_create_allocates_score_biases_only_on_mosaic(tmp_path, monkeypatch, capsys, backend):
+@pytest.mark.parametrize("backend,implementation", (
+    ("mosaic", "scan"), ("blocked", "strips"), ("blocked", None), ("blocked", "scan"), ("auto", None), ("fused", None),
+))
+def test_records_create_allocates_score_biases_on_mosaic_or_the_strips(tmp_path, monkeypatch, capsys, backend,
+                                                                       implementation):
+    """A fresh score-bias recipe trains on the Mosaic kernels or the blocked backend's causal strips, which a
+    blocked recipe that leaves the implementation unset receives; the blocked scan needs its explicit opt-out
+    flag, and validation refuses every other backend before allocation."""
     from scaffolds.records.__main__ import main
 
     recipe = yaml.safe_load((RUNS / "r25fffc16c2f3" / "config.yaml").read_text())
     recipe["model"].update(attention_score_bias="query", attention_backend=backend)
+    recipe["model"].pop("attention_blocked_implementation", None)  # the RoPE control predates the field
+    if implementation is not None:
+        recipe["model"]["attention_blocked_implementation"] = implementation
     source = tmp_path / "recipe.yaml"
     source.write_text(yaml.safe_dump(recipe))
     study = tmp_path / "study"
     monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
-    if backend == "blocked":
+    if backend in ("auto", "fused"):
+        with pytest.raises(ValueError, match="score bias"):
+            main()
+        assert not study.exists()
+    elif (backend, implementation) == ("blocked", "scan"):
         with pytest.raises(SystemExit) as failure:
             main()
-        assert failure.value.code == 2 and "Mosaic GPU kernels" in capsys.readouterr().err
+        assert failure.value.code == 2 and "causal strips" in capsys.readouterr().err
         assert not study.exists()
     else:
         main()
         run = Path(capsys.readouterr().out.strip())
         model = yaml.safe_load((run / "config.yaml").read_text())["model"]
-        assert model["attention_score_bias"] == "query" and model["attention_backend"] == "mosaic"
+        assert model["attention_score_bias"] == "query" and model["attention_backend"] == backend
+        assert model["attention_blocked_implementation"] == ("strips" if backend == "blocked" else "scan")
 
 
 def _numpy_bins(z):

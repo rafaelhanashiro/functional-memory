@@ -448,7 +448,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     r = 1..m: a row shift beta_r(t) [batch,time,heads,m], or the query-key inputs p, q
     [batch,time,heads,m] with offset b and amplitude a [heads,m], beta_r = b_r + a_r tanh(p_tr + q_ir).
     They run without a forget gate or with the per-order endpoint gate, on the Mosaic score-bias
-    kernels or the blocked reference; every other backend raises, never falling back.
+    kernels or the blocked backend (``blocked_implementation``: the scan or the causal strips); every
+    other backend raises, never falling back.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
@@ -483,8 +484,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         if log_decay is not None or (endpoint and not per_order):
             raise ValueError("Per-degree score biases take no forget gate or the per-order endpoint gate")
         if backend not in ("blocked", "mosaic"):
-            raise ValueError("Per-degree score biases train on the Mosaic kernels, with the blocked backend as "
-                             f"their reference; {backend!r} has no score-bias kernel")
+            raise ValueError("Per-degree score biases run on the Mosaic score-bias kernels or the blocked "
+                             f"backend; {backend!r} has no score-bias kernel")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_backend_attention(

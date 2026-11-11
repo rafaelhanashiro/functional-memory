@@ -679,11 +679,13 @@ own shift:
   continuations; the model rejects coefficient capture and override.
 - Backends: `mosaic` trains them on H100's score-bias kernels (`backends/mosaic/score_bias.py`; no gate
   or the endpoint gate, with a row shift for `static` and `query` or a pair shift for `query_key`).
-  The kernels form each shifted power inside the causal tiles, never expanding it into powers of `s`,
-  which would change how the orders cancel. Every other GPU refuses before tracing a kernel, and
-  `ModelConfig.mosaic_score_bias_problem` names a shape H100's shared memory cannot hold. `blocked`
-  (`backends/reference.py`) is their reference for CPU tests, acceptance's initialization check, and
-  diagnostics; `scaffolds.records create` refuses a fresh recipe on any backend but `mosaic`. `auto`,
+  Every other GPU refuses those kernels before tracing one, and `ModelConfig.mosaic_score_bias_problem`
+  names a shape H100's shared memory cannot hold. `blocked` (`backends/reference.py`) trains them on any
+  GPU with its causal strips, which `scaffolds.records create` gives a fresh blocked recipe (the scan
+  only with `--allow-scan-blocked-attention`); the scan is also their reference for CPU tests,
+  acceptance's initialization check, and diagnostics. Both form each shifted power directly (the
+  kernels inside their causal tiles, the blocked backend one `[batch, heads, queries, keys]` block per
+  order), never expanding it into powers of `s`, which would change how the orders cancel. `auto`,
   `fused`, and the other backends reject these recipes, and every other attention path raises on
   score-bias operands rather than ignoring them.
 - Operands: `static` and `query` pass the row shift `beta_r(t)` `[batch, time, heads, m]`, whose gradient
@@ -702,11 +704,18 @@ own shift:
   over heads; and the cancellation across orders per layer and head (`sum_r |T_r| / |sum_r T_r|` per
   pair, `sum_r ||o_r|| / ||o||` per row). Nonfinite parameters are its only issue. A positive shifted
   score does not imply a positive weight: the coefficients are signed.
-- Acceptance adds `tests/test_score_bias.py` and `tests/test_score_bias_lowering.py` to the CPU tests of
-  these recipes (FP64 references with every gradient, operands, starts, refusals, diagnostics, and the
-  H100 kernels' shared memory and tile mathematics lowered on the host), and
-  `tests/test_mosaic_score_bias.py` with the GPU case of `tests/test_score_bias.py` to the GPU tests,
-  at the kernel family's precision, beside the backbone's query and per-order gate checks.
+- Acceptance adds `tests/test_score_bias.py` to the CPU tests of these recipes (FP64 references through
+  the scan and the strips with every gradient, operands, starts, refusals, the model's layers on the
+  strips, and diagnostics). On `mosaic` it adds `tests/test_score_bias_lowering.py` (the H100 kernels'
+  shared memory and tile mathematics lowered on the host) and, on the GPU, `tests/test_mosaic_score_bias.py`
+  with the GPU case of `tests/test_score_bias.py`, at the kernel family's precision, beside the
+  backbone's query and per-order gate checks. On `blocked` the GPU stage is
+  `tests/test_score_bias_strips.py` alone: the strips through `attention_core` at production precision
+  (Q, K, V rounded to BF16 in the program, FP32 operands, degree eight, 2,048 tokens) for every mode on
+  both backbones, with negative and exactly zero shifted scores, against host FP64; the output and dQ,
+  dK, dV within 1.2x their BF16 rounding floors and every FP32 gradient within 1e-4 per order. The
+  backbone's other GPU cases qualify the Triton and Mosaic kernels these runs never execute and can skip
+  or refuse on a GPU those kernels are not qualified on, so they are not selected.
 
 ### B-spline score function
 

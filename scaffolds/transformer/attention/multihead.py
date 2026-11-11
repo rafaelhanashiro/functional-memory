@@ -377,8 +377,8 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Per-degree score biases require diagonal tanh query coefficients of unnormalized "
                                  f"polynomial attention of degree 1-{MAX_QUERY_DEGREE} with RoPE or no positional "
                                  "encoding, without selected orders, coefficient gates, or a B-spline basis, on the "
-                                 "mosaic backend or its blocked reference, and no forget gate but the per-order "
-                                 "query-key endpoint gate")
+                                 "mosaic or blocked backend, and no forget gate but the per-order query-key "
+                                 "endpoint gate")
         self.attention_score_bias = attention_score_bias
         self.hidden_size = hidden_size
         self.num_heads = num_heads
