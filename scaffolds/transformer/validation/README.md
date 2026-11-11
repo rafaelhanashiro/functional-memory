@@ -904,6 +904,39 @@ measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order ab
 (updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
 node's other load; losses again differed by no more than between identical trials.
 
+### Training telemetry on one GPU
+
+Since `6755d6b` the single-device update records the same statistics. Checks in
+`tests/test_telemetry.py`: on one CPU device, updates with and without telemetry are
+bit-identical, for one batch and for accumulated microbatches; on two CPU devices, one
+batch's statistics on one device agree with data-parallel training's to 1e-4; the full
+loop records window summaries, gradient spikes, and numerical-failure statistics with
+and without accumulation; remat training records none. The telemetry-off single-device
+programs are unchanged: their jaxprs match the previous code's for both output
+scalings, with and without update checks and accumulation.
+
+Cost on one B300 (`akita`, jobs 241876 and 241899, training code of `6755d6b`; reports in
+[`runs/telemetry-overhead-single-gpu/`](runs/telemetry-overhead-single-gpu/)), with the
+benchmark above in its one-device mode: alternating off/on trials (four of 60 or 40
+timed updates, two of 20 for the blocked and per-order recipes, after 5 warmup updates)
+from the same initial state, synthetic tokens, and update RNGs, including the loop's
+per-update packing and fetch of the statistics:
+
+| Recipe (run) | Off, ms/update | On, ms/update | Overhead | Per run | Statistics |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 12-layer width-640 query m = 8 + W decay, Mosaic (`r95a5691d293f`) | 437.6 | 440.0 | +0.55% | 18 s | 92 |
+| Softmax, cuDNN (`r9040f12f3d80`) | 905.4 | 910.9 | +0.61% | 42 s | 86 |
+| Exp with a query–key gate, blocked strips (`rd3501a40e020`) | 3,686.6 | 3,679.6 | −0.19% | – | 104 |
+| Per-degree query–key gates m = 4, per-order Mosaic (`r03be769d2069`) | 10,918.7 | 10,920.7 | +0.02% | 16 s | 107 |
+
+Telemetry adds 2.1–5.5 ms per update where it is measurable, under a minute per
+7,570-update run. Losses with and without it differ by no more than between repeated
+identical trials (0.0056–0.0111 over the timed updates for the cuDNN and Mosaic recipes,
+whose updates are nondeterministic; 2e-5 for the blocked strips and per-order kernels).
+The reports mark their source dirty only because earlier reports in the directory were
+untracked; every hashed source file matches `6755d6b`. One-GPU H100 timing was not run;
+two H100 PCIe measured +0.19–1.26% above.
+
 ### Single-device gradient accumulation
 
 Before 7e5c962f the single-device update dispatched one program per microbatch and
