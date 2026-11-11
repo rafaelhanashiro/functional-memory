@@ -8,9 +8,11 @@ gradient-event capture under the default policy: order r = 1..8 of the tanh quer
 (every mode), a [L, H, m] at one (query, query_key), u (query, query_key) and v (query_key) [L, H, m, D]
 at zero. Nothing is drawn for them, so every other initial array is the control's and removing them
 recovers the control's pinned initialization fingerprint. The runs train on the blocked backend's causal
-strips (plain JAX, on B200, B300 or H100), while both controls trained on the Mosaic kernels: the recipe
-must be blocked with strips, the only execution settings beyond locations and labels that differ from
-the control's.
+strips (plain JAX), while both controls trained on the Mosaic kernels: the recipe must be blocked with
+strips, the only execution settings beyond locations and labels that differ from the control's. The
+hardware follows each recipe's measured update at micro-batch 16 (scaffolds/transformer/validation): every
+recipe trains on B200, B300 or H100 but the gated query_key one, which fits only the Blackwell GPUs, and the
+gated recipes raise the allocator's share of the device.
 """
 import argparse
 from dataclasses import replace
@@ -60,6 +62,13 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
 BACKEND = {"attention_backend": "blocked", "attention_blocked_implementation": "strips"}
 # The strips are plain JAX; their GPU tests run on each of these.
 GPU_TYPES = ("B200", "B300", "H100")
+# Measured allocator peaks of the full recipes' updates at micro-batch 16 on one GPU (validation record): RoPE
+# 32-49 GiB; gated static and query 56-67 GiB; gated query_key 147 GiB, beyond an 80 GB H100 at any allocator
+# share, so it trains only on the Blackwell GPUs (B200 180 GB, B300 288 GB). XLA's allocator may take 0.75 of
+# the device by default (59.4 GiB on an H100, 133.8 GiB on a B200); the gated recipes take 0.95 (75.2 and 169.4
+# GiB), which the gated query recipe needs on an H100 and the gated query_key recipe on a B200.
+BLACKWELL_GPU_TYPES = ("B200", "B300")
+GATED_MEMORY_FRACTION = "0.95"
 OWN_TESTS = "experiments/transformer_pp/tests/test_score_bias_acceptance.py"
 
 
@@ -170,21 +179,44 @@ def check_initialization(config: Config) -> dict:
             "all_other_initial_parameters_match_control": True}
 
 
+def gpu_types(config: Config) -> tuple[str, ...]:
+    """The GPU types the recipe trains on: B200, B300 and H100, but only the Blackwell GPUs for the gated
+    query_key recipe, whose update needs 147 GiB."""
+    if config.model.attention_forget_gate and config.model.attention_score_bias == "query_key":
+        return BLACKWELL_GPU_TYPES
+    return GPU_TYPES
+
+
+def runtime_env(config: Config) -> dict[str, str]:
+    """The allocator's share of the device: 0.95 for the gated recipes, the default (0.75) for the RoPE ones."""
+    return {"XLA_PYTHON_CLIENT_MEM_FRACTION": GATED_MEMORY_FRACTION} if config.model.attention_forget_gate else {}
+
+
 def experiment_spec(config: Config, *, entry_module: str):
     check_recipe(config)
     shared = attention_spec(config, entry_module=entry_module)
+    # The launcher exports runtime_env for acceptance and training, and acceptance records it in its identity.
     return replace(shared, cpu_tests=(*shared.cpu_tests, OWN_TESTS), check_config=check_recipe,
-                   required_backend="blocked", check_initialization=check_initialization)
+                   required_backend="blocked", check_initialization=check_initialization,
+                   runtime_env={**shared.runtime_env, **runtime_env(config)})
 
 
 def require_gpu_type(argv) -> None:
-    """Refuse an allocation of any GPU type but B200, B300 and H100 before acceptance starts."""
+    """Refuse an allocation of a GPU type the recipe does not train on before acceptance starts. The
+    launcher's --runtime-env query allocates nothing and names no GPU type."""
     parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("config", nargs="?", type=Path)
     parser.add_argument("--gpu-type", default="H100")  # acceptance's own default
-    gpu_type = parser.parse_known_args(argv)[0].gpu_type
-    if gpu_type.upper() not in GPU_TYPES:
-        raise ValueError(f"Per-degree score biases train only on {', '.join(GPU_TYPES)}, where the causal strips' GPU "
-                         f"tests run, not on {gpu_type}. Submit with GPU types {','.join(GPU_TYPES)}.")
+    parser.add_argument("--runtime-env", action="store_true")
+    args = parser.parse_known_args(argv)[0]
+    if args.runtime_env:
+        return
+    allowed = GPU_TYPES if args.config is None else gpu_types(load_config(args.config))
+    if args.gpu_type.upper() not in allowed:
+        reason = ("its update needs 147 GiB at micro-batch 16, more than an 80 GB H100 holds"
+                  if allowed == BLACKWELL_GPU_TYPES else "the causal strips' GPU tests run there")
+        raise ValueError(f"This recipe trains only on {', '.join(allowed)} ({reason}), not on {args.gpu_type}. "
+                         f"Submit it with GPU types {','.join(allowed)}.")
 
 
 def main(argv=None) -> None:

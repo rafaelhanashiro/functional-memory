@@ -1,12 +1,14 @@
 """The per-degree score-bias runs remain their pinned controls with only the score biases and gradient-event
-capture added, train on the blocked backend's causal strips (the controls trained on the Mosaic kernels),
-and start from the controls' exact initialization."""
+capture added, train on the blocked backend's causal strips (the controls trained on the Mosaic kernels) on
+the GPU types and allocator share their measured memory allows, and start from the controls' exact
+initialization."""
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
 import json
 import math
 from pathlib import Path
+import re
 
 import pytest
 
@@ -417,24 +419,71 @@ def test_the_pilot_must_train_on_the_blocked_strips(monkeypatch, tmp_path, resol
     assert json.loads((tmp_path / "failure.json").read_text())["stage"] == "pilot"
 
 
-@pytest.mark.parametrize("argv", (
-    ["config.yaml", "--gpu-type", "A100"], ["config.yaml", "--gpu-type=A6000"], ["config.yaml", "--gpu-type", "H200"],
-))
-def test_other_gpu_types_are_refused_before_acceptance(monkeypatch, argv):
+# Each run's GPU types and allocator share (the validation record's full-recipe pilots at micro-batch 16).
+HARDWARE = {
+    "rb70f9e57190f": (("B200", "B300", "H100"), None),
+    "r891870ef80e9": (("B200", "B300", "H100"), None),
+    "r3b1619f8a901": (("B200", "B300", "H100"), None),
+    "ra2edcdc5ab60": (("B200", "B300", "H100"), "0.95"),
+    "rbf5d3bd6059c": (("B200", "B300", "H100"), "0.95"),
+    "r75dccfcf072e": (("B200", "B300"), "0.95"),
+}
+
+
+def recipe_path(run_id):
+    return str(adapter.RUNS / run_id / "config.yaml")
+
+
+@pytest.mark.parametrize("run_id", FROZEN_RUNS)
+def test_each_run_has_its_qualified_gpu_types_and_allocator_share(run_id):
+    """Only the gated query_key recipe (147 GiB) is kept off the H100; the gated recipes raise the allocator's
+    share to 0.95, through the spec's runtime environment, which the launcher exports and acceptance records."""
+    types, fraction = HARDWARE[run_id]
+    config = run_config(run_id)
+    assert adapter.gpu_types(config) == types
+    expected = {} if fraction is None else {"XLA_PYTHON_CLIENT_MEM_FRACTION": fraction}
+    assert adapter.runtime_env(config) == expected
+    assert adapter.experiment_spec(config, entry_module=adapter.__name__).runtime_env == expected
+    assert "XLA_PYTHON_CLIENT_MEM_FRACTION" in acceptance.RUNTIME_KEYS
+
+
+@pytest.mark.parametrize("run_id", FROZEN_RUNS)
+def test_the_launchers_runtime_query_exports_the_allocator_share(capsys, run_id):
+    """The launcher evaluates the adapter's --runtime-env output before acceptance and training; the query names
+    no GPU type, so the GPU gate lets it through for every recipe, the gated query_key one included."""
+    adapter.main([recipe_path(run_id), "--runtime-env"])
+    fraction = HARDWARE[run_id][1]
+    expected = "" if fraction is None else f"export XLA_PYTHON_CLIENT_MEM_FRACTION={fraction}\n"
+    assert capsys.readouterr().out == expected
+
+
+@pytest.mark.parametrize(("run_id", "gpu_type"), [  # no skips: acceptance's CPU stage runs this module
+    (run_id, gpu_type) for run_id in FROZEN_RUNS for gpu_type in ("A100", "A6000", "H200", "H100")
+    if gpu_type not in HARDWARE[run_id][0]])
+def test_other_gpu_types_are_refused_before_acceptance(monkeypatch, run_id, gpu_type):
+    allowed = HARDWARE[run_id][0]
     monkeypatch.setattr(adapter, "run_acceptance", lambda *args: pytest.fail("Acceptance started"))
-    with pytest.raises(ValueError, match="train only on B200, B300, H100"):
-        adapter.main(argv)
+    for value in (gpu_type, gpu_type.lower()):
+        for argv in ([recipe_path(run_id), "--gpu-type", value], [recipe_path(run_id), f"--gpu-type={value}"]):
+            message = (rf"trains only on {re.escape(', '.join(allowed))} \(.+\), not on {value}\. "
+                       rf"Submit it with GPU types {re.escape(','.join(allowed))}\.")
+            with pytest.raises(ValueError, match=message) as error:
+                adapter.main(argv)
+            assert ("147 GiB" in str(error.value)) is (allowed == ("B200", "B300"))
 
 
-@pytest.mark.parametrize("argv", (
-    ["config.yaml", "--gpu-type", "H100", "--gpu-count", "1"], ["config.yaml", "--gpu-type=h100"],
-    ["config.yaml", "--gpu-type", "B200"], ["config.yaml", "--gpu-type=B300"], ["config.yaml", "--runtime-env"],
-))
-def test_b200_b300_and_h100_allocations_reach_acceptance(monkeypatch, argv):
+@pytest.mark.parametrize("run_id", FROZEN_RUNS)
+def test_qualified_allocations_reach_acceptance(monkeypatch, run_id):
     calls = []
     monkeypatch.setattr(adapter, "run_acceptance", lambda spec, arguments: calls.append(arguments))
-    adapter.main(argv)
-    assert calls == [argv]
+    argvs = [[recipe_path(run_id), "--gpu-type", gpu_type, "--gpu-count", "1"] for gpu_type in HARDWARE[run_id][0]]
+    argvs.append([recipe_path(run_id), f"--gpu-type={HARDWARE[run_id][0][0].lower()}"])
+    # A worker's invocation (acceptance's _run_worker) passes the same gate.
+    argvs.append([recipe_path(run_id), "--directory", "/tmp/acceptance", "--gpu-count", "1", "--gpu-type", "B200",
+                  "--worker", "pilot", "--output", "/tmp/pilot.json", "--stop-after-step", "20"])
+    for argv in argvs:
+        adapter.main(argv)
+    assert calls == argvs
 
 
 @pytest.mark.parametrize("name", BACKBONES)
