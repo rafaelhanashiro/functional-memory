@@ -643,8 +643,9 @@ class ModelConfig:
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
-            or self.attention_backend == "mosaic" and (self.mosaic_decay_supported()
-                                                       or self.mosaic_score_bias_supported()))
+            # Score-bias recipes reach _validate_score_bias, which names the reason a Mosaic shape cannot run.
+            or self.attention_backend == "mosaic" and (self.attention_score_bias != "none"
+                                                       or self.mosaic_decay_supported()))
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or not (exponential or gated_polynomial)
                 or not forget_backend_supported):

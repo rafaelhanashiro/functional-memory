@@ -505,27 +505,3 @@ def per_order_endpoint_decay_attention(q, k, v, coefficients, query_gate_input, 
     log_rate = gate_log_rate[..., 0].astype(jnp.float32)
     rate = jnp.where(jnp.isfinite(log_rate), -jnp.exp(log_rate), jnp.nan)  # [heads, orders]
     return _per_order_endpoint_decay(q, k, v, coefficients, query_gate_input, key_gate_input, rate, precision)
-
-
-# ----------------------------------------------------------------------------------------
-# Per-degree score biases (attention/score_bias.py): order r >= 1 reads s_ti + beta_r(t,i).
-
-def score_bias_query_polynomial_attention(q, k, v, coefficients, *, row_shift=None, query_shift_input=None,
-                                          key_shift_input=None, shift_offset=None, shift_amplitude=None,
-                                          precision: str | None = None):
-    """Unnormalized causal sum_i [c_0 + sum_(r=1..m) c_r (s_ti + beta_r(t,i))^r] v_i with FP32
-    coefficients c[B, T, H, m+1] and per-degree score biases: a row shift beta_r(t) = row_shift
-    [B, T, H, m] (static and query biases), or the pair shift beta_r(t,i) = b_r + a_r tanh(p_tr + q_ir)
-    from FP32 inputs p = query_shift_input and q = key_shift_input [B, T, H, m], b = shift_offset and
-    a = shift_amplitude [H, m]. The shifted powers are evaluated inside the causal tiles, never expanded
-    into unshifted powers."""
-    raise NotImplementedError("score-bias Mosaic kernels are implemented in stage B")
-
-
-def score_bias_per_order_endpoint_attention(q, k, v, coefficients, query_gate_input, key_gate_input, gate_log_rate,
-                                            *, row_shift=None, query_shift_input=None, key_shift_input=None,
-                                            shift_offset=None, shift_amplitude=None, precision: str | None = None):
-    """``per_order_endpoint_decay_attention`` with the score biases of
-    ``score_bias_query_polynomial_attention``: order r's gate multiplies c_r (s_ti + beta_r(t,i))^r, and
-    order zero, c_0, is unshifted."""
-    raise NotImplementedError("score-bias Mosaic kernels are implemented in stage B")

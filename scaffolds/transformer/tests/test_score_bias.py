@@ -4,6 +4,7 @@ from dataclasses import replace
 from functools import partial
 import math
 from pathlib import Path
+import re
 from types import SimpleNamespace
 
 from flax import nnx
@@ -16,7 +17,8 @@ import yaml
 from scaffolds.transformer import acceptance
 from scaffolds.transformer.attention import score_bias
 from scaffolds.transformer.attention.backends import reference
-from scaffolds.transformer.attention.backends.mosaic import api as mosaic
+from scaffolds.transformer.attention.backends.mosaic import api as mosaic_api
+from scaffolds.transformer.attention.backends.mosaic import score_bias as mosaic_score_bias
 from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
 from scaffolds.transformer.attention.core import attention_core
 from scaffolds.transformer.attention.input_dependent import query_polynomial_attention
@@ -304,8 +306,8 @@ def test_dispatch_reaches_the_mosaic_score_bias_entry_points(monkeypatch):
             return v
         return entry
 
-    monkeypatch.setattr(mosaic, "score_bias_query_polynomial_attention", record("query"))
-    monkeypatch.setattr(mosaic, "score_bias_per_order_endpoint_attention", record("per_order_endpoint"))
+    monkeypatch.setattr(mosaic_score_bias, "score_bias_query_polynomial_attention", record("query"))
+    monkeypatch.setattr(mosaic_score_bias, "score_bias_per_order_endpoint_attention", record("per_order_endpoint"))
     q, k, v, c, beta, u, w, rate = (jnp.asarray(a, jnp.float32) for a in _operands("row", time=9, gated=True))
     query_polynomial_attention(q, k, v, c, backend="mosaic", score_bias_row_shift=beta)
     query_polynomial_attention(q, k, v, c, backend="mosaic", decay_mode="query_distance", query_gate_input=u,
@@ -321,6 +323,102 @@ def test_dispatch_reaches_the_mosaic_score_bias_entry_points(monkeypatch):
     _, stats = query_polynomial_attention(q, k, v, c, backend="mosaic", score_bias_row_shift=beta,
                                           return_diagnostics=True)
     assert "score_bias_z_sum" in stats
+
+
+def _model_path_keywords(kind, gated, shift, gate, decay_keyword):
+    keywords = dict(zip(SHIFT_NAMES[kind], shift, strict=True))
+    if gated:
+        keywords.update(zip(GATE_NAMES, gate, strict=True))
+        keywords[decay_keyword] = "query_distance"
+    return keywords
+
+
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("kind", ("row", "pair"))
+def test_model_path_reaches_the_real_kernels_with_nothing_replaced(kind, gated):
+    """On a CPU host, query_polynomial_attention and attention_core end in the real Mosaic entry points'
+    H100 refusal: a stub's NotImplementedError would fail this test."""
+    if jax.default_backend() != "cpu":
+        pytest.skip("On GPUs the same path runs the kernels (test_attention_core_runs_the_h100_kernels)")
+    q, k, v, c, *rest = (jnp.asarray(array, jnp.float32) for array in _operands(kind, time=128, degree=2, gated=gated))
+    shift, gate = _split(kind, rest)
+    with pytest.raises(ValueError, match="H100"):
+        query_polynomial_attention(q, k, v, c, backend="mosaic",
+                                   **_model_path_keywords(kind, gated, shift, gate, "decay_mode"))
+    with pytest.raises(ValueError, match="H100"):
+        attention_core(q, k, v, backend="mosaic", attention_degree=2, attention_normalization=False,
+                       query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
+                       **_model_path_keywords(kind, gated, shift, gate, "query_decay_mode"))
+
+
+@pytest.mark.parametrize("mode", MODES)
+@pytest.mark.parametrize("run", CONTROLS)
+def test_model_path_lowers_the_h100_kernels_for_both_control_recipes(run, mode, monkeypatch):
+    """A control recipe's model (reduced in size only) through MultiHeadAttention, attention_core and the
+    dispatch to the real Mosaic kernels, forward and with every gradient, lowered for cuda on any host:
+    only the GPU query is replaced, selecting H100 here."""
+    from scaffolds.transformer.attention.backends.mosaic import hopper
+
+    monkeypatch.setattr(mosaic_api, "_kernels", lambda: ("hopper", hopper))
+    control = load_config(RUNS / run / "config.yaml")
+    model = build_model(replace(control.model, vocab_size=64, max_seq_len=128, num_layers=1, hidden_size=128,
+                                num_heads=2, num_kv_heads=2, intermediate_size=64, attention_score_bias=mode,
+                                attention_backend="mosaic"), 0)
+    for _, module in nnx.iter_graph(model):
+        if isinstance(module, nnx.Module) and hasattr(module, "dtype"):
+            module.dtype = jnp.bfloat16
+    graphdef, params = nnx.split(model, nnx.Param)
+    tokens = jax.ShapeDtypeStruct((1, 128), jnp.int32)
+    call = lambda p, t: nnx.merge(graphdef, p)(t)
+    for function in (call, jax.grad(lambda p, t: call(p, t).astype(jnp.float32).mean())):
+        jax.jit(function).trace(params, tokens).lower(lowering_platforms=("cuda",))
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("gated", (False, True), ids=("ungated", "per_order_gate"))
+@pytest.mark.parametrize("kind", ("row", "pair"))
+def test_attention_core_runs_the_h100_kernels(kind, gated):
+    """Inside a GPU allocation, nothing replaced: on H100 attention_core gives the output of a direct call of
+    the kernel entry point, with every operand in place; on any other GPU it refuses before tracing."""
+    if jax.default_backend() != "gpu":
+        pytest.skip("Requires a GPU allocation")
+    rng = np.random.default_rng(13)
+    degree, time, heads = 4, 512, 2
+    shape = (1, time, heads)
+    q, k, v = (jnp.asarray(rng.standard_normal((*shape, 64)), jnp.bfloat16) for _ in range(3))
+    c = jnp.asarray(rng.standard_normal((*shape, degree + 1)), jnp.float32) / jnp.asarray(
+        [math.factorial(r) for r in range(degree + 1)], jnp.float32)
+    shifts = (lambda: jnp.asarray(rng.standard_normal((*shape, degree)), jnp.float32))
+    head = (lambda: jnp.asarray(rng.standard_normal((heads, degree)), jnp.float32))
+    shift = (shifts(),) if kind == "row" else (shifts(), shifts(), head(), head())
+    gate = ()
+    if gated:
+        gate = (jnp.asarray(rng.uniform(-4, -1, (*shape, degree + 1)), jnp.float32),
+                jnp.asarray(.5 * rng.standard_normal((*shape, degree + 1)), jnp.float32),
+                jnp.asarray(rng.uniform(-1, 1, (heads, degree + 1, 1)), jnp.float32))
+
+    def through_core(*operands):
+        return attention_core(q, k, v, backend="mosaic", attention_degree=degree, attention_normalization=False,
+                              query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
+                              **_model_path_keywords(kind, gated, operands[:len(shift)], operands[len(shift):],
+                                                     "query_decay_mode"))
+
+    if jax.devices()[0].compute_capability != "9.0":
+        with pytest.raises(ValueError, match="H100"):
+            through_core(*shift, *gate)
+        return
+    names = ("row_shift",) if kind == "row" else ("query_shift_input", "key_shift_input", "shift_offset",
+                                                  "shift_amplitude")
+    if gated:
+        direct = jax.jit(lambda *operands: mosaic_score_bias.score_bias_per_order_endpoint_attention(
+            q, k, v, c, *operands[len(shift):], **dict(zip(names, operands[:len(shift)]))))
+    else:
+        direct = jax.jit(lambda *operands: mosaic_score_bias.score_bias_query_polynomial_attention(
+            q, k, v, c, **dict(zip(names, operands))))
+    expected = np.asarray(direct(*shift, *gate), np.float32)
+    actual = np.asarray(jax.jit(through_core)(*shift, *gate), np.float32)
+    assert np.linalg.norm(expected) > 0
+    np.testing.assert_allclose(actual, expected, rtol=1e-3, atol=1e-3 * np.abs(expected).max())
 
 
 def test_every_other_kernel_and_backend_refuses_score_bias_operands():
@@ -457,6 +555,21 @@ def test_unqualified_recipes_are_rejected(changes):
         _config(**changes)
 
 
+@pytest.mark.parametrize("changes,reason", (
+    ({"qk_head_dim": 12}, "Q/K width 12"),
+    ({"qk_head_dim": 64, "value_head_dim": 32}, "value width 32"),
+    ({"qk_head_dim": 64, "value_head_dim": 64, "attention_forget_gate_per_order": False},
+     "per-order query-key endpoint gate"),
+    ({"qk_head_dim": 64, "value_head_dim": 64, "attention_forget_gate_conditioning": "query"},
+     "per-order query-key endpoint gate"),
+))
+def test_gated_mosaic_recipes_name_their_score_bias_problem(changes, reason):
+    """The generic forget-gate check does not answer for score biases: the rejection names the reason."""
+    with pytest.raises(ValueError, match="score bias") as failure:
+        _config(gated=True, attention_backend="mosaic", **changes)
+    assert reason in str(failure.value)
+
+
 def test_rejected_training_options_and_accepted_backbones():
     for gated in (False, True):
         for mode in MODES:
@@ -528,6 +641,125 @@ def test_records_create_allocates_score_biases_only_on_mosaic(tmp_path, monkeypa
         assert model["attention_score_bias"] == "query" and model["attention_backend"] == "mosaic"
 
 
+def _numpy_bins(z):
+    """Histogram bins of z by NumPy's half-open binning: 0 below the first edge, j covering
+    [edge_(j-1), edge_j) for j >= 1, and the last at or above the last edge."""
+    return np.searchsorted(np.asarray(score_bias.HISTOGRAM_EDGES, np.float64), z, side="right")
+
+
+def _statistic_arrays(stats):
+    return {name: np.asarray(value, np.float64) for name, value in stats.items() if name.startswith("score_bias_")}
+
+
+def _assert_statistics_equal(actual, expected):
+    for name, value in expected.items():
+        np.testing.assert_allclose(actual[name], value, rtol=1e-6, atol=1e-6, err_msg=name)
+
+
+def _z_expectations(z, weights, head_axis):
+    """Sums, extrema and strict-negative and near-zero counts of z [..., m] per head and order, reducing
+    every axis but ``head_axis`` and the last, and the histogram per order pooled over the other axes,
+    with ``weights`` causal pairs behind each entry."""
+    axes = tuple(axis for axis in range(z.ndim - 1) if axis != head_axis)
+    count = len(score_bias.HISTOGRAM_EDGES) + 1
+    return {
+        "score_bias_z_sum": (z * weights).sum(axis=axes),
+        "score_bias_z_sumsq": (z * z * weights).sum(axis=axes),
+        "score_bias_z_min": z.min(axis=axes),
+        "score_bias_z_max": z.max(axis=axes),
+        "score_bias_z_negative_count": ((z < 0) * weights).sum(axis=axes),
+        "score_bias_z_near_zero_count": ((np.abs(z) < score_bias.NEAR_ZERO) * weights).sum(axis=axes),
+        "score_bias_z_histogram": np.stack([np.bincount(_numpy_bins(z[..., r]).ravel(),
+                                                        weights=np.broadcast_to(weights[..., 0], z[..., r].shape).ravel(),
+                                                        minlength=count) for r in range(z.shape[-1])]),
+    }
+
+
+def test_reference_statistics_bin_and_count_row_shifts_exactly():
+    """Raw statistics of row shifts by value: integer scores and exact shifts put z_r exactly on histogram
+    edges, at zero, just beside zero, and beyond +/-16; bins and counts are compared with NumPy and with
+    hand-written bins."""
+    # z_r of every causal pair of row t (orders 1 and 2), and each one's bin.
+    targets = np.array([(-100., 100.), (-16.5, 16.5), (-16., 16.), (-15.5, 15.5), (-1., 1.), (-.5, .5),
+                        (-1e-4, 1e-4), (0., 0.), (.25, 3.), (1., 4.5), (15.5, 7.5), (16., -7.5)], np.float32)
+    bins = np.array([(0, 33), (0, 33), (1, 33), (1, 32), (16, 18), (16, 17),
+                     (16, 17), (17, 17), (17, 20), (18, 21), (32, 24), (33, 9)])
+    np.testing.assert_array_equal(_numpy_bins(targets.astype(np.float64)), bins)
+    # Integer scores per row: exact in BF16 and FP32, with s = 0 where z_r is not a multiple of 1/2.
+    scores = np.array([-7., 3., 5., -2., 4., -1., 0., 0., 2., -3., 1., -4.])
+    time, heads, degree = len(targets), 2, targets.shape[-1]
+    z = np.stack([np.stack([targets, -targets], axis=1), np.stack([targets[::-1], -targets[::-1]], axis=1)])
+    row_scores = np.stack([np.stack([scores, -scores], axis=1), np.stack([scores[::-1], -scores[::-1]], axis=1)])
+    beta = z - row_scores[..., None]  # [batch, time, heads, m], z_r = s_t + beta_r(t)
+    q = np.zeros((2, time, heads, 4))
+    q[..., 0] = row_scores  # s_ti = q_t[0] k_i[0] / sqrt(4) with k_i[0] = 2: s_t for every key
+    k = np.zeros_like(q)
+    k[..., 0] = 2.
+    c = np.ones((2, time, heads, degree + 1))
+    v = np.random.default_rng(3).normal(size=(2, time, heads, 3))
+    _, stats = reference.blocked_dot_product_attention(
+        jnp.asarray(q, jnp.bfloat16), jnp.asarray(k, jnp.bfloat16), jnp.asarray(v, jnp.float32),
+        attention_degree=degree, attention_normalization=False, query_polynomial_coefficients=jnp.asarray(c, jnp.float32),
+        query_block_size=4, score_bias_row_shift=jnp.asarray(beta, jnp.float32), return_diagnostics=True)
+    actual = _statistic_arrays(stats)
+    # Each row t has t + 1 causal keys, so z[:, t] stands for t + 1 pairs.
+    weights = np.arange(1, time + 1)[None, :, None, None]
+    expected = _z_expectations(z, weights, head_axis=2)
+    expected.update({"score_bias_beta_sum": beta.sum(axis=(0, 1)), "score_bias_beta_sumsq": (beta ** 2).sum(axis=(0, 1)),
+                     "score_bias_beta_min": beta.min(axis=(0, 1)), "score_bias_beta_max": beta.max(axis=(0, 1))})
+    _assert_statistics_equal(actual, expected)
+    assert actual["score_bias_pair_count"] == 2 * time * (time + 1) / 2 and actual["score_bias_beta_count"] == 2 * time
+    # By hand: in every head and order, |z| < 1e-3 holds for rows 6 and 7 of the first batch (7 and 8 causal
+    # pairs: z = -+1e-4 and z = 0) and their positions 5 and 4 in the reversed batch (6 and 5 pairs); z = 0
+    # is near zero but never negative.
+    near_zero = 7 + 8 + 6 + 5
+    np.testing.assert_array_equal(actual["score_bias_z_near_zero_count"], np.full((heads, degree), near_zero))
+    strict = ((z < 0) * weights).sum(axis=(0, 1))
+    assert (actual["score_bias_z_negative_count"] == strict).all() and (strict < ((z <= 0) * weights).sum(axis=(0, 1))).all()
+    assert actual["score_bias_z_histogram"].shape == (degree, len(score_bias.HISTOGRAM_EDGES) + 1)
+    # The on-edge, zero and beyond-range entries of the table above: z = -16 fills the first ordinary bin and
+    # z = +16 the overflow bin, in the bins NumPy and the table agree on.
+    histogram = actual["score_bias_z_histogram"]
+    assert histogram[0, 1] > 0 and histogram[0, 0] > 0 and histogram[1, 33] > 0 and histogram[1, 17] > 0
+
+
+def test_reference_statistics_bin_and_count_pair_shifts_exactly():
+    """Raw statistics of pair shifts by value, on scores that vary with the key: tanh(0) = 0 makes
+    beta_r = b_r exact, and z_r = s_ti + b_r lands exactly on edges, at zero, and beyond +/-16."""
+    rng = np.random.default_rng(2)
+    batch, time, heads, degree = 2, 13, 2, 2
+    q, k = (np.zeros((batch, time, heads, 4)) for _ in range(2))
+    q[..., 0], k[..., 0] = rng.integers(-8, 9, q.shape[:3]), rng.integers(-4, 5, q.shape[:3])
+    offset = np.array([[-.5, 0.], [4.5, -16.]])  # [heads, m]: exact half-integers
+    amplitude = rng.normal(size=(heads, degree)).astype(np.float32)  # irrelevant at tanh(0) = 0
+    scores = np.einsum("bthd,bihd->bhti", q, k) / 2  # exact half-integers
+    causal = np.tril(np.ones((time, time), bool))
+    z = (scores[..., None] + offset[None, :, None, None, :])  # [batch, heads, time, time, m]
+    z_pairs = z.transpose(1, 0, 2, 3, 4)[:, :, causal]  # [heads, batch, pairs, m]
+    assert (z_pairs == 0).any() and (np.abs(z_pairs) > 16).any() and (z_pairs == 16).any() and (z_pairs == -16).any()
+    c = np.ones((batch, time, heads, degree + 1))
+    v = np.random.default_rng(4).normal(size=(batch, time, heads, 3))
+    zeros = jnp.zeros((batch, time, heads, degree), jnp.float32)
+    _, stats = reference.blocked_dot_product_attention(
+        jnp.asarray(q, jnp.bfloat16), jnp.asarray(k, jnp.bfloat16), jnp.asarray(v, jnp.float32),
+        attention_degree=degree, attention_normalization=False, query_polynomial_coefficients=jnp.asarray(c, jnp.float32),
+        query_block_size=5, score_bias_query_input=zeros, score_bias_key_input=zeros,
+        score_bias_offset=jnp.asarray(offset, jnp.float32), score_bias_amplitude=jnp.asarray(amplitude),
+        return_diagnostics=True)
+    actual = _statistic_arrays(stats)
+    entries = z_pairs.transpose(1, 0, 2, 3)  # [batch, heads, pairs, m], one pair each
+    weights = np.ones_like(entries)
+    expected = _z_expectations(entries, weights, head_axis=1)
+    pairs = time * (time + 1) / 2
+    betas = np.broadcast_to(offset[None, :, None, :], entries.shape)
+    expected.update({"score_bias_beta_sum": betas.sum(axis=(0, 2)), "score_bias_beta_sumsq": (betas ** 2).sum(axis=(0, 2)),
+                     "score_bias_beta_min": betas.min(axis=(0, 2)), "score_bias_beta_max": betas.max(axis=(0, 2))})
+    _assert_statistics_equal(actual, expected)
+    assert actual["score_bias_pair_count"] == batch * pairs
+    np.testing.assert_array_equal(actual["score_bias_z_histogram"].sum(axis=-1), np.full(degree, batch * heads * pairs))
+    assert actual["score_bias_z_negative_count"].sum() == (entries < 0).sum()
+
+
 def test_identity_tags_and_telemetry_groups():
     for gated in (False, True):
         for mode in MODES:
@@ -544,10 +776,12 @@ def test_identity_tags_and_telemetry_groups():
             assert formula.endswith(", then per-head RMSNorm over value channels with a learned gain")
             assert "positive biased score does not imply a positive weight" in formula
             assert formula.count("each weight is multiplied") == 0
-            shift = "_pair_score_bias" if mode == "query_key" else "_row_score_bias"
-            assert identity["attention_implementation"] == (
-                ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay" if gated
-                 else "pallas_mosaic_gpu_query_polynomial") + shift)
+            assert identity["attention_implementation"] == mosaic_score_bias.implementation_name(
+                "endpoint" if gated else "none", mosaic_score_bias.SHIFT_OF_MODE[mode])
+            # The biases name their arrays: the coefficient generator's b, a and W, and the values v_i, keep theirs.
+            clause = formula[formula.index("beta_r(t,i) ="):formula.index("; the shifted powers")]
+            assert all(f"{name}_r" in clause for name in names)
+            assert not re.search(r"\b[abuv](_r)?\b", clause)
             assert f"score_bias_{mode}" in run_tags(config, {})
     for name in score_bias.ALL_PARAMETERS:
         assert telemetry.parameter_group((jax.tree_util.DictKey(name),)) == "score_bias"

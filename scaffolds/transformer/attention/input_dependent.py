@@ -507,14 +507,18 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
 
             attend = mosaic.query_polynomial_attention
             if bias_kind is not None:
+                from scaffolds.transformer.attention.backends.mosaic.score_bias import (
+                    score_bias_per_order_endpoint_attention, score_bias_query_polynomial_attention,
+                )
+
                 # The shifted powers are evaluated inside the causal tiles (row or pair shifts).
                 shift = {name: value for name, value in (
                     ("row_shift", score_bias_row_shift), ("query_shift_input", score_bias_query_input),
                     ("key_shift_input", score_bias_key_input), ("shift_offset", score_bias_offset),
                     ("shift_amplitude", score_bias_amplitude)) if value is not None}
-                attend = (partial(mosaic.score_bias_per_order_endpoint_attention, query_gate_input=query_gate_input,
+                attend = (partial(score_bias_per_order_endpoint_attention, query_gate_input=query_gate_input,
                                   key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **shift)
-                          if endpoint else partial(mosaic.score_bias_query_polynomial_attention, **shift))
+                          if endpoint else partial(score_bias_query_polynomial_attention, **shift))
             elif endpoint:
                 attend = partial(mosaic.per_order_endpoint_decay_attention if per_order
                                  else mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,

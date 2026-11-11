@@ -514,17 +514,19 @@ def attention_identity(config) -> dict:
         })
     elif config.model.attention_backend == "mosaic":
         from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+        from scaffolds.transformer.attention.backends.mosaic.score_bias import SHIFT_OF_MODE, implementation_name
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         gate = config.model.attention_forget_gate
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
-        # Score biases run their own kernels: row shifts (static, query) or pair shifts (query_key).
         score_bias = getattr(config.model, "attention_score_bias", "none")
-        shift = ("" if score_bias == "none" else "_pair_score_bias" if score_bias == "query_key"
-                 else "_row_score_bias")
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
+            # Score biases run their own kernels, which name themselves.
+            "attention_implementation": (implementation_name("endpoint" if endpoint and per_order else "none",
+                                                             SHIFT_OF_MODE[score_bias])
+                                         if score_bias != "none"
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
                                          if endpoint and per_order
                                          else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
                                          else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
@@ -532,7 +534,7 @@ def attention_identity(config) -> dict:
                                          else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
-                                         if not normalized else "pallas_mosaic_gpu") + shift,
+                                         if not normalized else "pallas_mosaic_gpu"),
             # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
             "attention_weight_precision": default_precision("taylor" if normalized else "query", degree),
             "query_block_size": None,
@@ -611,13 +613,17 @@ def attention_identity(config) -> dict:
     return identity
 
 
+# Named by their arrays: the coefficient generator's formula already uses b, a and W, and v_i is a value vector.
 SCORE_BIAS_FORMULAS = {
-    "static": "beta_r(t,i) = b_r per layer/head/order, b initially 0",
-    "query": ("beta_r(t,i) = b_r + a_r tanh(x_t u_r) per layer/head/order, b initially 0, a initially 1, "
-              "u initially zero; x_t is the query token's activation after the block input RMSNorm"),
-    "query_key": ("beta_r(t,i) = b_r + a_r tanh(x_t u_r + x_i v_r) per layer/head/order, b initially 0, "
-                  "a initially 1, u and v initially zero; x_t and x_i are the query and key tokens' "
-                  "activations after the block input RMSNorm"),
+    "static": "beta_r(t,i) = score_bias_offset_r per layer/head/order, initially 0",
+    "query": ("beta_r(t,i) = score_bias_offset_r + score_bias_amplitude_r tanh(x_t score_bias_query_kernel_r) per "
+              "layer/head/order, score_bias_offset initially 0, score_bias_amplitude initially 1, "
+              "score_bias_query_kernel initially zero; x_t is the query token's activation after the block input "
+              "RMSNorm"),
+    "query_key": ("beta_r(t,i) = score_bias_offset_r + score_bias_amplitude_r tanh(x_t score_bias_query_kernel_r + "
+                  "x_i score_bias_key_kernel_r) per layer/head/order, score_bias_offset initially 0, "
+                  "score_bias_amplitude initially 1, score_bias_query_kernel and score_bias_key_kernel initially "
+                  "zero; x_t and x_i are the query and key tokens' activations after the block input RMSNorm"),
 }
 OUTPUT_SCALING_SUFFIXES = (", divided by the number of visible keys t",
                            ", then per-head RMSNorm over value channels with a learned gain")
