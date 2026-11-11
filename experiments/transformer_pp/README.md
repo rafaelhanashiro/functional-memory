@@ -317,9 +317,19 @@ decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns th
 
 ## Diagnostic notes
 
-- **Seed noise.** A second seed and data order shifted fixed Taylor and static m = 8 by
-  0.6–0.7% in validation perplexity, but static's gap to fixed Taylor barely moved
-  (+0.45% against +0.35%; earlier QK setup). Compare variants within one seed only.
+### Noise
+
+A second seed and data order shifted fixed Taylor and static m = 8 by 0.6–0.7% in
+validation perplexity, but static's gap to fixed Taylor barely moved (+0.45% against
++0.35%; earlier QK setup). Compare variants within one seed only.
+
+### Miscellaneous
+
+At m = 4 on the earlier QK setup:
+
+- The 10B learning rate, 3e-4, was 6.5–8.5% worse than 1e-3.
+- Query tied fixed Taylor with cosine per-head QK normalization; with per-layer RMSNorm
+  it trailed by 0.5%.
 
 ## Exploratory diagnostics
 
