@@ -7,6 +7,7 @@
 #     experiments.<study>.acceptance \
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES] [STOP_AFTER_STEP]
 # One GPU is the default. For an explicit multi-GPU run, override both --gres and GPU_COUNT.
+# GPU_TYPES defaults to B300,H100; a submission that lists B200 also drops shiba from --exclude.
 # Fill the standard/long allowance before using sweep; see CLUSTERS.md.
 # Jobs requiring more than 24 hours must override --partition=long and --time.
 #SBATCH --job-name=transformer
@@ -68,7 +69,7 @@ source scaffolds/transformer/launchers/kennel_runtime.sh
 PYTHON="$EXECUTION_ROOT/scaffolds/transformer/$TRANSFORMER_ENVIRONMENT_DIR/bin/python"
 if [[ ! -x "$PYTHON" ]]; then
   if [[ "$TRANSFORMER_CUDA_ENVIRONMENT" == cuda13 ]]; then
-    echo "Missing the worktree's B300 environment; run UV_PROJECT_ENVIRONMENT=\$PWD/scaffolds/transformer/.venv-cuda13 uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink" >&2
+    echo "Missing the worktree's Blackwell (B200, B300) environment; run UV_PROJECT_ENVIRONMENT=\$PWD/scaffolds/transformer/.venv-cuda13 uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink" >&2
   else
     echo "Missing the worktree environment; run uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink" >&2
   fi

@@ -91,7 +91,10 @@ shared implementation ancestry; a run's own source commit is in its `record.json
 
 Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
 and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the
-validated 0.90 allocator fraction. Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
+validated 0.90 allocator fraction. Blackwell allocations (B200, B300) run in the CUDA 13
+environment `.venv-cuda13` with collectives on the compute stream; every other GPU runs in
+the CUDA 12 `.venv` ([CLUSTERS.md](../../CLUSTERS.md)). `launchers/kennel.sbatch` accepts the
+GPU types its `GPU_TYPES` argument lists (default `B300,H100`; B200 when listed). Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
 overrides automatic selection. This transport policy does not replace kernel and
 full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
@@ -1311,7 +1314,7 @@ package files with the uv cache, so an additional environment costs almost no di
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-# B300 (Blackwell) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
+# Blackwell (B200, B300) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
 UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
   uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 
