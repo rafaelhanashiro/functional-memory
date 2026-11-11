@@ -33,8 +33,8 @@
     },
     {
       "path": "experiments/attention_scaling/runs/r83c3394eb730/training.log",
-      "sha256": "214bdc6ed31b848ce17a13e7802f17d464fa04723fbee606fd00e5839a8e92ed",
-      "size_bytes": 675016
+      "sha256": "d481a4e370b938787c6ab94eb00a60c6f32775786ff6bb8a3d407635e6f461c7",
+      "size_bytes": 1381976
     }
   ],
   "attempts": [
@@ -142,10 +142,9 @@
   },
   "cancellation": {
     "cancelled_utc": "2026-10-23T19:45:54+00:00",
+    "checkpoint_retained": false,
     "production_started": true,
     "reason": "user_requested",
-    "resume_checkpoint_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/checkpoints/12500",
-    "resume_checkpoint_step": 12500,
     "slurm_job_id": "223319",
     "slurm_state": "CANCELLED"
   },
@@ -389,10 +388,10 @@
   "label": "200m-dk064-gdn-cubic-geometry-warmup400-seed0",
   "log": {
     "path": "experiments/attention_scaling/runs/r83c3394eb730/training.log",
-    "sha256": "214bdc6ed31b848ce17a13e7802f17d464fa04723fbee606fd00e5839a8e92ed",
-    "size_bytes": 675016
+    "sha256": "d481a4e370b938787c6ab94eb00a60c6f32775786ff6bb8a3d407635e6f461c7",
+    "size_bytes": 1381976
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gdn-cubic/experiments/attention_scaling/runs/r83c3394eb730/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r83c3394eb730/training.log",
   "metadata": {
     "path": "experiments/attention_scaling/runs/r83c3394eb730/metadata.json",
     "sha256": "d346f2d529fa872cc366764ce50f5fcedfabdfdf4c1bb776b5673feb460281e1",
