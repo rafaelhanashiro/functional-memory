@@ -9,6 +9,7 @@ from pathlib import Path
 import jax
 import jax.numpy as jnp
 import numpy as np
+import orbax.checkpoint as ocp
 import pytest
 
 from scaffolds.transformer.configs import config_to_dict, load_config
@@ -23,6 +24,7 @@ from scaffolds.transformer.training.distributed import resolve_batch_layout
 from scaffolds.transformer.training.gradient_events import (
     GradientEventCapture, GradientEventRule, read_state, select_for_retention,
 )
+from scaffolds.transformer.training.optim import make_learning_rate_schedule
 from scaffolds.transformer.training.state import create_state
 
 # A deliberately low threshold, so the tiny model's ordinary norm fluctuations trigger events.
@@ -65,8 +67,44 @@ def identity(row):
     return {key: value for key, value in row.items() if key not in ATTEMPT_FIELDS}
 
 
+def spike_rows(cfg):
+    return [row for row in event_rows(cfg) if row["event"] == "gradient_spike"]
+
+
+def current_events(rows):
+    """The final trajectory's events, read from the log alone: a ``resume`` row supersedes
+    the rows logged before it for updates after its restored step."""
+    current = []
+    for row in rows:
+        if row["event"] == "resume":
+            current = [earlier for earlier in current if earlier["update"] <= (row["restored_step"] or 0)]
+        elif row["event"] in ("gradient_spike", "nonfinite_update"):
+            current.append(row)
+    return current
+
+
 def capture_names(cfg):
     return sorted(path.name for path in gradient_event_directory(cfg).iterdir())
+
+
+def capture_checkpoint(cfg, update):
+    """A capture's step directory: named by the state's own step, inside the update's root."""
+    return gradient_event_directory(cfg) / str(update) / str(update - 1)
+
+
+def preempted_before(update, step):
+    """``step`` stopping, as a preemption would, when it is about to run update ``update``."""
+    def stopping(state, *args, **kwargs):
+        if int(state.step) == update - 1:
+            raise RuntimeError("simulated preemption")
+        return step(state, *args, **kwargs)
+    return stopping
+
+
+def listed_captures(cfg):
+    """The record's status and the updates of the captures it lists."""
+    record = json.loads((cfg.train.workdir / "record.json").read_text())
+    return record["status"], [item["update"] for item in record["diagnostic_checkpoints"]]
 
 
 def expected_events(norms, *, factor=1.2, min_norm=0.0, history=3, min_history=2, warmup=0):
@@ -182,8 +220,11 @@ def test_capture_leaves_training_unchanged_and_keeps_exact_pre_update_states(tmp
 
     layout = resolve_batch_layout(cfg, available_device_count=1)
     template = create_state(cfg, jax.random.PRNGKey(cfg.train.seed))
+    schedule = make_learning_rate_schedule(cfg)
+    assert float(schedule(0)) != float(schedule(1)), "the scenario needs the schedule to move between updates"
     for row in rows:
         update = row["update"]
+        assert row["learning_rate"] == float(schedule(update - 1))
         assert row["gradient_norm_pre_clip"] == norms[update - 1]
         assert row["loss"] == float(captured[update - 1]["loss"])
         assert row["pre_update_state_sha256"] == captured[update - 1]["pre"]
@@ -194,8 +235,15 @@ def test_capture_leaves_training_unchanged_and_keeps_exact_pre_update_states(tmp
             continue
         directory = gradient_event_directory(cfg) / str(update)
         assert json.loads((directory / "event.json").read_text()) == row
-        restored = restore_state(directory, template)
+        assert row["capture_directory"] == f"gradient_events/{update}" and row["pre_update_step"] == update - 1
+        restored = restore_state(capture_checkpoint(cfg, update), template)
         assert int(restored.step) == update - 1
+        # The capture is also a one-step manager root whose step is the state's own.
+        with ocp.CheckpointManager(directory, ocp.StandardCheckpointer(),
+                                   ocp.CheckpointManagerOptions(read_only=True)) as manager:
+            assert list(manager.all_steps()) == [update - 1]
+            managed = manager.restore(update - 1, args=ocp.args.StandardRestore({"state": template}))["state"]
+        assert int(managed.step) == update - 1 and state_sha256(managed) == captured[update - 1]["pre"]
         assert state_sha256(restored) == captured[update - 1]["pre"]
         # The logged coordinates rebuild the update's exact inputs, and the update itself.
         batches = make_train_iterator(replace(cfg.data, batch_size=layout.global_micro_batch_size),
@@ -226,13 +274,14 @@ def test_requeue_restores_the_norm_history_and_kept_captures(tmp_path, monkeypat
     first_attempt = {row["attempt_id"] for row in event_rows(resumed)}
     assert loop.run_training(resumed)["restored_step"] == 4
     # The resumed run logs the same events, keeps the same captures, and ends with the same history.
-    assert [identity(row) for row in event_rows(resumed)] == [identity(row) for row in event_rows(full)]
+    assert [identity(row) for row in spike_rows(resumed)] == [identity(row) for row in spike_rows(full)]
+    assert [row["restored_step"] for row in event_rows(resumed) if row["event"] == "resume"] == [4]
     final, reference = (read_state(gradient_event_directory(cfg)) for cfg in (resumed, full))
     assert final["current"] == reference["current"] and final["snapshots"] == reference["snapshots"]
     assert capture_names(resumed) == capture_names(full)
     # The first event after the resume relied on norms from before it: the resumed process alone
     # had seen fewer than min_history of them.
-    after = next(row for row in event_rows(resumed) if row["attempt_id"] not in first_attempt)
+    after = next(row for row in spike_rows(resumed) if row["attempt_id"] not in first_attempt)
     assert after["update"] - 1 - 4 < RULE["gradient_event_min_history"] <= after["history_length"]
 
 
@@ -246,13 +295,7 @@ def test_resume_discards_captures_made_after_its_checkpoint(tmp_path, monkeypatc
 
     cfg = capture_config(tmp_path / "run", ckpt_every=2)
     actual = loop.accumulated_train_step
-
-    def preempted_before_update_8(state, *args, **kwargs):
-        if int(state.step) == 7:
-            raise RuntimeError("simulated preemption")
-        return actual(state, *args, **kwargs)
-
-    monkeypatch.setattr(loop, "accumulated_train_step", preempted_before_update_8)
+    monkeypatch.setattr(loop, "accumulated_train_step", preempted_before(8, actual))
     with pytest.raises(RuntimeError, match="simulated preemption"):
         loop.run_training(cfg)
     # Update 7 replaced update 6, whose capture checkpoint 6's state still references.
@@ -260,16 +303,63 @@ def test_resume_discards_captures_made_after_its_checkpoint(tmp_path, monkeypatc
     monkeypatch.setattr(loop, "accumulated_train_step", actual)
     assert loop.run_training(cfg)["restored_step"] == 6
     discarded = [row for row in event_rows(cfg) if row["event"] == "capture_discarded"]
-    assert [row["update"] for row in discarded] == [7] and "checkpoint step 6" in discarded[0]["reason"]
+    assert [row["update"] for row in discarded] == [7]
+    assert discarded[0]["reason"] == "made after checkpoint step 6, from which the run repeats the update"
+    # The resume row precedes what the resume discarded, and names the step it repeats from.
+    rows = event_rows(cfg)
+    boundary = [row for row in rows if row["event"] == "resume"]
+    assert [row["restored_step"] for row in boundary] == [6]
+    assert rows.index(boundary[0]) < rows.index(discarded[0])
     assert capture_names(cfg) == capture_names(reference) == ["3", "7", "state.json"]
     final, expected = (read_state(gradient_event_directory(run)) for run in (cfg, reference))
     assert final["current"] == expected["current"] and final["snapshots"] == expected["snapshots"]
-    spikes = [identity(row) for row in event_rows(cfg) if row["event"] == "gradient_spike"]
-    assert spikes[:3] == [identity(row) for row in event_rows(reference)]
+    spikes = [identity(row) for row in spike_rows(cfg)]
+    assert spikes[:3] == [identity(row) for row in spike_rows(reference)]
     # The repeated update 7 is the same event; the resumed process had no preceding update's telemetry.
     repeated, original = ({key: value for key, value in row.items() if key != "preceding_telemetry"}
                           for row in (spikes[3], spikes[2]))
     assert len(spikes) == 4 and repeated == original and spikes[3]["preceding_telemetry"] is None
+    # The log alone tells the superseded row of update 7 from the row of the final trajectory.
+    current = current_events(rows)
+    assert [row["update"] for row in current] == [row["update"] for row in spike_rows(reference)] == [3, 6, 7]
+    assert current[-1]["attempt_id"] == boundary[0]["attempt_id"] != spike_rows(cfg)[2]["attempt_id"]
+
+
+def test_discard_reason_names_a_capture_replaced_before_the_restored_checkpoint(tmp_path, monkeypatch):
+    # With a checkpoint at every update, update 7 replaces update 6's capture before checkpoint 7
+    # is saved, and checkpoint 6's snapshot still references it when the run stops.
+    single_device(monkeypatch)
+    cfg = capture_config(tmp_path, ckpt_every=1)
+    actual = loop.accumulated_train_step
+    monkeypatch.setattr(loop, "accumulated_train_step", preempted_before(8, actual))
+    with pytest.raises(RuntimeError, match="simulated preemption"):
+        loop.run_training(cfg)
+    assert capture_names(cfg) == ["3", "6", "7", "state.json"]
+    monkeypatch.setattr(loop, "accumulated_train_step", actual)
+    assert loop.run_training(cfg, stop_after_step=8)["restored_step"] == 7
+    discarded = [row for row in event_rows(cfg) if row["event"] == "capture_discarded"]
+    assert [row["update"] for row in discarded] == [6]
+    assert discarded[0]["reason"] == "replaced at or before checkpoint step 7, whose state no longer keeps it"
+    assert capture_names(cfg) == ["3", "7", "state.json"]
+
+
+def test_restart_without_a_checkpoint_supersedes_the_earlier_attempts_events(tmp_path, monkeypatch):
+    single_device(monkeypatch)
+    cfg = capture_config(tmp_path)
+    actual = loop.accumulated_train_step
+    monkeypatch.setattr(loop, "accumulated_train_step", preempted_before(4, actual))
+    with pytest.raises(RuntimeError, match="simulated preemption"):
+        loop.run_training(cfg)
+    assert capture_names(cfg) == ["3", "state.json"]
+    monkeypatch.setattr(loop, "accumulated_train_step", actual)
+    assert loop.run_training(cfg, stop_after_step=4)["restored_step"] is None
+    rows = event_rows(cfg)
+    assert [row["event"] for row in rows] == ["gradient_spike", "resume", "capture_discarded", "gradient_spike"]
+    assert rows[1]["restored_step"] is None
+    assert rows[2]["update"] == 3
+    assert rows[2]["reason"] == "made by an earlier execution that left no checkpoint of this run"
+    assert [row["attempt_id"] for row in current_events(rows)] == [rows[3]["attempt_id"]]
+    assert capture_names(cfg) == ["3", "state.json"]
 
 
 def test_continuation_baseline_checkpoint_resumes_capture(pretrained, tmp_path):
@@ -289,7 +379,8 @@ def test_continuation_baseline_checkpoint_resumes_capture(pretrained, tmp_path):
     assert final["snapshots"]["6"]["history"] == reference["snapshots"]["6"]["history"]
     assert len(final["snapshots"]["6"]["history"]) == 3
     assert final["current"] == reference["current"]
-    assert [identity(row) for row in event_rows(resumed)] == [identity(row) for row in event_rows(full)]
+    assert [identity(row) for row in spike_rows(resumed)] == [identity(row) for row in spike_rows(full)]
+    assert [row["restored_step"] for row in event_rows(resumed) if row["event"] == "resume"] == [3]
 
 
 def test_resume_requires_the_checkpoint_snapshot(tmp_path, monkeypatch):
@@ -318,12 +409,13 @@ def test_nonfinite_update_keeps_its_pre_update_state_outside_the_cap(tmp_path, m
     failure = event_rows(cfg)[-1]
     assert (failure["event"], failure["update"], failure["loss"], failure["retained"]) == (
         "nonfinite_update", 9, "NaN", True)
+    assert failure["learning_rate"] == float(make_learning_rate_schedule(cfg)(8))
     # Update 9 started from checkpoint 8's state.
     template = create_state(cfg, jax.random.PRNGKey(0))
     with make_checkpoint_manager(cfg) as manager:
         checkpoint, checkpoint_step = restore_latest_checkpoint(manager, template)
     assert checkpoint_step == 8
-    captured = restore_state(gradient_event_directory(cfg) / "9", template)
+    captured = restore_state(capture_checkpoint(cfg, 9), template)
     assert state_sha256(captured) == state_sha256(checkpoint) == failure["pre_update_state_sha256"]
     record = json.loads((tmp_path / "record.json").read_text())
     assert record["status"] == "numerical_failure"
@@ -336,10 +428,42 @@ def test_nonfinite_update_keeps_its_pre_update_state_outside_the_cap(tmp_path, m
     monkeypatch.setattr(loop, "accumulated_train_step", actual)
     assert loop.run_training(cfg)["final_step"] == 12
     assert capture_names(cfg) == ["3", "7", "state.json"]
-    assert [row["update"] for row in event_rows(cfg) if row["event"] == "capture_discarded"] == [9]
-    record = json.loads((tmp_path / "record.json").read_text())
-    assert record["status"] == "complete"
-    assert [item["update"] for item in record["diagnostic_checkpoints"]] == [3, 7]
+    discarded = [row for row in event_rows(cfg) if row["event"] == "capture_discarded"]
+    assert [row["update"] for row in discarded] == [9]
+    assert discarded[0]["reason"] == "kept for a numerical failure that this retraining supersedes"
+    assert listed_captures(cfg) == ("complete", [3, 7])
+
+
+def test_a_retraining_lists_no_capture_until_it_reaches_its_own_outcome(tmp_path, monkeypatch):
+    single_device(monkeypatch)
+    cfg = capture_config(tmp_path)
+    actual = loop.accumulated_train_step
+
+    def nonfinite_update_9(*args, **kwargs):
+        updated, loss, *rest = actual(*args, **kwargs)
+        return (updated, jnp.where(updated.step == 9, jnp.nan, loss), *rest)
+
+    monkeypatch.setattr(loop, "accumulated_train_step", nonfinite_update_9)
+    with pytest.raises(FloatingPointError, match="at step 9"):
+        loop.run_training(cfg)
+    assert listed_captures(cfg) == ("numerical_failure", [3, 7, 9])
+
+    # Training again from checkpoint 8 supersedes the failure and deletes its capture. Whether
+    # the retraining then pauses or stops with an ordinary failure, the record lists no capture.
+    monkeypatch.setattr(loop, "accumulated_train_step", actual)
+    assert loop.run_training(cfg, stop_after_step=10)["restored_step"] == 8
+    assert capture_names(cfg) == ["3", "7", "state.json"]
+    assert listed_captures(cfg) == ("paused", [])
+    monkeypatch.setattr(loop, "accumulated_train_step", preempted_before(11, actual))
+    with pytest.raises(RuntimeError, match="simulated preemption"):
+        loop.run_training(cfg)
+    assert listed_captures(cfg) == ("failed", [])
+    assert json.loads((tmp_path / "record.json").read_text()).get("numerical_failure_path") is None
+
+    # The run's own outcome lists what is kept then, and only that.
+    monkeypatch.setattr(loop, "accumulated_train_step", actual)
+    assert loop.run_training(cfg)["final_step"] == 12
+    assert listed_captures(cfg) == ("complete", [3, 7])
 
 
 def test_finalization_keeps_and_records_only_the_kept_captures(tmp_path, monkeypatch):
@@ -370,7 +494,8 @@ def test_finalization_keeps_and_records_only_the_kept_captures(tmp_path, monkeyp
         assert item["kind"] == "directory" and Path(item["path"]).resolve() == (root / str(item["update"])).resolve()
         assert item["justification"] == (f"pre-update state of gradient event at update {item['update']}, "
                                          f"norm {item['gradient_norm_pre_clip']:.6g}")
-        assert {entry["path"] for entry in item["files"]} >= {"event.json", "default/_METADATA"}
+        assert {entry["path"] for entry in item["files"]} >= {"event.json",
+                                                              f"{item['pre_update_step']}/default/_METADATA"}
     assert json.loads((run / "retention.json").read_text())["retained_gradient_event_updates"] == [3, 7]
     assert any(entry["path"].endswith("gradient_events.jsonl") for entry in record["artifacts"])
     assert {item["path"] for item in kept} <= set(validate_record(run)["verified"])
@@ -425,5 +550,5 @@ def test_distributed_capture_copies_the_donated_state(tmp_path, monkeypatch):
     assert rows and rows[0]["device_count"] == 2 and "fold_in(fold_in(step_rng, j), d)" in rows[0]["rng_derivation"]
     template = create_state(cfg, jax.random.PRNGKey(0))
     for entry in read_state(gradient_event_directory(cfg))["current"]["retained"]:
-        restored = restore_state(gradient_event_directory(cfg) / entry["directory"], template)
+        restored = restore_state(capture_checkpoint(cfg, entry["update"]), template)
         assert state_sha256(restored) == captured[entry["update"] - 1]["pre"] == entry["pre_update_state_sha256"]

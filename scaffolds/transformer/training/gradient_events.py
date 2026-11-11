@@ -14,28 +14,33 @@ warmup updates and events included. It persists across requeues.
 
 An event saves the state the update started from (parameters, Adam moments, and
 ``state.step == k - 1``) synchronously, in the checkpoint manager's ``{"state": state}``
-item layout, at ``<checkpoint storage>/gradient_events/<k>/default``, with the event's
-record beside it as ``event.json``. At most ``gradient_event_max_states`` event states are
-kept: the run's first event and the largest later events by norm. A larger later event
-replaces the smallest kept later one, whose directory is deleted. Every event, kept or not,
-is appended to the run's ``gradient_events.jsonl``. An update whose loss, gradient norm, or
-updated parameters are nonfinite also saves its pre-update state, outside the cap, before the
-run stops with its numerical failure. Saving never changes the update: it reads the state
-the step left intact (one-device steps do not donate their input; the data-parallel step
-does, so it is given a device copy).
+item layout, at ``<checkpoint storage>/gradient_events/<k>/<k - 1>/default``, with the
+event's record as ``<k>/event.json``. Each ``<k>`` is thus a one-step checkpoint-manager root
+whose step directory names the state's own step, like every checkpoint of the run. At most
+``gradient_event_max_states`` event states are kept: the run's first event and the largest
+later events by norm. A larger later event replaces the smallest kept later one, whose
+directory is deleted. Every event, kept or not, is appended to the run's
+``gradient_events.jsonl``. An update whose loss, gradient norm, or updated parameters are
+nonfinite also saves its pre-update state, outside the cap, before the run stops with its
+numerical failure. Saving never changes the update: it reads the state the step left intact
+(one-device steps do not donate their input; the data-parallel step does, so it is given a
+device copy).
 
 ``state.json`` in the capture root holds, for every checkpoint a resume may restore, the
 history and kept list as of that checkpoint (written before the checkpoint's save is
 issued), and the current kept list for the run record. A resume restores its checkpoint's
 snapshot and deletes the captures that snapshot does not reference: those made after that
-checkpoint, whose updates the resumed run repeats, and the capture of a superseded numerical
-failure. A replaced capture that a restorable snapshot still references is deleted once a
-later checkpoint is durable.
+checkpoint, whose updates the resumed run repeats, the capture of a superseded numerical
+failure, and a capture replaced at or before that checkpoint that an earlier snapshot still
+referenced. A replaced capture that a restorable snapshot still references is deleted once a
+later checkpoint is durable. A resume also appends a ``resume`` row with its restored step
+to the log: rows that earlier attempts logged for later updates are superseded, because the
+resumed run repeats those updates.
 """
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 import json
@@ -129,6 +134,17 @@ def select_for_retention(retained: Sequence[Mapping], gradient_norm: float, max_
     if gradient_norm > smallest["gradient_norm_pre_clip"]:
         return True, smallest
     return False, None
+
+
+def _discard_reason(update: int, restored_step: int | None, failures: Collection[int]) -> str:
+    """Why a resume deletes a capture that no snapshot it can restore references."""
+    if restored_step is None:
+        return "made by an earlier execution that left no checkpoint of this run"
+    if update in failures:
+        return "kept for a numerical failure that this retraining supersedes"
+    if update > restored_step:
+        return f"made after checkpoint step {restored_step}, from which the run repeats the update"
+    return f"replaced at or before checkpoint step {restored_step}, whose state no longer keeps it"
 
 
 def device_copy(state):
@@ -258,10 +274,8 @@ class GradientEventCapture:
                device_kind: str) -> "GradientEventCapture":
         """The trigger state as of the restored checkpoint; empty for a run without one."""
         capture = cls(config, layout, attempt_id=attempt_id, device_kind=device_kind)
-        if restored_step is None:
-            reason = "made by an earlier execution that left no checkpoint of this run"
-        else:
-            saved = read_state(capture.root)
+        saved = read_state(capture.root)
+        if restored_step is not None:
             snapshot = (saved or {}).get("snapshots", {}).get(str(restored_step))
             if snapshot is None:
                 raise ValueError(f"No gradient-event state for checkpoint step {restored_step} in "
@@ -269,16 +283,20 @@ class GradientEventCapture:
             if saved["rule"] != capture.rule.describe():
                 raise ValueError(f"Gradient-event rule differs from the run's: {capture.root / STATE_NAME}")
             missing = [entry["update"] for entry in snapshot["retained"]
-                       if not (capture.root / entry["directory"] / "default").is_dir()]
+                       if not (capture.root / entry["directory"] / str(entry["pre_update_step"])
+                               / "default").is_dir()]
             if missing:
                 raise ValueError(f"Kept gradient-event captures {missing} are missing from {capture.root}")
             capture.history.extend(snapshot["history"])
             capture.retained = [dict(entry) for entry in snapshot["retained"]]
             capture.snapshots = {restored_step: snapshot}
-            reason = (f"made after checkpoint step {restored_step}, from which the run repeats the update, "
-                      "or kept for a superseded numerical failure")
+        if restored_step is not None or capture.log_path.exists():
+            # The boundary for the log's readers: this execution repeats every update after restored_step.
+            capture._log({"schema_version": VERSION, "event": "resume", "restored_step": restored_step,
+                          "timestamp_utc": datetime.now(UTC).isoformat(), "attempt_id": attempt_id})
         capture._write_state()
-        capture._remove_unreferenced(reason=reason)
+        failures = {entry["update"] for entry in saved["current"]["failures"]} if saved is not None else set()
+        capture._remove_unreferenced(reason=lambda update: _discard_reason(update, restored_step, failures))
         print(f"gradient_event_capture restored_step={restored_step} history={len(capture.history)} "
               f"retained={','.join(str(entry['update']) for entry in capture.retained) or 'none'}", flush=True)
         return capture
@@ -393,7 +411,7 @@ class GradientEventCapture:
             "sequences": {"first": first, "end": first + self.batch_size},
             "batch_sha256": audit["batch_sha256"], "rng_sha256": audit["rng_sha256"],
             "pre_update_state_sha256": state_hash,
-            # Relative to the run's checkpoint storage.
+            # Relative to the run's checkpoint storage; the state is in its step directory, pre_update_step.
             "capture_directory": f"{GRADIENT_EVENT_DIRECTORY}/{update}",
             "telemetry": _numbers(telemetry), "preceding_telemetry": _numbers(preceding_telemetry),
             **self.context,
@@ -409,7 +427,7 @@ class GradientEventCapture:
             if directory.exists():
                 _remove(directory)
             start = time.perf_counter()
-            save_state_now(directory, state)
+            save_state_now(directory / str(update - 1), state)
             record["capture_seconds"] = time.perf_counter() - start
             write_json_atomic(directory / EVENT_NAME, record)
         except Exception as error:
@@ -429,7 +447,7 @@ class GradientEventCapture:
             names.update(entry["directory"] for entry in snapshot["retained"])
         return names
 
-    def _remove_unreferenced(self, reason: str | None = None) -> None:
+    def _remove_unreferenced(self, reason: Callable[[int], str] | None = None) -> None:
         if not self.root.is_dir():
             return
         referenced = self._referenced()
@@ -439,7 +457,7 @@ class GradientEventCapture:
             if reason is not None and path.name.isdigit():
                 self._log({"schema_version": VERSION, "event": "capture_discarded", "update": int(path.name),
                            "timestamp_utc": datetime.now(UTC).isoformat(), "attempt_id": self.attempt_id,
-                           "reason": reason})
+                           "reason": reason(int(path.name))})
                 print(f"gradient_event_capture_discarded update={path.name}", flush=True)
             _remove(path)
 

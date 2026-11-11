@@ -556,6 +556,10 @@ def _update_run_record(config: Config, metadata: dict) -> None:
         if "selected_checkpoint" in artifacts:
             artifacts["selected_checkpoint"]["step"] = selected_step
         changes.update(artifacts)
+    if config.train.gradient_event_capture and status not in {"complete", "numerical_failure"}:
+        # Only an outcome that retains the kept captures lists them. Training again supersedes
+        # that outcome and changes the captures, so until it reaches its own a run lists none.
+        changes["diagnostic_checkpoints"] = []
     update_record(workdir, changes)
 
 

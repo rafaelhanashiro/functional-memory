@@ -1414,31 +1414,38 @@ retention are recipe fields, fixed before launch:
   The history includes warmup updates and events, and resumes with the checkpoint.
 - Capture: the pre-update state (parameters, Adam moments, `step` *k* − 1) is saved
   synchronously in the checkpoint manager's `{"state": state}` layout at
-  `<checkpoints>/gradient_events/<k>/default`, with the event's record as `event.json`.
-  `checkpointing.restore_state(directory, template)`, or a `StandardCheckpointer` restore of
-  `<k>/default`, reads it back. The step manager ignores this non-numeric root, and Git
-  ignores it with the checkpoints.
+  `<checkpoints>/gradient_events/<k>/<k-1>/default`, with the event's record as
+  `<k>/event.json`. Each `<k>` is a one-step checkpoint-manager root whose step directory
+  names the state's own step; `checkpointing.restore_state(<k>/<k-1>, template)`, or a
+  `StandardCheckpointer` restore of `<k>/<k-1>/default`, reads it back. The run's step
+  manager ignores the non-numeric `gradient_events` root, and Git ignores it with the
+  checkpoints.
 - Log: every event, kept or not, is appended to the run's `gradient_events.jsonl` and printed
   as `gradient_event`. A record holds the update and pre-update step, loss, pre-clip norm,
   clip scale, running median and threshold, learning rate, sequence range and microbatch
   layout, batch and RNG SHA256 (as the checkpoint audit hashes them), seed and RNG
   derivation, the update's and preceding update's telemetry, device kind and count, backend
   and implementation, source commit, frozen-execution hash, attempt ID, the pre-update
-  state's SHA256, and whether it was kept and which capture it replaced.
+  state's SHA256, and whether it was kept and which capture it replaced. The log is
+  append-only: a resume appends a `resume` row with its `restored_step`, and rows that earlier
+  attempts logged for later updates are superseded, because the resumed run repeats them.
 - Retention: a larger later event replaces the smallest kept later event (the first is never
   replaced); the replaced directory is deleted once no restorable checkpoint references it.
   A nonfinite update also keeps its pre-update state, outside the cap, before its numerical
   failure is recorded.
 - Resumption: `gradient_events/state.json` records the history and kept list of each
   checkpoint a resume may restore, written before that checkpoint's save. A resume restores
-  its checkpoint's snapshot, and deletes and logs (`capture_discarded`) captures made after
-  that checkpoint, whose updates it repeats, and the capture of a superseded numerical failure.
+  its checkpoint's snapshot, and deletes and logs (`capture_discarded`, with the reason for
+  each directory) captures that snapshot does not reference: those made after that checkpoint,
+  whose updates it repeats, the capture of a superseded numerical failure, and a capture
+  replaced at or before that checkpoint.
 - Records: a completed run and a numerical failure list their kept captures in `record.json`
-  under `diagnostic_checkpoints`: directory descriptors with SHA256 and a justification
-  ("pre-update state of gradient event at update *k*, norm *g*"). `retention.py` keeps them
-  and nothing else of the capture root, and lists them in `retention.json`
-  (`retained_gradient_event_updates`). `validate_record` checks them like checkpoints and
-  reports them unavailable on other clusters.
+  under `diagnostic_checkpoints`: directory descriptors of `<k>` with SHA256 and a
+  justification ("pre-update state of gradient event at update *k*, norm *g*"). A run that
+  trains again supersedes that list and lists none until it reaches its own outcome, as a
+  first execution does. `retention.py` keeps them and nothing else of the capture root, and
+  lists them in `retention.json` (`retained_gradient_event_updates`). `validate_record`
+  checks them like checkpoints and reports them unavailable on other clusters.
 - Cost: capture never changes training; on CPU losses, gradient norms, and states are
   bit-identical with and without it, on one device and on two. One-device steps do not
   donate their input, so holding the pre-update state across the update costs no device
