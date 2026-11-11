@@ -669,9 +669,10 @@ def _z_expectations(z, weights, head_axis):
         "score_bias_z_max": z.max(axis=axes),
         "score_bias_z_negative_count": ((z < 0) * weights).sum(axis=axes),
         "score_bias_z_near_zero_count": ((np.abs(z) < score_bias.NEAR_ZERO) * weights).sum(axis=axes),
-        "score_bias_z_histogram": np.stack([np.bincount(_numpy_bins(z[..., r]).ravel(),
-                                                        weights=np.broadcast_to(weights[..., 0], z[..., r].shape).ravel(),
-                                                        minlength=count) for r in range(z.shape[-1])]),
+        "score_bias_z_histogram": np.stack([
+            np.bincount(_numpy_bins(z[..., r]).ravel(),
+                        weights=np.broadcast_to(weights[..., 0], z[..., r].shape).ravel(), minlength=count)
+            for r in range(z.shape[-1])]),
     }
 
 
@@ -699,13 +700,15 @@ def test_reference_statistics_bin_and_count_row_shifts_exactly():
     v = np.random.default_rng(3).normal(size=(2, time, heads, 3))
     _, stats = reference.blocked_dot_product_attention(
         jnp.asarray(q, jnp.bfloat16), jnp.asarray(k, jnp.bfloat16), jnp.asarray(v, jnp.float32),
-        attention_degree=degree, attention_normalization=False, query_polynomial_coefficients=jnp.asarray(c, jnp.float32),
-        query_block_size=4, score_bias_row_shift=jnp.asarray(beta, jnp.float32), return_diagnostics=True)
+        attention_degree=degree, attention_normalization=False,
+        query_polynomial_coefficients=jnp.asarray(c, jnp.float32), query_block_size=4,
+        score_bias_row_shift=jnp.asarray(beta, jnp.float32), return_diagnostics=True)
     actual = _statistic_arrays(stats)
     # Each row t has t + 1 causal keys, so z[:, t] stands for t + 1 pairs.
     weights = np.arange(1, time + 1)[None, :, None, None]
     expected = _z_expectations(z, weights, head_axis=2)
-    expected.update({"score_bias_beta_sum": beta.sum(axis=(0, 1)), "score_bias_beta_sumsq": (beta ** 2).sum(axis=(0, 1)),
+    expected.update({"score_bias_beta_sum": beta.sum(axis=(0, 1)),
+                     "score_bias_beta_sumsq": (beta ** 2).sum(axis=(0, 1)),
                      "score_bias_beta_min": beta.min(axis=(0, 1)), "score_bias_beta_max": beta.max(axis=(0, 1))})
     _assert_statistics_equal(actual, expected)
     assert actual["score_bias_pair_count"] == 2 * time * (time + 1) / 2 and actual["score_bias_beta_count"] == 2 * time
@@ -715,7 +718,8 @@ def test_reference_statistics_bin_and_count_row_shifts_exactly():
     near_zero = 7 + 8 + 6 + 5
     np.testing.assert_array_equal(actual["score_bias_z_near_zero_count"], np.full((heads, degree), near_zero))
     strict = ((z < 0) * weights).sum(axis=(0, 1))
-    assert (actual["score_bias_z_negative_count"] == strict).all() and (strict < ((z <= 0) * weights).sum(axis=(0, 1))).all()
+    assert (actual["score_bias_z_negative_count"] == strict).all()
+    assert (strict < ((z <= 0) * weights).sum(axis=(0, 1))).all()
     assert actual["score_bias_z_histogram"].shape == (degree, len(score_bias.HISTOGRAM_EDGES) + 1)
     # The on-edge, zero and beyond-range entries of the table above: z = -16 fills the first ordinary bin and
     # z = +16 the overflow bin, in the bins NumPy and the table agree on.
@@ -742,7 +746,8 @@ def test_reference_statistics_bin_and_count_pair_shifts_exactly():
     zeros = jnp.zeros((batch, time, heads, degree), jnp.float32)
     _, stats = reference.blocked_dot_product_attention(
         jnp.asarray(q, jnp.bfloat16), jnp.asarray(k, jnp.bfloat16), jnp.asarray(v, jnp.float32),
-        attention_degree=degree, attention_normalization=False, query_polynomial_coefficients=jnp.asarray(c, jnp.float32),
+        attention_degree=degree, attention_normalization=False,
+        query_polynomial_coefficients=jnp.asarray(c, jnp.float32),
         query_block_size=5, score_bias_query_input=zeros, score_bias_key_input=zeros,
         score_bias_offset=jnp.asarray(offset, jnp.float32), score_bias_amplitude=jnp.asarray(amplitude),
         return_diagnostics=True)
@@ -752,7 +757,8 @@ def test_reference_statistics_bin_and_count_pair_shifts_exactly():
     expected = _z_expectations(entries, weights, head_axis=1)
     pairs = time * (time + 1) / 2
     betas = np.broadcast_to(offset[None, :, None, :], entries.shape)
-    expected.update({"score_bias_beta_sum": betas.sum(axis=(0, 2)), "score_bias_beta_sumsq": (betas ** 2).sum(axis=(0, 2)),
+    expected.update({"score_bias_beta_sum": betas.sum(axis=(0, 2)),
+                     "score_bias_beta_sumsq": (betas ** 2).sum(axis=(0, 2)),
                      "score_bias_beta_min": betas.min(axis=(0, 2)), "score_bias_beta_max": betas.max(axis=(0, 2))})
     _assert_statistics_equal(actual, expected)
     assert actual["score_bias_pair_count"] == batch * pairs
