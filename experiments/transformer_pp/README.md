@@ -315,6 +315,12 @@ averaged over 128 sequences, `r6122f26085ec` on 128 long documents) use
 decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns the ablation with
 `evaluate_extrapolation_ablation.sbatch`; all use the same resources and arguments.
 
+## Diagnostic notes
+
+- **Seed noise.** A second seed and data order shifted fixed Taylor and static m = 8 by
+  0.6–0.7% in validation perplexity, but static's gap to fixed Taylor barely moved
+  (+0.45% against +0.35%; earlier QK setup). Compare variants within one seed only.
+
 ## Exploratory diagnostics
 
 The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
