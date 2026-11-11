@@ -31,6 +31,11 @@ def attention_core(
     spline_knots: tuple[float, ...] | None = None,
     spline_coefficients: jax.Array | None = None,
     query_spline_coefficients: jax.Array | None = None,
+    score_bias_row_shift: jax.Array | None = None,
+    score_bias_query_input: jax.Array | None = None,
+    score_bias_key_input: jax.Array | None = None,
+    score_bias_offset: jax.Array | None = None,
+    score_bias_amplitude: jax.Array | None = None,
     attention_coefficient_activation: str = "identity",
     return_diagnostics: bool = False,
     dropout=None,
@@ -46,7 +51,9 @@ def attention_core(
     ``rational_polynomial.DENOMINATOR_KINDS``. ``blocked_implementation`` selects the blocked
     backend's execution ("scan" or "strips"; see ``backends.reference``); other backends ignore it.
     ``spline_knots`` with static ``spline_coefficients`` or ``query_spline_coefficients`` selects
-    the B-spline score function (``spline``), which defines the kernel alone.
+    the B-spline score function (``spline``), which defines the kernel alone. The ``score_bias_*``
+    operands (attention/score_bias.py: a row shift, or the query-key pair inputs with their offset
+    and amplitude) shift each order r >= 1 of tanh query coefficients; every other kernel rejects them.
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
@@ -56,6 +63,14 @@ def attention_core(
         raise TypeError(f"Unknown attention arguments: {sorted(unknown)}")
     if blocked_implementation not in BLOCKED_IMPLEMENTATIONS:
         raise ValueError(f"Unknown blocked attention implementation: {blocked_implementation}")
+    score_bias = {name: value for name, value in (
+        ("score_bias_row_shift", score_bias_row_shift), ("score_bias_query_input", score_bias_query_input),
+        ("score_bias_key_input", score_bias_key_input), ("score_bias_offset", score_bias_offset),
+        ("score_bias_amplitude", score_bias_amplitude)) if value is not None}
+    if score_bias and (query_polynomial_coefficients is None or key_polynomial_factors is not None
+                       or attention_coefficient_activation != "tanh"):
+        # No other kernel may ignore them: it would silently train the unshifted polynomial.
+        raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
     # The historical scan keeps every mechanism's established call; strips add the selection.
     strips = {} if blocked_implementation == "scan" else {"blocked_implementation": blocked_implementation}
     denominators = {name: array for name, array in denominators.items() if array is not None}
@@ -133,7 +148,8 @@ def attention_core(
         return query_polynomial_attention(q, k, v, query_polynomial_coefficients, backend=backend,
                                           return_diagnostics=return_diagnostics, log_decay=query_log_decay,
                                           decay_mode=query_decay_mode, query_gate_input=query_gate_input,
-                                          key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **strips)
+                                          key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
+                                          **score_bias, **strips)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 

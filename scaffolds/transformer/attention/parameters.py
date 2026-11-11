@@ -197,6 +197,12 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                                    constant_rate=getattr(config, "attention_forget_gate_constant_rate", "learned"),
                                    order_count=(config.attention_degree + 1
                                                 if getattr(config, "attention_forget_gate_per_order", False) else None))
+    if getattr(config, "attention_score_bias", "none") != "none":
+        # Deterministic starts, outside the learned branch: no factorial storage scale or order selection.
+        from scaffolds.transformer.attention.score_bias import parameter_specs as score_bias_specs
+
+        specs += score_bias_specs(hidden_size=config.hidden_size, degree=config.attention_degree,
+                                  mode=config.attention_score_bias)
     if getattr(config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.path import parameter_specs as path_specs
 

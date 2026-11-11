@@ -122,6 +122,12 @@ def main() -> None:
                     "model.initialization: flax_default. Use --allow-flax-default-init only when "
                     "Flax-default initialization was explicitly requested."
                 )
+            if model["attention_score_bias"] != "none" and model["attention_backend"] != "mosaic":
+                parser.error(
+                    "per-degree score biases train only on the Mosaic GPU kernels; this recipe sets "
+                    f"model.attention_backend: {model['attention_backend']}. Use mosaic: the blocked backend is "
+                    "their reference for tests, acceptance, and diagnostics, never a training backend."
+                )
             if (model["attention_backend"] == "fused" and config.model.mosaic_supported()
                     and not args.allow_triton_attention):
                 parser.error(

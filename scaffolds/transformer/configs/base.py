@@ -167,6 +167,13 @@ class ModelConfig:
     # once per layer/head and copied to every order: all orders start with the same alpha,
     # which head_rms_norm output scaling cancels up to its epsilon. w decays like U.
     attention_coefficient_gate: Literal["none", "sigmoid", "gdn"] = "none"
+    # Per-degree score biases (attention/score_bias.py): order r >= 1 of diagonal tanh query
+    # coefficients acts on s_ti + beta_r(t,i), order zero unshifted: "static" beta_r = b_r, "query"
+    # b_r + a_r tanh(x_t u_r), "query_key" b_r + a_r tanh(x_t u_r + x_i v_r), per layer/head/order,
+    # starting at b = 0, a = 1, u = v = 0 (no random draws); u and v decay. With no forget gate or
+    # the per-order query-key endpoint gate (each order's gate multiplies its own shifted power).
+    # Trains on the Mosaic kernels; the blocked backend is their reference for tests and diagnostics.
+    attention_score_bias: Literal["none", "static", "query", "query_key"] = "none"
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -252,6 +259,8 @@ class ModelConfig:
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
         if getattr(self, "attention_kernel_basis", "polynomial") != "polynomial":
             return False  # No Mosaic kernel evaluates a B-spline basis.
+        if getattr(self, "attention_score_bias", "none") != "none":
+            return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
         taylor = (self.attention_normalization and integer_degree and degree >= 1
                   and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed"
                   and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
@@ -286,6 +295,8 @@ class ModelConfig:
 
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+        if getattr(self, "attention_score_bias", "none") != "none":
+            return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
         input_free = self.attention_forget_gate_conditioning == "none"
         coefficients = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
                         and self.attention_coefficient_parameterization == "direct" if input_free else
@@ -301,6 +312,27 @@ class ModelConfig:
                                            per_order=self.attention_forget_gate_per_order)
                 and self.positional_encoding in ("rope", "none")
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
+
+    def mosaic_score_bias_supported(self) -> bool:
+        """Whether the Mosaic GPU score-bias kernels implement this recipe: per-degree score biases of
+        the tanh query-coefficient polynomial, with no forget gate or the per-order query-key endpoint
+        gate (``mosaic_score_bias_problem``). Only an explicit ``mosaic`` backend selects them; ``auto``
+        never does, and score-bias recipes reject it."""
+        return self.mosaic_score_bias_problem() is None
+
+    def mosaic_score_bias_problem(self) -> str | None:
+        """Why the Mosaic score-bias kernels cannot run this recipe, or None. They take Q/K widths 8-128,
+        value width 64, and degree 1-12 on H100; their entry points refuse other GPUs before tracing."""
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS
+
+        if getattr(self, "attention_score_bias", "none") == "none":
+            return "the recipe has no score biases"
+        problem = _score_bias_problem(self)
+        if problem is None and self.qk_head_dim not in WIDTHS:
+            problem = f"Q/K width {self.qk_head_dim} is not one of {WIDTHS}"
+        if problem is None and self.value_head_dim != VALUE_WIDTH:
+            problem = f"value width {self.value_head_dim} is not {VALUE_WIDTH}"
+        return problem
 
     def path_fused_supported(self) -> bool:
         """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
@@ -371,7 +403,9 @@ class ModelConfig:
             if self.attention_backend == "fused" and not self.path_fused_supported():
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
-        if self.attention_backend == "mosaic" and not (self.mosaic_supported() or self.mosaic_decay_supported()):
+        if (self.attention_backend == "mosaic" and self.attention_score_bias == "none"
+                and not (self.mosaic_supported() or self.mosaic_decay_supported())):
+            # Score-bias recipes name their own reason (_validate_score_bias).
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
                              "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
@@ -609,7 +643,8 @@ class ModelConfig:
         forget_backend_supported = (
             self.positional_encoding == "path" and self.attention_backend in ("auto", "blocked", "fused")
             or self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked"
-            or self.attention_backend == "mosaic" and self.mosaic_decay_supported())
+            or self.attention_backend == "mosaic" and (self.mosaic_decay_supported()
+                                                       or self.mosaic_score_bias_supported()))
         if self.attention_forget_gate and (
                 self.attention_mechanism != "dot_product" or not (exponential or gated_polynomial)
                 or not forget_backend_supported):
@@ -736,6 +771,7 @@ class ModelConfig:
                 raise ValueError("A sum-of-squares kernel requires an even attention_degree >= 2")
             if not self.attention_normalization:
                 raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
+        _validate_score_bias(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
         elif self.attention_degree == 0:
@@ -834,6 +870,60 @@ def _validate_kernel_basis(model: ModelConfig) -> None:
                              "theta_j = b_j + a_j tanh(w_j^T x_t), without an inner tanh bias")
     elif conditioning != "static":
         raise ValueError("B-spline coefficients are static or query-conditioned (no key factors)")
+
+
+def _score_bias_problem(model) -> str | None:
+    """Why per-degree score biases do not apply to this recipe's attention, or None."""
+    from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE
+
+    if (model.attention_mechanism != "dot_product" or model.attention_normalization
+            or model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
+            or model.attention_coefficient_parameterization != "direct"
+            or model.attention_coefficient_sharing != "per_head"
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_conditioning != "query"
+            or model.attention_coefficient_activation != "tanh"
+            or model.attention_coefficient_readout != "diagonal"
+            or model.attention_coefficient_orders is not None
+            or model.attention_coefficient_gate != "none"
+            or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
+        return ("they apply to unnormalized dot-product attention with learned direct per_head Taylor-initialized "
+                "diagonal tanh query coefficients, without selected orders, a coefficient gate, or a B-spline basis")
+    degree = model.attention_degree
+    if isinstance(degree, bool) or not isinstance(degree, int) or not 1 <= degree <= MAX_QUERY_DEGREE:
+        return f"they need an integer attention_degree from 1 to {MAX_QUERY_DEGREE}"
+    if model.positional_encoding not in ("rope", "none"):
+        return "they apply with RoPE or no positional encoding, not PaTH"
+    if model.attention_forget_gate and not (
+            model.attention_forget_gate_form == "input" and model.attention_forget_gate_mode == "query_distance"
+            and model.attention_forget_gate_conditioning == "query_key"
+            and model.attention_forget_gate_rate_activation == "softplus"
+            and model.attention_forget_gate_per_order is True):
+        return ("they take no forget gate or the per-order query-key endpoint gate (input form, query_distance "
+                "mode, softplus rates, attention_forget_gate_per_order)")
+    return None
+
+
+def _validate_score_bias(model: ModelConfig) -> None:
+    """Per-degree score biases (attention/score_bias.py) train on the Mosaic kernels alone; the blocked
+    backend is accepted only as their reference (acceptance helpers, CPU tests, and the diagnostics)."""
+    from scaffolds.transformer.attention.score_bias import MODES
+
+    mode = model.attention_score_bias
+    if not isinstance(mode, str) or mode not in MODES:
+        raise ValueError(f"Unknown attention score bias: {mode!r}")
+    if mode == "none":
+        return
+    problem = _score_bias_problem(model)
+    if problem is not None:
+        raise ValueError(f"Per-degree score biases ({mode}) do not fit this recipe: {problem}")
+    if model.attention_backend not in ("mosaic", "blocked"):
+        raise ValueError(f"Per-degree score biases train on attention_backend mosaic, with blocked as their reference "
+                         f"for tests and diagnostics; {model.attention_backend!r} never runs them")
+    if model.attention_backend == "mosaic":
+        problem = model.mosaic_score_bias_problem()
+        if problem is not None:
+            raise ValueError(f"Backend 'mosaic' cannot run these score biases: {problem}")
 
 
 @dataclass
@@ -967,6 +1057,15 @@ def validate_config(config: Config) -> None:
         if continuation.parent_checkpoint and not continuation.preserve_all_parameters:
             raise ValueError("A continuation cannot introduce B-spline coefficients; only an identical-architecture "
                              "continuation (continuation.preserve_all_parameters) supports the bspline basis")
+    if config.model.attention_score_bias != "none":
+        # Score biases cover orders 1..m beside coefficients indexed 0..m, and no qualified schedule moves
+        # them: a coefficient release, a separate query-readout learning rate, and continuations do not apply.
+        if getattr(optim, "coefficient_release_schedule", None) is not None:
+            raise ValueError("A coefficient release schedule is not qualified with per-degree score biases")
+        if optim.query_coefficient_learning_rate_scale != 1.0:
+            raise ValueError("optim.query_coefficient_learning_rate_scale is not qualified with per-degree score biases")
+        if continuation.parent_checkpoint:
+            raise ValueError("Checkpoint continuations are not qualified with per-degree score biases")
     if not isinstance(train.gradient_event_capture, bool):
         raise ValueError("train.gradient_event_capture must be a boolean")
     if train.gradient_event_capture:

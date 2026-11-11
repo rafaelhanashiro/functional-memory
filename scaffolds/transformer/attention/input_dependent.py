@@ -430,6 +430,8 @@ def key_factor_statistics(key_factors):
 def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", return_diagnostics=False,
                                log_decay=None, decay_mode="cumulative",
                                query_gate_input=None, key_gate_input=None, gate_log_rate=None,
+                               score_bias_row_shift=None, score_bias_query_input=None, score_bias_key_input=None,
+                               score_bias_offset=None, score_bias_amplitude=None,
                                blocked_implementation="scan"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
@@ -441,10 +443,17 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     An extra order axis applies independent decay inside the polynomial sum: query-distance
     decay on the blocked and Mosaic backends, and cumulative decay (each order's own sum L_tr,
     exp(L_tr - L_ir)) on the blocked backend. These gates include the constant term.
+
+    Per-degree score biases (attention/score_bias.py) replace order r's s_ti^r by (s_ti + beta_r(t,i))^r for
+    r = 1..m: a row shift beta_r(t) [batch,time,heads,m], or the query-key inputs p, q
+    [batch,time,heads,m] with offset b and amplitude a [heads,m], beta_r = b_r + a_r tanh(p_tr + q_ir).
+    They run without a forget gate or with the per-order endpoint gate, on the Mosaic score-bias
+    kernels or the blocked reference; every other backend raises, never falling back.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
     )
+    from scaffolds.transformer.attention.score_bias import operand_kind
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
@@ -463,6 +472,19 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             backend == "blocked" or backend == "mosaic" and decay_mode == "query_distance"):
         raise ValueError("The forget gate runs on the blocked reference backend; query-distance and endpoint "
                          "decay also run on mosaic")
+    score_bias = {name: value for name, value in (
+        ("score_bias_row_shift", score_bias_row_shift), ("score_bias_query_input", score_bias_query_input),
+        ("score_bias_key_input", score_bias_key_input), ("score_bias_offset", score_bias_offset),
+        ("score_bias_amplitude", score_bias_amplitude)) if value is not None}
+    bias_kind = operand_kind(coefficients.shape, row_shift=score_bias_row_shift,
+                             query_input=score_bias_query_input, key_input=score_bias_key_input,
+                             offset=score_bias_offset, amplitude=score_bias_amplitude)
+    if bias_kind is not None:
+        if log_decay is not None or (endpoint and not per_order):
+            raise ValueError("Per-degree score biases take no forget gate or the per-order endpoint gate")
+        if backend not in ("blocked", "mosaic"):
+            raise ValueError("Per-degree score biases train on the Mosaic kernels, with the blocked backend as "
+                             f"their reference; {backend!r} has no score-bias kernel")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_backend_attention(
@@ -470,7 +492,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             attention_normalization=False, query_polynomial_coefficients=coefficients,
             query_log_decay=log_decay, query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
-            return_diagnostics=return_diagnostics,
+            return_diagnostics=return_diagnostics, **score_bias,
         )
         if not return_diagnostics:
             return result
@@ -484,7 +506,16 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             from scaffolds.transformer.attention.backends.mosaic import api as mosaic
 
             attend = mosaic.query_polynomial_attention
-            if endpoint:
+            if bias_kind is not None:
+                # The shifted powers are evaluated inside the causal tiles (row or pair shifts).
+                shift = {name: value for name, value in (
+                    ("row_shift", score_bias_row_shift), ("query_shift_input", score_bias_query_input),
+                    ("key_shift_input", score_bias_key_input), ("shift_offset", score_bias_offset),
+                    ("shift_amplitude", score_bias_amplitude)) if value is not None}
+                attend = (partial(mosaic.score_bias_per_order_endpoint_attention, query_gate_input=query_gate_input,
+                                  key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, **shift)
+                          if endpoint else partial(mosaic.score_bias_query_polynomial_attention, **shift))
+            elif endpoint:
                 attend = partial(mosaic.per_order_endpoint_decay_attention if per_order
                                  else mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
                                  key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
@@ -495,12 +526,13 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:
             return output
-        # Diagnostics, including the forget gate's, come from the blocked reference.
+        # Diagnostics, including the forget gate's and the score biases', come from the blocked reference
+        # (forward only, on the fixed diagnostic sample) of the same kernel.
         _, diagnostics = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
             query_decay_mode=decay_mode, query_gate_input=query_gate_input,
-            key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, return_diagnostics=True,
+            key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, return_diagnostics=True, **score_bias,
         )
     else:
         raise ValueError("Query-conditioned polynomial attention requires a blocked, fused or mosaic backend")
