@@ -1634,27 +1634,27 @@ SXM (`dogo`). The jobs exclude the H100 PCIe node `mastiff` (about 1.5× slower)
 A6000 and B200 nodes. Home cluster: **Kennel**. These jobs have no scheduling dependencies on each
 other.
 
-The partition and time limit are not fixed here: they are chosen at submission from each run's
-measured H100 projection (the kernel benchmark, then acceptance's pilot, which refuses an
-allocation whose projected run exceeds its limit less two hours). For scale, the gated control
-trained at about 8.7 s per update on an H100 SXM (its logged throughput), about 18 hours for 7,570
-updates before evaluation and checkpoints, so its biased runs may need `long`. From the isolated
-`claude/score-biases` worktree, after committing the frozen execution set and recording the H100
-kernel qualification and benchmark, and checking live allowances:
+All six train on `long`: 48 hours for the RoPE runs and 72 hours for the gated runs, whose control
+alone trained at 8.7 s per update on an H100 SXM (about 18 hours for 7,570 updates). Acceptance's
+pilot refuses an allocation whose projected run exceeds its limit less two hours, so the H100
+benchmark must project each RoPE run under 46 hours and each gated run under 70. From the isolated
+`claude/score-biases` worktree, after committing the frozen execution set, recording the H100
+kernel qualification and benchmark in the [scaffold validation record](../../scaffolds/transformer/validation/README.md),
+and checking live allowances:
 
 ```bash
-submit() {  # run ID, partition, time limit (both from the measured projection)
-  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time="$3" --exclude=akita,mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+submit() {  # run ID, time limit
+  sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$2" --exclude=akita,mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
     --output="experiments/transformer_pp/runs/$1/training.log" \
     --error="experiments/transformer_pp/runs/$1/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
     "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
 }
-submit rb70f9e57190f '<partition>' '<time limit>'
-submit r891870ef80e9 '<partition>' '<time limit>'
-submit r3b1619f8a901 '<partition>' '<time limit>'
-submit ra2edcdc5ab60 '<partition>' '<time limit>'
-submit rbf5d3bd6059c '<partition>' '<time limit>'
-submit r75dccfcf072e '<partition>' '<time limit>'
+submit rb70f9e57190f 48:00:00
+submit r891870ef80e9 48:00:00
+submit r3b1619f8a901 48:00:00
+submit ra2edcdc5ab60 72:00:00
+submit rbf5d3bd6059c 72:00:00
+submit r75dccfcf072e 72:00:00
 ```
