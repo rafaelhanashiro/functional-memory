@@ -14,6 +14,8 @@ unpadded width. Decay families also take per-key FP32 ``key_vectors`` [n, batch,
 t-i in every tile, and ``dkv`` also returns their per-key sums [n, batch, heads, time].
 Families with per-head scalars take ``head_constants`` [heads, width] FP32. Per-order
 families form dV and dK together after S and dP, evaluating each order's decay once.
+Score-bias families (``common.accumulates``) add their per-order dQ and dK sums directly to
+the kernels' shared-memory staging buffers, so the rolled order loops carry no sums.
 """
 from functools import partial
 
@@ -98,8 +100,7 @@ def _smem(shape):
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
 def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-            block_k=None, stages=3):
-    block_k = common.hopper_blocks(family, degree)["forward"] if block_k is None else block_k
+            block_k=64, stages=3):
     BQ = B
     batch, time, heads, dq = q.shape
     dv = v.shape[-1]
@@ -252,9 +253,8 @@ def forward(q, k, v, vectors, key_vectors=None, head_constants=None, *, family, 
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_k", "stages"))
 def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-       block_k=None, stages=2):
+       block_k=64, stages=2):
     """dQ [batch, time, heads, d_K] in q.dtype, and per-query sums [n, batch, heads, time] FP32 or None."""
-    block_k = common.hopper_blocks(family, degree)["dq"] if block_k is None else block_k
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     tiles_per_cta = B * WGS // block_k
@@ -415,10 +415,9 @@ def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, d
 
 @partial(jax.jit, static_argnames=("family", "degree", "scale", "precision", "block_q", "stages"))
 def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, degree, scale, precision,
-        block_q=None, stages=2):
+        block_q=64, stages=2):
     """(dK, dV) in the input dtypes, and for families with per-key sums those sums
     [n, batch, heads, time]. Lanes are keys; per-query vectors stream with each query tile."""
-    block_q = common.hopper_blocks(family, degree)["dkv"] if block_q is None else block_q
     batch, time, heads, dqk = q.shape
     dv = v.shape[-1]
     per_wg = B // block_q
