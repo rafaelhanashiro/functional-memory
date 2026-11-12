@@ -104,101 +104,13 @@
   }
  },
  "deterministic": {
-  "r3b1619f8a901": {
-   "parity": {
-    "arms": {
-     "capture_forced": {
-      "final_state_equal": true,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     },
-     "capture_recipe": {
-      "final_state_equal": true,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     },
-     "diagnostics": {
-      "final_state_equal": true,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     },
-     "pilot": {
-      "final_state_equal": null,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     }
-    },
-    "capture_seconds": [
-     21.4,
-     21.2,
-     21.9
-    ],
-    "diagnostic_interval": 2,
-    "diagnostic_validations": [
-     [
-      2,
-      true,
-      true
-     ],
-     [
-      4,
-      true,
-      true
-     ],
-     [
-      6,
-      true,
-      true
-     ],
-     [
-      8,
-      true,
-      true
-     ],
-     [
-      10,
-      true,
-      true
-     ]
-    ],
-    "events": 9,
-    "events_match_capture_off_pre_update_state": 9,
-    "kept_captures": [
-     {
-      "equals_capture_off_state": true,
-      "restores_to_recorded": true,
-      "update": 2
-     },
-     {
-      "equals_capture_off_state": true,
-      "restores_to_recorded": true,
-      "update": 3
-     },
-     {
-      "equals_capture_off_state": true,
-      "restores_to_recorded": true,
-      "update": 4
-     }
-    ],
-    "node": "mastiff",
-    "passed": true,
-    "updates": 10,
-    "xla_flags": "--xla_gpu_deterministic_ops=true"
-   },
+  "gated-query": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
     "attention_backend": "mosaic",
     "attention_diagnostics_valid": true,
-    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_pair_score_bias",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_row_score_bias",
     "budget_gate": {
      "24h": false,
      "36h": false,
@@ -225,37 +137,37 @@
     "device_kinds": [
      "NVIDIA H100 PCIe"
     ],
-    "first_update_seconds": 103.1875470970408,
+    "first_update_seconds": 88.05250034102937,
     "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
-    "last5_mean_seconds_per_update": 56.8305597641971,
-    "median_seconds_per_update": 60.640409917978104,
+    "gpu_uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356",
+    "last5_mean_seconds_per_update": 53.1051491024089,
+    "median_seconds_per_update": 59.15432958700694,
     "min_max_seconds_per_update": [
-     58.39394525397802,
-     61.93089655198855
+     59.14241202402627,
+     59.17650355998194
     ],
     "node": "mastiff",
-    "pci_bus_id": "00000000:81:00.0",
-    "pilot_peak_GiB": 30.578765869140625,
+    "pci_bus_id": "00000000:61:00.0",
+    "pilot_peak_GiB": 31.106241703033447,
     "pilot_updates": 4,
-    "projected_hours": 129.50079618974618,
+    "projected_hours": 126.31944530711321,
     "projection_components_hours": {
-     "checkpointing": 0.2985016884657994,
-     "diagnostics": 0.018738797831918216,
-     "evaluation": 1.5396738324856334,
-     "pilot_overhead": 0.13057546010333074,
-     "training": 127.51330641085951
+     "checkpointing": 0.18153959276426274,
+     "diagnostics": 0.02036992663213621,
+     "evaluation": 1.614481738072225,
+     "pilot_overhead": 0.11464433474388594,
+     "training": 124.3884097149007
     },
     "projection_rates": {
-     "checkpoint": 38.37878851703135,
-     "diagnostics": 2.4092740069609135,
-     "evaluation_batch": 10.418845482985489,
-     "training_update": 60.640409917978104
+     "checkpoint": 23.340804783976637,
+     "diagnostics": 2.6189905669889413,
+     "evaluation_batch": 10.925064392969944,
+     "training_update": 59.15432958700694
     },
-    "slurm_job_id": "242484",
+    "slurm_job_id": "242557",
     "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
-    "training_peak_GiB": 30.566822052001953,
-    "validation_nll_at_pilot_stop": 10.085745573043823,
+    "training_peak_GiB": 30.919968843460083,
+    "validation_nll_at_pilot_stop": 10.052125096321106,
     "xla_flags": "--xla_gpu_deterministic_ops=true"
    },
    "resume_warm-cache": {
@@ -263,10 +175,10 @@
     "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache-deterministic",
     "final_step": 6,
     "first_update_batch_and_rng_equal": true,
-    "first_update_seconds": 66.72596378700109,
+    "first_update_seconds": 71.07859968702542,
     "node": "mastiff",
     "restored_step": 4,
-    "slurm_job_id": "242484",
+    "slurm_job_id": "242557",
     "start_state_equal": true,
     "train_step_compile_cache": [
      "hit"
@@ -288,7 +200,7 @@
     "xla_flags": "--xla_gpu_deterministic_ops=true"
    }
   },
-  "r75dccfcf072e": {
+  "gated-query_key": {
    "parity": {
     "arms": {
      "capture_forced": {
@@ -472,103 +384,7 @@
     "xla_flags": "--xla_gpu_deterministic_ops=true"
    }
   },
-  "r891870ef80e9": {
-   "pilot": {
-    "all_losses_and_numerics_finite": true,
-    "allocator_limit_GiB": 59.40660095214844,
-    "attention_backend": "mosaic",
-    "attention_diagnostics_valid": true,
-    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_row_score_bias",
-    "budget_gate": {
-     "24h": false,
-     "36h": false,
-     "48h": false,
-     "72h": false
-    },
-    "compared": {
-     "continuation_vs_uninterrupted": {
-      "final_state_equal": true,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     },
-     "pilot_validation_nll_equal": true,
-     "pilot_vs_uninterrupted": {
-      "final_state_equal": null,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     }
-    },
-    "device_kinds": [
-     "NVIDIA H100 PCIe"
-    ],
-    "first_update_seconds": 77.95624637900619,
-    "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
-    "last5_mean_seconds_per_update": 48.97856300520944,
-    "median_seconds_per_update": 55.665444598998874,
-    "min_max_seconds_per_update": [
-     54.25436649500625,
-     57.01675755303586
-    ],
-    "node": "mastiff",
-    "pci_bus_id": "00000000:81:00.0",
-    "pilot_peak_GiB": 30.62457799911499,
-    "pilot_updates": 4,
-    "projected_hours": 118.78176996623604,
-    "projection_components_hours": {
-     "checkpointing": 0.1797447863164901,
-     "diagnostics": 0.01783500355008679,
-     "evaluation": 1.426974004047677,
-     "pilot_overhead": 0.10515627942693148,
-     "training": 117.05205989289486
-    },
-    "projection_rates": {
-     "checkpoint": 23.1100439549773,
-     "diagnostics": 2.293071885011159,
-     "evaluation_batch": 9.65621506498428,
-     "training_update": 55.665444598998874
-    },
-    "slurm_job_id": "242484",
-    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
-    "training_peak_GiB": 30.55880117416382,
-    "validation_nll_at_pilot_stop": 10.086597979068756,
-    "xla_flags": "--xla_gpu_deterministic_ops=true"
-   },
-   "resume_warm-cache": {
-    "acceptance_resume_audit": "passed",
-    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache-deterministic",
-    "final_step": 6,
-    "first_update_batch_and_rng_equal": true,
-    "first_update_seconds": 60.59292094100965,
-    "node": "mastiff",
-    "restored_step": 4,
-    "slurm_job_id": "242484",
-    "start_state_equal": true,
-    "train_step_compile_cache": [
-     "hit"
-    ],
-    "vs_continuation": {
-     "final_state_equal": true,
-     "first_differing_update": null,
-     "identical": true,
-     "max_abs_gradient_norm_difference": 0.0,
-     "max_abs_loss_difference": 0.0
-    },
-    "vs_uninterrupted": {
-     "final_state_equal": true,
-     "first_differing_update": null,
-     "identical": true,
-     "max_abs_gradient_norm_difference": 0.0,
-     "max_abs_loss_difference": 0.0
-    },
-    "xla_flags": "--xla_gpu_deterministic_ops=true"
-   }
-  },
-  "ra2edcdc5ab60": {
+  "gated-static": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
@@ -664,7 +480,287 @@
     "xla_flags": "--xla_gpu_deterministic_ops=true"
    }
   },
-  "rb70f9e57190f": {
+  "rope-query": {
+   "pilot": {
+    "all_losses_and_numerics_finite": true,
+    "allocator_limit_GiB": 59.40660095214844,
+    "attention_backend": "mosaic",
+    "attention_diagnostics_valid": true,
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_row_score_bias",
+    "budget_gate": {
+     "24h": false,
+     "36h": false,
+     "48h": false,
+     "72h": false
+    },
+    "compared": {
+     "continuation_vs_uninterrupted": {
+      "final_state_equal": true,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     },
+     "pilot_validation_nll_equal": true,
+     "pilot_vs_uninterrupted": {
+      "final_state_equal": null,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     }
+    },
+    "device_kinds": [
+     "NVIDIA H100 PCIe"
+    ],
+    "first_update_seconds": 77.95624637900619,
+    "frozen_execution_checked": true,
+    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
+    "last5_mean_seconds_per_update": 48.97856300520944,
+    "median_seconds_per_update": 55.665444598998874,
+    "min_max_seconds_per_update": [
+     54.25436649500625,
+     57.01675755303586
+    ],
+    "node": "mastiff",
+    "pci_bus_id": "00000000:81:00.0",
+    "pilot_peak_GiB": 30.62457799911499,
+    "pilot_updates": 4,
+    "projected_hours": 118.78176996623604,
+    "projection_components_hours": {
+     "checkpointing": 0.1797447863164901,
+     "diagnostics": 0.01783500355008679,
+     "evaluation": 1.426974004047677,
+     "pilot_overhead": 0.10515627942693148,
+     "training": 117.05205989289486
+    },
+    "projection_rates": {
+     "checkpoint": 23.1100439549773,
+     "diagnostics": 2.293071885011159,
+     "evaluation_batch": 9.65621506498428,
+     "training_update": 55.665444598998874
+    },
+    "slurm_job_id": "242484",
+    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
+    "training_peak_GiB": 30.55880117416382,
+    "validation_nll_at_pilot_stop": 10.086597979068756,
+    "xla_flags": "--xla_gpu_deterministic_ops=true"
+   },
+   "resume_warm-cache": {
+    "acceptance_resume_audit": "passed",
+    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache-deterministic",
+    "final_step": 6,
+    "first_update_batch_and_rng_equal": true,
+    "first_update_seconds": 60.59292094100965,
+    "node": "mastiff",
+    "restored_step": 4,
+    "slurm_job_id": "242484",
+    "start_state_equal": true,
+    "train_step_compile_cache": [
+     "hit"
+    ],
+    "vs_continuation": {
+     "final_state_equal": true,
+     "first_differing_update": null,
+     "identical": true,
+     "max_abs_gradient_norm_difference": 0.0,
+     "max_abs_loss_difference": 0.0
+    },
+    "vs_uninterrupted": {
+     "final_state_equal": true,
+     "first_differing_update": null,
+     "identical": true,
+     "max_abs_gradient_norm_difference": 0.0,
+     "max_abs_loss_difference": 0.0
+    },
+    "xla_flags": "--xla_gpu_deterministic_ops=true"
+   }
+  },
+  "rope-query_key": {
+   "parity": {
+    "arms": {
+     "capture_forced": {
+      "final_state_equal": true,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     },
+     "capture_recipe": {
+      "final_state_equal": true,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     },
+     "diagnostics": {
+      "final_state_equal": true,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     },
+     "pilot": {
+      "final_state_equal": null,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     }
+    },
+    "capture_seconds": [
+     21.4,
+     21.2,
+     21.9
+    ],
+    "diagnostic_interval": 2,
+    "diagnostic_validations": [
+     [
+      2,
+      true,
+      true
+     ],
+     [
+      4,
+      true,
+      true
+     ],
+     [
+      6,
+      true,
+      true
+     ],
+     [
+      8,
+      true,
+      true
+     ],
+     [
+      10,
+      true,
+      true
+     ]
+    ],
+    "events": 9,
+    "events_match_capture_off_pre_update_state": 9,
+    "kept_captures": [
+     {
+      "equals_capture_off_state": true,
+      "restores_to_recorded": true,
+      "update": 2
+     },
+     {
+      "equals_capture_off_state": true,
+      "restores_to_recorded": true,
+      "update": 3
+     },
+     {
+      "equals_capture_off_state": true,
+      "restores_to_recorded": true,
+      "update": 4
+     }
+    ],
+    "node": "mastiff",
+    "passed": true,
+    "updates": 10,
+    "xla_flags": "--xla_gpu_deterministic_ops=true"
+   },
+   "pilot": {
+    "all_losses_and_numerics_finite": true,
+    "allocator_limit_GiB": 59.40660095214844,
+    "attention_backend": "mosaic",
+    "attention_diagnostics_valid": true,
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_pair_score_bias",
+    "budget_gate": {
+     "24h": false,
+     "36h": false,
+     "48h": false,
+     "72h": false
+    },
+    "compared": {
+     "continuation_vs_uninterrupted": {
+      "final_state_equal": true,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     },
+     "pilot_validation_nll_equal": true,
+     "pilot_vs_uninterrupted": {
+      "final_state_equal": null,
+      "first_differing_update": null,
+      "identical": true,
+      "max_abs_gradient_norm_difference": 0.0,
+      "max_abs_loss_difference": 0.0
+     }
+    },
+    "device_kinds": [
+     "NVIDIA H100 PCIe"
+    ],
+    "first_update_seconds": 103.1875470970408,
+    "frozen_execution_checked": true,
+    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
+    "last5_mean_seconds_per_update": 56.8305597641971,
+    "median_seconds_per_update": 60.640409917978104,
+    "min_max_seconds_per_update": [
+     58.39394525397802,
+     61.93089655198855
+    ],
+    "node": "mastiff",
+    "pci_bus_id": "00000000:81:00.0",
+    "pilot_peak_GiB": 30.578765869140625,
+    "pilot_updates": 4,
+    "projected_hours": 129.50079618974618,
+    "projection_components_hours": {
+     "checkpointing": 0.2985016884657994,
+     "diagnostics": 0.018738797831918216,
+     "evaluation": 1.5396738324856334,
+     "pilot_overhead": 0.13057546010333074,
+     "training": 127.51330641085951
+    },
+    "projection_rates": {
+     "checkpoint": 38.37878851703135,
+     "diagnostics": 2.4092740069609135,
+     "evaluation_batch": 10.418845482985489,
+     "training_update": 60.640409917978104
+    },
+    "slurm_job_id": "242484",
+    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
+    "training_peak_GiB": 30.566822052001953,
+    "validation_nll_at_pilot_stop": 10.085745573043823,
+    "xla_flags": "--xla_gpu_deterministic_ops=true"
+   },
+   "resume_warm-cache": {
+    "acceptance_resume_audit": "passed",
+    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache-deterministic",
+    "final_step": 6,
+    "first_update_batch_and_rng_equal": true,
+    "first_update_seconds": 66.72596378700109,
+    "node": "mastiff",
+    "restored_step": 4,
+    "slurm_job_id": "242484",
+    "start_state_equal": true,
+    "train_step_compile_cache": [
+     "hit"
+    ],
+    "vs_continuation": {
+     "final_state_equal": true,
+     "first_differing_update": null,
+     "identical": true,
+     "max_abs_gradient_norm_difference": 0.0,
+     "max_abs_loss_difference": 0.0
+    },
+    "vs_uninterrupted": {
+     "final_state_equal": true,
+     "first_differing_update": null,
+     "identical": true,
+     "max_abs_gradient_norm_difference": 0.0,
+     "max_abs_loss_difference": 0.0
+    },
+    "xla_flags": "--xla_gpu_deterministic_ops=true"
+   }
+  },
+  "rope-static": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
@@ -759,8 +855,10 @@
     },
     "xla_flags": "--xla_gpu_deterministic_ops=true"
    }
-  },
-  "rbf5d3bd6059c": {
+  }
+ },
+ "production": {
+  "gated-query": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
@@ -769,313 +867,70 @@
     "attention_implementation": "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_row_score_bias",
     "budget_gate": {
      "24h": false,
-     "36h": false,
-     "48h": false,
-     "72h": false
-    },
-    "compared": {
-     "continuation_vs_uninterrupted": {
-      "final_state_equal": true,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     },
-     "pilot_validation_nll_equal": true,
-     "pilot_vs_uninterrupted": {
-      "final_state_equal": null,
-      "first_differing_update": null,
-      "identical": true,
-      "max_abs_gradient_norm_difference": 0.0,
-      "max_abs_loss_difference": 0.0
-     }
-    },
-    "device_kinds": [
-     "NVIDIA H100 PCIe"
-    ],
-    "first_update_seconds": 88.05250034102937,
-    "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356",
-    "last5_mean_seconds_per_update": 53.1051491024089,
-    "median_seconds_per_update": 59.15432958700694,
-    "min_max_seconds_per_update": [
-     59.14241202402627,
-     59.17650355998194
-    ],
-    "node": "mastiff",
-    "pci_bus_id": "00000000:61:00.0",
-    "pilot_peak_GiB": 31.106241703033447,
-    "pilot_updates": 4,
-    "projected_hours": 126.31944530711321,
-    "projection_components_hours": {
-     "checkpointing": 0.18153959276426274,
-     "diagnostics": 0.02036992663213621,
-     "evaluation": 1.614481738072225,
-     "pilot_overhead": 0.11464433474388594,
-     "training": 124.3884097149007
-    },
-    "projection_rates": {
-     "checkpoint": 23.340804783976637,
-     "diagnostics": 2.6189905669889413,
-     "evaluation_batch": 10.925064392969944,
-     "training_update": 59.15432958700694
-    },
-    "slurm_job_id": "242557",
-    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
-    "training_peak_GiB": 30.919968843460083,
-    "validation_nll_at_pilot_stop": 10.052125096321106,
-    "xla_flags": "--xla_gpu_deterministic_ops=true"
-   },
-   "resume_warm-cache": {
-    "acceptance_resume_audit": "passed",
-    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache-deterministic",
-    "final_step": 6,
-    "first_update_batch_and_rng_equal": true,
-    "first_update_seconds": 71.07859968702542,
-    "node": "mastiff",
-    "restored_step": 4,
-    "slurm_job_id": "242557",
-    "start_state_equal": true,
-    "train_step_compile_cache": [
-     "hit"
-    ],
-    "vs_continuation": {
-     "final_state_equal": true,
-     "first_differing_update": null,
-     "identical": true,
-     "max_abs_gradient_norm_difference": 0.0,
-     "max_abs_loss_difference": 0.0
-    },
-    "vs_uninterrupted": {
-     "final_state_equal": true,
-     "first_differing_update": null,
-     "identical": true,
-     "max_abs_gradient_norm_difference": 0.0,
-     "max_abs_loss_difference": 0.0
-    },
-    "xla_flags": "--xla_gpu_deterministic_ops=true"
-   }
-  }
- },
- "production": {
-  "r3b1619f8a901": {
-   "parity": {
-    "arms": {
-     "capture_forced": {
-      "final_state_equal": false,
-      "first_differing_update": 1,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.0017783641815185547,
-      "max_abs_loss_difference": 1.811981201171875e-05
-     },
-     "capture_recipe": {
-      "final_state_equal": false,
-      "first_differing_update": 1,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.005017280578613281,
-      "max_abs_loss_difference": 1.71661376953125e-05
-     },
-     "diagnostics": {
-      "final_state_equal": false,
-      "first_differing_update": 1,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.004740238189697266,
-      "max_abs_loss_difference": 2.09808349609375e-05
-     },
-     "pilot": {
-      "final_state_equal": null,
-      "first_differing_update": 1,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.0004906654357910156,
-      "max_abs_loss_difference": 8.58306884765625e-06
-     }
-    },
-    "capture_seconds": [
-     20.9,
-     35.2,
-     22.2
-    ],
-    "diagnostic_interval": 2,
-    "diagnostic_validations": [
-     [
-      2,
-      true,
-      true
-     ],
-     [
-      4,
-      true,
-      true
-     ],
-     [
-      6,
-      true,
-      true
-     ],
-     [
-      8,
-      true,
-      true
-     ],
-     [
-      10,
-      true,
-      true
-     ]
-    ],
-    "events": 9,
-    "events_match_capture_off_pre_update_state": 0,
-    "kept_captures": [
-     {
-      "equals_capture_off_state": false,
-      "restores_to_recorded": true,
-      "update": 2
-     },
-     {
-      "equals_capture_off_state": false,
-      "restores_to_recorded": true,
-      "update": 3
-     },
-     {
-      "equals_capture_off_state": false,
-      "restores_to_recorded": true,
-      "update": 4
-     }
-    ],
-    "node": "mastiff",
-    "passed": false,
-    "updates": 10,
-    "xla_flags": null
-   },
-   "pilot": {
-    "all_losses_and_numerics_finite": true,
-    "allocator_limit_GiB": 59.40660095214844,
-    "attention_backend": "mosaic",
-    "attention_diagnostics_valid": true,
-    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_pair_score_bias",
-    "budget_gate": {
-     "24h": false,
      "36h": true,
      "48h": true,
      "72h": true
     },
-    "compared": {
-     "continuation_vs_uninterrupted": {
-      "final_state_equal": false,
-      "first_differing_update": 21,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.1528911590576172,
-      "max_abs_loss_difference": 0.00021457672119140625
-     },
-     "pilot_validation_nll_equal": false,
-     "pilot_vs_uninterrupted": {
-      "final_state_equal": null,
-      "first_differing_update": 1,
-      "identical": false,
-      "max_abs_gradient_norm_difference": 0.006484508514404297,
-      "max_abs_loss_difference": 2.09808349609375e-05
-     }
-    },
+    "compared": {},
     "device_kinds": [
      "NVIDIA H100 PCIe"
     ],
-    "first_update_seconds": 59.68556416896172,
+    "first_update_seconds": 41.59427197097102,
     "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
-    "last5_mean_seconds_per_update": 11.085010879207402,
-    "median_seconds_per_update": 10.201356825011317,
+    "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+    "last5_mean_seconds_per_update": 12.546628278808203,
+    "median_seconds_per_update": 12.537005176011007,
     "min_max_seconds_per_update": [
-     9.279738733021077,
-     11.358103226055391
+     12.465575971989892,
+     12.560640493989922
     ],
     "node": "mastiff",
-    "pci_bus_id": "00000000:81:00.0",
-    "pilot_peak_GiB": 31.040539264678955,
+    "pci_bus_id": "00000000:E1:00.0",
+    "pilot_peak_GiB": 31.453866958618164,
     "pilot_updates": 20,
-    "projected_hours": 22.225868671581555,
+    "projected_hours": 27.16107139360842,
     "projection_components_hours": {
-     "checkpointing": 0.17953358791658602,
-     "diagnostics": 0.016914532849138294,
-     "evaluation": 0.40917989492675083,
-     "pilot_overhead": 0.16905422107361825,
-     "training": 21.45118643481546
+     "checkpointing": 0.18027390315643668,
+     "diagnostics": 0.021426435472999907,
+     "evaluation": 0.48578045445694845,
+     "pilot_overhead": 0.1110547165211109,
+     "training": 26.362535884000923
     },
     "projection_rates": {
-     "checkpoint": 23.082889874989633,
-     "diagnostics": 2.174725652032066,
-     "evaluation_batch": 2.768886507023126,
-     "training_update": 10.201356825011317
+     "checkpoint": 23.17807326297043,
+     "diagnostics": 2.754827417957131,
+     "evaluation_batch": 3.2872361579793505,
+     "training_update": 12.537005176011007
     },
-    "slurm_job_id": "242445",
-    "source_commit": "6291769a9d660bcd6bb1c2eb62408f7491a15126",
-    "sxm_estimate": {
-     "projected_hours": 16.464378657323532,
-     "seconds_per_update": 7.556915055482796
-    },
-    "training_peak_GiB": 31.040539264678955,
-    "validation_nll_at_pilot_stop": 8.99315083026886,
-    "xla_flags": null
-   },
-   "resume_cold-cache": {
-    "acceptance_resume_audit": "passed",
-    "compilation_cache": "/tmp/sb-cold-242495.rYvlVg",
-    "final_step": 22,
-    "first_update_batch_and_rng_equal": true,
-    "first_update_seconds": 59.72949608199997,
-    "node": "mastiff",
-    "restored_step": 20,
     "slurm_job_id": "242495",
-    "start_state_equal": true,
-    "train_step_compile_cache": [
-     "miss"
-    ],
-    "vs_continuation": {
-     "final_state_equal": false,
-     "first_differing_update": 21,
-     "identical": false,
-     "max_abs_gradient_norm_difference": 0.0006206035614013672,
-     "max_abs_loss_difference": 2.86102294921875e-06
+    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
+    "sxm_estimate": {
+     "projected_hours": 20.120255850101085,
+     "seconds_per_update": 9.287106096806708
     },
-    "vs_uninterrupted": {
-     "final_state_equal": false,
-     "first_differing_update": 21,
-     "identical": false,
-     "max_abs_gradient_norm_difference": 0.1528923511505127,
-     "max_abs_loss_difference": 0.0002117156982421875
-    },
+    "training_peak_GiB": 31.453866958618164,
+    "validation_nll_at_pilot_stop": 8.9167760014534,
     "xla_flags": null
    },
    "resume_warm-cache": {
     "acceptance_resume_audit": "passed",
     "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache",
     "final_step": 22,
-    "first_update_batch_and_rng_equal": true,
-    "first_update_seconds": 19.18788266798947,
+    "first_update_batch_and_rng_equal": null,
+    "first_update_seconds": 69.65152776503237,
     "node": "mastiff",
     "restored_step": 20,
     "slurm_job_id": "242495",
-    "start_state_equal": true,
+    "start_state_equal": null,
     "train_step_compile_cache": [
-     "hit"
+     "miss"
     ],
-    "vs_continuation": {
-     "final_state_equal": false,
-     "first_differing_update": 21,
-     "identical": false,
-     "max_abs_gradient_norm_difference": 5.245208740234375e-06,
-     "max_abs_loss_difference": 5.7220458984375e-06
-    },
-    "vs_uninterrupted": {
-     "final_state_equal": false,
-     "first_differing_update": 21,
-     "identical": false,
-     "max_abs_gradient_norm_difference": 0.1528913974761963,
-     "max_abs_loss_difference": 0.00022029876708984375
-    },
+    "vs_continuation": null,
+    "vs_uninterrupted": null,
     "xla_flags": null
    }
   },
-  "r75dccfcf072e": {
+  "gated-query_key": {
    "parity": {
     "arms": {
      "capture_forced": {
@@ -1292,79 +1147,7 @@
     "xla_flags": null
    }
   },
-  "r891870ef80e9": {
-   "pilot": {
-    "all_losses_and_numerics_finite": true,
-    "allocator_limit_GiB": 59.40660095214844,
-    "attention_backend": "mosaic",
-    "attention_diagnostics_valid": true,
-    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_row_score_bias",
-    "budget_gate": {
-     "24h": true,
-     "36h": true,
-     "48h": true,
-     "72h": true
-    },
-    "compared": {},
-    "device_kinds": [
-     "NVIDIA H100 PCIe"
-    ],
-    "first_update_seconds": 30.596304049016908,
-    "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
-    "last5_mean_seconds_per_update": 5.861917961202562,
-    "median_seconds_per_update": 5.748470562975854,
-    "min_max_seconds_per_update": [
-     5.4492810550145805,
-     5.891063016024418
-    ],
-    "node": "mastiff",
-    "pci_bus_id": "00000000:81:00.0",
-    "pilot_peak_GiB": 30.926719665527344,
-    "pilot_updates": 20,
-    "projected_hours": 12.629266937685122,
-    "projection_components_hours": {
-     "checkpointing": 0.182184309027701,
-     "diagnostics": 0.015991801536616144,
-     "evaluation": 0.2760160208935203,
-     "pilot_overhead": 0.0673186501919473,
-     "training": 12.087756156035336
-    },
-    "projection_rates": {
-     "checkpoint": 23.423696874990128,
-     "diagnostics": 2.0560887689935043,
-     "evaluation_batch": 1.8677775849937461,
-     "training_update": 5.748470562975854
-    },
-    "slurm_job_id": "242484",
-    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
-    "sxm_estimate": {
-     "projected_hours": 9.355451348110053,
-     "seconds_per_update": 4.258326072551991
-    },
-    "training_peak_GiB": 30.926719665527344,
-    "validation_nll_at_pilot_stop": 8.99313735961914,
-    "xla_flags": null
-   },
-   "resume_warm-cache": {
-    "acceptance_resume_audit": "passed",
-    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache",
-    "final_step": 22,
-    "first_update_batch_and_rng_equal": null,
-    "first_update_seconds": 28.675661885994487,
-    "node": "mastiff",
-    "restored_step": 20,
-    "slurm_job_id": "242484",
-    "start_state_equal": null,
-    "train_step_compile_cache": [
-     "miss"
-    ],
-    "vs_continuation": null,
-    "vs_uninterrupted": null,
-    "xla_flags": null
-   }
-  },
-  "ra2edcdc5ab60": {
+  "gated-static": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
@@ -1436,7 +1219,296 @@
     "xla_flags": null
    }
   },
-  "rb70f9e57190f": {
+  "rope-query": {
+   "pilot": {
+    "all_losses_and_numerics_finite": true,
+    "allocator_limit_GiB": 59.40660095214844,
+    "attention_backend": "mosaic",
+    "attention_diagnostics_valid": true,
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_row_score_bias",
+    "budget_gate": {
+     "24h": true,
+     "36h": true,
+     "48h": true,
+     "72h": true
+    },
+    "compared": {},
+    "device_kinds": [
+     "NVIDIA H100 PCIe"
+    ],
+    "first_update_seconds": 30.596304049016908,
+    "frozen_execution_checked": true,
+    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
+    "last5_mean_seconds_per_update": 5.861917961202562,
+    "median_seconds_per_update": 5.748470562975854,
+    "min_max_seconds_per_update": [
+     5.4492810550145805,
+     5.891063016024418
+    ],
+    "node": "mastiff",
+    "pci_bus_id": "00000000:81:00.0",
+    "pilot_peak_GiB": 30.926719665527344,
+    "pilot_updates": 20,
+    "projected_hours": 12.629266937685122,
+    "projection_components_hours": {
+     "checkpointing": 0.182184309027701,
+     "diagnostics": 0.015991801536616144,
+     "evaluation": 0.2760160208935203,
+     "pilot_overhead": 0.0673186501919473,
+     "training": 12.087756156035336
+    },
+    "projection_rates": {
+     "checkpoint": 23.423696874990128,
+     "diagnostics": 2.0560887689935043,
+     "evaluation_batch": 1.8677775849937461,
+     "training_update": 5.748470562975854
+    },
+    "slurm_job_id": "242484",
+    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
+    "sxm_estimate": {
+     "projected_hours": 9.355451348110053,
+     "seconds_per_update": 4.258326072551991
+    },
+    "training_peak_GiB": 30.926719665527344,
+    "validation_nll_at_pilot_stop": 8.99313735961914,
+    "xla_flags": null
+   },
+   "resume_warm-cache": {
+    "acceptance_resume_audit": "passed",
+    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache",
+    "final_step": 22,
+    "first_update_batch_and_rng_equal": null,
+    "first_update_seconds": 28.675661885994487,
+    "node": "mastiff",
+    "restored_step": 20,
+    "slurm_job_id": "242484",
+    "start_state_equal": null,
+    "train_step_compile_cache": [
+     "miss"
+    ],
+    "vs_continuation": null,
+    "vs_uninterrupted": null,
+    "xla_flags": null
+   }
+  },
+  "rope-query_key": {
+   "parity": {
+    "arms": {
+     "capture_forced": {
+      "final_state_equal": false,
+      "first_differing_update": 1,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.0017783641815185547,
+      "max_abs_loss_difference": 1.811981201171875e-05
+     },
+     "capture_recipe": {
+      "final_state_equal": false,
+      "first_differing_update": 1,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.005017280578613281,
+      "max_abs_loss_difference": 1.71661376953125e-05
+     },
+     "diagnostics": {
+      "final_state_equal": false,
+      "first_differing_update": 1,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.004740238189697266,
+      "max_abs_loss_difference": 2.09808349609375e-05
+     },
+     "pilot": {
+      "final_state_equal": null,
+      "first_differing_update": 1,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.0004906654357910156,
+      "max_abs_loss_difference": 8.58306884765625e-06
+     }
+    },
+    "capture_seconds": [
+     20.9,
+     35.2,
+     22.2
+    ],
+    "diagnostic_interval": 2,
+    "diagnostic_validations": [
+     [
+      2,
+      true,
+      true
+     ],
+     [
+      4,
+      true,
+      true
+     ],
+     [
+      6,
+      true,
+      true
+     ],
+     [
+      8,
+      true,
+      true
+     ],
+     [
+      10,
+      true,
+      true
+     ]
+    ],
+    "events": 9,
+    "events_match_capture_off_pre_update_state": 0,
+    "kept_captures": [
+     {
+      "equals_capture_off_state": false,
+      "restores_to_recorded": true,
+      "update": 2
+     },
+     {
+      "equals_capture_off_state": false,
+      "restores_to_recorded": true,
+      "update": 3
+     },
+     {
+      "equals_capture_off_state": false,
+      "restores_to_recorded": true,
+      "update": 4
+     }
+    ],
+    "node": "mastiff",
+    "passed": false,
+    "updates": 10,
+    "xla_flags": null
+   },
+   "pilot": {
+    "all_losses_and_numerics_finite": true,
+    "allocator_limit_GiB": 59.40660095214844,
+    "attention_backend": "mosaic",
+    "attention_diagnostics_valid": true,
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_pair_score_bias",
+    "budget_gate": {
+     "24h": false,
+     "36h": true,
+     "48h": true,
+     "72h": true
+    },
+    "compared": {
+     "continuation_vs_uninterrupted": {
+      "final_state_equal": false,
+      "first_differing_update": 21,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.1528911590576172,
+      "max_abs_loss_difference": 0.00021457672119140625
+     },
+     "pilot_validation_nll_equal": false,
+     "pilot_vs_uninterrupted": {
+      "final_state_equal": null,
+      "first_differing_update": 1,
+      "identical": false,
+      "max_abs_gradient_norm_difference": 0.006484508514404297,
+      "max_abs_loss_difference": 2.09808349609375e-05
+     }
+    },
+    "device_kinds": [
+     "NVIDIA H100 PCIe"
+    ],
+    "first_update_seconds": 59.68556416896172,
+    "frozen_execution_checked": true,
+    "gpu_uuid": "GPU-09257090-c58b-4205-2e59-6e5a890313ed",
+    "last5_mean_seconds_per_update": 11.085010879207402,
+    "median_seconds_per_update": 10.201356825011317,
+    "min_max_seconds_per_update": [
+     9.279738733021077,
+     11.358103226055391
+    ],
+    "node": "mastiff",
+    "pci_bus_id": "00000000:81:00.0",
+    "pilot_peak_GiB": 31.040539264678955,
+    "pilot_updates": 20,
+    "projected_hours": 22.225868671581555,
+    "projection_components_hours": {
+     "checkpointing": 0.17953358791658602,
+     "diagnostics": 0.016914532849138294,
+     "evaluation": 0.40917989492675083,
+     "pilot_overhead": 0.16905422107361825,
+     "training": 21.45118643481546
+    },
+    "projection_rates": {
+     "checkpoint": 23.082889874989633,
+     "diagnostics": 2.174725652032066,
+     "evaluation_batch": 2.768886507023126,
+     "training_update": 10.201356825011317
+    },
+    "slurm_job_id": "242445",
+    "source_commit": "6291769a9d660bcd6bb1c2eb62408f7491a15126",
+    "sxm_estimate": {
+     "projected_hours": 16.464378657323532,
+     "seconds_per_update": 7.556915055482796
+    },
+    "training_peak_GiB": 31.040539264678955,
+    "validation_nll_at_pilot_stop": 8.99315083026886,
+    "xla_flags": null
+   },
+   "resume_cold-cache": {
+    "acceptance_resume_audit": "passed",
+    "compilation_cache": "/tmp/sb-cold-242495.rYvlVg",
+    "final_step": 22,
+    "first_update_batch_and_rng_equal": true,
+    "first_update_seconds": 59.72949608199997,
+    "node": "mastiff",
+    "restored_step": 20,
+    "slurm_job_id": "242495",
+    "start_state_equal": true,
+    "train_step_compile_cache": [
+     "miss"
+    ],
+    "vs_continuation": {
+     "final_state_equal": false,
+     "first_differing_update": 21,
+     "identical": false,
+     "max_abs_gradient_norm_difference": 0.0006206035614013672,
+     "max_abs_loss_difference": 2.86102294921875e-06
+    },
+    "vs_uninterrupted": {
+     "final_state_equal": false,
+     "first_differing_update": 21,
+     "identical": false,
+     "max_abs_gradient_norm_difference": 0.1528923511505127,
+     "max_abs_loss_difference": 0.0002117156982421875
+    },
+    "xla_flags": null
+   },
+   "resume_warm-cache": {
+    "acceptance_resume_audit": "passed",
+    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache",
+    "final_step": 22,
+    "first_update_batch_and_rng_equal": true,
+    "first_update_seconds": 19.18788266798947,
+    "node": "mastiff",
+    "restored_step": 20,
+    "slurm_job_id": "242495",
+    "start_state_equal": true,
+    "train_step_compile_cache": [
+     "hit"
+    ],
+    "vs_continuation": {
+     "final_state_equal": false,
+     "first_differing_update": 21,
+     "identical": false,
+     "max_abs_gradient_norm_difference": 5.245208740234375e-06,
+     "max_abs_loss_difference": 5.7220458984375e-06
+    },
+    "vs_uninterrupted": {
+     "final_state_equal": false,
+     "first_differing_update": 21,
+     "identical": false,
+     "max_abs_gradient_norm_difference": 0.1528913974761963,
+     "max_abs_loss_difference": 0.00022029876708984375
+    },
+    "xla_flags": null
+   }
+  },
+  "rope-static": {
    "pilot": {
     "all_losses_and_numerics_finite": true,
     "allocator_limit_GiB": 59.40660095214844,
@@ -1499,78 +1571,6 @@
     "node": "mastiff",
     "restored_step": 20,
     "slurm_job_id": "242484",
-    "start_state_equal": null,
-    "train_step_compile_cache": [
-     "miss"
-    ],
-    "vs_continuation": null,
-    "vs_uninterrupted": null,
-    "xla_flags": null
-   }
-  },
-  "rbf5d3bd6059c": {
-   "pilot": {
-    "all_losses_and_numerics_finite": true,
-    "allocator_limit_GiB": 59.40660095214844,
-    "attention_backend": "mosaic",
-    "attention_diagnostics_valid": true,
-    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay_row_score_bias",
-    "budget_gate": {
-     "24h": false,
-     "36h": true,
-     "48h": true,
-     "72h": true
-    },
-    "compared": {},
-    "device_kinds": [
-     "NVIDIA H100 PCIe"
-    ],
-    "first_update_seconds": 41.59427197097102,
-    "frozen_execution_checked": true,
-    "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
-    "last5_mean_seconds_per_update": 12.546628278808203,
-    "median_seconds_per_update": 12.537005176011007,
-    "min_max_seconds_per_update": [
-     12.465575971989892,
-     12.560640493989922
-    ],
-    "node": "mastiff",
-    "pci_bus_id": "00000000:E1:00.0",
-    "pilot_peak_GiB": 31.453866958618164,
-    "pilot_updates": 20,
-    "projected_hours": 27.16107139360842,
-    "projection_components_hours": {
-     "checkpointing": 0.18027390315643668,
-     "diagnostics": 0.021426435472999907,
-     "evaluation": 0.48578045445694845,
-     "pilot_overhead": 0.1110547165211109,
-     "training": 26.362535884000923
-    },
-    "projection_rates": {
-     "checkpoint": 23.17807326297043,
-     "diagnostics": 2.754827417957131,
-     "evaluation_batch": 3.2872361579793505,
-     "training_update": 12.537005176011007
-    },
-    "slurm_job_id": "242495",
-    "source_commit": "6ea6e210972c1ebf973997401b15583d59a51712",
-    "sxm_estimate": {
-     "projected_hours": 20.120255850101085,
-     "seconds_per_update": 9.287106096806708
-    },
-    "training_peak_GiB": 31.453866958618164,
-    "validation_nll_at_pilot_stop": 8.9167760014534,
-    "xla_flags": null
-   },
-   "resume_warm-cache": {
-    "acceptance_resume_audit": "passed",
-    "compilation_cache": "/data/cl/scratch/rafah/score-bias-qual/jax-cache",
-    "final_step": 22,
-    "first_update_batch_and_rng_equal": null,
-    "first_update_seconds": 69.65152776503237,
-    "node": "mastiff",
-    "restored_step": 20,
-    "slurm_job_id": "242495",
     "start_state_equal": null,
     "train_step_compile_cache": [
      "miss"

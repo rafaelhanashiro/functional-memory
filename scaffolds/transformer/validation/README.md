@@ -18,14 +18,17 @@ allocations run in the CUDA 13 environment `.venv-cuda13` (jax 0.10.0 with the C
 CUDA 13.2, cuBLAS 13.2.2.2, cuDNN 9.22.0.52) with collectives on the compute stream
 (`--xla_gpu_disable_async_collectives=ALLCOLLECTIVES`), like B300 ([CLUSTERS.md](../../../CLUSTERS.md)).
 On B200 this record qualifies one computation: the blocked backend's causal strips
-(`strip_dot_product_attention`, plain JAX) with per-degree score biases, which train the six score-bias
-runs ([README](../README.md#per-degree-score-biases)). No custom attention kernel (Triton, Mosaic or
+(`strip_dot_product_attention`, plain JAX) with per-degree score biases
+([README](../README.md#per-degree-score-biases)). No custom attention kernel (Triton, Mosaic or
 cuDNN) is qualified on B200; the Mosaic score-bias kernels refuse it before tracing. The same tests and
-pilots also ran on one H100 PCIe. The compact record is
-[runs/score-bias-strips/](runs/score-bias-strips/): `tests.json` (each GPU test run's source, runtime,
-devices and JUnit SHA256) and `training.json` (every pilot and resume, the out-of-memory failures, the
-compile-only memory estimates, the derived time limits, and the SHA256 of every report it summarizes;
-the reports are in the ignored `logs/score-bias-strips/`).
+pilots also ran on one H100 PCIe. The six recipes are degree-eight tanh query polynomials at the
+reference shape (15 layers, width 896, 7,570 updates of 256 × 2,048 tokens) on the strips: the recipes
+of the RoPE query control `r25fffc16c2f3` ("RoPE") and of the per-order query–key gated control
+`r227b0ed7c605` ("gated"), each with a `static`, `query` or `query_key` shift. The compact record is
+[runs/score-bias-strips/](runs/score-bias-strips/), keyed by recipe (`rope-static` to
+`gated-query_key`): `tests.json` (each GPU test run's source, runtime, devices and JUnit SHA256) and
+`training.json` (every pilot and resume, the out-of-memory failures, the compile-only memory estimates,
+and the SHA256 of every report it summarizes; the reports are in the ignored `logs/score-bias-strips/`).
 
 **GPU tests.** `tests/test_score_bias_strips.py` (SHA256
 `172bf704055ff6b94c1205eba84e96457e6579142596e94964e7a11358d29cc9`), acceptance's whole GPU stage for
@@ -49,8 +52,7 @@ passed, none skipped, in each run (`JAX_PLATFORMS=cuda,cpu`):
 
 Jobs 242699 and 242685 ran the stage as acceptance runs it (selection, stage identity, pytest, and
 `require_passing_tests`); all six recipes select this module alone. They ran at the default allocator
-share, so the gated recipes, which train at 0.95 (below), repeat the stage in production. Margins in job
-242636:
+share. Margins in job 242636:
 
 | Quantity | Bound | Largest, B200 | Largest, CPU host |
 | --- | ---: | ---: | ---: |
@@ -70,14 +72,14 @@ launcher's runtime, at sources `996c4e55` and `eb139cca` (which adds only
 `benchmarks/compiled_memory.py`); every pilot passed the frozen-execution check. Allocator share 0.75
 (the default) unless marked 0.95.
 
-| Run | Recipe | B200 s/update | B200 hours | B200 peak GiB | H100 PCIe s/update | H100 PCIe hours | H100 PCIe peak GiB |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `rb70f9e57190f` | RoPE static | 4.29 | 9.49 | 32.0 | 11.39 | 24.83 | 32.0 |
-| `r891870ef80e9` | RoPE query | 4.43 | 9.72 | 32.5 | 11.74 | 25.65 | 32.3 |
-| `r3b1619f8a901` | RoPE query_key | 13.15 | 28.31 | 49.1 | 36.75 | 78.58 | 47.1 |
-| `ra2edcdc5ab60` | gated static | 20.24 | 43.61 | 66.9 | 46.79 | 100.06 | 56.4 |
-| `rbf5d3bd6059c` | gated query | 20.47 | 44.07 | 67.3 | 46.79 (0.95) | 100.07 | 61.8 |
-| `r75dccfcf072e` | gated query_key | 36.82 (0.95) | 78.98 | 147.1 | – | – | – |
+| Recipe | B200 s/update | B200 hours | B200 peak GiB | H100 PCIe s/update | H100 PCIe hours | H100 PCIe peak GiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| RoPE static | 4.29 | 9.49 | 32.0 | 11.39 | 24.83 | 32.0 |
+| RoPE query | 4.43 | 9.72 | 32.5 | 11.74 | 25.65 | 32.3 |
+| RoPE query_key | 13.15 | 28.31 | 49.1 | 36.75 | 78.58 | 47.1 |
+| gated static | 20.24 | 43.61 | 66.9 | 46.79 | 100.06 | 56.4 |
+| gated query | 20.47 | 44.07 | 67.3 | 46.79 (0.95) | 100.07 | 61.8 |
+| gated query_key | 36.82 (0.95) | 78.98 | 147.1 | – | – | – |
 
 - Seconds per update are medians over updates 2–20; hours are acceptance's projection; peaks are the
   allocator's (through the validation, checkpoint and resume audit). Every pilot resolved the blocked
@@ -113,9 +115,7 @@ The measured peaks were 0.8–5.6% above these estimates.
 | gated query_key, micro-batch 4 | 68.1 | 65.0 |
 
 The gated query_key recipe does not fit an H100 at its micro-batch of 16. At micro-batch 4 (64
-accumulation steps) its estimate, 65.0 GiB, would likely fit the H100's 75.2 GiB at 0.95, but
-`train.micro_batch_size` is part of the frozen recipe, which must equal its control's, and the update
-would be slower.
+accumulation steps) its estimate, 65.0 GiB, would likely fit the H100's 75.2 GiB at 0.95.
 
 ```bash
 # Inside one GPU allocation, from the worktree root, under the launcher's runtime:
@@ -125,9 +125,9 @@ CUDA_HOME="$(transformer_cuda_home "$PY")"
 export CUDA_HOME TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" PYTHONPATH="$PWD"
 JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproject.toml \
   --import-mode=importlib -m gpu scaffolds/transformer/tests/test_score_bias_strips.py
-# Each recipe, with XLA_PYTHON_CLIENT_MEM_FRACTION=0.95 exported for the gated ones; a resume is its
-# own process.
-Q=(experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> --experiment transformer_pp
+# Each recipe and the adapter as committed at those sources, with XLA_PYTHON_CLIENT_MEM_FRACTION=0.95
+# exported where marked; a resume is its own process.
+Q=(<recipe>.yaml --directory <dir> --experiment transformer_pp
    --adapter experiments.transformer_pp.score_bias_acceptance --gpu-type <B200|H100>
    --limit-hours 24 36 48 72 96 120 168)
 QT=scaffolds.transformer.benchmarks.qualify_training
@@ -135,7 +135,7 @@ JAX_PLATFORMS=cuda "$PY" -m $QT pilot "${Q[@]}" --no-references --continue-updat
 JAX_PLATFORMS=cuda "$PY" -m $QT resume "${Q[@]}"
 # Compile-only memory of one update, from any host:
 CM=scaffolds.transformer.benchmarks.compiled_memory
-"$PY" -m $CM experiments/transformer_pp/runs/<run>/config.yaml --target b200 --output <report>.json
+"$PY" -m $CM <recipe>.yaml --target b200 --output <report>.json
 ```
 
 ### Score-bias Mosaic kernels on H100 (2026-11-11)
@@ -237,19 +237,20 @@ copy of each recipe with its own directory and W&B off; the production batch, 20
 and a checkpoint at update 20; projection by acceptance's `project_runtime` for 7,570 updates). H100
 PCIe on `mastiff`, jobs 242444, 242445, 242484, 242495 and 242557, pinned toolkit. The SXM estimate
 divides by 1.35, the gated control's ratio (11.72 s per update here, 8.71 s in its production on an
-H100 SXM). These pilots ran the recipes with `attention_backend: mosaic` at sources `4a5805f4`,
-`6291769a` and `6ea6e210`; the runs themselves train on the blocked strips (previous section).
+H100 SXM). These pilots ran the six reference-shape recipes of the previous section with
+`attention_backend: mosaic` at sources `4a5805f4`, `6291769a` and `6ea6e210`; the compact record keys
+them by recipe.
 
-| Run | Mode | Implementation | s/update (median, updates 2–20) | Projected hours | SXM estimate, hours | Allocator peak, GiB |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| `rb70f9e57190f` | RoPE static | row shift | 5.50 | 12.13 | 9.0 | 30.6 |
-| `r891870ef80e9` | RoPE query | row shift | 5.75 | 12.63 | 9.4 | 30.9 |
-| `r3b1619f8a901` | RoPE query_key | pair shift | 10.20 | 22.23 | 16.5 | 31.0 |
-| `ra2edcdc5ab60` | gated static | gate + row shift | 12.34 | 26.75 | 19.8 | 31.0 |
-| `rbf5d3bd6059c` | gated query | gate + row shift | 12.54 | 27.16 | 20.1 | 31.5 |
-| `r75dccfcf072e` | gated query_key | gate + pair shift | 20.18 | 43.48 | 32.2 | 31.8 |
-| `r25fffc16c2f3` | RoPE control | query polynomial | 3.52 | 7.83 | – | 30.3 |
-| `r227b0ed7c605` | gated control | per-order endpoint gate | 11.72 | 25.42 | – | 30.7 |
+| Recipe | Implementation | s/update (median, updates 2–20) | Projected hours | SXM estimate, hours | Allocator peak, GiB |
+| --- | --- | ---: | ---: | ---: | ---: |
+| RoPE static | row shift | 5.50 | 12.13 | 9.0 | 30.6 |
+| RoPE query | row shift | 5.75 | 12.63 | 9.4 | 30.9 |
+| RoPE query_key | pair shift | 10.20 | 22.23 | 16.5 | 31.0 |
+| gated static | gate + row shift | 12.34 | 26.75 | 19.8 | 31.0 |
+| gated query | gate + row shift | 12.54 | 27.16 | 20.1 | 31.5 |
+| gated query_key | gate + pair shift | 20.18 | 43.48 | 32.2 | 31.8 |
+| RoPE control `r25fffc16c2f3` | query polynomial | 3.52 | 7.83 | – | 30.3 |
+| gated control `r227b0ed7c605` | per-order endpoint gate | 11.72 | 25.42 | – | 30.7 |
 
 - Every pilot resolved the Mosaic backend and its implementation; every update's loss and gradient
   norm, the validation, and the attention diagnostics with the score-bias statistics were finite and
@@ -265,7 +266,7 @@ H100 SXM). These pilots ran the recipes with `attention_backend: mosaic` at sour
 
 **Resume and determinism.**
 
-- Acceptance's resume audit passed for all six in a fresh process: the restored state equals the
+- Acceptance's resume audit passed for all six recipes in a fresh process: the restored state equals the
   saved one, and the next batch and RNG are equal.
 - Under production XLA settings the same executable, on the same state and batch, is not bitwise
   reproducible. In the RoPE and gated query_key pilots, against an uninterrupted rerun in the same
@@ -282,7 +283,7 @@ H100 SXM). These pilots ran the recipes with `attention_backend: mosaic` at sour
   and RNG are therefore exact; the differences above come from XLA's default arithmetic.
   Deterministic ops add 46.6–50.4 s per update (55.5–67.9 s against 5.5–20.2 s, 3.4–10.1×).
 
-**Instrumentation parity** (`r3b1619f8a901` and `r75dccfcf072e`, 10 updates, every arm in one
+**Instrumentation parity** (the RoPE and gated query_key recipes, 10 updates, every arm in one
 process): gradient-event capture off; capture as the recipe sets it; capture forced from update 2 (a
 copy whose only changes are `gradient_event_factor: 1.0001`, `gradient_event_min_norm: 0` and
 `gradient_event_min_history: 1`, with the rule's warmup gate and factor then set to zero in the
@@ -326,10 +327,10 @@ JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -rA -c scaffolds/transformer/pyproject
 B=scaffolds.transformer.benchmarks.benchmark_score_bias
 JAX_PLATFORMS=cuda "$PY" -m $B kernels --output kernels.json --repeats 30
 JAX_PLATFORMS=cuda "$PY" -m $B registers --output registers.json
-# Each recipe at those sources; a resume is its own process. Add
+# Each recipe and the adapter as committed at those sources; a resume is its own process. Add
 # XLA_FLAGS=--xla_gpu_deterministic_ops=true and --pilot-steps 4 for the exact checks, and the parity
 # mode for the instrumentation arms.
-Q=(experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> --experiment transformer_pp
+Q=(<recipe>.yaml --directory <dir> --experiment transformer_pp
    --adapter experiments.transformer_pp.score_bias_acceptance --limit-hours 24 36 48 72)
 QT=scaffolds.transformer.benchmarks.qualify_training
 JAX_PLATFORMS=cuda "$PY" -m $QT pilot "${Q[@]}" --no-references
