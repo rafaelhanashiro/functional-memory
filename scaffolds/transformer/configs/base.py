@@ -132,8 +132,8 @@ class ModelConfig:
     attention_forget_gate_conditioning: Literal["query", "query_key", "none"] = "query"
     attention_forget_gate_rate_activation: Literal["softplus", "sigmoid"] = "softplus"
     # Independent input-form gate for every polynomial order, including zero: query-distance
-    # (blocked or mosaic), or cumulative with query conditioning (blocked only), where order r's
-    # term is multiplied by exp(L_tr - L_ir) with its own L_tr = sum_(j<=t) log alpha_jr.
+    # (blocked or mosaic), or cumulative with query conditioning (blocked, or mosaic on H100), where
+    # order r's term is multiplied by exp(L_tr - L_ir) with its own L_tr = sum_(j<=t) log alpha_jr.
     # Every order starts as a copy of the corresponding shared gate.
     attention_forget_gate_per_order: bool = False
     # Apply optim.weight_decay to the coefficient projections: the query W, the coefficient
@@ -275,12 +275,12 @@ class ModelConfig:
     def mosaic_decay_supported(self) -> bool:
         """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
         query-conditioned unnormalized polynomial attention with an input-form query-distance
-        forget gate (query or endpoint query-key rates), or learned static coefficients with an
-        input-free gate (the query-gate kernels with every query's coefficients and rates equal),
-        with RoPE or no positional encoding.
+        forget gate (query or endpoint query-key rates) or per-order cumulative query gates, or
+        learned static coefficients with an input-free gate (the query-gate kernels with every
+        query's coefficients and rates equal), with RoPE or no positional encoding.
         Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
-        B300 refuses the per-order shapes it cannot hold when the model is traced
-        (``query_degree_supported``).
+        B300 refuses the per-order shapes it cannot hold, and every per-order cumulative gate, when
+        the model is traced (``query_degree_supported``).
         Only an explicit ``mosaic`` backend selects them; ``auto`` keeps its historical choice."""
         from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 
@@ -294,11 +294,14 @@ class ModelConfig:
         return (self.attention_mechanism == "dot_product" and not self.attention_normalization
                 and getattr(self, "attention_kernel_basis", "polynomial") == "polynomial"
                 and coefficients
-                and self.attention_forget_gate and self.attention_forget_gate_mode == "query_distance"
+                and self.attention_forget_gate
+                and (self.attention_forget_gate_mode == "query_distance"
+                     or self.attention_forget_gate_mode == "cumulative" and not input_free)
                 and self.attention_forget_gate_form == "input" and integer_degree
                 and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len,
                                            gate="query" if input_free else self.attention_forget_gate_conditioning,
-                                           per_order=self.attention_forget_gate_per_order)
+                                           per_order=self.attention_forget_gate_per_order,
+                                           mode=self.attention_forget_gate_mode)
                 and self.positional_encoding in ("rope", "none")
                 and self.qk_head_dim in WIDTHS and self.value_head_dim == VALUE_WIDTH)
 
@@ -375,9 +378,10 @@ class ModelConfig:
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
                              "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
-                             "query-conditioned attention may add a query-distance forget gate, and learned "
-                             "static coefficients the input-free one (attention_forget_gate_conditioning: none), "
-                             "where the decay kernels fit the degree and width")
+                             "query-conditioned attention may add a query-distance forget gate or per-order "
+                             "cumulative query gates (H100 only), and learned static coefficients the input-free "
+                             "one (attention_forget_gate_conditioning: none), where the decay kernels fit the "
+                             "degree and width")
         if not isinstance(self.attention_normalization, bool):
             raise ValueError("model.attention_normalization must be a boolean")
         if self.attention_output_scaling not in ("none", "inverse_position", "head_rms_norm"):
@@ -561,14 +565,15 @@ class ModelConfig:
                 or self.attention_forget_gate_rate_activation != "softplus"
                 or self.positional_encoding not in ("rope", "none")
                 or self.attention_backend not in ("blocked", "mosaic")):
-            raise ValueError("Per-order gates require input-form softplus query-distance polynomial "
-                             "attention with RoPE/NoPE on the blocked or mosaic backend, or the cumulative "
-                             "query-conditioned gate on the blocked backend")
+            raise ValueError("Per-order gates require input-form softplus polynomial attention with RoPE/NoPE "
+                             "on the blocked or mosaic backend: the query-distance gate, or the cumulative "
+                             "query-conditioned gate")
         if self.attention_forget_gate_per_order and self.attention_forget_gate_mode == "cumulative" and (
-                self.attention_forget_gate_conditioning != "query" or self.attention_backend != "blocked"):
-            # Each order's own cumulative sum L_tr; Mosaic has no cumulative decay kernels.
-            raise ValueError("Per-order cumulative gates take query conditioning on the blocked backend "
-                             "(scan or strips); the Mosaic decay kernels apply only the query-distance mode")
+                self.attention_forget_gate_conditioning != "query"):
+            # Each order's own cumulative sum L_tr: the blocked backend (scan or strips), or H100's Mosaic
+            # per-order cumulative kernels (mosaic_decay_supported).
+            raise ValueError("Per-order cumulative gates take query conditioning, on the blocked backend (scan or "
+                             "strips) or mosaic")
         if self.attention_forget_gate_form == "sigmoid" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")):
             raise ValueError("The sigmoid forget gate form is qualified as cumulative decay with RoPE or no "
@@ -615,8 +620,8 @@ class ModelConfig:
                 or not forget_backend_supported):
             raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
                              "nonlinear query-conditioned polynomial attention (learned static coefficients take "
-                             "the input-free gate): RoPE/none on the blocked backend (query-distance decay of "
-                             "polynomials also on mosaic), or PaTH on blocked/fused/auto")
+                             "the input-free gate): RoPE/none on the blocked backend (query-distance and per-order "
+                             "cumulative decay of polynomials also on mosaic), or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "

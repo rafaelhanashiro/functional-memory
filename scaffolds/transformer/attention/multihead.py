@@ -213,7 +213,9 @@ class MultiHeadAttention(nnx.Module):
         # Softmax and the unnormalized exponential add the decay to their scores; nonlinear
         # query-coefficient polynomials multiply their weights by it. Each runs with RoPE or no
         # positional encoding on the blocked backend, or with PaTH on either PaTH backend; the
-        # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic. The
+        # polynomials' query-distance decay (and its endpoint variants) also runs on Mosaic, and so
+        # does their cumulative decay with query conditioning when every order has its own gate
+        # (the dispatch refuses a shared cumulative gate there). The
         # query-key endpoint gate applies to all three, in the query-distance mode. Static
         # coefficients take only the input-free query-distance gate (conditioning none), whose rate
         # reads no token; they then run the query-coefficient decay operation.
@@ -230,12 +232,13 @@ class MultiHeadAttention(nnx.Module):
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and (
                 backend == "blocked" or backend == "mosaic" and polynomial_gate
-                and attention_forget_gate_mode == "query_distance" and attention_forget_gate_form == "input"))
+                and (attention_forget_gate_mode == "query_distance" or attention_forget_gate_conditioning == "query")
+                and attention_forget_gate_form == "input"))
         if attention_forget_gate and not ((exponential_gate or polynomial_gate) and forget_backend_supported):
             raise ValueError("The forget gate requires softmax, the unnormalized exponential, or nonlinear query "
                              "coefficients (unnormalized static coefficients take the input-free gate): RoPE/none "
-                             "on the blocked backend (query-distance decay of polynomials also on mosaic), or "
-                             "PaTH on blocked/fused/auto")
+                             "on the blocked backend (query-distance and per-order cumulative decay of polynomials "
+                             "also on mosaic), or PaTH on blocked/fused/auto")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).
             raise ValueError("The query-distance decay mode requires RoPE or no positional encoding on the "

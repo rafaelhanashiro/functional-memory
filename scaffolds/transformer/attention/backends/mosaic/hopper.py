@@ -11,7 +11,8 @@ returns dQ and, for families with per-query sums, those sums [n, batch, heads, t
 ``dkv`` returns dK and dV. Callers validate shapes; ``scale`` is 1 / sqrt(d_K) for the
 unpadded width. Decay families also take per-key FP32 ``key_vectors`` [n, batch, heads, time]
 (streamed with each K tile, or loaded once with a CTA's keys in ``dkv``), see the distance
-t-i in every tile, and ``dkv`` also returns their per-key sums [n, batch, heads, time].
+t-i in every tile (the per-order cumulative family reads each endpoint's own sums instead),
+and ``dkv`` also returns their per-key sums [n, batch, heads, time].
 Families with per-head scalars take ``head_constants`` [heads, width] FP32. Per-order
 families form dV and dK together after S and dP, evaluating each order's decay once.
 """
@@ -34,9 +35,11 @@ def _pair(family, shape, offset, keys, causal, *, transposed=False, heads=()):
     """``common.Pair`` of a decay family's tile, else None: the FP32 query-minus-key distance of
     each entry, from the tile's loop-invariant local pattern plus ``offset`` (the distance of its
     first entry). Transposed tiles hold keys in rows; ``keys`` are broadcast per-key vectors and
-    ``heads`` per-head scalars."""
+    ``heads`` per-head scalars. The cumulative family reads no distance."""
     if family not in common.DECAY_FAMILIES:
         return None
+    if family == common.PER_ORDER_CUMULATIVE_DECAY:
+        return common.Pair(None, keys, causal, heads)
     rows, cols = (plgpu.broadcasted_iota(jnp.float32, shape, d, layout=L) for d in (0, 1))
     local = cols - rows if transposed else rows - cols
     return common.Pair(local + offset.astype(jnp.float32), keys, causal, heads)

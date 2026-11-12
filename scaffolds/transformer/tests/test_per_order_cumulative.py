@@ -4,8 +4,9 @@ Every polynomial order r, including zero, has its own Gated DeltaNet gate per la
 log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r), and its own cumulative sum
 L_tr = sum_(j<=t) log alpha_jr, so that W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir). The gates
 start as copies of the shared gate's draw: the model starts as cumulative FoX. The blocked backend
-(scan or causal strips) evaluates one order's [B,H,Q,K] factor at a time; Mosaic has no
-cumulative kernels. A nonfinite log alpha poisons the rows from its token on, as for shared FoX.
+(scan or causal strips) evaluates one order's [B,H,Q,K] factor at a time; H100's Mosaic kernels form
+the same weights inside their tiles (test_mosaic_per_order_cumulative.py). A nonfinite log alpha
+poisons the rows from its token on, as for shared FoX.
 """
 from functools import partial
 import math
@@ -556,22 +557,30 @@ MOSAIC_SHAPE = dict(qk_head_dim=64, value_head_dim=64, max_seq_len=2048)
 
 
 @pytest.mark.parametrize("degree", DEGREES)
-def test_mosaic_refuses_cumulative_gates_where_it_runs_query_distance_gates(degree, monkeypatch):
-    """At the Transformer++ widths and context with BF16, Mosaic runs the per-order query-distance twin
-    but has no cumulative kernels: its support check is false for this recipe, which is refused on
-    Mosaic. The per-order cumulative clause refuses Mosaic on its own, should that check ever accept."""
+def test_mosaic_runs_cumulative_gates_where_it_runs_query_distance_gates(degree, monkeypatch):
+    """At the Transformer++ widths and context with BF16, Mosaic runs this recipe (H100's per-order
+    cumulative kernels) as it runs the per-order query-distance twin. The shared cumulative gate has
+    no Mosaic kernel, and the per-order cumulative clause refuses query-key conditioning on its own,
+    should the support check ever accept it."""
     twin = dict(attention_forget_gate_mode="query_distance", **MOSAIC_SHAPE)
     assert _config(degree, **twin).model.mosaic_decay_supported()
     _config(degree, attention_backend="mosaic", dtype="bfloat16", **twin)
-    assert not _config(degree, **MOSAIC_SHAPE).model.mosaic_decay_supported()
-    with pytest.raises(ValueError, match="query-distance"):
-        _config(degree, attention_backend="mosaic", dtype="bfloat16", **MOSAIC_SHAPE)
+    assert _config(degree, **MOSAIC_SHAPE).model.mosaic_decay_supported()
+    _config(degree, attention_backend="mosaic", dtype="bfloat16", **MOSAIC_SHAPE)
+    shared = dict(attention_forget_gate_per_order=False, **MOSAIC_SHAPE)
+    assert not _config(degree, **shared).model.mosaic_decay_supported()
+    with pytest.raises(ValueError, match="per-order cumulative query gates"):
+        _config(degree, attention_backend="mosaic", dtype="bfloat16", **shared)
     monkeypatch.setattr(ModelConfig, "mosaic_decay_supported", lambda self: True)
-    with pytest.raises(ValueError, match="Per-order cumulative gates take query conditioning on the blocked"):
-        _config(degree, attention_backend="mosaic", dtype="bfloat16", **MOSAIC_SHAPE)
+    with pytest.raises(ValueError, match="Per-order cumulative gates take query conditioning"):
+        _config(degree, attention_backend="mosaic", dtype="bfloat16", attention_forget_gate_conditioning="query_key",
+                **MOSAIC_SHAPE)
 
 
-def test_the_operation_rejects_cumulative_orders_outside_query_polynomials_and_off_blocked():
+def test_the_operation_rejects_cumulative_orders_outside_query_polynomials_and_its_backends():
+    """Per-order cumulative decay runs on the blocked backend and Mosaic (whose dispatch
+    test_mosaic_per_order_cumulative.py checks); fused refuses it, and both refuse a shared gate's
+    cumulative decay of query polynomials."""
     q = jnp.zeros((1, 4, 2, 4))
     c = jnp.zeros((1, 4, 2, 5))
     sums = jnp.zeros((1, 4, 2, 5))
@@ -580,11 +589,11 @@ def test_the_operation_rejects_cumulative_orders_outside_query_polynomials_and_o
     with pytest.raises(ValueError, match="log decay"):
         blocked_dot_product_attention(q, q, q, attention_degree=4, attention_normalization=False,
                                       query_polynomial_coefficients=c, query_log_decay=sums[..., :3])
-    for backend in ("mosaic", "fused"):
+    for backend, decay in (("fused", sums), ("fused", sums[..., 0]), ("mosaic", sums[..., 0])):
         with pytest.raises(ValueError, match="blocked reference backend"):
             attention_core(q, q, q, backend=backend, attention_degree=4, attention_normalization=False,
                            query_polynomial_coefficients=c, attention_coefficient_activation="tanh",
-                           query_log_decay=sums)
+                           query_log_decay=decay)
     with pytest.raises(ValueError, match="Endpoint decay requires all three operands and query-distance mode"):
         blocked_dot_product_attention(q, q, q, attention_degree=4, attention_normalization=False,
                                       query_polynomial_coefficients=c, query_gate_input=sums, key_gate_input=sums,

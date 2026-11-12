@@ -519,8 +519,11 @@ def attention_identity(config) -> dict:
         gate = config.model.attention_forget_gate
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
+        cumulative = per_order and config.model.attention_forget_gate_mode == "cumulative"
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_cumulative_decay"
+                                         if cumulative
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
                                          if endpoint and per_order
                                          else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
                                          else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint

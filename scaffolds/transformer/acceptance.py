@@ -61,6 +61,7 @@ COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
 PER_ORDER_DECAY_TESTS = "scaffolds/transformer/tests/test_per_order_decay.py"
 PER_ORDER_CUMULATIVE_TESTS = "scaffolds/transformer/tests/test_per_order_cumulative.py"
+PER_ORDER_CUMULATIVE_MOSAIC_TESTS = "scaffolds/transformer/tests/test_mosaic_per_order_cumulative.py"
 EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential_query_distance.py"
 EXPONENTIAL_QUERY_KEY_TESTS = "scaffolds/transformer/tests/test_exponential_query_key.py"
 ENDPOINT_DECAY_TESTS = "scaffolds/transformer/tests/test_endpoint_decay.py"
@@ -146,8 +147,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(PER_ORDER_DECAY_TESTS)
         if cumulative:
             # Each order's own cumulative decay on the blocked backend: FP64 references on CPU, and
-            # the strips' production precision at degrees four and eight on the GPU.
+            # the strips' production precision at degrees four, eight and twelve on the GPU.
             paths.append(PER_ORDER_CUMULATIVE_TESTS)
+            if resolved_backend == "mosaic":
+                # H100's cumulative kernels: tile mathematics, lowering, dispatch and recipe rules on CPU;
+                # the kernels against FP64 and the strips on the GPU.
+                paths.append(PER_ORDER_CUMULATIVE_MOSAIC_TESTS)
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -168,7 +173,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                             and model.get("attention_forget_gate_conditioning", "query") == "query_key")
     if ((model.get("attention_forget_gate_conditioning", "query") != "query"
             or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
-            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False))
+            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_mode", "cumulative") == "query_distance")
             and (cpu or not exponential_endpoint)):
         # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate. Its GPU
         # cases are the query polynomials' kernels, so softmax and the exponential, whose query-key gate

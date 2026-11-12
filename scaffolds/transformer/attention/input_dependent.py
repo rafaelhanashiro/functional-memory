@@ -436,11 +436,12 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
     ``cumulative`` mode, multiplying each weight by exp(L_t-L_i). In ``query_distance``
     mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
-    exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
+    exp(-(t-i) exp(A) softplus(u_t + v_i)). Shared cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
     An extra order axis applies independent decay inside the polynomial sum: query-distance
-    decay on the blocked and Mosaic backends, and cumulative decay (each order's own sum L_tr,
-    exp(L_tr - L_ir)) on the blocked backend. These gates include the constant term.
+    decay and cumulative decay (each order's own sum L_tr, exp(L_tr - L_ir)), both on the
+    blocked and Mosaic backends (Mosaic's cumulative kernels on H100 alone). These gates include
+    the constant term.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
@@ -460,9 +461,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     if decay_mode != "cumulative" and log_decay is None and not endpoint:
         raise ValueError("A query-distance decay mode requires log_decay")
     if (log_decay is not None or endpoint) and not (
-            backend == "blocked" or backend == "mosaic" and decay_mode == "query_distance"):
-        raise ValueError("The forget gate runs on the blocked reference backend; query-distance and endpoint "
-                         "decay also run on mosaic")
+            backend == "blocked" or backend == "mosaic" and (decay_mode == "query_distance" or per_order)):
+        raise ValueError("The forget gate runs on the blocked reference backend; query-distance, endpoint, and "
+                         "per-order cumulative decay also run on mosaic")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_backend_attention(
@@ -488,6 +489,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
                 attend = partial(mosaic.per_order_endpoint_decay_attention if per_order
                                  else mosaic.endpoint_decay_attention, query_gate_input=query_gate_input,
                                  key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
+            elif log_decay is not None and decay_mode == "cumulative":  # per order (checked above)
+                attend = partial(mosaic.per_order_cumulative_decay_attention, log_decay=log_decay)
             elif log_decay is not None:
                 attend = partial(mosaic.per_order_query_decay_attention if per_order
                                  else mosaic.query_decay_attention, log_decay=log_decay)
