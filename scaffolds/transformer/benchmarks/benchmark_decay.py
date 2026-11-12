@@ -238,8 +238,9 @@ def main():
               "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "node": os.environ.get("SLURMD_NODENAME"),
               "jax": jax.__version__,
               "source_commit": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
-              "source_dirty": bool(subprocess.run(["git", "status", "--porcelain", "scaffolds"], capture_output=True,
-                                                  text=True).stdout.strip())}
+              # Tracked scaffold files only: records this benchmark writes into the validation record are new.
+              "source_dirty": bool(subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "scaffolds"],
+                                                  capture_output=True, text=True).stdout.strip())}
     if args.mode == "attention":
         report.update(attention(args.repeats, args.degree, args.families))
     elif args.mode == "kernels":
