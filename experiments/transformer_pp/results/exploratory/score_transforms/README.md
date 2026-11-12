@@ -75,8 +75,8 @@ The softplus kernel and its coefficients (`metadata.json`):
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | mean `c_r r!` | −0.12 | 0.68 | 0.56 | 0.43 | 0.33 | 0.18 | 0.34 | 0.89 | 1.49 |
 
-`c_r r!` is 1 for every order of the Taylor polynomial; the softplus run starts with `c_0 = 0`. The row
-averages each head's mean over the diagnostic sequence's tokens over the 12 layers and 10 heads.
+`c_r r!` is 1 for every order of the Taylor polynomial; the softplus run starts with `c_0 = 0`. Each entry
+averages, over the 12 layers and 10 heads, the head's mean coefficient over the diagnostic sequence's tokens.
 
 Gradient events (after warmup, a pre-clip norm above `max(1, 5 × median)` of the previous 100): softplus 8,
 the largest 12.38 at update 2,845; abs 5, the largest 7.83 at update 5,707. Each run keeps three pre-update
