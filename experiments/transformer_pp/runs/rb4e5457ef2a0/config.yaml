@@ -7,7 +7,7 @@ data:
   text_field: text
   train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
   eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
-  batch_size: 256
+  batch_size: 128
   sequence_length: 2049
   shuffle_seed: 0
   synthetic_vocab_size: 32000
@@ -15,21 +15,21 @@ model:
   kind: transformer
   vocab_size: 32000
   max_seq_len: 2048
-  num_layers: 15
-  hidden_size: 896
-  num_heads: 14
-  num_kv_heads: 14
+  num_layers: 12
+  hidden_size: 640
+  num_heads: 10
+  num_kv_heads: 10
   qk_head_dim: 64
   value_head_dim: 64
-  intermediate_size: 2304
+  intermediate_size: 1664
   rope_theta: 10000.0
   rms_norm_eps: 1.0e-06
   rms_norm_fp32: true
   dropout: 0.0
   tie_embeddings: false
   remat: false
-  attention_backend: blocked
-  attention_blocked_implementation: strips
+  attention_backend: mosaic
+  attention_blocked_implementation: scan
   attention_degree: 8
   attention_normalization: false
   attention_output_scaling: head_rms_norm
@@ -52,23 +52,23 @@ model:
   attention_coefficient_orders: null
   attention_coefficient_conditioning: query
   attention_coefficient_activation: tanh
-  attention_forget_gate: true
-  attention_forget_gate_mode: query_distance
+  attention_forget_gate: false
+  attention_forget_gate_mode: cumulative
   attention_forget_gate_form: input
   attention_forget_gate_constant_rate: learned
-  attention_forget_gate_conditioning: query_key
+  attention_forget_gate_conditioning: query
   attention_forget_gate_rate_activation: softplus
-  attention_forget_gate_per_order: true
+  attention_forget_gate_per_order: false
   attention_coefficient_kernel_weight_decay: true
   attention_coefficient_readout: diagonal
   attention_coefficient_readout_scale: 1.0
   attention_coefficient_feature_count: null
   attention_coefficient_amplitude_initial: 0.0
-  attention_coefficient_projection_initial_std: 0.03340765523905305
+  attention_coefficient_projection_initial_std: 0.03952847075210474
   attention_coefficient_tanh_bias: false
   attention_coefficient_gate: none
   attention_score_bias: static
-  positional_encoding: none
+  positional_encoding: rope
   path_w_rank: 32
   path_conv_size: 3
   attention_coefficient_amplitude_scale: factorial
@@ -103,24 +103,24 @@ optim:
   beta1: 0.9
   beta2: 0.95
   grad_clip_norm: 1.0
-  warmup_steps: 455
-  total_steps: 7570
+  warmup_steps: 454
+  total_steps: 7551
 train:
   seed: 42
   source_commit: auto
   dtype: bfloat16
-  workdir: experiments/transformer_pp/runs/ra2edcdc5ab60
-  checkpoint_dir: experiments/transformer_pp/runs/ra2edcdc5ab60/checkpoints
+  workdir: experiments/transformer_pp/runs/rb4e5457ef2a0
+  checkpoint_dir: experiments/transformer_pp/runs/rb4e5457ef2a0/checkpoints
   micro_batch_size: 16
   log_every: 10
   eval_every: 500
   eval_early_every: 100
   eval_early_until: 1500
-  eval_batches: 19
+  eval_batches: 38
   ckpt_every: 500
   wandb_project: functional-memory
   wandb_entity: rafah-massachusetts-institute-of-technology
-  wandb_run_name: query-m8-per-order-query-key-gate-nope-wd-score-bias-static
+  wandb_run_name: query-m8-w-decay-l12-d640-score-bias-static
   wandb_group: transformer_pp
   wandb_dir: null
   wandb_mode: online
