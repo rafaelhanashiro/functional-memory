@@ -55,31 +55,43 @@ backbone, too) with unit scores and with `N(0, 9)` scores (a sixth below -3, ext
 host FP64. Bounds: output, dQ, dK, dV within 1.2x their BF16 rounding floors and no element beyond 2 BF16
 roundoffs of the largest value; the coefficient gradient within 1e-4 relative L2 per order. Called on the CPU
 host, all six cases measure 1.000x their floors, largest elements 0.43–0.82 roundoffs, and coefficient
-gradients 4.3–4.7e-7. On one H100 PCIe (`mastiff`, job 243502, GPU-3729cb75 at bus C1:00.0, driver 560.35.05,
-commit `593e7267`, the CUDA 12 environment under the launcher's runtime) the stage, this module and
-`tests/test_score_bias_strips.py`, passed all 16 cases, none skipped, in 287 s (JUnit SHA256
-`7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2`): the transform cases at 1.007–1.011x their
-floors, largest elements 0.47–0.86 roundoffs, coefficient gradients 7.0–9.3e-7 per order; the score-bias cases at
-1.007–1.009x as before. No B200, B300 or H100 SXM ran it.
+gradients 4.3–4.7e-7. On two H100 PCIe GPUs of `mastiff` (driver 560.35.05, the CUDA 12 environment under the
+launcher's runtime) the stage, this module and `tests/test_score_bias_strips.py`, passed all 16 cases, none
+skipped:
 
-**Full-shape pilots** (`benchmarks/qualify_training.py pilot --no-references --continue-updates 0`: acceptance's
-pilot worker on a copy of each recipe, the production batch of 8 micro-batches of 16 × 2,048 tokens, 20 updates,
-validation with the diagnostics and a checkpoint; frozen-execution check passed), same job and GPU:
+| Job | GPU | Commit | Passed | pytest s | JUnit SHA256 |
+| --- | --- | --- | ---: | ---: | --- |
+| 243502 | GPU-3729cb75, bus C1:00.0 | `593e7267` | 16 | 287 | `7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2` |
+| 243529 | GPU-750d4329, bus 01:00.0 | `1fa151b7` | 16 | 168 | `24aa205cdbc030feb2601bb864509f104a2c9c34bb7eab503fb7cab97806f26b` |
 
-| Run | Transform | s/update (median, updates 2–20) | First update s | Projected hours, 7,551 updates | Allocator peak GiB | Validation NLL at 20 |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| `r1d342ca6e58c` | softplus | 3.240 | 65.5 | 7.29 | 22.8 | 9.366 |
-| `r17a1290cb4ac` | abs | 3.237 | 68.0 | 7.27 | 23.6 | 9.369 |
+The two commits share one frozen execution set (`b72a61cd`). The transform cases measured the same on both GPUs:
+1.007–1.011x their floors, largest elements 0.47–0.86 roundoffs, coefficient gradients 7.0–9.3e-7 per order. The
+score-bias cases stayed at 1.007–1.009x. No B200, B300 or H100 SXM ran the stage.
 
-Both resolved the blocked backend and `blocked_causal_strips`; every update's loss and numerics were finite and
-the attention diagnostics, with the transform statistics, valid. The allocator's limit was 59.4 GiB at the
-default share. The compact record is [runs/score-transform-strips/record.json](runs/score-transform-strips/record.json)
-(margins per case, each pilot's numbers, the SHA256 of its report and of the JUnit and log in the ignored
-`logs/score-transform-strips/`).
+**Full-shape pilots** (`benchmarks/qualify_training.py pilot --no-references`: acceptance's pilot worker on a copy
+of each recipe, the production batch of 8 micro-batches of 16 × 2,048 tokens, 20 updates, validation with the
+diagnostics and a checkpoint; frozen-execution check passed). In job 243529 the pilot set acceptance's resume
+horizon (`--continue-updates 1`), and `resume` then ran acceptance's resume worker in a fresh process: update 21
+from the pilot's checkpoint, with acceptance's audit of the restored state, data position and RNG. Same jobs and
+GPUs:
+
+| Run | Transform | Job | s/update (median, updates 2–20) | First update s | Projected hours, 7,551 updates | Allocator peak GiB | Validation NLL at 20 | Resume, update 21 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `r1d342ca6e58c` | softplus | 243502 | 3.240 | 65.5 | 7.29 | 22.8 | 9.366 | not run |
+| `r1d342ca6e58c` | softplus | 243529 | 3.329 | 84.5 | 7.48 | 22.9 | 9.366 | audit passed, loss 9.358 |
+| `r17a1290cb4ac` | abs | 243502 | 3.237 | 68.0 | 7.27 | 23.6 | 9.369 | not run |
+| `r17a1290cb4ac` | abs | 243529 | 3.275 | 46.8 | 7.35 | 23.6 | 9.369 | audit passed, loss 9.361 |
+
+Every pilot resolved the blocked backend and `blocked_causal_strips`. Every update's loss and numerics were finite,
+and the attention diagnostics, with the transform statistics, were valid. The two GPUs differ by up to 2.7% per
+update. The allocator's limit was 59.4 GiB at the default share. The compact record is
+[runs/score-transform-strips/record.json](runs/score-transform-strips/record.json): margins per case, each
+pilot's and resume's numbers, and the SHA256 of each report, JUnit and log in the ignored
+`logs/score-transform-strips/`.
 
 **Memory without running** (`benchmarks/compiled_memory.py`, the trainer's one-device update at micro-batch
 16, compile-only from the host with `JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1`): softplus 22.2 GiB on an H100 and
-21.6 GiB on a B200; abs 22.8 and 22.4 GiB; the H100 pilots' peaks were 2.6% and 3.5% above.
+21.6 GiB on a B200; abs 22.8 and 22.4 GiB; the H100 pilots' peaks were 2.6–2.9% and 3.5% above.
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml \
@@ -91,7 +103,9 @@ JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproj
 QT=scaffolds.transformer.benchmarks.qualify_training
 JAX_PLATFORMS=cuda "$PY" -m $QT pilot experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> \
   --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100 \
-  --no-references --continue-updates 0 --limit-hours 6 8 10 12 16 20 24
+  --no-references --continue-updates 1 --limit-hours 6 8 9 10 12 16 20 24
+JAX_PLATFORMS=cuda "$PY" -m $QT resume experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> \
+  --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100
 JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1 scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.benchmarks.compiled_memory \
   experiments/transformer_pp/runs/<run>/config.yaml --target <h100|b200>
 ```

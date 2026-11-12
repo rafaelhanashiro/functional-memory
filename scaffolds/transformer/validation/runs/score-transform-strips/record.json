@@ -1,4 +1,267 @@
 {
+ "format": "score-transform-strips-qualification",
+ "schema_version": 2,
+ "gpu_tests": {
+  "paths": ["scaffolds/transformer/tests/test_score_transform_strips.py", "scaffolds/transformer/tests/test_score_bias_strips.py"],
+  "selection": ["-m", "gpu"],
+  "platforms": "JAX_PLATFORMS=cuda,cpu (host FP64 references)",
+  "module_sha256": {
+   "test_score_bias_strips.py": "172bf704055ff6b94c1205eba84e96457e6579142596e94964e7a11358d29cc9",
+   "test_score_transform_strips.py": "a6a6dedee09953ae43438b14ef1e300257dfd295f24cad95902c251515da7f08"
+  },
+  "bounds": {
+   "floor_ratio": 1.2,
+   "largest_error_roundoffs": 2.0,
+   "largest_order_relative_l2": 0.0001
+  }
+ },
+ "pilot_command": "python -m scaffolds.transformer.benchmarks.qualify_training pilot RECIPE --directory DIR --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type TYPE --no-references --continue-updates N --limit-hours 6 8 9 10 12 16 20 24 (N = 1 gives acceptance's resume horizon; 0 in job 243502)",
+ "resume_command": "python -m scaffolds.transformer.benchmarks.qualify_training resume RECIPE --directory DIR --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type TYPE (acceptance's resume worker, update 21 in a fresh process, its audit)",
+ "pilot_updates": 20,
+ "allocations": {
+  "243502": {
+   "node": "mastiff",
+   "device": {
+    "kind": "NVIDIA H100 PCIe",
+    "uuid": "GPU-3729cb75-e8e7-f9da-d2a6-0f1d38028e4a",
+    "pci_bus_id": "00000000:C1:00.0",
+    "driver": "560.35.05",
+    "power_limit_W": 350.0
+   },
+   "source_commit": "593e72677cc95ed0c4f14cd7fa49e21003313d9b",
+   "source_dirty": false,
+   "runtime": "the CUDA 12 environment (.venv) under kennel_runtime.sh, locked toolkit, no XLA flags, XLA_PYTHON_CLIENT_PREALLOCATE=false, default allocator share",
+   "gpu_tests": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 286.524,
+    "junit": "logs/score-transform-strips/gpu-tests-243502.xml",
+    "junit_sha256": "7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2",
+    "log_sha256": "7b4c5a84e719868bc4b1e5ac658541827007fa4a211acdcfc479d14a8864bedb",
+    "score_transform_margins": {
+     "columns": ["output", "dq", "dk", "dv"],
+     "floor_ratio": {
+      "identity-unit": [1.008, 1.008, 1.008, 1.008],
+      "identity-wide": [1.008, 1.011, 1.007, 1.008],
+      "softplus-unit": [1.007, 1.008, 1.007, 1.007],
+      "softplus-wide": [1.008, 1.011, 1.007, 1.008],
+      "abs-unit": [1.008, 1.008, 1.008, 1.007],
+      "abs-wide": [1.009, 1.007, 1.009, 1.009]
+     },
+     "largest_error_roundoffs": {
+      "identity-unit": [0.51, 0.66, 0.81, 0.64],
+      "identity-wide": [0.72, 0.6, 0.51, 0.64],
+      "softplus-unit": [0.64, 0.66, 0.64, 0.58],
+      "softplus-wide": [0.63, 0.86, 0.79, 0.66],
+      "abs-unit": [0.74, 0.68, 0.82, 0.64],
+      "abs-wide": [0.54, 0.53, 0.66, 0.47]
+     },
+     "dc_largest_order_relative_l2": {
+      "identity-unit": 7.8e-07,
+      "identity-wide": 7.5e-07,
+      "softplus-unit": 6.99e-07,
+      "softplus-wide": 8.1e-07,
+      "abs-unit": 9.25e-07,
+      "abs-wide": 7.89e-07
+     }
+    },
+    "score_bias_largest_floor_ratio": 1.009
+   },
+   "pilots": {
+    "r1d342ca6e58c": {
+     "attention_backend": "blocked",
+     "attention_implementation": "blocked_causal_strips",
+     "attention_score_transform": "softplus",
+     "all_losses_and_numerics_finite": true,
+     "attention_diagnostics_valid": true,
+     "first_update_seconds": 65.5,
+     "median_seconds_per_update": 3.2404,
+     "min_max_seconds_per_update": [3.2009, 3.396],
+     "projected_hours_7551_updates": 7.286,
+     "projection_components_hours": {
+      "checkpointing": 0.092,
+      "diagnostics": 0.003,
+      "evaluation": 0.339,
+      "pilot_overhead": 0.055,
+      "training": 6.797
+     },
+     "training_peak_GiB": 22.8,
+     "allocator_limit_GiB": 59.41,
+     "validation_nll_update_20": 9.365786,
+     "budget_gate": {
+      "limits_hours": [6, 8, 10, 12, 16, 20, 24],
+      "smallest_passing_hours": 10
+     },
+     "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
+     "report": "logs/score-transform-strips/r1d342ca6e58c-H100-243502/pilot.json",
+     "report_sha256": "a6f42524fd176dea59c3ac46e10a2b47ebc0c3404f75ba7425666f7d1a8880e6",
+     "checkpoint_state_equals_final_state": true
+    },
+    "r17a1290cb4ac": {
+     "attention_backend": "blocked",
+     "attention_implementation": "blocked_causal_strips",
+     "attention_score_transform": "abs",
+     "all_losses_and_numerics_finite": true,
+     "attention_diagnostics_valid": true,
+     "first_update_seconds": 68.01,
+     "median_seconds_per_update": 3.2372,
+     "min_max_seconds_per_update": [3.1944, 3.3002],
+     "projected_hours_7551_updates": 7.27,
+     "projection_components_hours": {
+      "checkpointing": 0.088,
+      "diagnostics": 0.003,
+      "evaluation": 0.334,
+      "pilot_overhead": 0.055,
+      "training": 6.79
+     },
+     "training_peak_GiB": 23.59,
+     "allocator_limit_GiB": 59.41,
+     "validation_nll_update_20": 9.368942,
+     "budget_gate": {
+      "limits_hours": [6, 8, 10, 12, 16, 20, 24],
+      "smallest_passing_hours": 10
+     },
+     "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
+     "report": "logs/score-transform-strips/r17a1290cb4ac-H100-243502/pilot.json",
+     "report_sha256": "ce1f8af5685981758e0e6413fa0212a397148742432d070cab33d2ed316ed8e1",
+     "checkpoint_state_equals_final_state": true
+    }
+   }
+  },
+  "243529": {
+   "node": "mastiff",
+   "device": {
+    "kind": "NVIDIA H100 PCIe",
+    "uuid": "GPU-750d4329-4933-de98-f173-bdb2b6b21056",
+    "pci_bus_id": "00000000:01:00.0",
+    "driver": "560.35.05",
+    "power_limit_W": 350.0
+   },
+   "source_commit": "1fa151b79345d4e22022950f84fca45ddb911325",
+   "source_dirty": false,
+   "runtime": "the CUDA 12 environment (.venv) under kennel_runtime.sh, locked toolkit, no XLA flags, XLA_PYTHON_CLIENT_PREALLOCATE=false, default allocator share",
+   "gpu_tests": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 167.885,
+    "junit": "logs/score-transform-strips/gpu-tests-243529.xml",
+    "junit_sha256": "24aa205cdbc030feb2601bb864509f104a2c9c34bb7eab503fb7cab97806f26b",
+    "log_sha256": "8f23512ba3e408af6cfe3fb7cd61d0f11e1948975877d8ce9c858a831eea25e9",
+    "score_transform_margins": {
+     "columns": ["output", "dq", "dk", "dv"],
+     "floor_ratio": {
+      "identity-unit": [1.008, 1.008, 1.008, 1.008],
+      "identity-wide": [1.008, 1.011, 1.007, 1.008],
+      "softplus-unit": [1.007, 1.008, 1.007, 1.007],
+      "softplus-wide": [1.008, 1.011, 1.007, 1.008],
+      "abs-unit": [1.008, 1.008, 1.008, 1.007],
+      "abs-wide": [1.009, 1.007, 1.009, 1.009]
+     },
+     "largest_error_roundoffs": {
+      "identity-unit": [0.51, 0.66, 0.81, 0.64],
+      "identity-wide": [0.72, 0.6, 0.51, 0.64],
+      "softplus-unit": [0.64, 0.66, 0.64, 0.58],
+      "softplus-wide": [0.63, 0.86, 0.79, 0.66],
+      "abs-unit": [0.74, 0.68, 0.82, 0.64],
+      "abs-wide": [0.54, 0.53, 0.66, 0.47]
+     },
+     "dc_largest_order_relative_l2": {
+      "identity-unit": 7.8e-07,
+      "identity-wide": 7.5e-07,
+      "softplus-unit": 6.99e-07,
+      "softplus-wide": 8.1e-07,
+      "abs-unit": 9.25e-07,
+      "abs-wide": 7.89e-07
+     }
+    },
+    "score_bias_largest_floor_ratio": 1.009
+   },
+   "pilots": {
+    "r1d342ca6e58c": {
+     "attention_backend": "blocked",
+     "attention_implementation": "blocked_causal_strips",
+     "attention_score_transform": "softplus",
+     "all_losses_and_numerics_finite": true,
+     "attention_diagnostics_valid": true,
+     "first_update_seconds": 84.46,
+     "median_seconds_per_update": 3.3294,
+     "min_max_seconds_per_update": [3.2238, 3.5432],
+     "projected_hours_7551_updates": 7.483,
+     "projection_components_hours": {
+      "checkpointing": 0.096,
+      "diagnostics": 0.003,
+      "evaluation": 0.336,
+      "pilot_overhead": 0.064,
+      "training": 6.983
+     },
+     "training_peak_GiB": 22.88,
+     "allocator_limit_GiB": 59.41,
+     "validation_nll_update_20": 9.365786,
+     "budget_gate": {
+      "limits_hours": [6, 8, 9, 10, 12, 16, 20, 24],
+      "smallest_passing_hours": 10
+     },
+     "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
+     "report": "logs/score-transform-strips/r1d342ca6e58c-H100-243529/pilot.json",
+     "report_sha256": "33eb055c3ed1a3f3dca947f4f4134af3882d680d4db19e08d03a7205eb79a8d6",
+     "checkpoint_state_equals_final_state": true,
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "restored_step": 20,
+      "final_step": 21,
+      "data_start_sequence": 2560,
+      "first_update_seconds": 44.95,
+      "loss": [9.35796],
+      "peak_GiB": 22.37,
+      "report": "logs/score-transform-strips/r1d342ca6e58c-H100-243529/resume-warm-cache.json",
+      "report_sha256": "916b83806be0e6c58dd99d758c0988bc690c0f05c944b9c1ae7abef95f747154"
+     }
+    },
+    "r17a1290cb4ac": {
+     "attention_backend": "blocked",
+     "attention_implementation": "blocked_causal_strips",
+     "attention_score_transform": "abs",
+     "all_losses_and_numerics_finite": true,
+     "attention_diagnostics_valid": true,
+     "first_update_seconds": 46.84,
+     "median_seconds_per_update": 3.2746,
+     "min_max_seconds_per_update": [3.1949, 3.4347],
+     "projected_hours_7551_updates": 7.351,
+     "projection_components_hours": {
+      "checkpointing": 0.095,
+      "diagnostics": 0.003,
+      "evaluation": 0.336,
+      "pilot_overhead": 0.048,
+      "training": 6.869
+     },
+     "training_peak_GiB": 23.59,
+     "allocator_limit_GiB": 59.41,
+     "validation_nll_update_20": 9.368947,
+     "budget_gate": {
+      "limits_hours": [6, 8, 9, 10, 12, 16, 20, 24],
+      "smallest_passing_hours": 10
+     },
+     "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
+     "report": "logs/score-transform-strips/r17a1290cb4ac-H100-243529/pilot.json",
+     "report_sha256": "41a6fbe3af81812aae95429bf78b78237995bb13d444c7e27a80b107c8cc1ab1",
+     "checkpoint_state_equals_final_state": true,
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "restored_step": 20,
+      "final_step": 21,
+      "data_start_sequence": 2560,
+      "first_update_seconds": 43.6,
+      "loss": [9.361362],
+      "peak_GiB": 23.09,
+      "report": "logs/score-transform-strips/r17a1290cb4ac-H100-243529/resume-warm-cache.json",
+      "report_sha256": "2c5a6a61b1460f80e8941839da7eacb94f09b728cbc9193a1076bd8afa4a470a"
+     }
+    }
+   }
+  }
+ },
  "compile_only": {
   "estimates": {
    "r17a1290cb4ac-b200": {
@@ -20,224 +283,14 @@
   },
   "tool": "benchmarks/compiled_memory.py --target h100|b200 (host, JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1)"
  },
- "device": {
-  "driver": "560.35.05",
-  "kind": "NVIDIA H100 PCIe",
-  "pci_bus_id": "00000000:C1:00.0",
-  "power_limit_W": 350,
-  "uuid": "GPU-3729cb75-e8e7-f9da-d2a6-0f1d38028e4a"
- },
- "format": "score-transform-strips-qualification",
- "gpu_tests": {
-  "bounds": {
-   "floor_ratio": 1.2,
-   "largest_error_roundoffs": 2.0,
-   "largest_order_relative_l2": 0.0001
-  },
-  "failed": 0,
-  "junit": "logs/score-transform-strips/gpu-tests-243502.xml",
-  "junit_sha256": "7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2",
-  "log_sha256": "7b4c5a84e719868bc4b1e5ac658541827007fa4a211acdcfc479d14a8864bedb",
-  "module_sha256": {
-   "test_score_bias_strips.py": "172bf704055ff6b94c1205eba84e96457e6579142596e94964e7a11358d29cc9",
-   "test_score_transform_strips.py": "a6a6dedee09953ae43438b14ef1e300257dfd295f24cad95902c251515da7f08"
-  },
-  "passed": 16,
-  "paths": [
-   "scaffolds/transformer/tests/test_score_transform_strips.py",
-   "scaffolds/transformer/tests/test_score_bias_strips.py"
-  ],
-  "platforms": "JAX_PLATFORMS=cuda,cpu (host FP64 references)",
-  "pytest_seconds": 286.52,
-  "score_transform_margins": {
-   "abs-unit": {
-    "dc": {
-     "largest_order_relative_l2": 9.25e-07
-    },
-    "dk": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.82
-    },
-    "dq": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.68
-    },
-    "dv": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.64
-    },
-    "output": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.74
-    }
-   },
-   "abs-wide": {
-    "dc": {
-     "largest_order_relative_l2": 7.89e-07
-    },
-    "dk": {
-     "floor_ratio": 1.009,
-     "largest_error_roundoffs": 0.66
-    },
-    "dq": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.53
-    },
-    "dv": {
-     "floor_ratio": 1.009,
-     "largest_error_roundoffs": 0.47
-    },
-    "output": {
-     "floor_ratio": 1.009,
-     "largest_error_roundoffs": 0.54
-    }
-   },
-   "identity-unit": {
-    "dc": {
-     "largest_order_relative_l2": 7.8e-07
-    },
-    "dk": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.81
-    },
-    "dq": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.66
-    },
-    "dv": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.64
-    },
-    "output": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.51
-    }
-   },
-   "identity-wide": {
-    "dc": {
-     "largest_order_relative_l2": 7.5e-07
-    },
-    "dk": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.51
-    },
-    "dq": {
-     "floor_ratio": 1.011,
-     "largest_error_roundoffs": 0.6
-    },
-    "dv": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.64
-    },
-    "output": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.72
-    }
-   },
-   "softplus-unit": {
-    "dc": {
-     "largest_order_relative_l2": 6.99e-07
-    },
-    "dk": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.64
-    },
-    "dq": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.66
-    },
-    "dv": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.58
-    },
-    "output": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.64
-    }
-   },
-   "softplus-wide": {
-    "dc": {
-     "largest_order_relative_l2": 8.1e-07
-    },
-    "dk": {
-     "floor_ratio": 1.007,
-     "largest_error_roundoffs": 0.79
-    },
-    "dq": {
-     "floor_ratio": 1.011,
-     "largest_error_roundoffs": 0.86
-    },
-    "dv": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.66
-    },
-    "output": {
-     "floor_ratio": 1.008,
-     "largest_error_roundoffs": 0.63
-    }
-   }
-  },
-  "selection": [
-   "-m",
-   "gpu"
-  ],
-  "skipped": 0
- },
- "node": "mastiff",
- "pilot_command": "python -m scaffolds.transformer.benchmarks.qualify_training pilot RECIPE --directory DIR --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100 --no-references --continue-updates 0 --limit-hours 6 8 10 12 16 20 24",
- "pilots": {
-  "r17a1290cb4ac": {
-   "all_losses_and_numerics_finite": true,
-   "allocator_limit_GiB": 59.41,
-   "attention_backend": "blocked",
-   "attention_diagnostics_valid": true,
-   "attention_implementation": "blocked_causal_strips",
-   "attention_score_transform": "abs",
-   "checkpoint_audit": "checkpoint state equals the final state; next batch and RNG recorded",
-   "first_update_seconds": 68.01,
-   "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
-   "median_seconds_per_update": 3.2372,
-   "min_max_seconds_per_update": [
-    3.1944,
-    3.3002
-   ],
-   "pilot_updates": 20,
-   "projected_hours_7551_updates": 7.27,
-   "report": "logs/score-transform-strips/r17a1290cb4ac-H100-243502/pilot.json",
-   "report_sha256": "ce1f8af5685981758e0e6413fa0212a397148742432d070cab33d2ed316ed8e1",
-   "training_peak_GiB": 23.59,
-   "validation_nll_update_20": 9.368942
-  },
-  "r1d342ca6e58c": {
-   "all_losses_and_numerics_finite": true,
-   "allocator_limit_GiB": 59.41,
-   "attention_backend": "blocked",
-   "attention_diagnostics_valid": true,
-   "attention_implementation": "blocked_causal_strips",
-   "attention_score_transform": "softplus",
-   "checkpoint_audit": "checkpoint state equals the final state; next batch and RNG recorded",
-   "first_update_seconds": 65.5,
-   "frozen_execution_sha256": "b72a61cdf9252ae6f32ad0796dd8d31b898a18096214591184737bed401b36a9",
-   "median_seconds_per_update": 3.2404,
-   "min_max_seconds_per_update": [
-    3.2009,
-    3.396
-   ],
-   "pilot_updates": 20,
-   "projected_hours_7551_updates": 7.286,
-   "report": "logs/score-transform-strips/r1d342ca6e58c-H100-243502/pilot.json",
-   "report_sha256": "a6f42524fd176dea59c3ac46e10a2b47ebc0c3404f75ba7425666f7d1a8880e6",
-   "training_peak_GiB": 22.8,
-   "validation_nll_update_20": 9.365786
-  }
- },
- "runtime": "the CUDA 12 environment (.venv) under kennel_runtime.sh, locked toolkit, no XLA flags, XLA_PYTHON_CLIENT_PREALLOCATE=false, default allocator share",
- "schema_version": 1,
- "slurm_job_id": "243502",
- "source_commit": "593e72677cc95ed0c4f14cd7fa49e21003313d9b",
- "source_dirty": false,
  "time_limit": {
   "hours": 10,
-  "rule": "the slowest allowed GPU's projection (this H100 PCIe) plus two hours, rounded up"
+  "slowest_projection": {
+   "slurm_job_id": "243529",
+   "run": "r1d342ca6e58c",
+   "hours": 7.483,
+   "device": "NVIDIA H100 PCIe"
+  },
+  "rule": "the slowest measured projection plus two hours, rounded up (acceptance requires the projection within the limit less two hours)"
  }
 }
