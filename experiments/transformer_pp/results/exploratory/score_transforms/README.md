@@ -33,8 +33,8 @@ Each primary computes, with `s_ti = Q_t K_i^T / sqrt(d_K)` after QK RMSNorm, the
 with the control's coefficients `c_r(x_t) = b_r/r! + (a_r/r!) tanh(x_t w_r)` (`a = 0` and `b_r = 1` stored
 at the start). The softplus run starts `b_0` at 0 instead of 1; no parameter is added (99,678,056) and every
 other initial array is the control's. Each recipe is the control's with only the transform, the softplus
-run's constant start, and gradient-event capture changed, at the shape's 1x budget (7,551 updates of
-128 × 2,048 tokens). Both runs trained on the blocked backend's causal strips, each on one H100 PCIe; the
+run's constant start, gradient-event capture and the attention backend (`blocked` with `strips`, where the
+control has `mosaic` and `scan`) changed, at the shape's 1x budget (7,551 updates of 128 × 2,048 tokens). Both runs trained on the blocked backend's causal strips, each on one H100 PCIe; the
 control trained on B300's Mosaic kernels. Recipe, acceptance checks and launch commands:
 [study README](../../../README.md#score-transforms).
 

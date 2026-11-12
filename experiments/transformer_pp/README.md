@@ -1698,17 +1698,10 @@ Home cluster: **Kennel**. Both runs are complete, each trained on one H100 PCIe;
 commit, attempts, and the artifact-root locations of its validation-best checkpoint, kept gradient-event
 states and log. One GPU per run; the two jobs have no scheduling dependency.
 
-**GPU qualification and time limit.** Two H100 PCIe GPUs of `mastiff` ran the qualification (jobs 243502 and
-243529, commits `593e7267` and `1fa151b7`, one frozen execution set;
-[validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12)).
-On both the GPU stage passed (16 cases; transform cases at 1.007–1.011x their BF16 floors). Each recipe's
-20-update pilot (acceptance's own worker, with validation, diagnostics and a checkpoint) had finite losses and
-valid diagnostics, and acceptance's resume (update 21 in a fresh process) passed its audit:
-
-| Run | s/update | Projected hours (7,551 updates) | Allocator peak GiB | Update estimate GiB, H100 / B200 |
-| --- | ---: | ---: | ---: | ---: |
-| `r1d342ca6e58c` | 3.24–3.33 | 7.3–7.5 | 22.9 | 22.2 / 21.6 |
-| `r17a1290cb4ac` | 3.24–3.27 | 7.3–7.4 | 23.6 | 22.8 / 22.4 |
+**GPU qualification and time limit.** The strips' GPU stage, each recipe's 20-update pilot and acceptance's
+fresh-process resume passed on H100 PCIe
+([validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12));
+the pilots project 7.3–7.5 hours for 7,551 updates, with allocator peaks of 22.9 and 23.6 GiB.
 
 The default allocator share (59.4 GiB on an H100) holds either run. The H100 PCIe is the slowest GPU type these
 runs may receive, so each limit is the slowest projection plus two hours, rounded up: 7.5 + 2 gives 10 hours,
