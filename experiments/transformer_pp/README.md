@@ -1439,16 +1439,17 @@ gradient against FP64 and the strips), beside the Mosaic query kernels' GPU test
 weight precision.
 
 The kernels run on H100 alone: B300 refuses them before tracing a kernel, and the adapter refuses
-any other GPU type before acceptance starts. On one H100 PCIe the run's update benchmarks 1.06%
-slower than that of `rfe140c073b2f` (the per-order query-distance kernels at degree twelve), which
-trained at 5.15 s per update on an H100 SXM. On SXM the run should train at about 5.2 s per update,
-about 10.9 hours for 7,570 updates
-([validation record](../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11));
-the pilot measures the update time and refuses an allocation the run would not fit.
+any other GPU type before acceptance starts. The run is complete. It trained in job 243318 on
+`standard`, on an H100 PCIe (`mastiff`), at 8.68 s per update (median of its 500-update validation
+windows), 18.2 hours for 7,570 updates. The pilot, which measures the update time and refuses an
+allocation the run would not fit, measured 7.82 s; the validation record's update benchmark
+projected 7.5–7.7 s on PCIe and 5.2 s on SXM
+([validation record](../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11)).
 
-Home cluster: **Kennel**. From the isolated `claude/per-order-cumulative-mosaic` worktree, after
-committing its frozen execution set, submit it on `standard` with 24 hours. The exclusions leave
-only the H100 SXM node `dogo`, not the H100 PCIe node `mastiff`:
+Home cluster: **Kennel**. Its record holds the launch commit and the partition and node of its
+allocation. From the isolated `claude/per-order-cumulative-mosaic` worktree, after committing its
+frozen execution set, submit it on `standard` with 24 hours. The exclusions leave both H100 nodes,
+`dogo` (SXM) and `mastiff` (PCIe):
 
 ```bash
 # Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude

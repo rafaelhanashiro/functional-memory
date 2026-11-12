@@ -97,7 +97,8 @@ The seven benchmark updates' losses agree within 1e-5 between Mosaic and the str
 `rfe140c073b2f` trained at 5.15 s per update on H100 SXM (median of its validation windows) and
 `r20fe6fe864bc` at 5.70 s on H100 PCIe, 0.97 of its benchmark. `r95bfff096cd4`'s update takes
 1.06% longer than `rfe140c073b2f`'s, so it projects to 5.2 s per update on SXM, 10.9 hours for
-7,570 updates, and to 7.5-7.7 s on PCIe, 15.8-16.2 hours. Records:
+7,570 updates, and to 7.5-7.7 s on PCIe, 15.8-16.2 hours. It trained at 8.68 s per update on H100
+PCIe (job 243318, median of its validation windows), 1.13 times its benchmark. Records:
 [runs/per-order-cumulative-mosaic/](runs/per-order-cumulative-mosaic/).
 
 ```bash

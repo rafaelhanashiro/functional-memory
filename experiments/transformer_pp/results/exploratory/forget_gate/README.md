@@ -291,26 +291,60 @@ degree twelve, trained on the Mosaic per-order cumulative kernels on one H100. I
 orders add 2,262,960 parameters (203,356,666 in all). No shared-gate run exists at degree twelve, so
 acceptance checks the run's start against the degree-eight control's recipe at degree twelve, built
 at seed 42: every order's gate is that recipe's shared draw and every other parameter is its own.
+It completed 7,570 updates in one allocation (job 243318, `standard`) on an H100 PCIe (`mastiff`).
 The launch command is in the [study README](../../../README.md#degree-twelve-on-the-mosaic-kernels).
 
-| Role | Run | m | Implementation | Validation-best PPL |
-| --- | --- | ---: | --- | ---: |
-| Primary: per-order gates | `r95bfff096cd4` | 12 | Mosaic kernels, H100 | — |
-| Comparison: per-order gates | `rf8fc9ab2cecc` | 8 | blocked strips, B300 | 13.633 |
-| Comparison: per-order gates | `r319b83140040` | 4 | blocked strips, B300 | 13.767 |
-| Target: FoX exp | `r183f08346ddc` | — | blocked scan, H100 | 13.628 |
+Validation perplexity; best is the validation-best checkpoint (update 7,500; 7,570 for m = 4),
+terminal is update 7,570:
+
+| Role | Run | m | Implementation, GPU | 2,500 | 5,000 | Best | Terminal |
+| --- | --- | ---: | --- | ---: | ---: | ---: | ---: |
+| Primary: per-order gates | `r95bfff096cd4` | 12 | Mosaic kernels, H100 PCIe | 17.38 | 14.81 | 13.665 | 13.669 |
+| Comparison: per-order gates | `rf8fc9ab2cecc` | 8 | causal strips, B300 | 17.37 | 14.77 | 13.633 | 13.635 |
+| Comparison: per-order gates | `r319b83140040` | 4 | causal strips, B300 | 17.56 | 14.93 | 13.767 | 13.767 |
+| Target: FoX exp | `r183f08346ddc` | — | blocked scan, H100 SXM | 17.40 | 14.77 | **13.628** | 13.630 |
 
 **Limitation: the step to degree twelve also changes implementation and GPU.** The strips keep FP32
 attention weights; the Mosaic kernels round weights and score gradients once to BF16 for the tensor
-cores. No matched pair measures that change for this gate. Same-recipe tanh runs on the blocked
-reference and on the fused Triton kernels, on different GPUs, differed by up to 0.1 PPL, 0.4–0.5% at
-m = 3 and 4 (input-dependent coefficients collection). A difference from m = 8 or FoX exp below 0.5%
-therefore does not separate the degree from the implementation; a best PPL at least 0.5% below both
-(13.56 or lower) exceeds that variation.
+cores. On one micro-batch of this recipe, Mosaic's output and gradients differ from FP64 by
+1.39–1.42 times the BF16 rounding floor, the strips' by 1.01 times
+([validation record](../../../../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11)).
+No matched pair measures what that does to training for this gate. Same-recipe tanh runs on the
+blocked reference and on the fused Triton kernels, on different GPUs, differed by up to 0.1 PPL,
+0.4–0.5% at m = 3 and 4 (input-dependent coefficients collection). A difference from m = 8 or FoX
+exp below 0.5% therefore does not separate the degree from the implementation; a best PPL at least
+0.5% below both (13.56 or lower) exceeds that variation.
+
+- **Degree twelve neither passes FoX exp nor improves on degree eight.** Its best, 13.665, is 0.74%
+  below m = 4 but 0.24% above m = 8 and 0.27% above FoX exp (terminal −0.71%, +0.24%, +0.29%). Over
+  the series m = 4 to 8 gains 0.97% and m = 8 to 12 loses 0.24%. Both gaps lie inside the 0.5% the
+  implementation can explain; passing needed 13.56 or lower.
+- **The gap to m = 8 opened after update 2,500.** From update 600 to 2,500 m = 12 was within −0.11% to
+  +0.42% of m = 8 (+0.04% at 2,500); from 3,000 on it stays 0.08–0.34% above, and 0.23–0.33% from
+  5,000. It is lower than m = 8 at 5 of 28 evaluations, the last at 2,000, and lower than FoX exp at
+  15 of 28, none from 3,000 on (+0.20% to +0.33%). It is lower than m = 4 at 27 of 28.
+- **m = 12's largest gradient spikes fall in that span.** Its pre-clip gradient-norm window maxima
+  reach 263.6 at updates 2,501–3,000 (update 2,794), 22.3 at 3,001–3,500 and 23.0 at 3,501–4,000, and
+  27 of those 1,500 updates exceed the clipping norm of 1; m = 8 reached 7.9, 20.1 and 1.2 there with
+  10 clipped, m = 4 9.2, 52.7 and 3.5 with 24. Between updates 101 and 2,500 m = 12's window maxima
+  stay at or below 12.2 (update 1,403), and after 4,000 at or below 4.4. The series' two other window
+  maxima above 100 came earlier: m = 8 199.0 at updates 801–900 and m = 4 169.6 at 501–600. With one
+  seed per degree, the spikes cannot be tied to the gap.
+- **The long ranges spread over the top orders.** At update 7,570 the median half-life over the 210
+  layer-heads is 0.47–1.19 tokens for orders 0–6, 2.31–2.67 for orders 7–9 (13, 26 and 34 heads
+  above 100 tokens) and 3.81–5.79 for orders 10–12 (43, 42 and 50 heads above 100).
+- **Cumulative per-order gates still beat query-distance ones, by less.** 13.665 is 0.61% below the
+  per-order query gates at m = 12 (`rfe140c073b2f`, 13.750, in
+  [query_distance_decay](../query_distance_decay/README.md)), both on the Mosaic kernels; the
+  0.90% and 1.07% margins at m = 4 and 8 compare the strips with Mosaic.
+- **Cost:** 8.68 s per update on the H100 PCIe (median of its 500-update windows; the pilot measured
+  7.82 s, and the validation record benchmarks 7.70 s against 25.11 s on the strips), 18.2 hours of
+  training.
 
 ## Open decision
 
 Determine whether combining FoX and PaTH improves on either alone with projection
-weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; read the
-degree-twelve run by the 0.5% rule above and decide whether to repeat it at a second seed, then
-promote this question or discard it.
+weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; degree
+twelve's best is 0.24% above degree eight and 0.27% above FoX exp, inside the 0.5% the
+implementation change can explain. Decide whether to separate degree from implementation (a second seed, or degree
+eight on the Mosaic kernels), then promote this question or discard it.
