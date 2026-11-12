@@ -402,3 +402,11 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rf8fc9ab2cecc/best_validation.json
       sha256: 47ac21907e57c03dba695c5f43bf284cc24044b76fe8c2879295afc5a3967d16
+- study: transformer_pp
+  run_id: r95bfff096cd4
+  label: query-m12-per-order-forget-gate-no-rope-wdecay
+  role: per_order_forget_gate_no_rope_w_decay_m12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r95bfff096cd4/config.yaml
+      sha256: 9ce111625f41908714b3383dc4d9a66779e62149ccb34609ebbcd0f45e2bfb03

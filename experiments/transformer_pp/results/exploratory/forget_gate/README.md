@@ -251,8 +251,8 @@ L_{t,r} = \sum_{j\le t}\log\alpha_{j,r},\qquad
 \log\alpha_{t,r} = -e^{A_{\log,r}}\,\mathrm{softplus}(w_{\alpha,r}^\top x_t + b_{dt,r})$$
 per layer and head. Each order's gate starts as a copy of the control's shared draw, so each
 primary starts exactly at its control; the gates add $m \times 188{,}580$ parameters. Both train on
-the blocked backend's causal strips (the controls on its scan); Mosaic has no cumulative decay
-kernels. The target is the best exponential kernel under the same gate without positional encoding.
+the blocked backend's causal strips (the controls on its scan). The target is the best exponential
+kernel under the same gate without positional encoding.
 
 | Role | Run | Label | m | Validation-best PPL |
 | --- | --- | --- | ---: | ---: |
@@ -283,8 +283,34 @@ commands are in the [study README](../../../README.md#per-order-cumulative-fox-g
   0.50–1.50 for orders 0–6 and 4.89 and 4.58 for orders 7 and 8 (36 and 43 heads above 100). The
   shared gates' medians are 3.0 (m = 4) and 3.2 (m = 8); all orders start at 4.5–5.9 tokens.
 
+#### Degree twelve
+
+Added 2026-11-11. Does raising the degree from eight to twelve take per-order cumulative gates past
+FoX exp? `r95bfff096cd4` (`query-m12-per-order-forget-gate-no-rope-wdecay`) is `rf8fc9ab2cecc` at
+degree twelve, trained on the Mosaic per-order cumulative kernels on one H100. Its thirteen gate
+orders add 2,262,960 parameters (203,356,666 in all). No shared-gate run exists at degree twelve, so
+acceptance checks the run's start against the degree-eight control's recipe at degree twelve, built
+at seed 42: every order's gate is that recipe's shared draw and every other parameter is its own.
+The launch command is in the [study README](../../../README.md#degree-twelve-on-the-mosaic-kernels).
+
+| Role | Run | m | Implementation | Validation-best PPL |
+| --- | --- | ---: | --- | ---: |
+| Primary: per-order gates | `r95bfff096cd4` | 12 | Mosaic kernels, H100 | — |
+| Comparison: per-order gates | `rf8fc9ab2cecc` | 8 | blocked strips, B300 | 13.633 |
+| Comparison: per-order gates | `r319b83140040` | 4 | blocked strips, B300 | 13.767 |
+| Target: FoX exp | `r183f08346ddc` | — | blocked scan, H100 | 13.628 |
+
+**Limitation: the step to degree twelve also changes implementation and GPU.** The strips keep FP32
+attention weights; the Mosaic kernels round weights and score gradients once to BF16 for the tensor
+cores. No matched pair measures that change for this gate. Same-recipe tanh runs on the blocked
+reference and on the fused Triton kernels, on different GPUs, differed by up to 0.1 PPL, 0.4–0.5% at
+m = 3 and 4 (input-dependent coefficients collection). A difference from m = 8 or FoX exp below 0.5%
+therefore does not separate the degree from the implementation; a best PPL at least 0.5% below both
+(13.56 or lower) exceeds that variation.
+
 ## Open decision
 
 Determine whether combining FoX and PaTH improves on either alone with projection
-weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; decide
-whether to test them at a higher degree and a second seed, then promote this question or discard it.
+weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; read the
+degree-twelve run by the 0.5% rule above and decide whether to repeat it at a second seed, then
+promote this question or discard it.
