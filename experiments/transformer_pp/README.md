@@ -1493,6 +1493,7 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 | `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
 | `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
 | `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | B300 or H100 |
+| `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | B300 or H100 |
 | `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
@@ -1535,5 +1536,7 @@ submit rb2b70dae4d21 acceptance
 submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-sos
 # Degree twelve, from claude/poly-two-lines-sos, on long with --gres=gpu:1 and GPU types B300,H100:
 # submit r3d52b7ab43d1 coefficient_forms_acceptance
+# Degree sixteen, from claude/poly-sos-m16, the same way with --time=48:00:00:
+# submit rdfc61c988309 coefficient_forms_acceptance
 submit r6adefb42f443 coefficient_forms_acceptance
 ```
