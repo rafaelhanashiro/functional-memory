@@ -9,5 +9,5 @@ query_distance_m8,"Query-dependent distance decay + W decay, m = 8",r9320e5cd307
 per_order_query_m8,"Per-order query distance + W decay, m = 8",r20fe6fe864bc,complete,7500,2.623186776,13.779566,7570,2.623602005,13.785289,-0.159237,-1.142399,-0.155904,-1.118300
 query_distance_m12,"Query-dependent distance decay + W decay, m = 12",r47bfe39ce9b4,complete,7500,2.628373141,13.851218,7570,2.628751859,13.856464,-0.087585,-0.628356,-0.084729,-0.607760
 per_order_query_m12,"Per-order query distance + W decay, m = 12",rfe140c073b2f,complete,7500,2.621028212,13.749854,7570,2.621060069,13.750292,-0.101364,-0.731802,-0.106172,-0.766228
-per_order_query_key_m8,"Per-order query-key distance + W decay, m = 8",r227b0ed7c605,planned,,,,,,,,,,
-per_order_query_key_m12,"Per-order query-key distance + W decay, m = 12",rc2f9273c49cc,planned,,,,,,,,,,
+per_order_query_key_m8,"Per-order query-key distance + W decay, m = 8",r227b0ed7c605,complete,7500,2.618280012,13.712119,7570,2.618586598,13.716323,-0.067447,-0.489474,-0.068966,-0.500285
+per_order_query_key_m12,"Per-order query-key distance + W decay, m = 12",rc2f9273c49cc,complete,7500,2.616037708,13.681406,7570,2.616257609,13.684415,-0.068448,-0.497807,-0.065877,-0.479095

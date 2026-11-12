@@ -1,98 +1,124 @@
 # Per-degree score biases
 
-Opened: 2026-11-11. Status: **allocated, not yet trained**; the trial at the 12-layer width-640 shape
-goes first.
+Opened: 2026-11-11. Status: **both trials complete; neither beat the control**, so no reference-shape runs
+follow. Kept as the record of this check.
 
-Does giving every order `r = 1..8` of the tanh query polynomial its own signed shift of the score,
-`(s_ti + beta_r)^r` in place of `s_ti^r`, improve validation perplexity, with RoPE and with
-per-order query–key distance gates without positional encoding? Which shift form matters: a
-constant per order, one that depends on the query token, or one that depends on both tokens?
-
-First, one trial at the 12-layer width-640 shape: the query shift on the RoPE control there. The six
-reference-shape runs follow only if it beats its control ([open decision](#open-decision)).
+Does giving every order `r = 1..8` of the degree-eight tanh query polynomial its own signed shift of the
+score, `(s_ti + beta_r)^r` in place of `s_ti^r`, improve validation perplexity? Two trials at the 12-layer
+width-640 shape shift each order by a constant (static) or by an amount that depends on the query token
+(query).
 
 ## Runs
 
 | Role | Run | Label | Shift | Home cluster |
 | --- | --- | --- | --- | --- |
-| Primary | `rb70f9e57190f` | `query-m8-dk64-w-decay-score-bias-static` | static | Kennel |
-| Primary | `r891870ef80e9` | `query-m8-dk64-w-decay-score-bias-query` | query | Kennel |
-| Primary | `r3b1619f8a901` | `query-m8-dk64-w-decay-score-bias-query-key` | query–key | Kennel |
-| Control | `r25fffc16c2f3` | `query-m8-dk64-w-decay` | – | Kennel |
-| Primary | `ra2edcdc5ab60` | `query-m8-per-order-query-key-gate-nope-wd-score-bias-static` | static | Kennel |
-| Primary | `rbf5d3bd6059c` | `query-m8-per-order-query-key-gate-nope-wd-score-bias-query` | query | Kennel |
-| Primary | `r75dccfcf072e` | `query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key` | query–key | Kennel |
-| Control | `r227b0ed7c605` | `query-m8-per-order-query-key-gate-nope-wd` | – | Kennel |
 | Trial | `r8dc6e147601c` | `query-m8-w-decay-l12-d640-score-bias-query` | query | Kennel |
+| Trial | `rb4e5457ef2a0` | `query-m8-w-decay-l12-d640-score-bias-static` | static | Kennel |
 | Control | `r95a5691d293f` | `query-m8-w-decay-l12-d640` | – | Kennel |
 
-The [selection](selection.yaml) names each role and pins the runs' scientific files; the primaries
-and the trial pin only their recipes until they train. The controls' validation-best perplexities:
-
-| Control | Backbone | Shape | GPU | Update | Validation-best PPL |
-| --- | --- | --- | --- | ---: | ---: |
-| `r25fffc16c2f3` | tanh query `m = 8`, RoPE, projection weight decay | reference | B300 | 7,500 | 14.323 |
-| `r227b0ed7c605` | tanh query `m = 8`, per-order query–key gates, no positional encoding, projection weight decay | reference | H100 SXM | 7,500 | 13.712 |
-| `r95a5691d293f` | tanh query `m = 8`, RoPE, projection weight decay | 12-layer width-640 | B300 | 7,551 | 17.592 |
+The [selection](selection.yaml) names each role and pins the runs' scientific files.
 
 ## Method
 
-With `s_ti = Q_t K_i^T / sqrt(d_K)`, each run computes
+With `s_ti = Q_t K_i^T / sqrt(d_K)`, each trial computes
 
-    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..8) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r,
+    W(t,i) = c_0(x_t) + sum_(r=1..8) c_r(x_t) (s_ti + beta_r(t,i))^r
 
-with its control's coefficients `c_r(x_t)` (factorial scales unchanged) and gates (`G_r = 1` with
-RoPE, or the per-order endpoint gates). Per layer, head and order: static `beta_r = b_r`; query
-`beta_r = b_r + a_r tanh(u_r . x_t)`; query–key `beta_r = b_r + a_r tanh(u_r . x_t + v_r . x_i)`.
-They start at `b = 0`, `a = 1`, `u = v = 0`, so every run starts as its control's function, and
-`u`, `v` receive gradients from the first update; nothing else in the initialization changes.
-AdamW decays `u` and `v` (0.1), never `b` or `a`. The shifts are unconstrained in sign. Each run is
-its control's recipe with only the shift added and gradient-event capture on, at its shape's 1×
-budget. The six reference-shape runs (7,570 updates) train on the blocked backend's causal strips,
-which evaluate each shifted power directly rather than expanding it in powers of `s`; both of their
-controls trained on the Mosaic kernels. Each trains on one B200, B300 or H100 SXM, the gated
-query–key run on a B200 or B300 only (its update needs 147 GiB); on a B200 the six project 9.5–79
-hours. The trial (7,551 updates of 128 × 2,048 tokens) keeps its control's attention settings and
-trains on one H100 on the Mosaic score-bias kernels, which also form each shifted power directly.
-Recipe, parameter counts, acceptance checks, measured update times and launch commands:
-[study README](../../../README.md#per-degree-score-biases).
+with the control's tanh query coefficients `c_r(x_t)` (factorial scales unchanged) and `x_t` the block's
+attention input after its RMSNorm. Per layer, head and order: static `beta_r = b_r`; query
+`beta_r = b_r + a_r tanh(u_r . x_t)`. They start at `b = 0`, `a = 1`, `u = 0`, so each trial starts as the
+control's function. AdamW decays `u` (0.1), never `b` or `a`; the shifts are unconstrained in sign.
 
-**Gradient-event capture.** After warmup (update 455; 454 for the trial), an update whose finite
-pre-clip gradient norm exceeds `max(1, 5 × median)` of the previous 100 norms (once 20 exist) saves
-the exact state it started from, with its batch and RNG coordinates; at most three states are kept
-per run (the first event and the two largest later ones), and every event is logged in the run's
-`gradient_events.jsonl`. Details: [study README](../../../README.md#per-degree-score-biases).
+- Recipe: the control's (12 layers, width 640, 10 heads, RoPE, coefficient-W decay; 7,551 updates of
+  128 × 2,048 tokens, warmup 454, seed 42) with only the shift added and gradient-event capture on.
+- Kernels: the trials train on one H100 with the Mosaic score-bias kernels, which form each shifted power
+  directly; the control trained on B300's Mosaic query-polynomial kernels.
+- Gradient-event capture: after warmup, an update whose finite pre-clip gradient norm exceeds
+  `max(1, 5 × median)` of the previous 100 norms is logged in the run's `gradient_events.jsonl`; the
+  first such event's pre-update state and the two largest later ones are kept as diagnostic checkpoints.
+- Diagnostics: at each validation the forward-only JAX reference of the same kernel, on the first held-out
+  sequence (2,098,176 causal pairs), records the shifts, the shifted scores and the weights
+  (`attention_diagnostics` in `metrics.jsonl` and `metadata.json`). The values below are from the final
+  validation, update 7,551.
 
-**Diagnostics.** At each validation the forward-only JAX reference of the same shifted kernel, on the
-first held-out sequence and without gradients, records the bias parameters; per layer, head and
-order, the shifts' and shifted scores' moments and extremes, the fractions of shifted scores below
-zero and within `1e-3` of zero, and each order's term `T_r = c_r G_r (s + beta_r)^r`; per layer and
-order, shifted-score histograms on [-16, 16] pooled over heads; and per layer and head, how much the
-orders cancel, per pair (`sum_r |T_r| / |sum_r T_r|`) and per output (`sum_r ||o_r|| / ||o||`).
-The reference-shape runs train, and their acceptance pilots run, on the causal strips; the trial on
-the Mosaic kernels. Positive shifted scores do not imply positive weights: the coefficients `c_r` are
-signed, so an order's term can be negative with a positive shifted score.
+Recipe, acceptance and launch: [study README](../../../README.md#per-degree-score-biases).
+
+## Results
+
+| Run | Shift | Validation-best PPL (update) | vs control | Terminal PPL (update 7,551) | vs control |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `r95a5691d293f` | – (control) | 17.592 (7,551) | – | 17.592 | – |
+| `rb4e5457ef2a0` | static | 17.604 (7,551) | +0.07% | 17.604 | +0.07% |
+| `r8dc6e147601c` | query | 18.216 (7,551) | +3.55% | 18.216 | +3.55% |
+
+Validation perplexity against the control's at the same update (`metrics.jsonl`):
+
+| Update | 200 | 400 | 500 | 600 | 700 | 800 | 1,000 | 1,500 | 2,000 | 4,000 | 7,551 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| query | −6.2% | −11.4% | −11.9% | −5.0% | −2.0% | +0.2% | +1.6% | +2.7% | +3.5% | +3.5% | +3.55% |
+| static | −2.0% | −4.4% | −1.4% | −1.6% | −1.1% | −0.8% | −0.4% | −0.1% | +0.3% | −0.0% | +0.07% |
+
+Gradient norms after update 500 (pre-clip; clipping at 1). The validation rows count each window's
+clipped updates and its largest norm; the trials' `gradient_events.jsonl` names the events:
+
+| Run | Updates above 1, 501–7,551 (after 600) | Largest (update or window) | Events (update: norm) |
+| --- | ---: | --- | --- |
+| control | 8 (2) | 3.40 (5,501–6,000) | not logged |
+| static | 10 (2) | 6.25 (561) | 561: 6.25, 2,831: 1.81, 7,461: 1.46 |
+| query | 26 (17) | 6.42 (793) | 580: 4.49, 608: 3.72, 793: 6.42, 1,402: 3.11, then seven of 1.02–1.85 to 7,461 |
+
+The query trial's log also holds a row for update 2,626, superseded by its resume from update 2,500. Each
+trial keeps its three captured pre-update states (query 580, 608, 793; static 561, 2,831, 7,461), listed
+in its record.
+
+Learned shifts on the diagnostic sequence, by order `r`:
+
+| Quantity | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| query: mean `beta_r` | −0.46 | −0.59 | −0.35 | −0.38 | −0.28 | −0.06 | +0.14 | +0.59 |
+| query: shifted scores below zero | 59% | 62% | 58% | 58% | 56% | 52% | 48% | 39% |
+| static: mean `b_r` | −0.14 | −0.10 | −0.08 | −0.14 | −0.09 | −0.07 | −0.05 | +0.28 |
+| static: heads with `b_r < 0` | 78% | 83% | 78% | 92% | 85% | 82% | 63% | 2% |
+| static: shifted scores below zero | 54% | 54% | 53% | 54% | 54% | 53% | 53% | 48% |
+
+## Findings
+
+- **Neither trial cleared the bar** (below about 17.548, the control's 17.592 less 0.25% seed noise), so
+  no reference-shape runs follow.
+- **The query shift lost an early lead and finished 3.55% worse.** It led by 6–12% from update 200 to 500
+  (warmup ends at 454), fell behind by update 800, during its three largest gradient events (580, 608,
+  793), and stayed 3.4–3.8% behind from update 2,000 to the end.
+- **The query shift spiked more.** It clipped 17 updates after update 600, against 2 in the static trial
+  and 2 in the control. Large spikes are not specific to it: the static trial reached 6.25 at update 561
+  and the control 3.40 between updates 5,501 and 6,000. All three runs clip one update between 7,001 and
+  7,500 (1.46–1.69; update 7,461 in both trials).
+- **The static shift tied.** It was ahead by up to 4.4% through update 800, within 0.6% from update 900,
+  and within 0.07% from update 3,000 to the end.
+- **The learned shifts are mostly negative.** In the query trial, orders 1–5 shift by −0.28 to −0.59 on
+  average, order 6 by −0.06, order 7 by +0.14 and order 8 by +0.59; the offsets `b_r` average −0.13 to
+  +0.05 per order (single heads −0.72 to +0.39), so on average the query term `a_r tanh(u_r . x_t)`
+  (token standard deviation 0.39–0.68) carries most of the shift. The static offsets are negative in
+  most heads for orders 1–7 and positive for order 8.
+- **The coefficients stay positive, so negative shifts make odd orders' terms negative.** In the query
+  trial `c_2`–`c_8` are positive at every token of every head (`c_1` in 119 of 120 heads, `c_0` in 112),
+  with means against the control's of 0.80 vs 0.88 (`c_0`), 1.06 vs 0.85 (`c_1`), 0.16 vs 0.13 (`c_3`)
+  and 0.037 vs 0.031 (`c_4`); `c_2` and `c_5` match. 33.5% of its causal weights `W(t,i)` are negative,
+  against 21.3% in the static trial and 20.2% in the control.
 
 ## Limits
 
 - One seed per configuration.
-- Both reference-shape controls trained on the Mosaic kernels (the RoPE control on a B300, the gated
-  control on an H100 SXM), and the primaries train on the blocked backend's causal strips (on a B200,
-  B300 or H100 SXM; the gated query–key run on a B200 or B300), so every reference-shape comparison
-  also crosses attention implementations and possibly GPU types: the Mosaic kernels round the weights and score gradients to
-  BF16 (7 stored mantissa bits) for their products, while the strips keep them as FP32 values whose
-  products run as TF32 (10 stored mantissa bits) under JAX's default precision. No control is
-  retrained on the strips, so this difference is not measured here.
-- The trial and its control both round the weights to BF16 on Mosaic kernels, but on different
-  kernels and GPUs: the trial's H100 row-shift score-bias kernels against the control's B300
-  query-polynomial kernels.
+- Different kernels and GPUs, all rounding the weights to BF16: the trials' H100 Mosaic row-shift
+  score-bias kernels (the query trial on an H100 SXM through update 4,000 and an H100 PCIe after, the
+  static trial on an H100 PCIe) against the control's B300 query-polynomial kernels.
+- The control logs no gradient events: its spikes are known only through its windows' largest norms and
+  clipped counts (100 updates to update 1,500, then 500).
+- The shift and weight statistics come from one held-out sequence at the final validation.
 
 ## Open decision
 
-The trial decides whether the six reference-shape runs are submitted: only if its validation-best
-perplexity beats its control's 17.592 by clearly more than seed noise, taken as about 0.25% (below
-about 17.548). Once the submitted runs complete: promote the topic to its own canonical collection,
-or discard it with its runs and their artifacts.
+None pending: neither trial cleared the bar, so no reference-shape runs follow. The topic is kept as the
+record of this check.
 
 Refresh the selection after the runs' scientific files change:
 

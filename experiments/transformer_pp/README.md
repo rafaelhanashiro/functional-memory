@@ -315,6 +315,26 @@ averaged over 128 sequences, `r6122f26085ec` on 128 long documents) use
 decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns the ablation with
 `evaluate_extrapolation_ablation.sbatch`; all use the same resources and arguments.
 
+## Diagnostic notes
+
+### Noise
+
+A second seed and data order shifted fixed Taylor and static m = 8 by 0.6–0.7% in
+validation perplexity, but static's gap to fixed Taylor barely moved (+0.45% against
++0.35%; earlier QK setup). Compare variants within one seed only.
+
+### Miscellaneous
+
+At m = 4 on the earlier QK setup:
+
+- The 10B learning rate, 3e-4, was 6.5–8.5% worse than 1e-3.
+- Query tied fixed Taylor with cosine per-head QK normalization; with per-layer RMSNorm
+  it trailed by 0.5%.
+
+Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, at the 12-layer
+width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
+([score_biases](results/exploratory/score_biases/README.md)).
+
 ## Exploratory diagnostics
 
 The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
@@ -1242,135 +1262,6 @@ submit r9320e5cd3071 query_distance_degree_acceptance
 submit r20fe6fe864bc per_order_decay_acceptance
 ```
 
-## Query-distance gates on softmax and exp
-
-How much is the input dependence of the decay slope worth on the exponential kernels? Two runs
-copy the no-RoPE forget-gate run on their kernel and change only
-`attention_forget_gate_mode: query_distance`: every score gains `(t - i) log alpha_t`, the
-query token's own rate times the distance (ALiBi with a learned, input-dependent slope per query
-token), in place of FoX's `L_t - L_i`. Softmax normalizes the decayed scores; exp keeps its
-per-head output RMSNorm. The gate, its 188,580 parameters and their initialization are FoX's.
-`records create` set the causal strips (`attention_blocked_implementation: strips`), where the
-controls trained on the scan. Question, comparators and results are in the
-[alibi_decay topic](results/exploratory/alibi_decay/README.md#softmax-and-exp-with-query-distance-gates).
-
-| Run | Label | Control | Kernel | Parameters |
-| --- | --- | --- | --- | ---: |
-| `r208110a25271` | softmax-query-distance-no-rope | `r5adc29a91e3b` | softmax | 198,628,726 |
-| `r17444ad0f60e` | exp-query-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,642,166 |
-
-`exponential_query_distance_acceptance` pins each control's recipe by SHA256 and allows only the
-decay mode, the strips, and execution locations and labels. Every initial parameter must equal the
-control's at seed 42: the adapter pins the control recipe's initialization fingerprint, computed
-on CPU. Acceptance runs `tests/test_exponential_query_distance.py` on CPU, and its 2,048-token BF16
-strips cases against FP64 on the GPU, before training.
-
-Home cluster: **Kennel**. From the isolated `claude/data-dependent-gates` worktree, after committing
-the inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
-are too slow there) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen
-from the live allowance. The ALiBi pair trained on the same strips in 8.9 h (B300) and 11.3 h
-(H100 SXM); the pilot projects each run's time and refuses an allocation it would not fit.
-
-```bash
-for run in r208110a25271 r17444ad0f60e; do
-  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
-    --output="experiments/transformer_pp/runs/$run/training.log" \
-    --error="experiments/transformer_pp/runs/$run/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch \
-    experiments.transformer_pp.exponential_query_distance_acceptance \
-    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
-done
-```
-
-### Query-key gate on exp
-
-Added 2026-11-10. `rd3501a40e020` is the exp baseline matched to the per-order query–key polynomial
-gates (`r03be769d2069` at degree four; degrees eight and twelve in training). It copies the exp
-query-distance run `r17444ad0f60e` and changes only `attention_forget_gate_conditioning: query_key`:
-each pair's rate reads both of its tokens,
-`lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
-`(t - i) log alpha_ti = -(t - i) lambda_ti`. This is the polynomials' query–key gate with one gate per
-layer and head, since exp has no orders. The key projection `w_k` (`forget_gate_key_kernel`) starts at
-zero and takes weight decay, so the run starts exactly as `r17444ad0f60e`; `w_alpha`, `A_log` and
-`b_dt` keep FoX's (Gated DeltaNet's) initialization. No softmax counterpart is planned. Question,
-comparators and results are in the
-[alibi_decay topic](results/exploratory/alibi_decay/README.md#exp-with-a-query-key-gate).
-
-| Run | Label | Control | Kernel | Parameters (key projection) |
-| --- | --- | --- | --- | ---: |
-| `rd3501a40e020` | exp-query-key-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,830,326 (188,160) |
-
-`exponential_query_distance_acceptance` allows only the decay mode, the conditioning, the strips, and
-execution locations and labels to differ from the FoX control `r183f08346ddc`. The key projection
-(15 layers × 14 heads × 896) must start at exactly zero, and the remaining initial parameters must hash
-as the control's pinned fingerprint at seed 42. Before training, acceptance runs
-`tests/test_exponential_query_key.py` and `tests/test_exponential_query_distance.py` on CPU and their
-2,048-token BF16 strips cases against FP64 on the GPU, `tests/test_forget_gate_attention.py` on both,
-and `tests/test_endpoint_decay.py` and `tests/test_blocked_strips.py` on CPU.
-
-Home cluster: **Kennel**. From the isolated `claude/exp-query-key-gate` worktree, after committing the
-inputs, submit it on one B300 or H100 SXM on the blocked backend's causal strips, excluding the H100 PCIe node `mastiff` (the strips are too slow there)
-and the B200 node `shiba`, on `standard` with 24 hours. The exp query-distance run trains at about
-4.8 s per update on an H100 SXM, about 10 h for 7,570 updates; the pilot projects this run's time and
-refuses an allocation it would not fit.
-
-```bash
-run=rd3501a40e020
-sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
-  --output="experiments/transformer_pp/runs/$run/training.log" \
-  --error="experiments/transformer_pp/runs/$run/training.log" \
-  scaffolds/transformer/launchers/kennel.sbatch \
-  experiments.transformer_pp.exponential_query_distance_acceptance \
-  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
-```
-
-## Per-order cumulative FoX gates
-
-Do independent per-order gates improve cumulative FoX, as they improved query-distance decay? Two
-runs copy the no-RoPE FoX + W decay runs and change only `attention_forget_gate_per_order: true`:
-`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, where `L_tr = sum_(j<=t) log alpha_jr` and each
-order `r = 0..m` has its own gate (`w_alpha`, `A_log`, `b_dt` per layer and head). Each order's
-gate starts as a copy of the control's shared draw, so each run starts exactly at its control.
-`records create` set the causal strips; Mosaic has no cumulative decay kernels. The degree-eight
-control trained on ORCD; its copy reads Kennel's manifests, which hash identically. Question,
-controls and results are in the
-[forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
-
-| Run | Label | Control | Degree | Parameters (added gates) |
-| --- | --- | --- | ---: | ---: |
-| `r319b83140040` | query-m4-per-order-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | 4 | 200,339,386 (754,320) |
-| `rf8fc9ab2cecc` | query-m8-per-order-forget-gate-no-rope-wdecay | `r9353f554b917` | 8 | 201,848,026 (1,508,640) |
-
-`per_order_cumulative_acceptance` pins each control's recipe by SHA256. It drops the degree-four
-control's retired key `attention_coefficient_key_kernel_weight_decay` only if it is `false`. It
-allows only per-order gates, the strips, execution locations and labels, and manifest copies that
-hash like the controls'. Every order's gate must equal the control's shared draw and every other
-parameter the control's; collapsing the order axes must recover the control's initialization
-fingerprint. Acceptance runs `tests/test_per_order_cumulative.py` on CPU, and its degree-four and
-degree-eight 2,048-token BF16 strips cases against FP64 on the GPU, before training.
-
-Home cluster: **Kennel**, from the same branch and worktree. Submit each on one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
-5.3 s per update at degree four (B300) and 9.8 s at degree eight (ORCD H100), and per-order gates
-add one decay factor per order. The degree-four run requests 24 hours, on `standard` or `long`
-from the live allowance; the degree-eight run requests 72 hours on `long`, since on an H100 it may
-need more than 24 hours. The pilot projects each run's time and refuses an allocation it would not
-fit.
-
-```bash
-submit() {  # run ID, partition, time limit
-  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time="$3" --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
-    --output="experiments/transformer_pp/runs/$1/training.log" \
-    --error="experiments/transformer_pp/runs/$1/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_cumulative_acceptance \
-    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
-}
-submit r319b83140040 '<standard|long>' 24:00:00
-submit rf8fc9ab2cecc long 72:00:00
-```
-
 ### Degree twelve
 
 The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
@@ -1463,6 +1354,135 @@ submit r227b0ed7c605 standard 24:00:00 "$NOT_H100,mastiff"  # about 25 hours on 
 submit rc2f9273c49cc long 48:00:00 "$NOT_H100"
 ```
 
+## Query-distance gates on softmax and exp
+
+How much is the input dependence of the decay slope worth on the exponential kernels? Two runs
+copy the no-RoPE forget-gate run on their kernel and change only
+`attention_forget_gate_mode: query_distance`: every score gains `(t - i) log alpha_t`, the
+query token's own rate times the distance (ALiBi with a learned, input-dependent slope per query
+token), in place of FoX's `L_t - L_i`. Softmax normalizes the decayed scores; exp keeps its
+per-head output RMSNorm. The gate, its 188,580 parameters and their initialization are FoX's.
+`records create` set the causal strips (`attention_blocked_implementation: strips`), where the
+controls trained on the scan. Question, comparators and results are in the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md#softmax-and-exp-with-query-distance-gates).
+
+| Run | Label | Control | Kernel | Parameters |
+| --- | --- | --- | --- | ---: |
+| `r208110a25271` | softmax-query-distance-no-rope | `r5adc29a91e3b` | softmax | 198,628,726 |
+| `r17444ad0f60e` | exp-query-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,642,166 |
+
+`exponential_query_distance_acceptance` pins each control's recipe by SHA256 and allows only the
+decay mode, the strips, and execution locations and labels. Every initial parameter must equal the
+control's at seed 42: the adapter pins the control recipe's initialization fingerprint, computed
+on CPU. Acceptance runs `tests/test_exponential_query_distance.py` on CPU, and its 2,048-token BF16
+strips cases against FP64 on the GPU, before training.
+
+Home cluster: **Kennel**. From the isolated `claude/data-dependent-gates` worktree, after committing
+the inputs, submit each on one B300 or H100 SXM, excluding the H100 PCIe node `mastiff` (the strips
+are too slow there) and the B200 node `shiba`, with the partition (`standard` or `long`) chosen
+from the live allowance. The ALiBi pair trained on the same strips in 8.9 h (B300) and 11.3 h
+(H100 SXM); the pilot projects each run's time and refuses an allocation it would not fit.
+
+```bash
+for run in r208110a25271 r17444ad0f60e; do
+  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.exponential_query_distance_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+### Query-key gate on exp
+
+Added 2026-11-10. `rd3501a40e020` is the exp baseline matched to the per-order query–key polynomial
+gates (`r03be769d2069`, `r227b0ed7c605`, `rc2f9273c49cc`: degrees four, eight, twelve). It copies the exp
+query-distance run `r17444ad0f60e` and changes only `attention_forget_gate_conditioning: query_key`:
+each pair's rate reads both of its tokens,
+`lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
+`(t - i) log alpha_ti = -(t - i) lambda_ti`. This is the polynomials' query–key gate with one gate per
+layer and head, since exp has no orders. The key projection `w_k` (`forget_gate_key_kernel`) starts at
+zero and takes weight decay, so the run starts exactly as `r17444ad0f60e`; `w_alpha`, `A_log` and
+`b_dt` keep FoX's (Gated DeltaNet's) initialization. No softmax counterpart is planned. Question,
+comparators and results are in the
+[alibi_decay topic](results/exploratory/alibi_decay/README.md#exp-with-a-query-key-gate).
+
+| Run | Label | Control | Kernel | Parameters (key projection) |
+| --- | --- | --- | --- | ---: |
+| `rd3501a40e020` | exp-query-key-distance-no-rope | `r183f08346ddc` | unnormalized exp | 198,830,326 (188,160) |
+
+`exponential_query_distance_acceptance` allows only the decay mode, the conditioning, the strips, and
+execution locations and labels to differ from the FoX control `r183f08346ddc`. The key projection
+(15 layers × 14 heads × 896) must start at exactly zero, and the remaining initial parameters must hash
+as the control's pinned fingerprint at seed 42. Before training, acceptance runs
+`tests/test_exponential_query_key.py` and `tests/test_exponential_query_distance.py` on CPU and their
+2,048-token BF16 strips cases against FP64 on the GPU, `tests/test_forget_gate_attention.py` on both,
+and `tests/test_endpoint_decay.py` and `tests/test_blocked_strips.py` on CPU.
+
+Home cluster: **Kennel**. From the isolated `claude/exp-query-key-gate` worktree, after committing the
+inputs, submit it on one B300 or H100 SXM on the blocked backend's causal strips, excluding the H100 PCIe node `mastiff` (the strips are too slow there)
+and the B200 node `shiba`, on `standard` with 24 hours. The exp query-distance run trains at about
+4.8 s per update on an H100 SXM, about 10 h for 7,570 updates; the pilot projects this run's time and
+refuses an allocation it would not fit.
+
+```bash
+run=rd3501a40e020
+sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch \
+  experiments.transformer_pp.exponential_query_distance_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+## Per-order cumulative FoX gates
+
+Do independent per-order gates improve cumulative FoX, as they improved query-distance decay? Two
+runs copy the no-RoPE FoX + W decay runs and change only `attention_forget_gate_per_order: true`:
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, where `L_tr = sum_(j<=t) log alpha_jr` and each
+order `r = 0..m` has its own gate (`w_alpha`, `A_log`, `b_dt` per layer and head). Each order's
+gate starts as a copy of the control's shared draw, so each run starts exactly at its control.
+`records create` set the causal strips; Mosaic has no cumulative decay kernels. The degree-eight
+control trained on ORCD; its copy reads Kennel's manifests, which hash identically. Question,
+controls and results are in the
+[forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
+
+| Run | Label | Control | Degree | Parameters (added gates) |
+| --- | --- | --- | ---: | ---: |
+| `r319b83140040` | query-m4-per-order-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | 4 | 200,339,386 (754,320) |
+| `rf8fc9ab2cecc` | query-m8-per-order-forget-gate-no-rope-wdecay | `r9353f554b917` | 8 | 201,848,026 (1,508,640) |
+
+`per_order_cumulative_acceptance` pins each control's recipe by SHA256. It drops the degree-four
+control's retired key `attention_coefficient_key_kernel_weight_decay` only if it is `false`. It
+allows only per-order gates, the strips, execution locations and labels, and manifest copies that
+hash like the controls'. Every order's gate must equal the control's shared draw and every other
+parameter the control's; collapsing the order axes must recover the control's initialization
+fingerprint. Acceptance runs `tests/test_per_order_cumulative.py` on CPU, and its degree-four and
+degree-eight 2,048-token BF16 strips cases against FP64 on the GPU, before training.
+
+Home cluster: **Kennel**, from the same branch and worktree. Submit each on one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
+5.3 s per update at degree four (B300) and 9.8 s at degree eight (ORCD H100), and per-order gates
+add one decay factor per order. The degree-four run requests 24 hours, on `standard` or `long`
+from the live allowance; the degree-eight run requests 72 hours on `long`, since on an H100 it may
+need more than 24 hours. The pilot projects each run's time and refuses an allocation it would not
+fit.
+
+```bash
+submit() {  # run ID, partition, time limit
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_cumulative_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+}
+submit r319b83140040 '<standard|long>' 24:00:00
+submit rf8fc9ab2cecc long 72:00:00
+```
+
 ## Learned input-free gates for static coefficients
 
 The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
@@ -1540,203 +1560,82 @@ sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 
 ## Per-degree score biases
 
 Added 2026-11-11. Does giving each polynomial order its own signed shift of the score improve the
-degree-eight tanh query polynomial, with RoPE and with per-order query–key distance gates? The
-question, controls and results are in the
-[score_biases topic](results/exploratory/score_biases/README.md). One trial at the 12-layer
-width-640 shape goes first ([below](#trial-at-the-12-layer-width-640-shape)); the six
-reference-shape runs follow only if it beats its control.
+degree-eight tanh query polynomial? Two trials at the 12-layer width-640 shape test it against the RoPE
+query control there, `r95a5691d293f`. Neither beat it, so no reference-shape runs follow. Findings and
+diagnostics: [score_biases topic](results/exploratory/score_biases/README.md).
 
-With `s_ti = Q_t K_i^T / sqrt(d_K)` and the controls' coefficient generator `c_r(x_t)` (its
-factorial scales unchanged), every order `r = 1..8` reads its own biased score; order zero is
-unchanged:
+With `s_ti = Q_t K_i^T / sqrt(d_K)` and the control's coefficient generator `c_r(x_t)` (its factorial
+scales unchanged), every order `r = 1..8` reads its own shifted score; order zero is unchanged:
 
-    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..8) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+    W(t,i) = c_0(x_t) + sum_(r=1..8) c_r(x_t) (s_ti + beta_r(t,i))^r
     o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
 
-`G_r = 1` with RoPE (control `r25fffc16c2f3`), or each order's endpoint gate
-`exp(-(t - i) exp(A_r) softplus(w_q,r . x_t + w_k,r . x_i + dt_bias_r))` without positional encoding
-(control `r227b0ed7c605`). `x_t` is the block's attention input after its RMSNorm. Each layer, head
-and order has its own shift:
+`x_t` is the block's attention input after its RMSNorm. Each layer, head and order has its own shift:
 
-| Mode | `beta_r(t,i)` | Added arrays | Added parameters |
+| Mode | `beta_r(t)` | Added arrays | Added parameters |
 | --- | --- | --- | ---: |
-| static | `b_r` | `b` [15, 14, 8] | 1,680 |
-| query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [15, 14, 8]; `u` [15, 14, 8, 896] | 1,508,640 |
-| query_key | `b_r + a_r tanh(u_r . x_t + v_r . x_i)` | `b`, `a`; `u`, `v` [15, 14, 8, 896] | 3,013,920 |
+| static | `b_r` | `b` [12, 10, 8] | 960 |
+| query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [12, 10, 8]; `u` [12, 10, 8, 640] | 616,320 |
 
-`b` starts at 0, `a` at 1, and `u` and `v` at 0, so every shift starts at exactly zero: each run
-starts as its control's function, and `u` and `v` receive gradients from the first update. Nothing is
-drawn for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to
-`u` and `v` only, never to `b` or `a`; every other optimizer group, the coefficient-`W` and gate decay,
-and the output RMSNorm are the controls'. The shifts are signed, and so are the coefficients: a
-positive shifted score does not imply a positive weight. The blocked backend's causal strips form each
-shifted power directly, one block per order, never by expanding it into powers of `s`, which would
-change how the orders cancel.
+`b` starts at 0, `a` at 1 and `u` at 0, so every shift starts at exactly zero: each trial starts as the
+control's function, and the query trial's `u` receives gradients from the first update. Nothing is drawn
+for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to `u` only,
+never to `b` or `a`; every other optimizer group, the coefficient-`W` decay and the output RMSNorm are the
+control's. The shifts are signed, and so are the coefficients: a positive shifted score does not imply a
+positive weight.
 
-| Run | Label | Control | Mode | Parameters |
-| --- | --- | --- | --- | ---: |
-| `rb70f9e57190f` | query-m8-dk64-w-decay-score-bias-static | `r25fffc16c2f3` | static | 200,152,486 |
-| `r891870ef80e9` | query-m8-dk64-w-decay-score-bias-query | `r25fffc16c2f3` | query | 201,659,446 |
-| `r3b1619f8a901` | query-m8-dk64-w-decay-score-bias-query-key | `r25fffc16c2f3` | query_key | 203,164,726 |
-| `ra2edcdc5ab60` | query-m8-per-order-query-key-gate-nope-wd-score-bias-static | `r227b0ed7c605` | static | 203,543,146 |
-| `rbf5d3bd6059c` | query-m8-per-order-query-key-gate-nope-wd-score-bias-query | `r227b0ed7c605` | query | 205,050,106 |
-| `r75dccfcf072e` | query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key | `r227b0ed7c605` | query_key | 206,555,386 |
+| Run | Label | Mode | Parameters | Validation-best PPL (update) | Terminal PPL | vs control |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `r8dc6e147601c` | query-m8-w-decay-l12-d640-score-bias-query | query | 100,294,376 | 18.216 (7,551) | 18.216 | +3.55% |
+| `rb4e5457ef2a0` | query-m8-w-decay-l12-d640-score-bias-static | static | 99,679,016 | 17.604 (7,551) | 17.604 | +0.07% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | – | 99,678,056 | 17.592 (7,551) | 17.592 | – |
 
-The controls have 200,150,806 and 203,541,466 parameters. Each of these six recipes is its
-control's loaded recipe with `model.attention_score_bias` set, `train.gradient_event_capture: true`
-(the other capture fields explicit at their defaults), the blocked backend's causal strips
-(`model.attention_backend: blocked`, `model.attention_blocked_implementation: strips`) where both
-controls trained on the Mosaic kernels, and its own labels and paths. Everything else is the
-control's: the 1× budget (7,570 updates of 256 × 2,048 tokens), seed 42, warmup and cosine
-schedule, QK RMSNorm with per-head scales, and initialization.
+- Recipe: the control's, with `model.attention_score_bias` (`query` or `static`),
+  `train.gradient_event_capture: true` (the other capture fields explicit at their defaults), and its
+  own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551 updates
+  of 128 × 2,048 tokens, warmup 454, seed 42, and its attention settings (`mosaic`; the inert blocked
+  field stays `scan`).
+- Kernels: the H100 Mosaic row-shift score-bias kernels, which form each shifted power directly inside
+  their causal tiles, never by expanding it into powers of `s`
+  ([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11));
+  the control trained on B300's Mosaic query-polynomial kernels. The query trial trained on an H100 SXM
+  through update 4,000 and an H100 PCIe after; the static trial on an H100 PCIe.
+- Acceptance: [`score_bias_acceptance`](score_bias_acceptance.py) pins the control's recipe by SHA256
+  and its seed-42 initialization by fingerprint and parameter count, lets only the score bias, the
+  capture fields, and execution locations and labels differ from it, requires the biases' exact starts,
+  refuses every GPU type but H100, and requires a pilot on the Mosaic backend. On CPU acceptance runs
+  `tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
+  the adapter's tests beside the backbone's checks; on the GPU, at BF16, the seven modules of the
+  kernels' H100 qualification (129 cases, none of which skips on an H100).
+- Gradient-event capture ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)):
+  update `k > 454` is an event when its pre-clip global gradient norm `g` is finite, at least 20
+  earlier norms are known, and `g > max(1, 5 × median)` of the previous (up to) 100 norms. The state the
+  update started from is saved at `runs/<run>/checkpoints/gradient_events/<k>/<k-1>/default`; at most
+  three are kept (the first event and the two largest later ones), each listed in `record.json` under
+  `diagnostic_checkpoints` with its SHA256 and justification. Every event is logged in
+  `runs/<run>/gradient_events.jsonl`.
+- Diagnostics: at each validation the forward-only JAX reference of the same shifted kernel, on the first
+  held-out sequence and without gradients, reports `coefficients.score_biases` in
+  `attention_diagnostics`: the bias parameters; per layer, head and order, the shifts' and shifted
+  scores' moments, extremes, and negative and near-zero fractions, and each order's term; shifted-score
+  histograms on [-16, 16] per layer and order; and the cancellation across orders per layer and head.
 
-[`score_bias_acceptance`](score_bias_acceptance.py) chooses the control by the recipe's depth, width
-and forget gate, refuses a recipe that matches none, and pins each control's recipe by SHA256 and its
-seed-42 initialization by fingerprint and parameter count. For these six it requires a score-bias
-mode, the blocked strips, and capture on with the default policy; with the mode set to `none`, the
-backend fields set to the control's (`mosaic`, `scan`), and the capture fields and execution
-locations and labels removed, the recipe must equal its control's. At initialization each mode's
-arrays must have their shapes and exact FP32 starts (`b = 0`, `a = 1`, `u = v = 0`), the count must
-be the control's plus the mode's additions, and removing the arrays must leave the control's
-fingerprint; the shared check then requires the backbone to equal the softmax control's and every
-attention array to hold its declared start. Before acceptance starts, the adapter refuses an
-allocation of a GPU type the recipe does not train on (B200, B300 or H100; B200 or B300 for the
-gated query_key recipe), and acceptance's pilot must resolve the blocked backend. Before training
-acceptance runs `tests/test_score_bias.py`, `tests/test_blocked_strips.py`,
-`tests/test_gradient_events.py` and the adapter's tests on CPU, beside the backbone's CPU checks, and
-on the GPU `tests/test_score_bias_strips.py` alone: the strips through `attention_core` at production
-precision for every mode on both backbones, with negative and exactly zero shifted scores, against host
-FP64. A skipped test fails acceptance.
-
-**Gradient-event capture** ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)),
-fixed in the recipes before launch:
-
-- Rule: update `k > 455` (after warmup; `k > 454` for the trial below) is an event when its
-  pre-clip global gradient norm `g` is finite, at least 20 earlier norms are known, and
-  `g > max(1, 5 × median)` of the previous (up to) 100 norms. The history includes warmup updates
-  and earlier events and resumes with the checkpoint.
-- Capture: the exact state the update started from (parameters, Adam moments, step `k - 1`), saved
-  synchronously at `runs/<run>/checkpoints/gradient_events/<k>/<k-1>/default`, with the event's record
-  as `<k>/event.json`. A nonfinite update also keeps its pre-update state, outside the cap.
-- Retention: at most three states per run: the first event and the two largest later events by norm
-  (a larger later event replaces the smaller kept one). Every trigger is still logged.
-- Log: `runs/<run>/gradient_events.jsonl` records each event's update and pre-update step, loss,
-  pre-clip norm, clip scale, running median and threshold, learning rate, sequence range and
-  microbatch layout, batch and RNG SHA256, seed and RNG derivation, telemetry, device, backend and
-  kernel implementation, source commit, frozen-execution hash, attempt, the pre-update state's SHA256,
-  and whether it was kept. Kept captures are retained with the run and listed in `record.json` under
-  `diagnostic_checkpoints`, each with its SHA256 and justification.
-
-**Diagnostics.** Validation-time statistics come from the forward-only JAX reference of the same
-shifted kernel, on the first held-out sequence, outside the validation loss and without gradients
-(`coefficients.score_biases` in each validation's `attention_diagnostics`): the bias parameters;
-shift and shifted-score moments, extremes, and negative and near-zero fractions, and each order's
-term magnitude, per layer, head and order; shifted-score histograms on [-16, 16] per layer and order;
-and the cancellation across orders per layer and head. The six runs train, and their acceptance
-pilots run, on the causal strips, the trial below on the Mosaic kernels; every run's diagnostics run
-the scan of the same arithmetic.
-
-**Backend and hardware.** The six runs train on the blocked backend's causal strips, plain JAX that
-runs on B200, B300 and H100 alike, so they can take whichever of these GPUs is free. The Mosaic
-score-bias kernels run only on H100; they stay qualified
-([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11))
-and train the trial below, but these six runs do not use them. Both of their controls trained on the
-Mosaic kernels (the RoPE control `r25fffc16c2f3` on a B300, the gated control `r227b0ed7c605` on an
-H100 SXM) and are not retrained on the strips, so each comparison also changes the attention
-implementation: the Mosaic kernels round the weights and score gradients to BF16 (7 stored mantissa
-bits) for their products, while the strips keep them as FP32 values whose products run as TF32 (10
-stored mantissa bits) under JAX's default precision. Home cluster: **Kennel**. One GPU per run; the
-jobs have no scheduling dependencies on each other.
-
-Each recipe's pilot (20 updates of the production batch at micro-batch 16, with validation, the
-score-bias diagnostics and a checkpoint) and fresh-process resume passed on one B200 and, except the
-gated query_key recipe, on one H100 PCIe
-([validation record](../../scaffolds/transformer/validation/README.md#b200-and-the-score-bias-causal-strips-2026-11-11)).
-The gated query_key update needs 147 GiB, more than an 80 GB H100 holds, so that run trains on a B200
-or B300 only. XLA's allocator takes 0.75 of the device by default; the adapter exports
-`XLA_PYTHON_CLIENT_MEM_FRACTION=0.95` for the three gated runs, which the gated query_key run needs on
-a B200 and the gated query run on an H100 (the gated static run has 3 GiB to spare there at 0.75), and
-acceptance records it. Hours are acceptance's projection for 7,570 updates. No H100 SXM or B300 was
-measured: the H100 SXM column divides the H100 PCIe projection by 1.35, the gated control's ratio of
-PCIe to SXM update time, and the limits assume a B300 update takes no longer than a B200 update.
-
-| Run | Recipe | B200 peak GiB | B200 s/update | B200 hours | H100 SXM hours | GPU types | Allocator share | Limit | Limit on B200, B300 |
-| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
-| `rb70f9e57190f` | RoPE static | 32.0 | 4.29 | 9.5 | 18.4 | B200, B300, H100 | 0.75 | 24 h | 13 h |
-| `r891870ef80e9` | RoPE query | 32.5 | 4.43 | 9.7 | 19.0 | B200, B300, H100 | 0.75 | 24 h | 13 h |
-| `r3b1619f8a901` | RoPE query_key | 49.1 | 13.15 | 28.3 | 58.2 | B200, B300, H100 | 0.75 | 67 h | 34 h |
-| `ra2edcdc5ab60` | gated static | 66.9 | 20.24 | 43.6 | 74.1 | B200, B300, H100 | 0.95 | 84 h | 51 h |
-| `rbf5d3bd6059c` | gated query | 67.3 | 20.47 | 44.1 | 74.1 | B200, B300, H100 | 0.95 | 84 h | 51 h |
-| `r75dccfcf072e` | gated query_key | 147.1 | 36.82 | 79.0 | – | B200, B300 | 0.95 | 90 h | 90 h |
-
-Acceptance refuses an allocation whose projection exceeds its time limit less two hours, so each limit
-covers the slowest GPU type its job may land on: that projection plus two hours plus 10%, rounded up
-(the RoPE static and query runs take `standard`'s 24 hours). A run submitted without H100 needs only
-the last column's limit. The jobs exclude `mastiff`: Slurm grants its failing H100 to one-GPU jobs
-first, and its PCIe H100s would exceed the limits (the RoPE static and query runs project 24.8 and
-25.7 hours there). From the isolated `claude/score-biases` worktree, after committing the frozen
-execution set, each run is submitted with its GPU types and limit; partitions are chosen from the live
-allowances at submission ([CLUSTERS.md](../../CLUSTERS.md)): `standard` or `long` for the RoPE static
-and query runs, `long` for the others.
-
-```bash
-submit() {  # run ID, partition(s), time limit, GPU types
-  local exclude=mastiff,collie,samoyed,doodle,terrier
-  [[ $4 == *H100* ]] || exclude=dogo,$exclude
-  sbatch --parsable --partition="$2" --time="$3" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --exclude="$exclude" --job-name="$1" \
-    --output="experiments/transformer_pp/runs/$1/training.log" \
-    --error="experiments/transformer_pp/runs/$1/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
-    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
-}
-submit rb70f9e57190f standard,long 24:00:00 B200,B300,H100
-submit r891870ef80e9 standard,long 24:00:00 B200,B300,H100
-submit r3b1619f8a901 long 67:00:00 B200,B300,H100  # on B200, B300 only: long 34:00:00 B200,B300
-submit ra2edcdc5ab60 long 84:00:00 B200,B300,H100  # on B200, B300 only: long 51:00:00 B200,B300
-submit rbf5d3bd6059c long 84:00:00 B200,B300,H100  # on B200, B300 only: long 51:00:00 B200,B300
-submit r75dccfcf072e long 90:00:00 B200,B300
-```
-
-### Trial at the 12-layer width-640 shape
-
-One run goes first: the query shift on the RoPE query control at the 12-layer width-640 shape. The
-[topic](results/exploratory/score_biases/README.md#open-decision) holds the rule that decides whether
-the six runs above follow.
-
-| Run | Label | Control (validation-best PPL) | Mode | Parameters | Backend |
-| --- | --- | --- | --- | ---: | --- |
-| `r8dc6e147601c` | query-m8-w-decay-l12-d640-score-bias-query | `r95a5691d293f` (17.592) | query | 100,294,376 | Mosaic, H100 |
-
-- Recipe: the control's, with `model.attention_score_bias: query`, the six runs' capture fields, and
-  its own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551
-  updates of 128 × 2,048 tokens, warmup 454, seed 42, and its attention settings (`mosaic`; the
-  inert blocked field stays `scan`).
-- Shift: `b`, `a` [12, 10, 8] and `u` [12, 10, 8, 640], 616,320 parameters beside the control's
-  99,678,056.
-- Kernels: the H100 Mosaic row-shift score-bias kernels; the control trained on B300's Mosaic
-  query-polynomial kernels.
-- Acceptance: the adapter selects this control by depth, width and the absent forget gate, lets only
-  the score bias, the capture fields, and execution locations and labels differ from it, requires its
-  pinned initialization plus the exact biases, refuses every GPU type but H100, and requires a pilot
-  on the Mosaic backend. On CPU acceptance runs `tests/test_score_bias.py`,
-  `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and the adapter's tests beside
-  the backbone's checks; on the GPU, at BF16, the seven modules of the kernels' H100 qualification
-  (129 cases, none of which skips on an H100). The pilot projects the run's hours on the allocated
-  H100, and acceptance refuses the allocation if they exceed the 12-hour limit less two hours.
-
-Submit it from this worktree after committing the frozen execution set:
+Home cluster: **Kennel**. Both trials are complete; each record holds its launch commit, attempts, and
+the artifact-root locations of its validation-best checkpoint, kept gradient-event states and log. After
+committing the inputs, submit each on one H100, choosing the partition (`standard` or `long`) from the
+live allowance:
 
 ```bash
 # Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
 # unless another job holds that GPU.
-run=r8dc6e147601c
-sbatch --parsable --partition=long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-  --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
-  --output="experiments/transformer_pp/runs/$run/training.log" \
-  --error="experiments/transformer_pp/runs/$run/training.log" \
-  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
-  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+for run in r8dc6e147601c rb4e5457ef2a0; do
+  sbatch --parsable --partition=<standard|long> --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
 ```
 
 ## Score transforms
