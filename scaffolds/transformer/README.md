@@ -718,6 +718,59 @@ own shift:
   backbone's other GPU cases qualify the Triton and Mosaic kernels these runs never execute and can skip
   or refuse on a GPU those kernels are not qualified on, so they are not selected.
 
+### Score transforms
+
+`attention_score_transform` (default `identity`) evaluates the diagonal tanh query polynomial at a
+parameter-free function of the score instead of the score itself (`attention/score_transform.py`):
+
+    W(t,i) = sum_(r=0..m) c_r(x_t) z_ti^r,    z_ti = phi(s_ti)
+
+| Transform | `phi(s)` | Very negative `s` |
+| --- | --- | --- |
+| `identity` | `s` (every historical recipe) | `c_m s^m` dominates: a large weight of sign `(-1)^m` |
+| `softplus` | `log(1 + exp(s))`, as `max(s, 0) + log1p(exp(-abs(s)))` | `z -> 0`, so `W -> c_0` |
+| `abs` | `abs(s)` | the weight of `-s` |
+
+- Derivatives: `sigmoid(s)` for softplus and `sign(s)` (zero at `s = 0`) for abs, given as JVP rules;
+  autodiff of the softplus formula would give 0 at `s = 0`, since JAX takes `|s|`'s derivative there as 1.
+  Masked entries evaluate `phi` at their zero score and are zeroed as for every kernel; a nonfinite score
+  poisons its row as before.
+- `attention_coefficient_constant_initial` (default null) starts the order-0 offset `b_0` of the same
+  coefficients at its value instead of Taylor's 1 (stored `b_0 * 0!`, every other array unchanged); with
+  `attention_coefficient_amplitude_initial: 0`, `c_0` starts at exactly that value. With 0 and softplus the
+  kernel starts at `sum_(r=1..m) z^r/r!`, the Taylor polynomial of `e^z - 1 = e^s`: about `e^s` for negative
+  scores and `T_m(s) - 1` for large positive ones. Neither field adds a parameter.
+- Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized diagonal tanh
+  query coefficients of degree >= 1, without selected orders, a coefficient gate, or a B-spline basis (both
+  fields); the transform also requires RoPE or no positional encoding, no forget gate, no score biases, and
+  `attention_backend: blocked`. Configuration rejects coefficient release,
+  `optim.query_coefficient_learning_rate_scale` other than 1, and continuations with either field; the model
+  rejects coefficient capture and override with a transform.
+- Backends: only the blocked backend evaluates a transform (scan and strips, one `[batch, heads, queries,
+  keys]` block at a time); training uses the strips, which `scaffolds.records create` gives a fresh blocked
+  recipe and requires (also with `--allow-scan-blocked-attention`). The fused and Mosaic kernels, `auto`,
+  every other backend, and every other attention path raise on a transform rather than computing the
+  untransformed polynomial; `mosaic_supported()` is false for a transformed recipe. The constant start alone
+  runs on any backend.
+- Records: the attention identity records `attention_score_transform` and `attention_coefficient_constant_initial`
+  when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; W&B tags the run
+  `score_transform_<name>` and `coefficient_constant_start`. `runs.csv` has an `attention_score_transform`
+  column (`identity` for every model recipe that predates it). Untransformed recipes trace identical programs.
+- Diagnostics: the scan of the same kernel, forward only on the fixed diagnostic sample, reports
+  `coefficients.score_transform`: per layer and head the raw scores' and the inputs' moments and extrema, the
+  fraction of raw scores below zero, and the fraction of causal pairs at which the polynomial decreases in its
+  input (`sum_r r c_r(x_t) z^(r-1) < 0`); per layer, histograms of `s` and `z` on [-16, 16] pooled over heads.
+  The coefficient statistics beside it give each order's sign per head. `kernel_values` is
+  `query_polynomial_of_<name>_scores`.
+- Acceptance adds `tests/test_score_transform.py` to the CPU tests of a transformed recipe (FP64 references
+  through the scan and the strips with every gradient, special values, masking, the softplus start, refusals,
+  allocation, the model start, diagnostics), beside `tests/test_blocked_strips.py`, whose families include two
+  transforms. Its GPU stage is `tests/test_score_transform_strips.py` (the strips through `attention_core` at
+  production precision, degree eight and 2,048 tokens, for each transform with unit and wide scores, against
+  host FP64: output and dQ, dK, dV within 1.2x their BF16 floors, the coefficient gradient within 1e-4 per
+  order) and the strips' score-bias qualification, `tests/test_score_bias_strips.py`, alone. A recipe with
+  only the constant start adds `tests/test_score_transform.py` on CPU.
+
 ### B-spline score function
 
 `attention_kernel_basis: bspline` (default `polynomial`, the monomials above) replaces the

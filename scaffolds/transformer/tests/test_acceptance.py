@@ -714,3 +714,65 @@ def test_score_bias_gpu_tests_run_at_their_kernels_precision(monkeypatch, mode, 
     monkeypatch.setattr(api, "default_precision", lambda family, degree: asked.append((family, degree)) or "bf16x3")
     assert preflight.mosaic_test_options(config, "mosaic") == ("--mosaic-precision", "bf16x3")
     assert asked == [(score_bias.score_bias_family("endpoint" if gated else "none", shift), 8)]
+
+
+def _score_transform_model(transform, **changes):
+    return {"attention_degree": 8, "attention_normalization": False, "attention_coefficients": "learned",
+            "attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh",
+            "attention_backend": "blocked", "attention_blocked_implementation": "strips",
+            "attention_score_transform": transform, **changes}
+
+
+@pytest.mark.parametrize("start", (None, 0.0))
+@pytest.mark.parametrize("transform", ("softplus", "abs"))
+def test_score_transform_recipes_qualify_the_strips_and_no_kernel(transform, start):
+    """CPU: the transform's FP64 references, start, refusals and diagnostics, the strips' own checks, and the
+    gradient-event checks, beside the backbone's CPU checks. GPU: the strips at production precision, with the
+    transform and (their existing qualification) with score biases, and nothing else, so that no other kernel's
+    GPU case can skip or refuse on a GPU that kernel is not qualified on; an adapter's own GPU tests are kept."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    config = {"model": _score_transform_model(transform, attention_coefficient_constant_initial=start),
+              "train": {"gradient_event_capture": True}}
+    cpu = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=True)
+    gpu = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=False)
+    assert {preflight.SCORE_TRANSFORM_TESTS, preflight.BLOCKED_STRIPS_TESTS, preflight.GRADIENT_EVENT_TESTS,
+            preflight.QUERY_TANH_POLYNOMIAL_TESTS} <= set(cpu)
+    assert not {preflight.SCORE_TRANSFORM_STRIPS_TESTS, preflight.SCORE_BIAS_STRIPS_TESTS,
+                preflight.SCORE_BIAS_TESTS} & set(cpu)
+    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS)
+    own = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
+    assert preflight.test_paths(own, config, resolved_backend="blocked", cpu=False) == (
+        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS)
+    assert preflight.mosaic_test_options(config, "blocked") == ()
+    module = (preflight.ROOT / preflight.SCORE_TRANSFORM_STRIPS_TESTS).read_text()
+    assert "pytestmark = pytest.mark.gpu" in module and "mosaic" not in module.lower()
+    assert "pytest.mark.gpu" not in (preflight.ROOT / preflight.SCORE_TRANSFORM_TESTS).read_text()
+
+
+@pytest.mark.parametrize("cpu", (True, False), ids=("cpu", "gpu"))
+@pytest.mark.parametrize("backend,implementation", (
+    ("blocked", "scan"), ("blocked", None), ("mosaic", "strips"), ("fused", "strips")))
+def test_score_transform_recipes_off_the_strips_are_refused(cpu, backend, implementation):
+    """The scan, the transform's reference and the field's default, has no GPU qualification for training it,
+    and no other backend evaluates it: both stages refuse instead of qualifying computations the run would not
+    train on."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    model = _score_transform_model("softplus", attention_backend=backend)
+    if implementation is None:
+        del model["attention_blocked_implementation"]
+    else:
+        model["attention_blocked_implementation"] = implementation
+    with pytest.raises(ValueError, match="score transform trains on the blocked backend's causal strips"):
+        preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+
+
+@pytest.mark.parametrize("backend", ("blocked", "mosaic"))
+def test_constant_starts_alone_select_their_cpu_checks(backend):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    model = {**_score_transform_model("identity"), "attention_backend": backend}
+    for start, selected in ((None, False), (0.0, True)):
+        config = {"model": {**model, "attention_coefficient_constant_initial": start}}
+        assert (preflight.SCORE_TRANSFORM_TESTS in preflight.test_paths(spec, config, resolved_backend=backend,
+                                                                         cpu=True)) is selected
+        gpu = preflight.test_paths(spec, config, resolved_backend=backend, cpu=False)
+        assert preflight.SCORE_TRANSFORM_TESTS not in gpu and preflight.SCORE_TRANSFORM_STRIPS_TESTS not in gpu

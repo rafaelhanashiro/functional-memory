@@ -37,7 +37,7 @@ INDEX_COLUMNS = (
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
     "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
-    "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
+    "attention_score_transform", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
     "coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step",
@@ -579,6 +579,8 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         # Per-degree score biases postdate every recipe that lacks the field, so a model recipe without it
         # has none; runs without a model recipe (analyses of other runs or pretrained models) leave it empty.
         "attention_score_bias": model.get("attention_score_bias", "none") if model else None,
+        # Likewise the polynomial's input transform: a model recipe without the field reads the score itself.
+        "attention_score_transform": model.get("attention_score_transform", "identity") if model else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
@@ -716,7 +718,8 @@ def regenerate_index(study: str | Path) -> Path:
     added to a mechanism, where a recipe without the field can only mean the
     behavior that predates the option: the forget-gate mode, form, constant
     rate, conditioning, rate activation, and per-order gates of gated recipes,
-    and ``attention_score_bias`` (``none``) of every model recipe.
+    and ``attention_score_bias`` (``none``) and ``attention_score_transform`` (``identity``) of every
+    model recipe.
     """
     study = _study_path(study)
     with _locked(study):

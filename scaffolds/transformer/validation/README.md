@@ -11,6 +11,66 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Score transforms on the causal strips (2026-11-12)
+
+`model.attention_score_transform` evaluates the diagonal tanh query polynomial at `z = phi(s)` in place of
+the score `s` (`softplus`: `log(1 + exp(s))`; `abs`), and `model.attention_coefficient_constant_initial`
+starts the constant offset `b_0` at another value ([README](../README.md#score-transforms)). Only the blocked
+backend (scan and causal strips) evaluates a transform; every kernel refuses it.
+
+**CPU tests** (commit of this entry, `JAX_PLATFORMS=cpu`): `tests/test_score_transform.py` 75 passed: the scan's
+code and the strips in FP64 (to 1e-11) and the public FP32 scan and strips (to 3e-5 of each array's largest
+value; the coefficient gradient order by order) against an independent all-pairs FP64 oracle
+(`logaddexp(0, s)` and `s sign(s)` for the transforms, explicit powers), at degrees 1, 4 and 8, for mixed
+scores up to +-24 with exact zeros, all scores in [-30, -1/2], and all in [1/2, 30]; both transforms' values and
+derivatives at special points (softplus's derivative 1/2 at zero and `sigmoid(s)` elsewhere, `abs`'s 0 at
+zero, infinities and NaN); masked pairs scoring +-1e15 and future values of 1e20 leave earlier rows' outputs
+and the earlier tokens' gradients bitwise unchanged; `attention_core` and a two-layer model on the strips
+against the scan; the softplus start (`c_0 = 0`, `c_r = 1/r!`) equal to `e^s` minus its Taylor tail to 1e-14,
+and to `e^s` for scores at or below -3; the refusals of every other recipe, backend and kernel, allocation,
+the model's start against the control's, exact diagnostics against NumPy, and records.
+`tests/test_blocked_strips.py`, with a softplus (degree 4) and an abs (degree 8) family added to its tables:
+16 transform cases of 191. `tests/test_acceptance.py` (selection) and the records' index test pass, and the
+adapter's 97.
+
+**Unchanged programs.** Against `feab62a8`, with the base's `tests/test_blocked_strips.py` families for both
+trees: the jaxprs of `blocked_dot_product_attention` and `strip_dot_product_attention` for its 31 argument
+families (forward, VJP, and the scan's diagnostics, with FP32 and BF16 Q/K/V, in 8- and 128-query scan blocks
+and 16- and 512-query strips; 620 programs) and of `attention_core` for its 21 core families (forward, VJP and
+diagnostics through the scan and the strips; 252 programs) are identical. So are the loss-and-gradient
+programs, losses, gradients, parameters, attention identities and diagnostics of 40 small models (every
+blocked kernel and forget-gate family, the query polynomial at degrees 4 and 8, score biases, and five run
+recipes at a small shape: `r95a5691d293f`, `r25fffc16c2f3`, `r227b0ed7c605`, `r8dc6e147601c`,
+`r3e2fa2532c23`); validation, recipe (the two new fields at their defaults), attention identity, parameter
+count, and acceptance test selection (CPU and GPU, on the blocked, fused, mosaic and cudnn backends) for all 465
+earlier run recipes (408 valid); and the seed-42 initialization fingerprints of `r95a5691d293f`,
+`r25fffc16c2f3`, `r227b0ed7c605` and `r8dc6e147601c`.
+
+**GPU qualification.** `tests/test_score_transform_strips.py`, the transform runs' GPU stage beside
+`tests/test_score_bias_strips.py`, runs the production dispatch (`attention_core` on the strips, counted) at
+production precision: Q, K, V rounded to BF16 in the program, FP32 coefficients, a BF16 cotangent, degree
+eight, 2,048 tokens in four strips, `d_K = d_V = 64`, two heads; for each transform (identity, the controls'
+backbone, too) with unit scores and with `N(0, 9)` scores (a sixth below -3, extremes beyond +-12), against
+host FP64. Bounds: output, dQ, dK, dV within 1.2x their BF16 rounding floors and no element beyond 2 BF16
+roundoffs of the largest value; the coefficient gradient within 1e-4 relative L2 per order. Called on the CPU
+host (as the score-bias column above), all six cases measure 1.000x their floors, largest elements
+0.43–0.82 roundoffs, and coefficient gradients 4.3–4.7e-7.
+
+**Memory without running** (`benchmarks/compiled_memory.py`, the trainer's one-device update at micro-batch
+16, compile-only from the host with `JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1`): softplus 22.2 GiB on an H100 and
+21.6 GiB on a B200; abs 22.8 and 22.4 GiB, within the allocator's default share on each (59.4 GiB on an H100).
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib -m "not gpu" scaffolds/transformer/tests/test_score_transform.py \
+  scaffolds/transformer/tests/test_blocked_strips.py experiments/transformer_pp/tests/test_score_transform_acceptance.py
+# Inside one GPU allocation, from the worktree root, under the launcher's runtime (as for the score biases):
+JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  -m gpu scaffolds/transformer/tests/test_score_transform_strips.py scaffolds/transformer/tests/test_score_bias_strips.py
+JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1 scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.benchmarks.compiled_memory \
+  experiments/transformer_pp/runs/<run>/config.yaml --target <h100|b200>
+```
+
 ### B200 and the score-bias causal strips (2026-11-11)
 
 `shiba` has eight B200 GPUs (180 GB, compute capability 10.0, driver 580.196.07). Kennel B200

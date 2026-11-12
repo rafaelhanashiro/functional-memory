@@ -43,6 +43,7 @@ def attention_core(
     rngs=None,
     weights_dtype=None,
     blocked_implementation: str = "scan",
+    score_transform: str = "identity",
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
@@ -54,9 +55,13 @@ def attention_core(
     the B-spline score function (``spline``), which defines the kernel alone. The ``score_bias_*``
     operands (attention/score_bias.py: a row shift, or the query-key pair inputs with their offset
     and amplitude) shift each order r >= 1 of tanh query coefficients; every other kernel rejects them.
+    ``score_transform`` (attention/score_transform.py) evaluates tanh query coefficients' polynomial at
+    z = phi(s), without a forget gate, key factors or score biases, on the blocked backend; every other
+    mechanism and backend rejects a transform other than "identity".
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
+    from scaffolds.transformer.attention.score_transform import validate as validate_transform
 
     unknown = set(denominators) - set(DENOMINATOR_KINDS)
     if unknown:
@@ -71,6 +76,14 @@ def attention_core(
                        or attention_coefficient_activation != "tanh"):
         # No other kernel may ignore them: it would silently train the unshifted polynomial.
         raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
+    # The historical calls are unchanged without a transform.
+    transform = {} if validate_transform(score_transform) == "identity" else {"score_transform": score_transform}
+    if transform and (query_polynomial_coefficients is None or key_polynomial_factors is not None
+                      or attention_coefficient_activation != "tanh" or score_bias or query_log_decay is not None
+                      or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))):
+        # No other kernel may ignore it: it would silently train the untransformed polynomial.
+        raise ValueError("A score transform applies only to tanh query-coefficient polynomial attention without a "
+                         "forget gate, key factors, or score biases")
     # The historical scan keeps every mechanism's established call; strips add the selection.
     strips = {} if blocked_implementation == "scan" else {"blocked_implementation": blocked_implementation}
     denominators = {name: array for name, array in denominators.items() if array is not None}
@@ -149,7 +162,7 @@ def attention_core(
                                           return_diagnostics=return_diagnostics, log_decay=query_log_decay,
                                           decay_mode=query_decay_mode, query_gate_input=query_gate_input,
                                           key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
-                                          **score_bias, **strips)
+                                          **score_bias, **strips, **transform)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 
