@@ -1,4 +1,4 @@
-"""Qualify per-order cumulative FoX gates against their pinned shared-gate controls."""
+"""Qualify per-order cumulative FoX gates against pinned shared-gate reference recipes."""
 from dataclasses import fields, replace
 from functools import partial
 import hashlib
@@ -12,16 +12,20 @@ from scaffolds.transformer.configs.base import ModelConfig, validate_config
 from scaffolds.transformer.configs.loader import _update_dataclass
 
 ROOT = Path(__file__).resolve().parent
-# Shared cumulative FoX control of each polynomial degree: run ID and config SHA256.
+# Shared cumulative FoX recipe sources: run ID and config SHA256. At degree twelve the
+# reference is derived from the degree-eight recipe; no shared-gate degree-twelve run exists.
 CONTROLS = {
     4: ("r4a80e28ce0a7", "cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763"),
     8: ("r9353f554b917", "9ff6d8e01a865f759e4a86e192533e46bed2ccd3d20c9a52927d47c2b71a2b65"),
+    12: ("r9353f554b917", "9ff6d8e01a865f759e4a86e192533e46bed2ccd3d20c9a52927d47c2b71a2b65"),
 }
+DERIVED_CONTROL_DEGREES = {12: 8}
 # Each control's initial parameters at seed 42: degree four's recorded at its launch, degree eight's computed
-# on CPU with initialization_facts on its recipe.
+# on CPU with initialization_facts on its recipe, and twelve's on the derived reference recipe.
 INITIALIZATION_SHA256 = {4: "41222e5822311b7c7828965e5f4e03b72e820cc14f0928d6af073c8649a7b7d7",
-                         8: "d2f533debb5896ecf1e2d456b1e2a962de3f62934fb42ad43fd3eacca189241e"}
-PARAMETER_COUNT = {4: 199585066, 8: 200339386}
+                         8: "d2f533debb5896ecf1e2d456b1e2a962de3f62934fb42ad43fd3eacca189241e",
+                         12: "1045f57c64e45b0534c327493c9539671a664ecaa53f85a0dc55a5298f6c5e2c"}
+PARAMETER_COUNT = {4: 199585066, 8: 200339386, 12: 201093706}
 # Keys a control's source branch recorded that this scaffold no longer defines, with the only value each may
 # hold: degree four's declared a key-generator decay switch, which a query-only model never reads.
 RETIRED_MODEL_KEYS = {"attention_coefficient_key_kernel_weight_decay": False}
@@ -58,6 +62,7 @@ def control_recipe(raw: dict, *, context: str) -> Config:
 
 
 def control_config(degree: int) -> Config:
+    """Pinned shared-gate recipe, with only degree changed for the unexecuted m=12 reference."""
     if degree not in CONTROLS:
         raise ValueError(f"No cumulative FoX control at degree {degree}")
     run, digest = CONTROLS[degree]
@@ -65,11 +70,17 @@ def control_config(degree: int) -> Config:
     contents = path.read_bytes()
     if hashlib.sha256(contents).hexdigest() != digest:
         raise ValueError(f"The pinned FoX control recipe {run} changed")
-    return control_recipe(yaml.safe_load(contents), context=str(path))
+    config = control_recipe(yaml.safe_load(contents), context=str(path))
+    if degree in DERIVED_CONTROL_DEGREES:
+        if config.model.attention_degree != DERIVED_CONTROL_DEGREES[degree]:
+            raise ValueError("The derived reference has an unexpected source degree")
+        config.model.attention_degree = degree
+        validate_config(config)
+    return config
 
 
 def check_recipe(config: Config) -> None:
-    """Only per-order gates (and the causal strips) differ from the degree's shared-gate FoX control."""
+    """Only per-order gates (and the causal strips) differ from the degree's shared-gate reference."""
     validate_config(config)
     model = config.model
     if not model.attention_forget_gate_per_order or model.attention_forget_gate_mode != "cumulative":
@@ -135,11 +146,15 @@ def _check_initialized_parameters(params, control_params, config: Config) -> dic
     recovered = state_sha256(params)
     if recovered != INITIALIZATION_SHA256[degree]:
         raise RuntimeError(f"Collapsed initialization differs from FoX control {CONTROLS[degree][0]}: {recovered}")
-    return {"parameter_count": count, "parameter_sha256": actual_sha256,
+    facts = {"parameter_count": count, "parameter_sha256": actual_sha256,
             "control_run_id": CONTROLS[degree][0], "control_parameter_count": PARAMETER_COUNT[degree],
             "recovered_control_parameter_sha256": recovered, "added_gate_parameter_count": (orders - 1) * gate_count,
             "unchanged_parameters_match_control": True, "all_order_gates_match_shared_control": True,
             "initialization": "duplicate the shared gate across orders 0..m"}
+    if degree in DERIVED_CONTROL_DEGREES:
+        facts.update(control_recipe_degree=DERIVED_CONTROL_DEGREES[degree],
+                     control_reference_degree=degree, control_reference_is_derived=True)
+    return facts
 
 
 def check_initialization(config: Config) -> dict:

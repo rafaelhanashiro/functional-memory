@@ -32,7 +32,7 @@ def frozen(degree, monkeypatch):
     return config
 
 
-@pytest.mark.parametrize("degree", DEGREES)
+@pytest.mark.parametrize("degree", tuple(FROZEN_RUNS))
 def test_frozen_run_is_its_control_with_per_order_gates(degree, monkeypatch):
     config = frozen(degree, monkeypatch)
     adapter.check_recipe(config)
@@ -56,7 +56,7 @@ def test_frozen_run_is_its_control_with_per_order_gates(degree, monkeypatch):
     assert not config.continuation.parent_checkpoint
 
 
-@pytest.mark.parametrize("degree", DEGREES)
+@pytest.mark.parametrize("degree", tuple(FROZEN_RUNS))
 def test_pinned_controls_are_the_recorded_shared_gate_runs(degree):
     run, digest = adapter.CONTROLS[degree]
     directory = adapter.ROOT / "runs" / run
@@ -71,6 +71,16 @@ def test_pinned_controls_are_the_recorded_shared_gate_runs(degree):
     assert control.model.attention_degree == degree and control.model.attention_forget_gate
     assert control.model.attention_forget_gate_mode == "cumulative" and not control.model.attention_forget_gate_per_order
     assert control.model.attention_blocked_implementation == "scan"
+
+
+def test_degree_twelve_reference_changes_only_the_degree_of_the_pinned_eight_recipe():
+    assert adapter.CONTROLS[12] == adapter.CONTROLS[8]
+    assert adapter.DERIVED_CONTROL_DEGREES == {12: 8}
+    actual = config_to_dict(adapter.control_config(12))
+    expected = config_to_dict(adapter.control_config(8))
+    expected["model"]["attention_degree"] = 12
+    assert actual == expected
+    adapter.check_recipe(variant(12))
 
 
 @pytest.mark.parametrize("degree", DEGREES)
@@ -131,7 +141,7 @@ def test_shared_gates_query_distance_the_scan_and_mosaic_are_rejected(degree):
             adapter.check_recipe(config)
 
 
-@pytest.mark.parametrize("degree", (2, 6, 12))
+@pytest.mark.parametrize("degree", (2, 6, 10))
 def test_degrees_without_a_shared_gate_control_are_rejected(degree):
     config = variant(4)
     config.model.attention_degree = degree
@@ -219,6 +229,10 @@ def test_initialization_guard_recovers_the_control_and_rejects_any_change(degree
     assert facts["recovered_control_parameter_sha256"] == state_sha256(expected)
     assert facts["added_gate_parameter_count"] == degree * (8 + 2) * 2 * 2
     assert facts["parameter_count"] == adapter.PARAMETER_COUNT[degree] + facts["added_gate_parameter_count"]
+    if degree == 12:
+        assert facts["control_reference_is_derived"] is True
+        assert facts["control_recipe_degree"] == 8 and facts["control_reference_degree"] == 12
+        assert facts["control_run_id"] == adapter.CONTROLS[8][0]
 
     broken = _initial_parameters(config)
     gate = broken["forget_gate_kernel"]

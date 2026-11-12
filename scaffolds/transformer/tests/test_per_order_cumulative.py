@@ -34,7 +34,7 @@ from scaffolds.transformer.training.diagnostics import (
 from scaffolds.transformer.training.optim import attention_weight_decay_mask
 from scaffolds.transformer.training.state import create_state
 
-DEGREES = (4, 8)
+DEGREES = (4, 8, 12)
 IMPLEMENTATIONS = ("scan", "strips")
 GATE = ("forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias")
 # (time, scan block, strip): ragged 8-query blocks and 16-query strips of 37 tokens, one block and
