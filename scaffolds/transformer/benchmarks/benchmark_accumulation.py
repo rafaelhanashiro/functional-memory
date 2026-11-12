@@ -16,6 +16,7 @@ import time
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flax import nnx
 
 from scaffolds.transformer.benchmarks.benchmark_attention import write_report
 from scaffolds.transformer.benchmarks.benchmark_train_step import parameter_digest
@@ -28,12 +29,18 @@ from scaffolds.transformer.training.numerics import checked_update_loss, update_
 from scaffolds.transformer.training.state import create_state
 
 
+_compiled_microbatch = nnx.jit(
+    loop.microbatch_loss_and_grads,
+    static_argnames=("coefficient_penalty", "coefficient_penalty_denominator"),
+)
+
+
 def python_accumulation(state, batches, rngs, *, coefficient_penalty=0.0,
                         coefficient_penalty_denominator=True):
     """Baseline: separately compiled microbatches and Python-dispatched reductions."""
     grad_sum = loss_sum = None
     for batch, rng in zip(batches, rngs, strict=True):
-        loss, grads = loop.microbatch_loss_and_grads(
+        loss, grads = _compiled_microbatch(
             state, batch, rng, coefficient_penalty=coefficient_penalty,
             coefficient_penalty_denominator=coefficient_penalty_denominator)
         if grad_sum is None:

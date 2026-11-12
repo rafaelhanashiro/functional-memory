@@ -68,7 +68,10 @@ def attention_core(
 
         if (not callable(score_kernel) or attention_degree is not None or quadratic_mode != "fixed"
                 or coefficients is not None or polynomial_coefficients is not None or polynomial_square_factors is not None
-                or query_polynomial_coefficients is not None or key_polynomial_factors is not None or denominators):
+                or query_polynomial_coefficients is not None or key_polynomial_factors is not None or denominators
+                or any(value is not None for value in (spline_knots, spline_coefficients, query_spline_coefficients,
+                                                       query_log_decay, query_gate_input, key_gate_input, gate_log_rate))
+                or query_decay_mode != "cumulative" or backend == "blocked" and blocked_implementation != "scan"):
             raise ValueError("A callable scalar score kernel cannot be combined with polynomial options")
         if backend == "triton_scalar":
             from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention

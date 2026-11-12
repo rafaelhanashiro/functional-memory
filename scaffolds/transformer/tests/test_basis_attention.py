@@ -94,10 +94,23 @@ def test_named_projection_config_roundtrip_and_legacy_compatibility(tmp_path, pr
 
 @pytest.mark.parametrize("override", [{"attention_degree": 2}, {"attention_mechanism": "gla"},
                                        {"attention_coefficients": "learned"}, {"attention_backend": "fused"},
-                                       {"attention_backend": "mosaic"}, {"attention_backend": "cudnn"}])
+                                       {"attention_backend": "mosaic"}, {"attention_backend": "cudnn"},
+                                       {"attention_forget_gate": True}, {"attention_kernel_basis": "bspline"},
+                                       {"attention_coefficient_readout": "dense"},
+                                       {"attention_blocked_implementation": "strips"}])
 def test_conflicting_configuration_rejected(projection, override):
     with pytest.raises(ValueError):
         ModelConfig(attention_basis=projection.to_config(), **override)
+
+
+@pytest.mark.parametrize("options", [
+    {"query_log_decay": jnp.zeros((1, 3, 1))}, {"spline_knots": (-1.0, 0.0, 1.0)},
+    {"query_decay_mode": "query_distance"}, {"blocked_implementation": "strips"},
+])
+def test_scalar_dispatch_rejects_unimplemented_kernel_combinations(options):
+    x = jnp.ones((1, 3, 1, 2))
+    with pytest.raises(ValueError, match="scalar score kernel"):
+        attention_core(x, x, x, score_kernel=jnp.exp, **options)
 
 
 def test_checkpoint_resume_keeps_frozen_fit_and_trains_with_output_scaling(tmp_path):

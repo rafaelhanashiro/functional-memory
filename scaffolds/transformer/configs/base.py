@@ -335,7 +335,13 @@ class ModelConfig:
                     or self.quadratic_mode != "fixed"
                     or self.attention_fixed_coefficients is not None or self.attention_fixed_square_factors is not None
                     or self.attention_coefficient_conditioning not in ("static", "query")
-                    or self.attention_coefficient_parameterization != "direct"):
+                    or self.attention_coefficient_parameterization != "direct"
+                    or self.attention_kernel_basis != "polynomial" or self.attention_forget_gate
+                    or self.attention_coefficient_gate != "none" or self.attention_coefficient_readout != "diagonal"
+                    or self.attention_coefficient_readout_scale != 1.0 or self.attention_coefficient_feature_count is not None
+                    or self.attention_coefficient_kernel_weight_decay or self.attention_coefficient_orders is not None
+                    or self.positional_encoding == "path"
+                    or self.attention_backend in ("auto", "blocked") and self.attention_blocked_implementation != "scan"):
                 raise ValueError("attention_basis requires scalar dot-product attention without polynomial options")
             if self.attention_coefficients == "learned" and self.attention_normalization:
                 raise ValueError("Learned basis coefficients currently require unnormalized attention")
@@ -968,6 +974,7 @@ def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
     (scaffolds.records create, and launchers that allocate copied recipes) applies this rule.
     """
     return (model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("attention_basis") is None
             and model.get("positional_encoding", "rope") != "path"
             and model.get("attention_backend", "auto") in ("blocked", "auto"))
 

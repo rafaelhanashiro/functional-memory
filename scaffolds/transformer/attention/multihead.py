@@ -145,7 +145,11 @@ class MultiHeadAttention(nnx.Module):
         if score_kernel is not None and (
                 not callable(score_kernel) or backend not in ("blocked", "triton_scalar") or attention_degree is not None
                 or quadratic_mode != "fixed" or attention_fixed_coefficients is not None
-                or attention_fixed_square_factors is not None or attention_coefficient_conditioning not in ("static", "query")):
+                or attention_fixed_square_factors is not None or attention_coefficient_conditioning not in ("static", "query")
+                or attention_kernel_basis != "polynomial" or attention_forget_gate
+                or attention_coefficient_gate != "none" or attention_coefficient_readout != "diagonal"
+                or attention_coefficient_readout_scale != 1.0 or attention_coefficient_orders is not None
+                or positional_encoding == "path" or backend == "blocked" and attention_blocked_implementation != "scan"):
             raise ValueError("A scalar score kernel requires blocked or triton_scalar attention without polynomial options")
         self.score_kernel = score_kernel
         if not isinstance(attention_normalization, bool):
