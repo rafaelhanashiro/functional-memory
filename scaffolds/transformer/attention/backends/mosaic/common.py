@@ -158,18 +158,18 @@ def polynomial_and_derivative(s, coefficients):
 #                             L_t0..L_tm as vectors m+1..2m+1 and L_i0..L_im as key vectors, whose
 #                             FP32 difference (exact for nearby tokens, however large |L|) the tile
 #                             scales by log2(e).
-# Callers validate gates per token: an invalid rate, endpoint input or cumulative sum arrives as NaN,
-# which makes every weight it touches NaN. Decay kernels compile with approximate exp2/log2
+# Callers validate gates per token: an invalid rate, endpoint input or cumulative sum arrives as
+# NaN, which makes every weight it touches NaN. Decay kernels compile with approximate exp2/log2
 # (``approx_math``). They also receive a ``Pair``: the distance t-i (none for the cumulative family)
-# and the per-key vectors of the tile. Their dQ row
-# sums append sum_i G W (t-i) (query) or sum_i G W (t-i) sigmoid(x) and
-# sum_i G W (t-i) log2(1 + e^x) (endpoint), where G = dO V^T, W = p D and x = u_t + v_i; the
-# endpoint dK pass also sums G W (t-i) sigmoid(x) over queries for every key. Per-order families
-# evaluate one order's decay at a time; their dQ sums are dc_r = sum_i G D_r s^r, then per order
-# sum_i G W_r (t-i) (query) or sum_i G W_r (t-i) sigmoid(x_r) and sum_i G W_r (t-i) log2(1 + e^x_r)
-# (endpoint), with W_r = c_r s^r D_r; the endpoint dK pass sums G W_r (t-i) sigmoid(x_r) per order.
-# The cumulative family's dQ sums are the dc_r alone and its dK pass sums G W_r per order: L_tr's
-# gradient is c_tr dc_tr less that sum at key t (the caller forms it).
+# and the per-key vectors of the tile. Their dQ row sums append sum_i G W (t-i) (query) or
+# sum_i G W (t-i) sigmoid(x) and sum_i G W (t-i) log2(1 + e^x) (endpoint), where G = dO V^T,
+# W = p D and x = u_t + v_i; the endpoint dK pass also sums G W (t-i) sigmoid(x) over queries for
+# every key. Per-order families evaluate one order's decay at a time; their dQ sums are
+# dc_r = sum_i G D_r s^r, then per order sum_i G W_r (t-i) (query) or sum_i G W_r (t-i) sigmoid(x_r)
+# and sum_i G W_r (t-i) log2(1 + e^x_r) (endpoint), with W_r = c_r s^r D_r; the endpoint dK pass
+# sums G W_r (t-i) sigmoid(x_r) per order. The cumulative family's dQ sums are the dc_r alone and
+# its dK pass sums G W_r per order: L_tr's gradient is c_tr dc_tr less that sum at key t (the
+# caller forms it).
 TAYLOR, QUERY = "taylor", "query"
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
