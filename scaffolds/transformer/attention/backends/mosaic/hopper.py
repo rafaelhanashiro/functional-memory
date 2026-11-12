@@ -14,6 +14,8 @@ unpadded width. Decay families also take per-key FP32 ``key_vectors`` [n, batch,
 t-i in every tile, and ``dkv`` also returns their per-key sums [n, batch, heads, time].
 Families with per-head scalars take ``head_constants`` [heads, width] FP32. Per-order
 families form dV and dK together after S and dP, evaluating each order's decay once.
+Score-bias families (``common.accumulates``) add their per-order dQ and dK sums directly to
+the kernels' shared-memory staging buffers, so the rolled order loops carry no sums.
 """
 from functools import partial
 
@@ -31,15 +33,19 @@ WGS = 2
 
 
 def _pair(family, shape, offset, keys, causal, *, transposed=False, heads=()):
-    """``common.Pair`` of a decay family's tile, else None: the FP32 query-minus-key distance of
-    each entry, from the tile's loop-invariant local pattern plus ``offset`` (the distance of its
-    first entry). Transposed tiles hold keys in rows; ``keys`` are broadcast per-key vectors and
-    ``heads`` per-head scalars."""
-    if family not in common.DECAY_FAMILIES:
+    """``common.Pair`` of a decay or score-bias family's tile, else None: for decay families the
+    FP32 query-minus-key distance of each entry, from the tile's loop-invariant local pattern plus
+    ``offset`` (the distance of its first entry); score biases without a gate need no distance.
+    Transposed tiles hold keys in rows; ``keys`` are broadcast per-key vectors and ``heads``
+    per-head scalars."""
+    if not common.has_pair(family):
         return None
-    rows, cols = (plgpu.broadcasted_iota(jnp.float32, shape, d, layout=L) for d in (0, 1))
-    local = cols - rows if transposed else rows - cols
-    return common.Pair(local + offset.astype(jnp.float32), keys, causal, heads)
+    distance = None
+    if family in common.DECAY_FAMILIES:
+        rows, cols = (plgpu.broadcasted_iota(jnp.float32, shape, d, layout=L) for d in (0, 1))
+        local = cols - rows if transposed else rows - cols
+        distance = local + offset.astype(jnp.float32)
+    return common.Pair(distance, keys, causal, heads)
 
 
 def _inputs(*arrays):
@@ -59,6 +65,25 @@ def _per_order_operands(rows_smem, columns_smem, head_smem, wg, n_rows, n_column
     return (common.Lazy(n_rows, vector(rows_smem, query_axis)),
             common.Lazy(n_columns, vector(columns_smem, key_axis)) if n_columns else (),
             common.Lazy(n_head, lambda i: head_smem[wg, i]) if n_head else ())
+
+
+class _SmemSums:
+    """Running per-row FP32 sums of one warpgroup in shared memory ([n, rows], the kernel's output
+    staging buffer), for families that ``common.accumulates``: ``add`` reads, adds and writes back
+    one sum, by static or traced index, so no sum occupies registers. A row's value is replicated
+    over the lanes that hold that row, which read, add and write the same value."""
+
+    def __init__(self, ref):
+        self.ref = ref
+
+    def zero(self, count):
+        zero = plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1))
+        for i in range(count):
+            self.ref.at[i][...] = zero
+
+    def add(self, index, x):
+        ref = self.ref.at[index]
+        ref[...] = plgpu.load(ref, (), layout=L.reduce(1)) + x
 
 
 def _params(family):
@@ -238,6 +263,7 @@ def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, d
     n_key = common.key_counts(family, degree)[0]
     n_head = common.head_count(family, degree)
     per_order = family in common.PER_ORDER_FAMILIES
+    accumulating = common.accumulates(family)
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, *refs):
         refs = list(refs)
@@ -306,10 +332,12 @@ def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, d
                 pair = _pair(family, s.shape, q0 - j * block_k, broadcast, causal, heads=heads)
                 if masked:
                     s, dp = jnp.where(causal, s, 0.0), jnp.where(causal, dp, 0.0)
-                ds, row = common.dq_terms(family, degree, s, dp, vecs, pair)
+                ds, row = common.dq_terms(family, degree, s, dp, vecs, pair,
+                                          sums=_SmemSums(sums_smem.at[wg]) if accumulating else None)
                 if masked:
                     ds = jnp.where(causal, ds, 0.0)
-                sums = tuple(a + x for a, x in zip(sums, row))
+                if not accumulating:
+                    sums = tuple(a + x for a, x in zip(sums, row))
                 parts = common.weight_parts(ds, precision)
 
                 def acc_dq(acc_ref):
@@ -321,7 +349,11 @@ def dq(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, d
                 return acc, sums
 
             acc = plgpu.layout_cast(jnp.zeros((B, dqk), jnp.float32), L)
-            sums = tuple(plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1)) for _ in range(n_sums))
+            if accumulating:  # the sums accumulate in this warpgroup's output staging buffer
+                _SmemSums(sums_smem.at[wg]).zero(n_sums)
+                sums = ()
+            else:
+                sums = tuple(plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1)) for _ in range(n_sums))
             carry = lax.fori_loop(0, full_steps, partial(step, masked=False), (acc, sums))
             acc, sums = lax.fori_loop(full_steps, my_steps, partial(step, masked=True), carry)
             # As in forward, tiles past this warpgroup's diagonal are neither consumed nor freed.
@@ -394,6 +426,7 @@ def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, 
     n_head = common.head_count(family, degree)
     decayed = family in common.DECAY_FAMILIES
     per_order = family in common.PER_ORDER_FAMILIES
+    accumulating = common.accumulates(family)
 
     def kernel(q_gmem, k_gmem, v_gmem, do_gmem, vec_gmem, *refs):
         refs = list(refs)
@@ -515,10 +548,12 @@ def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, 
                     s, dp = jnp.where(causal, s, 0.0), jnp.where(causal, dp, 0.0)
                 pair = _pair(family, s.shape, (start + j) * block_q - k0, keys_lazy, causal, transposed=True,
                              heads=heads)
-                w, ds, sums = common.dkv_terms(family, degree, s, dp, vecs, pair)
+                w, ds, sums = common.dkv_terms(family, degree, s, dp, vecs, pair,
+                                               sums=_SmemSums(key_sums_smem.at[wg]) if accumulating and n_key_sums else None)
                 if masked:
                     w, ds = jnp.where(causal, w, 0.0), jnp.where(causal, ds, 0.0)
-                key_sums = tuple(a + x for a, x in zip(key_sums, sums))
+                if not accumulating:
+                    key_sums = tuple(a + x for a, x in zip(key_sums, sums))
                 w_parts, ds_parts = common.weight_parts(w, precision), common.weight_parts(ds, precision)
 
                 def acc_dkv(refs):
@@ -535,7 +570,10 @@ def dkv(q, k, v, do, vectors, key_vectors=None, head_constants=None, *, family, 
             if per_order:
                 step = step_per_order
             zero = plgpu.layout_cast(jnp.zeros((B, dqk), jnp.float32), L)
+            if accumulating and n_key_sums:  # the per-key sums accumulate in this warpgroup's staging buffer
+                _SmemSums(key_sums_smem.at[wg]).zero(n_key_sums)
             carry = (zero, plgpu.layout_cast(jnp.zeros((B, dv), jnp.float32), L),
+                     () if accumulating else
                      tuple(plgpu.layout_cast(jnp.zeros((B,), jnp.float32), L.reduce(1)) for _ in range(n_key_sums)))
             carry = lax.fori_loop(first, first + per_wg, partial(step, masked=True), carry)
             dk_acc, dv_acc, key_sums = lax.fori_loop(first + per_wg, n_tiles, partial(step, masked=False), carry)

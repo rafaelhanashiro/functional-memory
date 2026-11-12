@@ -130,6 +130,9 @@ class TransformerLM(nnx.Module):
         if query_coefficients is not None or return_coefficients:
             if cfg.attention_kernel_basis != "polynomial":
                 raise ValueError("Coefficient override and capture apply to monomial coefficients, not a B-spline basis")
+            if cfg.attention_score_bias != "none":
+                raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
+                                 "shift every order's score")
             fixed_direct = (cfg.attention_coefficients == "fixed"
                             and cfg.attention_coefficient_conditioning == "static"
                             and cfg.attention_fixed_square_factors is None)

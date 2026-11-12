@@ -514,13 +514,19 @@ def attention_identity(config) -> dict:
         })
     elif config.model.attention_backend == "mosaic":
         from scaffolds.transformer.attention.backends.mosaic.api import default_precision
+        from scaffolds.transformer.attention.backends.mosaic.score_bias import SHIFT_OF_MODE, implementation_name
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
         gate = config.model.attention_forget_gate
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
+        score_bias = getattr(config.model, "attention_score_bias", "none")
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
+            # Score biases run their own kernels, which name themselves.
+            "attention_implementation": (implementation_name("endpoint" if endpoint and per_order else "none",
+                                                             SHIFT_OF_MODE[score_bias])
+                                         if score_bias != "none"
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
                                          if endpoint and per_order
                                          else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
                                          else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
@@ -586,10 +592,10 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
         if model.attention_forget_gate:
             identity["attention_implementation"] += "_forget_gate"
-    if (forget_gate and query_conditioned and not input_free_gate
+    if (forget_gate and query_conditioned and not input_free_gate and not gate_per_order
             and (gate_conditioning != "query" or gate_rate_activation != "softplus")):
-        # Query polynomials' endpoint variants; softmax, the exponential and the input-free gate state
-        # theirs above.
+        # Query polynomials' shared endpoint variants; softmax, the exponential, the input-free gate and
+        # per-order gates state theirs above.
         prefix = identity["attention_formula"].split("; each weight is multiplied")[0]
         if gate_conditioning == "query_key":
             gate_formula = ("exp(-(t-i) exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)) per layer/head; "
@@ -601,7 +607,49 @@ def attention_identity(config) -> dict:
     release = coefficient_release(config)
     if release is not None:
         identity.update(_release_identity(config, release, identity["attention_formula"]))
+    if getattr(config.model, "attention_score_bias", "none") != "none":
+        # A final pass over the complete formula: every other clause is already in place.
+        identity.update(_score_bias_identity(config.model, identity["attention_formula"]))
     return identity
+
+
+# Named by their arrays: the coefficient generator's formula already uses b, a and W, and v_i is a value vector.
+SCORE_BIAS_FORMULAS = {
+    "static": "beta_r(t,i) = score_bias_offset_r per layer/head/order, initially 0",
+    "query": ("beta_r(t,i) = score_bias_offset_r + score_bias_amplitude_r tanh(x_t score_bias_query_kernel_r) per "
+              "layer/head/order, score_bias_offset initially 0, score_bias_amplitude initially 1, "
+              "score_bias_query_kernel initially zero; x_t is the query token's activation after the block input "
+              "RMSNorm"),
+    "query_key": ("beta_r(t,i) = score_bias_offset_r + score_bias_amplitude_r tanh(x_t score_bias_query_kernel_r + "
+                  "x_i score_bias_key_kernel_r) per layer/head/order, score_bias_offset initially 0, "
+                  "score_bias_amplitude initially 1, score_bias_query_kernel and score_bias_key_kernel initially "
+                  "zero; x_t and x_i are the query and key tokens' activations after the block input RMSNorm"),
+}
+OUTPUT_SCALING_SUFFIXES = (", divided by the number of visible keys t",
+                           ", then per-head RMSNorm over value channels with a learned gain")
+
+
+def _score_bias_identity(model, formula: str) -> dict:
+    """Per-degree score biases: their mode, parameters and weight decay, and the formula with order
+    r >= 1 reading (s_ti + beta_r(t,i))^r, the definition placed before any output-scaling clause."""
+    from scaffolds.transformer.attention.score_bias import parameter_specs
+
+    mode, degree = model.attention_score_bias, model.attention_degree
+    if "s_ti^r" not in formula:
+        raise ValueError("Score biases shift the s_ti^r of a query polynomial formula, which this one lacks")
+    specs = parameter_specs(hidden_size=model.hidden_size, degree=degree, mode=mode)
+    suffix = next((suffix for suffix in OUTPUT_SCALING_SUFFIXES if formula.endswith(suffix)), "")
+    body = formula[:len(formula) - len(suffix)].replace("s_ti^r", "(s_ti + beta_r(t,i))^r")
+    definition = (f"; order r = 1..{degree} reads its own biased score and order 0 is unshifted (beta_0 = 0): "
+                  f"{SCORE_BIAS_FORMULAS[mode]}; the shifted powers are evaluated directly, never expanded into "
+                  "unshifted powers, and a positive biased score does not imply a positive weight, since the "
+                  "coefficients are signed")
+    return {
+        "attention_score_bias": mode,
+        "score_bias_parameter_count": sum(len(spec.initial) for spec in specs) * model.num_layers * model.num_heads,
+        "score_bias_weight_decay": {spec.name: spec.weight_decay for spec in specs},
+        "attention_formula": body + definition + suffix,
+    }
 
 
 def _release_identity(config, release, formula: str) -> dict:
@@ -980,6 +1028,93 @@ def coefficient_gate_report(params, raw_layers, gate: str = "sigmoid") -> dict:
     }
 
 
+def score_bias_report(params, raw_layers, config) -> dict:
+    """Per-degree score biases on the pinned diagnostic sample: their parameters, the shifts beta_r, the
+    biased scores z_r = s + beta_r with their histogram, the order terms T_r = c_r G_r z_r^r, and cancellation
+    across orders. The blocked reference of the same kernel measures them, forward only. Arrays are
+    [layers, heads, order] for r = 1..m (order terms: r = 0..m), histograms [layers, order, bin] pooled over
+    heads, and cancellation [layers, heads], at FP32 precision. Measurements only: nonfinite parameters
+    are the only issue. A positive z_r does not imply a positive weight, since the coefficients are signed."""
+    from scaffolds.transformer.attention.score_bias import (
+        AMPLITUDE, HISTOGRAM_EDGES, KEY_KERNEL, NEAR_ZERO, OFFSET, QUERY_KERNEL, parameter_names,
+    )
+
+    mode, degree = config.model.attention_score_bias, config.model.attention_degree
+    arrays = {name: np.asarray(jax.device_get(params[name][...]), dtype=np.float32) for name in parameter_names(mode)}
+    stack = lambda name: np.stack([np.asarray(layer[f"score_bias_{name}"], np.float64) for layer in raw_layers])
+    serial = _float32_serializable
+    pairs = stack("pair_count")[:, None, None]  # every head and order of a layer measures the same pairs
+
+    def moments(prefix, count):
+        mean = stack(f"{prefix}_sum") / count
+        spread = np.sqrt(np.maximum(stack(f"{prefix}_sumsq") / count - mean ** 2, 0.0))
+        return {"mean": serial(mean), "std": serial(spread), "min": serial(stack(f"{prefix}_min")),
+                "max": serial(stack(f"{prefix}_max"))}
+
+    parameters = {"offset_b": serial(arrays[OFFSET])}
+    if AMPLITUDE in arrays:
+        parameters["amplitude_a"] = serial(arrays[AMPLITUDE])
+    for name, label in ((QUERY_KERNEL, "query_kernel_l2"), (KEY_KERNEL, "key_kernel_l2")):
+        if name in arrays:
+            parameters[label] = serial(np.linalg.norm(arrays[name].astype(np.float64), axis=-1))
+    if mode == "static":
+        beta = {"domain": "parameters: beta_r = b_r (parameters.offset_b)"}
+    elif mode == "query":
+        beta = {"domain": "tokens", **moments("beta", stack("beta_count")[:, None, None])}
+    else:
+        beta = {"domain": "causal_pairs", **moments("beta", pairs)}
+    with np.errstate(divide="ignore", invalid="ignore"):
+        cancellation = {
+            "axes": ["layer", "head"],
+            "pair_formula": "sum_r |T_r| / |sum_r T_r| over causal pairs whose kernel sum_r T_r is nonzero",
+            "pair_mean": serial(stack("pair_cancellation_sum") / stack("pair_cancellation_count")),
+            "pair_max": serial(stack("pair_cancellation_max")),
+            "pair_zero_kernel_count": stack("pair_zero_kernel_count").astype(np.int64).tolist(),
+            "value_formula": ("sum_r ||o_r|| / ||sum_r o_r||, o_r = sum_(i<=t) T_r(t,i) v_i, over rows whose "
+                              "output is nonzero"),
+            "value_mean": serial(stack("value_cancellation_sum") / stack("value_cancellation_count")),
+            "value_max": serial(stack("value_cancellation_max")),
+            "value_zero_output_count": stack("value_zero_output_count").astype(np.int64).tolist(),
+        }
+    return {
+        "mode": mode,
+        "sample": "fixed_diagnostic_sample",
+        "axes": ["layer", "head", "order"],
+        "orders": list(range(1, degree + 1)),
+        "note": ("z_r = s_ti + beta_r(t,i) > 0 does not imply a positive weight: the coefficients c_r are signed; "
+                 "measured by the blocked reference of the same kernel, forward only"),
+        "parameters": parameters,
+        "beta": beta,
+        "shifted_score": {
+            "domain": "causal_pairs",
+            "causal_pair_count": int(stack("pair_count")[0]),
+            **moments("z", pairs),
+            "negative_fraction": serial(stack("z_negative_count") / pairs),
+            "near_zero_fraction": serial(stack("z_near_zero_count") / pairs),
+            "near_zero_threshold": NEAR_ZERO,
+        },
+        "shifted_score_histogram": {
+            "axes": ["layer", "order", "bin"],
+            "pooled_over": "heads",
+            "edges": list(HISTOGRAM_EDGES),
+            "bins": (f"underflow (z < {HISTOGRAM_EDGES[0]}), [e, e + 1) for each edge e < {HISTOGRAM_EDGES[-1]}, "
+                     f"overflow (z >= {HISTOGRAM_EDGES[-1]})"),
+            "counts": stack("z_histogram").astype(np.int64).tolist(),
+        },
+        "order_terms": {
+            "axes": ["layer", "head", "order"],
+            "orders": list(range(degree + 1)),
+            "formula": ("T_r = c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r, T_0 = c_0(x_t) G_0(t,i), over causal "
+                        "pairs; row_share is the mean over rows of each order's share of sum_r sum_i |T_r|"),
+            "abs_mean": serial(stack("term_abs_sum") / pairs),
+            "rms": serial(np.sqrt(stack("term_sumsq") / pairs)),
+            "row_share": serial(stack("term_row_share_sum") / np.maximum(stack("term_row_count"), 1)[..., None]),
+        },
+        "cancellation": cancellation,
+        "finite": bool(all(np.isfinite(array).all() for array in arrays.values())),
+    }
+
+
 def spline_pieces(knots) -> list[str]:
     """The score ranges each B-spline piece evaluates; the end pieces include the continuation."""
     edges = ["-inf", *(f"{knot:g}" for knot in knots[1:-1]), "inf"]
@@ -1282,7 +1417,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         layer = {"layer": index}
         for name, value in raw.items():
             if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
-                                "coefficient_gate_", "spline_")):
+                                "coefficient_gate_", "spline_", "score_bias_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -1347,6 +1482,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 params, raw_layers, gate=config.model.attention_coefficient_gate)
             if not coefficient_report["coefficient_gates"]["finite"]:
                 issues.append("Nonfinite coefficient gate parameters or gates")
+        if getattr(config.model, "attention_score_bias", "none") != "none":
+            coefficient_report["score_biases"] = score_bias_report(params, raw_layers, config)
+            if not coefficient_report["score_biases"]["finite"]:
+                issues.append("Nonfinite score-bias parameters")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
@@ -1441,7 +1580,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     elif has_fixed_square_factors(config.model):
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):
-        report["kernel_values"] = "unshifted_query_polynomial"
+        # "shifted" names row-max shifting; the score biases have their own label.
+        report["kernel_values"] = ("query_polynomial_with_per_degree_score_biases"
+                                   if getattr(config.model, "attention_score_bias", "none") != "none"
+                                   else "unshifted_query_polynomial")
     if spline:
         report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"
                                    else "unshifted_spline")

@@ -71,15 +71,20 @@ whole sweep before any jobs can run or requeue.
   use IDs; labels are only a convenience for interactive lookup.
 - `update_record(run, changes)` atomically deep-merges execution facts while
   rejecting changes to run identity or the recipe descriptor. Lists are replaced.
-- `capture_artifacts(run, checkpoint_directory=None, include_log=False)` hashes
-  available outputs and returns provenance updates. Pass the selected checkpoint's
-  step directory after pruning. Launchers capture the final log after the worker
+- `capture_artifacts(run, checkpoint_directory=None, include_log=False,
+  diagnostic_checkpoints=None)` hashes available outputs and returns provenance updates.
+  Pass the selected checkpoint's step directory after pruning. `diagnostic_checkpoints`
+  lists other retained checkpoint directories, each a mapping with its `path`, a nonempty
+  `justification`, and optional descriptive fields; they become `diagnostic_checkpoints`
+  directory descriptors (an empty list records that none are kept, and `None` leaves the
+  record's entry unchanged). Launchers capture the final log after the worker
   exits through `python -m scaffolds.launch.finalize --run <run> --exit-code <code>`.
 - `validate_record(run, verify_hashes=True, checkpoint_hashes=True)` checks identity,
-  recipe integrity, and available artifact hashes. With `checkpoint_hashes=False`,
-  checkpoint trees are compared by file names and sizes and listed as `size_checked`.
-  Missing external artifacts are reported as unavailable; missing or modified input
-  recipes are errors.
+  recipe integrity, and available artifact hashes, and requires every
+  `diagnostic_checkpoints` entry to be a directory descriptor with a justification.
+  With `checkpoint_hashes=False`, checkpoint trees are compared by file names and sizes
+  and listed as `size_checked`. Missing external artifacts are reported as unavailable;
+  missing or modified input recipes are errors.
 - `regenerate_index(study)` derives a deterministic CSV from recipes, records, and
   raw metrics, including attention family, coefficient conditioning, home cluster,
   and training budget. Coefficient conditioning distinguishes static learned

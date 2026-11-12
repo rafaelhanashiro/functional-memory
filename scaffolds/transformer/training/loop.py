@@ -62,6 +62,7 @@ from scaffolds.transformer.training.metrics import (
     write_json_atomic,
 )
 from scaffolds.transformer.training.coefficient_release import coefficient_release, mask_frozen_gradients
+from scaffolds.transformer.training.gradient_events import GradientEventCapture, device_copy, recorded_captures
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
 from scaffolds.transformer.training.numerics import checked_update_loss, requires_update_checks, update_numerics
 from scaffolds.transformer.training.randomness import model_forward_rngs
@@ -548,10 +549,17 @@ def _update_run_record(config: Config, metadata: dict) -> None:
     if status in {"complete", "failed", "numerical_failure"}:
         selected_step = metadata.get("retained_best_checkpoint_step")
         selected = checkpoint_directory(config) / str(selected_step) if selected_step is not None else None
-        artifacts = capture_artifacts(workdir, checkpoint_directory=selected)
+        # Kept gradient-event captures are diagnostic checkpoints of a completed run or a
+        # numerical failure; other failures end an execution that a requeue usually resumes.
+        captures = recorded_captures(config) if status != "failed" else None
+        artifacts = capture_artifacts(workdir, checkpoint_directory=selected, diagnostic_checkpoints=captures)
         if "selected_checkpoint" in artifacts:
             artifacts["selected_checkpoint"]["step"] = selected_step
         changes.update(artifacts)
+    if config.train.gradient_event_capture and status not in {"complete", "numerical_failure"}:
+        # Only an outcome that retains the kept captures lists them. Training again supersedes
+        # that outcome and changes the captures, so until it reaches its own a run lists none.
+        changes["diagnostic_checkpoints"] = []
     update_record(workdir, changes)
 
 
@@ -820,6 +828,16 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         telemetry_window = telemetry.TelemetryWindow()
         telemetry_values = previous_telemetry = None
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
+        # Event-triggered capture of pre-update states (training/gradient_events.py); its
+        # norm history and kept captures resume with the checkpoint.
+        events = (GradientEventCapture.resume(config, layout, restored_step, attempt_id=attempt_id,
+                                              device_kind=devices[0].device_kind)
+                  if config.train.gradient_event_capture else None)
+
+        def consumed_batches():
+            # The update's batches as the checkpoint audit hashes them.
+            return batches if data_parallel is not None or layout.grad_accum_steps > 1 else batch[None]
+
         if profile_timing:
             jax.block_until_ready(state)
             timing["setup_seconds"] = time.perf_counter() - runtime_start
@@ -858,6 +876,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             }
             timing["evaluation_seconds"].append(time.perf_counter() - baseline_start)
             checkpoint_start = time.perf_counter() if profile_timing else None
+            if events is not None:
+                events.before_checkpoint(start_step, manager)
             metrics_store.stage(record)
             if not save_checkpoint(manager, start_step, state, metrics={
                 "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
@@ -865,6 +885,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             }):
                 raise RuntimeError("Failed to save continuation baseline")
             manager.wait_until_finished()
+            if events is not None:
+                events.checkpoint_durable(start_step)
             if profile_timing:
                 timing["checkpoint_seconds"].append(time.perf_counter() - checkpoint_start)
             best_nll = eval_loss
@@ -881,6 +903,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 tracking.log_coefficient_release(wandb_run, step, release.trainable_orders(step - 1))
             train_step_start = time.perf_counter()
             step_rng = jax.random.fold_in(rng, step)
+            # The exact state this update starts from, held until its gradient norm is known.
+            # One-device steps keep their input intact, so this costs no device memory; the
+            # data-parallel step donates its input, so a capture holds a device copy.
+            pre_update = (None if events is None else state if data_parallel is None
+                          else device_copy(state))
             if data_parallel is not None:
                 batches = np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)])
                 if audit is not None and step == start_step + 1:
@@ -923,6 +950,14 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 telemetry_values = dict(zip(telemetry_keys,
                                             np.asarray(jax.device_get(telemetry_vector)).tolist(), strict=True))
             if not math.isfinite(loss_value):
+                if events is not None:
+                    events.capture_failure(
+                        step, pre_update, loss=loss_value,
+                        update_numerics=numerical_metrics[0] if numerical_metrics else None,
+                        learning_rate=float(schedule(step - 1)),
+                        audit=lambda: _update_audit(step, consumed_batches(), step_rng),
+                        telemetry=telemetry_values, preceding_telemetry=previous_telemetry)
+                    pre_update = None
                 _fail_numerics(config, state, step,
                                f"Nonfinite training loss or optimizer update at step {step}: {loss_value}",
                                diagnostic_sample, diagnostic_provenance, loss=loss_value,
@@ -947,6 +982,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                           f"running_median={spike['running_median']:.6f}"
                           + "".join(f" {key}={value:.6g}" for key, value in telemetry.log_summary(telemetry_values).items()),
                           flush=True)
+            if events is not None:
+                decision = events.observe(step, gradient_norm)
+                if decision is not None:
+                    events.capture(decision, pre_update, loss=loss_value, update_numerics=numerical_metrics[0],
+                                   clip_scale=clip_scale, learning_rate=float(schedule(step - 1)),
+                                   audit=lambda: _update_audit(step, consumed_batches(), step_rng),
+                                   telemetry=telemetry_values, preceding_telemetry=previous_telemetry)
+                # Release the pre-update state before validation or the next update allocates.
+                pre_update = None
             if (is_log or is_eval) and penalty_sum is not None:
                 # The penalty term as added to the loss, at the updated parameters; the
                 # recorded training NLL and perplexities exclude it.
@@ -1025,6 +1069,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     "wandb_run_id": wandb_run_id, "is_best": is_best,
                 }
                 checkpoint_start = time.perf_counter()
+                if events is not None:
+                    events.before_checkpoint(step, manager)
                 metrics_store.stage(record)
                 if not save_checkpoint(manager, step, state, metrics={
                     "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
@@ -1033,6 +1079,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     raise RuntimeError(f"Failed to save validation checkpoint at step {step}")
                 manager.wait_until_finished()
                 timing["checkpoint_seconds"].append(time.perf_counter() - checkpoint_start)
+                if events is not None:
+                    events.checkpoint_durable(step)
                 if is_best:
                     best_nll = eval_loss
                     write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
@@ -1048,6 +1096,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 gradient_norms = []
                 telemetry_window.reset()
             elif is_checkpoint:
+                if events is not None:
+                    events.before_checkpoint(step, manager)
                 if not save_checkpoint(manager, step, state, metrics=None):
                     raise RuntimeError(f"Failed to save resume checkpoint at step {step}")
             if is_checkpoint:
@@ -1055,6 +1105,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         manager.wait_until_finished()
         timing["runtime_seconds"] = time.perf_counter() - runtime_start
         final_step = int(state.step)
+        if events is not None:
+            events.checkpoint_durable(final_step)
         result = {
             "latest_checkpoint_before": latest_before, "restored": restored_step is not None,
             "restored_step": restored_step, "start_step": start_step, "end_step": end_step,

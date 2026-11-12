@@ -1,0 +1,99 @@
+question: Do per-degree signed score biases, (s_ti + beta_r)^r for orders r = 1..8,
+  improve the degree-eight tanh query polynomial with RoPE and coefficient-W decay
+  at the 12-layer width-640 shape?
+study: transformer_pp
+settings:
+  metric: held-out validation perplexity
+  report:
+  - validation-best
+  - terminal at the last update
+  shape:
+    layers: 12
+    width: 640
+    heads: 10
+    training_steps: 7551
+    warmup_steps: 454
+    global_batch_size: 128
+  training_context: 2048
+  seed: 42
+  degree: 8
+  kernel: W(t,i) = c_0(x_t) + sum_(r=1..8) c_r(x_t) (s_ti + beta_r(t,i))^r
+  score_bias_modes:
+    static: beta_r = b_r
+    query: beta_r = b_r + a_r tanh(u_r x_t)
+  initialization: b = 0, a = 1, u = 0 (zero shift); u decays, b and a do not
+  allowed_differences:
+  - model.attention_score_bias
+  - train.gradient_event_capture and its policy fields (defaults)
+  backend: trials on the H100 Mosaic score-bias kernels (row shift); the control on
+    the B300 Mosaic query-polynomial kernels; diagnostics on the forward-only blocked
+    scan
+  decision: a trial clears the bar only if its validation-best perplexity beats the
+    control's 17.592 by clearly more than seed noise, taken as about 0.25% (below
+    about 17.548)
+  comparison_groups:
+    trial_rope_w_decay_l12_d640:
+    - control_query_m8_rope_w_decay_l12_d640
+    - trial_query_m8_rope_w_decay_l12_d640_static_biases
+    - trial_query_m8_rope_w_decay_l12_d640_query_biases
+runs:
+- study: transformer_pp
+  run_id: r95a5691d293f
+  role: control_query_m8_rope_w_decay_l12_d640
+  label: query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r95a5691d293f/config.yaml
+      sha256: e27c5364bfb1a47c6fde45598a3c31da8ad6c8c4402d29b873d76b0a7571f458
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metrics.jsonl
+      sha256: c64c39221cf9a9cc2028c74aadf41b0e9b7826c42701f1fc02e1db0b2793a0fd
+    completion.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/completion.json
+      sha256: c0a10c85d9d102f048783a25b4c83e0c178e50292d41c5a07f1b2fb69a85ffce
+    metadata.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/metadata.json
+      sha256: 09b2dce817e820a82400816bc1cbe3bed0087bc71bae748078d8e06f8def1a3b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r95a5691d293f/best_validation.json
+      sha256: 41a966c09777b5656698fd8a2c63e764a7387b1d2a9e8f6918d1bb158efcd969
+- study: transformer_pp
+  run_id: rb4e5457ef2a0
+  role: trial_query_m8_rope_w_decay_l12_d640_static_biases
+  label: static score biases, query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/config.yaml
+      sha256: a254146d2cf38ae6c06a0d82ba0568e84b403cc791eeae6dc30448eacc92b6a7
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/metrics.jsonl
+      sha256: e2390c796061629244bef489d4de224c173422a7b5a3a14d46edffcc543234cf
+    completion.json:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/completion.json
+      sha256: 444d95f97c63e7f3f2844efd8bc9d336e4e133ae545120aa7704ea664cd43e81
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/metadata.json
+      sha256: a2fa25cc878e5a462a6aeec9ef1ce545903c21a4b68fbe31f709ec504d0f6e90
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/best_validation.json
+      sha256: c3a01e7715d59c0fcb91a7ebd37c483c6eb0317483a38e0b53071109b15e83d2
+- study: transformer_pp
+  run_id: r8dc6e147601c
+  role: trial_query_m8_rope_w_decay_l12_d640_query_biases
+  label: query score biases, query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/config.yaml
+      sha256: edb4c519a19dc42bd3d3f9388583d68f52c3f492a6bfd656d005ab9cf0f80ec9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/metrics.jsonl
+      sha256: b9cd3e5ed2e547cb558b40c33a114cea830bf90681d6a661cc5870f93d844439
+    completion.json:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/completion.json
+      sha256: e35f6f0a68216c09116d1f5346ae606a70352af8cee2b8a54aa675e83ba868db
+    metadata.json:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/metadata.json
+      sha256: 321a657d360b1ff8d72e0d6c9a80cecc68afff63c13b1d7623cda9a66f670678
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r8dc6e147601c/best_validation.json
+      sha256: fc2e08054383764d4be9d00ee127964c7c3e0271d5fd57deeee74778ece9233e

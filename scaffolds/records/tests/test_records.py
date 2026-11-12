@@ -323,6 +323,22 @@ def test_index_distinguishes_gdn_erase_modes_without_inventing_legacy_settings(t
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_exposes_score_biases_and_none_for_model_recipes_that_predate_them(tmp_path):
+    study = tmp_path / "study"
+    runs = {"legacy": create_run(study, {"model": {"attention_degree": 8}}),
+            **{mode: create_run(study, {"model": {"attention_degree": 8, "attention_score_bias": mode}})
+               for mode in ("none", "static", "query", "query_key")},
+            "pretrained": create_run(study, {"model": "organization/model", "condition": "random"}),
+            "analysis": create_run(study, {"experiment_kind": "per_position_evaluation"})}
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert {name: rows[run.name]["attention_score_bias"] for name, run in runs.items()} == {
+        "legacy": "none", "none": "none", "static": "static", "query": "query", "query_key": "query_key",
+        "pretrained": "", "analysis": ""}
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
     run = create_run(tmp_path / "study", recipe(), "label")
     update_record(run, {"execution": {"hardware": "H100", "acceptance": {"passed": 10}}})

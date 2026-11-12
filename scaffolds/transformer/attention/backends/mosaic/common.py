@@ -163,11 +163,44 @@ def polynomial_and_derivative(s, coefficients):
 # evaluate one order's decay at a time; their dQ sums are dc_r = sum_i G D_r s^r, then per order
 # sum_i G W_r (t-i) (query) or sum_i G W_r (t-i) sigmoid(x_r) and sum_i G W_r (t-i) log2(1 + e^x_r)
 # (endpoint), with W_r = c_r s^r D_r; the endpoint dK pass sums G W_r (t-i) sigmoid(x_r) per order.
+#   score_bias_*: per-degree score biases, sum_r c_r G_r z_r^r with z_r = s + beta_r for r >= 1 and
+#                 order 0 unshifted, G_r = 1 (score_bias_row, score_bias_pair) or the per-order endpoint
+#                 gate D_r (score_bias_endpoint_*, laid out as per_order_endpoint_decay). Each order's
+#                 powers z^(r-1) and z^r are formed by repeated multiplication inside the tile: never
+#                 expanded into powers of s, never divided by z. A row shift (*_row) takes
+#                 beta_1(t)..beta_m(t) as the next m vectors. A pair shift (*_pair) takes p_1..p_m as
+#                 the next m vectors, q_1..q_m as the next m key vectors, and b_1..b_m, a_1..a_m as the
+#                 next 2m head scalars: beta_r = b_r + a_r tanh(p_r(t) + q_r(i)), tanh built from exp2.
+#                 With g = G dbeta_r = G c_r G_r r z_r^(r-1), the dQ sums are dc_r = sum_i G G_r z_r^r,
+#                 the gate's two kinds with W_r = c_r G_r z_r^r, then per order r >= 1 sum_i dbeta_r
+#                 (row) or sum_i dbeta_r (1 - tau_r^2), sum_i dbeta_r tau_r, sum_i dbeta_r (pair); the dK
+#                 pass sums the gate's kind, then sum_t dbeta_r (1 - tau_r^2) per order (pair). Every
+#                 summand of a tile crossing the diagonal is selected with the causal mask first.
 TAYLOR, QUERY = "taylor", "query"
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
-PER_ORDER_FAMILIES = (PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY)
-DECAY_FAMILIES = (QUERY_DECAY, ENDPOINT_DECAY, *PER_ORDER_FAMILIES)
+SCORE_BIAS_ROW, SCORE_BIAS_PAIR = "score_bias_row", "score_bias_pair"
+SCORE_BIAS_ENDPOINT_ROW, SCORE_BIAS_ENDPOINT_PAIR = "score_bias_endpoint_row", "score_bias_endpoint_pair"
+GATED_SCORE_BIAS_FAMILIES = (SCORE_BIAS_ENDPOINT_ROW, SCORE_BIAS_ENDPOINT_PAIR)
+PAIR_SHIFT_FAMILIES = (SCORE_BIAS_PAIR, SCORE_BIAS_ENDPOINT_PAIR)
+SCORE_BIAS_FAMILIES = (SCORE_BIAS_ROW, SCORE_BIAS_PAIR, *GATED_SCORE_BIAS_FAMILIES)
+PER_ORDER_FAMILIES = (PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY, *SCORE_BIAS_FAMILIES)
+DECAY_FAMILIES = (QUERY_DECAY, ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY,
+                  *GATED_SCORE_BIAS_FAMILIES)
+
+
+def has_pair(family):
+    """Whether a family's tiles see a ``Pair``: decay families (distance and gate operands) and
+    score-bias families (the causal mask, and a pair shift's key vectors and head scalars)."""
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES
+
+
+def accumulates(family):
+    """Whether a family's dQ and dK terms add every order's sums to the kernel's running sums
+    themselves (score-bias families), through ``sums.add(index, x)``: x is a row vector of the
+    tile and ``index`` the sum's position, static or traced. The kernels keep these sums in shared
+    memory, so a rolled order loop neither carries nor routes them through registers."""
+    return family in SCORE_BIAS_FAMILIES
 
 
 class Pair(NamedTuple):
@@ -219,6 +252,10 @@ def vector_counts(family, degree):
     """(forward vectors, backward vectors, dQ row sums) for a family."""
     if family == TAYLOR:
         return 0, 2, 0
+    if family in SCORE_BIAS_FAMILIES:
+        orders, gated = degree + 1, family in GATED_SCORE_BIAS_FAMILIES
+        vectors = (2 if gated else 1) * orders + degree
+        return vectors, vectors, (3 if gated else 1) * orders + (3 if family in PAIR_SHIFT_FAMILIES else 1) * degree
     if family in PER_ORDER_FAMILIES:
         orders = degree + 1
         return 2 * orders, 2 * orders, (3 if family == PER_ORDER_ENDPOINT_DECAY else 2) * orders
@@ -228,19 +265,27 @@ def vector_counts(family, degree):
 
 def approx_math(family):
     """Whether a family's kernels use the GPU's approximate exp2/log2 (ex2/lg2.approx: about
-    2^-22 relative and absolute error). Only decay families evaluate transcendentals."""
-    return family in DECAY_FAMILIES
+    2^-22 relative and absolute error). Only decay families and pair shifts (tanh from exp2)
+    evaluate transcendentals; a row shift evaluates none, so the flag does not change it."""
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES
 
 
 def key_counts(family, degree):
     """(per-key vectors, per-key dK-pass sums) for a family."""
+    if family in SCORE_BIAS_FAMILIES:
+        count = (degree + 1 if family in GATED_SCORE_BIAS_FAMILIES else 0) + (
+            degree if family in PAIR_SHIFT_FAMILIES else 0)
+        return count, count
     if family == PER_ORDER_ENDPOINT_DECAY:
         return degree + 1, degree + 1
     return (1, 1) if family == ENDPOINT_DECAY else (0, 0)
 
 
 def head_count(family, degree):
-    """Per-head FP32 scalars of a family (per-order endpoint rates a_r)."""
+    """Per-head FP32 scalars of a family (per-order endpoint rates a_r; a pair shift's b_r, a_r)."""
+    if family in SCORE_BIAS_FAMILIES:
+        return (degree + 1 if family in GATED_SCORE_BIAS_FAMILIES else 0) + (
+            2 * degree if family in PAIR_SHIFT_FAMILIES else 0)
     return degree + 1 if family == PER_ORDER_ENDPOINT_DECAY else 0
 
 
@@ -366,8 +411,158 @@ def _per_order_backward(family, degree, s, dp, vectors, pair, *, rows, weights=F
     return dp * derivative, value, [x for kind in accumulators for x in kind]
 
 
+def _shift_operands(family, degree):
+    """Indices of order 1's shift operands in a score-bias family's (vectors, key vectors, head
+    scalars): they follow the coefficients and, for gated families, the endpoint gate's inputs."""
+    orders = degree + 1
+    gated = family in GATED_SCORE_BIAS_FAMILIES
+    return (2 if gated else 1) * orders, orders if gated else 0, orders if gated else 0
+
+
+def _order_shift(family, degree, vectors, pair, order, *, slopes=False):
+    """(beta_r, tau_r, 1 - tau_r^2) of order r >= 1 in a score-bias tile (tau terms None for a row
+    shift; 1 - tau^2 only with ``slopes``). tau = sign(h) (1 - e) / (1 + e) with e = 2^(-2 log2(e) |h|),
+    h = p_r(t) + q_r(i), and 1 - tau^2 = 4 e / (1 + e)^2 are stable for every h: tau is exactly zero
+    at h = 0 and +-1 once e underflows, and NaN for a NaN input. On masked entries every term is
+    zero, so z = s = 0 there and a future token's shift input never reaches a sum."""
+    vector, key, head = _shift_operands(family, degree)
+    tau = sech2 = None
+    if family in PAIR_SHIFT_FAMILIES:
+        h = vectors[vector + order - 1] + pair.keys[key + order - 1]
+        e = jnp.exp2(jnp.abs(h) * (-2.0 * LOG2E))
+        inverse = 1.0 / (1.0 + e)
+        magnitude = (1.0 - e) * inverse
+        tau = jnp.where(h < 0.0, -magnitude, magnitude)
+        beta = pair.heads[head + order - 1] + pair.heads[head + degree + order - 1] * tau
+        if slopes:
+            sech2 = 4.0 * e * (inverse * inverse)
+    else:
+        beta = vectors[vector + order - 1]
+    if pair.causal is not None:
+        beta = jnp.where(pair.causal, beta, 0.0)
+        if tau is not None:
+            tau = jnp.where(pair.causal, tau, 0.0)
+        if sech2 is not None:
+            sech2 = jnp.where(pair.causal, sech2, 0.0)
+    return beta, tau, sech2
+
+
+def _order_terms(family, degree, vectors, pair, order, *, slopes=False):
+    """(c_r G_r, ``Decay`` or None) of one order in a score-bias tile; c_r G_r is zero on masked
+    entries, where a transposed tile's earlier query may hold any coefficient."""
+    gate = None
+    weight = vectors[order]
+    if family in GATED_SCORE_BIAS_FAMILIES:  # the per-order endpoint gate, laid out as that family's
+        gate = _order_decay(PER_ORDER_ENDPOINT_DECAY, degree, vectors, pair, order, slopes=slopes)
+        weight = weight * gate.factor
+    if pair.causal is not None:
+        weight = jnp.where(pair.causal, weight, 0.0)
+    return weight, gate
+
+
+def _shifted_powers(s, beta, order):
+    """(z^(r-1), z^r) of z = s + beta for a rolled order r >= 2: r - 1 multiplications."""
+    z = s + beta
+    previous = lax.fori_loop(0, order - 2, lambda _, power: power * z, z)
+    return previous, previous * z
+
+
+def _score_bias_weights(family, degree, s, vectors, pair):
+    """W = c_0 G_0 + sum_{r >= 1} c_r G_r (s + beta_r)^r, one order per iteration of a rolled loop
+    (as ``_per_order_weights``), each power formed from its own base."""
+    def term(order):
+        return _order_terms(family, degree, vectors, pair, order)[0]
+
+    def body(order, w):
+        beta, _, _ = _order_shift(family, degree, vectors, pair, order)
+        power = _shifted_powers(s, beta, order)[1]  # before the gate: its tiles need not outlive the powers
+        return w + term(order) * power
+
+    beta, _, _ = _order_shift(family, degree, vectors, pair, 1)
+    return lax.fori_loop(2, degree + 1, body, term(0) + term(1) * (s + beta))
+
+
+def _score_bias_backward(family, degree, s, dp, vectors, pair, sums, *, rows, weights=False):
+    """(dS, W or None) of a score-bias tile in one ascending pass over the orders: dS = G
+    sum_r r c_r G_r z_r^(r-1), whose order-r term is dbeta_r = G r c_r G_r z_r^(r-1), and W. Each
+    order's dQ (``rows``) or dK sums (see above) are added to the kernel's running sums as they
+    are formed (``accumulates``). Orders 0 and 1 are evaluated explicitly; later orders form a
+    rolled loop (as ``_per_order_backward``) that carries only dS's factor and W."""
+    gated = family in GATED_SCORE_BIAS_FAMILIES
+    paired = family in PAIR_SHIFT_FAMILIES
+    orders = degree + 1
+    # Index of order 0 in each kind of sums (shift kinds start at order 1).
+    if rows:
+        gate_bases = (orders, 2 * orders) if gated else ()
+        start = (3 if gated else 1) * orders - 1
+        shift_bases = tuple(start + j * degree for j in range(3 if paired else 1))
+    else:
+        gate_bases = (0,) if gated else ()
+        shift_bases = (orders - 1,) if paired and gated else (-1,) if paired else ()
+
+    def evaluate(order, previous, power, beta_terms):
+        """Order r's weight c_r G_r, derivative term r c_r G_r z^(r-1) (None for r = 0), and
+        its (index of order 0 in a kind, sum) pairs, given z^(r-1) (None: one) and z^r."""
+        weight, gate = _order_terms(family, degree, vectors, pair, order, slopes=gated)
+        static = isinstance(order, int)
+        term = None
+        if not (static and order == 0):
+            term = weight if previous is None else weight * previous
+            if not static:
+                term = term * order.astype(jnp.float32)
+            elif order > 1:
+                term = term * float(order)
+        contributions = []
+        if rows:
+            gds = dp if gate is None else dp * gate.factor
+            if power is not None:
+                gds = gds * power
+            contributions.append((0, gds.sum(axis=1)))  # dc_r
+        if gated:
+            gwd = dp * weight * pair.distance if power is None else dp * power * weight * pair.distance
+            contributions.append((gate_bases[0], (gwd * gate.sigmoid).sum(axis=1)))
+            if rows:
+                contributions.append((gate_bases[1], (gwd * gate.log2_softplus).sum(axis=1)))
+        if term is not None and shift_bases:
+            _, tau, sech2 = beta_terms
+            dbeta = dp * term
+            if paired:
+                contributions.append((shift_bases[0], (dbeta * sech2).sum(axis=1)))
+                if rows:
+                    contributions.append((shift_bases[1], (dbeta * tau).sum(axis=1)))
+                    contributions.append((shift_bases[2], dbeta.sum(axis=1)))
+            else:
+                contributions.append((shift_bases[0], dbeta.sum(axis=1)))
+        return weight, term, contributions
+
+    def add(order, contributions):
+        for base, x in contributions:
+            sums.add(base + order, x)
+
+    weight0, _, contributions = evaluate(0, None, None, None)
+    add(0, contributions)
+    terms1 = _order_shift(family, degree, vectors, pair, 1, slopes=paired)
+    z1 = s + terms1[0]
+    weight1, derivative, contributions = evaluate(1, None, z1, terms1)
+    add(1, contributions)
+    value = weight0 + weight1 * z1 if weights else None
+
+    def body(order, carry):
+        derivative, value = carry
+        terms = _order_shift(family, degree, vectors, pair, order, slopes=paired)
+        previous, power = _shifted_powers(s, terms[0], order)
+        weight, term, contributions = evaluate(order, previous, power, terms)
+        add(order, contributions)
+        return derivative + term, None if value is None else value + weight * power
+
+    derivative, value = lax.fori_loop(2, orders, body, (derivative, value))
+    return dp * derivative, value
+
+
 def forward_weights(family, degree, s, vectors, pair=None, terms=None):
     """Weights of a tile; decay families may pass the tile's ``Decay`` as ``terms``."""
+    if family in SCORE_BIAS_FAMILIES:
+        return _score_bias_weights(family, degree, s, vectors, pair)
     if family in PER_ORDER_FAMILIES:
         return _per_order_weights(family, degree, s, vectors, pair)
     if family in DECAY_FAMILIES:
@@ -400,6 +595,8 @@ def score_gradient(family, degree, s, dp, vectors):
 
 def value_weights(family, degree, s, vectors, pair=None, terms=None):
     """W for the dV product."""
+    if family in SCORE_BIAS_FAMILIES:
+        return _score_bias_weights(family, degree, s, vectors, pair)
     if family in PER_ORDER_FAMILIES:
         return _per_order_weights(family, degree, s, vectors, pair)
     if family in DECAY_FAMILIES:
@@ -433,8 +630,11 @@ def _decay_gradient(family, degree, s, dp, vectors, pair, terms=None):
     return gd * slope, gwd, gd, terms
 
 
-def dq_terms(family, degree, s, dp, vectors, pair=None):
-    """(dS, dQ-kernel row sums) of a tile."""
+def dq_terms(family, degree, s, dp, vectors, pair=None, sums=None):
+    """(dS, dQ-kernel row sums) of a tile; families that ``accumulates`` add the tile's sums to the
+    running ``sums`` instead and return (dS, None)."""
+    if family in SCORE_BIAS_FAMILIES:
+        return _score_bias_backward(family, degree, s, dp, vectors, pair, sums, rows=True)[0], None
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=True)
         return ds, sums
@@ -447,9 +647,12 @@ def dq_terms(family, degree, s, dp, vectors, pair=None):
     return ds, [*sums, (gwd * terms.sigmoid).sum(axis=1), (gwd * terms.log2_softplus).sum(axis=1)]
 
 
-def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None):
+def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None, sums=None):
     """(dS, per-key sums over the tile's queries) of a transposed dK tile; ``terms`` may hold
-    the tile's ``Decay`` from ``decay(..., slopes=True)``."""
+    the tile's ``Decay`` from ``decay(..., slopes=True)``. Families that ``accumulates`` add the
+    tile's sums to the running ``sums`` instead and return (dS, None)."""
+    if family in SCORE_BIAS_FAMILIES:
+        return _score_bias_backward(family, degree, s, dp, vectors, pair, sums, rows=False)[0], None
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=False)
         return ds, sums
@@ -459,8 +662,12 @@ def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None):
     return ds, ([(gwd * terms.sigmoid).sum(axis=1)] if family == ENDPOINT_DECAY else [])
 
 
-def dkv_terms(family, degree, s, dp, vectors, pair):
+def dkv_terms(family, degree, s, dp, vectors, pair, sums=None):
     """(W, dS, per-key sums) of a per-order family's transposed tile in one pass, for kernels that
-    form dV and dK together after S and dP."""
+    form dV and dK together after S and dP; families that ``accumulates`` add the tile's sums to
+    the running ``sums`` instead and return (W, dS, None)."""
+    if family in SCORE_BIAS_FAMILIES:
+        ds, w = _score_bias_backward(family, degree, s, dp, vectors, pair, sums, rows=False, weights=True)
+        return w, ds, None
     ds, w, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=False, weights=True)
     return w, ds, sums

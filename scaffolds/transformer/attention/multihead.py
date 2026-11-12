@@ -79,6 +79,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_blocked_implementation=getattr(config, "attention_blocked_implementation", "scan"),
         attention_kernel_basis=getattr(config, "attention_kernel_basis", "polynomial"),
         attention_spline_knots=getattr(config, "attention_spline_knots", None),
+        attention_score_bias=getattr(config, "attention_score_bias", "none"),
         rngs=rngs,
     )
 
@@ -123,6 +124,7 @@ class MultiHeadAttention(nnx.Module):
         attention_forget_gate_constant_rate: str = "learned",
         attention_kernel_basis: str = "polynomial",
         attention_spline_knots: tuple[float, ...] | None = None,
+        attention_score_bias: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -353,6 +355,31 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Spline knots apply to the bspline kernel basis only")
         self.attention_kernel_basis = attention_kernel_basis
         self.attention_spline_knots = attention_spline_knots
+        # Per-degree score biases (attention/score_bias.py) shift each order's score of diagonal tanh query
+        # coefficients; ModelConfig states the recipe-level requirements, mirrored for direct construction.
+        from scaffolds.transformer.attention.score_bias import MODES as SCORE_BIAS_MODES
+
+        if not isinstance(attention_score_bias, str) or attention_score_bias not in SCORE_BIAS_MODES:
+            raise ValueError(f"Unknown attention score bias: {attention_score_bias!r}")
+        if attention_score_bias != "none":
+            from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE
+
+            if (attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                    or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
+                    or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
+                    or attention_normalization or quadratic_mode != "fixed"
+                    or not 1 <= attention_degree <= MAX_QUERY_DEGREE
+                    or positional_encoding not in ("rope", "none") or backend not in ("blocked", "mosaic")
+                    or attention_forget_gate and not (
+                        attention_forget_gate_form == "input" and attention_forget_gate_mode == "query_distance"
+                        and attention_forget_gate_conditioning == "query_key"
+                        and attention_forget_gate_rate_activation == "softplus")):
+                raise ValueError("Per-degree score biases require diagonal tanh query coefficients of unnormalized "
+                                 f"polynomial attention of degree 1-{MAX_QUERY_DEGREE} with RoPE or no positional "
+                                 "encoding, without selected orders, coefficient gates, or a B-spline basis, on the "
+                                 "mosaic or blocked backend, and no forget gate but the per-order query-key "
+                                 "endpoint gate")
+        self.attention_score_bias = attention_score_bias
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -401,6 +428,10 @@ class MultiHeadAttention(nnx.Module):
         spline = self.attention_kernel_basis == "bspline"
         if spline and (query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture apply to monomial coefficients, not a B-spline basis")
+        if self.attention_score_bias != "none" and (
+                query_coefficients is not None or return_coefficients or key_factors is not None):
+            raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
+                             "shift every order's score")
         if query_coefficients is not None or return_coefficients:
             if (self.attention_coefficient_conditioning not in ("static", "query")
                     or self.attention_normalization or self.attention_degree is None
@@ -565,6 +596,22 @@ class MultiHeadAttention(nnx.Module):
                 parameters["query_log_decay"] = (jnp.cumsum(log_alpha, axis=1)
                                                    if self.attention_forget_gate_mode == "cumulative" else log_alpha)
             parameters["query_decay_mode"] = self.attention_forget_gate_mode
+        from scaffolds.transformer.attention.score_bias import (
+            ALL_PARAMETERS as SCORE_BIAS_PARAMETERS, attention_operands, parameter_names as score_bias_names,
+        )
+
+        score_bias = {name: parameters.pop(name, None) for name in SCORE_BIAS_PARAMETERS}
+        bias_names = score_bias_names(self.attention_score_bias)
+        if any(score_bias[name] is None for name in bias_names) or any(
+                value is not None for name, value in score_bias.items() if name not in bias_names):
+            raise ValueError("Score biases require exactly their model-owned parameters for their mode")
+        if bias_names:
+            if self.attention_forget_gate and getattr(parameters.get("query_gate_input"), "ndim", None) != 4:
+                raise ValueError("Per-degree score biases take only the per-order query-key endpoint gate")
+            # From the same FP32 activation as the coefficient generator: row shifts beta_r(t) for static
+            # and query biases, or the query-key inputs x u, x v with b and a; pairs combine in the kernel.
+            parameters.update(attention_operands(
+                self.attention_score_bias, x, {name: score_bias[name] for name in bias_names}))
         kernel_coefficient_activation = self.attention_coefficient_activation
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):

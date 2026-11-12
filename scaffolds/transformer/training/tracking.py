@@ -68,6 +68,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
             tags.append("coefficient_kernel_weight_decay")
         if getattr(config.model, "attention_coefficient_gate", "none") != "none":
             tags.append(f"coefficient_gate_{config.model.attention_coefficient_gate}")
+    if getattr(config.model, "attention_score_bias", "none") != "none":
+        tags.append(f"score_bias_{config.model.attention_score_bias}")
     if getattr(config.model, "attention_forget_gate", False):
         tags.append("forget_gate")
     if identity.get("coefficient_release_schedule"):

@@ -1,0 +1,703 @@
+{
+ "format": "score-bias-kernel-qualification",
+ "schema_version": 1,
+ "node": "mastiff",
+ "slurm_job_id": "242565",
+ "partition": "long",
+ "device": {
+  "name": "NVIDIA H100 PCIe",
+  "uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+  "pci_bus_id": "00000000:E1:00.0",
+  "max_sm_clock": "1755 MHz",
+  "power_limit": "350.00 W",
+  "driver_version": "560.35.05"
+ },
+ "source_commit": "e068dd94b66e05e2379695e7da55ee5677024c17",
+ "source_changed_paths": 0,
+ "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+ "cuda_home": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-biases/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+ "cuda_home_ptxas": "Cuda compilation tools, release 12.9, V12.9.86",
+ "node_cuda": "/usr/local/cuda -> /usr/local/cuda-12.6; its ptxas: Cuda compilation tools, release 12.6, V12.6.85",
+ "runtime": "TRANSFORMER_CUDA_ENVIRONMENT=cuda12 TRANSFORMER_HOST_STAGING=0 XLA_PYTHON_CLIENT_PREALLOCATE=false XLA_FLAGS=",
+ "compilation_cache": "empty, node-local (JAX_COMPILATION_CACHE_DIR, XDG_CACHE_HOME under TMPDIR)",
+ "runner": {
+  "directory": "scaffolds/transformer/validation/logs/score-bias-kernels (ignored)",
+  "gpu_verify.sh": "d04d2ccd13dd27a96f285b27bf641f326fa86850725bc9b1f5f7360f01616eb7",
+  "toolchain_probe.py": "6ec2e7847c0aa826262fa77b83380432a3e25b1e7a2caa7821710b381df84d20",
+  "logs": "scaffolds/transformer/validation/logs/score-bias-kernels (ignored; JUnit XML, pytest logs, info)"
+ },
+ "environment_note": "the production launcher's runtime: launchers/kennel_runtime.sh, CUDA_HOME and TRITON_PTXAS_PATH pinned to the locked toolkit as kennel.sbatch pins them, JAX_PLATFORMS=cuda,cpu for the tests as acceptance's GPU stage sets it",
+ "toolchain_probe": {
+  "pinned": {
+   "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-biases/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+   "usr_local_cuda": "/usr/local/cuda-12.6",
+   "usr_local_cuda_ptxas": "Cuda compilation tools, release 12.6, V12.6.85",
+   "cuda_home_ptxas": "Cuda compilation tools, release 12.9, V12.9.86",
+   "kernels": {
+    "per_order_endpoint_decay/dq": {
+     "ptx_isa": "8.8",
+     "target": "sm_90a",
+     "stack_bytes": 992,
+     "spill_store_bytes": 2316,
+     "spill_load_bytes": 2184,
+     "registers": 168
+    },
+    "score_bias_endpoint_pair/forward": {
+     "ptx_isa": "8.8",
+     "target": "sm_90a",
+     "stack_bytes": 72,
+     "spill_store_bytes": 104,
+     "spill_load_bytes": 96,
+     "registers": 168
+    }
+   }
+  },
+  "unpinned": {
+   "CUDA_HOME": null,
+   "usr_local_cuda": "/usr/local/cuda-12.6",
+   "usr_local_cuda_ptxas": "Cuda compilation tools, release 12.6, V12.6.85",
+   "cuda_home_ptxas": null,
+   "kernels": {
+    "per_order_endpoint_decay/dq": {
+     "ptx_isa": "8.5",
+     "target": "sm_90a",
+     "stack_bytes": 1176,
+     "spill_store_bytes": 2580,
+     "spill_load_bytes": 2412,
+     "registers": 168
+    },
+    "score_bias_endpoint_pair/forward": {
+     "ptx_isa": "8.5",
+     "target": "sm_90a",
+     "stack_bytes": 128,
+     "spill_store_bytes": 212,
+     "spill_load_bytes": 200,
+     "registers": 168
+    }
+   }
+  }
+ },
+ "tests": {
+  "command": "python -m pytest -q -p no:cacheprovider -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu --mosaic-precision bf16 <the gated runs' 11 GPU modules in acceptance's order> -rA --durations=0 --durations-min=0.5 -o junit_logging=system-out",
+  "acceptance_gpu_stage": {
+   "run2": {
+    "summary": "187 passed, 382 deselected in 809.37s (0:13:29)",
+    "passed": 187,
+    "skipped": 0,
+    "failed": 0,
+    "errors": 0,
+    "deselected": 382,
+    "pytest_seconds": 809.37,
+    "modules": {
+     "test_mosaic_query": {
+      "tests": 44,
+      "passed": 44,
+      "seconds": 149.2
+     },
+     "test_mosaic_repeatability": {
+      "tests": 3,
+      "passed": 3,
+      "seconds": 56.8
+     },
+     "test_per_order_decay": {
+      "tests": 24,
+      "passed": 24,
+      "seconds": 183.0
+     },
+     "test_mosaic_score_bias": {
+      "tests": 57,
+      "passed": 57,
+      "seconds": 173.3
+     },
+     "test_score_bias": {
+      "tests": 4,
+      "passed": 4,
+      "seconds": 2.5
+     },
+     "test_endpoint_decay": {
+      "tests": 30,
+      "passed": 30,
+      "seconds": 145.2
+     },
+     "test_input_dependent_coefficients": {
+      "tests": 5,
+      "passed": 5,
+      "seconds": 14.1
+     },
+     "test_query_tanh_polynomial": {
+      "tests": 16,
+      "passed": 16,
+      "seconds": 44.7
+     },
+     "test_coefficient_forms": {
+      "tests": 3,
+      "passed": 3,
+      "seconds": 33.6
+     },
+     "test_query_distance_decay": {
+      "tests": 1,
+      "passed": 1,
+      "seconds": 4.0
+     }
+    },
+    "junit": {
+     "file": "verify_pinned_run2.xml",
+     "sha256": "fd67fc13dc3c4247fdfbea23ea48d5bf216d4f7cfd287dee175d1b5963995936"
+    },
+    "log": {
+     "file": "verify_pinned_run2.log",
+     "sha256": "aa4ff9494234db3b684dac62a819b8a6be0fb1b1904096b2385da4f80d50b22a"
+    }
+   },
+   "fp32": {
+    "summary": "4 passed, 57 deselected in 24.22s",
+    "passed": 4,
+    "skipped": 0,
+    "failed": 0,
+    "errors": 0,
+    "deselected": 57,
+    "pytest_seconds": 24.22,
+    "modules": {
+     "test_mosaic_score_bias": {
+      "tests": 4,
+      "passed": 4,
+      "seconds": 23.5
+     }
+    },
+    "junit": {
+     "file": "verify_pinned_fp32.xml",
+     "sha256": "72713b80287bbb26fc5f243c9179c36bfa4529a4ee09b39de6a9d17f71c54083"
+    },
+    "log": {
+     "file": "verify_pinned_fp32.log",
+     "sha256": "af5f4aea764c5c7d2f80baf6102db5b0ad47ce2a0063a09ce4ec25bdccb7cdb6"
+    }
+   }
+  }
+ },
+ "float64_relative_l2": {
+  "bf16": {
+   "out": {
+    "relative_l2": 0.00241,
+    "tolerance": 0.006,
+    "ratio": 0.4016666666666666,
+    "case": "endpoint-pair T=512 m=4"
+   },
+   "dq": {
+    "relative_l2": 0.00241,
+    "tolerance": 0.025,
+    "ratio": 0.09639999999999999,
+    "case": "endpoint-row T=2048 m=8"
+   },
+   "dk": {
+    "relative_l2": 0.0024,
+    "tolerance": 0.025,
+    "ratio": 0.09599999999999999,
+    "case": "endpoint-row T=2048 m=8"
+   },
+   "dv": {
+    "relative_l2": 0.00244,
+    "tolerance": 0.015,
+    "ratio": 0.16266666666666665,
+    "case": "none-row exact zeros (0.054 of shifted scores zero, 0.474 negative)"
+   },
+   "dc": {
+    "relative_l2": 1.85e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000185,
+    "case": "endpoint-row exact zeros (0.054 of shifted scores zero, 0.475 negative)"
+   },
+   "dbeta": {
+    "relative_l2": 1.96e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000196,
+    "case": "endpoint-row T=2048 m=8 top"
+   },
+   "dp": {
+    "relative_l2": 1.78e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000178,
+    "case": "endpoint-pair T=2048 m=8 top"
+   },
+   "dqs": {
+    "relative_l2": 1.66e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000166,
+    "case": "endpoint-pair negative offsets"
+   },
+   "db": {
+    "relative_l2": 7.33e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000733,
+    "case": "endpoint-pair T=2048 m=8 top"
+   },
+   "da": {
+    "relative_l2": 3.36e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000336,
+    "case": "endpoint-pair T=512 m=4"
+   },
+   "du": {
+    "relative_l2": 4.49e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000449,
+    "case": "endpoint-row exact zeros (0.054 of shifted scores zero, 0.475 negative)"
+   },
+   "dw": {
+    "relative_l2": 3.98e-06,
+    "tolerance": 0.01,
+    "ratio": 0.00039799999999999997,
+    "case": "endpoint-row T=2048 m=8 top"
+   },
+   "dlog_rate": {
+    "relative_l2": 9.48e-06,
+    "tolerance": 0.01,
+    "ratio": 0.0009480000000000001,
+    "case": "endpoint-row exact zeros (0.054 of shifted scores zero, 0.475 negative)"
+   }
+  },
+  "bf16x3": {
+   "out": {
+    "relative_l2": 0.00166,
+    "tolerance": 0.006,
+    "ratio": 0.27666666666666667,
+    "case": "none-pair bf16x3"
+   },
+   "dq": {
+    "relative_l2": 0.00166,
+    "tolerance": 0.025,
+    "ratio": 0.0664,
+    "case": "endpoint-pair bf16x3"
+   },
+   "dk": {
+    "relative_l2": 0.00166,
+    "tolerance": 0.025,
+    "ratio": 0.0664,
+    "case": "endpoint-pair bf16x3"
+   },
+   "dv": {
+    "relative_l2": 0.00167,
+    "tolerance": 0.015,
+    "ratio": 0.11133333333333334,
+    "case": "none-pair bf16x3"
+   },
+   "dc": {
+    "relative_l2": 1.26e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000126,
+    "case": "endpoint-row bf16x3"
+   },
+   "dbeta": {
+    "relative_l2": 1.3e-06,
+    "tolerance": 0.01,
+    "ratio": 0.00013,
+    "case": "endpoint-row bf16x3"
+   },
+   "dp": {
+    "relative_l2": 1.32e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000132,
+    "case": "endpoint-pair bf16x3"
+   },
+   "dqs": {
+    "relative_l2": 1.25e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000125,
+    "case": "endpoint-pair bf16x3"
+   },
+   "db": {
+    "relative_l2": 2.23e-06,
+    "tolerance": 0.01,
+    "ratio": 0.00022299999999999997,
+    "case": "endpoint-pair bf16x3"
+   },
+   "da": {
+    "relative_l2": 2.44e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000244,
+    "case": "endpoint-pair bf16x3"
+   },
+   "du": {
+    "relative_l2": 3.25e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000325,
+    "case": "endpoint-row bf16x3"
+   },
+   "dw": {
+    "relative_l2": 3.44e-06,
+    "tolerance": 0.01,
+    "ratio": 0.000344,
+    "case": "endpoint-row bf16x3"
+   },
+   "dlog_rate": {
+    "relative_l2": 4.3e-06,
+    "tolerance": 0.01,
+    "ratio": 0.00043000000000000004,
+    "case": "endpoint-row bf16x3"
+   }
+  }
+ },
+ "zero_shift_against_existing_kernels": {
+  "bound_relative_l2": 0.0002,
+  "families": {
+   "none-row": {
+    "out": {
+     "max_over_max_reference": 0.00059,
+     "relative_l2": 4.1e-05
+    },
+    "dq": {
+     "max_over_max_reference": 0.00047,
+     "relative_l2": 3.4e-05
+    },
+    "dk": {
+     "max_over_max_reference": 0.00072,
+     "relative_l2": 5.6e-05
+    },
+    "dv": {
+     "max_over_max_reference": 0.0017,
+     "relative_l2": 6e-05
+    },
+    "dc": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    }
+   },
+   "none-pair": {
+    "out": {
+     "max_over_max_reference": 0.00059,
+     "relative_l2": 4.1e-05
+    },
+    "dq": {
+     "max_over_max_reference": 0.0026,
+     "relative_l2": 9e-05
+    },
+    "dk": {
+     "max_over_max_reference": 0.0017,
+     "relative_l2": 8.8e-05
+    },
+    "dv": {
+     "max_over_max_reference": 0.0022,
+     "relative_l2": 6.6e-05
+    },
+    "dc": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    }
+   },
+   "endpoint-row": {
+    "out": {
+     "max_over_max_reference": 0.00041,
+     "relative_l2": 3.6e-05
+    },
+    "dq": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "dk": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "dv": {
+     "max_over_max_reference": 4.6e-05,
+     "relative_l2": 3.3e-06
+    },
+    "dc": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "du": {
+     "max_over_max_reference": 1.7e-07,
+     "relative_l2": 1.1e-07
+    },
+    "dw": {
+     "max_over_max_reference": 1.4e-07,
+     "relative_l2": 1.1e-07
+    },
+    "dlog_rate": {
+     "max_over_max_reference": 1.1e-07,
+     "relative_l2": 1.5e-07
+    }
+   },
+   "endpoint-pair": {
+    "out": {
+     "max_over_max_reference": 0.00041,
+     "relative_l2": 3.6e-05
+    },
+    "dq": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "dk": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "dv": {
+     "max_over_max_reference": 0.00011,
+     "relative_l2": 7.1e-06
+    },
+    "dc": {
+     "max_over_max_reference": 0.0,
+     "relative_l2": 0.0
+    },
+    "du": {
+     "max_over_max_reference": 8.4e-08,
+     "relative_l2": 1.1e-07
+    },
+    "dw": {
+     "max_over_max_reference": 1.3e-07,
+     "relative_l2": 1e-07
+    },
+    "dlog_rate": {
+     "max_over_max_reference": 2.1e-07,
+     "relative_l2": 1.8e-07
+    }
+   }
+  }
+ },
+ "exact_zero_shifted_scores": [
+  {
+   "case": "none-row exact zeros",
+   "zero_fraction": 0.054,
+   "negative_fraction": 0.474
+  },
+  {
+   "case": "endpoint-row exact zeros",
+   "zero_fraction": 0.054,
+   "negative_fraction": 0.475
+  }
+ ],
+ "benchmark": {
+  "node": "mastiff",
+  "slurm_job_id": "242565",
+  "device": "NVIDIA H100 PCIe",
+  "source_commit": "e068dd94b66e05e2379695e7da55ee5677024c17",
+  "source_dirty": false,
+  "toolkit": {
+   "cuda_home": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/score-biases/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+   "cuda_home_ptxas_version": "12.9.86"
+  },
+  "shape": {
+   "batch": 16,
+   "time": 2048,
+   "heads": 14,
+   "width": 64,
+   "value_width": 64,
+   "degree": 8
+  },
+  "files": {
+   "kernels": "kernels.json",
+   "registers": "registers.json"
+  },
+  "median_ms": {
+   "query": {
+    "forward": 0.835,
+    "dq": 1.714,
+    "dkv": 1.388
+   },
+   "per_order_endpoint_decay": {
+    "forward": 5.948,
+    "dq": 15.813,
+    "dkv": 15.448
+   },
+   "score_bias_row": {
+    "forward": 2.381,
+    "dq": 3.784,
+    "dkv": 5.241
+   },
+   "score_bias_pair": {
+    "forward": 5.64,
+    "dq": 10.6,
+    "dkv": 10.985
+   },
+   "score_bias_endpoint_row": {
+    "forward": 8.242,
+    "dq": 15.69,
+    "dkv": 15.764
+   },
+   "score_bias_endpoint_pair": {
+    "forward": 11.238,
+    "dq": 23.535,
+    "dkv": 35.11
+   }
+  },
+  "ptxas": {
+   "query": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 0,
+     "spill_load_bytes": 0,
+     "stack_bytes": 0,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 0,
+     "spill_load_bytes": 0,
+     "stack_bytes": 0,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 140,
+     "spill_load_bytes": 140,
+     "stack_bytes": 144,
+     "ptx_isa": "8.8"
+    }
+   },
+   "per_order_endpoint_decay": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 0,
+     "spill_load_bytes": 0,
+     "stack_bytes": 0,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 2316,
+     "spill_load_bytes": 2184,
+     "stack_bytes": 992,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 1400,
+     "spill_load_bytes": 1636,
+     "stack_bytes": 688,
+     "ptx_isa": "8.8"
+    }
+   },
+   "score_bias_row": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 0,
+     "spill_load_bytes": 0,
+     "stack_bytes": 0,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 32,
+     "spill_load_bytes": 36,
+     "stack_bytes": 32,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 260,
+     "spill_load_bytes": 188,
+     "stack_bytes": 144,
+     "ptx_isa": "8.8"
+    }
+   },
+   "score_bias_pair": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 0,
+     "spill_load_bytes": 0,
+     "stack_bytes": 0,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 564,
+     "spill_load_bytes": 472,
+     "stack_bytes": 288,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 668,
+     "spill_load_bytes": 600,
+     "stack_bytes": 336,
+     "ptx_isa": "8.8"
+    }
+   },
+   "score_bias_endpoint_row": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 132,
+     "spill_load_bytes": 120,
+     "stack_bytes": 104,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 584,
+     "spill_load_bytes": 484,
+     "stack_bytes": 280,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 1168,
+     "spill_load_bytes": 1128,
+     "stack_bytes": 600,
+     "ptx_isa": "8.8"
+    }
+   },
+   "score_bias_endpoint_pair": {
+    "forward": {
+     "registers": 168,
+     "spill_store_bytes": 104,
+     "spill_load_bytes": 96,
+     "stack_bytes": 72,
+     "ptx_isa": "8.8"
+    },
+    "dq": {
+     "registers": 168,
+     "spill_store_bytes": 1416,
+     "spill_load_bytes": 1376,
+     "stack_bytes": 640,
+     "ptx_isa": "8.8"
+    },
+    "dkv": {
+     "registers": 168,
+     "spill_store_bytes": 2400,
+     "spill_load_bytes": 2224,
+     "stack_bytes": 960,
+     "ptx_isa": "8.8"
+    }
+   }
+  }
+ },
+ "training_qualification": {
+  "summary": "training.json",
+  "summary_sha256_source": "ecf0a0f4bf362dc2786d8c3b801c62958bd443bf721035b445cca7122f8bdd62",
+  "reports": {
+   "controls/r227b0ed7c605/pilot.json": "fe8a4fb46f8561fd6623ce6fae3a2b427a8dd0a66d4e9d0341ad5489752ee47c",
+   "controls/r25fffc16c2f3/pilot.json": "1d388e3d5e89bfefd0697a4ab4ac8e4aa0862b4467006326cc07ddae08f723a1",
+   "deterministic/rope-query_key/parity.json": "67283cf34dca68e9de319e3d7a535c1da46b7a25ad9c7148a066c7f2a28531d2",
+   "deterministic/rope-query_key/pilot.json": "0575f9025ebd548a5db1279a0cef28edea94069bbdafaafd7b6a0bccd230887b",
+   "deterministic/rope-query_key/resume-warm-cache.json": "49405efae3074f5f3fc15b774529c12ca7e6bdd4da6950692166e2082bce91b2",
+   "deterministic/gated-query_key/parity.json": "d39be2dd15bc174a3e7a0e1853c8360b0a18510fdb36f95deb6d5e402e25c66c",
+   "deterministic/gated-query_key/pilot.json": "e2bd8589138f3df1231b25ddd8bfb186083abb3a47f17b5ac498df7abcc20ac4",
+   "deterministic/gated-query_key/resume-warm-cache.json": "c9f8ee42fb7031bd832d6794192d289ebfa7d17f6c2ac924bed886523cb91e0b",
+   "deterministic/rope-query/pilot.json": "49c6c5591c687f9deaaff99c05b74125e7348820eea5f737b6896b8d2bd82ac7",
+   "deterministic/rope-query/resume-warm-cache.json": "e8a95882413c04e040b87fb6e69ba6f456bd6318c057bcfe4a49bda28e438a1b",
+   "deterministic/gated-static/pilot.json": "25eb31103a343ed5a4bf16f5dbd3e484779125014e1a35ce25d875e677e6f515",
+   "deterministic/gated-static/resume-warm-cache.json": "bbb5e6ef632a5972cfacbde9bae61b63cda8b7b010f48b67e72341244726e52c",
+   "deterministic/rope-static/pilot.json": "baec2c73d7ad2f0fe17c19fa7a5d1b92a231e92a751d4402ab84ea6a1bf00988",
+   "deterministic/rope-static/resume-warm-cache.json": "d0df0b186135b3a55f018c9600c6331fe6ea3380a7dec66bfc1c0329b83d1565",
+   "deterministic-late/gated-query/pilot.json": "a3cb95ceb86f42608f5be5bc2d173b05ef03135a681f43bcca88c25cc92c4e2f",
+   "deterministic-late/gated-query/resume-warm-cache.json": "6bd3908b9f04a9156eac4478cee09fcb576f92e90f3fa4147a073f2704386ecb",
+   "rope-query_key/parity.json": "f258084a0aa4ab879483ff533d2dc63c5ab791f16e652bc5c39bc31426d7587b",
+   "rope-query_key/pilot.json": "ad794aa3913dd65a6eb89edcbe688c827cd845b187879927c3373c4775617dcc",
+   "rope-query_key/resume-cold-cache.json": "5011ed15b9889675b70685675459c5f2e674cad72025cce6aff82389213c3b9b",
+   "rope-query_key/resume-warm-cache.json": "db8f612e2060baed315ce9b2c888c2528037a91fea43a3748e38f52a58f0dad1",
+   "gated-query_key/parity.json": "85cb7a2a142317ac0a710b9b0aa33552e45ee3d085ebff04bf98efffe67501d2",
+   "gated-query_key/pilot.json": "7e7d3f49695fdcb9581b0390c01f6e48077ec55fbc869c3a4eba2b7c848e9015",
+   "gated-query_key/resume-cold-cache.json": "d2d3d91857b63254cc3e855489f555188eafd4158c0388b658f2f70956f5974f",
+   "gated-query_key/resume-warm-cache.json": "32ea0f51ddad864990870432924a693ecda9c7a00c8fef8b7af0f41aa0e0ae72",
+   "rope-query/pilot.json": "d1dff8b9f9a1f79fe5af671e148f571c85c8d8d683e1f3cc1cda3e91e06c8252",
+   "rope-query/resume-warm-cache.json": "79806b9a9c93e38fc542664142dc8a80c461a62da7b637d9c26976e3a86d0202",
+   "gated-static/pilot.json": "d127a3197228d42f2f86c18bb03e7cb049310add75b9cd581f7e9b55f7be5734",
+   "gated-static/resume-warm-cache.json": "9dba02e9fc1628144d5a68bc6cdd6afab340eb423955b0e3830ccb37e28cb96e",
+   "rope-static/pilot.json": "221ee051080cd4fe073cbde4e5988ddb121dd5b59906a95ca94dba7601e5604e",
+   "rope-static/resume-warm-cache.json": "6b0d89de9b2605e2aa373576bcc85e7119e3f5ea9b8cf489651c2b2b1110bfab",
+   "gated-query/pilot.json": "c54a73b63603d5a0ddedfc4288aac84333425a5559d2147e563d1558f4b4e117",
+   "gated-query/resume-warm-cache.json": "8d9f67273874b74c268b33a8abebddb2f9f700ef60c0e537da1ccda78ae65b76"
+  },
+  "reports_root": "scaffolds/transformer/validation/logs/score-bias-kernels/training (ignored; summary.json is the summary's source)"
+ }
+}

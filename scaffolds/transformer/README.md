@@ -91,7 +91,10 @@ shared implementation ancestry; a run's own source commit is in its `record.json
 
 Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
 and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the
-validated 0.90 allocator fraction. Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
+validated 0.90 allocator fraction. Blackwell allocations (B200, B300) run in the CUDA 13
+environment `.venv-cuda13` with collectives on the compute stream; every other GPU runs in
+the CUDA 12 `.venv` ([CLUSTERS.md](../../CLUSTERS.md)). `launchers/kennel.sbatch` accepts the
+GPU types its `GPU_TYPES` argument lists (default `B300,H100`; B200 when listed). Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
 overrides automatic selection. This transport policy does not replace kernel and
 full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
@@ -645,6 +648,75 @@ and formula, recorded in metrics and metadata, include the schedule and every
 `coefficient_release_schedule`, `coefficient_release_step`, and
 `coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
 `tests/test_coefficient_release.py` for every recipe with a schedule.
+
+### Per-degree score biases
+
+`attention_score_bias` (default `none`) gives every order `r = 1..m` of diagonal tanh query
+coefficients its own signed shift of the score (`attention/score_bias.py`); order zero is unchanged:
+
+    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..m) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+
+`c_r` keeps its generator and factorial scales. `G_r = 1`, or each order's endpoint gate
+`exp(-(t-i) exp(A_r) softplus(x_t w_query_r + x_i w_key_r + dt_bias_r))` (the per-order query–key
+gate above). `x` is the attention input after the block's RMSNorm. Each layer, head, and order has its
+own shift:
+
+| Mode | `beta_r(t,i)` | Arrays | Added parameters (15 layers, 14 heads, width 896, `m = 8`) |
+| --- | --- | --- | ---: |
+| `static` | `b_r` | `score_bias_offset` (`b`) | 1,680 |
+| `query` | `b_r + a_r tanh(x_t u_r)` | `b`, `score_bias_amplitude` (`a`), `score_bias_query_kernel` (`u`) | 1,508,640 |
+| `query_key` | `b_r + a_r tanh(x_t u_r + x_i v_r)` | the query mode's and `score_bias_key_kernel` (`v`) | 3,013,920 |
+
+- Arrays: FP32, `[layers, heads, m]` (`b`, `a`) and `[layers, heads, m, hidden_size]` (`u`, `v`). `b`
+  starts at 0, `a` at 1, `u` and `v` at 0, with no random draw, so every shift starts at exactly zero,
+  every other array keeps its initialization, and `u` and `v` receive gradients from the first update.
+  AdamW decays `u` and `v`; `b` and `a` never decay. Telemetry reports them as the `score_bias` group.
+- Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized
+  diagonal tanh query coefficients of degree 1-12, without selected orders, a coefficient gate, or a
+  B-spline basis; RoPE or no positional encoding; and no forget gate or the per-order query–key
+  endpoint gate (input form, `query_distance`, softplus rates). Configuration rejects every other
+  recipe, coefficient release, `optim.query_coefficient_learning_rate_scale` other than 1, and
+  continuations; the model rejects coefficient capture and override.
+- Backends: `mosaic` trains them on H100's score-bias kernels (`backends/mosaic/score_bias.py`; no gate
+  or the endpoint gate, with a row shift for `static` and `query` or a pair shift for `query_key`).
+  Every other GPU refuses those kernels before tracing one, and `ModelConfig.mosaic_score_bias_problem`
+  names a shape H100's shared memory cannot hold. `blocked` (`backends/reference.py`) trains them on any
+  GPU with its causal strips, which `scaffolds.records create` gives a fresh blocked recipe. The scan is
+  their reference for CPU tests and diagnostics, but no GPU test qualifies it for training them:
+  `scaffolds.records create` (also with `--allow-scan-blocked-attention`) and acceptance's test
+  selection refuse a score-bias recipe on the scan. Both form each shifted power directly (the
+  kernels inside their causal tiles, the blocked backend one `[batch, heads, queries, keys]` block per
+  order), never expanding it into powers of `s`, which would change how the orders cancel. `auto`,
+  `fused`, and the other backends reject these recipes, and every other attention path raises on
+  score-bias operands rather than ignoring them.
+- Operands: `static` and `query` pass the row shift `beta_r(t)` `[batch, time, heads, m]`, whose gradient
+  autodiff carries to `b`, `a`, and `u`; `query_key` passes the projections `x u` and `x v`
+  `[batch, time, heads, m]` with `b` and `a` `[heads, m]`, and each pair's shift is formed in its tile.
+- Records: the attention identity records the mode, `score_bias_parameter_count`,
+  `score_bias_weight_decay`, and the formula with `(s_ti + beta_r(t,i))^r`; `attention_implementation`
+  names the kernels (for example `pallas_mosaic_gpu_query_polynomial_pair_score_bias`); W&B tags the run
+  `score_bias_<mode>`. `runs.csv` has an `attention_score_bias` column (`none` for every model recipe
+  that predates it).
+- Diagnostics: at each validation, the blocked reference of the same shifted kernel, forward only on the
+  fixed diagnostic sample, reports `coefficients.score_biases`: the parameters; per layer, head, and
+  order, the moments and extremes of the shifted scores (and of the query or query–key shifts), the
+  fractions of shifted scores below zero and within `1e-3` of zero, and each order's term
+  `T_r = c_r G_r (s + beta_r)^r`; shifted-score histograms on [-16, 16] per layer and order, pooled
+  over heads; and the cancellation across orders per layer and head (`sum_r |T_r| / |sum_r T_r|` per
+  pair, `sum_r ||o_r|| / ||o||` per row). Nonfinite parameters are its only issue. A positive shifted
+  score does not imply a positive weight: the coefficients are signed.
+- Acceptance adds `tests/test_score_bias.py` to the CPU tests of these recipes (FP64 references through
+  the scan and the strips with every gradient, operands, starts, refusals, the model's layers on the
+  strips, and diagnostics). On `mosaic` it adds `tests/test_score_bias_lowering.py` (the H100 kernels'
+  shared memory and tile mathematics lowered on the host) and, on the GPU, `tests/test_mosaic_score_bias.py`
+  with the GPU case of `tests/test_score_bias.py`, at the kernel family's precision, beside the
+  backbone's query and per-order gate checks. On `blocked` the GPU stage is
+  `tests/test_score_bias_strips.py` alone: the strips through `attention_core` at production precision
+  (Q, K, V rounded to BF16 in the program, FP32 operands, degree eight, 2,048 tokens) for every mode on
+  both backbones, with negative and exactly zero shifted scores, against host FP64; the output and dQ,
+  dK, dV within 1.2x their BF16 rounding floors and every FP32 gradient within 1e-4 per order. The
+  backbone's other GPU cases qualify the Triton and Mosaic kernels these runs never execute and can skip
+  or refuse on a GPU those kernels are not qualified on, so they are not selected.
 
 ### B-spline score function
 
@@ -1252,7 +1324,7 @@ package files with the uv cache, so an additional environment costs almost no di
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-# B300 (Blackwell) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
+# Blackwell (B200, B300) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
 UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
   uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 
@@ -1395,6 +1467,66 @@ submitting to change it), and acceptance pilots never log. Saved workspace views
 results code built with the `views` dependency group
 (`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
+### Gradient-event capture
+
+`train.gradient_event_capture: true` saves the exact state an update started from when its
+pre-clip gradient norm spikes after warmup (`training/gradient_events.py`). The rule and
+retention are recipe fields, fixed before launch:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `gradient_event_factor` | 5.0 | multiple of the running median the norm must exceed |
+| `gradient_event_min_norm` | 1.0 | floor of the threshold |
+| `gradient_event_history` | 100 | finite pre-clip norms of earlier updates in the median |
+| `gradient_event_min_history` | 20 | earlier norms required before any event |
+| `gradient_event_max_states` | 3 | kept states: the first event and the largest later ones |
+
+- Rule: update *k* is an event when *k* > `optim.warmup_steps`, its norm *g* is finite, at
+  least `min_history` earlier norms are known, and *g* > max(`min_norm`, `factor` × median).
+  The history includes warmup updates and events, and resumes with the checkpoint.
+- Capture: the pre-update state (parameters, Adam moments, `step` *k* − 1) is saved
+  synchronously in the checkpoint manager's `{"state": state}` layout at
+  `<checkpoints>/gradient_events/<k>/<k-1>/default`, with the event's record as
+  `<k>/event.json`. Each `<k>` is a one-step checkpoint-manager root whose step directory
+  names the state's own step; `checkpointing.restore_state(<k>/<k-1>, template)`, or a
+  `StandardCheckpointer` restore of `<k>/<k-1>/default`, reads it back. The run's step
+  manager ignores the non-numeric `gradient_events` root, and Git ignores it with the
+  checkpoints.
+- Log: every event, kept or not, is appended to the run's `gradient_events.jsonl` and printed
+  as `gradient_event`. A record holds the update and pre-update step, loss, pre-clip norm,
+  clip scale, running median and threshold, learning rate, sequence range and microbatch
+  layout, batch and RNG SHA256 (as the checkpoint audit hashes them), seed and RNG
+  derivation, the update's and preceding update's telemetry, device kind and count, backend
+  and implementation, source commit, frozen-execution hash, attempt ID, the pre-update
+  state's SHA256, and whether it was kept and which capture it replaced. The log is
+  append-only: a resume appends a `resume` row with its `restored_step`, and rows that earlier
+  attempts logged for later updates are superseded, because the resumed run repeats them.
+- Retention: a larger later event replaces the smallest kept later event (the first is never
+  replaced); the replaced directory is deleted once no restorable checkpoint references it.
+  A nonfinite update also keeps its pre-update state, outside the cap, before its numerical
+  failure is recorded.
+- Resumption: `gradient_events/state.json` records the history and kept list of each
+  checkpoint a resume may restore, written before that checkpoint's save. A resume restores
+  its checkpoint's snapshot, and deletes and logs (`capture_discarded`, with the reason for
+  each directory) captures that snapshot does not reference: those made after that checkpoint,
+  whose updates it repeats, the capture of a superseded numerical failure, and a capture
+  replaced at or before that checkpoint.
+- Records: a completed run and a numerical failure list their kept captures in `record.json`
+  under `diagnostic_checkpoints`: directory descriptors of `<k>` with SHA256 and a
+  justification ("pre-update state of gradient event at update *k*, norm *g*"). A run that
+  trains again supersedes that list and lists none until it reaches its own outcome, as a
+  first execution does. `retention.py` keeps them and nothing else of the capture root, and
+  lists them in `retention.json` (`retained_gradient_event_updates`). `validate_record`
+  checks them like checkpoints and reports them unavailable on other clusters.
+- Cost: capture never changes training; on CPU losses, gradient norms, and states are
+  bit-identical with and without it, on one device and on two. One-device steps do not
+  donate their input, so holding the pre-update state across the update costs no device
+  memory. The data-parallel step donates it, so each of its updates first copies the state
+  (one more state per device: 2.4 GB for the 15-layer width-896 recipes). An event costs a
+  state hash, and a kept one a synchronous save comparable to a checkpoint save.
+- Acceptance adds `tests/test_gradient_events.py` to the CPU tests of every recipe with capture on
+  (its data-parallel case runs in the two-device stage).
+
 ## Launch, acceptance, retention, and analysis
 
 Both shared launchers default to one GPU. Independent training runs are submitted
@@ -1458,7 +1590,9 @@ Studies configure these shared modules with execution modules at their root
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. The identity includes the allocated GPU model, so a requeue onto another
+  resume. The kernel tests run with `JAX_PLATFORMS=cuda,cpu`: CUDA is the default, and
+  the host CPU is there for FP64 references; the workers and training list CUDA alone.
+  The identity includes the allocated GPU model, so a requeue onto another
   model under the same launcher GPU type (H100 NVL after H100 80GB HBM3) repeats
   them. `attention_spec(config, entry_module=...)` selects correctness and kernel
   tests from the recipe and resolved backend, plus the initialization check and
@@ -1472,7 +1606,8 @@ Studies configure these shared modules with execution modules at their root
   reusing run copies the report into its own acceptance directory and records its
   origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
-  the selection.
+  the selection, keeping a capturing run's kept gradient-event states as recorded
+  diagnostic checkpoints.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

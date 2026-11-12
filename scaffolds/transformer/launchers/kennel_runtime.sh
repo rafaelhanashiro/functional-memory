@@ -4,10 +4,10 @@
 transformer_configure_kennel_runtime() {
   local gpu_names
   gpu_names="$(nvidia-smi --query-gpu=name --format=csv,noheader)" || return
-  # One lock, two environments: B300 uses CUDA 13 (cuBLAS >= 13.2, which fixes Blackwell
-  # data corruption when a cuBLAS kernel overlaps another kernel); other GPUs use CUDA 12.
+  # One lock, two environments: Blackwell (B200, B300) uses CUDA 13 (cuBLAS >= 13.2, which fixes
+  # Blackwell data corruption when a cuBLAS kernel overlaps another kernel); other GPUs use CUDA 12.
   case "$gpu_names" in
-    *B300*) export TRANSFORMER_CUDA_ENVIRONMENT=cuda13 TRANSFORMER_ENVIRONMENT_DIR=.venv-cuda13 ;;
+    *B200*|*B300*) export TRANSFORMER_CUDA_ENVIRONMENT=cuda13 TRANSFORMER_ENVIRONMENT_DIR=.venv-cuda13 ;;
     *) export TRANSFORMER_CUDA_ENVIRONMENT=cuda12 TRANSFORMER_ENVIRONMENT_DIR=.venv ;;
   esac
   case "${TRANSFORMER_HOST_STAGING:-auto}" in
@@ -25,9 +25,9 @@ transformer_configure_kennel_runtime() {
   fi
   case "$gpu_names" in
     *A6000*) export XLA_PYTHON_CLIENT_MEM_FRACTION="${XLA_PYTHON_CLIENT_MEM_FRACTION:-0.90}" ;;
-    *B300*)
-      # Collectives on the compute stream: the workaround used before the CUDA 13
-      # environment; it costs no measurable throughput and is kept; see CLUSTERS.md.
+    *B200*|*B300*)
+      # Collectives on the compute stream: the workaround used on B300 before the CUDA 13
+      # environment; it costs no measurable throughput and is kept on Blackwell; see CLUSTERS.md.
       case " ${XLA_FLAGS:-} " in
         *" --xla_gpu_disable_async_collectives="*) ;;
         *) export XLA_FLAGS="${XLA_FLAGS:+$XLA_FLAGS }--xla_gpu_disable_async_collectives=ALLCOLLECTIVES" ;;

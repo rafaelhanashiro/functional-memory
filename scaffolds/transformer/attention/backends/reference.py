@@ -24,13 +24,14 @@ from scaffolds.transformer.attention.rational_polynomial import denominator_fact
 from scaffolds.transformer.attention.spline import (
     basis_count, evaluate as evaluate_spline, score_coverage, to_pieces, validate_knots,
 )
+from scaffolds.transformer.attention.score_bias import HISTOGRAM_EDGES, NEAR_ZERO, operand_kind
 from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
 STRIP_SIZE = 512
 BLOCKED_IMPLEMENTATIONS = ("scan", "strips")
 # Per-head diagnostic arrays: the scan reduces them over its blocks alone.
-PER_HEAD_DIAGNOSTICS = ("forget_gate_", "spline_")
+PER_HEAD_DIAGNOSTICS = ("forget_gate_", "spline_", "score_bias_")
 
 
 class _Spline(NamedTuple):
@@ -65,13 +66,17 @@ class _Mechanism(NamedTuple):
     per_order: bool
     query_decay_mode: str
     spline: _Spline | None
+    # Per-degree score biases of query coefficients: "row" (beta_r(t)), "pair" (b_r + a_r tanh(p_tr + q_ir)).
+    score_bias: str | None = None
 
 
 def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, attention_normalization,
                coefficients, quadratic_mode, polynomial_coefficients, polynomial_square_factors,
                query_polynomial_coefficients, key_polynomial_factors, query_log_decay, query_decay_mode,
                query_gate_input, key_gate_input, gate_log_rate, spline_knots=None, spline_coefficients=None,
-               query_spline_coefficients=None, **denominators) -> _Mechanism:
+               query_spline_coefficients=None, score_bias_row_shift=None, score_bias_query_input=None,
+               score_bias_key_input=None, score_bias_offset=None, score_bias_amplitude=None,
+               **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
@@ -170,6 +175,15 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     if query_decay_mode != "cumulative" and not (query_conditioned or exponential):
         raise ValueError("The query-distance decay mode requires query coefficients, softmax, or the "
                          "unnormalized exponential")
+    score_bias = None
+    bias_operands = dict(row_shift=score_bias_row_shift, query_input=score_bias_query_input,
+                         key_input=score_bias_key_input, offset=score_bias_offset, amplitude=score_bias_amplitude)
+    if any(value is not None for value in bias_operands.values()):
+        if not query_conditioned or key_conditioned:
+            raise ValueError("Per-degree score biases apply to query-coefficient polynomial attention alone")
+        if decayed and not (endpoint and per_order):
+            raise ValueError("Per-degree score biases take no forget gate or the per-order endpoint gate")
+        score_bias = operand_kind(query_polynomial_coefficients.shape, **bias_operands)
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     if spline is not None:
@@ -189,20 +203,24 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         query_conditioned=query_conditioned, key_conditioned=key_conditioned, nonnegative=nonnegative,
         rational=rational, signed=signed, extended_diagnostics=extended_diagnostics, endpoint=endpoint,
         decayed=decayed, per_order=per_order, query_decay_mode=query_decay_mode, spline=spline,
+        score_bias=score_bias,
     )
 
 
 def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positions, k, v, query_coefficients,
                   key_factors, query_gate_input, key_gate, gate_log_rate, gate_rate, query_log_decay,
-                  key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None):
+                  key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None,
+                  score_bias_rows=None, score_bias_key=None, score_bias_head=None):
     """The query block [start, start + block_size) against the keys at ``key_positions``.
 
     ``query`` holds the block's queries and ``rows(array)`` takes its rows of a query-side
     [batch, time, ...] array (query coefficients, a query B-spline's pieces [batch, time, heads,
-    pieces, degree + 1], gate inputs, log decay). ``k``, ``v`` and
-    the per-key operands (key factors, key gate [batch, heads, 1, keys], key log decay) cover
-    ``key_positions``: every key in the scan, the causal prefix in a strip. Arithmetic is in
-    ``compute``, FP32 in every model; the output has ``output_dtype``, V's dtype.
+    pieces, degree + 1], gate inputs, log decay, score-bias row shifts or query inputs [batch, time,
+    heads, m]). ``k``, ``v`` and the per-key operands (key factors, key gate [batch, heads, 1, keys],
+    key log decay, score-bias key inputs [batch, heads, 1, keys, m]) cover ``key_positions``: every key
+    in the scan, the causal prefix in a strip. ``score_bias_head`` holds the pair shift's offset and
+    amplitude [heads, m]. Arithmetic is in ``compute``, FP32 in every model; the output has
+    ``output_dtype``, V's dtype.
     """
     m = mechanism
     batch, _, heads, qk_dim = query.shape
@@ -318,9 +336,38 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
                     coefficient = jnp.where(valid, coefficient * factor, jnp.nan)
                 return coefficient
 
-            kernel = jnp.broadcast_to(pair_coefficient(m.attention_degree), safe_scores.shape)
-            for order in range(m.attention_degree - 1, -1, -1):
-                kernel = kernel * safe_scores + pair_coefficient(order)
+            if m.score_bias is not None:
+                # Slice the query-side shift operand once for every order, as the gate operands above.
+                block_shift = rows(score_bias_rows)
+
+                def order_shift(order):
+                    """beta_r [b, h, q, k] (r >= 1) on the block's causal pairs, zero on masked entries."""
+                    if m.score_bias == "row":
+                        return jnp.where(causal, jnp.swapaxes(block_shift[..., order - 1], 1, 2)[..., None], 0.0)
+                    # Masked inputs are zeroed before tanh, so that a nonfinite future key input never meets
+                    # a masked entry's zero cotangent through tanh's derivative. tanh saturates, so a
+                    # nonfinite causal input is made invalid explicitly, poisoning its row.
+                    inputs = jnp.where(causal, jnp.swapaxes(block_shift[..., order - 1], 1, 2)[..., None]
+                                       + score_bias_key[..., order - 1], 0.0)
+                    offset, amplitude = (array[:, order - 1][None, :, None, None] for array in score_bias_head)
+                    beta = jnp.where(jnp.isfinite(inputs), offset + amplitude * jnp.tanh(inputs), jnp.nan)
+                    return jnp.where(causal, beta, 0.0)
+
+                def order_term(order):
+                    """c_r G_r (s + beta_r)^r [b, h, q, k], an explicit power; order zero is c_0 G_0, unshifted."""
+                    if order == 0:
+                        return jnp.broadcast_to(pair_coefficient(0), safe_scores.shape)
+                    return pair_coefficient(order) * (safe_scores + order_shift(order)) ** order
+
+                # Every order has its own base, so no Horner recurrence and no expansion into unshifted
+                # powers: one [B,H,Q,K] block per order, never a pair-by-order tensor.
+                kernel = order_term(0)
+                for order in range(1, m.attention_degree + 1):
+                    kernel = kernel + order_term(order)
+            else:
+                kernel = jnp.broadcast_to(pair_coefficient(m.attention_degree), safe_scores.shape)
+                for order in range(m.attention_degree - 1, -1, -1):
+                    kernel = kernel * safe_scores + pair_coefficient(order)
             if m.decayed and not m.per_order:
                 kernel = kernel * jnp.exp(gap)
                 if m.query_decay_mode == "query_distance":
@@ -426,7 +473,98 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
             "row_count": jnp.sum(actual_rows, dtype=jnp.int32) * batch * heads,
             "invalid_output_count": jnp.sum(actual_rows[None, :, None, None] & ~jnp.isfinite(output), dtype=jnp.int32),
         })
+    if m.score_bias is not None:
+        diagnostics.update(_score_bias_statistics(m, safe_scores, measured, actual_rows, block_shift, order_shift,
+                                                  order_term, v, compute))
     return output, jax.lax.stop_gradient(diagnostics)
+
+
+def _score_bias_statistics(m, scores, measured, actual_rows, block_shift, order_shift, order_term, v, compute):
+    """Score-bias measurements on one block, per head and order r = 1..m unless stated: beta over the
+    block's real tokens (row shifts) or measured pairs (pair shifts); z_r = s + beta_r over measured
+    pairs, with a histogram pooled over heads [m, bins]; the order terms T_r = c_r G_r z_r^r for
+    r = 0..m (T_0 = c_0 G_0); and cancellation across orders, per pair (sum_r |T_r| / |sum_r T_r|, over
+    pairs whose kernel is nonzero) and per row (sum_r ||o_r|| / ||o||, o_r = sum_i T_r v_i, over rows
+    whose output is nonzero). Sums, square sums, extrema and counts, which the scan reduces over blocks."""
+    batch = scores.shape[0]
+    pairs = jnp.broadcast_to(measured, scores.shape)
+    axes = (0, 2, 3)
+    count = partial(jnp.sum, dtype=jnp.int32)
+    stats = {"score_bias_pair_count": count(measured) * batch}
+    if m.score_bias == "row":
+        tokens = actual_rows[None, :, None, None]  # rows of [b, q, h, m]
+        stats.update({
+            "score_bias_beta_sum": jnp.sum(jnp.where(tokens, block_shift, 0.0), axis=(0, 1)),
+            "score_bias_beta_sumsq": jnp.sum(jnp.where(tokens, block_shift * block_shift, 0.0), axis=(0, 1)),
+            "score_bias_beta_min": jnp.min(jnp.where(tokens, block_shift, jnp.inf), axis=(0, 1)),
+            "score_bias_beta_max": jnp.max(jnp.where(tokens, block_shift, -jnp.inf), axis=(0, 1)),
+            "score_bias_beta_count": count(actual_rows) * batch,
+        })
+    # Histogram bin j covers [e_0 + j - 1, e_0 + j) for edges e_0 = -16, ..., 16; bins 0 and 33 collect
+    # the under- and overflow, and masked or NaN entries go to a discarded last bin.
+    bins = len(HISTOGRAM_EDGES) + 1
+    orders = {}
+    total = magnitude = output = norms = 0.0
+    values = v.astype(compute)
+    for order in range(m.attention_degree + 1):
+        term = jnp.where(pairs, order_term(order), 0.0)
+        total, magnitude = total + term, magnitude + jnp.abs(term)
+        partial_output = jnp.einsum("bhqk,bkhd->bqhd", term, values, preferred_element_type=compute)
+        output, norms = output + partial_output, norms + jnp.linalg.norm(partial_output, axis=-1)
+        measured_order = {
+            "term_abs_sum": jnp.sum(jnp.abs(term), axis=axes),
+            "term_sumsq": jnp.sum(term * term, axis=axes),
+            "term_row_abs": jnp.sum(jnp.abs(term), axis=-1),
+        }
+        if order:
+            beta = order_shift(order)
+            z = scores + beta
+            index = jnp.clip(jnp.floor(z) - (HISTOGRAM_EDGES[0] - 1), 0, bins - 1)
+            index = jnp.where(pairs & ~jnp.isnan(z), index, bins).astype(jnp.int32)
+            measured_order.update({
+                "z_sum": jnp.sum(jnp.where(pairs, z, 0.0), axis=axes),
+                "z_sumsq": jnp.sum(jnp.where(pairs, z * z, 0.0), axis=axes),
+                "z_min": jnp.min(jnp.where(pairs, z, jnp.inf), axis=axes),
+                "z_max": jnp.max(jnp.where(pairs, z, -jnp.inf), axis=axes),
+                "z_negative_count": count(pairs & (z < 0), axis=axes),
+                "z_near_zero_count": count(pairs & (jnp.abs(z) < NEAR_ZERO), axis=axes),
+                "z_histogram": jnp.bincount(index.ravel(), length=bins + 1)[:bins].astype(jnp.int32),
+            })
+            if m.score_bias == "pair":
+                measured_order.update({
+                    "beta_sum": jnp.sum(jnp.where(pairs, beta, 0.0), axis=axes),
+                    "beta_sumsq": jnp.sum(jnp.where(pairs, beta * beta, 0.0), axis=axes),
+                    "beta_min": jnp.min(jnp.where(pairs, beta, jnp.inf), axis=axes),
+                    "beta_max": jnp.max(jnp.where(pairs, beta, -jnp.inf), axis=axes),
+                })
+        for name, value in measured_order.items():
+            orders.setdefault(name, []).append(value)
+    # Each row's share of its summed |T_r| over orders, on rows where that sum is nonzero.
+    row_abs = jnp.stack(orders.pop("term_row_abs"), axis=-1)  # [b, h, q, m+1]
+    row_total = jnp.sum(row_abs, axis=-1, keepdims=True)
+    shared = actual_rows[None, None, :, None] & (row_total > 0)
+    stats["score_bias_term_row_share_sum"] = jnp.sum(
+        jnp.where(shared, row_abs / jnp.where(shared, row_total, 1.0), 0.0), axis=(0, 2))
+    stats["score_bias_term_row_count"] = count(shared[..., 0], axis=(0, 2))
+    for name, value in orders.items():
+        stats[f"score_bias_{name}"] = jnp.stack(value, axis=0 if name == "z_histogram" else -1)
+    nonzero = pairs & (total != 0)
+    pair_ratio = magnitude / jnp.where(nonzero, jnp.abs(total), 1.0)
+    norm = jnp.linalg.norm(output, axis=-1)  # [b, q, h]
+    real = actual_rows[None, :, None]
+    rows = real & (norm > 0)
+    value_ratio = norms / jnp.where(rows, norm, 1.0)
+    stats.update({
+        "score_bias_pair_cancellation_sum": jnp.sum(jnp.where(nonzero, pair_ratio, 0.0), axis=axes),
+        "score_bias_pair_cancellation_max": jnp.max(jnp.where(nonzero, pair_ratio, -jnp.inf), axis=axes),
+        "score_bias_pair_cancellation_count": count(nonzero, axis=axes),
+        "score_bias_pair_zero_kernel_count": count(pairs & (total == 0), axis=axes),
+        "score_bias_value_cancellation_sum": jnp.sum(jnp.where(rows, value_ratio, 0.0), axis=(0, 1)),
+        "score_bias_value_cancellation_max": jnp.max(jnp.where(rows, value_ratio, -jnp.inf), axis=(0, 1)),
+        "score_bias_value_cancellation_count": count(rows, axis=(0, 1)),
+        "score_bias_value_zero_output_count": count(real & (norm == 0), axis=(0, 1)),
+    })
+    return stats
 
 
 def blocked_dot_product_attention(
@@ -450,6 +588,11 @@ def blocked_dot_product_attention(
     spline_knots: tuple[float, ...] | None = None,
     spline_coefficients: jax.Array | None = None,
     query_spline_coefficients: jax.Array | None = None,
+    score_bias_row_shift: jax.Array | None = None,
+    score_bias_query_input: jax.Array | None = None,
+    score_bias_key_input: jax.Array | None = None,
+    score_bias_offset: jax.Array | None = None,
+    score_bias_amplitude: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -509,6 +652,16 @@ def blocked_dot_product_attention(
     attention_degree - 1, gives the unnormalized signed kernel f(s) = sum_j theta_j B_j(s) of
     attention/spline.py, continued past the end knots by its end pieces; invalid rows follow the
     signed learned polynomial's rules. Its diagnostics add per-head score coverage (``spline_*``).
+    Per-degree score biases (attention/score_bias.py) of query coefficients, alone or with per-order
+    endpoint gates, replace order r's s_ti^r by (s_ti + beta_r(t,i))^r for r = 1..m: a row shift
+    ``score_bias_row_shift`` beta_r(t) [batch,time,heads,m], or the pair shift b_r + a_r tanh(p_tr + q_ir)
+    from ``score_bias_query_input`` p and ``score_bias_key_input`` q [batch,time,heads,m] with
+    ``score_bias_offset`` b and ``score_bias_amplitude`` a [heads,m]. Each order's power is evaluated
+    explicitly in its own [batch, heads, query_block, keys] block; masked entries enter with zero shift.
+    The causal strips train score-bias recipes on the blocked backend with this arithmetic, and the scan
+    is their reference (tests, acceptance, and every score-bias run's diagnostics). Its diagnostics
+    add per-head, per-order measurements (``score_bias_*``):
+    shifts, shifted scores and their histogram, order terms, and cancellation across orders.
     Diagnostics exclude padded queries and masked future entries.
     """
     return _blocked_scan(
@@ -519,6 +672,9 @@ def blocked_dot_product_attention(
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
         key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
+        score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
+        score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
+        score_bias_amplitude=score_bias_amplitude,
         query_block_size=query_block_size, return_diagnostics=return_diagnostics, **denominators,
     )
 
@@ -528,6 +684,8 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   query_polynomial_coefficients=None, key_polynomial_factors=None, query_log_decay=None,
                   query_decay_mode="cumulative", query_gate_input=None, key_gate_input=None, gate_log_rate=None,
                   spline_knots=None, spline_coefficients=None, query_spline_coefficients=None,
+                  score_bias_row_shift=None, score_bias_query_input=None, score_bias_key_input=None,
+                  score_bias_offset=None, score_bias_amplitude=None,
                   query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, **denominators):
     """blocked_dot_product_attention with its arithmetic in ``compute``: FP32 there, FP64 only
     in exact-arithmetic tests of the strips against the scan."""
@@ -539,7 +697,9 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
         key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
-        **denominators,
+        score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
+        score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
+        score_bias_amplitude=score_bias_amplitude, **denominators,
     )
     batch, time, heads, qk_dim = q.shape
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -571,6 +731,14 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         # One fixed linear map per query and head, before any per-score work.
         spline_pieces = jnp.pad(to_pieces(query_spline_coefficients, m.spline.knots, m.spline.degree, compute),
                                 ((0, 0), (0, pad), (0, 0), (0, 0), (0, 0)))
+    score_bias_rows = score_bias_key = score_bias_head = None
+    if m.score_bias is not None:
+        # Padded queries never enter the output or the diagnostics.
+        score_bias_rows = jnp.pad((score_bias_row_shift if m.score_bias == "row" else score_bias_query_input)
+                                  .astype(compute), ((0, 0), (0, pad), (0, 0), (0, 0)))
+        if m.score_bias == "pair":
+            score_bias_key = jnp.swapaxes(score_bias_key_input.astype(compute), 1, 2)[:, :, None]
+            score_bias_head = (score_bias_offset.astype(compute), score_bias_amplitude.astype(compute))
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -583,7 +751,8 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
             query_gate_input=padded_query_gate_input, key_gate=key_gate, gate_log_rate=gate_log_rate,
             gate_rate=gate_rate, query_log_decay=padded_log_decay, key_log_decay=log_decay,
             compute=compute, output_dtype=v.dtype, return_diagnostics=return_diagnostics,
-            spline_pieces=spline_pieces,
+            spline_pieces=spline_pieces, score_bias_rows=score_bias_rows, score_bias_key=score_bias_key,
+            score_bias_head=score_bias_head,
         )
 
     _, result = jax.lax.scan(
@@ -662,6 +831,11 @@ def strip_dot_product_attention(
     spline_knots: tuple[float, ...] | None = None,
     spline_coefficients: jax.Array | None = None,
     query_spline_coefficients: jax.Array | None = None,
+    score_bias_row_shift: jax.Array | None = None,
+    score_bias_query_input: jax.Array | None = None,
+    score_bias_key_input: jax.Array | None = None,
+    score_bias_offset: jax.Array | None = None,
+    score_bias_amplitude: jax.Array | None = None,
     strip_size: int = STRIP_SIZE,
     **denominators,
 ) -> jax.Array:
@@ -697,7 +871,9 @@ def strip_dot_product_attention(
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
         key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
-        **denominators,
+        score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
+        score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
+        score_bias_amplitude=score_bias_amplitude, **denominators,
     )
     time = q.shape[1]
     # The strips slice these full arrays inside their checkpoints, so the residuals each layer
@@ -719,6 +895,13 @@ def strip_dot_product_attention(
         # One fixed linear map per query and head, before the strips (as in the scan).
         operands["spline_pieces"] = to_pieces(_exact_upcast(query_spline_coefficients, compute),
                                               m.spline.knots, m.spline.degree, compute)
+    if m.score_bias is not None:
+        operands["score_bias_rows"] = _exact_upcast(
+            score_bias_row_shift if m.score_bias == "row" else score_bias_query_input, compute)
+        if m.score_bias == "pair":
+            operands["score_bias_key"] = jnp.swapaxes(_exact_upcast(score_bias_key_input, compute), 1, 2)[:, :, None]
+            operands["score_bias_head"] = (_exact_upcast(score_bias_offset, compute),
+                                           _exact_upcast(score_bias_amplitude, compute))
 
     def attend_strip(arrays, *, start, end):
         def prefix(name, axis=1):
@@ -732,7 +915,8 @@ def strip_dot_product_attention(
             gate_log_rate=gate_log_rate, gate_rate=arrays.get("gate_rate"),
             query_log_decay=arrays.get("log_decay"), key_log_decay=prefix("log_decay"),
             compute=compute, output_dtype=compute, return_diagnostics=False,
-            spline_pieces=arrays.get("spline_pieces"),
+            spline_pieces=arrays.get("spline_pieces"), score_bias_rows=arrays.get("score_bias_rows"),
+            score_bias_key=prefix("score_bias_key", axis=3), score_bias_head=arrays.get("score_bias_head"),
         )
         # The block's conversion to V's dtype, rounded explicitly: a consumer that upcasts the
         # output (head RMSNorm) would otherwise let XLA drop it. A signed kernel's row with an

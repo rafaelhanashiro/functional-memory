@@ -331,6 +331,10 @@ At m = 4 on the earlier QK setup:
 - Query tied fixed Taylor with cosine per-head QK normalization; with per-layer RMSNorm
   it trailed by 0.5%.
 
+Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, at the 12-layer
+width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
+([score_biases](results/exploratory/score_biases/README.md)).
+
 ## Exploratory diagnostics
 
 The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
@@ -1551,4 +1555,85 @@ sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 
   --time=01:00:00 --job-name=gate-fixed-scan --open-mode=append \
   --output=experiments/transformer_pp/runs/r1736cf7a019c/training.log \
   experiments/transformer_pp/diagnose_gate_spikes.sbatch r1736cf7a019c "$(git rev-parse HEAD)"
+```
+
+## Per-degree score biases
+
+Added 2026-11-11. Does giving each polynomial order its own signed shift of the score improve the
+degree-eight tanh query polynomial? Two trials at the 12-layer width-640 shape test it against the RoPE
+query control there, `r95a5691d293f`. Neither beat it, so no reference-shape runs follow. Findings and
+diagnostics: [score_biases topic](results/exploratory/score_biases/README.md).
+
+With `s_ti = Q_t K_i^T / sqrt(d_K)` and the control's coefficient generator `c_r(x_t)` (its factorial
+scales unchanged), every order `r = 1..8` reads its own shifted score; order zero is unchanged:
+
+    W(t,i) = c_0(x_t) + sum_(r=1..8) c_r(x_t) (s_ti + beta_r(t,i))^r
+    o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
+
+`x_t` is the block's attention input after its RMSNorm. Each layer, head and order has its own shift:
+
+| Mode | `beta_r(t)` | Added arrays | Added parameters |
+| --- | --- | --- | ---: |
+| static | `b_r` | `b` [12, 10, 8] | 960 |
+| query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [12, 10, 8]; `u` [12, 10, 8, 640] | 616,320 |
+
+`b` starts at 0, `a` at 1 and `u` at 0, so every shift starts at exactly zero: each trial starts as the
+control's function, and the query trial's `u` receives gradients from the first update. Nothing is drawn
+for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to `u` only,
+never to `b` or `a`; every other optimizer group, the coefficient-`W` decay and the output RMSNorm are the
+control's. The shifts are signed, and so are the coefficients: a positive shifted score does not imply a
+positive weight.
+
+| Run | Label | Mode | Parameters | Validation-best PPL (update) | Terminal PPL | vs control |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `r8dc6e147601c` | query-m8-w-decay-l12-d640-score-bias-query | query | 100,294,376 | 18.216 (7,551) | 18.216 | +3.55% |
+| `rb4e5457ef2a0` | query-m8-w-decay-l12-d640-score-bias-static | static | 99,679,016 | 17.604 (7,551) | 17.604 | +0.07% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | – | 99,678,056 | 17.592 (7,551) | 17.592 | – |
+
+- Recipe: the control's, with `model.attention_score_bias` (`query` or `static`),
+  `train.gradient_event_capture: true` (the other capture fields explicit at their defaults), and its
+  own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551 updates
+  of 128 × 2,048 tokens, warmup 454, seed 42, and its attention settings (`mosaic`; the inert blocked
+  field stays `scan`).
+- Kernels: the H100 Mosaic row-shift score-bias kernels, which form each shifted power directly inside
+  their causal tiles, never by expanding it into powers of `s`
+  ([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11));
+  the control trained on B300's Mosaic query-polynomial kernels. The query trial trained on an H100 SXM
+  through update 4,000 and an H100 PCIe after; the static trial on an H100 PCIe.
+- Acceptance: [`score_bias_acceptance`](score_bias_acceptance.py) pins the control's recipe by SHA256
+  and its seed-42 initialization by fingerprint and parameter count, lets only the score bias, the
+  capture fields, and execution locations and labels differ from it, requires the biases' exact starts,
+  refuses every GPU type but H100, and requires a pilot on the Mosaic backend. On CPU acceptance runs
+  `tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
+  the adapter's tests beside the backbone's checks; on the GPU, at BF16, the seven modules of the
+  kernels' H100 qualification (129 cases, none of which skips on an H100).
+- Gradient-event capture ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)):
+  update `k > 454` is an event when its pre-clip global gradient norm `g` is finite, at least 20
+  earlier norms are known, and `g > max(1, 5 × median)` of the previous (up to) 100 norms. The state the
+  update started from is saved at `runs/<run>/checkpoints/gradient_events/<k>/<k-1>/default`; at most
+  three are kept (the first event and the two largest later ones), each listed in `record.json` under
+  `diagnostic_checkpoints` with its SHA256 and justification. Every event is logged in
+  `runs/<run>/gradient_events.jsonl`.
+- Diagnostics: at each validation the forward-only JAX reference of the same shifted kernel, on the first
+  held-out sequence and without gradients, reports `coefficients.score_biases` in
+  `attention_diagnostics`: the bias parameters; per layer, head and order, the shifts' and shifted
+  scores' moments, extremes, and negative and near-zero fractions, and each order's term; shifted-score
+  histograms on [-16, 16] per layer and order; and the cancellation across orders per layer and head.
+
+Home cluster: **Kennel**. Both trials are complete; each record holds its launch commit, attempts, and
+the artifact-root locations of its validation-best checkpoint, kept gradient-event states and log. After
+committing the inputs, submit each on one H100, choosing the partition (`standard` or `long`) from the
+live allowance:
+
+```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
+# unless another job holds that GPU.
+for run in r8dc6e147601c rb4e5457ef2a0; do
+  sbatch --parsable --partition=<standard|long> --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
 ```
