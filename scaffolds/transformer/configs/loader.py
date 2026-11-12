@@ -75,6 +75,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
                                           "parent_data_identity_sha256": "",
                                           "parent_step": 0})
         value.setdefault("model", {}).setdefault("attention_degree", None)
+        value["model"].setdefault("attention_basis", None)
         value["model"].setdefault("attention_normalization", True)
         value["model"].setdefault("attention_output_scaling", "none")
         value["model"].setdefault("initialization", "flax_default")

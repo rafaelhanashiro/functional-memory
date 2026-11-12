@@ -65,17 +65,34 @@ class _Mechanism(NamedTuple):
     per_order: bool
     query_decay_mode: str
     spline: _Spline | None
+    score_kernel: object | None
 
 
 def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, attention_normalization,
                coefficients, quadratic_mode, polynomial_coefficients, polynomial_square_factors,
                query_polynomial_coefficients, key_polynomial_factors, query_log_decay, query_decay_mode,
                query_gate_input, key_gate_input, gate_log_rate, spline_knots=None, spline_coefficients=None,
-               query_spline_coefficients=None, **denominators) -> _Mechanism:
+               query_spline_coefficients=None, score_kernel=None, basis_coefficients=None,
+               **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
         raise ValueError("attention_normalization must be a boolean")
+    if score_kernel is not None and (
+            not callable(score_kernel) or attention_degree is not None or quadratic_mode != "fixed"
+            or any(value is not None for value in (
+                coefficients, polynomial_coefficients, polynomial_square_factors,
+                query_polynomial_coefficients, key_polynomial_factors, query_log_decay,
+                query_gate_input, key_gate_input, gate_log_rate, spline_knots,
+                spline_coefficients, query_spline_coefficients))
+            or query_decay_mode != "cumulative" or denominators):
+        raise ValueError("A callable scalar score kernel cannot be combined with polynomial or decay options")
+    if basis_coefficients is not None:
+        if score_kernel is None or not hasattr(score_kernel, "basis"):
+            raise ValueError("Runtime basis coefficients require an ExpProjection")
+        count = len(score_kernel.basis)
+        if basis_coefficients.shape not in ((count,), (q.shape[2], count), (*q.shape[:3], count)):
+            raise ValueError("Basis coefficients require [R], [H,R] or [B,T,H,R]")
     spline = None
     if spline_knots is not None or spline_coefficients is not None or query_spline_coefficients is not None:
         if spline_knots is None or (spline_coefficients is None) == (query_spline_coefficients is None):
@@ -119,7 +136,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
         denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2], dtype=compute)
-    signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
+    signed = score_kernel is not None or query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
     ) or spline is not None
@@ -189,12 +206,14 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         query_conditioned=query_conditioned, key_conditioned=key_conditioned, nonnegative=nonnegative,
         rational=rational, signed=signed, extended_diagnostics=extended_diagnostics, endpoint=endpoint,
         decayed=decayed, per_order=per_order, query_decay_mode=query_decay_mode, spline=spline,
+        score_kernel=score_kernel,
     )
 
 
 def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positions, k, v, query_coefficients,
                   key_factors, query_gate_input, key_gate, gate_log_rate, gate_rate, query_log_decay,
-                  key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None):
+                  key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None,
+                  basis_coefficients=None):
     """The query block [start, start + block_size) against the keys at ``key_positions``.
 
     ``query`` holds the block's queries and ``rows(array)`` takes its rows of a query-side
@@ -242,7 +261,20 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     # As for the polynomials, a nonfinite or positive raw log alpha_t poisons its query's row, and a
     # nonfinite endpoint input or log rate every causal pair it enters (and so those pairs' rows).
     poison_invalid_rate = m.decayed and m.attention_degree is None and m.query_decay_mode == "query_distance"
-    if not m.attention_normalization and m.attention_degree is None:
+    if m.score_kernel is not None:
+        # Signed scalar bases use unshifted scores and the common failure/diagnostic rules.
+        safe_scores = jnp.where(causal, scores, 0.0)
+        if basis_coefficients is None:
+            kernel = jnp.asarray(m.score_kernel(safe_scores), dtype=compute)
+        else:
+            block_coefficients = rows(basis_coefficients)
+            kernel = jnp.zeros_like(safe_scores)
+            for order, function in enumerate(m.score_kernel.basis):
+                coefficient = jnp.swapaxes(block_coefficients[..., order], 1, 2)[..., None]
+                kernel = kernel + coefficient * function(safe_scores)
+        kernel = jnp.broadcast_to(kernel, scores.shape)
+        invalid_kernel = ~jnp.isfinite(kernel)
+    elif not m.attention_normalization and m.attention_degree is None:
         # A row shift changes the unnormalized operator. Underflow to zero
         # is allowed; a nonfinite causal exponential poisons the output.
         kernel = jnp.exp(jnp.where(causal, logits, 0.0))
@@ -528,7 +560,8 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   query_polynomial_coefficients=None, key_polynomial_factors=None, query_log_decay=None,
                   query_decay_mode="cumulative", query_gate_input=None, key_gate_input=None, gate_log_rate=None,
                   spline_knots=None, spline_coefficients=None, query_spline_coefficients=None,
-                  query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, **denominators):
+                  query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False,
+                  score_kernel=None, basis_coefficients=None, **denominators):
     """blocked_dot_product_attention with its arithmetic in ``compute``: FP32 there, FP64 only
     in exact-arithmetic tests of the strips against the scan."""
     m = _mechanism(
@@ -539,7 +572,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         query_log_decay=query_log_decay, query_decay_mode=query_decay_mode, query_gate_input=query_gate_input,
         key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, spline_knots=spline_knots,
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
-        **denominators,
+        score_kernel=score_kernel, basis_coefficients=basis_coefficients, **denominators,
     )
     batch, time, heads, qk_dim = q.shape
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -551,6 +584,11 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
     queries = jnp.swapaxes(queries, 0, 1)
     padded_coefficients = key_factors = padded_query_gate_input = key_gate = gate_rate = None
     log_decay = padded_log_decay = None
+    padded_basis_coefficients = None
+    if basis_coefficients is not None:
+        expanded = jnp.broadcast_to(basis_coefficients, (batch, time, heads, len(score_kernel.basis)))
+        padded_basis_coefficients = jnp.pad(expanded.astype(compute),
+                                            ((0, 0), (0, pad), (0, 0), (0, 0)))
     if m.query_conditioned:
         padded_coefficients = jnp.pad(query_polynomial_coefficients.astype(compute),
                                       ((0, 0), (0, pad), (0, 0), (0, 0)))
@@ -583,7 +621,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
             query_gate_input=padded_query_gate_input, key_gate=key_gate, gate_log_rate=gate_log_rate,
             gate_rate=gate_rate, query_log_decay=padded_log_decay, key_log_decay=log_decay,
             compute=compute, output_dtype=v.dtype, return_diagnostics=return_diagnostics,
-            spline_pieces=spline_pieces,
+            spline_pieces=spline_pieces, basis_coefficients=padded_basis_coefficients,
         )
 
     _, result = jax.lax.scan(

@@ -21,7 +21,7 @@ from scaffolds.transformer.attention.taylor import _validate_degree
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.training import telemetry
 
-AttentionBackend = Literal["blocked", "fused", "manual", "auto", "xla", "cudnn"]
+AttentionBackend = Literal["blocked", "fused", "mosaic", "triton_scalar", "manual", "auto", "xla", "cudnn"]
 
 
 def attention_from_config(config, *, rngs: nnx.Rngs):
@@ -48,6 +48,9 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
             write_activation=config.gdn_write_activation,
             polynomial_degree=config.gdn_polynomial_degree, rngs=rngs,
         )
+    from scaffolds.transformer.attention.basis import projection_from_config
+
+    score_kernel = None if config.attention_basis is None else projection_from_config(config.attention_basis)
     return MultiHeadAttention(
         config.hidden_size, config.num_heads, config.num_kv_heads,
         config.qk_head_dim, config.value_head_dim, rope_theta=config.rope_theta,
@@ -69,6 +72,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         qk_norm_head_scale=config.qk_norm_head_scale,
         qk_norm_token_scale=getattr(config, "qk_norm_token_scale", "none"),
         attention_output_scaling=config.attention_output_scaling, rms_norm_eps=config.rms_norm_eps,
+        score_kernel=score_kernel,
         positional_encoding=config.positional_encoding,
         attention_forget_gate=getattr(config, "attention_forget_gate", False),
         attention_forget_gate_mode=getattr(config, "attention_forget_gate_mode", "cumulative"),
@@ -104,6 +108,7 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_activation: str = "identity",
+        score_kernel=None,
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
         positional_encoding: str = "rope",
@@ -137,6 +142,16 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
         self.positional_encoding = positional_encoding
         _validate_degree(attention_degree)
+        if score_kernel is not None and (
+                not callable(score_kernel) or backend not in ("blocked", "triton_scalar") or attention_degree is not None
+                or quadratic_mode != "fixed" or attention_fixed_coefficients is not None
+                or attention_fixed_square_factors is not None or attention_coefficient_conditioning not in ("static", "query")
+                or attention_kernel_basis != "polynomial" or attention_forget_gate
+                or attention_coefficient_gate != "none" or attention_coefficient_readout != "diagonal"
+                or attention_coefficient_readout_scale != 1.0 or attention_coefficient_orders is not None
+                or positional_encoding == "path" or backend == "blocked" and attention_blocked_implementation != "scan"):
+            raise ValueError("A scalar score kernel requires blocked or triton_scalar attention without polynomial options")
+        self.score_kernel = score_kernel
         if not isinstance(attention_normalization, bool):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
@@ -153,7 +168,7 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The per-token query scale extends QK RMS head scaling")
         if qk_norm and attention_degree == 0:
             raise ValueError("QK-norm requires a kernel that reads scores; degree 0 ignores Q/K")
-        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic")):
+        if not attention_normalization and (quadratic_mode != "fixed" or backend not in ("blocked", "fused", "mosaic", "triton_scalar")):
             raise ValueError("Unnormalized attention requires a fixed exp/Taylor kernel and a blocked, fused or mosaic backend")
         if attention_output_scaling not in OUTPUT_SCALINGS:
             raise ValueError(f"Unknown attention output scaling: {attention_output_scaling}")
@@ -192,9 +207,9 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("This experiment requires full MHA (num_heads == num_kv_heads)")
         if qk_head_dim % 2:
             raise ValueError("qk_head_dim must be even for RoPE")
-        if backend not in ("blocked", "fused", "mosaic", "manual", "auto", "xla", "cudnn"):
+        if backend not in ("blocked", "fused", "mosaic", "triton_scalar", "manual", "auto", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {backend}")
-        if backend not in ("blocked", "fused", "mosaic") and attention_degree is not None:
+        if backend not in ("blocked", "fused", "mosaic", "triton_scalar") and attention_degree is not None:
             raise ValueError("Taylor attention requires backend='blocked', 'fused' or 'mosaic'")
         if backend != "manual" and dropout != 0.0:
             raise ValueError("Blocked/fused attention requires dropout=0")
@@ -292,7 +307,8 @@ class MultiHeadAttention(nnx.Module):
         if attention_coefficient_conditioning == "query_key" and attention_coefficient_activation != "tanh":
             raise ValueError("Query-key coefficients require the tanh activation")
         if attention_coefficient_conditioning in ("query", "query_key") and (
-                attention_normalization or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"
+                attention_normalization or (score_kernel is None and (attention_degree is None or attention_degree < 1))
+                or quadratic_mode != "fixed"
                 or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None):
             raise ValueError("Query-conditioned coefficients require unnormalized polynomial attention")
         if (attention_coefficient_conditioning == "query" and attention_coefficient_activation == "identity"
@@ -315,16 +331,20 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_orders = attention_coefficient_orders
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
-        if attention_coefficient_amplitude_scale not in ("none", "factorial"):
+        if attention_coefficient_amplitude_scale not in ("none", "factorial", "projection"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
         if (attention_coefficient_amplitude_scale != "none"
                 and attention_coefficient_activation not in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid")):
             raise ValueError("An amplitude scale applies to tanh and sigmoid coefficients only")
         self.attention_coefficient_activation = attention_coefficient_activation
         self.attention_coefficient_amplitude_scale = attention_coefficient_amplitude_scale
-        if attention_coefficient_scale not in ("none", "factorial"):
+        if attention_coefficient_scale not in ("none", "factorial", "projection"):
             raise ValueError(f"Unknown attention coefficient scale: {attention_coefficient_scale}")
         self.attention_coefficient_scale = attention_coefficient_scale
+        for scale in (attention_coefficient_scale, attention_coefficient_amplitude_scale):
+            if (scale == "projection" and score_kernel is None
+                    or scale == "factorial" and score_kernel is not None):
+                raise ValueError("Coefficient scaling must match the polynomial or scalar basis")
         if attention_coefficient_gate not in ("none", "sigmoid", "gdn"):
             raise ValueError(f"Unknown attention coefficient gate: {attention_coefficient_gate!r}")
         if attention_coefficient_gate != "none" and (
@@ -435,11 +455,12 @@ class MultiHeadAttention(nnx.Module):
         output_norm_scale = parameters.pop("output_norm_scale", None)
         if (self.attention_output_scaling == "head_rms_norm") != (output_norm_scale is not None):
             raise ValueError("Head RMSNorm output scaling requires exactly its model-owned output_norm_scale parameter")
-        query_kernel = parameters.pop("query_polynomial_kernel", None)
-        query_bias = parameters.pop("query_polynomial_bias", None)
-        query_amplitude = parameters.pop("query_polynomial_amplitude", None)
-        query_mixing = parameters.pop("query_polynomial_mixing", None)
-        query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
+        query_prefix = "query_basis" if self.score_kernel is not None else "query_polynomial"
+        query_kernel = parameters.pop(f"{query_prefix}_kernel", None)
+        query_bias = parameters.pop(f"{query_prefix}_bias", None)
+        query_amplitude = parameters.pop(f"{query_prefix}_amplitude", None)
+        query_tanh_bias = parameters.pop(f"{query_prefix}_tanh_bias", None)
+        query_mixing = parameters.pop(f"{query_prefix}_mixing", None)
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
         gate_kernel = parameters.pop("query_polynomial_gate_kernel", None)
@@ -479,6 +500,19 @@ class MultiHeadAttention(nnx.Module):
                 query_bias = factorial_scale(query_bias, self.attention_coefficient_orders)
             else:
                 parameters["polynomial_coefficients"] = factorial_scale(parameters["polynomial_coefficients"])
+        if self.attention_coefficient_scale == "projection":
+            scale = jnp.asarray(self.score_kernel.coefficients, dtype=jnp.float32)
+            if (query_bias is None) == ("basis_coefficients" not in parameters):
+                raise ValueError("Projection scaling needs exactly one learned basis coefficient array")
+            if query_bias is not None:
+                query_bias = query_bias.astype(jnp.float32) * scale
+            else:
+                parameters["basis_coefficients"] = parameters["basis_coefficients"].astype(jnp.float32) * scale
+        if self.attention_coefficient_amplitude_scale == "projection":
+            if query_amplitude is None:
+                raise ValueError("Projection amplitude scaling requires a learned query amplitude")
+            query_amplitude = query_amplitude.astype(jnp.float32) * jnp.asarray(
+                self.score_kernel.coefficients, dtype=jnp.float32)
         if spline:
             # theta per layer/head, or theta_j(x_t) = b_j + a_j tanh(w_j^T x_t) from the monomial
             # query generator's own FP32 projection; the kernel is attention/spline.py's.
@@ -510,11 +544,12 @@ class MultiHeadAttention(nnx.Module):
                 effective_coefficients = project_coefficients(
                     x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
-                    amplitude_scale=self.attention_coefficient_amplitude_scale,
+                    amplitude_scale=("none" if self.attention_coefficient_amplitude_scale == "projection"
+                                     else self.attention_coefficient_amplitude_scale),
                     readout_scale=self.attention_coefficient_readout_scale,
                     orders=self.attention_coefficient_orders, gate_kernel=gate_kernel, gate_bias=gate_bias,
                     gate_log_rate=gate_log_rate)
-            parameters["query_polynomial_coefficients"] = effective_coefficients
+            parameters["basis_coefficients" if self.score_kernel is not None else "query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
                     raise ValueError("Query-key attention requires its model-owned key kernel and amplitude")
@@ -652,6 +687,24 @@ class MultiHeadAttention(nnx.Module):
                                                 *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
+        if (self.backend == "triton_scalar" and self.score_kernel is not None
+                and not self.attention_normalization and self.attention_output_scaling == "head_rms_norm"):
+            basis_coefficients = parameters.pop("basis_coefficients", None)
+            if parameters:
+                raise ValueError("A scalar score kernel cannot receive polynomial parameters")
+            from scaffolds.transformer.attention.backends.triton_scalar import basis_kernel, scalar_attention
+            y = scalar_attention(q, k, v, kernel=basis_kernel(self.score_kernel, implementation="auto" if basis_coefficients is None else "direct"),
+                                 basis_coefficients=basis_coefficients, output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+            diagnostics = None
+            if return_diagnostics or telemetry.active():
+                # Diagnostics inspect the raw mathematical operation separately;
+                # never label the RMS-normalized tensor as the raw attention output.
+                raw = attention_core(q, k, v, backend="blocked", score_kernel=self.score_kernel,
+                                     basis_coefficients=basis_coefficients, attention_normalization=False, return_diagnostics=return_diagnostics)
+                raw, diagnostics = raw if return_diagnostics else (raw, None)
+                telemetry.record_attention_output(raw, head_rms_norm_eps=self.rms_norm_eps)
+            output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
+            return (output, diagnostics) if return_diagnostics else output
         gate_statistics = None
         if return_diagnostics and gate_kernel is not None:
             from scaffolds.transformer.attention.input_dependent import (
@@ -673,6 +726,7 @@ class MultiHeadAttention(nnx.Module):
             quadratic_mode=self.quadratic_mode, **parameters,
             return_diagnostics=return_diagnostics, dropout=self.dropout,
             deterministic=deterministic, rngs=rngs, weights_dtype=x.dtype,
+            score_kernel=self.score_kernel,
             blocked_implementation=self.attention_blocked_implementation,
         )
         y, diagnostics = result if return_diagnostics else (result, None)

@@ -1,0 +1,31 @@
+JobId=223787 JobName=scalar-h100
+   UserId=lucastor(26364) GroupId=lucastor(26364) MCS_label=N/A
+   Priority=20161 Nice=0 Account=lucastor QOS=normal
+   JobState=RUNNING Reason=None Dependency=(null)
+   Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:00:01 TimeLimit=02:00:00 TimeMin=N/A
+   SubmitTime=2026-10-22T00:21:16 EligibleTime=2026-10-22T00:21:16
+   AccrueTime=2026-10-22T00:21:16
+   StartTime=2026-10-22T00:21:16 EndTime=2026-10-22T02:21:16 Deadline=N/A
+   PreemptEligibleTime=2026-10-22T02:21:16 PreemptTime=None
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-10-22T00:21:16 Scheduler=Backfill
+   Partition=standard AllocNode:Sid=kennel:992194
+   ReqNodeList=(null) ExcNodeList=(null)
+   NodeList=dogo
+   BatchHost=dogo
+   NumNodes=1 NumCPUs=8 NumTasks=1 CPUs/Task=8 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1
+   AllocTRES=cpu=8,mem=128G,node=1,billing=8,gres/gpu=1
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=8 MinMemoryNode=128G MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
+   Command=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/scalar_triton.sbatch
+   WorkDir=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput
+   StdErr=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/logs/scalar-223787.log
+   StdIn=/dev/null
+   StdOut=/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/logs/scalar-223787.log
+   Power=
+   MemPerTres=gpu:32000
+   TresPerNode=gres/gpu:h100:1
+   TresPerTask=cpu:8

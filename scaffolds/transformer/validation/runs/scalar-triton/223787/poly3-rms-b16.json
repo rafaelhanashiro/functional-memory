@@ -1,0 +1,545 @@
+{
+  "cases": [
+    {
+      "compile_and_first_seconds": 36.290227997116745,
+      "forward": {
+        "median_ms": 7.680305978283286,
+        "p10_ms": 7.574372086673975,
+        "p90_ms": 7.686347980052233,
+        "samples_ms": [
+          7.536051794886589,
+          7.563204038888216,
+          7.5911241583526134,
+          7.629654835909605,
+          7.689836202189326,
+          7.68661592155695,
+          7.685946067795157,
+          7.680305978283286,
+          7.684767013415694,
+          7.671716157346964,
+          7.684516021981835,
+          7.685186108574271,
+          7.684934884309769,
+          7.665835786610842,
+          7.670446066185832
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 31.210813904181123,
+        "p10_ms": 31.1550154350698,
+        "p90_ms": 31.25370661728084,
+        "samples_ms": [
+          31.1964841093868,
+          31.3016960863024,
+          31.210813904181123,
+          31.190542969852686,
+          31.211694004014134,
+          31.201384030282497,
+          31.21647401712835,
+          31.193993985652924,
+          31.235004076734185,
+          31.23112511821091,
+          31.266174977645278,
+          31.154402997344732,
+          31.1559340916574,
+          31.103443121537566,
+          31.221893848851323
+        ]
+      },
+      "implementation": "blocked",
+      "profile": "scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/blocked",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.0,
+        "dk": 0.0,
+        "dq": 0.0,
+        "dv": 0.0,
+        "output": 0.0
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 36.50089217815548,
+      "forward": {
+        "median_ms": 1.000052085146308,
+        "p10_ms": 0.9912488982081413,
+        "p90_ms": 1.0104481596499681,
+        "samples_ms": [
+          1.026201993227005,
+          1.0104922112077475,
+          1.0103820823132992,
+          0.991051085293293,
+          0.9914408437907696,
+          1.00413104519248,
+          1.0059720370918512,
+          0.9977619629353285,
+          0.9971410036087036,
+          1.0013319551944733,
+          1.000052085146308,
+          0.9999808389693499,
+          0.9954618290066719,
+          1.0071021970361471,
+          0.9911209344863892
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 3.8172819186002016,
+        "p10_ms": 3.7302985321730375,
+        "p90_ms": 3.8395429495722055,
+        "samples_ms": [
+          3.7165209650993347,
+          3.7691618781536818,
+          3.7538809701800346,
+          3.7305511068552732,
+          3.730130149051547,
+          3.805591957643628,
+          3.836242947727442,
+          3.8224421441555023,
+          3.841642988845706,
+          3.820712910965085,
+          3.8353330455720425,
+          3.8061621598899364,
+          3.854053094983101,
+          3.8172819186002016,
+          3.836392890661955
+        ]
+      },
+      "implementation": "triton_separate",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.002575755352154374,
+        "dk": 0.005046425387263298,
+        "dq": 0.0031893467530608177,
+        "dv": 0.005108457058668137,
+        "output": 0.0030155067797750235
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 11.337328981840983,
+      "forward": {
+        "median_ms": 0.9839208796620369,
+        "p10_ms": 0.9768316056579351,
+        "p90_ms": 0.9910335764288902,
+        "samples_ms": [
+          0.964821083471179,
+          0.9773410856723785,
+          0.9839208796620369,
+          0.9888021741062403,
+          0.978891970589757,
+          0.988801009953022,
+          0.9850610513240099,
+          0.9833020158112049,
+          0.9925211779773235,
+          0.9877409320324659,
+          0.9764919523149729,
+          0.9823010768741369,
+          0.9814410004764795,
+          0.9873108938336372,
+          0.997062074020505
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 3.8669828791171312,
+        "p10_ms": 3.8170950021594763,
+        "p90_ms": 3.9115365128964186,
+        "samples_ms": [
+          3.79095203243196,
+          3.8213729858398438,
+          3.8238619454205036,
+          3.8142430130392313,
+          3.829351859167218,
+          3.9068851619958878,
+          3.9196049328893423,
+          3.9101638831198215,
+          3.9124249015003443,
+          3.91020392999053,
+          3.8711330853402615,
+          3.857244038954377,
+          3.8669828791171312,
+          3.883363911882043,
+          3.855832852423191
+        ]
+      },
+      "implementation": "triton_fused",
+      "profile": "scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/triton_fused",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.0024140917230397463,
+        "dk": 0.005337979644536972,
+        "dq": 0.0036965925246477127,
+        "dv": 0.005415869411081076,
+        "output": 0.0032647259067744017
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 11.16892096400261,
+      "forward": {
+        "median_ms": 1.4586611650884151,
+        "p10_ms": 1.4557294081896544,
+        "p90_ms": 1.4733141288161278,
+        "samples_ms": [
+          1.4568620827049017,
+          1.4586611650884151,
+          1.4485421124845743,
+          1.4562809374183416,
+          1.4565419405698776,
+          1.455581048503518,
+          1.4559519477188587,
+          1.4630609657615423,
+          1.4641419984400272,
+          1.4657811261713505,
+          1.4576020184904337,
+          1.4745420776307583,
+          1.471472205594182,
+          1.4673620462417603,
+          1.476312056183815
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 4.342174157500267,
+        "p10_ms": 4.29511284455657,
+        "p90_ms": 4.396151192486286,
+        "samples_ms": [
+          4.226032178848982,
+          4.280352033674717,
+          4.335133824497461,
+          4.321273183450103,
+          4.31725406087935,
+          4.374804208055139,
+          4.406956024467945,
+          4.412544891238213,
+          4.327473929151893,
+          4.369173897430301,
+          4.333533812314272,
+          4.3544641230255365,
+          4.342174157500267,
+          4.355893936008215,
+          4.379943944513798
+        ]
+      },
+      "implementation": "triton_streamed",
+      "profile": "scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/triton_streamed",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.002375140320509672,
+        "dk": 0.0053380331955850124,
+        "dq": 0.003695171792060137,
+        "dv": 0.005415794439613819,
+        "output": 0.0032579046674072742
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 12.404324775096029,
+      "forward": {
+        "median_ms": 3.5881679505109787,
+        "p10_ms": 3.5174024291336536,
+        "p90_ms": 3.6303509026765823,
+        "samples_ms": [
+          3.5204270388931036,
+          3.573757130652666,
+          3.5144560970366,
+          3.5153860226273537,
+          3.5611370112746954,
+          3.634667955338955,
+          3.5930881276726723,
+          3.6336989142000675,
+          3.621949115768075,
+          3.590208012610674,
+          3.569606924429536,
+          3.589186817407608,
+          3.6253288853913546,
+          3.554736962541938,
+          3.5881679505109787
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 16.673480160534382,
+        "p10_ms": 16.615718975663185,
+        "p90_ms": 16.74778196029365,
+        "samples_ms": [
+          16.7904628906399,
+          16.742832027375698,
+          16.694901045411825,
+          16.751081915572286,
+          16.673480160534382,
+          16.72493200749159,
+          16.703631030395627,
+          16.615319065749645,
+          16.70421101152897,
+          16.636549029499292,
+          16.616318840533495,
+          16.60176902078092,
+          16.644618939608335,
+          16.61834795959294,
+          16.65513007901609
+        ]
+      },
+      "implementation": "triton_precise",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.001663811388425529,
+        "dk": 0.0063708471134305,
+        "dq": 0.005056401714682579,
+        "dv": 0.004860570654273033,
+        "output": 0.002781701274216175
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 35.66236951993778,
+      "forward": {
+        "median_ms": 1.1413050815463066,
+        "p10_ms": 1.1367784813046455,
+        "p90_ms": 1.1606649961322546,
+        "samples_ms": [
+          1.1664850171655416,
+          1.1793761514127254,
+          1.1395139154046774,
+          1.1413050815463066,
+          1.146045047789812,
+          1.141394954174757,
+          1.1406640987843275,
+          1.1265149805694818,
+          1.1366941034793854,
+          1.1369050480425358,
+          1.1423451360315084,
+          1.1399539653211832,
+          1.151934964582324,
+          1.1393851600587368,
+          1.1462140828371048
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 3.9132339879870415,
+        "p10_ms": 3.8954385090619326,
+        "p90_ms": 4.060503374785185,
+        "samples_ms": [
+          3.830601926892996,
+          3.8943549152463675,
+          3.9319349452853203,
+          3.8970638997852802,
+          3.9132339879870415,
+          3.9122651796787977,
+          3.9010350592434406,
+          3.90801508910954,
+          3.9025540463626385,
+          3.9627361111342907,
+          4.018177045509219,
+          4.060287959873676,
+          4.060646984726191,
+          4.0502778720110655,
+          4.063467960804701
+        ]
+      },
+      "implementation": "pallas",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.0016638132510706782,
+        "dk": 0.004694248083978891,
+        "dq": 0.002284202491864562,
+        "dv": 0.004754027351737022,
+        "output": 0.002781699877232313
+      },
+      "status": "complete"
+    },
+    {
+      "compile_and_first_seconds": 36.31592457112856,
+      "forward": {
+        "median_ms": 0.6804550066590309,
+        "p10_ms": 0.6792824249714613,
+        "p90_ms": 0.6891110446304083,
+        "samples_ms": [
+          0.6833348888903856,
+          0.6925950292497873,
+          0.696985051035881,
+          0.6804950535297394,
+          0.6830149795860052,
+          0.6838850677013397,
+          0.6796850357204676,
+          0.680144876241684,
+          0.6790540646761656,
+          0.6784750148653984,
+          0.6804550066590309,
+          0.6796249654144049,
+          0.682715093716979,
+          0.6801451090723276,
+          0.6797038950026035
+        ]
+      },
+      "forward_backward": {
+        "median_ms": 2.3641008883714676,
+        "p10_ms": 2.355010947212577,
+        "p90_ms": 2.394897351041436,
+        "samples_ms": [
+          2.309570088982582,
+          2.3883511312305927,
+          2.3724008351564407,
+          2.362380037084222,
+          2.3641008883714676,
+          2.362790983170271,
+          2.362790983170271,
+          2.3541708942502737,
+          2.3589208722114563,
+          2.3562710266560316,
+          2.4013719521462917,
+          2.390391193330288,
+          2.39536096341908,
+          2.393352100625634,
+          2.394201932474971
+        ]
+      },
+      "implementation": "mosaic",
+      "profile": "scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/mosaic",
+      "relative_l2_errors_vs_blocked": {
+        "dgain": 0.002574740443378687,
+        "dk": 0.005046253092586994,
+        "dq": 0.003189310198649764,
+        "dv": 0.005108480341732502,
+        "output": 0.0030155000276863575
+      },
+      "status": "complete"
+    }
+  ],
+  "dtype": "bfloat16",
+  "format": "scalar-attention-comparison",
+  "function": "poly3",
+  "gpu_memory_stats": {
+    "bytes_in_use": 805318656,
+    "bytes_limit": 63787352064,
+    "bytes_reserved": 0,
+    "largest_alloc_size": 1073741824,
+    "largest_free_block_bytes": 0,
+    "num_allocs": 1726,
+    "peak_bytes_in_use": 2080391424,
+    "peak_bytes_reserved": 0,
+    "peak_pool_bytes": 2147483648,
+    "pool_bytes": 2147483648
+  },
+  "iterations": 15,
+  "mode": "rms",
+  "provenance": {
+    "benchmark_source_sha256": "1b6835f6bdbb035f295ef2e2fb4eeb31936552de526e70011e6ab6e3c8687933",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device": {
+      "description": "cuda:0",
+      "driver_version": "560.35.05",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "name": "NVIDIA H100 80GB HBM3",
+      "pci_bus_id": "00000000:04:00.0",
+      "physical_index": "0",
+      "platform": "gpu",
+      "process_index": 0,
+      "uuid": "GPU-6ba0d532-b7aa-afda-fee3-8412d43350bb"
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "SLURM_JOB_ID": "223787",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "frozen_execution_scope": {
+      "experiment": "attention_scaling",
+      "scaffold": "transformer"
+    },
+    "frozen_execution_sha256": "5bee028b9da2d2302d7e295cb385c462bbbddb724acbb1bccb8160220c96d53b",
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flash-linear-attention": "0.6.0",
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52",
+      "triton": "3.7.1"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.14",
+    "runtime_environment": {
+      "CUDA_HOME": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_TRITON_PTXAS_DEVICE_DEBUG": null,
+      "JAX_TRITON_PTXAS_EXTRA_FLAGS": null,
+      "NCCL_P2P_DISABLE": null,
+      "PATH": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin:/data/cl/u/lucastor/home/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/data/cl/user/lucastor/home/.codex/tmp/arg0-linux/codex-arg0mHKNlp:/data/cl/user/lucastor/home/.codex/tmp/arg0/codex-arg0jpGgHZ:/data/cl/u/lucastor/home/.codex/packages/standalone/releases/0.162.1-x86_64-unknown-linux-musl/codex-path:/data/cl/user/lucastor/home/.codex/tmp/arg0/codex-arg0SfTlWR:/data/cl/u/lucastor/home/.codex/packages/standalone/releases/0.162.1-x86_64-unknown-linux-musl/codex-path:/data/cl/user/lucastor/home/.config/bin:/data/cl/user/lucastor/home/.local/bin:/data/cl/user/lucastor/home/.local/bin:/usr/local/cuda/bin:/data/cl/user/lucastor/home/.local/bin:/data/cl/u/lucastor/home/.vscode/cli/servers/Stable-8b640eef5a6c6089c029249d48efa5c99adf7d51/server/bin/remote-cli:/data/cl/user/lucastor/home/.config/bin:/data/cl/u/lucastor/home/google-cloud-sdk/bin:/data/cl/user/lucastor/home/.local/bin:/usr/local/cuda/bin:/data/cl/user/lucastor/home/.local/bin:/data/cl/user/lucastor/home/.config/bin:/data/cl/user/lucastor/home/.local/bin:/usr/local/cuda/bin:/data/cl/user/lucastor/home/.local/bin:/data/cl/user/lucastor/home/.config/bin:/data/cl/user/lucastor/home/.local/bin:/usr/local/cuda/bin:/data/cl/user/lucastor/home/.local/bin:/data/cl/user/lucastor/home/.nvm/versions/node/v18.15.0/bin:/data/cl/user/lucastor/home/.cargo/bin:/data/cl/user/lucastor/miniconda3/condabin:/usr/local/csail/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/usr/local/go/bin:/home/lucastor/Xilinx/Vivado/2024.2/bin:/snap/bin:/opt/puppetlabs/bin:/usr/local/go/bin:/home/lucastor/Xilinx/Vivado/2024.2/bin:/usr/local/go/bin:/home/lucastor/Xilinx/Vivado/2024.2/bin:/home/lucastor/Xilinx/Vivado/2024.2/bin:/data/cl/user/lucastor/home/bin",
+      "POLY_GDN_MIN_CTAS_PER_SM": null,
+      "POLY_GDN_NUM_WARPS": null,
+      "POLY_GDN_VALUE_PRECISION": null,
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "TRITON_PTXAS_BLACKWELL_PATH": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin/ptxas",
+      "TRITON_PTXAS_PATH": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc/bin/ptxas",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "source_commit": "11d51ab5a95139e347b3516aa86f4983d0024670",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "31c11469d2af2f6572110b159e4c8e4e7bda2458af25c41ea823d5e5adacc724",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "a8321522447331aafc08652587ba9cb7d0e817ff6cc92ebb91df08c800a3f541",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "17d23066f78dfb4505d115d82fdd01da84355cdd05afa83190dfac2938dae272",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_key_polynomial.py": "e9c83c11e22fd94658a92fc291a9881e5d337d11fd03738ddeb8a6b863c5b2f2",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "9642ec94aa1ef4548491b61b01f214e17c000b5e7b576df4472b30cb1292194f",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "e4c4394dbe4c07ccb04c370243163591e4bef87e26c44e1e3c38b348662be0ac",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "5f681f7f564bf1fd8305e1c33218d3e6e665f8405e2fd26a582957381d22233e",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "98f2edab325a3ab75bb79f932f5ad85ca9313b246db99bdefbcb82e64cb4588b",
+      "scaffolds/transformer/attention/backends/reference.py": "b6f1a74e30a094f251d9d6c81c0206e21610ea8589a8c81c723587c95566d757",
+      "scaffolds/transformer/attention/backends/selection.py": "beb01e65a7a662b9462a6de44cc410ebd6876a054138f7af9cb7e40381105c97",
+      "scaffolds/transformer/attention/backends/triton_scalar.py": "da25e8d654fbc951131b50b644f9655aa4614e79be271c9fe61e4ff0549e2674",
+      "scaffolds/transformer/attention/backends/triton_scalar_kernels.py": "fd5feef825768a406a01ef2f7a2baace752b302a229c24bc99aedf7e00d32bbf",
+      "scaffolds/transformer/attention/basis.py": "03758a8b54e93ce4c8bd90e6f0a0e2faf6a0d5861886384b3f297521acccaffd",
+      "scaffolds/transformer/attention/core.py": "8d2d84008c92e88268ab155b22f4d8920028dd2c4575785c31451aca8caff4d5",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "64c2b7db0b955f58c5effc5132c47fe8c6a9b9465bb33cdaa4b44129cdcf761f",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "684218d869027a55408b214ab735fbea49843c4e942a857541e014f20069420f",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "25ff16d10333670c51f0f3ae67ee9d44ccd9bc1de342da0b5cf86ccf706311b0",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "919e84929d39664444267a2e5446c8e715b007129a7211168d33c6f7afac4f65",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "327957b89995b8edb6eb70c3b994b0bf3c1de750813d87979378f2a0bc153155",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "recipe": null,
+  "scope": "Resident synthetic attention operands; forward and forward plus Q/K/V/gain backward. Compilation and profiling excluded.",
+  "seed": 1729,
+  "shape": [
+    16,
+    2048,
+    16,
+    64
+  ],
+  "status": "complete",
+  "version": 1,
+  "warmup": 3
+}

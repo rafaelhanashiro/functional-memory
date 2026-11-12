@@ -97,7 +97,249 @@ metrics and execution records stay in each run. At completion retain only each
 validation-best checkpoint and move retained artifacts into Kennel's primary
 checkout before integration, following the repository lifecycle.
 
+## Fixed RBF basis counts
+
+This sweep trains **unnormalized** scalar RBF attention with **3, 5, 9, or 20**
+basis functions and **per-head RMSNorm** after the attention sum. QK normalization
+is enabled independently. Its home cluster is **Kennel**, and its open comparison
+is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
+
+| RBF count | Run ID | Status |
+| --- | --- | --- |
+| 3 | `re530e0627233` | complete: 10B tokens |
+| 5 | `r1b62a76f9b55` | complete: 10B tokens |
+| 9 | `r46c3479f9681` | complete: 10B tokens |
+| 20 | `rc28d7b48dc72` | complete: 10B tokens |
+
+For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and
+`rbf(c, 1)(s) = exp(-0.5 * (s-c)**2)`. The first three center grids are nested;
+the 20-function grid is a separate uniform grid on the same interval.
+Coefficients are fitted once to `exp(s)` under `N(0, 1)` with 128 quadrature
+nodes and checked with 256 nodes, then frozen in `model.attention_basis`.
+The fitted coefficients, centers, and widths are shared across all layers and
+heads. The Transformer parameters and per-layer/head QK scale train normally.
+All fits pass the quadrature convergence diagnostic and a float32 evaluation
+check. The Gaussian is a fitting measure, not an enforced score distribution.
+
+The shared recipe is `scaffolds/transformer/configs/base.yaml`: ten layers,
+hidden width 1,024, 16 heads, `d_K = d_V = 64`, 2,048 prediction tokens per
+sequence, global batch 256, seed 0, and 19,074 updates (10,000,269,312 tokens),
+with 400 warmup updates. These runs explicitly use `transformer_reference`
+initialization and the native `triton_scalar` backend. Each run uses **one H100**,
+layer rematerialization, and a microbatch of 16 sequences, accumulated to the
+global optimization batch. The selected backend fuses head RMSNorm and uses
+the regular-RBF recurrence for the 5-, 9-, and 20-function fits. Checkpoints are saved every 500 updates. The RBF exploratory comparison explicitly selects existing baseline executions; this sweep allocates only RBF runs.
+
+The full frozen configurations are authoritative. To reconstruct a fit for a
+count `n`, use:
+
+```python
+import numpy as np
+from scaffolds.transformer.attention.basis import fit_exp, rbf
+fit = fit_exp([rbf(float(c), 1.0) for c in np.linspace(-6, 6, n)],
+              mean=0.0, std=1.0, quadrature_order=128, check_order=256)
+```
+
+Use `worktrees/rbf-triton-training` on `codex/rbf-triton-training`. Sync its
+locked H100 environment with `uv sync --project scaffolds/transformer --locked
+--extra cuda --link-mode hardlink`. The FineWeb train/evaluation manifests under
+`/data/cl/u/rafah/home/datasets/fineweb_12b/` match the study's recorded hashes;
+all 91 referenced shards are readable. The launcher validates dataset identity
+inside each job. The [scaffold qualification](../../scaffolds/transformer/validation/README.md#native-triton-scalar-attention)
+records operator correctness, profiles and complete optimizer-update benchmarks.
+
+Submit each run to **standard**, requesting one H100. Clear inherited
+`LD_LIBRARY_PATH` so system CUDA libraries do not override the locked wheels.
+The launcher gates production on CPU and GPU checks (including native Triton),
+initialization, a full-recipe 20-update real-data pilot, and exact fresh-process
+checkpoint resumption. Pilot timing estimates total training time; runs can span
+multiple 24-hour allocations. The job requeues ten minutes before each limit
+and resumes its latest checkpoint. Queue waits and repeated work since that
+checkpoint add to the estimate.
+
+All four frozen recipes request online W&B tracking in
+`rafah-massachusetts-institute-of-technology/functional-memory`, grouped under
+`attention_scaling`, with one identity retained across checkpoint resumptions.
+Training metrics are logged every ten updates, validation every 1,000 updates,
+and checkpoints every 500 updates. Acceptance pilots disable W&B; production
+starts its own tracking identity. Canonical measurements remain in each run.
+
+```bash
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
+for RUN in rc28d7b48dc72 r46c3479f9681 r1b62a76f9b55 re530e0627233; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=online \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+    --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
+Keep the frozen execution set unchanged while any job can run or requeue.
+
+### 1× Chinchilla RBF budget
+
+The seed-zero 1× Chinchilla cohort uses the same four RBF fits and 199,916,704
+trainable parameters, including the untied input/output embeddings. The budget
+convention is **20 training tokens per total trainable parameter**
+([Chinchilla](https://arxiv.org/abs/2203.15556)). Rounding up to a whole global
+batch gives **7,627 updates × 524,288 tokens = 3,998,744,576 tokens**. The fixed
+RBF coefficients add no trainable parameters. These are fresh executions from
+reference initialization, with cosine decay ending at update 7,627; they do not
+resume the 10B-token schedules. Warmup is proportionally shortened from 400 to
+160 updates, retaining the same peak/minimum learning rates. Validation runs
+every 400 updates and at the terminal step; checkpoint cadence is 500 updates.
+All other model, data, and optimizer settings match the RBF recipe above.
+
+| RBF count | Run ID | Status |
+| --- | --- | --- |
+| 3 | `r4614f6fff21f` | complete: 3.999B tokens |
+| 5 | `r0fbe4040cc36` | complete: 3.999B tokens |
+| 9 | `r6e1b71e49350` | complete: 3.999B tokens |
+| 20 | `r8f7f83e9b6ee` | complete: 3.999B tokens |
+
+Home cluster is **Kennel**, worktree `worktrees/rbf-chinchilla`, branch
+`codex/rbf-chinchilla`. Each run uses one H100 in `standard`, with CPU/GPU
+checks, a full-recipe pilot, and exact checkpoint resume before production.
+The recipes request the configured private W&B project; local measurements
+remain authoritative if the service denies access. No baseline training is
+allocated by this cohort.
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
+LAUNCH_COMMIT=4e6919c8dabf6510317e9c64d2f3219e15b27810
+for RUN in r8f7f83e9b6ee r6e1b71e49350 r0fbe4040cc36 r4614f6fff21f; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=online \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+    --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$LAUNCH_COMMIT" 1 H100
+done
+```
+
+### Learned 9-RBF coefficients at 1× Chinchilla
+
+The learned-coefficient comparison keeps the nine Gaussian centers uniformly
+spaced from −6 to 6 with width 1, using the fitted exp coefficients as the initial
+weights. The static variant learns one coefficient vector per layer/head.
+The query-dependent variant uses the polynomial experiments' form
+`c_j(x_t) = b_j + a_j tanh(w_j^T x_t)`, where `x_t` is the query token's activation
+after the block input RMSNorm. Each layer/head owns its projections, biases and
+amplitudes. Biases start at the fitted RBF weights, amplitudes at zero, and
+projection entries at `N(0, 1/1024)`. Thus both start at the fixed-RBF function;
+the amplitude learns first and subsequently enables projection-weight learning.
+Centers and widths remain fixed. Coefficient parameters are FP32, without weight
+decay. QK normalization and per-head output RMSNorm remain enabled.
+
+| Coefficients | Run ID | Parameters | Updates | Training tokens |
+| --- | --- | ---: | ---: | ---: |
+| Static learned | `r55b028eb88a6` | 199,918,144 | 7,627 | 3,998,744,576 |
+| Query-dependent learned | `r564c8c864d15` | 201,394,144 | 7,683 | 4,028,104,704 |
+
+Budgets round 20 tokens per total trainable parameter up to a full batch.
+Warmup is 160 and 161 updates, respectively; all other data, optimizer, seed,
+and model settings match the fixed 1× cohort. The additional query projection
+parameters therefore receive the same budget convention. The fixed 9-RBF
+comparison is `r6e1b71e49350`; results remain in the
+[RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
+
+Both runs completed their full budgets on 2026-10-25: Slurm jobs **225077**
+(static) and **225078** (query-dependent). Each retains its validation-best
+checkpoint, which is also terminal, and native offline W&B history. Quality
+findings are in the [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md#learned-9-rbf-comparison).
+
+Home cluster: **Kennel**, worktree `worktrees/rbf-learned-9`, branch
+`codex/rbf-learned-9`. Each run uses one H100. Native coefficient gradients are
+qualified against independent dense attention, followed by the shared full-recipe
+training pilot and exact checkpoint resumption. Offline W&B retains a native
+uploadable history within each run while project permissions are unresolved.
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+export EJKERNEL_TRITON_CACHE_COMPILES=1
+export EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton"
+LAUNCH_COMMIT=3f009173139a41aaf28545aefbe66257862d0a1e
+for RUN in r55b028eb88a6 r564c8c864d15; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=offline \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+    --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+    --output="experiments/attention_scaling/runs/$RUN/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.attention_scaling.acceptance \
+    "experiments/attention_scaling/runs/$RUN/config.yaml" "$LAUNCH_COMMIT" 1 H100
+done
+```
+
 ## Runs and comparisons
+
+### RBFs on Rafael's 200M / 4B recipe
+
+The matched cohort takes the executed exponential-control recipe
+`r83139ea7389c` (its recipe is preserved at
+`experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml` in source
+`36b074480751897c8b8f9754cbc13c22594024be`), and changes the scalar attention
+function and coefficient parameterization. It uses 15 layers, width 896, 14 heads,
+width-64 Q/K/V, truncated reference initialization, FP32 norm statistics, per-layer
+Q/K RMSNorm gains, seed 42, and per-head output RMSNorm. The optimizer retains
+peak LR 0.001, floor 0.0001, 455 warmup updates and 7,570 total updates. All three
+variants receive exactly 3,968,860,160 prediction tokens. Evaluation retains 19
+batches (9,961,472 tokens), every 100 steps through 1,500 and every 500 thereafter,
+plus the terminal evaluation. Data, global batch 256 and microbatch 16 match.
+
+The nine Gaussian RBFs have fixed centers uniformly spaced over [-6, 6], width
+one, and the same frozen Gaussian-weighted exp fit as `r6e1b71e49350`.
+The fixed control keeps the fitted coefficients `s_j`. Learned static coefficients
+are `s_j theta_j`, with `theta_j` initially one. Query-dependent coefficients are
+`s_j [b_j + a_j tanh(w_j^T x)]`, with `b_j=1`, `a_j=0` and independent projection
+entries drawn from `N(0, 1/896)`. The incoming query activation `x` is after the
+block input RMSNorm. Each layer/head owns its coefficients; coefficient parameters
+are FP32 without decay. This matches the static and tanh forms and relative
+coefficient coordinates of Rafael's degree-eight polynomials. The same named
+random stream also gives the same initial query projections. Centers and widths
+remain fixed. Fixed/static/query parameter counts match the corresponding
+degree-eight polynomial variants.
+
+`experiments.attention_scaling.rbf_matched` verifies the frozen fixed-control recipe's SHA256
+and rejects every difference outside the declared RBF choices and run/logging
+identity. Its acceptance adds relative-coefficient chain-rule checks and
+full-context H100 parity for Q/K RMSNorm, RoPE, the RBF operation and output RMSNorm,
+followed by the shared initialization audit, full-recipe pilot and exact resume.
+The backbone hash must equal the reference run's saved CPU initialization audit
+(`bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b`).
+All three runs completed on one H100 each on Kennel. Their records identify the
+retained artifacts; the frozen fixed-control recipe preserves the audited shared
+settings independently of the reference study's current layout.
+Native offline W&B history is retained while project permissions are unresolved.
+Findings belong in the [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
+
+| Coefficient mode | Run ID | Parameters |
+| --- | --- | ---: |
+| Fixed | `r4ef941dde7b9` | 198,453,376 |
+| Learned static | `rd3711311e629` | 198,455,266 |
+| Learned query-dependent | `r77e00510b1b0` | 200,150,596 |
+
+Submit from this cohort's worktree after committing the frozen execution set:
+
+```bash
+LAUNCH_COMMIT=$(git rev-parse HEAD)
+for RUN in r4ef941dde7b9 rd3711311e629 r77e00510b1b0; do
+  env -u LD_LIBRARY_PATH TRANSFORMER_ALLOCATION_HOURS=24 TRANSFORMER_WANDB_MODE=offline \
+    PYTHONDONTWRITEBYTECODE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+    EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/transformer/triton" \
+    sbatch --partition=standard --time=24:00:00 --gres=gpu:h100:1 \
+      --cpus-per-task=8 --mem=128G --job-name="$RUN" \
+      --output="experiments/attention_scaling/runs/$RUN/training.log" \
+      scaffolds/transformer/launchers/kennel.sbatch experiments.attention_scaling.rbf_matched \
+      "experiments/attention_scaling/runs/$RUN/config.yaml" "$LAUNCH_COMMIT" 1 H100
+done
+```
 
 Each `runs/<run_id>/` holds one complete recipe and execution. Settings are fields
 in `config.yaml` and columns in `runs.csv`: attention family, `d_K`, degree,

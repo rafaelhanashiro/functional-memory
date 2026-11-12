@@ -18,6 +18,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --exclude=collie,samoyed,doodle,terrier,shiba
 #SBATCH --time=1-00:00:00
+#SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
 set -euo pipefail
@@ -101,6 +102,11 @@ finish_record() {
   exit "$result"
 }
 trap finish_record EXIT
+requeue_before_limit() {
+  echo "Requeueing job $SLURM_JOB_ID before its time limit; it resumes from the latest checkpoint"
+  scontrol requeue "$SLURM_JOB_ID"
+}
+trap requeue_before_limit USR1
 start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
@@ -113,10 +119,10 @@ export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg"
 # unlink/read operations can stall an otherwise idle GPU process; keep these local.
 TRANSFORMER_JOB_TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/functional-memory-${SLURM_JOB_ID}.XXXXXX")"
 export TMPDIR="$TRANSFORMER_JOB_TMPDIR"
-# jaxlib assembles Triton custom-call PTX with the first ptxas among its CUDA roots,
-# which is the node's /usr/local/cuda unless CUDA_HOME names another; pin the locked toolkit.
+# JAX's custom-call runtime searches PATH before CUDA roots. Pin both searches
+# to the locked toolkit; CUDA_HOME alone leaves the node's older ptxas on PATH.
 CUDA_HOME="$(transformer_cuda_home "$PYTHON")"
-export CUDA_HOME
+export CUDA_HOME PATH="$CUDA_HOME/bin:$PATH"
 # Triton assembles with its bundled ptxas (CUDA 13.1 for Blackwell) and emits PTX newer
 # than the locked toolkit's ptxas, which jaxlib uses for custom calls, can read. Point
 # Triton's assemblers at the locked toolkit so both agree on the PTX version.
@@ -161,7 +167,8 @@ PY
 # Acceptance and production share the allocation; matching passed stages are reused on a requeue
 # to the same GPU model, and passed test stages are shared with the worktree's other runs.
 run_step "$PYTHON" -m "$ADAPTER" "$CONFIG" --directory "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT" \
-  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests"
+  --gpu-count "$GPU_COUNT" --gpu-type "$GPU_TYPE" --test-cache "$CACHE/acceptance-tests" \
+  --allocation-hours "${TRANSFORMER_ALLOCATION_HOURS:-48}" --allow-requeue
 "$PYTHON" - "$RUN_ROOT" "$LOGS/acceptance/$GPU_TYPE-$GPU_COUNT/success.json" <<'PY'
 import hashlib, json, sys
 from pathlib import Path

@@ -179,7 +179,7 @@ _GROUP_RULES = (
     ("qk_norm_scale", re.compile(r"qk_norm_log_scale")),
     ("qk_norm_gains", re.compile(r"qk_norm_[qk]_gain")),
     ("attention_output_norm", re.compile(r"output_norm_scale|o_norm_scale")),
-    ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator|spline")),
+    ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator|spline|basis")),
     ("norm_scales", re.compile(r"(attention_norm|ffn_norm|final_norm)/")),
 )
 

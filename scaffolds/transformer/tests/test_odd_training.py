@@ -154,7 +154,9 @@ def test_odd_finite_loss_invalid_gradient_persists_scientific_failure(tmp_path, 
         _, _, *statistics = actual(state, *args, **kwargs)
         return jnp.array(2.0), jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), state.params), *statistics
 
-    monkeypatch.setattr(loop, "microbatch_loss_and_grads", finite_loss_invalid_gradient)
+    # Accumulation now traces the differentiation boundary into its scan.
+    monkeypatch.setattr(loop, "loss_and_grads", finite_loss_invalid_gradient)
+    loop.accumulated_train_step.clear_cache()
     with pytest.raises(FloatingPointError, match="step 1"):
         loop.run_training(config)
     failure = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())

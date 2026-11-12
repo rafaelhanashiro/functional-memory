@@ -1,0 +1,133 @@
+data:
+  source: packed
+  dataset_name: HuggingFaceFW/fineweb-edu
+  dataset_config: sample-100BT
+  split: train
+  tokenizer_name: NousResearch/Llama-2-7b-hf
+  text_field: text
+  train_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json
+  eval_manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+  batch_size: 256
+  sequence_length: 2049
+  shuffle_seed: 0
+  synthetic_vocab_size: 32000
+model:
+  kind: transformer
+  vocab_size: 32000
+  max_seq_len: 2048
+  num_layers: 10
+  hidden_size: 1024
+  num_heads: 16
+  num_kv_heads: 16
+  qk_head_dim: 64
+  value_head_dim: 64
+  intermediate_size: 3008
+  rope_theta: 10000.0
+  rms_norm_eps: 1.0e-06
+  dropout: 0.0
+  tie_embeddings: false
+  remat: true
+  attention_backend: blocked
+  attention_degree: null
+  attention_normalization: false
+  attention_basis:
+    version: 1
+    target: exp
+    basis:
+    - kind: rbf
+      center: -6.0
+      width: 1.0
+    - kind: rbf
+      center: -3.0
+      width: 1.0
+    - kind: rbf
+      center: 0.0
+      width: 1.0
+    - kind: rbf
+      center: 3.0
+      width: 1.0
+    - kind: rbf
+      center: 6.0
+      width: 1.0
+    coefficients:
+    - 5.339937464674399
+    - -0.23400716082225384
+    - 0.9312125373360598
+    - 13.07024840694441
+    - 370.9794096959457
+    mean: 0.0
+    std: 1.0
+    quadrature_order: 128
+    check_order: 256
+    rcond: 1.0e-12
+    diagnostics:
+      rank: 5
+      condition_number: 1.5013138663031034
+      check_condition_number: 1.5013138663031045
+      l2_error: 0.3286759869035036
+      relative_l2_error: 0.1209131383885332
+      relative_quadrature_change: 7.193675201588409e-16
+      relative_target_norm_error: 3.3306690738754696e-16
+      quadrature_converged: true
+      negative_mass_estimate: 0.024453802311643624
+  attention_output_scaling: head_rms_norm
+  attention_mechanism: dot_product
+  gdn_conv_size: 4
+  gdn_erase_mode: tied
+  gdn_write_activation: sigmoid
+  gdn_polynomial_degree: 1
+  gla_gate_rank: 16
+  gla_gate_tau: 16.0
+  gla_chunk_size: 64
+  gla_inner_chunk_size: 16
+  gla_use_rope: true
+  quadratic_mode: fixed
+  quadratic_sharing: global
+  attention_coefficients: fixed
+  attention_fixed_coefficients: null
+  attention_fixed_square_factors: null
+  attention_coefficient_sharing: global
+  attention_coefficient_conditioning: static
+  attention_coefficient_activation: identity
+  attention_coefficient_amplitude_initial: 1.0
+  attention_coefficient_projection_initial_std: 0.0
+  attention_coefficient_tanh_bias: false
+  attention_coefficient_parameterization: direct
+  attention_coefficient_initialization: taylor
+  attention_denominator_degree: null
+  attention_denominator_parameterization: direct
+  attention_denominator_constant: fixed
+  qk_norm: true
+  qk_norm_sharing: per_head
+  qk_norm_initial_scale: null
+  qk_norm_eps: 1.0e-06
+  initialization: transformer_reference
+optim:
+  learning_rate: 0.0003
+  min_learning_rate: 3.0e-05
+  weight_decay: 0.1
+  weight_decay_policy: exclude_embeddings_norms_biases_v1
+  coefficient_penalty: 0.0
+  coefficient_penalty_denominator: true
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip_norm: 1.0
+  warmup_steps: 400
+  total_steps: 19074
+train:
+  seed: 0
+  source_commit: auto
+  dtype: bfloat16
+  workdir: experiments/attention_scaling/runs/r1b486c356e1a
+  checkpoint_dir: experiments/attention_scaling/runs/r1b486c356e1a/checkpoints
+  micro_batch_size: 1
+  log_every: 10
+  eval_every: 1000
+  eval_batches: 7
+  ckpt_every: 500
+  wandb_project: functional-memory
+  wandb_entity: rafah-massachusetts-institute-of-technology
+  wandb_run_name: 200m-rbf-n05-unnormalized-headrms-qknorm-dk64-seed0
+  wandb_group: attention_scaling
+  wandb_dir: null
+  wandb_mode: online

@@ -50,7 +50,7 @@ class ModelConfig:
     # Retained for recipe compatibility; this scaffold requires separate weights.
     tie_embeddings: bool = False
     remat: bool = False
-    attention_backend: Literal["auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"] = "auto"
+    attention_backend: Literal["auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"] = "auto"
     # How the blocked backend runs dot-product attention with RoPE or no positional encoding.
     # "scan" (historical) evaluates 128-query blocks against every key, summing dK/dV across
     # blocks in the input dtype; "strips" evaluates the same arithmetic over causal 512-query
@@ -60,6 +60,9 @@ class ModelConfig:
     attention_blocked_implementation: Literal["scan", "strips"] = "scan"
     attention_degree: int | None = None
     attention_normalization: bool = True
+    # Scalar-basis initialization projection from attention.basis.fit_exp(...).to_config().
+    # Coefficients are fitted before launch; evaluation uses blocked JAX or opt-in native Triton.
+    attention_basis: dict | None = None
     # Unnormalized dot-product attention only: rescale each head's output
     # o_t = sum_(j<=t) k(s_tj) v_j before the output projection. "inverse_position"
     # divides by the number of visible keys t; "head_rms_norm" applies an RMSNorm over
@@ -176,12 +179,13 @@ class ModelConfig:
     path_conv_size: int = 3
     # "factorial" divides the tanh amplitude of order r by r!, c_r = b_r + (a_r/r!) tanh(w_r^T x_t),
     # so under Adam's unit-scale steps order r's modulation moves at lr/r!, matching b_r = 1/r!.
-    # Sigmoid coefficients become sigmoid(w_r^T x_t)/r! (dense: V's row r divided by r!).
-    attention_coefficient_amplitude_scale: Literal["none", "factorial"] = "none"
+    attention_coefficient_amplitude_scale: Literal["none", "factorial", "projection"] = "none"
     # "factorial" stores order r's input-independent coefficient (static c_r, or the query
     # bias b_r) as r! times its value, c_r = c~_r / r!, so under Adam it moves at lr/r!
     # and its gradient carries s^r / r! rather than s^r. It starts at the same values.
-    attention_coefficient_scale: Literal["none", "factorial"] = "none"
+    # "projection" instead multiplies stored scalar-basis coefficients by their
+    # frozen fitted weights, the analogue of learning relative Taylor coefficients.
+    attention_coefficient_scale: Literal["none", "factorial", "projection"] = "none"
     # The score function's basis. "polynomial" (historical): monomials, sum_r c_r s^r of degree
     # attention_degree. "bspline": f(s) = sum_j theta_j B_j(s), the fixed B-splines of degree
     # attention_degree on the distinct attention_spline_knots, clamped (each endpoint repeated
@@ -203,7 +207,8 @@ class ModelConfig:
     # "linear" starts the numerator at s and the denominator at 1 (a_1 = 1, b_0 = 1,
     # all other coefficients 0), so a rational kernel starts at linear attention
     # divided by the number of visible keys. Not available with sum_of_squares.
-    attention_coefficient_initialization: Literal["taylor", "linear"] = "taylor"
+    # "projection" initializes learned scalar-basis weights from attention_basis.
+    attention_coefficient_initialization: Literal["taylor", "linear", "projection"] = "taylor"
     # Rational kernels only: the denominator's degree (null: attention_degree) and form.
     # "direct" learns b_1..b_d of 1 + sum_r b_r s^r; "sum_of_squares" (even d) learns
     # u_1..u_k, w_1..w_k of (1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2, a nonnegative
@@ -248,6 +253,8 @@ class ModelConfig:
         static (fixed or learned) coefficients, at its widths and degrees."""
         from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 
+        if self.attention_basis is not None:
+            return False
         degree = self.attention_degree
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
         if getattr(self, "attention_kernel_basis", "polynomial") != "polynomial":
@@ -320,6 +327,30 @@ class ModelConfig:
         return "query_polynomial"
 
     def __post_init__(self):
+        if self.attention_basis is not None:
+            from scaffolds.transformer.attention.basis import projection_from_config
+
+            projection_from_config(self.attention_basis)
+            if (self.attention_mechanism != "dot_product" or self.attention_degree is not None
+                    or self.quadratic_mode != "fixed"
+                    or self.attention_fixed_coefficients is not None or self.attention_fixed_square_factors is not None
+                    or self.attention_coefficient_conditioning not in ("static", "query")
+                    or self.attention_coefficient_parameterization != "direct"
+                    or self.attention_kernel_basis != "polynomial" or self.attention_forget_gate
+                    or self.attention_coefficient_gate != "none" or self.attention_coefficient_readout != "diagonal"
+                    or self.attention_coefficient_readout_scale != 1.0 or self.attention_coefficient_feature_count is not None
+                    or self.attention_coefficient_kernel_weight_decay or self.attention_coefficient_orders is not None
+                    or self.positional_encoding == "path"
+                    or self.attention_backend in ("auto", "blocked") and self.attention_blocked_implementation != "scan"):
+                raise ValueError("attention_basis requires scalar dot-product attention without polynomial options")
+            if self.attention_coefficients == "learned" and self.attention_normalization:
+                raise ValueError("Learned basis coefficients currently require unnormalized attention")
+            if self.attention_coefficients == "learned" and self.attention_coefficient_initialization != "projection":
+                raise ValueError("Learned basis coefficients require projection initialization")
+            if self.attention_backend not in ("auto", "blocked", "triton_scalar"):
+                raise ValueError("attention_basis supports auto, blocked or triton_scalar execution")
+        if self.attention_backend == "triton_scalar" and self.attention_basis is None:
+            raise ValueError("Model triton_scalar dispatch currently requires attention_basis")
         if self.kind != "transformer":
             raise ValueError("The shared scaffold supports only kind=transformer")
         if self.tie_embeddings is not False:
@@ -341,7 +372,7 @@ class ModelConfig:
                      or (self.attention_mechanism == "gla" and self.gla_use_rope))
         if self.qk_head_dim % 2 and uses_rope:
             raise ValueError("model.qk_head_dim must be even for RoPE")
-        if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "manual", "xla", "cudnn"):
+        if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "triton_scalar", "manual", "xla", "cudnn"):
             raise ValueError(f"Unknown attention backend: {self.attention_backend}")
         if self.positional_encoding not in ("rope", "path", "none"):
             raise ValueError(f"Unknown positional encoding: {self.positional_encoding}")
@@ -431,7 +462,7 @@ class ModelConfig:
         if not self.attention_normalization:
             if self.quadratic_mode != "fixed":
                 raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
-            if self.attention_backend not in ("auto", "blocked", "fused", "mosaic"):
+            if self.attention_backend not in ("auto", "blocked", "fused", "mosaic", "triton_scalar"):
                 raise ValueError("Unnormalized attention requires backend='auto', 'blocked', 'fused' or 'mosaic'")
         if self.attention_backend in ("manual", "xla", "cudnn") and self.attention_degree is not None:
             raise ValueError(f"Backend {self.attention_backend!r} supports exact softmax only")
@@ -487,8 +518,9 @@ class ModelConfig:
             if (self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                     or self.attention_coefficient_parameterization != "direct"
                     or self.attention_coefficient_sharing != "per_head"
-                    or self.attention_degree is None or self.attention_degree < 1 or self.attention_normalization
-                    or self.attention_coefficient_initialization != "taylor"):
+                    or (self.attention_basis is None and (self.attention_degree is None or self.attention_degree < 1))
+                    or self.attention_normalization
+                    or self.attention_coefficient_initialization != ("projection" if self.attention_basis is not None else "taylor")):
                 raise ValueError("Query-conditioned coefficients require unnormalized learned/direct "
                                  "per_head polynomial attention with Taylor initialization")
             if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
@@ -521,7 +553,7 @@ class ModelConfig:
                 or self.attention_forget_gate is not False or self.positional_encoding != "rope"):
             raise ValueError("Coefficient gates are qualified only for diagonal tanh query coefficients with RoPE, "
                              "without selected orders, an inner tanh bias, or a forget gate")
-        if self.attention_coefficient_amplitude_scale not in ("none", "factorial"):
+        if self.attention_coefficient_amplitude_scale not in ("none", "factorial", "projection"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {self.attention_coefficient_amplitude_scale}")
         if (self.attention_coefficient_amplitude_scale != "none"
                 and activation not in (*AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS)):
@@ -637,7 +669,7 @@ class ModelConfig:
         if (self.attention_coefficient_kernel_weight_decay
                 and self.attention_coefficient_conditioning not in ("query", "query_key")):
             raise ValueError("Coefficient kernel weight decay requires query-conditioned coefficients")
-        if self.attention_coefficient_scale not in ("none", "factorial"):
+        if self.attention_coefficient_scale not in ("none", "factorial", "projection"):
             raise ValueError(f"Unknown attention coefficient scale: {self.attention_coefficient_scale}")
         if self.attention_coefficient_scale != "none" and (
                 self.attention_coefficients != "learned" or self.attention_normalization
@@ -646,10 +678,19 @@ class ModelConfig:
                     and activation not in AFFINE_ACTIVATIONS)):
             raise ValueError("A coefficient scale applies to learned direct unnormalized coefficients, "
                              "static or tanh query-conditioned")
+        for scale in (self.attention_coefficient_scale, self.attention_coefficient_amplitude_scale):
+            if scale == "projection":
+                if self.attention_basis is None or self.attention_coefficients != "learned":
+                    raise ValueError("Projection scaling requires learned scalar-basis coefficients")
+                from scaffolds.transformer.attention.basis import projection_from_config
+                if any(value == 0 for value in projection_from_config(self.attention_basis).coefficients):
+                    raise ValueError("Projection scaling requires nonzero fitted basis coefficients")
+            if scale == "factorial" and self.attention_basis is not None:
+                raise ValueError("Factorial scaling applies to polynomial orders, not scalar-basis indices")
         if self.attention_coefficients == "learned":
             if self.attention_mechanism != "dot_product" or self.quadratic_mode != "fixed":
                 raise ValueError("Learned polynomial coefficients use dot-product attention without a quadratic mode")
-            if self.attention_degree is None or self.attention_degree < 1:
+            if self.attention_basis is None and (self.attention_degree is None or self.attention_degree < 1):
                 raise ValueError("Learned polynomial coefficients require an integer attention_degree >= 1")
         if self.attention_coefficient_orders is not None:
             orders = self.attention_coefficient_orders
@@ -668,8 +709,10 @@ class ModelConfig:
             self.attention_coefficient_orders = tuple(orders)
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
-        if self.attention_coefficient_initialization not in ("taylor", "linear"):
+        if self.attention_coefficient_initialization not in ("taylor", "linear", "projection"):
             raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
+        if self.attention_coefficient_initialization == "projection" and self.attention_basis is None:
+            raise ValueError("Projection initialization requires attention_basis")
         if self.attention_coefficient_initialization != "taylor":
             if self.attention_coefficients != "learned":
                 raise ValueError("model.attention_coefficient_initialization applies to learned polynomial coefficients only")
@@ -931,6 +974,7 @@ def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
     (scaffolds.records create, and launchers that allocate copied recipes) applies this rule.
     """
     return (model.get("attention_mechanism", "dot_product") == "dot_product"
+            and model.get("attention_basis") is None
             and model.get("positional_encoding", "rope") != "path"
             and model.get("attention_backend", "auto") in ("blocked", "auto"))
 
@@ -1091,6 +1135,8 @@ def validate_config(config: Config) -> None:
     if (not isinstance(penalty, (int, float)) or isinstance(penalty, bool)
             or not math.isfinite(penalty) or penalty < 0):
         raise ValueError("optim.coefficient_penalty must be a finite number >= 0")
+    if penalty > 0 and config.model.attention_basis is not None:
+        raise ValueError("Polynomial coefficient penalties do not apply to basis coefficients")
     if penalty > 0 and config.model.attention_coefficient_conditioning != "static":
         raise ValueError("optim.coefficient_penalty requires static polynomial coefficients")
     if penalty > 0 and (config.model.attention_coefficients != "learned"

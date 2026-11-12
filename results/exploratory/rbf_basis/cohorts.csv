@@ -1,0 +1,10 @@
+cohort,role,run_id,label,status,metric_scope,training_tokens,terminal_validation_nll,terminal_validation_perplexity,best_validation_step,best_validation_perplexity
+Original 1×,rbf_3_chinchilla1x,r4614f6fff21f,Fixed 3-RBF,complete,terminal,3998744576,2.810261355979102,16.614259887561406,7627,16.614259887561406
+Original 1×,rbf_5_chinchilla1x,r0fbe4040cc36,Fixed 5-RBF,complete,terminal,3998744576,2.7765826944793974,16.064031340413916,7627,16.064031340413916
+Original 1×,rbf_9_chinchilla1x,r6e1b71e49350,Fixed 9-RBF,complete,terminal,3998744576,2.7762024785791124,16.05792470126983,7627,16.05792470126983
+Original 1×,rbf_20_chinchilla1x,r8f7f83e9b6ee,Fixed 20-RBF,complete,terminal,3998744576,2.7732842372996465,16.011132111784786,7627,16.011132111784786
+Original 1×,rbf_9_static_chinchilla1x,r55b028eb88a6,"9-RBF, learned static",complete,terminal,3998744576,2.7640582748821805,15.86409333873116,7627,15.86409333873116
+Original 1×,rbf_9_query_chinchilla1x,r564c8c864d15,"9-RBF, learned query",complete,terminal,4028104704,2.7575866537434712,15.76175843047613,7683,15.76175843047613
+Matched recipe,rbf_9_fixed_matched,r4ef941dde7b9,"9-RBF, fixed",complete,terminal,3968860160,2.683394955177056,14.634693180927218,7500,14.629870077413097
+Matched recipe,rbf_9_static_matched,rd3711311e629,"9-RBF, static",complete,terminal,3968860160,2.664890087748829,14.366370419101722,7500,14.362846772547034
+Matched recipe,rbf_9_query_matched,r77e00510b1b0,"9-RBF, query",complete,terminal,3968860160,2.6700298362656643,14.440400033987215,7500,14.436650657747194

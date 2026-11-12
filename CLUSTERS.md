@@ -91,6 +91,13 @@ and passes it to acceptance as `TRANSFORMER_ALLOCATION_SECONDS`. Acceptance uses
 that limit instead of the adapter's fallback budget. ORCD keeps the adapter's
 qualification horizon because training intentionally resumes across allocations.
 
+The Transformer Kennel launcher requeues ten minutes before the time limit and
+resumes the latest checkpoint. For `standard`, submit with
+`TRANSFORMER_ALLOCATION_HOURS=24` and `--time=24:00:00`; acceptance checks that
+durable checkpoint progress fits each allocation and records the total projected
+training time across allocations. Clear inherited `LD_LIBRARY_PATH` at submission
+so system CUDA libraries cannot override the locked environment's wheels.
+
 ### Kennel transfer policy
 
 The shared launcher helper `scaffolds/transformer/launchers/kennel_runtime.sh`
@@ -118,6 +125,9 @@ or `nvidia/cu13`, CUDA 13.2), since 12.6 rejects Triton's PTX. Triton 3.7 picks 
 version from its bundled assembler (CUDA 13.1 for Blackwell, PTX 9.1), which CUDA 12.9's
 `ptxas` rejects, so the launcher also sets `TRITON_PTXAS_PATH` and
 `TRITON_PTXAS_BLACKWELL_PATH` to the environment's `ptxas`.
+JAX 0.10's Triton custom-call runtime searches `PATH` before its CUDA roots:
+the launcher must also prepend `$CUDA_HOME/bin` to `PATH`. Setting `CUDA_HOME`
+alone can still select the node's older assembler.
 
 cuBLAS 12.8–13.1 has an NVIDIA bug on Blackwell: some kernels free tensor memory twice,
 which can silently corrupt data when a cuBLAS kernel runs concurrently with another

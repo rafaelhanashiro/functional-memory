@@ -25,7 +25,8 @@ GDN_GATE_PARAMETERS = ("query_polynomial_gate_kernel", "query_polynomial_gate_lo
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
-                    feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none"):
+                    feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none",
+                    initial_coefficients=None, name_prefix="query_polynomial"):
     """b starts at 1/r!; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
@@ -48,11 +49,13 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     if readout == "dense" and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or conditioning != "query"):
         raise ValueError("Dense coefficient readout requires nonlinear query-only coefficients")
     count = degree + 1
+    if initial_coefficients is not None and len(initial_coefficients) != count:
+        raise ValueError("Expected one initial coefficient per basis function")
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):
         raise ValueError("A feature count other than degree+1 requires dense readout with V starting at zero")
     kernel = AttentionParameterSpec(
-        name="query_polynomial_kernel", argument="query_polynomial_kernel",
+        name=f"{name_prefix}_kernel", argument=f"{name_prefix}_kernel",
         initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
         sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
     )
@@ -70,27 +73,28 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         ))
     specs = (
         AttentionParameterSpec(
-            name="query_polynomial_bias", argument="query_polynomial_bias",
-            initial=tuple(1.0 / math.factorial(r) for r in range(count)), sharing="per_head", weight_decay=False,
+            name=f"{name_prefix}_bias", argument=f"{name_prefix}_bias",
+            initial=(tuple(1.0 / math.factorial(r) for r in range(count))
+                     if initial_coefficients is None else tuple(initial_coefficients)), sharing="per_head", weight_decay=False,
         ),
         kernel,
     )
     if activation in AFFINE_FEATURES:
         if readout == "dense":
             specs += (AttentionParameterSpec(
-                name="query_polynomial_mixing", argument="query_polynomial_mixing",
+                name=f"{name_prefix}_mixing", argument=f"{name_prefix}_mixing",
                 initial=tuple(float(amplitude_initial) if output == feature else 0.0
                               for output in range(count) for feature in range(features)),
                 initial_shape=(count, features), sharing="per_head", weight_decay=False,
             ),)
         else:
             specs += (AttentionParameterSpec(
-                name="query_polynomial_amplitude", argument="query_polynomial_amplitude",
+                name=f"{name_prefix}_amplitude", argument=f"{name_prefix}_amplitude",
                 initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
             ),)
         if tanh_bias:
             specs += (AttentionParameterSpec(
-                name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
+                name=f"{name_prefix}_tanh_bias", argument=f"{name_prefix}_tanh_bias",
                 initial=(0.0,) * features, sharing="per_head", weight_decay=False,
             ),)
     elif activation != "identity":

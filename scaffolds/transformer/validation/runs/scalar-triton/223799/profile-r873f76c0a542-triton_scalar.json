@@ -1,0 +1,612 @@
+{
+  "driver_sha256": "bb58a473c666975151a7668a5739b5cee1d07928f37c00915aa45c93b30f8f20",
+  "format": "scalar-attention-profile",
+  "method": "GPU Stream # events inside synchronized host annotations; duration sums can include overlap. Native kernel names are specific to these benchmarks. Register counts and theoretical occupancy are profiler metadata, not measured SM utilization.",
+  "traces": [
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 4368.0,
+                "kernel_sum_ms": 809.9614640000235,
+                "percent_of_kernel_sum": 17.781570956767283
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "native_scalar_attention": {
+                "kernel_count": 800.0,
+                "kernel_sum_ms": 3251.786940666662,
+                "percent_of_kernel_sum": 71.38843363756843
+              },
+              "other": {
+                "kernel_count": 11270.0,
+                "kernel_sum_ms": 493.3129336666961,
+                "percent_of_kernel_sum": 10.829995405664304
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 28.594364171832698,
+            "gpu_activity_percent_of_wall": 99.55076581003947,
+            "gpu_activity_union_ms": 4553.291400999556,
+            "kernel_active_union_ms": 4550.642540666587,
+            "kernel_count": 16438.0,
+            "kernel_overlap_excess_ms": 4.418797666794621,
+            "kernel_sum_ms": 4555.061338333381,
+            "memory_operation_sum_ms": 2.6488603329684204,
+            "no_recorded_gpu_activity_ms": 20.54724700044406,
+            "wall_ms": 4573.838648
+          },
+          "pid": 1,
+          "updates": [
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 4368,
+                  "kernel_sum_ms": 809.4227659999985,
+                  "percent_of_kernel_sum": 17.781415595010944
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 800,
+                  "kernel_sum_ms": 3249.3019049999957,
+                  "percent_of_kernel_sum": 71.3807295685402
+                },
+                "other": {
+                  "kernel_count": 11270,
+                  "kernel_sum_ms": 493.3469100000251,
+                  "percent_of_kernel_sum": 10.837854836448871
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 28.602089770169997,
+              "gpu_activity_percent_of_wall": 99.56611186488583,
+              "gpu_activity_union_ms": 4550.334978999966,
+              "kernel_active_union_ms": 4547.664309999974,
+              "kernel_count": 16438,
+              "kernel_overlap_excess_ms": 4.407271000045352,
+              "kernel_sum_ms": 4552.071581000019,
+              "memory_operation_sum_ms": 2.6706689999907067,
+              "no_recorded_gpu_activity_ms": 19.829401000034064,
+              "step_num": "8",
+              "top_kernels": [
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 1421.4620310000025,
+                  "name": "forward"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 1144.0453819999998,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 664.2647269999976,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1936,
+                  "kernel_sum_ms": 320.3111340000038,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_NNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 83.07688099999903,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_TNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 82.89659399999555,
+                  "name": "nvjet_tst_192x128_64x5_1x2_h_bz_coopB_NTT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 62.52759899999641,
+                  "name": "loop_add_multiply_fusion_5"
+                },
+                {
+                  "count": 640,
+                  "kernel_sum_ms": 58.122146999998805,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_TNT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 44.68879699999947,
+                  "name": "nvjet_tst_128x128_64x6_2x1_v_bz_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 42.562914999999236,
+                  "name": "gemm_fusion_dot_71"
+                },
+                {
+                  "count": 480,
+                  "kernel_sum_ms": 42.37363500000213,
+                  "name": "nvjet_tss_128x256_64x4_2x1_v_bz_coopA_NTN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.61975299999843,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_NNT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.45898599999906,
+                  "name": "nvjet_tst_168x128_64x5_1x2_h_bz_TNN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.204013000001375,
+                  "name": "nvjet_tst_256x96_64x4_1x2_h_bz_coopA_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 34.04043499999988,
+                  "name": "loop_multiply_fusion_10"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 32.34930600000042,
+                  "name": "wrapped_convert_71"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 30.702749000001248,
+                  "name": "loop_multiply_fusion_9"
+                },
+                {
+                  "count": 144,
+                  "kernel_sum_ms": 25.49682700000005,
+                  "name": "input_add_reduce_fusion_22"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 22.28971199999979,
+                  "name": "input_concatenate_fusion_20"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 20.35112799999767,
+                  "name": "input_add_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4570.16438
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 4368,
+                  "kernel_sum_ms": 810.0962560000373,
+                  "percent_of_kernel_sum": 17.774648294019094
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 800,
+                  "kernel_sum_ms": 3254.1918659999947,
+                  "percent_of_kernel_sum": 71.40153465837639
+                },
+                "other": {
+                  "kernel_count": 11270,
+                  "kernel_sum_ms": 493.3056070000669,
+                  "percent_of_kernel_sum": 10.823817047604512
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 28.58122683712538,
+              "gpu_activity_percent_of_wall": 99.55049580001254,
+              "gpu_activity_union_ms": 4555.763510999163,
+              "kernel_active_union_ms": 4553.152825999938,
+              "kernel_count": 16438,
+              "kernel_overlap_excess_ms": 4.440903000161052,
+              "kernel_sum_ms": 4557.593729000099,
+              "memory_operation_sum_ms": 2.6106849992256613,
+              "no_recorded_gpu_activity_ms": 20.57081500083767,
+              "step_num": "9",
+              "top_kernels": [
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 1423.3249000000012,
+                  "name": "forward"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 1145.7634870000015,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 665.6049719999935,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1936,
+                  "kernel_sum_ms": 320.3837650000025,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_NNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 83.07087100001053,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_TNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 82.90969300000648,
+                  "name": "nvjet_tst_192x128_64x5_1x2_h_bz_coopB_NTT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 62.53099500000197,
+                  "name": "loop_add_multiply_fusion_5"
+                },
+                {
+                  "count": 640,
+                  "kernel_sum_ms": 58.18146000000462,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_TNT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 45.25657300000265,
+                  "name": "nvjet_tst_128x128_64x6_2x1_v_bz_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 42.578135999999944,
+                  "name": "gemm_fusion_dot_71"
+                },
+                {
+                  "count": 480,
+                  "kernel_sum_ms": 42.28873499999661,
+                  "name": "nvjet_tss_128x256_64x4_2x1_v_bz_coopA_NTN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.63621000001021,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_NNT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.42498200000636,
+                  "name": "nvjet_tst_168x128_64x5_1x2_h_bz_TNN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.24095199999958,
+                  "name": "nvjet_tst_256x96_64x4_1x2_h_bz_coopA_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 33.97358999999985,
+                  "name": "loop_multiply_fusion_10"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 32.36417800000031,
+                  "name": "wrapped_convert_71"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 30.699921999993734,
+                  "name": "loop_multiply_fusion_9"
+                },
+                {
+                  "count": 144,
+                  "kernel_sum_ms": 25.528459000005387,
+                  "name": "input_add_reduce_fusion_22"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 22.305906999992207,
+                  "name": "input_concatenate_fusion_20"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 20.379973999991083,
+                  "name": "input_add_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4576.334326000001
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 4368,
+                  "kernel_sum_ms": 810.3653700000345,
+                  "percent_of_kernel_sum": 17.788652016961258
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 800,
+                  "kernel_sum_ms": 3251.867050999995,
+                  "percent_of_kernel_sum": 71.38302488870973
+                },
+                "other": {
+                  "kernel_count": 11270,
+                  "kernel_sum_ms": 493.2862839999963,
+                  "percent_of_kernel_sum": 10.828323094329022
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 28.59978773811359,
+              "gpu_activity_percent_of_wall": 99.53570612097307,
+              "gpu_activity_union_ms": 4553.77571299954,
+              "kernel_active_union_ms": 4551.110485999849,
+              "kernel_count": 16438,
+              "kernel_overlap_excess_ms": 4.408219000177458,
+              "kernel_sum_ms": 4555.518705000026,
+              "memory_operation_sum_ms": 2.6652269996888935,
+              "no_recorded_gpu_activity_ms": 21.241525000460445,
+              "step_num": "10",
+              "top_kernels": [
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 1422.2593499999941,
+                  "name": "forward"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 1145.5145369999893,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 664.5503369999993,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1936,
+                  "kernel_sum_ms": 320.2941150000021,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_NNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 83.09855200001225,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_TNT"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 82.94232000001148,
+                  "name": "nvjet_tst_192x128_64x5_1x2_h_bz_coopB_NTT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 62.53807200000622,
+                  "name": "loop_add_multiply_fusion_5"
+                },
+                {
+                  "count": 640,
+                  "kernel_sum_ms": 58.14056799999997,
+                  "name": "nvjet_tst_128x160_64x5_2x1_v_bz_TNT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 45.44357500000112,
+                  "name": "nvjet_tst_128x128_64x6_2x1_v_bz_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 42.640822000000625,
+                  "name": "gemm_fusion_dot_71"
+                },
+                {
+                  "count": 480,
+                  "kernel_sum_ms": 42.40315399999544,
+                  "name": "nvjet_tss_128x256_64x4_2x1_v_bz_coopA_NTN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.62405199999921,
+                  "name": "nvjet_tst_256x128_64x4_1x2_h_bz_coopA_NNT"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.46310700001009,
+                  "name": "nvjet_tst_168x128_64x5_1x2_h_bz_TNN"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 40.217141999999065,
+                  "name": "nvjet_tst_256x96_64x4_1x2_h_bz_coopA_NTT"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 34.04430899999477,
+                  "name": "loop_multiply_fusion_10"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 32.3599570000004,
+                  "name": "wrapped_convert_71"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 30.699434999989347,
+                  "name": "loop_multiply_fusion_9"
+                },
+                {
+                  "count": 144,
+                  "kernel_sum_ms": 25.50024399998039,
+                  "name": "input_add_reduce_fusion_22"
+                },
+                {
+                  "count": 320,
+                  "kernel_sum_ms": 22.30036099998653,
+                  "name": "input_concatenate_fusion_20"
+                },
+                {
+                  "count": 160,
+                  "kernel_sum_ms": 20.360673999998717,
+                  "name": "input_add_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4575.017237999999
+            }
+          ]
+        }
+      ],
+      "excluded_stream_events": {},
+      "expanded_bytes": 35473877,
+      "native_kernel_resources": [
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:49664 grid:32,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "backward_kv",
+          "recorded_launches": 480
+        },
+        {
+          "details": "regs:146 static_shared:0 dynamic_shared:40960 grid:32,256,1 block:128,1,1 occ_pct:18.75",
+          "kernel": "backward_q",
+          "recorded_launches": 480
+        },
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:33792 grid:32,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "forward",
+          "recorded_launches": 960
+        },
+        {
+          "details": "regs:128 static_shared:0 dynamic_shared:4096 grid:16,256,1 block:128,1,1 occ_pct:25",
+          "kernel": "preprocess",
+          "recorded_launches": 480
+        }
+      ],
+      "step_annotation": "train",
+      "step_count": 3,
+      "trace": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/runs/scalar-triton/223799/profiles/r873f76c0a542-triton_scalar/plugins/profile/2026_10_22_01_45_47/perfetto_trace.json.gz",
+      "trace_sha256": "576edac335501d53c1fe47e707882a8fe46a7f3bf0424604b6feb7b7484118d2",
+      "trial_annotations": []
+    }
+  ],
+  "version": 1
+}

@@ -171,6 +171,12 @@ def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Arra
                           **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
 
 
+@nnx.jit
+def apply_gradients_step(state: TrainState, grads):
+    """Apply one pre-accumulated update, including any frozen-parameter mask."""
+    return state.apply_gradients(grads=mask_frozen_gradients(state, grads))
+
+
 @partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
                                    "collect_telemetry"))
 def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False,
@@ -183,6 +189,8 @@ def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Arra
     parameter for every partial sum, left a single GPU idle for about 40% of each update.
     With ``collect_telemetry``, also return, last, the update's named statistics.
     """
+    if len(batches) == 0 or len(batches) != len(rngs):
+        raise ValueError("Accumulation requires nonempty batches and one RNG per microbatch")
     penalty = _penalty_arguments(coefficient_penalty, coefficient_penalty_denominator)
     reductions, recording = _telemetry_options(collect_telemetry)
 

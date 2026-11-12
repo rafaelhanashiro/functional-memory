@@ -11,6 +11,352 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Native Triton scalar attention
+
+On one H100 80GB HBM3, the selected native Triton backend reduces complete
+199,916,704-parameter optimizer-update time from **8.900 to 2.565 seconds for
+3 RBFs (3.47x)** and **13.752 to 4.546 seconds for 20 RBFs (3.02x)**. These are
+compute measurements with resident synthetic tokens, not training-quality or
+complete-run estimates. The frozen fitted functions and model initialization
+are identical across backends.
+
+The engine uses the official Triton fused-attention tutorial's tiled structure
+with an inlined `(value, derivative)` callback for exponential, polynomial,
+RBF, sine and cosine functions. It supports normalized and unnormalized
+attention and fused per-head RMSNorm. Streaming preserves a positive scale
+separately from the accumulated output; RMSNorm includes the corresponding
+`eps / scale**2`, preserving the requested epsilon. The model uses direct
+3-RBF evaluation and the two-exponential recurrence for eligible equally
+spaced, equal-width fits with at least five terms. This recurrence evaluates
+the same fixed sum; it does not refit or remove basis functions. API details
+and limitations are in [the scaffold README](../README.md#native-triton-scalar-attention).
+
+The selected tiles are 64×32 for forward and dQ and 32×64 for dK/dV.
+The four-candidate measurement below supports a common default: this geometry
+was fastest for 3 RBFs and within 6% of the fastest 20-RBF candidate. The larger
+tutorial-style tiles and direct 20-RBF evaluation were expensive: the initial
+20-RBF model took 21.430 seconds per update. The selected callback and tiles
+reduce that to 4.546 seconds. Backend selection remains explicit through
+`model.attention_backend: triton_scalar`; existing automatic routing is unchanged.
+
+All comparisons used the same physical H100 on `dogo`, UUID
+`GPU-6ba0d532-b7aa-afda-fee3-8412d43350bb`, driver 560.35.05, JAX 0.10.0,
+Triton 3.7.1 and the locked CUDA 12 environment. The operator grid uses BF16,
+sequence length 2048, 16 heads, key/value width 64, and microbatches 1/4/16/32.
+It measures synchronized forward and forward-plus-backward calls, including
+the RMSNorm gain gradient. The original comparison includes separate and fused
+RMSNorm, streaming, TF32x3 products, recurrence callbacks, and tile controls.
+The final RBF grid measures the exact callback, streaming and tile choices
+used by the model. Pallas/Triton, Mosaic and cuDNN are included only where
+those existing paths implement the same scalar function and normalization;
+blocked JAX is the existing RBF baseline.
+
+Full updates retain global batch 256, microbatch 16, QK normalization,
+rematerialization and the original model/optimizer. There are two warmups and
+five timed updates per case. All four final executions completed with finite
+losses and update diagnostics and matching initial-parameter hashes. Native
+profiles use three additional warmed updates outside the timing samples.
+Compilation, data loading, evaluation and checkpointing are excluded. Peak
+memory is the JAX allocator's recorded peak, not total device memory.
+
+<!-- BEGIN SCALAR TABLES -->
+Full optimizer updates: job `223799`, seconds per global batch.
+
+| RBFs | Blocked | Selected Triton | Speedup | Peak allocator GiB, blocked / Triton |
+| ---: | ---: | ---: | ---: | ---: |
+| 3 | 8.900 | 2.565 | 3.47x | 13.89 / 11.21 |
+| 20 | 13.752 | 4.546 | 3.02x | 13.89 / 11.21 |
+
+Selected RBF kernels: job `223803`. Each cell is blocked → selected Triton,
+forward plus backward in milliseconds, at `(B, 2048, 16, 64)`.
+
+| RBFs | B=1 | B=4 | B=16 | B=32 |
+| ---: | ---: | ---: | ---: | ---: |
+| 3 | 2.503 → 0.785 | 9.151 → 1.880 | 35.400 → 6.448 | 69.221 → 12.048 |
+| 5 | 3.021 → 0.812 | 12.296 → 2.006 | 43.795 → 6.809 | 85.866 → 12.793 |
+| 9 | 3.322 → 0.985 | 13.857 → 2.552 | 49.872 → 8.414 | 97.959 → 15.985 |
+| 20 | 4.364 → 1.640 | 16.087 → 4.597 | 59.065 → 15.807 | 115.605 → 30.476 |
+
+Tile comparison: job `223790`, microbatch 16, forward plus backward in milliseconds.
+The 3-RBF callback is direct; the 20-RBF callback uses the recurrence.
+
+| Tiles: forward; dQ; dK/dV | 3 RBFs | 20 RBFs |
+| --- | ---: | ---: |
+| 128×64; 128×32; 32×128 | 8.409 | 32.739 |
+| 64×32; 64×32; 32×64 (selected) | 6.419 | 15.722 |
+| 64×64; 64×64; 64×64 | 6.532 | 24.099 |
+| 64×32; 32×32; 32×32 | 7.151 | 14.882 |
+
+Other scalar functions: job `223787`, microbatch 16, forward plus backward
+in milliseconds. These native-Triton controls use the initial 128×64 forward,
+128×32 dQ, and 32×128 dK/dV tiles; they do not measure the selected smaller tiles.
+
+| Function / output | Blocked | Native Triton | Pallas | Mosaic | cuDNN |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| sine / head RMSNorm | 40.931 | 13.991 | — | — | — |
+| poly3 / head RMSNorm | 31.211 | 4.342 | 3.913 | 2.364 | — |
+| poly8 / head RMSNorm | 29.205 | 6.203 | 6.514 | 3.621 | — |
+| exp / head RMSNorm | 29.226 | 3.939 | 3.869 | — | — |
+| poly3 / normalized | 37.904 | 4.283 | 4.839 | 3.150 | — |
+| poly8 / normalized | 37.318 | 6.200 | 6.256 | 2.652 | — |
+| exp / normalized | 42.191 | 3.948 | — | — | 1.640 |
+<!-- END SCALAR TABLES -->
+
+The operator profile shows 394 GPU kernels per blocked 20-RBF forward/backward
+call versus six for the native path. The final full-model profiles attribute
+1.256 seconds/update (49.0% of GPU kernel duration) to native attention for
+3 RBFs, and 3.252 seconds/update (71.4%) for 20 RBFs. The smaller 3-RBF forward
+uses 112 registers/thread rather than the initial 255. For 20 RBFs, forward
+and dK/dV still use 255 registers/thread, with 12.5% theoretical occupancy;
+register pressure remains an optimization opportunity. These occupancy values
+are profiler metadata, not measured SM utilization; summed kernel durations
+can include overlap. The compact [3-RBF](runs/scalar-triton/223799/profile-r10b2cb22687c-triton_scalar.json)
+and [20-RBF](runs/scalar-triton/223799/profile-r873f76c0a542-triton_scalar.json)
+profile summaries pin the retained local traces.
+
+The initial blocked full-model executions produced all timing samples but
+crashed when starting the profiler (exit 139). Their raw reports and logs are
+retained, and the collector marks them `process_failed`, keeping recovered
+samples separate. The table selects clean final blocked executions with full
+tracing disabled. Blocked operator traces and native full-model traces succeeded.
+
+Qualification on frozen source `ea9cd8d` passed **60 CPU checks, 64 FP32
+interpreter cases, 64 CUDA qualification exports, 59 training-shape exports,
+and 67 H100 execution checks**. Two signed-normalization cases are intentionally
+skipped in the GPU suite. The independent NumPy FP64 forward and analytic
+backward cover Q/K/V and RMSNorm gain, BF16/FP32, causal/ragged lengths,
+frozen 3/5/9/20-RBF fits and recurrence, mixed sine/cosine, polynomials and
+exponential, normalized and unnormalized outputs, extreme positive/negative
+scores, tiny/zero values, exact epsilon, negative signed sums and zero-sum
+failures. Maximum interpreter relative L2 error was `2.975e-5`.
+
+The initial 35 operator coordinates contain 211 successful implementation
+comparisons; maximum relative output/gradient L2 difference from BF16 blocked
+JAX was 0.65%. The final selected-kernel grid contains 16 coordinates and 32
+successful comparisons. The tile comparison contains ten successful cases.
+These sampled checks and short optimizer runs do not establish long-training
+quality or a full data/evaluation/checkpoint-resume cycle.
+
+The [scalar-attention record](runs/scalar-triton/record.json) pins reports,
+source/frozen hashes, hardware, allocations and retained logs. Explicit jobs:
+`223787` for the initial broad comparison, `223790` for tile selection,
+`223799` for final GPU qualification and model updates, and `223803` for the
+final selected RBF grid. The final model and grid share the same frozen
+execution hash; validation-only driver/report changes are outside that set.
+No scientific training run was resumed.
+
+Reproduce from the committed worktree and its locked CUDA environment:
+
+```bash
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+export CUDA_HOME="$PWD/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc"
+export PATH="$CUDA_HOME/bin:$PATH"
+export TRITON_PTXAS_PATH="$CUDA_HOME/bin/ptxas" TRITON_PTXAS_BLACKWELL_PATH="$CUDA_HOME/bin/ptxas"
+export EJKERNEL_TRITON_CACHE_COMPILES=1 EJKERNEL_TRITON_CACHE_DIR="$PWD/.cache/scalar-triton"
+TRITON_INTERPRET=1 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.interpret_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/interpreter.json
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.compile_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/cuda-export.json
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python \
+  -m scaffolds.transformer.validation.compile_scalar --training \
+  --output scaffolds/transformer/validation/runs/scalar-triton/training-cuda-export.json
+export SHARED_TRANSFORMER_SOURCE_COMMIT="$(git rev-parse HEAD)"
+env -u LD_LIBRARY_PATH PHASE=qualified_train sbatch --partition=standard \
+  --job-name=scalar-h100 --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/scalar_triton.sbatch
+env -u LD_LIBRARY_PATH sbatch --partition=standard --job-name=scalar-grid \
+  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/scalar_model_grid.sbatch
+env -u LD_LIBRARY_PATH sbatch --partition=standard --job-name=scalar-tune \
+  --output=scaffolds/transformer/validation/logs/scalar-%j.log \
+  --export=ALL scaffolds/transformer/validation/tune_scalar.sbatch
+```
+
+Use fresh job IDs for new executions. `PHASE=bench` runs the broader operator
+comparison. The initial broad comparison used source `543096f`; the selected
+model uses `ea9cd8d`. To reproduce those exact versions, use separate Git
+worktrees with their own locked environments. Regenerate this record and its
+tables from the explicitly selected retained jobs:
+
+```bash
+python3 -m scaffolds.transformer.validation.summarize_scalar \
+  --jobs 223787 223790 223799 223803
+python3 -m scaffolds.transformer.validation.scalar_tables \
+  --initial-job 223787 --tuning-job 223790 --training-job 223799 --grid-job 223803 \
+  --write-readme
+python3 -m scaffolds.transformer.validation.profile_scalar \
+  scaffolds/transformer/validation/runs/scalar-triton/223799/profiles/r10b2cb22687c-triton_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/223799/profile-r10b2cb22687c-triton_scalar.json
+python3 -m scaffolds.transformer.validation.profile_scalar \
+  scaffolds/transformer/validation/runs/scalar-triton/223799/profiles/r873f76c0a542-triton_scalar \
+  --output scaffolds/transformer/validation/runs/scalar-triton/223799/profile-r873f76c0a542-triton_scalar.json
+```
+
+### Single-GPU gradient accumulation
+
+The compiled single-GPU accumulator is checked against the previous Python
+loop for complete parameter/optimizer states, supplied dropout RNGs, clipping,
+and coefficient penalties. The regression selection also exercises numerical
+failure recording and exact checkpoint resumption, including scalar-basis
+attention. Evidence and the current GPU benchmark status are in
+[the accumulation record](runs/rbf-accumulation/record.json).
+
+The GPU benchmark compares Python and compiled accumulation at microbatch 1,
+then compiled microbatches 2, 4, 8, 16, 32, and 64, for the fixed 3- and 20-RBF
+recipes. All cases retain global batch 256, rematerialization, unnormalized
+attention, QK normalization, per-head RMSNorm and the original model/optimizer.
+Each case starts a fresh process and records synchronized complete-update
+timings and allocator peaks. Synthetic tokens are resident before timing;
+compilation, data loading, evaluation and checkpoints are excluded. Failed or
+out-of-memory configurations remain visible.
+
+Job `223579` completed in 29 minutes 10 seconds on one H100 80GB HBM3 on
+`dogo`, with identical initial parameter hashes and frozen execution hashes
+across all 16 cases. Fifteen cases completed with finite losses and update
+diagnostics. The 3-RBF microbatch-64 case failed with an out-of-memory error;
+the matching 20-RBF case completed. The reason for that difference is not
+established by this benchmark, so microbatch 64 is not a shared recommendation.
+
+Median seconds per global-batch update, from three timed updates after two
+warmups:
+
+| Accumulation | Microbatch | 3 RBFs | 20 RBFs |
+| --- | ---: | ---: | ---: |
+| Python | 1 | 13.626 | 20.767 |
+| Compiled | 1 | 9.525 | 15.851 |
+| Compiled | 2 | 8.950 | 15.426 |
+| Compiled | 4 | 8.642 | 14.799 |
+| Compiled | 8 | 9.227 | 14.057 |
+| Compiled | 16 | 8.892 | 13.732 |
+| Compiled | 32 | 8.736 | 13.618 |
+| Compiled | 64 | out of memory | 13.559 |
+
+Compiled accumulation at microbatch 32 is 1.56x and 1.53x faster than the
+Python/microbatch-1 baseline (35.9% and 34.4% less update time). Its measured
+allocator peak was 23.40 GiB for both basis counts. It is a candidate for
+real-data qualification, not a production-qualified recipe: the 5- and 9-RBF
+models and a full training/evaluation/checkpoint-resume cycle at this microbatch
+have not been tested. Microbatch 4 was slightly faster for 3 RBFs and used
+6.94 GiB; microbatch 64 improved 20-RBF timing by only 0.4% over 32 while using
+42.15 GiB. These short measurements do not establish a universal optimum.
+
+At microbatch 32, 19,074 updates project to 46.3 and 72.2 hours of compute
+for 3 and 20 RBFs. These are not complete-run estimates: data loading,
+evaluation, checkpointing, queue waits and initialization are excluded.
+The cancelled scientific runs remain cancelled; this benchmark produces no
+validation-quality measurements. The record pins every case report and its
+retained log, including the failed case.
+
+Regenerate the retained timing table from those explicit cases:
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+r = json.loads(Path("scaffolds/transformer/validation/runs/rbf-accumulation/record.json").read_text())
+cases = {(c["implementation"], c["microbatch_size"], c["basis_count"]): c
+         for c in r["gpu_benchmark"]["cases"]}
+print("| Accumulation | Microbatch | 3 RBFs | 20 RBFs |")
+print("| --- | ---: | ---: | ---: |")
+for implementation, sizes in (("python", [1]), ("compiled", [1, 2, 4, 8, 16, 32, 64])):
+    for size in sizes:
+        cells = [f'{cases[implementation, size, n]["median_update_seconds"]:.3f}'
+                 if cases[implementation, size, n]["status"] == "complete" else "out of memory"
+                 for n in (3, 20)]
+        print(f"| {implementation.title()} | {size} | {' | '.join(cells)} |")
+PY
+```
+
+From the worktree with its locked environment, reproduce with:
+
+```bash
+mkdir -p scaffolds/transformer/validation/logs
+sbatch --partition=standard --job-name=rbf-microbatch-bench \
+  --output='scaffolds/transformer/validation/logs/rbf-accumulation-%j.log' \
+  --export="ALL,SHARED_TRANSFORMER_SOURCE_COMMIT=$(git rev-parse HEAD)" \
+  scaffolds/transformer/validation/benchmark_accumulation.sbatch
+```
+
+This requests one H100. Reports are written beneath
+`validation/runs/rbf-accumulation/<job_id>/`; `exit-status.txt` preserves
+subprocess exits, including timeouts, alongside each case's report and log.
+`RUNS` and `MICROBATCHES` can restrict the cases through Slurm's environment.
+
+### Fixed scalar RBF bases
+
+On 2026-10-21, Slurm job `223516` on one B300 (`akita`) passed all eight
+normalized RBF accuracy cases (counts 3, 5, 9, 20; FP32 and BF16), using source
+`6d37d6098c37dce8c2fd10a393ee7216b7a78e2e` and the locked CUDA 13 environment with
+loaded cuBLAS 13.2.2. The [qualification record](runs/rbf-basis-b300/record.json)
+pins the exact frozen configurations, source, dependency lock, runtime, successful
+log, errors, and timings. The log is retained under the primary checkout at
+`/data/cl/u/lucastor/home/git/functional-memory/scaffolds/transformer/validation/logs/`.
+
+The checks use synthetic inputs and compare causal attention outputs and all
+Q/K/V derivatives against independent NumPy FP64 analytic formulas, including
+non-divisible sequence lengths and future-value masking. The largest relative
+error across outputs and gradients was 0.000897 for FP32 and
+0.00175 for BF16 (thresholds `1e-3` and `4e-2`, respectively).
+These are sampled operator checks, not end-to-end model accuracy measurements.
+
+BF16 forward plus Q/K/V backward timing uses one sequence of 2,048 tokens,
+16 heads and `d_K = d_V = 64`, with five synchronized measurements after warmup:
+
+| RBF count | Median attention forward + backward (ms) |
+| --- | --- |
+| 3 | 2.980 |
+| 5 | 3.160 |
+| 9 | 3.489 |
+| 20 | 4.491 |
+
+The timings cover one attention operator and exclude projections, the rest of
+the model, optimizer, and data loading. Outputs and gradients at this shape were
+finite. Full-recipe training acceptance, data integrity, and checkpoint resumption
+on the GPU remain prerequisites for production; the tiny CPU training/resume check
+does not establish those GPU properties.
+
+Reproduce these normalized operator measurements from their pinned source in a
+separate worktree with its own locked GPU environment:
+
+```bash
+git worktree add --detach worktrees/rbf-normalized-validation 6d37d6098c37dce8c2fd10a393ee7216b7a78e2e
+cd worktrees/rbf-normalized-validation
+UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
+  uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
+sbatch --job-name=rbf-qualification \
+  --output='scaffolds/transformer/validation/logs/rbf-basis-%j.log' \
+  scaffolds/transformer/validation/qualify_basis.sbatch "$(git rev-parse HEAD)" \
+  scaffolds/transformer/validation/runs/rbf-basis-b300/record.json \
+  experiments/attention_scaling/runs/rd3733c250ced/config.yaml \
+  experiments/attention_scaling/runs/r1b60d90c83e5/config.yaml \
+  experiments/attention_scaling/runs/r467aea7027c0/config.yaml \
+  experiments/attention_scaling/runs/r5bbad3217224/config.yaml
+```
+
+The qualification launcher clears inherited `LD_LIBRARY_PATH` so the locked
+wheel libraries are selected, and rejects loaded cuBLAS below 13.2 on B300.
+No dataset is opened and no language-model run record is changed.
+
+### RBF kernels on H100
+
+On 2026-10-21, all 16 scalar RBF GPU cases passed on H100 80GB HBM3
+(job `223562`) and H100 PCIe (job `223563`), source
+`3b8dd3ebb30593d441eb535c8b3140b2dfc3f1dd`, with the locked CUDA 12 environment.
+The [H100 qualification record](runs/rbf-basis-h100/record.json) includes the
+JUnit reports, dependency lock, runtime settings, and source hashes.
+The tests restore fixed coefficients and cover counts 3, 5, 9, and 20 in
+FP32/BF16, for both normalized and unnormalized causal attention. Outputs and
+all Q/K/V gradients are compared to analytic NumPy float64 formulas, with
+relative tolerances `1e-3` and `4e-2`; changing a future value must preserve
+past outputs exactly. These are operator checks; per-head RMSNorm and full
+training behavior are checked separately by the model tests and run acceptance.
+
+Regenerate in a matching locked H100 allocation with the launcher's CUDA
+settings: `python -m pytest -q -m gpu scaffolds/transformer/tests/test_basis_gpu.py`.
+
+
 ### Query-key gates on softmax and the exponential (2026-11-10)
 
 `model.attention_forget_gate_conditioning: query_key` now applies to the query-distance gate of
@@ -2560,6 +2906,26 @@ runtime source identity. Every one of the 53 Python files in the benchmarked
 source was compared byte-for-byte with `2e0e88d`, and all matched. The final shared source is retained at `d493a41`, but
 an immutable hash of its benchmark-time dirty tree was not recorded. These
 small benchmarks are supporting evidence rather than production experiment data.
+
+### Learned scalar-basis coefficients on H100
+
+[Qualification](runs/learned-basis/record.json): 81 GPU checks passed on one H100
+(job 225069), including independent forward and gradient checks for 3/9 Gaussian
+bases, global/head/query coefficients, FP32/BF16 inputs, zero coefficients, and
+end-to-end query projection gradients. The fixed scalar-kernel regression suite
+also passes. CPU model/configuration/initialization regressions passed 186 tests.
+Learned weights default to TF32x3 products with FP32 operands: BF16 intermediates
+can introduce a spurious coefficient-scale gradient after RMSNorm. The precision
+probe and qualification launcher live here; full-recipe training and checkpoint
+resume checks remain required on each production allocation.
+
+[Production-environment qualification](runs/learned-basis/production.json) uses
+CUDA-only JAX, loading frozen fits without requiring a CPU fitting backend. Static
+and query-dependent recipes passed 97 and 118 GPU tests, respectively, plus
+full-size 20-update pilots, finite coefficient diagnostics and exact checkpoint
+resumption. Median updates were 6.58 s and 6.80 s (79.7k and 77.0k tokens/s) on
+one H100, with global batch 256, context 2048 and microbatch 16. These are startup
+pilot measurements; the full-budget projections are 14.85 and 15.43 hours.
 
 ### Frozen-backbone query-generator fitting
 

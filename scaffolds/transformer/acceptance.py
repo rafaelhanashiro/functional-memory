@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -119,8 +119,10 @@ class AcceptanceSpec:
     runtime_env: dict[str, str] = field(default_factory=dict)
     """Environment the launcher exports for this experiment (for example XLA flags)."""
     pilot_steps: int = 20
-    allocation_hours: int = 48
-    """Qualification horizon; launchers that require one allocation can override it at runtime."""
+    allocation_hours: float = 48
+    allow_requeue: bool = False
+    """Launcher guarantees checkpoint resumption across allocation time limits."""
+    """Qualification horizon; launchers can override it at runtime."""
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
@@ -131,6 +133,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
     if spec.select_tests is not None:
         paths.extend(spec.select_tests(config, resolved_backend, cpu))
+    if resolved_backend == "triton_scalar":
+        paths.append("scaffolds/transformer/tests/test_triton_scalar.py")
+        if cpu:
+            paths.append("scaffolds/transformer/tests/test_triton_bridge_precision.py")
+    model = config["model"]
+    if model.get("attention_basis") is not None and model.get("attention_coefficients") == "learned":
+        paths.append("scaffolds/transformer/tests/test_learned_basis.py")
+
     if not cpu:
         paths.extend(runtime_test_paths)
     if cpu and config.get("continuation", {}).get("parent_checkpoint"):
@@ -344,6 +354,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         if quadratic:
             tests.extend(["learned_quadratic", "learned_training"] if cpu else
                          (["learned_fused_attention"] if fused else []))
+        elif model.get("attention_basis") is not None:
+            tests.extend(["basis_projection", "basis_attention"] if cpu else ["basis_gpu"])
+            if learned:
+                tests.append("learned_basis")
         elif learned:
             if cpu:
                 tests.extend(["learned_polynomial", "learned_polynomial_training"])
@@ -492,6 +506,7 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
                            (("train", config.data.train_manifest), ("eval", config.data.eval_manifest))},
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
         "runtime": runtime_identity(),
+        "timing_policy": {"allocation_hours": spec.allocation_hours, "allow_requeue": spec.allow_requeue},
         "allocation_seconds": allocation_seconds(spec),
     }
     return _sealed(payload)
@@ -722,6 +737,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
+                                           attention_basis=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
                                            attention_coefficient_feature_count=None,
@@ -783,7 +799,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
-        attention_fixed_square_factors=None,
+        attention_fixed_square_factors=None, attention_basis=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
         attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
@@ -819,6 +835,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         "softmax_counterpart_parameter_sha256": initialization_facts(control)["parameter_sha256"],
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
                                              **({"initial_std": spec.initial_std} if spec.initial_std else {}),
+                                             **({"random_stream_name": spec.random_stream_name} if spec.random_stream_name else {}),
                                              **({"initializer": spec.initializer} if spec.initializer else {}),
                                              **({"repeat_initial_axis": spec.repeat_initial_axis}
                                                 if spec.repeat_initial_axis is not None else {}),
@@ -916,6 +933,9 @@ def _run_worker(spec, args, name, output, *, stop, cpu=False) -> dict:
     command = [sys.executable, "-m", entry_module(spec), str(args.config), "--directory", str(args.directory),
                "--gpu-count", str(args.gpu_count), "--gpu-type", args.gpu_type, "--worker", name,
                "--output", str(output), "--stop-after-step", str(stop)]
+    command.extend(["--allocation-hours", str(spec.allocation_hours)])
+    if spec.allow_requeue:
+        command.append("--allow-requeue")
     subprocess.run(command, cwd=ROOT, env=dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda"), check=True)
     return json.loads(Path(output).read_text())
 
@@ -1039,9 +1059,11 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             write_json(directory / "runtime-projection.json", projection)
             print(f"acceptance_runtime_projection={json.dumps(projection, sort_keys=True)}", flush=True)
             projected = projection["projected_seconds"]
-            require_allocation_budget(projected, experiment["allocation_seconds"])
+            allocation = validate_allocation_timing(
+                replace(spec, allocation_hours=experiment["allocation_seconds"] / 3600),
+                experiment["config"], outcome["timing"], projected)
             record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600,
-                   runtime_projection=projection)
+                   runtime_projection=projection, **allocation)
         stage = "resume"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):
@@ -1072,6 +1094,28 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         raise
 
 
+def validate_allocation_timing(spec, config, timing, projected):
+    """Require either a complete run or safe checkpoint progress in each allocation."""
+    budget = (spec.allocation_hours - 2) * 3600
+    if budget <= 0 or not math.isfinite(projected) or projected <= 0:
+        raise RuntimeError("Invalid allocation budget or projected runtime")
+    if spec.allow_requeue:
+        # The first checkpoint must fit even with compilation, validation, and I/O.
+        interval = config["train"]["ckpt_every"]
+        if interval <= 0:
+            raise RuntimeError("Requeue requires periodic checkpoints")
+        checkpoint_window = (timing["runtime_seconds"]
+                             + max(timing["train_step_seconds"][1:]) * min(interval, config["optim"]["total_steps"])
+                             + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"]
+                             + max(timing["checkpoint_seconds"]))
+        if checkpoint_window > budget:
+            raise RuntimeError("Pilot projects beyond one allocation before durable checkpoint progress")
+    elif projected > budget:
+        raise RuntimeError(f"Pilot projects beyond a {spec.allocation_hours}h allocation: {projected / 3600:.2f} hours")
+    return {"allocation_hours": spec.allocation_hours, "allow_requeue": spec.allow_requeue,
+            "estimated_allocations": math.ceil(projected / budget)}
+
+
 def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", type=Path)
@@ -1084,11 +1128,21 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser.add_argument("--runtime-env", action="store_true", help="Print shell exports for the launcher and exit")
     parser.add_argument("--test-cache", type=Path,
                         help="Directory sharing passed test stages between runs with the same test identity")
+    parser.add_argument("--allocation-hours", type=float,
+                        help="Allocation duration for the pilot timing check (reserves two hours)")
+    parser.add_argument("--allow-requeue", action="store_true",
+                        help="Launcher requeues at time limits; require checkpoint progress per allocation")
     args = parser.parse_args(argv)
     if not isinstance(spec, AcceptanceSpec):
         if args.config is None:
             parser.error("config is required to select attention acceptance checks and runtime settings")
         spec = spec(load_config(args.config))
+    if args.allocation_hours is not None:
+        if not math.isfinite(args.allocation_hours) or args.allocation_hours <= 2:
+            parser.error("--allocation-hours must be finite and greater than two")
+        spec = replace(spec, allocation_hours=args.allocation_hours)
+    if args.allow_requeue:
+        spec = replace(spec, allow_requeue=True)
     if args.stop_after_step is None:
         args.stop_after_step = spec.pilot_steps
     if args.runtime_env:

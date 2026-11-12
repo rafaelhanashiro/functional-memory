@@ -313,6 +313,175 @@ broadcast differentiation. `attention_backend: auto` selects fused execution on
 supported NVIDIA GPUs and the blocked reference otherwise. The blocked reference
 provides diagnostics while the fused output continues through subsequent layers.
 
+### Projecting exp onto a scalar function basis
+
+`attention/basis.py` fits a fixed approximation `k(s) = sum_j c_j b_j(s)` to
+`exp(s)` under `s ~ N(mean, std²)`. The basis can contain monomials, Gaussian
+RBFs, sines, cosines, mixtures of these, or vectorized Python callables. This
+changes the scalar function applied to query–key scores; it does not construct
+expanded query/key features or linearize attention.
+
+```python
+import jax.numpy as jnp
+from scaffolds.transformer.attention.basis import fit_exp, monomial, rbf, sine, cosine
+
+# Named functions support both interactive evaluation and saved run recipes.
+fit = fit_exp([monomial(0), rbf(-2, 1.5), rbf(0, 1.5), rbf(2, 1.5)],
+              mean=0.0, std=1.0)
+print(fit.coefficients, fit.diagnostics)
+values = fit(jnp.linspace(-4, 4, 101))
+
+# Callables provide the same fitting API; use JAX operations if the result
+# will be differentiated or compiled. Scalar constant returns are supported.
+interactive = fit_exp([lambda s: 1.0, lambda s: jnp.sin(s), lambda s: jnp.cos(s)])
+```
+
+For an interactive attention calculation, pass the fitted callable as
+`attention_core(q, k, v, backend="blocked", score_kernel=interactive,
+attention_normalization=True)` from `attention/core.py`, using post-RoPE Q/K/V
+arrays with shape `[batch, time, heads, channels]`. Automatic differentiation
+passes through the fixed function to Q and K.
+
+`rbf(center, width)` means `exp(-0.5 * ((s-center)/width)**2)`; `sine(frequency,
+phase=0)` and `cosine(frequency, phase=0)` use radians. `monomial(power)` includes
+the constant at power zero. A named specification is a dictionary such as
+`{"kind": "rbf", "center": 0.0, "width": 1.5}`. Unknown kinds and parameters are
+rejected; specifications never execute strings as Python code.
+
+Fitting runs once on the CPU in float64. Gauss–Hermite quadrature discretizes
+the Gaussian expectation, and a column-scaled SVD least-squares solve finds the
+projection in the original basis. The functions need not be orthogonal. A zero
+function or numerical linear dependence raises an error instead of silently
+discarding terms. The default fit uses 64 quadrature nodes; a separate 128-node
+fit checks the change in the fitted function. `quadrature_order` and `check_order`
+are configurable, with `basis size <= quadrature_order < check_order <= 256`.
+
+Diagnostics include estimated absolute and relative L2 error, scaled-design
+condition numbers, relative change under the higher quadrature order, and an
+estimate of the Gaussian mass where the approximation is negative. The
+`quadrature_converged` flag requires both relative function change and relative
+error in the known exponential L2 norm to be at most `1e-7`.
+These are numerical checks, not error bounds for arbitrary functions: narrow
+RBFs or rapid oscillations may need more quadrature nodes. Increasing the basis
+span and resolving its integrals are separate requirements.
+
+Freeze the named basis, coefficients, Gaussian measure, fitting settings and
+diagnostics into the input recipe before allocating a training run:
+
+```python
+from scaffolds.transformer.configs import Config, ModelConfig, save_config
+
+config = Config(model=ModelConfig(
+    attention_basis=fit.to_config(),
+    attention_backend="blocked",  # auto also resolves to blocked on CPU or GPU
+    attention_normalization=True,
+    qk_norm=True,
+    initialization="transformer_reference",
+))
+save_config(config, "basis-recipe.yaml")
+```
+
+Fill in the study's data and training recipe before allocating with
+`scaffolds.records create`. Saved fits are restored without refitting, and resume
+checks include the entire specification. Anonymous callables cannot be serialized;
+use named functions for recorded training. The fitted coefficients are fixed and
+shared across layers and heads and add no trainable parameters. They exclude the
+existing polynomial degree, polynomial coefficient, and query-conditioning options.
+
+Normalized execution computes `sum_(i<=t) k(s_ti) v_i / sum_(i<=t) k(s_ti)`;
+unnormalized execution omits the denominator and supports the existing output
+scaling options (use head RMSNorm for new unnormalized runs). Scores are unshifted.
+The fit need not be positive: signed weights and negative nonzero sums are valid;
+zero or nonfinite denominators produce explicit numerical failures, without
+clipping or epsilon. Projection minimizes scalar-kernel L2 error, not normalized
+attention-output error. The blocked JAX path implements arbitrary bases;
+`attention_backend: triton_scalar` also supports frozen named bases on H100.
+Explicit fused, Mosaic, XLA-softmax or cuDNN requests are rejected. CPU tests cover
+analytic projections, forward/backward attention and training/resume; production
+GPU use requires the usual hardware qualification.
+
+### Native Triton scalar attention
+
+For relative learning of a fitted scalar basis, set
+`attention_coefficient_scale: projection`. Stored static coefficients start at
+one and represent `c_j = s_j theta_j`, where `s_j` is the frozen fitted weight.
+For tanh query conditioning also set
+`attention_coefficient_amplitude_scale: projection`: the represented coefficients
+are `c_j(x) = s_j [b_j + a_j tanh(w_j^T x)]`. Biases start at one, amplitudes at
+zero, and the projection standard deviation is specified by the recipe.
+All fitted scales must be nonzero. Signed fitted scales are supported, and every
+coefficient remains unconstrained. This is the scalar-basis counterpart of
+factorial scaling for Taylor coefficients; factorials are rejected for RBF indices.
+The relative query-basis generator uses the polynomial generator's named random
+stream, so matching head count, basis count, hidden size, seed and projection spread
+give identical initial projection arrays. The historical `none` setting retains
+its original parameterization and random stream.
+
+`attention/backends/triton_scalar.py` exposes `scalar_attention(q, k, v,
+kernel=...)` for causal BTHD operands. `ScalarKernel` contains an inlined
+`@triton.jit` callback `(scores, parameters, WITH_GRAD) -> (value, derivative)`
+and immutable compile-time parameters. `exponential_kernel`,
+`polynomial_kernel`, and `basis_kernel` provide exponential, fixed polynomial,
+and named-basis callbacks. The custom backward differentiates Q, K, V, the
+optional per-head RMSNorm gain, and optional runtime `basis_coefficients`.
+Runtime coefficients have shape `[R]`, `[H,R]`, or `[B,T,H,R]`; they replace the
+fitted weights while basis definitions remain fixed. The default precision for
+learned weights is `tf32x3`, retaining FP32 operands through weighted-value
+products and adjoints to avoid spurious coefficient-scale gradients after
+RMSNorm. Fixed kernels retain the BF16 product default.
+`uniform_rbf_kernel` is an explicit alternative for equally spaced Gaussian
+centers with a common width: two exponentials initialize a product recurrence
+for the unchanged fitted sum and derivative. It starts at the endpoint nearer
+each score and rejects spans wider than 24 standard deviations. The generic
+`basis_kernel` evaluates each basis function independently by default.
+`implementation="auto"` selects the recurrence for eligible bases with at least
+five terms, and otherwise keeps direct evaluation; `implementation="recurrence"`
+requires an eligible basis. Neither choice refits or changes the coefficients.
+
+The tiled implementation is adapted from Triton's official fused-attention
+tutorial, pinned in the kernel source. Forward uses tensor descriptors; dQ and
+dK/dV recompute scalar values and derivatives without retaining the attention
+matrix. The bridge supplies descriptor scratch as a private XLA result, whose
+lifetime also covers CUDA graph execution.
+
+The modes are unnormalized attention, normalized attention
+(`attention_normalization=True`), and unnormalized attention fused with per-head
+RMSNorm (`output_norm_scale=gain`). The last two enable streaming accumulation
+by default; `streaming=False` measures its cost independently. Streaming keeps
+`Y = exp(log_scale) * accumulator`, with positive scale `1 + sum(abs(weights))`.
+The RMSNorm epilogue rebases this to `max(1, max(abs(Y)))`, avoiding overflow
+or underflow when squaring the accumulator, including for tiny or zero values.
+RMSNorm uses `eps * exp(-2*log_scale)`, so retaining epsilon does not change the
+mathematics. Exponential evaluation shifts scores; other callbacks must produce
+finite values on valid scores. Streaming controls magnitude, not cancellation.
+Normalized exponential uses the positive weight mass without the unit prior,
+preserving softmax stability for entirely negative rows as well. Normalized
+signed weights still require a nonzero signed sum.
+
+Supported operands have BF16 or FP32 dtype and head widths 16, 32, 64 or 128.
+BF16 execution rounds weights and backward adjoints for tensor-core products;
+`precision="tf32x3"` retains FP32 operands for those products. The model's explicit
+`triton_scalar` backend supports fixed or learned named bases and fuses RMSNorm
+when requested. Fixed weights use `implementation="auto"`; learned weights use
+direct evaluation. Its default
+tiles are 64×32 for forward and dQ, and 32×64 for dK/dV; `tuning=Tuning(...)`
+overrides them for direct API calls. Backend `auto` remains blocked for basis attention. Diagnostic collection
+uses an additional blocked calculation, so it is not part of the fused fast path.
+Correctness and benchmark evidence belongs in the
+[validation record](validation/README.md).
+
+Learn named-basis coefficients by setting `attention_coefficients: learned`,
+`attention_coefficient_initialization: projection`, and unnormalized attention.
+Static weights support global or per-head sharing. Query-dependent coefficients
+use `attention_coefficient_conditioning: query`, `attention_coefficient_sharing:
+per_head`, and `attention_coefficient_activation: tanh`; their formula is the
+same FP32 `b + a*tanh(x W)` as the polynomial path. Biases start at the fitted
+weights. Amplitude/projection initialization uses the existing coefficient
+settings, and centers/widths remain fixed. Each parameter is owned by the model
+and excluded from weight decay. Both variants expose coefficient diagnostics.
+
+### QK-norm (cosine scores)
+
 ### QK normalization
 
 New dot-product experiments allocated with `python -m scaffolds.records create`
@@ -1247,6 +1416,20 @@ it cannot disable these checks.
 
 ## Environment and training API
 
+`train.micro_batch_size` is the global microbatch, divided evenly across GPUs.
+Each optimizer update consumes `data.batch_size / train.micro_batch_size`
+microbatches. Single-GPU accumulation uses a compiled `lax.scan`; it averages
+the FP32 gradients before clipping and applies the optimizer once per global
+batch, preserving the supplied RNG for each microbatch.
+
+To measure a microbatch size on one allocated GPU, run
+`python -m scaffolds.transformer.benchmarks.benchmark_accumulation --config RECIPE
+--micro-batch-size 8 --output REPORT.json`. Use a fresh process per size;
+`--implementation python` supplies the former Python-loop baseline.
+The report includes synchronized complete-update timings and allocator peaks
+using resident synthetic tokens. Data loading, evaluation and checkpoint costs
+are excluded, so these timings alone are not an end-to-end training estimate.
+
 Each worktree syncs its own environment from this scaffold's lock; hardlinks share
 package files with the uv cache, so an additional environment costs almost no disk:
 
@@ -1452,6 +1635,14 @@ Studies configure these shared modules with execution modules at their root
   `TRANSFORMER_STALL_MINUTES` (default 20), the job logs its GPUs' state, ends the
   running step, and exits with code 124. The finalizer requeues the job, which resumes
   from its latest checkpoint, for a run's first two stalls and records a third as a failure.
+  Kennel also requeues ten minutes before its allocation expires. Set
+  `TRANSFORMER_ALLOCATION_HOURS` to the requested duration (default 48; use 24
+  for standard). Acceptance records the full-run estimate and allows multiple
+  allocations only if compilation, evaluation, and a checkpoint interval fit
+  inside one allocation with two hours reserved. The CLI exposes this policy as
+  `--allocation-hours HOURS --allow-requeue`; without the latter, the full run
+  must fit one allocation. Requeues can repeat up to one checkpoint interval,
+  and queue waits are additional to the estimate.
 - `launchers/orcd.sbatch` does the same on ORCD. Its allocations fit that cluster's
   per-user GPU caps; a job asks for 12 hours, accepts `mit_normal_gpu`'s 6-hour
   maximum, and requeues itself before its limit (see [CLUSTERS.md](../../CLUSTERS.md)).

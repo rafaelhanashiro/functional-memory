@@ -12,3 +12,4 @@ either promoted into its own canonical result collection or deleted with its run
 | [coefficient_oracle](coefficient_oracle/README.md) | How much can free per-query polynomial coefficients improve a fixed pretrained model on one sequence or a full batch? | 2026-10-23 |
 | [path_position_encoding](path_position_encoding/README.md) | Does replacing RoPE with PaTH improve softmax and query-conditioned tanh polynomial attention? | 2026-10-19 |
 | [sparse_polynomial_heads](sparse_polynomial_heads/README.md) | Can fixed or query-dependent sparse polynomial features reproduce frozen pretrained softmax heads at a small active-feature budget? | 2026-10-15 |
+| [rbf_basis](rbf_basis/README.md) | Fixed and learned scalar RBF attention: 13 completed production runs across 10B-token, original 1×, and matched-recipe cohorts. Learning helps both shorter-budget cohorts; query dependence has no consistent advantage. Promotion remains open. | 2026-10-21 |

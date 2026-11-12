@@ -24,6 +24,8 @@ class AttentionParameterSpec:
     # Independent N(0, initial_std^2) noise added to every stored entry, drawn from the
     # mechanism stream so the backbone's initialization is unchanged.
     initial_std: float = 0.0
+    # An explicit shared draw lets matched bases reuse the same coefficient generator.
+    random_stream_name: str | None = None
     # A named random draw (RANDOM_INITIALIZERS) from the same mechanism stream; it replaces
     # ``initial``, which then only fixes the shape.
     initializer: str | None = None
@@ -111,7 +113,26 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
     elif getattr(config, "attention_coefficients", "fixed") == "learned":
         parameterization = getattr(config, "attention_coefficient_parameterization", "direct")
         conditioning = getattr(config, "attention_coefficient_conditioning", "static")
-        if conditioning in ("query", "query_key"):
+        if getattr(config, "attention_basis", None) is not None:
+            from scaffolds.transformer.attention.basis import projection_from_config
+            values = projection_from_config(config.attention_basis).coefficients
+            if config.attention_coefficient_scale == "projection":
+                values = (1.0,) * len(values)
+            if conditioning == "query":
+                from scaffolds.transformer.attention.input_dependent import parameter_specs
+                specs = parameter_specs(
+                    hidden_size=config.hidden_size, degree=len(values)-1, activation="tanh",
+                    amplitude_initial=config.attention_coefficient_amplitude_initial,
+                    projection_initial_std=config.attention_coefficient_projection_initial_std,
+                    tanh_bias=config.attention_coefficient_tanh_bias,
+                    initial_coefficients=values, name_prefix="query_basis")
+                if config.attention_coefficient_scale == "projection":
+                    specs = tuple(replace(spec, random_stream_name="query_polynomial_kernel")
+                                  if spec.name == "query_basis_kernel" else spec for spec in specs)
+            else:
+                specs = (AttentionParameterSpec("basis_coefficients", "basis_coefficients", values,
+                                                config.attention_coefficient_sharing),)
+        elif conditioning in ("query", "query_key"):
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
             specs = parameter_specs(
@@ -230,7 +251,7 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
         if spec.initial_std or spec.initializer:
             if key is None:
                 raise ValueError(f"{spec.name} has a random initialization and needs the mechanism key")
-            name_key = jax.random.fold_in(key, zlib.crc32(spec.name.encode()) & 0x7FFFFFFF)
+            name_key = jax.random.fold_in(key, zlib.crc32((spec.random_stream_name or spec.name).encode()) & 0x7FFFFFFF)
             if spec.initializer:
                 if spec.initial_std or spec.initializer not in RANDOM_INITIALIZERS:
                     raise ValueError(f"{spec.name} needs one known random initialization")

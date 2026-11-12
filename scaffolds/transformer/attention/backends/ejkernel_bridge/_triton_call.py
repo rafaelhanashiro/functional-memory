@@ -77,6 +77,7 @@ import dataclasses
 import functools
 import hashlib
 import inspect
+import math
 import os
 import pickle
 import re
@@ -616,6 +617,8 @@ class CompilationResult:
     cluster_dims: tuple
     ttgir: str | None
     llir: str | None
+    global_scratch_size: int = 0
+    global_scratch_align: int = 1
 
 
 def _validate_min_ctas_per_sm(value: int | None) -> None:
@@ -767,6 +770,8 @@ def compile_ttir_to_ptx_inplace(
     if cuda_options.debug:
         print(ptx)
     name = metadata["name"]
+    if metadata.get("profile_scratch_size", 0):
+        raise ValueError("Triton profiling scratch is not supported by this bridge")
     cluster_dims = metadata.get("cluster_dims", (0, 0, 0))
     return CompilationResult(
         binary=ptx,
@@ -775,6 +780,8 @@ def compile_ttir_to_ptx_inplace(
         cluster_dims=cluster_dims,
         ttgir=None,
         llir=None,
+        global_scratch_size=metadata.get("global_scratch_size", 0),
+        global_scratch_align=metadata.get("global_scratch_align", 1),
     )
 
 
@@ -856,26 +863,6 @@ def _get_triton_cache_dir() -> Path:
     return TRITON_CACHE_DIR
 
 
-def _triton_kernel_source_hash(fn: triton.JITFunction) -> str:
-    """Compute a SHA-256 hash of a Triton JIT function's source code.
-
-    Falls back to hashing the bytecode, constants, and names if the source
-    text is unavailable (e.g. for dynamically generated functions).
-
-    Args:
-        fn: A Triton ``JITFunction`` whose source will be hashed.
-
-    Returns:
-        Hex-digest string of the SHA-256 hash.
-    """
-    try:
-        source = inspect.getsource(fn.fn)
-    except (OSError, TypeError):
-        code = fn.fn.__code__
-        source = repr((code.co_code, code.co_consts, code.co_names))
-    return hashlib.sha256(source.encode("utf-8")).hexdigest()
-
-
 def _make_triton_cache_key(
     *,
     fn: triton.JITFunction,
@@ -890,6 +877,7 @@ def _make_triton_cache_key(
     enable_fp_fusion: bool,
     default_dot_input_precision: str | None = None,
     min_ctas_per_sm: int | None = None,
+    backend_hash: str | None = None,
 ) -> str:
     """Build a deterministic SHA-256 cache key for a Triton kernel compilation.
 
@@ -915,8 +903,11 @@ def _make_triton_cache_key(
         A SHA-256 hex-digest string uniquely identifying this compilation.
     """
     _validate_min_ctas_per_sm(min_ctas_per_sm)
-    source_hash = _triton_kernel_source_hash(fn)
+    source_hash = fn.cache_key  # Includes nested JIT helpers, not just the entry.
+    constants = tuple((key, value.cache_key if isinstance(value, triton.JITFunction) else value)
+                      for key, value in constants)
     payload = (
+        "global-scratch-v1",
         triton.__version__,
         jax.__version__,
         platform,
@@ -936,6 +927,8 @@ def _make_triton_cache_key(
     if min_ctas_per_sm is not None:
         # Preserve historical cache identities for callers that do not opt in.
         payload += (("min_ctas_per_sm", min_ctas_per_sm),)
+    if backend_hash is not None:
+        payload += (("backend_hash", backend_hash),)
     return hashlib.sha256(repr(payload).encode("utf-8")).hexdigest()
 
 
@@ -997,6 +990,8 @@ def _load_triton_kernel_cache(
             cluster_dims=tuple(data.get("cluster_dims", (0, 0, 0))),
             ttgir=None,
             llir=None,
+            global_scratch_size=data.get("global_scratch_size", 0),
+            global_scratch_align=data.get("global_scratch_align", 1),
         )
     except Exception as exc:
         _invalidate_triton_cache_entry(cache_key, f"load failed: {exc}")
@@ -1043,13 +1038,15 @@ def _save_triton_kernel_cache(
         "shared_mem_bytes": compilation_result.shared_mem_bytes,
         "cluster_dims": compilation_result.cluster_dims,
         "ttir": ttir,
+        "global_scratch_size": compilation_result.global_scratch_size,
+        "global_scratch_align": compilation_result.global_scratch_align,
     }
     with tmp_path.open("wb") as f:
         pickle.dump(payload, f)
     os.replace(tmp_path, cache_path)
 
 
-_COMPILED_KERNEL_CACHE: OrderedDict[str, triton_kernel_call_lib.TritonKernel] = OrderedDict()  # type: ignore
+_COMPILED_KERNEL_CACHE: OrderedDict = OrderedDict()
 
 
 def _lru_get(cache: OrderedDict, key: str):
@@ -1232,9 +1229,13 @@ def get_or_create_triton_kernel(
         enable_fp_fusion=enable_fp_fusion,
         default_dot_input_precision=default_dot_input_precision,
         min_ctas_per_sm=min_ctas_per_sm,
+        backend_hash=backend.hash(),
     )
-    kernel = _lru_get(_COMPILED_KERNEL_CACHE, cache_key)
-    if kernel is not None:
+    memory_entry = _lru_get(_COMPILED_KERNEL_CACHE, cache_key)
+    kernel = None
+    scratch = (0, 1)
+    if memory_entry is not None:
+        kernel, scratch = memory_entry
         _log_triton_cache(f"[triton-cache] hit (memory) key={cache_key}")
 
     if kernel is None and TRITON_CACHE_ENABLED:
@@ -1272,7 +1273,8 @@ def get_or_create_triton_kernel(
                     compute_capability,
                     *cached.cluster_dims,
                 )
-            _lru_set(_COMPILED_KERNEL_CACHE, cache_key, kernel)
+            scratch = (cached.global_scratch_size, cached.global_scratch_align)
+            _lru_set(_COMPILED_KERNEL_CACHE, cache_key, (kernel, scratch))
         else:
             _log_triton_cache(f"[triton-cache] miss (disk) key={cache_key}")
 
@@ -1332,7 +1334,8 @@ def get_or_create_triton_kernel(
                 *compilation_result.cluster_dims,
             )
 
-        _lru_set(_COMPILED_KERNEL_CACHE, cache_key, kernel)
+        scratch = (compilation_result.global_scratch_size, compilation_result.global_scratch_align)
+        _lru_set(_COMPILED_KERNEL_CACHE, cache_key, (kernel, scratch))
         if TRITON_CACHE_ENABLED:
             try:
                 _save_triton_kernel_cache(
@@ -1346,6 +1349,7 @@ def get_or_create_triton_kernel(
             except Exception as exc:
                 _log_triton_cache(f"[triton-cache] save failed key={cache_key}: {exc}")
 
+    attrs["global_scratch"] = scratch
     return kernel, attrs
 
 
@@ -1533,7 +1537,8 @@ def triton_kernel_call_lowering(
             )
         )
 
-    kernel_calls = []
+    compiled_configs = []
+    scratch_bytes = 0
     for params in config_params:
         kernel, specialization_attr = get_or_create_triton_kernel(
             backend_init_func,
@@ -1552,7 +1557,13 @@ def triton_kernel_call_lowering(
             metaparams=dict(params["metaparams"]),
             dump=debug,
         )
-
+        size, alignment = specialization_attr.get("global_scratch", (0, 1))
+        if size < 0 or alignment > 256:
+            raise ValueError("Unsupported Triton scratch size/alignment")
+        scratch_bytes = max(scratch_bytes, size * math.prod(params["grid"]) * params["num_ctas"])
+        compiled_configs.append((params, kernel, specialization_attr))
+    kernel_calls = []
+    for params, kernel, specialization_attr in compiled_configs:
         kernel_params = []
         zeroed_params_with_sizes = dict(params["zeroed_params_with_sizes"])
         equal_to_1 = {i for i, _, v in scalar_args if v == 1}
@@ -1567,6 +1578,12 @@ def triton_kernel_call_lowering(
                 )
             elif i not in equal_to_1:
                 kernel_params.append(triton_kernel_call_lib.create_scalar_parameter(arg, dtype))
+
+        if scratch_bytes:
+            # The compiler appends global scratch after the explicit arguments.
+            # Expose it as an XLA-owned temporary result, including during graph
+            # capture. The runtime's next null pointer fills profiling scratch.
+            kernel_params.append(triton_kernel_call_lib.create_array_parameter(0, 256))
 
         kernel_calls.append(
             triton_kernel_call_lib.TritonKernelCall(
@@ -1601,6 +1618,10 @@ def triton_kernel_call_lowering(
         backend_config=zlib.compress(call_proto),
         operand_output_aliases=dict(input_output_aliases),
     )
+    if scratch_bytes:
+        scratch_aval = core.ShapedArray((scratch_bytes,), np.uint8)
+        scratch_ctx = ctx.replace(avals_out=(*ctx.avals_out, scratch_aval))
+        return rule(scratch_ctx, *array_args)[:-1]
     return rule(ctx, *array_args)
 
 

@@ -19,7 +19,8 @@ def has_fixed_square_factors(model) -> bool:
 
 
 def has_learned_polynomial(model) -> bool:
-    return getattr(model, "attention_coefficients", "fixed") == "learned"
+    return (getattr(model, "attention_coefficients", "fixed") == "learned"
+            and getattr(model, "attention_basis", None) is None)
 
 
 def has_sum_of_squares_kernel(model) -> bool:
@@ -36,7 +37,8 @@ def has_rational_kernel(model) -> bool:
 
 def is_signed_kernel(model) -> bool:
     """Kernels whose weights may be negative or zero by design."""
-    return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
+    return (getattr(model, "attention_basis", None) is not None
+            or is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
             or (has_learned_polynomial(model) and not has_sum_of_squares_kernel(model)))
 
 

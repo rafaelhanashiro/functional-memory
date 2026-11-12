@@ -1,0 +1,1782 @@
+{
+  "driver_sha256": "bb58a473c666975151a7668a5739b5cee1d07928f37c00915aa45c93b30f8f20",
+  "format": "scalar-attention-profile",
+  "method": "GPU Stream # events inside synchronized host annotations; duration sums can include overlap. Native kernel names are specific to these benchmarks. Register counts and theoretical occupancy are profiler metadata, not measured SM utilization.",
+  "traces": [
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 128.0,
+                "kernel_sum_ms": 15.760485333333323,
+                "percent_of_kernel_sum": 51.53955845606096
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "native_scalar_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 234.0,
+                "kernel_sum_ms": 14.818910000000031,
+                "percent_of_kernel_sum": 48.46044154393903
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.1016489033258,
+            "gpu_activity_percent_of_wall": 97.4400152804953,
+            "gpu_activity_union_ms": 30.68325733333333,
+            "kernel_active_union_ms": 30.42834600000001,
+            "kernel_count": 362.0,
+            "kernel_overlap_excess_ms": 0.15104933333334458,
+            "kernel_sum_ms": 30.579395333333355,
+            "memory_operation_sum_ms": 0.2569059999999954,
+            "no_recorded_gpu_activity_ms": 0.8061233333333379,
+            "wall_ms": 31.489380666666666
+          },
+          "pid": 1,
+          "updates": [
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 128,
+                  "kernel_sum_ms": 15.757145999999956,
+                  "percent_of_kernel_sum": 51.52441129891697
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 234,
+                  "kernel_sum_ms": 14.824758000000077,
+                  "percent_of_kernel_sum": 48.47558870108303
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 99.09456912820066,
+              "gpu_activity_percent_of_wall": 97.13391572365563,
+              "gpu_activity_union_ms": 30.68497600000003,
+              "kernel_active_union_ms": 30.431153000000034,
+              "kernel_count": 362,
+              "kernel_overlap_excess_ms": 0.1507510000000002,
+              "kernel_sum_ms": 30.581904000000034,
+              "memory_operation_sum_ms": 0.25590299999999844,
+              "no_recorded_gpu_activity_ms": 0.9054069999999665,
+              "step_num": "0",
+              "top_kernels": [
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.242770000000004,
+                  "name": "input_reduce_select_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.194224000000021,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 32,
+                  "kernel_sum_ms": 3.7902239999999803,
+                  "name": "gemm_fusion_dot_18"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.9082490000000036,
+                  "name": "input_reduce_select_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.3051399999999993,
+                  "name": "gemm_fusion_dot_19"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.1615229999999865,
+                  "name": "gemm_fusion_dot_14"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.963025999999998,
+                  "name": "gemm_fusion_dot_13"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.933470000000005,
+                  "name": "gemm_fusion_dot_17"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.8335999999999912,
+                  "name": "gemm_fusion_dot_16"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.7701629999999968,
+                  "name": "gemm_fusion_dot_15"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.0169269999999924,
+                  "name": "loop_add_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.0098520000000026,
+                  "name": "loop_add_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12668799999999827,
+                  "name": "loop_convert_transpose_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.11789000000000306,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 2,
+                  "kernel_sum_ms": 0.09391999999999825,
+                  "name": "wrapped_transpose"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.09158200000000215,
+                  "name": "loop_dynamic_update_slice_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.08275200000000041,
+                  "name": "loop_broadcast_fusion_4"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.08063999999999942,
+                  "name": "loop_select_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07647899999999935,
+                  "name": "input_reduce_fusion_3"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07241600000000108,
+                  "name": "input_transpose_fusion_2"
+                }
+              ],
+              "wall_ms": 31.590383
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 128,
+                  "kernel_sum_ms": 15.76156199999999,
+                  "percent_of_kernel_sum": 51.54295349134571
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 234,
+                  "kernel_sum_ms": 14.81790799999996,
+                  "percent_of_kernel_sum": 48.45704650865428
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 99.10234873266288,
+              "gpu_activity_percent_of_wall": 97.60262336131368,
+              "gpu_activity_union_ms": 30.683853999999993,
+              "kernel_active_union_ms": 30.428367000000012,
+              "kernel_count": 362,
+              "kernel_overlap_excess_ms": 0.15110299999993732,
+              "kernel_sum_ms": 30.57946999999995,
+              "memory_operation_sum_ms": 0.2575029999999533,
+              "no_recorded_gpu_activity_ms": 0.7536760000000068,
+              "step_num": "1",
+              "top_kernels": [
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.24193499999999,
+                  "name": "input_reduce_select_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.195087999999989,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 32,
+                  "kernel_sum_ms": 3.786705000000009,
+                  "name": "gemm_fusion_dot_18"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.910073999999986,
+                  "name": "input_reduce_select_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.3022619999999954,
+                  "name": "gemm_fusion_dot_19"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.171731999999989,
+                  "name": "gemm_fusion_dot_14"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.96180799999999,
+                  "name": "gemm_fusion_dot_13"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.933533000000003,
+                  "name": "gemm_fusion_dot_17"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.8347520000000077,
+                  "name": "gemm_fusion_dot_16"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.7707699999999968,
+                  "name": "gemm_fusion_dot_15"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.013471999999987,
+                  "name": "loop_add_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.0078679999999949,
+                  "name": "loop_add_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12646399999999994,
+                  "name": "loop_convert_transpose_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.11814399999999296,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 2,
+                  "kernel_sum_ms": 0.09391999999999825,
+                  "name": "wrapped_transpose"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.09196900000001187,
+                  "name": "loop_dynamic_update_slice_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.08188700000000244,
+                  "name": "loop_broadcast_fusion_4"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.08166300000000774,
+                  "name": "loop_select_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07606399999999848,
+                  "name": "input_reduce_fusion_3"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07299199999999836,
+                  "name": "input_transpose_fusion_2"
+                }
+              ],
+              "wall_ms": 31.43753
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 128,
+                  "kernel_sum_ms": 15.762748000000022,
+                  "percent_of_kernel_sum": 51.55131280527212
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 234,
+                  "kernel_sum_ms": 14.814064000000057,
+                  "percent_of_kernel_sum": 48.44868719472789
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 99.1080299672837,
+              "gpu_activity_percent_of_wall": 97.58498260302099,
+              "gpu_activity_union_ms": 30.680941999999966,
+              "kernel_active_union_ms": 30.425517999999983,
+              "kernel_count": 362,
+              "kernel_overlap_excess_ms": 0.15129400000009627,
+              "kernel_sum_ms": 30.57681200000008,
+              "memory_operation_sum_ms": 0.25731200000003446,
+              "no_recorded_gpu_activity_ms": 0.7592870000000402,
+              "step_num": "2",
+              "top_kernels": [
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.243537000000011,
+                  "name": "input_reduce_select_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 4.193520000000019,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 32,
+                  "kernel_sum_ms": 3.79537000000001,
+                  "name": "gemm_fusion_dot_18"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.908155999999988,
+                  "name": "input_reduce_select_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.304758000000016,
+                  "name": "gemm_fusion_dot_19"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 2.162680999999997,
+                  "name": "gemm_fusion_dot_14"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.9576849999999977,
+                  "name": "gemm_fusion_dot_13"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.938744000000006,
+                  "name": "gemm_fusion_dot_17"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.8323830000000016,
+                  "name": "gemm_fusion_dot_16"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.7711269999999932,
+                  "name": "gemm_fusion_dot_15"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.0115840000000025,
+                  "name": "loop_add_fusion_1"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 1.0080880000000034,
+                  "name": "loop_add_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.1256319999999978,
+                  "name": "loop_convert_transpose_fusion"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.11731200000003446,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 2,
+                  "kernel_sum_ms": 0.09388800000000629,
+                  "name": "wrapped_transpose"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.09232000000000698,
+                  "name": "loop_dynamic_update_slice_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.08243099999999685,
+                  "name": "loop_broadcast_fusion_4"
+                },
+                {
+                  "count": 16,
+                  "kernel_sum_ms": 0.08140800000002492,
+                  "name": "loop_select_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07574300000000221,
+                  "name": "input_reduce_fusion_3"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07289599999999337,
+                  "name": "input_transpose_fusion_2"
+                }
+              ],
+              "wall_ms": 31.440229000000006
+            }
+          ]
+        }
+      ],
+      "excluded_stream_events": {},
+      "expanded_bytes": 825494,
+      "native_kernel_resources": [],
+      "step_annotation": "attention",
+      "step_count": 3,
+      "trace": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/blocked/plugins/profile/2026_10_22_00_50_15/perfetto_trace.json.gz",
+      "trace_sha256": "e84c47ee68393ce7ae0d8aebceb9651f2c18547b13b03326b0557005a7ccf2c6",
+      "trial_annotations": []
+    },
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "native_scalar_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "other": {
+                "kernel_count": 10.0,
+                "kernel_sum_ms": 2.2704719999999994,
+                "percent_of_kernel_sum": 100.0
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 99.99999999999999,
+            "gpu_activity_percent_of_wall": 90.78812846243613,
+            "gpu_activity_union_ms": 2.2679969999999994,
+            "kernel_active_union_ms": 2.2679969999999994,
+            "kernel_count": 10.0,
+            "kernel_overlap_excess_ms": 0.0024749999999997573,
+            "kernel_sum_ms": 2.2704719999999994,
+            "memory_operation_sum_ms": 0.0,
+            "no_recorded_gpu_activity_ms": 0.2301236666666673,
+            "wall_ms": 2.498120666666667
+          },
+          "pid": 1,
+          "updates": [
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 10,
+                  "kernel_sum_ms": 2.269437,
+                  "percent_of_kernel_sum": 100.0
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 100.0,
+              "gpu_activity_percent_of_wall": 86.7892090621705,
+              "gpu_activity_union_ms": 2.267164999999999,
+              "kernel_active_union_ms": 2.267164999999999,
+              "kernel_count": 10,
+              "kernel_overlap_excess_ms": 0.002272000000000844,
+              "kernel_sum_ms": 2.269437,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.3451010000000015,
+              "step_num": "0",
+              "top_kernels": [
+                {
+                  "count": 3,
+                  "kernel_sum_ms": 1.9561570000000001,
+                  "name": "kernel_mosaic_gpu_kernel"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12047999999999956,
+                  "name": "input_convert_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07395199999999931,
+                  "name": "input_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.062368000000000395,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.046399999999999636,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.004127999999999701,
+                  "name": "wrapped_broadcast"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0037440000000005967,
+                  "name": "loop_multiply_rsqrt_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0022080000000005385,
+                  "name": "input_reduce_fusion_2"
+                }
+              ],
+              "wall_ms": 2.6122660000000004
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 10,
+                  "kernel_sum_ms": 2.269757999999998,
+                  "percent_of_kernel_sum": 100.0
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 100.0,
+              "gpu_activity_percent_of_wall": 92.69464176448874,
+              "gpu_activity_union_ms": 2.2678049999999983,
+              "kernel_active_union_ms": 2.2678049999999983,
+              "kernel_count": 10,
+              "kernel_overlap_excess_ms": 0.0019529999999995198,
+              "kernel_sum_ms": 2.269757999999998,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.17872800000000097,
+              "step_num": "1",
+              "top_kernels": [
+                {
+                  "count": 3,
+                  "kernel_sum_ms": 1.956862000000001,
+                  "name": "kernel_mosaic_gpu_kernel"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12179099999999926,
+                  "name": "input_convert_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0721919999999991,
+                  "name": "input_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.06278399999999965,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.04630400000000009,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.004095999999999549,
+                  "name": "wrapped_broadcast"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0036489999999994326,
+                  "name": "loop_multiply_rsqrt_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0020799999999999274,
+                  "name": "input_reduce_fusion_2"
+                }
+              ],
+              "wall_ms": 2.4465329999999996
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "other": {
+                  "kernel_count": 10,
+                  "kernel_sum_ms": 2.2722209999999996,
+                  "percent_of_kernel_sum": 100.0
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 100.0,
+              "gpu_activity_percent_of_wall": 93.16207382030358,
+              "gpu_activity_union_ms": 2.269021000000001,
+              "kernel_active_union_ms": 2.269021000000001,
+              "kernel_count": 10,
+              "kernel_overlap_excess_ms": 0.0031999999999989086,
+              "kernel_sum_ms": 2.2722209999999996,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.16654199999999947,
+              "step_num": "2",
+              "top_kernels": [
+                {
+                  "count": 3,
+                  "kernel_sum_ms": 1.9583329999999988,
+                  "name": "kernel_mosaic_gpu_kernel"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12079999999999927,
+                  "name": "input_convert_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.07446399999999995,
+                  "name": "input_reduce_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.061536000000000056,
+                  "name": "loop_select_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.04732799999999952,
+                  "name": "input_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.004128000000000611,
+                  "name": "wrapped_broadcast"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.003584000000000742,
+                  "name": "loop_multiply_rsqrt_fusion"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.002048000000000684,
+                  "name": "input_reduce_fusion_2"
+                }
+              ],
+              "wall_ms": 2.435563
+            }
+          ]
+        }
+      ],
+      "excluded_stream_events": {},
+      "expanded_bytes": 38089,
+      "native_kernel_resources": [],
+      "step_annotation": "attention",
+      "step_count": 3,
+      "trace": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/mosaic/plugins/profile/2026_10_22_00_52_46/perfetto_trace.json.gz",
+      "trace_sha256": "aab147923858317e34545dfbe58c8c9c528202505ac41c32b3a19e0542fdd7ca",
+      "trial_annotations": []
+    },
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "native_scalar_attention": {
+                "kernel_count": 4.0,
+                "kernel_sum_ms": 3.5545113333333327,
+                "percent_of_kernel_sum": 99.8759176688257
+              },
+              "other": {
+                "kernel_count": 2.0,
+                "kernel_sum_ms": 0.004415999999998651,
+                "percent_of_kernel_sum": 0.12408233117428041
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 0.0,
+            "gpu_activity_percent_of_wall": 90.61819613961089,
+            "gpu_activity_union_ms": 3.5587139999999984,
+            "kernel_active_union_ms": 3.5587139999999984,
+            "kernel_count": 6.0,
+            "kernel_overlap_excess_ms": 0.00021333333333313931,
+            "kernel_sum_ms": 3.5589273333333313,
+            "memory_operation_sum_ms": 0.0,
+            "no_recorded_gpu_activity_ms": 0.3684376666666691,
+            "wall_ms": 3.927151666666667
+          },
+          "pid": 1,
+          "updates": [
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 3.561593999999999,
+                  "percent_of_kernel_sum": 99.87616411619712
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.004415999999999258,
+                  "percent_of_kernel_sum": 0.12383588380288502
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 90.13168205013098,
+              "gpu_activity_union_ms": 3.565786,
+              "kernel_active_union_ms": 3.565786,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00022399999999834109,
+              "kernel_sum_ms": 3.5660099999999986,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.39040999999999987,
+              "step_num": "0",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.50275,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.0906219999999993,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.8468780000000006,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12134399999999915,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0025599999999994906,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0018559999999997671,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 3.956196
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 3.54809,
+                  "percent_of_kernel_sum": 99.8756933837691
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.004415999999999258,
+                  "percent_of_kernel_sum": 0.12430661623088768
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 91.24069180632371,
+              "gpu_activity_union_ms": 3.552313999999997,
+              "kernel_active_union_ms": 3.552313999999997,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00019200000000273577,
+              "kernel_sum_ms": 3.5525059999999993,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.3410300000000043,
+              "step_num": "1",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.5017569999999996,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.0906219999999993,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.8344310000000005,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12128000000000065,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.002623999999999796,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0017919999999994616,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 3.893344000000001
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 3.5538499999999984,
+                  "percent_of_kernel_sum": 99.8758946070924
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.0044159999999974385,
+                  "percent_of_kernel_sum": 0.12410539290759724
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 90.49132547371947,
+              "gpu_activity_union_ms": 3.5580419999999977,
+              "kernel_active_union_ms": 3.5580419999999977,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00022399999999834109,
+              "kernel_sum_ms": 3.558265999999996,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.37387300000000323,
+              "step_num": "2",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.500701000000001,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.0932789999999986,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.8386229999999996,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12124699999999938,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.002527999999998428,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0018879999999990105,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 3.931915000000001
+            }
+          ]
+        }
+      ],
+      "excluded_stream_events": {},
+      "expanded_bytes": 33616,
+      "native_kernel_resources": [
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:66048 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "backward_kv",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:234 static_shared:0 dynamic_shared:57344 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "backward_q",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:66560 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "forward",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:128 static_shared:0 dynamic_shared:4096 grid:16,256,1 block:128,1,1 occ_pct:25",
+          "kernel": "preprocess",
+          "recorded_launches": 3
+        }
+      ],
+      "step_annotation": "attention",
+      "step_count": 3,
+      "trace": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/triton_fused/plugins/profile/2026_10_22_00_51_06/perfetto_trace.json.gz",
+      "trace_sha256": "4aa7f98a698c82705723c40ba23b211ccf29aca960c91f066aa76a0b454c2e60",
+      "trial_annotations": []
+    },
+    {
+      "devices": [
+        {
+          "device": "/device:GPU:0",
+          "mean_per_update": {
+            "categories": {
+              "attention_other": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "collectives": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cross_entropy": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "cudnn_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "gemm_unattributed": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "mlp": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "native_scalar_attention": {
+                "kernel_count": 4.0,
+                "kernel_sum_ms": 3.9930393333333343,
+                "percent_of_kernel_sum": 99.87301520074162
+              },
+              "other": {
+                "kernel_count": 2.0,
+                "kernel_sum_ms": 0.005076999999999923,
+                "percent_of_kernel_sum": 0.12698479925838213
+              },
+              "pallas_attention": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              },
+              "projections": {
+                "kernel_count": 0.0,
+                "kernel_sum_ms": 0.0,
+                "percent_of_kernel_sum": 0.0
+              }
+            },
+            "command_buffer_kernel_sum_percent": 0.0,
+            "gpu_activity_percent_of_wall": 90.92117686791454,
+            "gpu_activity_union_ms": 3.9978390000000004,
+            "kernel_active_union_ms": 3.9978390000000004,
+            "kernel_count": 6.0,
+            "kernel_overlap_excess_ms": 0.0002773333333334449,
+            "kernel_sum_ms": 3.9981163333333343,
+            "memory_operation_sum_ms": 0.0,
+            "no_recorded_gpu_activity_ms": 0.39919933333333146,
+            "wall_ms": 4.397038333333332
+          },
+          "pid": 1,
+          "updates": [
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 4.001242,
+                  "percent_of_kernel_sum": 99.8674172368574
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.005311999999999898,
+                  "percent_of_kernel_sum": 0.13258276314258832
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 89.70255005714162,
+              "gpu_activity_union_ms": 4.006201999999999,
+              "kernel_active_union_ms": 4.006201999999999,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00035200000000077124,
+              "kernel_sum_ms": 4.006554,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.45989400000000025,
+              "step_num": "0",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.514621000000001,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.2694069999999993,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.0956149999999998,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12159900000000017,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.003456000000000131,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0018559999999997671,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4.466095999999999
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 3.9923780000000026,
+                  "percent_of_kernel_sum": 99.87034594343903
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.005182999999999083,
+                  "percent_of_kernel_sum": 0.12965405656096507
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 91.72950499157372,
+              "gpu_activity_union_ms": 3.997337000000003,
+              "kernel_active_union_ms": 3.997337000000003,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00022399999999834109,
+              "kernel_sum_ms": 3.9975610000000015,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.3604069999999956,
+              "step_num": "1",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.5025250000000014,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.2811180000000004,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.087487000000001,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12124799999999959,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0034869999999991705,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0016959999999999126,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4.3577439999999985
+            },
+            {
+              "categories": {
+                "attention_other": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "collectives": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cross_entropy": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "cudnn_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "gemm_unattributed": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "mlp": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "native_scalar_attention": {
+                  "kernel_count": 4,
+                  "kernel_sum_ms": 3.9854979999999998,
+                  "percent_of_kernel_sum": 99.88131021889942
+                },
+                "other": {
+                  "kernel_count": 2,
+                  "kernel_sum_ms": 0.004736000000000786,
+                  "percent_of_kernel_sum": 0.1186897811005767
+                },
+                "pallas_attention": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                },
+                "projections": {
+                  "kernel_count": 0,
+                  "kernel_sum_ms": 0.0,
+                  "percent_of_kernel_sum": 0.0
+                }
+              },
+              "command_buffer_kernel_sum_percent": 0.0,
+              "gpu_activity_percent_of_wall": 91.36081423771118,
+              "gpu_activity_union_ms": 3.9899779999999994,
+              "kernel_active_union_ms": 3.9899779999999994,
+              "kernel_count": 6,
+              "kernel_overlap_excess_ms": 0.00025600000000122237,
+              "kernel_sum_ms": 3.9902340000000005,
+              "memory_operation_sum_ms": 0.0,
+              "no_recorded_gpu_activity_ms": 0.37729699999999866,
+              "step_num": "2",
+              "top_kernels": [
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.4972459999999992,
+                  "name": "backward_kv"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.2662700000000005,
+                  "name": "forward"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 1.1004779999999992,
+                  "name": "backward_q"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.12150400000000082,
+                  "name": "preprocess"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.002623999999999796,
+                  "name": "loop_reduce_fusion_1"
+                },
+                {
+                  "count": 1,
+                  "kernel_sum_ms": 0.0021120000000009894,
+                  "name": "loop_reduce_fusion"
+                }
+              ],
+              "wall_ms": 4.367274999999998
+            }
+          ]
+        }
+      ],
+      "excluded_stream_events": {},
+      "expanded_bytes": 33683,
+      "native_kernel_resources": [
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:66048 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "backward_kv",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:234 static_shared:0 dynamic_shared:57344 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "backward_q",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:255 static_shared:0 dynamic_shared:66560 grid:16,256,1 block:128,1,1 occ_pct:12.5",
+          "kernel": "forward",
+          "recorded_launches": 3
+        },
+        {
+          "details": "regs:128 static_shared:0 dynamic_shared:4096 grid:16,256,1 block:128,1,1 occ_pct:25",
+          "kernel": "preprocess",
+          "recorded_launches": 3
+        }
+      ],
+      "step_annotation": "attention",
+      "step_count": 3,
+      "trace": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-throughput/scaffolds/transformer/validation/runs/scalar-triton/223787/profiles/poly3/triton_streamed/plugins/profile/2026_10_22_00_51_18/perfetto_trace.json.gz",
+      "trace_sha256": "b86e9759f3827d36e97025e10d452a34ea44804314af0f7925d61ce63565d700",
+      "trial_annotations": []
+    }
+  ],
+  "version": 1
+}

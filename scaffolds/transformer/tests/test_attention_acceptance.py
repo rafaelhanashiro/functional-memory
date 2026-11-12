@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from scaffolds.transformer.acceptance import attention_spec, main, test_paths as selected_paths
+from scaffolds.transformer.acceptance import AcceptanceSpec, attention_spec, main, test_paths as selected_paths
 from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict, save_config
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -20,6 +20,22 @@ def recipe(**model):
 def checks(config, backend, cpu):
     return selected_paths(attention_spec(config, entry_module=ENTRY), config_to_dict(config),
                           resolved_backend=backend, cpu=cpu)
+
+
+@pytest.mark.parametrize("cpu", (False, True))
+def test_native_scalar_backend_requires_its_checks_even_for_a_minimal_adapter(cpu):
+    from scaffolds.transformer.attention.basis import fit_exp, rbf
+
+    config = recipe(attention_basis=fit_exp([rbf(-1., 1.), rbf(0., 1.), rbf(1., 1.)]).to_config(),
+                    attention_backend="triton_scalar", attention_normalization=False,
+                    attention_output_scaling="head_rms_norm")
+    spec = AcceptanceSpec(entry_module=ENTRY, cpu_tests=())
+    for selected in (selected_paths(spec, config_to_dict(config), resolved_backend="triton_scalar", cpu=cpu),
+                     checks(config, "triton_scalar", cpu)):
+        assert "scaffolds/transformer/tests/test_triton_scalar.py" in selected
+        if cpu:
+            assert "scaffolds/transformer/tests/test_triton_bridge_precision.py" in selected
+    assert attention_spec(config, entry_module=ENTRY).required_backend == "triton_scalar"
 
 
 @pytest.mark.parametrize("degree", (1, 2, 3, 4))

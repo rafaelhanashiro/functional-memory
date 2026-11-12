@@ -15,3 +15,7 @@ slurm-*.out
 slurm-*.err
 # Numerical data archives stay at the home-cluster artifact root; Git holds results only.
 /experiments/**/*.npz
+
+# Large profiler traces are retained locally; commit compact summaries and hashes.
+/scaffolds/*/validation/runs/*/profiles/
+/scaffolds/*/validation/runs/*/*/profiles/
