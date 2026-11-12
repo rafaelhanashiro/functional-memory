@@ -226,7 +226,9 @@ def main():
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "node": os.environ.get("SLURMD_NODENAME"),
         "jax": jax.__version__,
         "source_commit": subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip(),
-        "source_dirty": bool(subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "scaffolds"],
+        # Scaffold files, tracked or new, except the validation records checks write.
+        "source_dirty": bool(subprocess.run(["git", "status", "--porcelain", "--", "scaffolds",
+                                             ":(exclude)scaffolds/transformer/validation/runs"],
                                             capture_output=True, text=True).stdout.strip()),
         "shape": {"batch": BATCH, "time": TIME, "heads": HEADS, "width": WIDTH, "value_width": 64, "degree": DEGREE},
         "cases": cases,
