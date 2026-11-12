@@ -753,7 +753,9 @@ parameter-free function of the score instead of the score itself (`attention/sco
   `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
   polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
   `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
-  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. Softplus is
+  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. The entry
+  point refuses them there too (`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint
+  without backend selection; `tests/test_mosaic_score_transform.py` admits the GPU it qualifies. Softplus is
   `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
   `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
   `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked
