@@ -1793,3 +1793,33 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
   score-bias qualification `tests/test_score_bias_strips.py`, nothing else. A skipped test fails acceptance.
 
 Home cluster: **Kennel**. One GPU per run; the two jobs have no scheduling dependency.
+
+**GPU qualification and time limit.** On one H100 PCIe (`mastiff`, job 243502, commit `593e7267`;
+[validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12))
+the GPU stage passed (16 cases; transform cases at 1.007–1.011x their BF16 floors) and each recipe's
+20-update pilot (acceptance's own worker, with validation, diagnostics and a checkpoint) ran at 3.24 s per
+update with finite losses and valid diagnostics:
+
+| Run | s/update | Projected hours (7,551 updates) | Allocator peak GiB | Update estimate GiB, H100 / B200 |
+| --- | ---: | ---: | ---: | ---: |
+| `r1d342ca6e58c` | 3.24 | 7.3 | 22.8 | 22.2 / 21.6 |
+| `r17a1290cb4ac` | 3.24 | 7.3 | 23.6 | 22.8 / 22.4 |
+
+The default allocator share (59.4 GiB on an H100) holds either run. The H100 PCIe is the slowest GPU type
+these runs may receive, so each limit is its projection plus two hours, rounded up: 10 hours, within
+`standard`'s 24. Acceptance projects again on the granted GPU and refuses the allocation if that projection
+exceeds the limit less two hours. Submit both from the isolated `claude/score-transforms` worktree after
+committing the frozen execution set; the launcher runs B200 and B300 allocations in the CUDA 13 environment:
+
+```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): drop mastiff from --exclude only
+# while another job holds that GPU.
+for run in r1d342ca6e58c r17a1290cb4ac; do
+  sbatch --parsable --partition=standard --time=10:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=mastiff,collie,samoyed,doodle,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```

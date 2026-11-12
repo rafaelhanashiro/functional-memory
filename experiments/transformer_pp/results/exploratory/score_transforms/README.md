@@ -40,8 +40,9 @@ at the start). The softplus run starts `b_0` at 0 instead of 1; no parameter is 
 other initial array is the control's. Each recipe is the control's with only the transform, the softplus
 run's constant start, and gradient-event capture changed, at the shape's 1x budget (7,551 updates of
 128 × 2,048 tokens). The runs train on the blocked backend's causal strips on one B200, B300 or H100, the
-only computation that evaluates the transform; the control trained on B300's Mosaic kernels. Recipe,
-acceptance checks and launch commands: [study README](../../../README.md#score-transforms).
+only computation that evaluates the transform (on an H100 PCIe the pilots project 7.3 hours); the control
+trained on B300's Mosaic kernels. Recipe, acceptance checks and launch commands:
+[study README](../../../README.md#score-transforms).
 
 **Diagnostics.** At each validation the forward-only JAX scan of the same kernel, on the first held-out
 sequence, records under `coefficients.score_transform`, per layer and head, the raw scores' and the inputs'
