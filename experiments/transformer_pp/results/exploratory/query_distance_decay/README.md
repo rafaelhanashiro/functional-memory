@@ -466,7 +466,7 @@ comparison covers all 28 evaluations.
   the per-order query–key gates are +0.77% (m = 4), +0.80% (m = 8) and +0.57% (m = 12)
   (terminal +0.76%, +0.79%, +0.56%). They are lower only within the first 800 updates (at 4, 3
   and 6 of 28 evaluations). From update 3,000 on, the degree-four and degree-eight gaps narrow
-  from 1.5% and 1.3% to about 0.8% by update 6,000; the degree-twelve gap stays at 0.46–0.66%.
+  from 1.5% and 1.3% to 0.73–0.83% from update 6,000 on; the degree-twelve gap stays at 0.46–0.66%.
 - **What the gates learned.** At update 7,570 the median half-life over the 210 layer-heads, with
   the mean `log alpha` taken over the diagnostic sample's causal query–key pairs, is 0.49–1.18
   tokens per order at degree eight and 0.59–1.84 at degree twelve, as at degree four (0.54–1.96);
