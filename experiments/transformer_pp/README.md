@@ -1738,3 +1738,58 @@ sbatch --parsable --partition=long --time=12:00:00 --gres=gpu:1 --cpus-per-task=
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
+
+## Score transforms
+
+Added 2026-11-12. With a very negative score the degree-eight query polynomial gives a large weight (odd
+orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
+key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
+the 12-layer width-640 shape? Question, roles, decision rule and results: the
+[score_transforms topic](results/exploratory/score_transforms/README.md).
+
+With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
+coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads `z_ti = phi(s_ti)`:
+
+    W(t,i) = sum_(r=0..8) c_r(x_t) z_ti^r
+    o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
+
+| Run | Label | `phi(s)` | `b_0` start | Parameters |
+| --- | --- | --- | --- | ---: |
+| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 |
+| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 |
+
+- Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
+  `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
+  kernel starts at `sum_(r=1..8) z^r/r!`, the Taylor polynomial of `e^z - 1 = e^s`: about `e^s` for negative
+  scores and about `T_8(s) - 1` for large positive ones. `c_0` stays learnable.
+- The transforms add no parameter. The softplus run's initialization is the control's except `b_0 = 0` in
+  every layer and head; the abs run's is the control's exactly.
+- Recipes: the control `r95a5691d293f` (validation-best 17.592) with `model.attention_score_transform`, the
+  softplus run's constant start, gradient-event capture on with the default policy (as in the
+  [score-bias runs](#per-degree-score-biases)), and the blocked backend's causal strips
+  (`model.attention_backend: blocked`, `attention_blocked_implementation: strips`); everything else is the
+  control's: 12 layers, 10 heads, width 640, 7,551 updates of 128 × 2,048 tokens, warmup 454, seed 42.
+- Kernels: only the blocked backend evaluates the transform (`attention/score_transform.py`; softplus as
+  `max(s, 0) + log1p(exp(-abs(s)))` in FP32, derivative `sigmoid(s)`), so the runs train on the causal strips,
+  plain JAX on B200, B300 or H100; the Mosaic and fused kernels refuse a transform. The control trained on
+  B300's Mosaic query-polynomial kernels, which round the weights and score gradients to BF16 for their
+  products, where the strips keep FP32 values whose products run as TF32: each comparison also crosses this
+  implementation difference.
+- Diagnostics: at each validation the forward-only scan of the same kernel on the first held-out sequence
+  reports `coefficients.score_transform` (raw-score and input moments and extrema, the fraction of raw scores
+  below zero, the fraction of causal pairs where the polynomial decreases in `z`, and histograms of `s` and
+  `z`), beside the coefficient statistics.
+- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) pins the control's recipe by SHA256
+  and its seed-42 initialization by fingerprint (`72d75524`) and count. It requires softplus with the zero
+  start or abs with the Taylor start, the strips, and capture on with the default policy; with the transform
+  fields set to the control's, the backend fields to `mosaic` and `scan`, and the capture fields and execution
+  locations and labels removed, the recipe must equal the control's. At initialization the parameters must be
+  the control's count and, with `b_0` restored to the control's 1, its fingerprint, with `b_0` exactly 0 in
+  every layer and head of the softplus run. It refuses every GPU type but B200, B300 and H100 before
+  acceptance starts, and the pilot must resolve the blocked backend. On CPU acceptance runs
+  `tests/test_score_transform.py`, `tests/test_blocked_strips.py`, `tests/test_gradient_events.py` and the
+  adapter's tests beside the backbone's checks; on the GPU, `tests/test_score_transform_strips.py` (each
+  transform at production precision, degree eight, 2,048 tokens, against host FP64) and the strips'
+  score-bias qualification `tests/test_score_bias_strips.py`, nothing else. A skipped test fails acceptance.
+
+Home cluster: **Kennel**. One GPU per run; the two jobs have no scheduling dependency.

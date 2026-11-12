@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r17a1290cb4ac/config.yaml",
+    "sha256": "08b9c2db806f701388d3aa496ebe1617c9e719a5d2fcc87c0946ba39194d1851"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-w-decay-l12-d640-abs-input",
+  "name": "query-m8-w-decay-l12-d640-abs-input",
+  "record_schema_version": 1,
+  "run_id": "r17a1290cb4ac",
+  "status": "planned"
+}
