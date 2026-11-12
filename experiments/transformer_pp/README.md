@@ -1643,7 +1643,8 @@ done
 Added 2026-11-12. With a very negative score the degree-eight query polynomial gives a large weight (odd
 orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
 key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
-the 12-layer width-640 shape? Question, roles, decision rule and results: the
+the 12-layer width-640 shape, and with softplus at the reference shape ([below](#reference-shape-softplus-run))?
+Question, roles, decision rule and results: the
 [score_transforms topic](results/exploratory/score_transforms/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
@@ -1656,6 +1657,7 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
 | --- | --- | --- | --- | ---: |
 | `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 |
 | `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 |
+| `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 |
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1668,24 +1670,25 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
   [score-bias runs](#per-degree-score-biases)), and the blocked backend's causal strips
   (`model.attention_backend: blocked`, `attention_blocked_implementation: strips`); everything else is the
   control's: 12 layers, 10 heads, width 640, 7,551 updates of 128 × 2,048 tokens, warmup 454, seed 42.
-- Kernels: only the blocked backend evaluates the transform (`attention/score_transform.py`; softplus as
-  `max(s, 0) + log1p(exp(-abs(s)))` in FP32, derivative `sigmoid(s)`), so the runs train on the causal strips,
-  plain JAX on B200, B300 or H100; the Mosaic and fused kernels refuse a transform. The control trained on
-  B300's Mosaic query-polynomial kernels, which round the weights and score gradients to BF16 for their
-  products, where the strips keep FP32 values whose products run as TF32: each comparison also crosses this
-  implementation difference.
+- Kernels: the 12-layer width-640 runs train on the blocked backend's causal strips
+  (`attention/score_transform.py`; softplus as `max(s, 0) + log1p(exp(-abs(s)))` in FP32, derivative
+  `sigmoid(s)`), plain JAX on B200, B300 or H100. Their control trained on B300's Mosaic query-polynomial
+  kernels, which round the weights and score gradients to BF16 for their products, where the strips keep FP32
+  values whose products run as TF32: each comparison also crosses this implementation difference. The
+  reference-shape run keeps its control's Mosaic kernels ([below](#reference-shape-softplus-run)).
 - Diagnostics: at each validation the forward-only scan of the same kernel on the first held-out sequence
   reports `coefficients.score_transform` (raw-score and input moments and extrema, the fraction of raw scores
   below zero, the fraction of causal pairs where the polynomial decreases in `z`, and histograms of `s` and
   `z`), beside the coefficient statistics.
-- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) pins the control's recipe by SHA256
-  and its seed-42 initialization by fingerprint (`72d75524`) and count. It requires softplus with the zero
-  start or abs with the Taylor start, the strips, and capture on with the default policy; with the transform
-  fields set to the control's, the backend fields to `mosaic` and `scan`, and the capture fields and execution
-  locations and labels removed, the recipe must equal the control's. At initialization the parameters must be
-  the control's count and, with `b_0` restored to the control's 1, its fingerprint, with `b_0` exactly 0 in
-  every layer and head of the softplus run. It refuses every GPU type but B200, B300 and H100 before
-  acceptance starts, and the pilot must resolve the blocked backend. On CPU acceptance runs
+- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) pins each control's recipe by SHA256
+  and its seed-42 initialization by fingerprint and count, and selects the control by the recipe's depth and
+  width; here `r95a5691d293f` (`72d75524`). It requires softplus with the zero start or abs with the Taylor
+  start, the strips, and capture on with the default policy; with the transform fields set to the control's,
+  the backend fields to `mosaic` and `scan`, and the capture fields and execution locations and labels removed,
+  the recipe must equal the control's. At initialization the parameters must be the control's count and, with
+  `b_0` restored to the control's 1, its fingerprint, with `b_0` exactly 0 in every layer and head of the
+  softplus run. It refuses every GPU type but B200, B300 and H100 for these runs before acceptance starts, and
+  the pilot must resolve the blocked backend. On CPU acceptance runs
   `tests/test_score_transform.py`, `tests/test_blocked_strips.py`, `tests/test_gradient_events.py` and the
   adapter's tests beside the backbone's checks; on the GPU, `tests/test_score_transform_strips.py` (each
   transform at production precision, degree eight, 2,048 tokens, against host FP64) and the strips'
@@ -1723,4 +1726,60 @@ for run in r1d342ca6e58c r17a1290cb4ac; do
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
 done
+```
+
+### Reference shape: softplus run
+
+Added 2026-11-12 at the user's request: the softplus variant at the reference shape, against the RoPE query
+control `r25fffc16c2f3` (validation-best 14.323; exp `r6a76e7fbde45` 14.257, fixed Taylor at degree eight
+`ra7ee8a4b2544` 14.218).
+
+- Recipe: the control's (15 layers, 14 heads, width 896, `d_K = 64`, 7,570 updates of 256 × 2,048 tokens,
+  warmup 455, seed 42) with `model.attention_score_transform: softplus`,
+  `model.attention_coefficient_constant_initial: 0` and gradient-event capture on with the default policy;
+  it keeps the control's `attention_backend: mosaic`. 200,150,806 parameters; every initial array is the
+  control's but `b_0 = 0` in every layer and head.
+- Kernels: the Mosaic transformed query-polynomial kernels
+  (`mosaic.api.transformed_query_polynomial_attention`, family `query_softplus`), the control's query kernels
+  with `softplus(s)` evaluated in their causal tiles from `ex2`/`lg2.approx` and `dS = dP p'(z) sigmoid(s)`,
+  with the control's BF16 weight products. On the blocked strips this shape would take 23–30 hours on an H100
+  PCIe. Diagnostics as above, from the blocked scan of the same kernel.
+- Acceptance: the adapter pins `r25fffc16c2f3` (recipe SHA256 `ffa72e4d`, seed-42 fingerprint `bacacd7e`,
+  200,150,806 parameters) and requires the recipe to equal it but for the transform, the zero start, capture,
+  and execution locations and labels, with the control's `mosaic` and `scan`. It refuses every GPU type but
+  H100 before acceptance starts, and the pilot must resolve the Mosaic backend. On CPU acceptance runs
+  `tests/test_score_transform.py`, `tests/test_score_transform_lowering.py`, `tests/test_gradient_events.py`
+  and the adapter's tests beside the backbone's checks; on the GPU, `tests/test_mosaic_score_transform.py`
+  beside the query kernels' own Mosaic cases (`tests/test_mosaic_query.py`, `tests/test_mosaic_repeatability.py`
+  and the tanh query modules the control's acceptance ran), at BF16. A skipped test fails acceptance.
+
+**GPU qualification and time limit.** One H100 PCIe of `mastiff` ran the qualification (job 244010, commit
+`fe0c2a97`; [validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)):
+acceptance's GPU stage for this run passed (116 cases, none skipped; the transformed kernels within 2.8e-3
+relative L2 of FP64 and of the strips, the coefficient gradients within 1.1e-6 per order), and its 20-update
+pilot (acceptance's own worker, with validation, diagnostics and a checkpoint) had finite losses and valid
+diagnostics, with acceptance's resume passing its audit:
+
+| Run | s/update | Projected hours (7,570 updates) | Allocator peak GiB |
+| --- | ---: | ---: | ---: |
+| `ra3b54e2489f8` | 3.71 (3.64–3.74) | 8.26 | 30.3 |
+
+The control took 3.52 s per update on another of `mastiff`'s H100 PCIe GPUs; on this one the softplus kernels'
+240 calls per update take 0.29 s more than the query kernels'. The default allocator share (59.4 GiB on an
+H100) holds the run. The limit is the projection plus two hours, rounded up: 11 hours, within `standard`'s 24;
+acceptance projects again on the granted GPU and refuses the allocation if that projection exceeds 9 hours. No
+Blackwell GPU ran the transformed kernels (`akita` was down, `shiba` allocated), so the run trains on H100
+alone. Submit it from the isolated `claude/score-transforms-mosaic` worktree after committing the frozen
+execution set:
+
+```bash
+# H100 only. Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): drop mastiff from
+# --exclude only while another job holds that GPU.
+run=ra3b54e2489f8
+sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,shiba,mastiff,collie,samoyed,doodle,terrier --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
