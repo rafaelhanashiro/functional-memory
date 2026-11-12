@@ -176,6 +176,18 @@ class ModelConfig:
     # on any GPU; the blocked scan is their reference for tests and diagnostics, and allocation and
     # acceptance refuse it for training. Every other backend rejects them.
     attention_score_bias: Literal["none", "static", "query", "query_key"] = "none"
+    # The polynomial's input (attention/score_transform.py): every order of diagonal tanh query
+    # coefficients reads z_ti = phi(s_ti) in place of the score s_ti, W(t,i) = sum_r c_r(x_t) z_ti^r.
+    # "identity" (z = s) is every historical recipe; "softplus" z = log(1 + exp(s)), so a very negative
+    # score gives z near 0 and a weight near c_0; "abs" z = |s|. No parameter is added. Runs on the blocked
+    # backend alone (training on its causal strips), without a forget gate or score biases; every other
+    # backend rejects it, and auto never resolves it.
+    attention_score_transform: Literal["identity", "softplus", "abs"] = "identity"
+    # The start of the order-0 offset b_0 of diagonal tanh query coefficients, c_0(x_t) = b_0 + a_0
+    # tanh(x_t w_0), in place of Taylor's 1 (null). With attention_coefficient_amplitude_initial 0, c_0
+    # starts at exactly this value: 0 with the softplus transform starts the kernel at
+    # sum_(r=1..m) z^r/r!, the Taylor polynomial of e^z - 1 = e^s. No other array changes.
+    attention_coefficient_constant_initial: float | None = None
     # Dot-product position encoding: "rope" rotates queries and keys; "path" replaces it with
     # PaTH (arXiv:2505.16381), scores transported through token Householder products
     # I - beta_t w_t w_t^T. w_t comes from a rank-path_w_rank projection, a width-path_conv_size
@@ -263,6 +275,8 @@ class ModelConfig:
             return False  # No Mosaic kernel evaluates a B-spline basis.
         if getattr(self, "attention_score_bias", "none") != "none":
             return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
+        if getattr(self, "attention_score_transform", "identity") != "identity":
+            return False  # No kernel evaluates a transformed polynomial input; the blocked backend does.
         taylor = (self.attention_normalization and integer_degree and degree >= 1
                   and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed"
                   and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
@@ -299,6 +313,8 @@ class ModelConfig:
         integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
         if getattr(self, "attention_score_bias", "none") != "none":
             return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
+        if getattr(self, "attention_score_transform", "identity") != "identity":
+            return False  # No kernel evaluates a transformed polynomial input.
         input_free = self.attention_forget_gate_conditioning == "none"
         coefficients = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
                         and self.attention_coefficient_parameterization == "direct" if input_free else
@@ -422,8 +438,10 @@ class ModelConfig:
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
         if (self.attention_backend == "mosaic" and self.attention_score_bias == "none"
+                and self.attention_score_transform == "identity"
                 and not (self.mosaic_supported() or self.mosaic_decay_supported())):
-            # Score-bias recipes name their own reason (_validate_score_bias).
+            # Score-bias and score-transform recipes name their own reasons (_validate_score_bias,
+            # _validate_score_transform).
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
                              "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
@@ -791,6 +809,7 @@ class ModelConfig:
             if not self.attention_normalization:
                 raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
         _validate_score_bias(self)
+        _validate_score_transform(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
         elif self.attention_degree == 0:
@@ -948,6 +967,61 @@ def _validate_score_bias(model: ModelConfig) -> None:
             raise ValueError(f"Backend 'mosaic' cannot run these score biases: {problem}")
 
 
+def _query_coefficient_problem(model) -> str | None:
+    """Why this recipe's attention is not the diagonal tanh query-coefficient polynomial, or None."""
+    if (model.attention_mechanism != "dot_product" or model.attention_normalization
+            or model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
+            or model.attention_coefficient_parameterization != "direct"
+            or model.attention_coefficient_sharing != "per_head"
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_conditioning != "query"
+            or model.attention_coefficient_activation != "tanh"
+            or model.attention_coefficient_readout != "diagonal"
+            or model.attention_coefficient_orders is not None
+            or model.attention_coefficient_gate != "none"
+            or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
+        return ("it applies to unnormalized dot-product attention with learned direct per_head Taylor-initialized "
+                "diagonal tanh query coefficients, without selected orders, a coefficient gate, or a B-spline basis")
+    degree = model.attention_degree
+    if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
+        return "it needs an integer attention_degree >= 1"
+    return None
+
+
+def _validate_score_transform(model: ModelConfig) -> None:
+    """A score transform (attention/score_transform.py) runs on the blocked backend alone, for diagonal tanh
+    query coefficients with RoPE or no positional encoding, without a forget gate or score biases; allocation
+    and acceptance train it on the causal strips. A constant-coefficient start sets b_0's initial value of
+    the same coefficients on any backend. The identity transform and a null start change nothing."""
+    from scaffolds.transformer.attention.score_transform import TRANSFORMS
+
+    transform, start = model.attention_score_transform, model.attention_coefficient_constant_initial
+    if not isinstance(transform, str) or transform not in TRANSFORMS:
+        raise ValueError(f"Unknown attention score transform: {transform!r}")
+    if start is not None:
+        if isinstance(start, bool) or not isinstance(start, (int, float)) or not math.isfinite(start):
+            raise ValueError("model.attention_coefficient_constant_initial must be null or a finite number")
+        problem = _query_coefficient_problem(model)
+        if problem is not None:
+            raise ValueError(f"A constant-coefficient start (attention_coefficient_constant_initial) does not fit "
+                             f"this recipe: {problem}")
+        model.attention_coefficient_constant_initial = float(start)
+    if transform == "identity":
+        return
+    problem = _query_coefficient_problem(model)
+    if problem is None and model.positional_encoding not in ("rope", "none"):
+        problem = "it applies with RoPE or no positional encoding, not PaTH"
+    if problem is None and model.attention_forget_gate:
+        problem = "it is qualified without a forget gate"
+    if problem is None and model.attention_score_bias != "none":
+        problem = "it does not combine with per-degree score biases"
+    if problem is not None:
+        raise ValueError(f"The {transform} score transform does not fit this recipe: {problem}")
+    if model.attention_backend != "blocked":
+        raise ValueError(f"A score transform runs on attention_backend blocked alone (its scan and causal strips); "
+                         f"{model.attention_backend!r} never evaluates it")
+
+
 @dataclass
 class OptimConfig:
     learning_rate: float = 1e-3
@@ -1088,6 +1162,19 @@ def validate_config(config: Config) -> None:
             raise ValueError("optim.query_coefficient_learning_rate_scale is not qualified with per-degree score biases")
         if continuation.parent_checkpoint:
             raise ValueError("Checkpoint continuations are not qualified with per-degree score biases")
+    if (config.model.attention_score_transform != "identity"
+            or config.model.attention_coefficient_constant_initial is not None):
+        # Both change the function or start of the coefficients that these schedules and continuations assume
+        # start at Taylor and read s^r: none is qualified with them.
+        if getattr(optim, "coefficient_release_schedule", None) is not None:
+            raise ValueError("A coefficient release schedule is not qualified with a score transform or a "
+                             "constant-coefficient start")
+        if optim.query_coefficient_learning_rate_scale != 1.0:
+            raise ValueError("optim.query_coefficient_learning_rate_scale is not qualified with a score transform "
+                             "or a constant-coefficient start")
+        if continuation.parent_checkpoint:
+            raise ValueError("Checkpoint continuations are not qualified with a score transform or a "
+                             "constant-coefficient start")
     if not isinstance(train.gradient_event_capture, bool):
         raise ValueError("train.gradient_event_capture must be a boolean")
     if train.gradient_event_capture:

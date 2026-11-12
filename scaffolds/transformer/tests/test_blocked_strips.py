@@ -67,6 +67,11 @@ CASES = {
                              ("query_gate_input", "key_gate_input", "gate_log_rate")),
     "fox_exp_endpoint": ({"query_decay_mode": "query_distance", **UNNORMALIZED},
                          ("query_gate_input", "key_gate_input", "gate_log_rate")),
+    # Transformed polynomial inputs z = phi(s) (attention/score_transform.py).
+    "query4_softplus": ({"attention_degree": 4, "score_transform": "softplus", **UNNORMALIZED},
+                        ("query_polynomial_coefficients",)),
+    "query8_abs": ({"attention_degree": 8, "score_transform": "abs", **UNNORMALIZED},
+                   ("query_polynomial_coefficients",)),
 }
 
 
@@ -268,6 +273,10 @@ FAILURES = [
     ("query4_per_order_cumulative", "nan_cumulative_sum", ROWS >= POSITION, {}),
     ("fox_softmax_endpoint", "nan_key_gate_input", ROWS >= POSITION, {}),
     ("fox_exp_endpoint", "inf_query_gate_input", ROWS == POSITION, {}),
+    ("query4_softplus", "polynomial_overflow", ROWS == POSITION, {}),
+    ("query4_softplus", "k_negative_infinity", ROWS >= POSITION, {}),
+    ("query8_abs", "polynomial_overflow", ROWS == POSITION, {}),
+    ("query8_abs", "q_nan", ROWS == POSITION, {}),
 ]
 
 
@@ -405,7 +414,7 @@ CORE_FAMILIES = {"softmax": {}, "taylor2": {}, "exp": {}, "learned2_unnormalized
                  "query_key3": TANH, "query4_cumulative": TANH, "query4_endpoint": TANH, "fox_softmax": {},
                  "fox_exp": {}, "query4_per_order_distance": TANH, "query4_per_order_cumulative": TANH,
                  "fox_softmax_distance": {}, "fox_exp_distance": {}, "fox_softmax_endpoint": {},
-                 "fox_exp_endpoint": {}}
+                 "fox_exp_endpoint": {}, "query4_softplus": TANH, "query8_abs": TANH}
 
 
 @pytest.mark.parametrize("family", list(CORE_FAMILIES))
@@ -502,6 +511,16 @@ MODEL_RECIPES = {
     "fox_exp_endpoint": dict(attention_forget_gate=True, attention_forget_gate_mode="query_distance",
                              attention_forget_gate_conditioning="query_key", attention_normalization=False,
                              qk_norm=False),
+    # Transformed polynomial inputs, the softplus one from its zero constant-coefficient start.
+    "query4_softplus": dict(attention_degree=4, attention_normalization=False, attention_coefficients="learned",
+                            attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
+                            attention_coefficient_activation="tanh", attention_score_transform="softplus",
+                            attention_coefficient_constant_initial=0.0, qk_norm=False,
+                            attention_coefficient_projection_initial_std=0.1),
+    "query8_abs": dict(attention_degree=8, attention_normalization=False, attention_coefficients="learned",
+                       attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
+                       attention_coefficient_activation="tanh", attention_score_transform="abs", qk_norm=False,
+                       attention_coefficient_projection_initial_std=0.1),
 }
 
 

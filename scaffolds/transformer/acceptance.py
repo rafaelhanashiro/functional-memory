@@ -109,6 +109,8 @@ SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_score_bias.py"
 SCORE_BIAS_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_bias_lowering.py"
 MOSAIC_SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_mosaic_score_bias.py"
 SCORE_BIAS_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_bias_strips.py"
+SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_score_transform.py"
+SCORE_TRANSFORM_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_transform_strips.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -167,6 +169,26 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # runs never train on (the fused Triton and Mosaic kernels, and the scan), and some refuse or skip
             # on GPUs those kernels are not qualified on, which would fail acceptance.
             return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
+    transform = model.get("attention_score_transform", "identity")
+    if transform != "identity":
+        implementation = model.get("attention_blocked_implementation", "scan")
+        if resolved_backend != "blocked" or implementation != "strips":
+            # Only the blocked backend evaluates the transform, and of its implementations only the strips have a
+            # GPU qualification for training it; the scan is its reference.
+            raise ValueError(f"A score transform trains on the blocked backend's causal strips; this recipe resolves "
+                             f"{resolved_backend!r} with attention_blocked_implementation: {implementation}")
+        if not cpu:
+            # The strips are plain JAX on any GPU: the transform's production-precision qualification and the
+            # strips' existing one for the tanh query polynomial (with score biases). The backbone's other GPU
+            # cases qualify kernels these runs never train on and can skip or refuse on a GPU those kernels are
+            # not qualified on, which would fail acceptance.
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, SCORE_TRANSFORM_STRIPS_TESTS)))
+        # The FP64 reference through the scan and the strips with every gradient, the start, refusals and
+        # diagnostics.
+        paths.append(SCORE_TRANSFORM_TESTS)
+    if cpu and model.get("attention_coefficient_constant_initial") is not None:
+        # The constant-coefficient start's parameters and model start, on any backend.
+        paths.append(SCORE_TRANSFORM_TESTS)
     if model.get("attention_forget_gate_per_order", False):
         cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
         if cpu or not cumulative:
@@ -778,7 +800,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_gate="none",
-                                           attention_score_bias="none",
+                                           attention_score_bias="none", attention_score_transform="identity",
+                                           attention_coefficient_constant_initial=None,
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_per_order=False,
@@ -837,7 +860,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_gate="none", attention_score_bias="none",
+        attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
+        attention_coefficient_constant_initial=None,
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",

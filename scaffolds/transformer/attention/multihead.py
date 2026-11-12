@@ -80,6 +80,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_kernel_basis=getattr(config, "attention_kernel_basis", "polynomial"),
         attention_spline_knots=getattr(config, "attention_spline_knots", None),
         attention_score_bias=getattr(config, "attention_score_bias", "none"),
+        attention_score_transform=getattr(config, "attention_score_transform", "identity"),
         rngs=rngs,
     )
 
@@ -125,6 +126,7 @@ class MultiHeadAttention(nnx.Module):
         attention_kernel_basis: str = "polynomial",
         attention_spline_knots: tuple[float, ...] | None = None,
         attention_score_bias: str = "none",
+        attention_score_transform: str = "identity",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -380,6 +382,21 @@ class MultiHeadAttention(nnx.Module):
                                  "mosaic or blocked backend, and no forget gate but the per-order query-key "
                                  "endpoint gate")
         self.attention_score_bias = attention_score_bias
+        # A transformed polynomial input (attention/score_transform.py); ModelConfig states the recipe-level
+        # requirements, mirrored for direct construction.
+        from scaffolds.transformer.attention.score_transform import validate as validate_transform
+
+        if validate_transform(attention_score_transform) != "identity" and (
+                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
+                or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
+                or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
+                or attention_degree < 1 or positional_encoding not in ("rope", "none") or backend != "blocked"
+                or attention_forget_gate or attention_score_bias != "none"):
+            raise ValueError("A score transform requires diagonal tanh query coefficients of unnormalized polynomial "
+                             "attention with RoPE or no positional encoding, without selected orders, coefficient "
+                             "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend")
+        self.attention_score_transform = attention_score_transform
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -432,6 +449,10 @@ class MultiHeadAttention(nnx.Module):
                 query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
                              "shift every order's score")
+        if self.attention_score_transform != "identity" and (
+                query_coefficients is not None or return_coefficients or key_factors is not None):
+            raise ValueError("Coefficient override and capture assume sum_r c_r s^r; a score transform evaluates "
+                             "the polynomial at z = phi(s)")
         if query_coefficients is not None or return_coefficients:
             if (self.attention_coefficient_conditioning not in ("static", "query")
                     or self.attention_normalization or self.attention_degree is None
@@ -713,6 +734,9 @@ class MultiHeadAttention(nnx.Module):
             gate_statistics = coefficient_gate_statistics(
                 coefficient_gate_logits(x, gate_kernel, gate_bias), ungated,
                 parameters["query_polynomial_coefficients"], q, k, gate_log_rate=gate_log_rate)
+        if self.attention_score_transform != "identity":
+            # Only transformed recipes pass it, so every other recipe's call is unchanged.
+            parameters["score_transform"] = self.attention_score_transform
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,

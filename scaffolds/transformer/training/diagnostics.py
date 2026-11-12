@@ -610,6 +610,9 @@ def attention_identity(config) -> dict:
     if getattr(config.model, "attention_score_bias", "none") != "none":
         # A final pass over the complete formula: every other clause is already in place.
         identity.update(_score_bias_identity(config.model, identity["attention_formula"]))
+    if (getattr(config.model, "attention_score_transform", "identity") != "identity"
+            or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
+        identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
     return identity
 
 
@@ -650,6 +653,29 @@ def _score_bias_identity(model, formula: str) -> dict:
         "score_bias_weight_decay": {spec.name: spec.weight_decay for spec in specs},
         "attention_formula": body + definition + suffix,
     }
+
+
+def _score_transform_identity(model, formula: str) -> dict:
+    """A score transform (the polynomial reads z_ti = phi(s_ti)) and a constant-coefficient start (b_0's start
+    in place of Taylor's 1), each recorded only for recipes that set it, in the query polynomial's formula."""
+    from scaffolds.transformer.attention.score_transform import FORMULAS
+
+    transform = getattr(model, "attention_score_transform", "identity")
+    start = getattr(model, "attention_coefficient_constant_initial", None)
+    identity = {}
+    if transform != "identity":
+        if "s_ti^r" not in formula or "s_ti = Q_t K_i^T / sqrt(d_k)" not in formula:
+            raise ValueError("A score transform replaces the s_ti^r of a query polynomial formula, which this one lacks")
+        formula = formula.replace("s_ti^r", "z_ti^r").replace(
+            "s_ti = Q_t K_i^T / sqrt(d_k)", f"{FORMULAS[transform]}, s_ti = Q_t K_i^T / sqrt(d_k)", 1)
+        identity["attention_score_transform"] = transform
+    if start is not None:
+        if "b_r initially 1/r!" not in formula:
+            raise ValueError("A constant-coefficient start changes the b_r of a tanh query polynomial formula, which "
+                             "this one lacks")
+        formula = formula.replace("b_r initially 1/r!", f"b_r initially 1/r! for r >= 1 and b_0 initially {start:g}", 1)
+        identity["attention_coefficient_constant_initial"] = start
+    return {**identity, "attention_formula": formula}
 
 
 def _release_identity(config, release, formula: str) -> dict:
@@ -1115,6 +1141,49 @@ def score_bias_report(params, raw_layers, config) -> dict:
     }
 
 
+def score_transform_report(raw_layers, config) -> dict:
+    """The transformed polynomial input z = phi(s) on the pinned diagnostic sample, measured by the blocked
+    reference of the same kernel (forward only): per layer and head [layers, heads], the raw scores' and the
+    inputs' moments and extrema, the fraction of raw scores below zero, and the fraction of causal pairs at which
+    the polynomial decreases in its input; per layer, histograms of s and z pooled over heads, on the score
+    biases' edges. With the coefficient statistics (signs per order) they show whether the kernel is monotone
+    where the scores fall. Measurements only, at FP32 precision."""
+    from scaffolds.transformer.attention.score_bias import HISTOGRAM_EDGES
+    from scaffolds.transformer.attention.score_transform import FORMULAS
+
+    stack = lambda name: np.stack([np.asarray(layer[f"score_transform_{name}"], np.float64) for layer in raw_layers])
+    serial = _float32_serializable
+    pairs = stack("pair_count")[:, None]  # every head of a layer measures the same pairs
+
+    def moments(prefix):
+        mean = stack(f"{prefix}_sum") / pairs
+        spread = np.sqrt(np.maximum(stack(f"{prefix}_sumsq") / pairs - mean ** 2, 0.0))
+        return {"mean": serial(mean), "std": serial(spread), "min": serial(stack(f"{prefix}_min")),
+                "max": serial(stack(f"{prefix}_max"))}
+
+    def histogram(prefix, symbol):
+        return {"axes": ["layer", "bin"], "pooled_over": "heads", "edges": list(HISTOGRAM_EDGES),
+                "bins": (f"underflow ({symbol} < {HISTOGRAM_EDGES[0]}), [e, e + 1) for each edge e < "
+                         f"{HISTOGRAM_EDGES[-1]}, overflow ({symbol} >= {HISTOGRAM_EDGES[-1]})"),
+                "counts": stack(f"{prefix}_histogram").astype(np.int64).tolist()}
+
+    transform = config.model.attention_score_transform
+    return {
+        "transform": transform,
+        "formula": f"W(t,i) = sum_r c_r(x_t) z_ti^r, {FORMULAS[transform]}",
+        "sample": "fixed_diagnostic_sample",
+        "axes": ["layer", "head"],
+        "note": "measured by the blocked reference of the same kernel, forward only, over causal pairs",
+        "causal_pair_count": int(stack("pair_count")[0]),
+        "raw_score": {**moments("raw"), "negative_fraction": serial(stack("raw_negative_count") / pairs)},
+        "polynomial_input": moments("input"),
+        "decreasing_fraction": serial(stack("decreasing_count") / pairs),
+        "decreasing_formula": "dW/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients",
+        "raw_score_histogram": histogram("raw", "s"),
+        "polynomial_input_histogram": histogram("input", "z"),
+    }
+
+
 def spline_pieces(knots) -> list[str]:
     """The score ranges each B-spline piece evaluates; the end pieces include the continuation."""
     edges = ["-inf", *(f"{knot:g}" for knot in knots[1:-1]), "inf"]
@@ -1417,7 +1486,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         layer = {"layer": index}
         for name, value in raw.items():
             if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
-                                "coefficient_gate_", "spline_", "score_bias_")):
+                                "coefficient_gate_", "spline_", "score_bias_", "score_transform_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -1486,6 +1555,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             coefficient_report["score_biases"] = score_bias_report(params, raw_layers, config)
             if not coefficient_report["score_biases"]["finite"]:
                 issues.append("Nonfinite score-bias parameters")
+        if getattr(config.model, "attention_score_transform", "identity") != "identity":
+            coefficient_report["score_transform"] = score_transform_report(raw_layers, config)
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
@@ -1581,8 +1652,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):
         # "shifted" names row-max shifting; the score biases have their own label.
+        transform = getattr(config.model, "attention_score_transform", "identity")
         report["kernel_values"] = ("query_polynomial_with_per_degree_score_biases"
                                    if getattr(config.model, "attention_score_bias", "none") != "none"
+                                   else f"query_polynomial_of_{transform}_scores" if transform != "identity"
                                    else "unshifted_query_polynomial")
     if spline:
         report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"

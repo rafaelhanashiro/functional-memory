@@ -11,6 +11,107 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Score transforms on the causal strips (2026-11-12)
+
+`model.attention_score_transform` evaluates the diagonal tanh query polynomial at `z = phi(s)` in place of
+the score `s` (`softplus`: `log(1 + exp(s))`; `abs`), and `model.attention_coefficient_constant_initial`
+starts the constant offset `b_0` at another value ([README](../README.md#score-transforms)). Only the blocked
+backend (scan and causal strips) evaluates a transform; every kernel refuses it.
+
+**CPU tests** (`593e7267`, `JAX_PLATFORMS=cpu`): `tests/test_score_transform.py` 75 passed: the scan's
+code and the strips in FP64 (to 1e-11) and the public FP32 scan and strips (to 3e-5 of each array's largest
+value; the coefficient gradient order by order) against an independent all-pairs FP64 oracle
+(`logaddexp(0, s)` and `s sign(s)` for the transforms, explicit powers), at degrees 1, 4 and 8, for mixed
+scores up to +-24 with exact zeros, all scores in [-30, -1/2], and all in [1/2, 30]; both transforms' values and
+derivatives at special points (softplus's derivative 1/2 at zero and `sigmoid(s)` elsewhere, `abs`'s 0 at
+zero, infinities and NaN); masked pairs scoring +-1e15 and future values of 1e20 leave earlier rows' outputs
+and the earlier tokens' gradients bitwise unchanged; `attention_core` and a two-layer model on the strips
+against the scan; the softplus start (`c_0 = 0`, `c_r = 1/r!`) equal to `e^s` minus its Taylor tail to 1e-14,
+and to `e^s` for scores at or below -3; the refusals of every other recipe, backend and kernel, allocation,
+the model's start against the control's, exact diagnostics against NumPy, and records.
+`tests/test_blocked_strips.py`, with a softplus (degree 4) and an abs (degree 8) family added to its tables:
+16 transform cases of 191. `tests/test_acceptance.py` (selection) and the records' index test pass, and the
+adapter's 97. The whole CPU suite (every scaffold, study and result test but the two-device stage) passed: 4,942
+tests, none failed.
+
+**Unchanged programs.** Against `feab62a8`, with the base's `tests/test_blocked_strips.py` families for both
+trees: the jaxprs of `blocked_dot_product_attention` and `strip_dot_product_attention` for its 31 argument
+families (forward, VJP, and the scan's diagnostics, with FP32 and BF16 Q/K/V, in 8- and 128-query scan blocks
+and 16- and 512-query strips; 620 programs) and of `attention_core` for its 21 core families (forward, VJP and
+diagnostics through the scan and the strips; 252 programs) are identical. So are the loss-and-gradient
+programs, losses, gradients, parameters, attention identities and diagnostics of 40 small models
+(softmax, exp, Taylor, learned static coefficients, the query polynomial at degrees 4 and 8 with its forget-gate,
+endpoint, per-order, query-key, sigmoid and dense variants, ALiBi, PaTH, score biases, and five run recipes at a
+small shape: `r95a5691d293f`, `r25fffc16c2f3`, `r227b0ed7c605`, `r8dc6e147601c`, `r3e2fa2532c23`); validation, recipe (the two new fields at their defaults), attention identity, parameter
+count, and acceptance test selection (CPU and GPU, on the blocked, fused, mosaic and cudnn backends) for all 465
+earlier run recipes (408 valid); and the seed-42 initialization fingerprints of `r95a5691d293f`,
+`r25fffc16c2f3`, `r227b0ed7c605` and `r8dc6e147601c`.
+
+**GPU qualification.** `tests/test_score_transform_strips.py`, the transform runs' GPU stage beside
+`tests/test_score_bias_strips.py`, runs the production dispatch (`attention_core` on the strips, counted) at
+production precision: Q, K, V rounded to BF16 in the program, FP32 coefficients, a BF16 cotangent, degree
+eight, 2,048 tokens in four strips, `d_K = d_V = 64`, two heads; for each transform (identity, the controls'
+backbone, too) with unit scores and with `N(0, 9)` scores (a sixth below -3, extremes beyond +-12), against
+host FP64. Bounds: output, dQ, dK, dV within 1.2x their BF16 rounding floors and no element beyond 2 BF16
+roundoffs of the largest value; the coefficient gradient within 1e-4 relative L2 per order. Called on the CPU
+host, all six cases measure 1.000x their floors, largest elements 0.43–0.82 roundoffs, and coefficient
+gradients 4.3–4.7e-7. On two H100 PCIe GPUs of `mastiff` (driver 560.35.05, the CUDA 12 environment under the
+launcher's runtime) the stage, this module and `tests/test_score_bias_strips.py`, passed all 16 cases, none
+skipped:
+
+| Job | GPU | Commit | Passed | pytest s | JUnit SHA256 |
+| --- | --- | --- | ---: | ---: | --- |
+| 243502 | GPU-3729cb75, bus C1:00.0 | `593e7267` | 16 | 287 | `7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2` |
+| 243529 | GPU-750d4329, bus 01:00.0 | `1fa151b7` | 16 | 168 | `24aa205cdbc030feb2601bb864509f104a2c9c34bb7eab503fb7cab97806f26b` |
+
+The two commits share one frozen execution set (`b72a61cd`). `3c0ae7e7` changes it only by a run-index column
+(`scaffolds/records`, with its test) and the scaffold README; the runs' launcher (`kennel.sbatch`), acceptance,
+training and retention never call the index. The transform cases measured the same on both GPUs:
+1.007–1.011x their floors, largest elements 0.47–0.86 roundoffs, coefficient gradients 7.0–9.3e-7 per order. The
+score-bias cases stayed at 1.007–1.009x. No B200, B300 or H100 SXM ran the stage.
+
+**Full-shape pilots** (`benchmarks/qualify_training.py pilot --no-references`: acceptance's pilot worker on a copy
+of each recipe, the production batch of 8 micro-batches of 16 × 2,048 tokens, 20 updates, validation with the
+diagnostics and a checkpoint; frozen-execution check passed). In job 243529 the pilot set acceptance's resume
+horizon (`--continue-updates 1`), and `resume` then ran acceptance's resume worker in a fresh process: update 21
+from the pilot's checkpoint, with acceptance's audit of the restored state, data position and RNG. Same jobs and
+GPUs:
+
+| Run | Transform | Job | s/update (median, updates 2–20) | First update s | Projected hours, 7,551 updates | Allocator peak GiB | Validation NLL at 20 | Resume, update 21 |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `r1d342ca6e58c` | softplus | 243502 | 3.240 | 65.5 | 7.29 | 22.8 | 9.366 | not run |
+| `r1d342ca6e58c` | softplus | 243529 | 3.329 | 84.5 | 7.48 | 22.9 | 9.366 | audit passed, loss 9.358 |
+| `r17a1290cb4ac` | abs | 243502 | 3.237 | 68.0 | 7.27 | 23.6 | 9.369 | not run |
+| `r17a1290cb4ac` | abs | 243529 | 3.275 | 46.8 | 7.35 | 23.6 | 9.369 | audit passed, loss 9.361 |
+
+Every pilot resolved the blocked backend and `blocked_causal_strips`. Every update's loss and numerics were finite,
+and the attention diagnostics, with the transform statistics, were valid. The two GPUs differ by up to 2.7% per
+update. The allocator's limit was 59.4 GiB at the default share. The compact record is
+[runs/score-transform-strips/record.json](runs/score-transform-strips/record.json): margins per case, each
+pilot's and resume's numbers, and the SHA256 of each report, JUnit and log in the ignored
+`logs/score-transform-strips/`.
+
+**Memory without running** (`benchmarks/compiled_memory.py`, the trainer's one-device update at micro-batch
+16, compile-only from the host with `JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1`): softplus 22.2 GiB on an H100 and
+21.6 GiB on a B200; abs 22.8 and 22.4 GiB; the H100 pilots' peaks were 2.6–2.9% and 3.5% above.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml \
+  --import-mode=importlib -m "not gpu" scaffolds/transformer/tests/test_score_transform.py \
+  scaffolds/transformer/tests/test_blocked_strips.py experiments/transformer_pp/tests/test_score_transform_acceptance.py
+# Inside one GPU allocation, from the worktree root, under the launcher's runtime (as for the score biases):
+JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  -m gpu scaffolds/transformer/tests/test_score_transform_strips.py scaffolds/transformer/tests/test_score_bias_strips.py
+QT=scaffolds.transformer.benchmarks.qualify_training
+JAX_PLATFORMS=cuda "$PY" -m $QT pilot experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> \
+  --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100 \
+  --no-references --continue-updates 1 --limit-hours 6 8 9 10 12 16 20 24
+JAX_PLATFORMS=cuda "$PY" -m $QT resume experiments/transformer_pp/runs/<run>/config.yaml --directory <dir> \
+  --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100
+JAX_SKIP_CUDA_CONSTRAINTS_CHECK=1 scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.benchmarks.compiled_memory \
+  experiments/transformer_pp/runs/<run>/config.yaml --target <h100|b200>
+```
+
 ### B200 and the score-bias causal strips (2026-11-11)
 
 `shiba` has eight B200 GPUs (180 GB, compute capability 10.0, driver 580.196.07). Kennel B200

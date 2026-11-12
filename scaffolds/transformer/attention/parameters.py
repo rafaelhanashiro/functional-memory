@@ -124,7 +124,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 conditioning=conditioning,
                 readout=getattr(config, "attention_coefficient_readout", "diagonal"),
                 feature_count=getattr(config, "attention_coefficient_feature_count", None),
-                gate=getattr(config, "attention_coefficient_gate", "none"))
+                gate=getattr(config, "attention_coefficient_gate", "none"),
+                constant_initial=getattr(config, "attention_coefficient_constant_initial", None))
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 
