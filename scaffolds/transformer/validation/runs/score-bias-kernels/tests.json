@@ -21,7 +21,7 @@
  "runtime": "TRANSFORMER_CUDA_ENVIRONMENT=cuda12 TRANSFORMER_HOST_STAGING=0 XLA_PYTHON_CLIENT_PREALLOCATE=false XLA_FLAGS=",
  "compilation_cache": "empty, node-local (JAX_COMPILATION_CACHE_DIR, XDG_CACHE_HOME under TMPDIR)",
  "runner": {
-  "directory": "/data/cl/scratch/rafah/score-bias-kernels",
+  "directory": "scaffolds/transformer/validation/logs/score-bias-kernels (ignored)",
   "gpu_verify.sh": "d04d2ccd13dd27a96f285b27bf641f326fa86850725bc9b1f5f7360f01616eb7",
   "toolchain_probe.py": "6ec2e7847c0aa826262fa77b83380432a3e25b1e7a2caa7821710b381df84d20",
   "logs": "scaffolds/transformer/validation/logs/score-bias-kernels (ignored; JUnit XML, pytest logs, info)"
@@ -698,6 +698,6 @@
    "gated-query/pilot.json": "c54a73b63603d5a0ddedfc4288aac84333425a5559d2147e563d1558f4b4e117",
    "gated-query/resume-warm-cache.json": "8d9f67273874b74c268b33a8abebddb2f9f700ef60c0e537da1ccda78ae65b76"
   },
-  "reports_root": "/data/cl/scratch/rafah/score-bias-qual"
+  "reports_root": "scaffolds/transformer/validation/logs/score-bias-kernels/training (ignored; summary.json is the summary's source)"
  }
 }

@@ -95,13 +95,15 @@ Learned shifts on the diagnostic sequence, by order `r`:
 - **The static shift tied.** It was ahead by up to 4.4% through update 800, within 0.6% from update 900,
   and within 0.07% from update 3,000 to the end.
 - **The learned shifts are mostly negative.** In the query trial, orders 1–5 shift by −0.28 to −0.59 on
-  average, order 6 by −0.06, order 7 by +0.14 and order 8 by +0.59; the offsets `b_r` stay within −0.13
-  to +0.05 per order, so the query term `a_r tanh(u_r . x_t)` (token standard deviation 0.39–0.68) carries
-  the shift. The static offsets are negative in most heads for orders 1–7 and positive for order 8.
+  average, order 6 by −0.06, order 7 by +0.14 and order 8 by +0.59; the offsets `b_r` average −0.13 to
+  +0.05 per order (single heads −0.72 to +0.39), so on average the query term `a_r tanh(u_r . x_t)`
+  (token standard deviation 0.39–0.68) carries most of the shift. The static offsets are negative in
+  most heads for orders 1–7 and positive for order 8.
 - **The coefficients stay positive, so negative shifts make odd orders' terms negative.** In the query
   trial `c_2`–`c_8` are positive at every token of every head (`c_1` in 119 of 120 heads, `c_0` in 112),
-  with means close to the control's apart from `c_1` (1.06 against 0.85). 33.5% of its causal weights
-  `W(t,i)` are negative, against 21.3% in the static trial and 20.2% in the control.
+  with means against the control's of 0.80 vs 0.88 (`c_0`), 1.06 vs 0.85 (`c_1`), 0.16 vs 0.13 (`c_3`)
+  and 0.037 vs 0.031 (`c_4`); `c_2` and `c_5` match. 33.5% of its causal weights `W(t,i)` are negative,
+  against 21.3% in the static trial and 20.2% in the control.
 
 ## Limits
 
