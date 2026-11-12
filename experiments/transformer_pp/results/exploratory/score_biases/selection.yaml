@@ -158,6 +158,14 @@ runs:
       path: experiments/transformer_pp/runs/r8dc6e147601c/config.yaml
       sha256: edb4c519a19dc42bd3d3f9388583d68f52c3f492a6bfd656d005ab9cf0f80ec9
 - study: transformer_pp
+  run_id: rb4e5457ef2a0
+  role: trial_query_m8_rope_w_decay_l12_d640_static_biases
+  label: static score biases, query m = 8 + RoPE + W decay, 12-layer width-640
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb4e5457ef2a0/config.yaml
+      sha256: a254146d2cf38ae6c06a0d82ba0568e84b403cc791eeae6dc30448eacc92b6a7
+- study: transformer_pp
   run_id: r95a5691d293f
   role: control_query_m8_rope_w_decay_l12_d640
   label: query m = 8 + RoPE + W decay, 12-layer width-640

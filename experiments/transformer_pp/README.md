@@ -1700,20 +1700,21 @@ submit r75dccfcf072e long 90:00:00 B200,B300
 
 ### Trial at the 12-layer width-640 shape
 
-One run goes first: the query shift on the RoPE query control at the 12-layer width-640 shape. The
-[topic](results/exploratory/score_biases/README.md#open-decision) holds the rule that decides whether
-the six runs above follow.
+Two runs go first: the static and the query shift on the RoPE query control at the 12-layer
+width-640 shape. The [topic](results/exploratory/score_biases/README.md#open-decision) holds the rule
+that decides whether the six runs above follow.
 
 | Run | Label | Control (validation-best PPL) | Mode | Parameters | Backend |
 | --- | --- | --- | --- | ---: | --- |
 | `r8dc6e147601c` | query-m8-w-decay-l12-d640-score-bias-query | `r95a5691d293f` (17.592) | query | 100,294,376 | Mosaic, H100 |
+| `rb4e5457ef2a0` | query-m8-w-decay-l12-d640-score-bias-static | `r95a5691d293f` (17.592) | static | 99,679,016 | Mosaic, H100 |
 
-- Recipe: the control's, with `model.attention_score_bias: query`, the six runs' capture fields, and
-  its own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551
+- Recipe: the control's, with `model.attention_score_bias` (`query` or `static`), the six runs'
+  capture fields, and its own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551
   updates of 128 × 2,048 tokens, warmup 454, seed 42, and its attention settings (`mosaic`; the
   inert blocked field stays `scan`).
-- Shift: `b`, `a` [12, 10, 8] and `u` [12, 10, 8, 640], 616,320 parameters beside the control's
-  99,678,056.
+- Shift: query `b`, `a` [12, 10, 8] and `u` [12, 10, 8, 640], 616,320 parameters beside the
+  control's 99,678,056; static `b` [12, 10, 8], 960.
 - Kernels: the H100 Mosaic row-shift score-bias kernels; the control trained on B300's Mosaic
   query-polynomial kernels.
 - Acceptance: the adapter selects this control by depth, width and the absent forget gate, lets only
@@ -1725,12 +1726,12 @@ the six runs above follow.
   (129 cases, none of which skips on an H100). The pilot projects the run's hours on the allocated
   H100, and acceptance refuses the allocation if they exceed the 12-hour limit less two hours.
 
-Submit it from this worktree after committing the frozen execution set:
+Submit each from this worktree after committing the frozen execution set:
 
 ```bash
 # Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
 # unless another job holds that GPU.
-run=r8dc6e147601c
+run=r8dc6e147601c  # or rb4e5457ef2a0
 sbatch --parsable --partition=long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
   --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
   --output="experiments/transformer_pp/runs/$run/training.log" \
