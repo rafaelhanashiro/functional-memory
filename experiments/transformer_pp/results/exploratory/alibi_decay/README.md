@@ -90,10 +90,11 @@ Added 2026-11-10: a query–key gate on exp. `rd3501a40e020` copies the exp quer
 changes only `attention_forget_gate_conditioning: query_key`: each pair's rate reads both of its
 tokens, `lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
 `(t - i) log alpha_ti`. This is the gate of the per-order query–key polynomials (`r03be769d2069`,
-13.708 at degree four; degrees eight and twelve in training) with one gate per layer and head, since exp
-has no orders: it is their matched exp baseline. On the degree-four polynomial, the shared query–key
-gate lowers validation-best PPL by 1.2% against the query gate, and per-order query–key gates by a
-further 2.3% ([query_distance_decay](../query_distance_decay/README.md#results)). The key projection
+`r227b0ed7c605` and `rc2f9273c49cc`: 13.708, 13.712 and 13.681 at degrees four, eight and twelve)
+with one gate per layer and head, since exp has no orders: it is their matched exp baseline. On the
+degree-four polynomial, the shared query–key gate lowers validation-best PPL by 1.2% against the
+query gate, and per-order query–key gates by a further 2.3%
+([query_distance_decay](../query_distance_decay/README.md#results)). The key projection
 `w_k` (188,160 parameters) starts at zero, so the run starts exactly as the exp query-distance
 primary; `w_alpha`, `A_log` and `b_dt` keep FoX's initialization. It compares with exp FoX
 (`r183f08346ddc`, 13.628), the exp query-distance primary (`r17444ad0f60e`) and exp ALiBi
@@ -220,9 +221,11 @@ Validation-best PPL; each comparison covers all 28 evaluations.
 - **The key projection is used.** Starting at zero, its per-head norm reaches a median of 0.36
   against the query projection's 0.64. Half-lives barely change: a median of 3.0 tokens, as with
   the query-only gate (3.1), with 19% of heads above 100 tokens against 21%.
-- **It is the bar for the per-order query–key polynomials.** At degree four (13.708) they trail
-  it by 0.77%, lower at 4 of 28 evaluations; degrees eight and twelve are in training. The
-  per-order FoX polynomial at degree eight (`rf8fc9ab2cecc`, 13.633, pinned in
+- **It is the bar for the per-order query–key polynomials.** They trail it by 0.77% at degree
+  four (13.708), 0.80% at eight (13.712) and 0.57% at twelve (13.681), lower only within the
+  first 800 updates (at 4, 3 and 6 of 28 evaluations; pinned in
+  [query_distance_decay](../query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)).
+  The per-order FoX polynomial at degree eight (`rf8fc9ab2cecc`, 13.633, pinned in
   [forget_gate](../forget_gate/README.md#per-order-gates)) trails it by 0.21%.
 
 ### Softmax and exp with ALiBi's fixed slopes
