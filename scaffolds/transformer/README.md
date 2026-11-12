@@ -752,9 +752,14 @@ parameter-free function of the score instead of the score itself (`attention/sco
   blocked recipe and requires (also with `--allow-scan-blocked-attention`). An explicit `mosaic` backend runs
   `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
   polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
-  `common.QUERY_ABS`). Softplus is `max(s, 0) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one
-  `lg2.approx` (below `y = 2^-6` the cubic series of `ln(1 + y)`), and `sigmoid(s) = e^(min(s, 0) - ln(1 + y))`
-  from one more `ex2.approx`; abs evaluates no transcendental and keeps the query family's compiler settings.
+  `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
+  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. Softplus is
+  `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
+  `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
+  `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked
+  reference, where the limit 0 would give the pair the finite weight `c_0`. `sigmoid(s) =
+  e^(min(s, 0) - ln(1 + y))` takes one more `ex2.approx`; abs evaluates no transcendental and keeps the query
+  family's compiler settings.
   dS is `dP p'(z) phi'(s)` in the dQ and dK passes, and the dQ pass sums `dc_r = sum_i dP z^r`; shared memory,
   vectors, precision (BF16 weight products), shapes and failure behavior are the query family's, and the
   identity transform is `query_polynomial_attention` itself. `auto` never selects these kernels
@@ -1297,7 +1302,7 @@ shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh 
 sigmoid query polynomials, and the input-free gate of learned static coefficients (on the same
 query-decay kernels, every query's coefficients and rates equal), run on the Mosaic decay
 kernels only when `mosaic` is requested (`ModelConfig.mosaic_decay_supported`), and so does the tanh query
-polynomial evaluated at a transformed score, on the query kernels with `phi(s)` in their tiles
+polynomial evaluated at a transformed score, on the query kernels with `phi(s)` in their tiles, on H100 alone
 (`ModelConfig.mosaic_score_transform_supported`; [Score transforms](#score-transforms)). Shared gates must fit B300 like the gate-free
 kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
 (`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
