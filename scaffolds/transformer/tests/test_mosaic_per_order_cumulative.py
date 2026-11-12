@@ -54,10 +54,10 @@ def _relative_l2(actual, expected):
 # --- The tile mathematics (common.py) against FP64 ------------------------------------------------
 
 def _tile(degree, queries, keys, *, offset=0.0, seed=0):
-    """FP32 operands of one tile, as the kernels see them, and FP64 copies of the same values: scores s,
-    G = dO V^T, query coefficients, and per-order cumulative sums whose per-token log alpha spans half-lives
-    from under a token to about a thousand tokens, shifted by ``offset`` (sums near -3,000 are a fast gate's
-    at the end of a 2,048-token context)."""
+    """One tile's operands, FP32 values held in FP64: scores s, G = dO V^T, query coefficients, and
+    per-order cumulative sums whose per-token log alpha spans half-lives from under a token to about a
+    thousand tokens, shifted by ``offset`` (sums near -3,000 are a fast gate's at the end of a 2,048-token
+    context)."""
     rng = np.random.default_rng(seed + degree)
     orders = degree + 1
     end = max(queries[-1], keys[-1]) + 1
@@ -145,7 +145,8 @@ def test_tile_gate_is_exact_on_the_diagonal_and_drops_future_keys():
     gradient) is exactly zero."""
     degree, orders = 4, 5
     tile = _tile(degree, np.arange(16, 32), np.arange(16, 32))
-    tile["lq"] = tile["lk"] = np.broadcast_to(np.float32(-1e30) * np.arange(16, 32)[:, None], (16, orders)).astype(np.float64)
+    sums = np.float32(-1e30) * np.arange(16, 32, dtype=np.float32)[:, None]
+    tile["lq"] = tile["lk"] = np.broadcast_to(sums, (16, orders)).astype(np.float64)
     tile["c"] = np.zeros_like(tile["c"])
     tile["c"][:, 0] = 1.0
     actual = _tile_terms(tile, degree)
@@ -389,7 +390,8 @@ def test_the_dispatch_routes_per_order_cumulative_decay_to_the_kernels(monkeypat
 
     monkeypatch.setattr(api, "per_order_cumulative_decay_attention", kernels)
     (q, k, v, c, sums), _ = _cpu_operands(16, 4)
-    output = input_dependent.query_polynomial_attention(q, k, v, c, backend="mosaic", log_decay=sums, decay_mode="cumulative")
+    output = input_dependent.query_polynomial_attention(q, k, v, c, backend="mosaic", log_decay=sums,
+                                                        decay_mode="cumulative")
     np.testing.assert_array_equal(output, jnp.full(v.shape, 7.0, v.dtype))
     assert len(calls) == 1 and all(a is b for a, b in zip(calls[0], (q, k, v, c, sums)))
     output, diagnostics = attention_core(q, k, v, backend="mosaic", attention_degree=4, attention_normalization=False,
@@ -404,7 +406,8 @@ def test_the_dispatch_routes_per_order_cumulative_decay_to_the_kernels(monkeypat
         np.testing.assert_array_equal(diagnostics[name], value, err_msg=name)
     for backend, decay in (("mosaic", sums[..., 0]), ("fused", sums), ("fused", sums[..., 0])):
         with pytest.raises(ValueError, match="blocked reference backend"):
-            input_dependent.query_polynomial_attention(q, k, v, c, backend=backend, log_decay=decay, decay_mode="cumulative")
+            input_dependent.query_polynomial_attention(q, k, v, c, backend=backend, log_decay=decay,
+                                                       decay_mode="cumulative")
     assert len(calls) == 2
 
 
@@ -655,7 +658,11 @@ def test_gpu_production_dispatch_matches_the_strips_and_float64(degree):
 def test_gpu_gate_projection_chain_rule_matches_float64(degree):
     """The model's route: forget_gate.log_decay of per-order parameters, the FP32 cumulative sum over time,
     and attention_core on Mosaic. The output and the gradients of Q, K, V, the coefficients, x, and every
-    gate parameter (order by order) against an independent FP64 formula."""
+    gate parameter (order by order) against an independent FP64 formula. A_log's and dt_bias's gradients
+    are one scalar per head and order, each a sum over the context of terms that largely cancel (every
+    pair enters L_r's gradient at its query and, negated, at its key): there the FP32 strips themselves
+    miss FP64 by up to 6.9e-4 (degree 12, order 5) and Mosaic by up to 9.3e-4, so these two take the
+    per-order Mosaic tests' 0.01 bound."""
     _requires_h100()
     rng = np.random.default_rng(degree)
     (q, k, v, c, _), cotangent = _gpu_inputs(512, degree)
@@ -690,9 +697,10 @@ def test_gpu_gate_projection_chain_rule_matches_float64(degree):
         axis = {"coefficients": -1, "kernel": 1, "log_rate": 1, "dt_bias": 1}.get(name)
         parts = ([(got, want)] if axis is None else
                  [(np.take(got, r, axis), np.take(want, r, axis)) for r in range(orders)])
+        tolerance = .01 if name in ("log_rate", "dt_bias") else FP32_TOLERANCE
         for order, (part, reference) in enumerate(parts):
             error = _relative_l2(part, reference)
-            assert error < FP32_TOLERANCE, f"{name} order {order}: relative L2 error {error:.3e}"
+            assert error < tolerance, f"{name} order {order}: relative L2 error {error:.3e}"
 
 
 @pytest.mark.gpu
