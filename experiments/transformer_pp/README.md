@@ -1258,6 +1258,98 @@ submit r9320e5cd3071 query_distance_degree_acceptance
 submit r20fe6fe864bc per_order_decay_acceptance
 ```
 
+### Degree twelve
+
+The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
+trains the shared query gate (`r47bfe39ce9b4`: the recipe of `r9320e5cd3071` at degree
+twelve) and per-order query gates (`rfe140c073b2f`: `r47bfe39ce9b4` with per-order gates) on
+the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour allocation,
+in the partition chosen at launch from the live `standard` and `long` allowances
+([CLUSTERS.md](../../CLUSTERS.md)); acceptance's pilot measures the update time and stops
+before training if the run would not fit. Both runs accept only H100: B300 cannot hold the
+per-order gates at degree twelve, and the shared-gate run uses H100 too, so that the pair
+trains on the same GPU type. These jobs have no scheduling dependencies on each other.
+
+`query_distance_degree_acceptance` also allows degree twelve; no FoX run exists at that
+degree, so it requires every initial parameter to equal those of the cumulative FoX recipe
+`r9353f554b917` at degree twelve, built at the same seed. `per_order_decay_acceptance` pins
+`r47bfe39ce9b4` as the per-order run's shared-gate control, collapses the thirteen duplicated
+order axes, and verifies the control's initialization fingerprint.
+
+From the isolated `claude/per-order-m12` worktree, after committing its frozen execution set
+and setting the partition:
+
+```bash
+PARTITION=standard,long  # chosen at launch from the live allowances
+submit() {  # run ID, acceptance adapter
+  sbatch --parsable --partition="$PARTITION" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit r47bfe39ce9b4 query_distance_degree_acceptance
+submit rfe140c073b2f per_order_decay_acceptance
+```
+
+### Query–key gates at degrees eight and twelve
+
+The [per-order query–key pair](results/exploratory/query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)
+gives the per-order query runs the per-order query–key gates of `r03be769d2069`. Each run
+changes only its twin's `model.attention_forget_gate_conditioning` to `query_key`; the key
+projections start at zero, so it starts exactly as the twin.
+
+| Run | Twin | Degree | Parameters | Allocation |
+| --- | --- | ---: | ---: | --- |
+| `r227b0ed7c605` | `r20fe6fe864bc` | 8 | 203,541,466 | `standard`, 24 hours, H100 SXM only (`mastiff` excluded) |
+| `rc2f9273c49cc` | `rfe140c073b2f` | 12 | 205,802,746 | `long`, 48 hours, either H100 |
+
+Home cluster: Kennel. Use one H100 per run: B300 holds per-order query–key gates only up to
+degree six at `d_K = 64` and 2,048 tokens. Key dependence makes every order's rate a function of
+each query–key pair, so its extra cost grows with the number of orders. At degree four (five
+orders), per-order query–key updates take 2.43 s longer than per-order query updates on H100
+SXM (5.19 vs 2.76 s) and 3.33 s longer on H100 PCIe (7.70 vs 4.38 s). Adding that cost per
+order to the twins' measured updates (5.70 s at degree eight on PCIe, 5.15 s at degree twelve
+on SXM, converted to the other GPU by degree four's per-order query ratio) gives, for the 7,570
+training updates:
+
+| Degree | H100 SXM (`dogo`) | H100 PCIe (`mastiff`) |
+| ---: | ---: | ---: |
+| 8 | 8.0 s/update, about 17 hours | 11.7 s/update, about 25 hours |
+| 12 | 11.5 s/update, about 24 hours | 16.8 s/update, about 35 hours |
+
+Acceptance's pilot stops before training when its projection of the whole run exceeds the
+allocation less a 2-hour reserve: 22 hours of a 24-hour allocation, 46 of a 48-hour one. Degree
+eight therefore trains on `standard` with `mastiff` excluded, and degree twelve on `long` on
+either H100. These jobs have no scheduling dependencies on each other.
+
+`per_order_decay_acceptance` pins the shared query gates `r9320e5cd3071` and `r47bfe39ce9b4`
+as the controls (no shared query–key gate runs at these degrees) and allows exactly two
+differences from them: per-order gates and query–key conditioning. A Mosaic control's
+variant must also train on the Mosaic kernels. At initialization it collapses the duplicated
+order axes to the control's gate, requires every per-order key projection to be exactly zero,
+removes it, and verifies the control's fingerprint (passing on CPU for both recipes).
+Acceptance runs all of `test_per_order_decay.py`, whose GPU cases include query–key gates at
+degrees eight and twelve and twelve's top orders alone, and `test_endpoint_decay.py`.
+
+From the isolated `claude/per-order-query-key` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+submit() {  # run ID, partition, time limit, excluded nodes
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude="$4" --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+NOT_H100=akita,collie,samoyed,doodle,terrier,shiba
+submit r227b0ed7c605 standard 24:00:00 "$NOT_H100,mastiff"  # about 25 hours on H100 PCIe
+submit rc2f9273c49cc long 48:00:00 "$NOT_H100"
+```
+
 ## Query-distance gates on softmax and exp
 
 How much is the input dependence of the decay slope worth on the exponential kernels? Two runs
@@ -1302,7 +1394,7 @@ done
 ### Query-key gate on exp
 
 Added 2026-11-10. `rd3501a40e020` is the exp baseline matched to the per-order query–key polynomial
-gates (`r03be769d2069` at degree four; degrees eight and twelve in training). It copies the exp
+gates (`r03be769d2069`, `r227b0ed7c605`, `rc2f9273c49cc`: degrees four, eight, twelve). It copies the exp
 query-distance run `r17444ad0f60e` and changes only `attention_forget_gate_conditioning: query_key`:
 each pair's rate reads both of its tokens,
 `lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
@@ -1385,41 +1477,6 @@ submit() {  # run ID, partition, time limit
 }
 submit r319b83140040 '<standard|long>' 24:00:00
 submit rf8fc9ab2cecc long 72:00:00
-```
-
-### Degree twelve
-
-The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
-trains the shared query gate (`r47bfe39ce9b4`: the recipe of `r9320e5cd3071` at degree
-twelve) and per-order query gates (`rfe140c073b2f`: `r47bfe39ce9b4` with per-order gates) on
-the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour allocation,
-in the partition chosen at launch from the live `standard` and `long` allowances
-([CLUSTERS.md](../../CLUSTERS.md)); acceptance's pilot measures the update time and stops
-before training if the run would not fit. Both runs accept only H100: B300 cannot hold the
-per-order gates at degree twelve, and the shared-gate run uses H100 too, so that the pair
-trains on the same GPU type. These jobs have no scheduling dependencies on each other.
-
-`query_distance_degree_acceptance` also allows degree twelve; no FoX run exists at that
-degree, so it requires every initial parameter to equal those of the cumulative FoX recipe
-`r9353f554b917` at degree twelve, built at the same seed. `per_order_decay_acceptance` pins
-`r47bfe39ce9b4` as the per-order run's shared-gate control, collapses the thirteen duplicated
-order axes, and verifies the control's initialization fingerprint.
-
-From the isolated `claude/per-order-m12` worktree, after committing its frozen execution set
-and setting the partition:
-
-```bash
-PARTITION=standard,long  # chosen at launch from the live allowances
-submit() {  # run ID, acceptance adapter
-  sbatch --parsable --partition="$PARTITION" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$1" \
-    --output="experiments/transformer_pp/runs/$1/training.log" \
-    --error="experiments/transformer_pp/runs/$1/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
-    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
-}
-submit r47bfe39ce9b4 query_distance_degree_acceptance
-submit rfe140c073b2f per_order_decay_acceptance
 ```
 
 ## Learned input-free gates for static coefficients
