@@ -22,7 +22,8 @@ at a time; one head of the first case is checked against that host oracle itself
 per-order query-distance kernels, given the same per-token log alpha, are compared with the
 strips the same way for reference.
 
-    python scaffolds/transformer/validation/per_order_cumulative_context.py --output record.json  # one H100
+    # In one H100 allocation, from the worktree root:
+    PYTHONPATH=$PWD python scaffolds/transformer/validation/per_order_cumulative_context.py --output record.json
 """
 import argparse
 import json
