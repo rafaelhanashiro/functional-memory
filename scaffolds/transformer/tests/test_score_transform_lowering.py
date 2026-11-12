@@ -10,8 +10,9 @@ transforms and the operands the query kernels refuse; and the tile mathematics o
 kernels call on each tile) on whole causal matrices in FP64, against explicit all-pairs references, with the
 kernels' masking of a tile crossing the diagonal: very negative and very positive scores, exact zeros, masked
 entries holding huge scores, and special values; a nonfinite causal score (-inf from an overflowed dot product,
-+inf, NaN) makes its row NaN, as the blocked reference does; and backend selection admits the transformed kernels
-on H100 alone. The kernels' numerics on GPUs are qualified by ``tests/test_mosaic_score_transform.py``.
++inf, NaN) makes its row NaN, as the blocked reference does; and backend selection and the entry point admit the
+transformed kernels on H100 alone. The kernels' numerics on GPUs are qualified by
+``tests/test_mosaic_score_transform.py``.
 """
 import math
 
@@ -107,8 +108,10 @@ def test_blackwell_kernels_lower_with_the_query_rings(transform):
 @pytest.mark.parametrize("transform", TRANSFORMS)
 def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, arch):
     """The production entry point lowers forward and with every gradient at 2,048 tokens: degree eight at Q/K
-    widths 8 (zero-padded to 16), 64 and 128, and degree twelve at width 64."""
+    widths 8 (zero-padded to 16), 64 and 128, and degree twelve at width 64 (B300 admitted here, as the GPU
+    module admits it to qualify its kernels)."""
     monkeypatch.setattr(api, "_kernels", lambda: (arch, {"hopper": hopper, "blackwell": blackwell}[arch]))
+    monkeypatch.setattr(api, "TRANSFORM_ARCHITECTURES", ("hopper", "blackwell"))
 
     def attend(q, k, v, c):
         return api.transformed_query_polynomial_attention(q, k, v, c, transform=transform)
@@ -120,6 +123,21 @@ def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, arch):
         c = jax.ShapeDtypeStruct((1, 2048, 2, degree + 1), jnp.float32)
         _lowers_for_cuda(attend, q, q, v, c)
         _lowers_for_cuda(lambda *a: jax.vjp(attend, *a)[1](jnp.ones(a[2].shape, a[2].dtype)), q, q, v, c)
+
+
+@pytest.mark.parametrize("transform", TRANSFORMS)
+def test_entry_point_admits_h100_alone(monkeypatch, transform):
+    """No Blackwell GPU has run the transformed kernels, so the entry point refuses B300's before tracing them, which
+    also covers models built without backend selection (restored checkpoints); H100's run."""
+    q = k = v = jax.ShapeDtypeStruct((1, 256, 2, 64), jnp.bfloat16)
+    c = jax.ShapeDtypeStruct((1, 256, 2, 9), jnp.float32)
+    attend = lambda *a: api.transformed_query_polynomial_attention(*a, transform=transform)
+    assert api.TRANSFORM_ARCHITECTURES == ("hopper",)
+    monkeypatch.setattr(api, "_kernels", lambda: ("blackwell", blackwell))
+    with pytest.raises(ValueError, match=r"qualified on H100 \(sm90\) only; no GPU has run its blackwell kernels"):
+        jax.eval_shape(attend, q, k, v, c)
+    monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
+    assert jax.eval_shape(attend, q, k, v, c).shape == v.shape
 
 
 @pytest.mark.parametrize("change", ("identity", "unknown", "coefficient dtype", "degree too high", "coefficient shape",

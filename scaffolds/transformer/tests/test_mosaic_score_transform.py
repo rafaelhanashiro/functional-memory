@@ -36,9 +36,11 @@ COEFFICIENT_TOLERANCE = 0.01
 
 
 @pytest.fixture(autouse=True)
-def _requires_mosaic_gpu():
+def _requires_mosaic_gpu(monkeypatch):
     if jax.default_backend() != "gpu" or jax.devices()[0].compute_capability not in ("9.0", "10.0", "10.3"):
         pytest.skip("Requires an H100 or B300 allocation")
+    # These cases qualify the kernels, so they run them on either architecture, admitted or not yet.
+    monkeypatch.setattr(api, "TRANSFORM_ARCHITECTURES", ("hopper", "blackwell"))
 
 
 def _inputs(degree, width, spread, *, time=512, heads=2, seed=31):
