@@ -22,6 +22,8 @@ CHANGES = {
                            attention_coefficient_amplitude_scale="none"),
     "hermite": dict(attention_coefficient_initialization="hermite"),
 }
+# A sum-of-squares run at degree twelve copies the query run of that degree.
+DEGREE_PARTNERS = {("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
 PATH_FIELDS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode")
 
 
@@ -36,8 +38,8 @@ def form(config):
     raise ValueError("This adapter covers static query-key gates, sum-of-squares, and Hermite starts only")
 
 
-def partner_config(name):
-    run, sha = PARTNERS[name]
+def partner_config(name, degree=None):
+    run, sha = DEGREE_PARTNERS.get((name, degree), PARTNERS[name])
     path = RUNS / run / "config.yaml"
     if hashlib.sha256(path.read_bytes()).hexdigest() != sha:
         raise ValueError(f"The pinned partner recipe {run} changed")
@@ -47,7 +49,7 @@ def partner_config(name):
 def check_recipe(config):
     validate_config(config)
     name = form(config)
-    expected = config_to_dict(replace(partner_config(name)))
+    expected = config_to_dict(replace(partner_config(name, config.model.attention_degree)))
     expected["model"].update(CHANGES[name])
     actual = config_to_dict(config)
     if name == "static_gate":
