@@ -85,23 +85,24 @@ def attention_core(
         raise ValueError("Endpoint decay requires all three operands and query-distance mode without log decay")
     if query_decay_mode != "cumulative" and query_log_decay is None and not endpoint:
         raise ValueError("A query-distance decay mode requires query_log_decay")
-    if endpoint and query_polynomial_coefficients is None:
-        raise ValueError("Endpoint decay requires query coefficients")
-    if query_log_decay is not None and query_polynomial_coefficients is None:
-        # Softmax and the unnormalized exponential add the decay to every score (the Forgetting Transformer).
+    if (query_log_decay is not None or endpoint) and query_polynomial_coefficients is None:
+        # Softmax and the unnormalized exponential add the decay to every score: L_t - L_i (the
+        # Forgetting Transformer), or (t - i) log alpha_t in the query-distance mode, or with endpoint
+        # operands (t - i) log alpha_ti, log alpha_ti = -exp(gate_log_rate) softplus(u_t + v_i).
         if (attention_degree is not None or quadratic_mode != "fixed" or coefficients is not None
                 or polynomial_coefficients is not None or polynomial_square_factors is not None or denominators
                 or key_polynomial_factors is not None):
             raise ValueError("The forget gate requires query coefficients, softmax, or the unnormalized exponential")
-        if query_decay_mode != "cumulative":
-            raise ValueError("Softmax and exponential attention take only the cumulative forget-gate decay")
         if backend != "blocked":
             raise ValueError("Softmax and exponential attention with a forget gate run on the blocked backend")
         from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
 
+        decay = (dict(query_gate_input=query_gate_input, key_gate_input=key_gate_input, gate_log_rate=gate_log_rate)
+                 if endpoint else dict(query_log_decay=query_log_decay))
         return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
                                          attention_normalization=attention_normalization,
-                                         query_log_decay=query_log_decay, return_diagnostics=return_diagnostics)
+                                         query_decay_mode=query_decay_mode, return_diagnostics=return_diagnostics,
+                                         **decay)
     if (query_log_decay is not None or endpoint) and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:

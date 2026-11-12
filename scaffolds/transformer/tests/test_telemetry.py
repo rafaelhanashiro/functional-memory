@@ -1,4 +1,5 @@
 from dataclasses import replace
+from functools import partial
 import json
 
 import jax
@@ -9,8 +10,13 @@ from flax import nnx
 
 from scaffolds.transformer.tests.test_training import tiny_config
 from scaffolds.transformer.training import loop, telemetry
-from scaffolds.transformer.training.distributed import make_data_parallel_functions, put_replicated, put_train_batches
+from scaffolds.transformer.training.distributed import (
+    make_data_parallel_functions, put_replicated, put_train_batches, resolve_batch_layout,
+)
 from scaffolds.transformer.training.state import create_state
+
+# Two microbatches of four five-token sequences.
+TOKENS = np.arange(40, dtype=np.int64).reshape(2, 4, 5) % 16
 
 
 def _devices():
@@ -24,9 +30,24 @@ def _run(cfg, devices, *, collect):
     state = create_state(cfg, jax.random.PRNGKey(0))
     functions = make_data_parallel_functions(state, devices, check_all_gradients=True, collect_telemetry=collect)
     state = put_replicated(state, functions.replicated_sharding)
-    batches = put_train_batches(np.arange(40, dtype=np.int64).reshape(2, 4, 5) % 16, functions.train_batch_sharding)
+    batches = put_train_batches(TOKENS, functions.train_batch_sharding)
     outputs = functions.train_step(state, batches, jax.random.PRNGKey(3))
     return functions, outputs
+
+
+def _single_device_update(cfg, *, collect, accumulate):
+    state = create_state(cfg, jax.random.PRNGKey(0))
+    rngs = jax.random.split(jax.random.PRNGKey(3), TOKENS.shape[0])
+    recording = {"collect_telemetry": True} if collect else {}
+    if accumulate:
+        return loop.accumulated_train_step(state, jnp.asarray(TOKENS), rngs, check_all_gradients=True, **recording)
+    return loop.train_step(state, jnp.asarray(TOKENS[0]), rngs[0], check_all_gradients=True, **recording)
+
+
+def _single_device_training(monkeypatch):
+    """Train on one device even when the test process exposes several."""
+    monkeypatch.setattr(loop, "resolve_batch_layout", partial(resolve_batch_layout, available_device_count=1))
+    monkeypatch.setattr(loop, "select_data_parallel_devices", lambda layout: tuple(jax.local_devices()[:1]))
 
 
 @pytest.mark.parametrize("scaling", ["none", "head_rms_norm"])
@@ -53,6 +74,47 @@ def test_distributed_telemetry_leaves_the_update_unchanged(tmp_path, scaling):
     # The global gradient norm equals the norm of the per-group gradient norms.
     group_norms = [value for key, value in statistics.items() if key.endswith("/gradient_norm")]
     np.testing.assert_allclose(np.sqrt(np.sum(np.square(group_norms))), float(np.asarray(observed[2])[1]), rtol=1e-5)
+
+
+@pytest.mark.parametrize("accumulate", [False, True])
+@pytest.mark.parametrize("scaling", ["none", "head_rms_norm"])
+def test_single_device_telemetry_leaves_the_update_unchanged(tmp_path, scaling, accumulate):
+    cfg = tiny_config(tmp_path)
+    cfg.model = replace(cfg.model, attention_output_scaling=scaling, attention_normalization=scaling == "none")
+    plain = _single_device_update(cfg, collect=False, accumulate=accumulate)
+    observed = _single_device_update(cfg, collect=True, accumulate=accumulate)
+    assert len(plain) == 3 and len(observed) == 4
+    np.testing.assert_array_equal(np.asarray(plain[1]), np.asarray(observed[1]))
+    np.testing.assert_array_equal(np.asarray(plain[2]), np.asarray(observed[2]))
+    for before, after in zip(jax.tree.leaves(plain[0].params), jax.tree.leaves(observed[0].params), strict=True):
+        np.testing.assert_array_equal(np.asarray(before), np.asarray(after))
+    statistics = {key: float(value) for key, value in observed[3].items()}
+    assert all(np.isfinite(value) for value in statistics.values())
+    expected = {"layer_00/residual_rms", "layer_00/residual_max_abs", "layer_00/attention_output_rms",
+                "layer_00/attention_output_head_rms_min", "final/residual_rms", "final/residual_max_abs",
+                "update/mlp/gradient_norm", "update/mlp/parameter_norm", "update/mlp/update_norm"}
+    assert expected <= statistics.keys()
+    assert ("layer_00/head_rms_norm_gain_max" in statistics) == (scaling == "head_rms_norm")
+    assert 0 < statistics["layer_00/attention_output_head_rms_min"] <= statistics["layer_00/attention_output_rms"]
+    group_norms = [value for key, value in statistics.items() if key.endswith("/gradient_norm")]
+    np.testing.assert_allclose(np.sqrt(np.sum(np.square(group_norms))), float(np.asarray(observed[2])[1]), rtol=1e-5)
+    # The host fetches the statistics as one vector in sorted key order.
+    np.testing.assert_array_equal(np.asarray(telemetry.pack(observed[3])),
+                                  np.asarray([observed[3][key] for key in sorted(observed[3])]))
+
+
+def test_single_device_statistics_match_distributed_training(tmp_path):
+    # Equal-sized microbatches on one device or split across two summarize the same batch alike.
+    devices = _devices()
+    cfg = tiny_config(tmp_path)
+    cfg.model = replace(cfg.model, attention_output_scaling="head_rms_norm", attention_normalization=False)
+    functions, distributed = _run(cfg, devices, collect=True)
+    expected = dict(zip(functions.telemetry_keys, np.asarray(distributed[3]).tolist(), strict=True))
+    single = _single_device_update(cfg, collect=True, accumulate=True)
+    observed = {key: float(value) for key, value in single[3].items()}
+    assert observed.keys() == expected.keys()
+    for key, value in expected.items():
+        np.testing.assert_allclose(observed[key], value, rtol=1e-4, atol=1e-7, err_msg=key)
 
 
 def test_activation_statistics_match_direct_computation(tmp_path):
@@ -133,6 +195,54 @@ def test_distributed_training_records_telemetry(tmp_path, capsys):
     assert {"layer_00/attention_output_head_rms_min", "final/residual_rms", "update/mlp/gradient_norm"} <= summary.keys()
     assert summary["update/mlp/gradient_norm"]["min"] <= summary["update/mlp/gradient_norm"]["max"]
     assert records[0]["train_gradient_spike_count"] == 0 and records[0]["train_gradient_spikes"] == []
+
+
+@pytest.mark.parametrize("micro_batch_size", [2, 4])
+def test_single_device_training_records_telemetry(tmp_path, monkeypatch, capsys, micro_batch_size):
+    # Microbatch 2 accumulates two microbatches per update; 4 is one batch per update.
+    _single_device_training(monkeypatch)
+    cfg = tiny_config(tmp_path)
+    cfg.train.micro_batch_size = micro_batch_size
+    loop.run_training(cfg)
+    output = capsys.readouterr().out
+    assert "data_parallel_devices=1 " in output
+    assert "attention_output_head_rms_min=" in output and "residual_max_abs=" in output
+    records = [json.loads(line) for line in (tmp_path / "metrics.jsonl").read_text().splitlines()]
+    assert [record["train_telemetry_update_count"] for record in records] == [2, 2]
+    summary = records[0]["train_telemetry"]
+    assert {"layer_00/attention_output_head_rms_min", "final/residual_rms", "update/mlp/gradient_norm"} <= summary.keys()
+    assert summary["update/mlp/gradient_norm"]["min"] <= summary["update/mlp/gradient_norm"]["max"]
+    assert records[0]["train_gradient_spike_count"] == 0 and records[0]["train_gradient_spikes"] == []
+
+
+def test_single_device_numerical_failure_keeps_telemetry(tmp_path, monkeypatch):
+    _single_device_training(monkeypatch)
+    cfg = tiny_config(tmp_path)
+    cfg.train.log_every, cfg.train.eval_every, cfg.train.ckpt_every = 3, 4, 4
+    actual = loop.accumulated_train_step
+
+    def failing_second_update(*args, **kwargs):
+        updated, loss, *rest = actual(*args, **kwargs)
+        return (updated, jnp.where(updated.step == 2, jnp.nan, loss), *rest)
+
+    monkeypatch.setattr(loop, "accumulated_train_step", failing_second_update)
+    with pytest.raises(FloatingPointError, match="at step 2"):
+        loop.run_training(cfg)
+    failure = json.loads((tmp_path / "numerical_failure_step_00000002.json").read_text())
+    recorded = failure["training_telemetry"]
+    assert recorded["failed_update"]["layer_00/attention_output_head_rms_min"] > 0
+    assert recorded["preceding_update"]["update/mlp/gradient_norm"] > 0
+
+
+def test_remat_training_records_no_telemetry(tmp_path, monkeypatch):
+    # Recorded values cannot leave a rematerialized block, so remat training skips telemetry.
+    _single_device_training(monkeypatch)
+    cfg = tiny_config(tmp_path)
+    cfg.model = replace(cfg.model, remat=True)
+    loop.run_training(cfg)
+    records = [json.loads(line) for line in (tmp_path / "metrics.jsonl").read_text().splitlines()]
+    assert records and not any("train_telemetry" in record for record in records)
+    assert all(record["train_gradient_norm_count"] == 2 for record in records)
 
 
 def test_distributed_numerical_failure_keeps_telemetry(tmp_path, monkeypatch):

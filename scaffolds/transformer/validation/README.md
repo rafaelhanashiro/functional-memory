@@ -11,6 +11,140 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Query-key gates on softmax and the exponential (2026-11-10)
+
+`model.attention_forget_gate_conditioning: query_key` now applies to the query-distance gate of
+softmax and the unnormalized exponential: each pair's rate reads both of its tokens,
+`log alpha_ti = -exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)`, and
+`(t - i) log alpha_ti` joins its score. It runs on the blocked backend, scan or strips, with RoPE
+or no positional encoding ([README](../README.md#forget-gate)).
+
+All 159 CPU checks in `tests/test_exponential_query_key.py` passed. FP64 all-pairs references
+cover softmax and exp at ragged sizes (37 tokens in 8-query blocks and 16-query strips; 5 tokens;
+one token): the output and the Q, K, V, query-input, key-input, and log-rate gradients through the
+scan's code and the strips in FP64 (to 1e-10) and through the public FP32 functions (relative L2
+below 3e-5); the gate projections (`w_query`, `w_key`, `A_log`, `dt_bias`, 4e-5); and the attention
+module from its weights. Further checks: the pair rate reads only its endpoints, with an exact unit
+diagonal; a query input moves its own row and a key input the later rows; a nonfinite query input,
+key input, or log rate poisons exactly its row, the rows from its token on, or its head's rows,
+every other row bitwise unchanged; open and closed gates stay finite with exactly zero gate
+gradients; raw scores far outside FP32's exp range never reach the exponential (a masked future
+key's raw score of 200 beside causal scores of 0 or an own score of -100, a causal raw score of 200
+that a closed gate decays to -1,800, and for softmax scores of 100 under an open gate), with the
+output and every gradient finite and equal to FP64 through two-query blocks and strips; the scan's
+gate statistics cover every causal pair; a zero key input reproduces the query-distance gate (FP32
+to 2e-6, FP64 to 1e-12); constant pair rates at ALiBi's slopes reproduce the cumulative ALiBi decay
+(FP32 to 5e-6, FP64 to 1e-12); at initialization (`w_key = 0`) the model's logits equal its
+query-gate counterpart's bitwise and every shared gradient agrees to 2e-5; the key projection is the
+only added parameter (188,160 in the Transformer++ shape) and takes weight decay; plus the accepted
+and rejected recipes, identity, diagnostics, training updates, acceptance selection, and the
+softmax-backbone initialization check. Mutations that drop the key input from the pair rate, or stop
+invalid endpoint rates from poisoning, fail 53 and 36 of them. Mutations that exponentiate the
+endpoint kernels' masked logits, take softmax's row maximum over raw or masked scores, or drop its
+shift each fail 2 to 6 of the extreme-score checks, on the scan and the strips alike.
+`tests/test_blocked_strips.py` adds both kernels' query-key families to its scan/strips equivalence
+checks, invalid-row cases, core routing, and FP64 two-layer models (175 passed).
+`tests/test_exponential_query_distance.py` (126) and `tests/test_forget_gate_attention.py` no longer
+expect this conditioning to be rejected. The former gains the same 14 extreme-score checks for the
+query gate, which those mutations also fail when applied to every exponential and every decayed
+softmax.
+
+Existing mechanisms are unchanged against `e29277ba`. The jaxprs are identical for 808 programs:
+`blocked_dot_product_attention` and `strip_dot_product_attention` for that commit's 29 argument
+families (forward, VJP, and the scan's diagnostics, with FP32 and BF16 Q/K/V, in 8- and 128-query
+scan blocks and 16- and 512-query strips), and `attention_core` for its 19 core families (forward,
+VJP, and diagnostics through the scan and the strips). The loss-and-gradient programs, losses,
+gradients, parameters, identities, and diagnostics of 24 small kernel and forget-gate models are
+identical. Validation, recipe, attention identity, acceptance test selection (CPU and GPU, for each
+of the blocked, fused, mosaic, and cudnn backends), and parameter count are identical for all 446
+run recipes (392 valid).
+
+`test_gpu_strips_query_key_matches_float64_at_the_production_context` (softmax, exp) runs BF16
+Q/K/V at [1, 2048, 14, 64] through the gate projections at width 896 and the strips, with pair
+half-lives from under one token to the context, against a host FP64 oracle that matches FP64
+autodiff on CPU. It requires the output, dQ, dK, and dV within 1.2x their BF16 rounding floor and
+the FP32 gradients of `w_query`, `w_key`, `A_log`, and `dt_bias` within 1e-4. Run on CPU, the case
+measures 1.00x the floor and gate-parameter errors of 1.6e-7 to 5.9e-7. GPU qualification runs in
+the production run's acceptance, which selects this file for these recipes on CPU and GPU.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m "not gpu" \
+  scaffolds/transformer/tests/test_exponential_query_key.py \
+  scaffolds/transformer/tests/test_blocked_strips.py
+```
+
+### Data-dependent decay: query-distance gates on softmax and the exponential, per-order cumulative gates (2026-11-09)
+
+`model.attention_forget_gate_mode: query_distance` applies to softmax and the unnormalized
+exponential with the input-form softplus gate: every score gains `(t - i) log alpha_t`, ALiBi with a
+learned, input-dependent slope per query token. `attention_forget_gate_per_order: true` takes the
+cumulative mode for nonlinear query-coefficient polynomials: each order has its own gate and sum,
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`. Both run on the blocked backend, scan or strips
+([README](../README.md#forget-gate)).
+
+All 114 CPU checks in `tests/test_exponential_query_distance.py` passed. FP64 all-pairs references
+cover softmax and exp at ragged sizes (37 tokens in 8-query blocks and 16-query strips; 5 tokens; one
+token): the output and the Q, K, V, and raw log-alpha gradients through the scan's code and the
+strips in FP64 (to 1e-10) and through the public FP32 functions (relative L2 below 3e-5); the gate
+projection (every gate parameter, 4e-5); and the attention module from its weights. Further checks:
+an invalid rate (NaN, ±inf, positive) poisons only its query's row, every other row bitwise
+unchanged; open and closed gates stay finite; the gate is query-local; a constant per-head rate
+reproduces the cumulative ALiBi decay (FP32 to 2e-6, FP64 to 1e-12); the parameters, their initial
+values, and the Transformer++ count are cumulative FoX's; with `w_alpha = 0` the model equals
+cumulative FoX (logits, and every gradient but `w_alpha`'s, to 2e-5); plus the accepted and rejected
+recipes, identity, diagnostics, training updates, and acceptance selection.
+
+All 92 CPU checks in `tests/test_per_order_cumulative.py` passed, at degrees 4 and 8 with unit-scale
+scores and the coefficient and cumulative-sum gradients compared order by order. FP64 references
+cover the scan and strips in FP64 (1e-10) and FP32 (3e-5), and the module's route through
+`forget_gate.log_decay` and the cumulative sum (every gate parameter, 5e-5). Duplicated orders
+reproduce shared cumulative FoX (FP32 to 2e-6, FP64 to 1e-12), with each shared parameter's gradient
+the sum over its copies. Constant gates reproduce per-order query-distance gates (FP32 to 2e-5, FP64
+to 1e-11). A nonfinite `log alpha` poisons the rows from its token on. Open and closed gates
+(`log alpha` 0, -100, -1e30, and mixed by order) keep the output and every gradient finite and
+within 3e-5 of FP64: each order's gap is masked before `exp`, a closed order keeps only the diagonal
+term, and its `log alpha` gradient is exactly zero. The jaxprs of the scan and the strips, forward
+and VJP, hold one order's `[B,H,Q,K]` factor at a time. Orders stay isolated, and the degree-zero
+term gives the decay matrix `exp(L_t0 - L_i0)` with an exact diagonal. At initialization the model
+equals shared cumulative FoX, and with `w_alpha = 0` it equals the per-order query-distance model.
+Each extra order adds 188,580 parameters in the Transformer++ shape. At the Transformer++ widths
+and context with BF16, where Mosaic runs the per-order query-distance twin, Mosaic refuses the
+cumulative recipe. The suite also checks weight-decay masks, training updates of every layer, head,
+and order, diagnostics (per-order half-lives, and the formula of each decay mode), and acceptance
+selection.
+`tests/test_blocked_strips.py` adds both families and the per-order query-distance family to its
+scan/strips equivalence checks (161 passed). Its FP64 model check compares every gradient to 1e-11,
+except the forget-gate parameters of the query-distance exponential, which must agree within one
+FP32 epsilon per summed token (64) at their scale: the gate computes in FP32 by design, both
+programs give it the same FP32 cotangent, and XLA orders that recipe's FP32 sums over the tokens
+differently (2 ulps in `dt_bias`'s gradient on CPU).
+
+Existing mechanisms are unchanged against `e6ed4e58`. The jaxprs of
+`blocked_dot_product_attention` and `strip_dot_product_attention` are identical for 37 existing
+argument families (666 programs: forward, VJP, and the scan's diagnostics, with FP32 and BF16
+Q/K/V, at two block and strip sizes). Validation, recipe, attention identity, acceptance test
+selection, and parameter count are identical for all 442 run recipes (388 valid). The
+loss-and-gradient programs, values, and diagnostics of 20 small kernel and forget-gate models are
+identical.
+
+`test_gpu_strips_query_distance_matches_float64_at_the_production_context` (softmax, exp) and
+`test_gpu_strips_per_order_cumulative_matches_float64_at_the_production_context` (degrees 4, 8) run
+BF16 Q/K/V at [1, 2048, 14, 64] through the strips against host FP64 oracles, which match FP64
+autodiff on CPU. They require the output, dQ, dK, and dV within 1.2x their BF16 rounding floor, and
+the FP32 log-decay gradients (with the coefficient gradients, per order) within 1e-4. Run on CPU,
+these cases measure 1.00x the floor and FP32 gradient errors of 1.4e-7 to 5.1e-7. GPU qualification
+runs in each production run's acceptance on H100 and B300; acceptance selects these files for the
+recipes that use either mechanism.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m "not gpu" \
+  scaffolds/transformer/tests/test_exponential_query_distance.py \
+  scaffolds/transformer/tests/test_per_order_cumulative.py \
+  scaffolds/transformer/tests/test_blocked_strips.py
+```
+
 ### Degree-twelve query-distance gates on Mosaic (2026-11-09)
 
 At degree twelve, `d_K = 64`, and 2,048 tokens, H100's per-order kernels lower for cuda on a
@@ -769,6 +903,39 @@ On two H100 PCIe (`mastiff`, job 212211, source `57784b2`, shared with other job
 measured +0.59%, +1.12%, +0.19%, and +1.26% for the four recipes in the order above
 (updates of 1.35–1.73 s). Individual trials ranged from −0.8% to +7.9% because of the
 node's other load; losses again differed by no more than between identical trials.
+
+### Training telemetry on one GPU
+
+Since `6755d6b` the single-device update records the same statistics. Checks in
+`tests/test_telemetry.py`: on one CPU device, updates with and without telemetry are
+bit-identical, for one batch and for accumulated microbatches; on two CPU devices, one
+batch's statistics on one device agree with data-parallel training's to 1e-4; the full
+loop records window summaries, gradient spikes, and numerical-failure statistics with
+and without accumulation; remat training records none. The telemetry-off single-device
+programs are unchanged: their jaxprs match the previous code's for both output
+scalings, with and without update checks and accumulation.
+
+Cost on one B300 (`akita`, jobs 241876 and 241899, training code of `6755d6b`; reports in
+[`runs/telemetry-overhead-single-gpu/`](runs/telemetry-overhead-single-gpu/)), with the
+benchmark above in its one-device mode: alternating off/on trials (four of 60 or 40
+timed updates, two of 20 for the blocked and per-order recipes, after 5 warmup updates)
+from the same initial state, synthetic tokens, and update RNGs, including the loop's
+per-update packing and fetch of the statistics:
+
+| Recipe (run) | Off, ms/update | On, ms/update | Overhead | Per run | Statistics |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 12-layer width-640 query m = 8 + W decay, Mosaic (`r95a5691d293f`) | 437.6 | 440.0 | +0.55% | 18 s | 92 |
+| Softmax, cuDNN (`r9040f12f3d80`) | 905.4 | 910.9 | +0.61% | 42 s | 86 |
+| Exp with a query–key gate, blocked strips (`rd3501a40e020`) | 3,686.6 | 3,679.6 | −0.19% | – | 104 |
+| Per-degree query–key gates m = 4, per-order Mosaic (`r03be769d2069`) | 10,918.7 | 10,920.7 | +0.02% | 16 s | 107 |
+
+Telemetry adds 2.1–5.5 ms per update where it is measurable, under a minute per
+7,570-update run. Losses with and without it differ by no more than between repeated
+identical trials (0.0056–0.0111 over the timed updates for the cuDNN and Mosaic recipes,
+whose updates are nondeterministic; 2e-5 for the blocked strips and per-order kernels).
+The reports mark their source dirty only because earlier reports in the directory were
+untracked; every hashed source file matches `6755d6b`. One-GPU H100 timing was not run;
+two H100 PCIe measured +0.19–1.26% above.
 
 ### Single-device gradient accumulation
 

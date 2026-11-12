@@ -1,15 +1,19 @@
 """Forgetting Transformer decay with Gated DeltaNet's per-head Mamba-2 gate.
 
 Each attention weight from key i to query t is multiplied by prod_(j=i+1..t) alpha_j in
-cumulative FoX, or by alpha_t ** (t-i) in query-distance mode, with
+cumulative FoX, or by alpha_t ** (t-i) in query-distance mode (softmax and the exponential add
+the factor's logarithm to the score), with
 log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) per layer and head, computed from
 the attention input x (after the block's pre-attention RMSNorm). The parameterization and the
 initialization are Gated DeltaNet's: exp(A_log) ~ Uniform(0, 16), softplus(dt_bias)
 log-uniform on [0.001, 0.1] (floored at 1e-4), and w_alpha a PyTorch-default Linear row,
 Uniform(+-1/sqrt(hidden_size)). As in Gated DeltaNet, w_alpha decays and A_log, dt_bias do not.
+Per-order gates (``order_count``) give every polynomial order its own input-form parameters,
+copies of the shared draw at initialization, in either mode.
 
 For query-distance gates, ``query_key`` conditioning adds a zero-initialized key projection
-inside softplus; its pairwise input uses just the two endpoints. The query-only ``sigmoid``
+inside softplus; its pairwise input uses just the two endpoints, and on softmax and the exponential
+the pair's (t-i) log alpha_ti joins its score. The query-only ``sigmoid``
 rate option bounds lambda by exp(A_log), initializing sigmoid(dt_bias) to the same legacy dt
 draw. Its rate agrees at zero input; tokenwise rates and derivatives are not identical.
 

@@ -438,8 +438,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     mode it is log alpha_t itself, giving exp((t-i)*log alpha_t); endpoint gate inputs give
     exp(-(t-i) exp(A) softplus(u_t + v_i)). Cumulative decay uses the blocked backend;
     query-distance and endpoint decay also run on the Mosaic kernels.
-    An extra order axis applies independent decay inside the polynomial sum, on the blocked
-    and Mosaic backends. These gates include the constant term.
+    An extra order axis applies independent decay inside the polynomial sum: query-distance
+    decay on the blocked and Mosaic backends, and cumulative decay (each order's own sum L_tr,
+    exp(L_tr - L_ir)) on the blocked backend. These gates include the constant term.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,

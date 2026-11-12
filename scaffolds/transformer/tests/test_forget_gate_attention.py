@@ -109,23 +109,29 @@ def test_configurations(kernel):
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
-def test_query_distance_gates_stay_with_query_polynomials(kernel):
-    """Only cumulative decay is qualified on softmax and the exponential (the constant form, ALiBi,
-    in test_constant_decay)."""
-    message = "query-distance decay mode"
+def test_query_distance_gates_take_the_softplus_input_gate(kernel):
+    """The query-distance mode on softmax and the exponential takes the input-form softplus gate, query
+    conditioned (test_exponential_query_distance.py) or query-key conditioned (test_exponential_query_key.py);
+    bounded rates stay with the query polynomials (the constant form, ALiBi, is cumulative:
+    test_constant_decay). The cumulative mode takes no endpoint operands."""
+    for conditioning in ("query", "query_key"):
+        model = _config(kernel, attention_forget_gate_mode="query_distance",
+                        attention_forget_gate_conditioning=conditioning).model
+        assert (model.attention_forget_gate_mode, model.attention_forget_gate_conditioning) == (
+            "query_distance", conditioning)
+    message = "softplus gate with query conditioning"
     with pytest.raises(ValueError, match=message):
-        _config(kernel, attention_forget_gate_mode="query_distance")
+        _config(kernel, attention_forget_gate_mode="query_distance", attention_forget_gate_rate_activation="sigmoid")
     model = _config(kernel).model
-    model.attention_forget_gate_mode = "query_distance"  # bypass config validation: the module rejects it too
-    with pytest.raises(ValueError, match=message):
+    model.attention_forget_gate_mode, model.attention_forget_gate_rate_activation = "query_distance", "sigmoid"
+    with pytest.raises(ValueError, match=message):  # bypass config validation: the module rejects it too
         attention_from_config(model, rngs=nnx.Rngs(0))
     q = k = v = jnp.zeros((1, 4, 2, 4))
-    with pytest.raises(ValueError, match="cumulative"):
-        attention_core(q, k, v, attention_normalization=kernel == "softmax", query_log_decay=jnp.zeros((1, 4, 2)),
-                       query_decay_mode="query_distance")
-    with pytest.raises(ValueError, match="cumulative"):
-        blocked_dot_product_attention(q, k, v, attention_normalization=kernel == "softmax",
-                                      query_log_decay=jnp.zeros((1, 4, 2)), query_decay_mode="query_distance")
+    endpoint = dict(query_gate_input=jnp.zeros((1, 4, 2)), key_gate_input=jnp.zeros((1, 4, 2)),
+                    gate_log_rate=jnp.zeros((2, 1)))
+    for attend in (attention_core, blocked_dot_product_attention):
+        with pytest.raises(ValueError, match="Endpoint decay requires all three operands and query-distance mode"):
+            attend(q, k, v, attention_normalization=kernel == "softmax", **endpoint)
 
 
 @pytest.mark.parametrize("kernel", KERNELS)

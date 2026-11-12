@@ -105,6 +105,8 @@ positions and backends). `attention_forget_gate_mode: cumulative` (the historica
 default) multiplies weights by `exp(L_t - L_i)`, where `L_t = sum_{j<=t} log(alpha_j)`.
 For query polynomials on the blocked backend, the `query_distance` mode instead
 multiplies by `exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+On softmax and the unnormalized exponential the mode adds `(t-i) * log(alpha_t)` to every
+score ([Forget gate](#forget-gate)).
 Both modes apply attenuation after the polynomial, keep diagonal attenuation one,
 and preserve the coefficient generator and attention-output normalization.
 They share identical parameters and initialization: the gate projection decays,
@@ -119,7 +121,9 @@ blocked backend. `attention_forget_gate_conditioning: query_key` adds
 and takes weight decay, exactly recovering the query-only control initially.
 Compact query/key projections pass to the attention core; pair rates and causal
 statistics are evaluated within query blocks. Polynomial coefficients stay
-query-conditioned.
+query-conditioned. On softmax and the unnormalized exponential the same query-key rate
+adds `(t-i) * log(alpha_ti)` to every score ([Forget gate](#forget-gate)); the bounded
+sigmoid rate below stays with the query polynomials.
 
 With query-only gating, `attention_forget_gate_rate_activation: sigmoid` replaces
 softplus by sigmoid, giving a positive rate bounded by learned `exp(A_log)`.
@@ -135,12 +139,16 @@ own softplus query-distance gate on the blocked backend or the Mosaic decay kern
 (see `attention_backend: mosaic` below for their GPU limits). With query-only
 coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
 The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
-`query_key` adds `wk_r·x_i` inside softplus. Gate arrays add an order axis
-before their final channel axis. All orders initially duplicate the shared
-gate's draw; key projections start at zero. The copies then learn independently.
-Projection matrices receive WD; rates and biases remain exempt. Diagnostics
-retain the layer, head, and order axes. Cumulative gates, sigmoid rates, and
-other backends reject this option. Existing recipes default to a shared gate.
+`query_key` adds `wk_r·x_i` inside softplus. With `attention_forget_gate_mode:
+cumulative` (query conditioning, blocked backend only) each order instead keeps its
+own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
+`sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)` ([Forget gate](#forget-gate)). Gate arrays
+add an order axis before their final channel axis. All orders initially duplicate
+the shared gate's draw; key projections start at zero. The copies then learn
+independently. Projection matrices receive WD; rates and biases remain exempt.
+Diagnostics retain the layer, head, and order axes. Sigmoid rates, other gate
+forms, and other backends reject this option, and Mosaic rejects cumulative
+per-order gates. Existing recipes default to a shared gate.
 
 `attention_forget_gate_conditioning: none` is the input-free gate of learned static
 coefficients: `lambda = exp(A_log) * softplus(b_dt)` per layer and head reads no token,
@@ -753,7 +761,8 @@ original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initiali
 paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
 1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
 Softmax and the exponential take the cumulative mode with the input, sigmoid, or constant gate
-form; the sigmoid and constant forms need RoPE or no positional encoding.
+form, or the query-distance mode with the input form (below); the sigmoid and constant forms need
+RoPE or no positional encoding.
 `attention_forget_gate_form: constant` gives every head one rate, `log alpha_t = -m_h` at every
 token, so `L_t - L_i = -m_h (t - i)`: softmax with this decay is ALiBi (Press et al., 2022) and the
 exponential gains ALiBi's bias. `m_h = exp(A_log)` is learned from ALiBi's slopes `2^(-8 h / H)`,
@@ -762,10 +771,47 @@ parameter. This geometric rule is the paper's for every `H`; ALiBi's code uses i
 power of two (for 14 heads it takes `2^-1..2^-8` and `2^-0.5, 2^-1.5, ..., 2^-5.5`). `tests/test_constant_decay.py` checks both kernels against FP64 ALiBi through the scan
 and the strips; acceptance runs it for every constant-form recipe on CPU and, for softmax and the
 exponential, its 2,048-token BF16 strips case on the GPU.
+
+`attention_forget_gate_mode: query_distance` with the input gate replaces `L_t - L_i` by
+`(t - i) log alpha_t`, the query's own rate times the key distance: softmax and the unnormalized
+exponential add it to every score, ALiBi with a learned, input-dependent slope per query token
+(softmax's row maximum is taken over the decayed logits). It takes the softplus rate with query
+conditioning or its query-key form (below), RoPE or no positional encoding, and the blocked backend
+(scan or strips); PaTH, bounded rates, per-order gates, the other gate forms, and other backends
+are rejected. A nonfinite or positive raw `log alpha_t` poisons its query's row. Its parameters and
+their initialization are cumulative FoX's. `tests/test_exponential_query_distance.py` checks both
+kernels against FP64 all-pairs references through the scan and the strips; acceptance runs it for
+these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+
+`attention_forget_gate_conditioning: query_key` gives that gate the query polynomials' endpoint
+rate: each pair reads both of its tokens, `log alpha_ti = -exp(A_log) softplus(x_t w_query +
+x_i w_key + dt_bias)`, and softmax and the exponential add `(t - i) log alpha_ti` to its score.
+Only the token projections reach the attention core; pair rates are evaluated inside the score
+blocks, and a nonfinite projection or log rate poisons the rows of the causal pairs it enters (its
+query's row, the rows from a key's token on, or every row of a rate's head). The key projection
+`w_key` (`forget_gate_key_kernel`, per layer and head) starts at zero and takes weight decay, so the
+model starts exactly as its query-gate counterpart; it adds `num_layers * num_heads * hidden_size`
+parameters (188,160 in the Transformer++ shape). Diagnostics report `log alpha_ti` over every
+causal pair. `tests/test_exponential_query_key.py` checks both kernels against FP64 all-pairs
+references through the scan and the strips; acceptance runs it for these recipes on CPU and its
+2,048-token BF16 strips cases on the GPU, and `tests/test_endpoint_decay.py` on CPU only (its GPU
+cases qualify the query polynomials' kernels).
+
+`attention_forget_gate_per_order: true` with the cumulative mode gives every order `r` of
+nonlinear query coefficients (including zero) its own input gate and sum `L_tr`:
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, each block evaluating one order's
+`[B, H, Q, K]` factor at a time. It takes query conditioning, RoPE or no positional encoding,
+and the blocked backend (scan or strips); Mosaic has no cumulative kernels. The gates start as
+copies of the shared draw, so the model starts as cumulative FoX; each extra order adds
+`(hidden_size + 2) * num_layers * num_heads` parameters (188,580 in the Transformer++ shape). A
+nonfinite `log alpha` poisons the rows from its token on, as for a shared gate.
+`tests/test_per_order_cumulative.py` checks degrees four and eight against FP64; acceptance runs it
+for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
-and the decay. Diagnostics report each head's `log alpha` statistics and the gate's
-parameters (for a fixed rate, the slopes); `runs.csv` has an `attention_forget_gate_constant_rate`
-column, empty without the constant form.
+and the decay. Diagnostics report each head's `log alpha` statistics (per order for per-order
+gates, with their half-lives) and the gate's parameters (for a fixed rate, the slopes); `runs.csv`
+has an `attention_forget_gate_constant_rate` column, empty without the constant form.
 
 ### PaTH position encoding
 
@@ -1310,8 +1356,9 @@ The default saved workspace from `views.experiment_workspace` includes gradient
 norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
 Historical runs without these measurements retain unknown gradient diagnostics.
 
-Training telemetry (`training/telemetry.py`) is standard for data-parallel training
-with `model.remat: false`. Every update returns, in one packed vector:
+Training telemetry (`training/telemetry.py`) is standard for training with
+`model.remat: false`, on one GPU or several. Every update's statistics reach the host
+in one packed vector:
 
 | Statistic | Reduction over microbatches and GPUs |
 | --- | --- |
@@ -1327,8 +1374,10 @@ projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
 attention coefficients, and other. `update_norm` is the actual parameter change
 after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
 statistics only. Recording never changes the update: on CPU the update is
-bit-identical with and without it, and on GPU the differences match GPU
-nondeterminism between identical updates.
+bit-identical with and without it, on one device and on two, and on GPU the
+differences match GPU nondeterminism between identical updates. Statistics of one
+batch are the same whether its equal-sized microbatches run on one device or split
+across several.
 
 Each log line adds the smallest `attention_output_head_rms_min`, largest
 `head_rms_norm_gain_max`, and largest `residual_max_abs` over layers; W&B receives

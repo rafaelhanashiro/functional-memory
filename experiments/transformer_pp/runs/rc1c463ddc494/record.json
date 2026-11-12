@@ -1,0 +1,92 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rc1c463ddc494/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rc1c463ddc494/metrics.jsonl",
+      "sha256": "1837478460811c35a71bef744ac64cd0b065c84f09e3baceccb95e91d69b106c",
+      "size_bytes": 11205
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rc1c463ddc494/summary.json",
+      "sha256": "505f18b8f3bb5af13dd640885ac3aed20fec457a861cd7bd223d0d10680378a2",
+      "size_bytes": 136472
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rc1c463ddc494/training.log",
+      "sha256": "028800639eeae32762d8a7e2d2a766e63d68ad125b619dc3fda5783757756897",
+      "size_bytes": 12780
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-10T20:14:45.576622+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "home_cluster": "kennel",
+      "launch_commit": "cb8851ddf17a34d9d0f5f9163cac696a08ff6e3f",
+      "slurm_job_id": "241752",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-10T20:04:54.149271+00:00"
+    }
+  ],
+  "checkpoint_retention": {
+    "policy": "conditional_diagnostic_parameters",
+    "reason": "If a clipped event is observed, preserve its exact pre-update parameters for frozen derivative comparisons without trajectory drift; no optimizer state is retained."
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/config.yaml",
+    "sha256": "b0088eae55c27f6dcfb456d033f089bc0b2b9b05bfe05fa65bff73a1a0c741fa"
+  },
+  "data_identity": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/data_identity.json",
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291
+  },
+  "diagnostic_summary": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/summary.json",
+    "sha256": "505f18b8f3bb5af13dd640885ac3aed20fec457a861cd7bd223d0d10680378a2",
+    "size_bytes": 136472
+  },
+  "error": null,
+  "execution": {
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/gated-gradient-diagnostic/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda12",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "native_scaffold_source_commit": "b38c116f5aad182df158c14e62c0bbb4e730524c",
+    "node": "dogo",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "241752"
+  },
+  "frozen_execution_sha256": "e9dc9f70b70fdae408ab45b0c18e36492d934a41525275a6f65dfc067c60206f",
+  "home_cluster": "kennel",
+  "label": "per-order-query-key-gradient-tail-replay-h100",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/training.log",
+    "sha256": "028800639eeae32762d8a7e2d2a766e63d68ad125b619dc3fda5783757756897",
+    "size_bytes": 12780
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rc1c463ddc494/training.log",
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rc1c463ddc494/metrics.jsonl",
+    "sha256": "1837478460811c35a71bef744ac64cd0b065c84f09e3baceccb95e91d69b106c",
+    "size_bytes": 11205
+  },
+  "name": "per-order-query-key-gradient-tail-replay-h100",
+  "parent_run_id": "r03be769d2069",
+  "record_schema_version": 1,
+  "run_id": "rc1c463ddc494",
+  "seed": 42,
+  "source_commit": "cb8851ddf17a34d9d0f5f9163cac696a08ff6e3f",
+  "status": "complete"
+}

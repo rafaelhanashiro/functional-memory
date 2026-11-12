@@ -25,17 +25,14 @@ def _digest(path: Path) -> str:
 
 def test_committed_outcomes_and_differences():
     rows = {row["run_id"]: row for row in load_rows(ROOT, SELECTION)}
-    assert Counter(row["status"] for row in rows.values()) == {"complete": 12, "cancelled": 5}
+    assert Counter(row["status"] for row in rows.values()) == {"complete": 12, "cancelled": 4}
     assert rows["rd40af7956426"]["terminal_validation_perplexity"] == pytest.approx(13.179060532842437)
     assert rows["rd40af7956426"]["percent_vs_control"] == pytest.approx(-2.948, abs=1e-3)
     assert rows["ra79e66bd9121"]["percent_vs_tied_gdn"] == pytest.approx(-5.472, abs=1e-3)
     assert rows["ra98612db06d4"]["percent_vs_tied_gdn"] == pytest.approx(-6.742, abs=1e-3)
     assert rows["rf65d38ec0552"]["percent_vs_control"] == pytest.approx(2.558, abs=1e-3)
-    # Cancellation preserves a partial run's measurements without inventing terminal metrics.
+    # A run cancelled before training keeps its cell without inventing measurements.
     assert rows["rae2329afb5bd"]["curve"] == [] and rows["rae2329afb5bd"]["percent_vs_tied_gdn"] is None
-    cancelled = rows["r83c3394eb730"]
-    assert cancelled["curve"] and cancelled["last_step"] < SELECTION["terminal_step"]
-    assert cancelled["terminal_validation_perplexity"] is None and cancelled["percent_vs_control"] is None
     # The order-0 write makes the polynomial runs clip far more often than linear ones.
     assert rows["rd40af7956426"]["gradient_clipped_fraction"] > 0.9 > 0.01 > rows["rf7341031e3d5"]["gradient_clipped_fraction"]
 
@@ -66,12 +63,14 @@ def test_heatmap_marks_cancelled_cells():
     figure = heatmap(load_rows(ROOT, SELECTION), SELECTION)
     try:
         gids = {text.get_gid() for axis in figure.axes for text in axis.texts}
-        assert {"cell:2:64:complete", "cell:3:64:cancelled", "cell:1:8:cancelled",
-                "cell:tied:16:complete", "cell:softmax:8:complete"} <= gids
+        assert {"cell:2:64:complete", "cell:1:8:cancelled", "cell:tied:16:complete",
+                "cell:softmax:8:complete"} <= gids
         assert not any(gid and gid.startswith("cell:4:") for gid in gids)  # no degree-four column
         texts = {text.get_gid(): text.get_text() for axis in figure.axes for text in axis.texts}
         assert texts["cell:1:8:cancelled"] == "CANCELLED"
-        assert texts["cell:3:64:cancelled"].startswith("CANCELLED\n@")
+        # A coordinate with no selected run is shown as not run, not as a result.
+        not_run = [gid for gid in gids if gid and gid.startswith("cell:3:64:")]
+        assert not_run and "cancelled" not in not_run[0] and "complete" not in not_run[0]
     finally:
         plt.close(figure)
 

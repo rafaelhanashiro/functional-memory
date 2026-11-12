@@ -90,7 +90,7 @@ def benchmark(args):
                              "runtime": original_record["execution"]["runtime"]},
               "historical_baseline": baseline, "warmup_updates": args.warmup,
               "timed_updates": args.iterations, "samples": [],
-              "limitations": ["Single-GPU trainer omits the per-group telemetry used by data-parallel training.",
+              "limitations": ["Training telemetry is recorded as in production training (unless model.remat).",
                               "Historical four-GPU measurements are not a simultaneous hardware-controlled comparison.",
                               "Historical 1000-step windows include a periodic checkpoint; measured replay intervals do not.",
                               "Steady intervals exclude validation, checkpointing, compilation, and startup."]}

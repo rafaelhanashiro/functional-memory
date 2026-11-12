@@ -59,6 +59,11 @@ DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readou
 SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
 COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
 QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
+PER_ORDER_DECAY_TESTS = "scaffolds/transformer/tests/test_per_order_decay.py"
+PER_ORDER_CUMULATIVE_TESTS = "scaffolds/transformer/tests/test_per_order_cumulative.py"
+EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential_query_distance.py"
+EXPONENTIAL_QUERY_KEY_TESTS = "scaffolds/transformer/tests/test_exponential_query_key.py"
+ENDPOINT_DECAY_TESTS = "scaffolds/transformer/tests/test_endpoint_decay.py"
 INPUT_FREE_GATE_TESTS = "scaffolds/transformer/tests/test_input_free_gate.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
@@ -135,7 +140,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.append(COEFFICIENT_RELEASE_TESTS)
     model = config["model"]
     if model.get("attention_forget_gate_per_order", False):
-        paths.append("scaffolds/transformer/tests/test_per_order_decay.py")
+        cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
+        if cpu or not cumulative:
+            # The per-order gates' parameters and starts; on the GPU, the query-distance kernels.
+            paths.append(PER_ORDER_DECAY_TESTS)
+        if cumulative:
+            # Each order's own cumulative decay on the blocked backend: FP64 references on CPU, and
+            # the strips' production precision at degrees four and eight on the GPU.
+            paths.append(PER_ORDER_CUMULATIVE_TESTS)
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -152,11 +164,16 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if (cpu and model.get("attention_forget_gate", False)
             and model.get("attention_forget_gate_form", "input") == "sigmoid"):
         paths.append(SIGMOID_GATE_TESTS)
-    if (model.get("attention_forget_gate_conditioning", "query") != "query"
+    exponential_endpoint = (model.get("attention_degree") is None
+                            and model.get("attention_forget_gate_conditioning", "query") == "query_key")
+    if ((model.get("attention_forget_gate_conditioning", "query") != "query"
             or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
-            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False)):
-        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate.
-        paths.append("scaffolds/transformer/tests/test_endpoint_decay.py")
+            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False))
+            and (cpu or not exponential_endpoint)):
+        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate. Its GPU
+        # cases are the query polynomials' kernels, so softmax and the exponential, whose query-key gate
+        # shares only the blocked endpoint arithmetic checked here on CPU, take their own GPU cases below.
+        paths.append(ENDPOINT_DECAY_TESTS)
     if model.get("attention_forget_gate", False) and model.get("attention_forget_gate_conditioning", "query") == "none":
         # Static coefficients under the input-free gate: CPU references through the blocked scan and
         # strips, and on the GPU the Mosaic decay kernels through the production dispatch.
@@ -203,6 +220,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     exponential_gate = model.get("attention_forget_gate", False) and model.get("attention_degree") is None
     if exponential_gate:
         paths.append(FORGET_GATE_ATTENTION_TESTS)
+        if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
+            # (t - i) log alpha_t on every score: FP64 references on CPU, and the strips'
+            # production precision on the GPU.
+            paths.append(EXPONENTIAL_QUERY_DISTANCE_TESTS)
+            if model.get("attention_forget_gate_conditioning", "query") == "query_key":
+                # The pair rate (t - i) log alpha_ti: likewise on CPU and on the GPU.
+                paths.append(EXPONENTIAL_QUERY_KEY_TESTS)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":

@@ -4,7 +4,8 @@ Opened 2026-10-27.
 
 **Question.** Does a Forgetting Transformer decay, defined as in Gated DeltaNet, improve
 degree-four polynomial attention with tanh query coefficients? Later sections add the
-exponential kernels (softmax, exp) and compare the paper's original sigmoid gate.
+exponential kernels (softmax, exp), compare the paper's original sigmoid gate, and give each
+polynomial order its own gate.
 
 ## Method
 
@@ -238,7 +239,52 @@ terminal is update 7,570:
   with the Gated DeltaNet gate, and query at 9.8 s. Softmax trained its first 200 updates on
   an H100 PCIe and the rest on a B300 (6.1 s per update) after that H100 stopped responding.
 
+### Per-order gates
+
+Added 2026-11-09. Do independent per-order gates improve cumulative FoX, as they improved
+query-distance decay by 2.2% (per-order query gates 13.892 against the shared gate's 14.198 at
+m = 4, in [query_distance_decay](../query_distance_decay/README.md))? Each primary copies its
+no-RoPE FoX + W decay control and changes only `attention_forget_gate_per_order: true`, so every
+order $r = 0..m$ of the query polynomial decays with its own gate:
+$$w_{ti} = \sum_{r\le m} c_r(x_t)\,s_{ti}^r\,e^{L_{t,r} - L_{i,r}},\qquad
+L_{t,r} = \sum_{j\le t}\log\alpha_{j,r},\qquad
+\log\alpha_{t,r} = -e^{A_{\log,r}}\,\mathrm{softplus}(w_{\alpha,r}^\top x_t + b_{dt,r})$$
+per layer and head. Each order's gate starts as a copy of the control's shared draw, so each
+primary starts exactly at its control; the gates add $m \times 188{,}580$ parameters. Both train on
+the blocked backend's causal strips (the controls on its scan); Mosaic has no cumulative decay
+kernels. The target is the best exponential kernel under the same gate without positional encoding.
+
+| Role | Run | Label | m | Validation-best PPL |
+| --- | --- | --- | ---: | ---: |
+| Primary: per-order gates | `r319b83140040` | `query-m4-per-order-forget-gate-no-rope-w-decay` | 4 | 13.767 |
+| Primary: per-order gates | `rf8fc9ab2cecc` | `query-m8-per-order-forget-gate-no-rope-wdecay` | 8 | 13.633 |
+| Control: shared gate | `r4a80e28ce0a7` | `query-m4-forget-gate-no-rope-w-decay` | 4 | 13.873 |
+| Control: shared gate | `r9353f554b917` | `query-m8-forget-gate-no-rope-wdecay` | 8 | 13.907 |
+| Target: FoX exp | `r183f08346ddc` | `exp-forget-gate-no-rope` | — | 13.628 |
+
+Both completed 7,570 updates on one B300 each (`akita`; m = 4 on `standard`, job 240745, and m = 8 on
+`long`, job 240746); each was preempted once during acceptance, before training began. Launch
+commands are in the [study README](../../../README.md#per-order-cumulative-fox-gates).
+
+- **Per-order gates improve cumulative FoX at both degrees.** m = 4 ends at 13.767 against the
+  shared gate's 13.873 (−0.77%, lower at all 28 evaluations), m = 8 at 13.633 against 13.907
+  (−1.97%, lower at 27 of 28). With per-order gates m = 8 improves on m = 4 by 0.97% (lower at 26 of
+  28), where the shared gate got worse (+0.24%).
+- **The degree-eight run ties the best exponential kernel.** It ends 0.04% above FoX exp (13.628;
+  lower at 16 of 28 evaluations, within ±0.14% from update 3,000 on) and 0.04% below exp with the
+  query-distance gate (13.638, lower at 27 of 28; pinned in [alibi_decay](../alibi_decay/README.md)),
+  0.35% below FoX softmax (13.680), and 0.55% below the best per-order query-distance run
+  (query–key gates at m = 4, 13.708, in [query_distance_decay](../query_distance_decay/README.md)).
+- **Cumulative per-order gates beat query-distance ones** at both degrees: by 0.90% at m = 4 and
+  1.07% at m = 8 against the per-order query gates (13.892, 13.780).
+- **Low orders forget within about a token; the two highest hold the long ranges.** At update 7,570
+  the median half-life over the 210 layer-heads is 0.62, 1.18 and 0.82 tokens for orders 0–2 at
+  m = 4 and 4.75 and 3.33 for orders 3 and 4 (40 and 49 heads above 100 tokens); at m = 8 it is
+  0.50–1.50 for orders 0–6 and 4.89 and 4.58 for orders 7 and 8 (36 and 43 heads above 100). The
+  shared gates' medians are 3.0 (m = 4) and 3.2 (m = 8); all orders start at 4.5–5.9 tokens.
+
 ## Open decision
 
 Determine whether combining FoX and PaTH improves on either alone with projection
-weight decay, then decide whether to promote this question or discard it.
+weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; decide
+whether to test them at a higher degree and a second seed, then promote this question or discard it.

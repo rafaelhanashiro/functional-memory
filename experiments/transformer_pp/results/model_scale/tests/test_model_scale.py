@@ -16,12 +16,12 @@ SELECTION = yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
 DERIVED = ("model_scale.png", "model_scale.pdf", "summary.csv", "README.md")
 # Validation-best perplexity as quoted in the README: (15-layer width-896, 12-layer width-640).
 BEST = {"softmax": (14.543, 17.964), "exp": (14.257, 17.550), "fixed_taylor_m4": (14.722, 18.087),
-        "static_m4": (14.767, 18.010), "query_m4_w_decay": (14.709, 17.944),
+        "static_m4": (14.767, 18.010), "query_m4_w_decay": (14.709, 17.944), "query_m8_w_decay": (14.323, 17.592),
         "fox_no_pe_query_m4_w_decay": (13.873, 16.911), "fox_no_pe_exp": (13.628, 16.753)}
 # Percent difference from softmax within each shape, as quoted in the findings.
 VERSUS_SOFTMAX = {"exp": (-1.96, -2.30), "fixed_taylor_m4": (1.23, 0.68), "static_m4": (1.54, 0.26),
-                  "query_m4_w_decay": (1.14, -0.11), "fox_no_pe_query_m4_w_decay": (-4.60, -5.86),
-                  "fox_no_pe_exp": (-6.29, -6.74)}
+                  "query_m4_w_decay": (1.14, -0.11), "query_m8_w_decay": (-1.51, -2.07),
+                  "fox_no_pe_query_m4_w_decay": (-4.60, -5.86), "fox_no_pe_exp": (-6.29, -6.74)}
 
 
 def _digest(path: Path) -> str:
@@ -37,7 +37,7 @@ def _configs():
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["variant"], row["shape"]): row for row in rows}
-    assert len(rows) == 14 and set(cells) == {(variant, shape) for variant in BEST for shape in ("reference", "l12_d640")}
+    assert len(rows) == 16 and set(cells) == {(variant, shape) for variant in BEST for shape in ("reference", "l12_d640")}
     for variant, (reference, small) in BEST.items():
         assert cells[variant, "reference"]["best_validation_perplexity"] == pytest.approx(reference, abs=5e-4), variant
         assert cells[variant, "l12_d640"]["best_validation_perplexity"] == pytest.approx(small, abs=5e-4), variant
@@ -69,8 +69,14 @@ def test_variant_follows_the_recipe():
     assert variant_of(query) == "query_m4_w_decay"
     assert variant_of(dict(query, attention_forget_gate=True, positional_encoding="none")) \
         == "fox_no_pe_query_m4_w_decay"
+    assert variant_of(dict(query, attention_degree=8)) == "query_m8_w_decay"
     with pytest.raises(ValueError, match="degree 4"):
-        variant_of(dict(query, attention_degree=8))
+        variant_of(dict(query, attention_degree=12))
+    with pytest.raises(ValueError, match="only as query"):
+        variant_of(dict(learned, attention_degree=8, attention_coefficient_conditioning="static",
+                        attention_coefficient_sharing="per_head"))
+    with pytest.raises(ValueError, match="only as query"):
+        variant_of(dict(query, attention_degree=8, attention_forget_gate=True, positional_encoding="none"))
     with pytest.raises(ValueError, match="Unlisted variant"):
         variant_of(dict(query, attention_coefficient_kernel_weight_decay=False))
 
@@ -106,7 +112,7 @@ def test_pairs_differ_only_by_the_shape_rules():
 # Pairs as (reference-shape run, 12-layer run).
 PAIRS = {"softmax": ("r9040f12f3d80", "rf81c96f76a1d"), "exp": ("r6a76e7fbde45", "r3e2fa2532c23"),
          "fixed_taylor_m4": ("r816ab0fbe119", "r2c432bd3a2a4"), "static_m4": ("r4339a245820e", "r94e0f2b8cff9"),
-         "query_m4_w_decay": ("rca97cc9db8f2", "r4cce9a985a70"),
+         "query_m4_w_decay": ("rca97cc9db8f2", "r4cce9a985a70"), "query_m8_w_decay": ("r25fffc16c2f3", "r95a5691d293f"),
          "fox_no_pe_query_m4_w_decay": ("r4a80e28ce0a7", "r3d14b598d88f"), "fox_no_pe_exp": ("r183f08346ddc", "ra5dfd978d3bd")}
 
 

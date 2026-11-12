@@ -110,11 +110,15 @@ def test_invalid_update_stops_training_before_checkpoint(tmp_path, monkeypatch, 
     config.model.quadratic_mode = mode
     config.train.micro_batch_size = micro_batch_size
 
-    def finite_loss_invalid_gradient(state, *args):
-        return jnp.array(2.0), jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), state.params)
+    def finite_loss_invalid_gradient(actual):
+        # Keep the step's telemetry statistics; replace only the loss and gradient.
+        def step(state, *args, **kwargs):
+            _, _, *statistics = actual(state, *args, **kwargs)
+            return jnp.array(2.0), jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), state.params), *statistics
+        return step
 
-    monkeypatch.setattr(loop, "loss_and_grads", finite_loss_invalid_gradient)
-    monkeypatch.setattr(loop, "microbatch_loss_and_grads", finite_loss_invalid_gradient)
+    monkeypatch.setattr(loop, "loss_and_grads", finite_loss_invalid_gradient(loop.loss_and_grads))
+    monkeypatch.setattr(loop, "microbatch_loss_and_grads", finite_loss_invalid_gradient(loop.microbatch_loss_and_grads))
     with pytest.raises(FloatingPointError, match="optimizer update at step 1"):
         loop.run_training(config)
     failure = json.loads((tmp_path / "numerical_failure_step_00000001.json").read_text())
