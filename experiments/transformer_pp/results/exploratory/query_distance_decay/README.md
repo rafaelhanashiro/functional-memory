@@ -205,7 +205,7 @@ dV 3.11 and 6.14 ms. The shared endpoint gate's dQ pass also takes 5.26 ms on B3
 
 ## Results
 
-The selection pins all ten runs explicitly. Best PPL is the lowest validation PPL
+The selection pins all twelve runs explicitly. Best PPL is the lowest validation PPL
 over all evaluations; terminal PPL is the completion record at update 7,570.
 
 <!-- BEGIN GENERATED RESULTS -->
@@ -221,12 +221,16 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Per-order query distance + W decay, m = 8 | `r20fe6fe864bc` | complete | 13.7796 | 7500 | 13.7853 |
 | Query-dependent distance decay + W decay, m = 12 | `r47bfe39ce9b4` | complete | 13.8512 | 7500 | 13.8565 |
 | Per-order query distance + W decay, m = 12 | `rfe140c073b2f` | complete | 13.7499 | 7500 | 13.7503 |
+| Per-order query-key distance + W decay, m = 8 | `r227b0ed7c605` | complete | 13.7121 | 7500 | 13.7163 |
+| Per-order query-key distance + W decay, m = 12 | `rc2f9273c49cc` | complete | 13.6814 | 7500 | 13.6844 |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 
 Endpoint query–key and bounded-rate variants compare against the query-dependent control.
-Each per-order variant compares against its corresponding shared-gate control.
+Each per-order query gate and the degree-four per-order query–key gate compare against
+their shared-gate controls; the degree-eight and degree-twelve per-order query–key gates
+against their per-order query twins.
 The degree-eight shared gate compares against the degree-four query-dependent run,
 and the degree-twelve shared gate against the degree-eight one.
 Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
@@ -266,7 +270,7 @@ Incomplete runs have no terminal PPL; their best-so-far metrics do not establish
   start equal (median 4.7–5.6 tokens at update 100); the split forms by update 900.
 
 One seed is tested, so this comparison cannot quantify seed-to-seed variability.
-The ten runs differ in their decay rule or degree, without separately tuned optimization.
+The twelve runs differ in their decay rule or degree, without separately tuned optimization.
 The endpoint, bounded-rate, per-order, degree-eight and degree-twelve runs use the Mosaic
 kernels; the FoX run and the degree-four query-only control use the blocked reference. They
 differ numerically in two ways: Mosaic rounds attention weights and score gradients to BF16
@@ -277,7 +281,9 @@ The endpoint and bounded-rate runs were preempted once and resumed from their la
 checkpoint; both degree-four per-order runs trained without interruption on one H100 SXM each.
 The degree-eight pair (below) trained without interruption on one H100 PCIe each, and the
 degree-twelve pair on one H100 SXM each; the degree-twelve shared-gate run resumed once from
-its update-4,000 checkpoint after a GPU runtime abort.
+its update-4,000 checkpoint after a GPU runtime abort. The degree-eight per-order query–key run
+trained on one H100 SXM, and the degree-twelve one on H100 SXM to update 6,000 and on H100
+PCIe from there.
 
 ## Independent per-order gates
 
@@ -410,14 +416,77 @@ tolerances.
   5.20 and 4.93 for orders 11 and 12 (35 and 34 heads above 100); the shared gate's median is
   2.43 (44 heads above 100). All orders start at 5.0–6.2 tokens at update 100.
 
+### Per-order query-key gates at degrees eight and twelve
+
+Added 2026-11-10 at the user's request. **Question.** Does the gain of per-order query–key over
+per-order query gates at degree four (13.708 vs 13.892, −1.32%) persist at degrees eight and
+twelve?
+
+| Variant | Run | Twin (per-order query gates) | Parameters |
+| --- | --- | --- | ---: |
+| Per-order query–key gates, m = 8 | `r227b0ed7c605` | `r20fe6fe864bc` (13.780) | 203,541,466 |
+| Per-order query–key gates, m = 12 | `rc2f9273c49cc` | `rfe140c073b2f` (13.750) | 205,802,746 |
+
+Each run is its twin with `attention_forget_gate_conditioning: query_key`: every order's rate is
+`exp(A_r) softplus(wq_r·x_t + wk_r·x_i + b_r)`, and the three per-order query–key runs
+(`r03be769d2069`, `r227b0ed7c605`, `rc2f9273c49cc`) differ only in degree. The key projections
+start at zero, so each run starts exactly as its twin; like `wq_r` they receive weight decay 0.1.
+Each run compares against its twin, the degree-four per-order query–key gate (`r03be769d2069`,
+13.708), and, as the target, the matched exp baseline: exp with the same query–key gate, one per
+layer and head since exp has no orders (`rd3501a40e020`, 13.604, pinned in
+[alibi_decay](../alibi_decay/README.md#exp-with-a-query-key-gate)).
+
+Both train on the Mosaic per-order endpoint kernels (`per_order_endpoint_decay`) on one H100
+each: B300 holds per-order query–key gates only up to degree six at this shape (see
+[Attention kernels](#attention-kernels)). Acceptance runs all of `test_per_order_decay.py` and
+`test_endpoint_decay.py`; their GPU cases include per-order query–key gates against FP64 at
+degrees eight and twelve (and twelve's top orders alone) and duplicated orders against the
+shared query–key kernels.
+
+Validation-best PPL is at update 7,500 for every run here, terminal PPL at update 7,570; each
+comparison covers all 28 evaluations.
+
+| Degree | Per-order query–key gates | Best (terminal) PPL | vs per-order query twin | vs exp query–key gate (13.604) |
+| ---: | --- | --- | ---: | ---: |
+| 4 | `r03be769d2069` | 13.708 (13.712) | −1.32% (13.892) | +0.77% |
+| 8 | `r227b0ed7c605` | 13.712 (13.716) | −0.49% (13.780) | +0.80% |
+| 12 | `rc2f9273c49cc` | 13.681 (13.684) | −0.50% (13.750) | +0.57% |
+
+- **Key dependence still helps, less than at degree four.** Against their per-order query twins
+  the query–key gates are 0.49% lower at degree eight (terminal −0.50%), at 22 of 28 evaluations
+  including every one from update 1,100 on, by 0.22–0.53% from update 3,000 on; and 0.50% lower
+  at degree twelve (terminal −0.48%), at 27 of 28 (not at update 500), by 0.40–0.60% from update
+  3,000 on. At degree four the gain was 1.32%.
+- **Degree adds little.** Degree eight ties degree four: 13.712 vs 13.708 (+0.03%), lower at 4 of
+  28 evaluations, within ±0.27% from update 3,000 on. Degree twelve is 0.22% below degree eight
+  and 0.20% below degree four, lower than both at 27 of 28 (not at update 500); its lead over
+  degree eight shrinks from 0.70% at update 3,000 to 0.19–0.29% from update 5,500 on. Per-order
+  query gates gained 0.81% from degree four to eight and 0.22% from eight to twelve.
+- **No degree reaches the matched exp baseline.** Against exp with the query–key gate (13.604)
+  the per-order query–key gates are +0.77% (m = 4), +0.80% (m = 8) and +0.57% (m = 12)
+  (terminal +0.76%, +0.79%, +0.56%). They are lower only within the first 800 updates (at 4, 3
+  and 6 of 28 evaluations). From update 3,000 on, the degree-four and degree-eight gaps narrow
+  from 1.5% and 1.3% to 0.73–0.83% from update 6,000 on; the degree-twelve gap stays at 0.46–0.66%.
+- **What the gates learned.** At update 7,570 the median half-life over the 210 layer-heads, with
+  the mean `log alpha` taken over the diagnostic sample's causal query–key pairs, is 0.49–1.18
+  tokens per order at degree eight and 0.59–1.84 at degree twelve, as at degree four (0.54–1.96);
+  the twins' medians, over query tokens, are 1.37–5.04 and 1.38–5.20. As in the twins, the top
+  orders hold the most heads above 100 tokens: 17 and 23 for orders 7 and 8 (twin: 41 and 49),
+  and 17, 17 and 18 for orders 10–12 (twin: 33, 35 and 34). The key projections start at zero
+  and reach median norms of 0.73 (m = 8) and 0.83 (m = 12), against 0.93 and 1.01 for the query
+  projections.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
 FoX, and the bounded rate changes nothing. Per-order rates improve both gates by
 about 2.2% at degree four and the query gate by 1.1% at degree eight and 0.7% at degree
-twelve, where it reaches 13.750, 0.9% above exp with the forget gate. The degree-four
-per-order query–key gate remains the best run, 1.2% below cumulative FoX. Decide whether to
-confirm with additional seeds and promote the topic as its own collection, or discard it.
+twelve, where it reaches 13.750, 0.9% above exp with the forget gate. Per-order query–key
+gates improve on per-order query gates by 1.3% at degree four and 0.5% at degrees eight and
+twelve. The degree-twelve per-order query–key gate is the best run (13.681), 1.4% below
+cumulative FoX but 0.57% above its matched exp baseline, exp with the query–key gate (13.604);
+degree eight ties degree four, and no degree reaches that baseline. Decide whether to confirm
+with additional seeds and promote the topic as its own collection, or discard it.
 
 ## Regeneration
 

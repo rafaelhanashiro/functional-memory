@@ -331,6 +331,10 @@ At m = 4 on the earlier QK setup:
 - Query tied fixed Taylor with cosine per-head QK normalization; with per-layer RMSNorm
   it trailed by 0.5%.
 
+Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, at the 12-layer
+width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
+([score_biases](results/exploratory/score_biases/README.md)).
+
 ## Exploratory diagnostics
 
 The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
@@ -1293,6 +1297,63 @@ submit r47bfe39ce9b4 query_distance_degree_acceptance
 submit rfe140c073b2f per_order_decay_acceptance
 ```
 
+### Query–key gates at degrees eight and twelve
+
+The [per-order query–key pair](results/exploratory/query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)
+gives the per-order query runs the per-order query–key gates of `r03be769d2069`. Each run
+changes only its twin's `model.attention_forget_gate_conditioning` to `query_key`; the key
+projections start at zero, so it starts exactly as the twin.
+
+| Run | Twin | Degree | Parameters | Allocation |
+| --- | --- | ---: | ---: | --- |
+| `r227b0ed7c605` | `r20fe6fe864bc` | 8 | 203,541,466 | `standard`, 24 hours, H100 SXM only (`mastiff` excluded) |
+| `rc2f9273c49cc` | `rfe140c073b2f` | 12 | 205,802,746 | `long`, 48 hours, either H100 |
+
+Home cluster: Kennel. Use one H100 per run: B300 holds per-order query–key gates only up to
+degree six at `d_K = 64` and 2,048 tokens. Key dependence makes every order's rate a function of
+each query–key pair, so its extra cost grows with the number of orders. At degree four (five
+orders), per-order query–key updates take 2.43 s longer than per-order query updates on H100
+SXM (5.19 vs 2.76 s) and 3.33 s longer on H100 PCIe (7.70 vs 4.38 s). Adding that cost per
+order to the twins' measured updates (5.70 s at degree eight on PCIe, 5.15 s at degree twelve
+on SXM, converted to the other GPU by degree four's per-order query ratio) gives, for the 7,570
+training updates:
+
+| Degree | H100 SXM (`dogo`) | H100 PCIe (`mastiff`) |
+| ---: | ---: | ---: |
+| 8 | 8.0 s/update, about 17 hours | 11.7 s/update, about 25 hours |
+| 12 | 11.5 s/update, about 24 hours | 16.8 s/update, about 35 hours |
+
+Acceptance's pilot stops before training when its projection of the whole run exceeds the
+allocation less a 2-hour reserve: 22 hours of a 24-hour allocation, 46 of a 48-hour one. Degree
+eight therefore trains on `standard` with `mastiff` excluded, and degree twelve on `long` on
+either H100. These jobs have no scheduling dependencies on each other.
+
+`per_order_decay_acceptance` pins the shared query gates `r9320e5cd3071` and `r47bfe39ce9b4`
+as the controls (no shared query–key gate runs at these degrees) and allows exactly two
+differences from them: per-order gates and query–key conditioning. A Mosaic control's
+variant must also train on the Mosaic kernels. At initialization it collapses the duplicated
+order axes to the control's gate, requires every per-order key projection to be exactly zero,
+removes it, and verifies the control's fingerprint (passing on CPU for both recipes).
+Acceptance runs all of `test_per_order_decay.py`, whose GPU cases include query–key gates at
+degrees eight and twelve and twelve's top orders alone, and `test_endpoint_decay.py`.
+
+From the isolated `claude/per-order-query-key` worktree, after committing its frozen
+execution set and checking live allowances:
+
+```bash
+submit() {  # run ID, partition, time limit, excluded nodes
+  sbatch --parsable --partition="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time="$3" --exclude="$4" --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_decay_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+NOT_H100=akita,collie,samoyed,doodle,terrier,shiba
+submit r227b0ed7c605 standard 24:00:00 "$NOT_H100,mastiff"  # about 25 hours on H100 PCIe
+submit rc2f9273c49cc long 48:00:00 "$NOT_H100"
+```
+
 ## Query-distance gates on softmax and exp
 
 How much is the input dependence of the decay slope worth on the exponential kernels? Two runs
@@ -1337,7 +1398,7 @@ done
 ### Query-key gate on exp
 
 Added 2026-11-10. `rd3501a40e020` is the exp baseline matched to the per-order query–key polynomial
-gates (`r03be769d2069` at degree four; degrees eight and twelve in training). It copies the exp
+gates (`r03be769d2069`, `r227b0ed7c605`, `rc2f9273c49cc`: degrees four, eight, twelve). It copies the exp
 query-distance run `r17444ad0f60e` and changes only `attention_forget_gate_conditioning: query_key`:
 each pair's rate reads both of its tokens,
 `lambda_ti = exp(A_log) softplus(w_alpha . x_t + w_k . x_i + b_dt)`, and every score gains
@@ -1535,4 +1596,170 @@ sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 
   --time=01:00:00 --job-name=gate-fixed-scan --open-mode=append \
   --output=experiments/transformer_pp/runs/r1736cf7a019c/training.log \
   experiments/transformer_pp/diagnose_gate_spikes.sbatch r1736cf7a019c "$(git rev-parse HEAD)"
+```
+
+## Per-degree score biases
+
+Added 2026-11-11. Does giving each polynomial order its own signed shift of the score improve the
+degree-eight tanh query polynomial? Two trials at the 12-layer width-640 shape test it against the RoPE
+query control there, `r95a5691d293f`. Neither beat it, so no reference-shape runs follow. Findings and
+diagnostics: [score_biases topic](results/exploratory/score_biases/README.md).
+
+With `s_ti = Q_t K_i^T / sqrt(d_K)` and the control's coefficient generator `c_r(x_t)` (its factorial
+scales unchanged), every order `r = 1..8` reads its own shifted score; order zero is unchanged:
+
+    W(t,i) = c_0(x_t) + sum_(r=1..8) c_r(x_t) (s_ti + beta_r(t,i))^r
+    o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
+
+`x_t` is the block's attention input after its RMSNorm. Each layer, head and order has its own shift:
+
+| Mode | `beta_r(t)` | Added arrays | Added parameters |
+| --- | --- | --- | ---: |
+| static | `b_r` | `b` [12, 10, 8] | 960 |
+| query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [12, 10, 8]; `u` [12, 10, 8, 640] | 616,320 |
+
+`b` starts at 0, `a` at 1 and `u` at 0, so every shift starts at exactly zero: each trial starts as the
+control's function, and the query trial's `u` receives gradients from the first update. Nothing is drawn
+for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to `u` only,
+never to `b` or `a`; every other optimizer group, the coefficient-`W` decay and the output RMSNorm are the
+control's. The shifts are signed, and so are the coefficients: a positive shifted score does not imply a
+positive weight.
+
+| Run | Label | Mode | Parameters | Validation-best PPL (update) | Terminal PPL | vs control |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| `r8dc6e147601c` | query-m8-w-decay-l12-d640-score-bias-query | query | 100,294,376 | 18.216 (7,551) | 18.216 | +3.55% |
+| `rb4e5457ef2a0` | query-m8-w-decay-l12-d640-score-bias-static | static | 99,679,016 | 17.604 (7,551) | 17.604 | +0.07% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | – | 99,678,056 | 17.592 (7,551) | 17.592 | – |
+
+- Recipe: the control's, with `model.attention_score_bias` (`query` or `static`),
+  `train.gradient_event_capture: true` (the other capture fields explicit at their defaults), and its
+  own labels and paths. Everything else is the control's: 12 layers, 10 heads, width 640, 7,551 updates
+  of 128 × 2,048 tokens, warmup 454, seed 42, and its attention settings (`mosaic`; the inert blocked
+  field stays `scan`).
+- Kernels: the H100 Mosaic row-shift score-bias kernels, which form each shifted power directly inside
+  their causal tiles, never by expanding it into powers of `s`
+  ([validation record](../../scaffolds/transformer/validation/README.md#score-bias-mosaic-kernels-on-h100-2026-11-11));
+  the control trained on B300's Mosaic query-polynomial kernels. The query trial trained on an H100 SXM
+  through update 4,000 and an H100 PCIe after; the static trial on an H100 PCIe.
+- Acceptance: [`score_bias_acceptance`](score_bias_acceptance.py) pins the control's recipe by SHA256
+  and its seed-42 initialization by fingerprint and parameter count, lets only the score bias, the
+  capture fields, and execution locations and labels differ from it, requires the biases' exact starts,
+  refuses every GPU type but H100, and requires a pilot on the Mosaic backend. On CPU acceptance runs
+  `tests/test_score_bias.py`, `tests/test_score_bias_lowering.py`, `tests/test_gradient_events.py` and
+  the adapter's tests beside the backbone's checks; on the GPU, at BF16, the seven modules of the
+  kernels' H100 qualification (129 cases, none of which skips on an H100).
+- Gradient-event capture ([scaffold reference](../../scaffolds/transformer/README.md#gradient-event-capture)):
+  update `k > 454` is an event when its pre-clip global gradient norm `g` is finite, at least 20
+  earlier norms are known, and `g > max(1, 5 × median)` of the previous (up to) 100 norms. The state the
+  update started from is saved at `runs/<run>/checkpoints/gradient_events/<k>/<k-1>/default`; at most
+  three are kept (the first event and the two largest later ones), each listed in `record.json` under
+  `diagnostic_checkpoints` with its SHA256 and justification. Every event is logged in
+  `runs/<run>/gradient_events.jsonl`.
+- Diagnostics: at each validation the forward-only JAX reference of the same shifted kernel, on the first
+  held-out sequence and without gradients, reports `coefficients.score_biases` in
+  `attention_diagnostics`: the bias parameters; per layer, head and order, the shifts' and shifted
+  scores' moments, extremes, and negative and near-zero fractions, and each order's term; shifted-score
+  histograms on [-16, 16] per layer and order; and the cancellation across orders per layer and head.
+
+Home cluster: **Kennel**. Both trials are complete; each record holds its launch commit, attempts, and
+the artifact-root locations of its validation-best checkpoint, kept gradient-event states and log. After
+committing the inputs, submit each on one H100, choosing the partition (`standard` or `long`) from the
+live allowance:
+
+```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
+# unless another job holds that GPU.
+for run in r8dc6e147601c rb4e5457ef2a0; do
+  sbatch --parsable --partition=<standard|long> --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_bias_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+```
+
+## Score transforms
+
+Added 2026-11-12. With a very negative score the degree-eight query polynomial gives a large weight (odd
+orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
+key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
+the 12-layer width-640 shape? Softplus cleared the topic's 0.5% bar and continues at the reference shape;
+abs did not. Question, roles, decision rule, findings and diagnostics: the
+[score_transforms topic](results/exploratory/score_transforms/README.md).
+
+With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
+coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads `z_ti = phi(s_ti)`:
+
+    W(t,i) = sum_(r=0..8) c_r(x_t) z_ti^r
+    o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
+
+| Run | Label | `phi(s)` | `b_0` start | Parameters | Validation-best PPL (update) | Terminal PPL | vs control | vs exp |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 | 17.488 (7,551) | 17.488 | −0.59% | −0.36% |
+| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 | 17.941 (7,551) | 17.941 | +1.98% | +2.22% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
+| `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
+
+- Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
+  `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
+  kernel starts at `sum_(r=1..8) z^r/r!`, the Taylor polynomial of `e^z - 1 = e^s`: about `e^s` for negative
+  scores and about `T_8(s) - 1` for large positive ones. `c_0` stays learnable.
+- The transforms add no parameter. The softplus run's initialization is the control's except `b_0 = 0` in
+  every layer and head; the abs run's is the control's exactly.
+- Recipes: the control `r95a5691d293f` (validation-best 17.592) with `model.attention_score_transform`, the
+  softplus run's constant start, gradient-event capture on with the default policy (as in the
+  [score-bias runs](#per-degree-score-biases)), and the blocked backend's causal strips
+  (`model.attention_backend: blocked`, `attention_blocked_implementation: strips`); everything else is the
+  control's: 12 layers, 10 heads, width 640, 7,551 updates of 128 × 2,048 tokens, warmup 454, seed 42.
+- Kernels: only the blocked backend evaluates the transform (`attention/score_transform.py`; softplus as
+  `max(s, 0) + log1p(exp(-abs(s)))` in FP32, derivative `sigmoid(s)`), so the runs train on the causal strips,
+  plain JAX on B200, B300 or H100; the Mosaic and fused kernels refuse a transform. The control trained on
+  B300's Mosaic query-polynomial kernels, which round the weights and score gradients to BF16 for their
+  products, where the strips keep FP32 values whose products run as TF32: each comparison also crosses this
+  implementation difference.
+- Diagnostics: at each validation the forward-only scan of the same kernel on the first held-out sequence
+  reports `coefficients.score_transform` (raw-score and input moments and extrema, the fraction of raw scores
+  below zero, the fraction of causal pairs where the polynomial decreases in `z`, and histograms of `s` and
+  `z`), beside the coefficient statistics.
+- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) pins the control's recipe by SHA256
+  and its seed-42 initialization by fingerprint (`72d75524`) and count. It requires softplus with the zero
+  start or abs with the Taylor start, the strips, and capture on with the default policy; with the transform
+  fields set to the control's, the backend fields to `mosaic` and `scan`, and the capture fields and execution
+  locations and labels removed, the recipe must equal the control's. At initialization the parameters must be
+  the control's count and, with `b_0` restored to the control's 1, its fingerprint, with `b_0` exactly 0 in
+  every layer and head of the softplus run. It refuses every GPU type but B200, B300 and H100 before
+  acceptance starts, and the pilot must resolve the blocked backend. On CPU acceptance runs
+  `tests/test_score_transform.py`, `tests/test_blocked_strips.py`, `tests/test_gradient_events.py` and the
+  adapter's tests beside the backbone's checks; on the GPU, `tests/test_score_transform_strips.py` (each
+  transform at production precision, degree eight, 2,048 tokens, against host FP64) and the strips'
+  score-bias qualification `tests/test_score_bias_strips.py`, nothing else. A skipped test fails acceptance.
+
+Home cluster: **Kennel**. Both runs are complete, each trained on one H100 PCIe; each record holds its launch
+commit, attempts, and the artifact-root locations of its validation-best checkpoint, kept gradient-event
+states and log. One GPU per run; the two jobs have no scheduling dependency.
+
+**GPU qualification and time limit.** The strips' GPU stage, each recipe's 20-update pilot and acceptance's
+fresh-process resume passed on H100 PCIe
+([validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12));
+the pilots project 7.3–7.5 hours for 7,551 updates, with allocator peaks of 22.9 and 23.6 GiB.
+
+The default allocator share (59.4 GiB on an H100) holds either run. The H100 PCIe is the slowest GPU type these
+runs may receive, so each limit is the slowest projection plus two hours, rounded up: 7.5 + 2 gives 10 hours,
+within `standard`'s 24. Acceptance projects again on the granted GPU and refuses the allocation if that
+projection exceeds the limit less two hours: 8 hours, about 3.58 s per update. Submit both from the isolated
+`claude/score-transforms` worktree after committing the frozen execution set; the launcher runs B200 and B300
+allocations in the CUDA 13 environment:
+
+```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): drop mastiff from --exclude only
+# while another job holds that GPU.
+for run in r1d342ca6e58c r17a1290cb4ac; do
+  sbatch --parsable --partition=standard --time=10:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=mastiff,collie,samoyed,doodle,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
 ```

@@ -3,7 +3,10 @@
 The trainer retains the latest and best checkpoints while a run can resume.
 After completion, :func:`finalize_run` verifies the terminal record, prunes every
 other checkpoint step, and records the selection in `retention.json` and the
-run metadata. It is idempotent, so a requeue after pruning is harmless.
+run metadata. A run with gradient-event capture also keeps its kept pre-update
+states (`training/gradient_events.py`), recorded as diagnostic checkpoints, and
+nothing else of its capture root. It is idempotent, so a requeue after pruning
+is harmless.
 """
 from __future__ import annotations
 
@@ -16,6 +19,7 @@ import shutil
 from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.training.checkpointing import checkpoint_directory
 from scaffolds.transformer.training.diagnostics import attention_identity
+from scaffolds.transformer.training.gradient_events import prune_unrecorded_captures, recorded_captures
 from scaffolds.transformer.training.metrics import write_json_atomic
 from scaffolds.records import capture_artifacts, update_record
 
@@ -58,6 +62,9 @@ def finalize_run(config) -> dict:
         "validation_nll": best["validation_nll"], "terminal_step": completion["final_step"],
         "terminal_metrics_preserved": True,
     }
+    captures = recorded_captures(config)
+    if captures is not None:
+        record["retained_gradient_event_updates"] = [capture["update"] for capture in captures]
     # Record the intended retention before pruning, so a requeue after any deletion
     # recognizes that terminal metrics are complete even when the best step is earlier.
     write_json_atomic(workdir / "retention.json", record)
@@ -65,12 +72,15 @@ def finalize_run(config) -> dict:
         if path.is_dir() and ((path.name.isdigit() and int(path.name) != best["step"])
                               or path.name.endswith(".orbax-checkpoint-tmp")):
             shutil.rmtree(path)
+    if captures is not None:
+        prune_unrecorded_captures(config)
     metadata_path = workdir / "metadata.json"
     metadata = json.loads(metadata_path.read_text())
     metadata.update(checkpoint_retention=record,
                     retained_terminal_checkpoint_step=best["step"] if best["step"] == completion["final_step"] else None)
     write_json_atomic(metadata_path, metadata)
-    artifacts = capture_artifacts(workdir, checkpoint_directory=checkpoints / str(best["step"]))
+    artifacts = capture_artifacts(workdir, checkpoint_directory=checkpoints / str(best["step"]),
+                                  diagnostic_checkpoints=captures)
     artifacts["selected_checkpoint"].update(step=best["step"], validation_nll=best["validation_nll"])
     update_record(workdir, {
         **artifacts,

@@ -36,12 +36,17 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 GPU types currently include A6000, A100, H100, B200, and B300; use `sinfo` to inspect
 nodes before choosing hardware. On 2026-09-22 they were: `akita` 8×B300;
 `dogo` and `mastiff` 8×H100 each; `collie` 2×A100 and `samoyed` 10×A100;
-`doodle` 9×A6000 and `terrier` 10×A6000. `shiba` (8×B200, in `standard`, `long`,
-`sweep`, and `debug`) appeared by 2026-10-27. Nodes define no Slurm features, so
-accept either B300 or H100 by requesting `--gres=gpu:N` and excluding the
-A100/A6000 nodes and `shiba`; A6000 training is markedly slower in this project's
-tests, and the transformer launcher accepts only B300 and H100, so a job granted
-a B200 exits within seconds. General priority is `debug > standard > long > sweep`.
+`doodle` 9×A6000 and `terrier` 10×A6000. `shiba` (8×B200 with 180 GB, compute capability
+10.0, in `standard`, `long`, `sweep`, and `debug`) appeared by 2026-10-27. Nodes define no
+Slurm features, so accept several GPU types by requesting `--gres=gpu:N` and excluding the
+other types' nodes; A6000 training is markedly slower in this project's tests. The
+transformer launcher's `GPU_TYPES` argument defaults to `B300,H100` and its default
+`--exclude` lists `shiba`, so a job granted a B200 exits within seconds unless its submission
+lists `B200` in `GPU_TYPES` and drops `shiba` from `--exclude`. B200 runs in the CUDA 13
+environment, like B300 (below); on B200 only the blocked backend's causal strips with per-degree score
+biases are qualified
+([validation](scaffolds/transformer/validation/README.md#b200-and-the-score-bias-causal-strips-2026-11-11)).
+General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
 60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
 node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps
@@ -53,7 +58,9 @@ is reset. `mastiff`'s H100 at bus `41:00.0` did this on 2026-11-05; the node's r
 2026-11-06 restored it (no uncorrected ECC errors or pending row remaps). On 2026-11-10
 two jobs failed within seconds on a `mastiff` H100 with `CUDA_ERROR_ECC_UNCORRECTABLE`
 when JAX opened the device (UUID `GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5`); Slurm keeps
-granting the idle GPU, so a job that lands on it fails at start-up until the admins reset it.
+granting the idle GPU, so a job that lands on it fails at start-up until the admins reset it. On
+2026-11-11 a one-GPU probe on `mastiff` was granted it as index 1 (bus `41:00.0`), the lowest free
+index, so single-GPU jobs there land on it first; exclude `mastiff` for one-GPU jobs until it is reset.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
@@ -121,14 +128,15 @@ version from its bundled assembler (CUDA 13.1 for Blackwell, PTX 9.1), which CUD
 
 cuBLAS 12.8–13.1 has an NVIDIA bug on Blackwell: some kernels free tensor memory twice,
 which can silently corrupt data when a cuBLAS kernel runs concurrently with another
-kernel. B300 jobs therefore use a second environment from the same lock: `.venv-cuda13`
-(extra `cuda13`: JAX's CUDA 13 plugin, CUDA 13.2, cuBLAS 13.2.2.2, and the same cuDNN
-9.22.0.52 as the CUDA 12 environment). `kennel_runtime.sh` selects it on B300 and the
-CUDA 12 `.venv` on every other GPU, and runs record the choice as
-`TRANSFORMER_CUDA_ENVIRONMENT`; a run requeued between B300 and H100 changes environment
-with its hardware. CUDA 13 needs driver >= 580: `akita` had 580.126.20 on 2026-10-15,
-while `dogo` had 560 (CUDA 12.6) on 2026-10-04, so H100 stays on CUDA 12, where the bug
-does not apply. Sync both environments in every worktree that may run on B300:
+kernel. Blackwell jobs (B200 and B300) therefore use a second environment from the same
+lock: `.venv-cuda13` (extra `cuda13`: JAX's CUDA 13 plugin, CUDA 13.2, cuBLAS 13.2.2.2, and
+the same cuDNN 9.22.0.52 as the CUDA 12 environment). `kennel_runtime.sh` selects it on B200
+and B300 and the CUDA 12 `.venv` on every other GPU, and runs record the choice as
+`TRANSFORMER_CUDA_ENVIRONMENT`; a run requeued between Blackwell and H100 changes environment
+with its hardware. CUDA 13 needs driver >= 580: `akita` had 580.126.20 on 2026-10-15 and
+`shiba` 580.196.07 on 2026-11-11, while `dogo` had 560 (CUDA 12.6) on 2026-10-04, so H100
+stays on CUDA 12, where the bug does not apply. Sync both environments in every worktree that
+may run on Blackwell:
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
@@ -138,7 +146,7 @@ UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
 
 On CUDA 12, B300 runs stopped on infinite gradient norms at finite losses, also with
 the gradient all-reduce on the compute stream (`--xla_gpu_disable_async_collectives=ALLCOLLECTIVES`,
-still set on B300 at no measurable cost) and on a single GPU; a checkpoint that failed
+still set on B300 at no measurable cost, and on B200) and on a single GPU; a checkpoint that failed
 twice on CUDA 12 replayed cleanly twice on CUDA 13. On B300 the cuDNN softmax rejects
 width 256 with `d_qk != d_v`, and FLA's Gated DeltaNet kernel crashes at width 128 in
 float32 in either environment. Evidence is in

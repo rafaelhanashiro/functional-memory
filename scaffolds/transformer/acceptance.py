@@ -49,6 +49,11 @@ TEST_STAGES = (
     ("cpu-distributed-tests", ("-m", "not gpu", "-k", "distributed"), True),
     ("gpu-tests", ("-m", "gpu"), False),
 )
+# JAX platforms of the GPU test stage's pytest process: CUDA, the default because it is listed first, and the
+# host CPU, on which kernel tests compute their FP64 references (jax.devices("cpu") exists only when "cpu" is
+# listed). On a GPU node a listed platform that fails to start raises, so the tests never fall back to the CPU.
+# Workers, like production training, list CUDA alone.
+GPU_TEST_PLATFORMS = "cuda,cpu"
 NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT")
@@ -101,6 +106,13 @@ POLYNOMIAL_GDN_INTEGRATION_TESTS = "scaffolds/transformer/tests/test_polynomial_
 POLYNOMIAL_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn_kernel.py"
 CUBIC_GDN_TESTS = "scaffolds/transformer/tests/test_cubic_gdn.py"
 CUBIC_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_cubic_gdn_kernel.py"
+SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_score_bias.py"
+SCORE_BIAS_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_bias_lowering.py"
+MOSAIC_SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_mosaic_score_bias.py"
+SCORE_BIAS_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_bias_strips.py"
+SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_score_transform.py"
+SCORE_TRANSFORM_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_transform_strips.py"
+GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
 @dataclass(frozen=True)
@@ -139,7 +151,45 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
     if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
         paths.append(COEFFICIENT_RELEASE_TESTS)
+    if cpu and config.get("train", {}).get("gradient_event_capture", False):
+        # The capture rule, exact pre-update states with training unchanged, the retention cap, and
+        # requeue restoration; its data-parallel case runs in the two-device stage.
+        paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
+    if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked":
+        implementation = model.get("attention_blocked_implementation", "scan")
+        if implementation != "strips":
+            # The scan is the score biases' reference; no GPU test qualifies it for training them, so neither
+            # stage may pass a recipe that would train on it.
+            raise ValueError("Per-degree score biases on the blocked backend train on its causal strips, the only "
+                             "blocked computation with a GPU qualification for them; this recipe sets "
+                             f"attention_blocked_implementation: {implementation}")
+        if not cpu:
+            # The GPU stage qualifies the strips, plain JAX on any GPU: every score-bias mode on both backbones
+            # at production precision against host FP64. The backbone's other GPU cases qualify kernels these
+            # runs never train on (the fused Triton and Mosaic kernels, and the scan), and some refuse or skip
+            # on GPUs those kernels are not qualified on, which would fail acceptance.
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
+    transform = model.get("attention_score_transform", "identity")
+    if transform != "identity":
+        implementation = model.get("attention_blocked_implementation", "scan")
+        if resolved_backend != "blocked" or implementation != "strips":
+            # Only the blocked backend evaluates the transform, and of its implementations only the strips have a
+            # GPU qualification for training it; the scan is its reference.
+            raise ValueError(f"A score transform trains on the blocked backend's causal strips; this recipe resolves "
+                             f"{resolved_backend!r} with attention_blocked_implementation: {implementation}")
+        if not cpu:
+            # The strips are plain JAX on any GPU: the transform's production-precision qualification and the
+            # strips' existing one for the tanh query polynomial (with score biases). The backbone's other GPU
+            # cases qualify kernels these runs never train on and can skip or refuse on a GPU those kernels are
+            # not qualified on, which would fail acceptance.
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, SCORE_TRANSFORM_STRIPS_TESTS)))
+        # The FP64 reference through the scan and the strips with every gradient, the start, refusals and
+        # diagnostics.
+        paths.append(SCORE_TRANSFORM_TESTS)
+    if cpu and model.get("attention_coefficient_constant_initial") is not None:
+        # The constant-coefficient start's parameters and model start, on any backend.
+        paths.append(SCORE_TRANSFORM_TESTS)
     if model.get("attention_forget_gate_per_order", False):
         cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
         if cpu or not cumulative:
@@ -153,6 +203,17 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                 # H100's cumulative kernels: tile mathematics, lowering, dispatch and recipe rules on CPU;
                 # the kernels against FP64 and the strips on the GPU.
                 paths.append(PER_ORDER_CUMULATIVE_MOSAIC_TESTS)
+    if model.get("attention_score_bias", "none") != "none":
+        # Per-degree score biases. CPU: the FP64 reference through the scan and the strips with every
+        # gradient, model operands, starts, refusals and diagnostics; on the blocked backend that is all
+        # (its GPU stage returned above). On the H100 Mosaic score-bias kernels, also those kernels' exact
+        # shared memory and tile mathematics lowered on the host, and on the GPU the kernels against dense
+        # FP64 and attention_core's dispatch to them (the GPU case of test_score_bias.py).
+        if resolved_backend == "blocked":
+            paths.append(SCORE_BIAS_TESTS)
+        else:
+            paths.extend((SCORE_BIAS_TESTS, SCORE_BIAS_LOWERING_TESTS) if cpu else
+                         (MOSAIC_SCORE_BIAS_TESTS, SCORE_BIAS_TESTS))
     if cpu and model.get("qk_norm_token_scale", "none") != "none":
         paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
                       "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
@@ -406,7 +467,15 @@ def mosaic_test_options(config: dict, resolved_backend: str) -> tuple[str, ...]:
         return ()
     from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 
-    family = "taylor" if model.get("attention_normalization", True) else "query"
+    if model.get("attention_score_bias", "none") != "none":
+        # The score-bias kernel family that trains: no gate or the per-order endpoint gate, with a row
+        # shift (static and query biases) or a pair shift (query-key biases).
+        from scaffolds.transformer.attention.backends.mosaic.score_bias import SHIFT_OF_MODE, score_bias_family
+
+        family = score_bias_family("endpoint" if model.get("attention_forget_gate", False) else "none",
+                                   SHIFT_OF_MODE[model["attention_score_bias"]])
+    else:
+        family = "taylor" if model.get("attention_normalization", True) else "query"
     return ("--mosaic-precision", default_precision(family, model["attention_degree"]))
 
 
@@ -737,6 +806,8 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
                                            attention_coefficient_gate="none",
+                                           attention_score_bias="none", attention_score_transform="identity",
+                                           attention_coefficient_constant_initial=None,
                                            attention_coefficient_kernel_weight_decay=False,
                                            attention_forget_gate=False,
                                            attention_forget_gate_per_order=False,
@@ -795,7 +866,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_gate="none",
+        attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
+        attention_coefficient_constant_initial=None,
         attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
         attention_forget_gate_per_order=False,
         attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
@@ -1003,7 +1075,7 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
                 record(path, experiment, tests_passed=require_passing_tests(junit), reused_from=origin)
                 print(f"acceptance_reused={stage} from={origin['acceptance_directory']}", flush=True)
                 continue
-            env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else "cuda")
+            env = dict(os.environ, JAX_PLATFORMS="cpu" if cpu else GPU_TEST_PLATFORMS)
             if stage == "cpu-distributed-tests":
                 env["XLA_FLAGS"] = f"{env.get('XLA_FLAGS', '')} --xla_force_host_platform_device_count=2".strip()
             if not cpu:

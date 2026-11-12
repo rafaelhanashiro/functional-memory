@@ -36,6 +36,14 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         raise ValueError(f"Unknown attention backend: {request}")
     if dtype not in ("float32", "bfloat16"):
         raise ValueError("Attention requires float32 or bfloat16 computation")
+    score_bias = getattr(model_config, "attention_score_bias", "none") != "none"
+    if score_bias and request not in ("mosaic", "blocked"):
+        # Nothing may resolve them to a kernel that ignores the biases.
+        raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
+                         f"{request!r} never selects them")
+    if getattr(model_config, "attention_score_transform", "identity") != "identity" and request != "blocked":
+        # Nor may a transformed polynomial input reach a kernel that evaluates the untransformed polynomial.
+        raise ValueError(f"A score transform runs on an explicit blocked backend alone; {request!r} never selects it")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if getattr(model_config, "positional_encoding", "rope") == "path":
@@ -103,6 +111,8 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         problems = [message for failed, message in (
             (dtype != "bfloat16", "Mosaic attention requires train.dtype=bfloat16"),
             (capability not in (9, 10), f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x"),
+            (score_bias and capability != 9,
+             f"Mosaic score-bias attention is qualified on H100 (sm90) only, got sm{capability}x"),
             (length % multiple, f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}"),
         ) if failed]
         if not problems:
