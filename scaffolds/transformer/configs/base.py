@@ -180,8 +180,9 @@ class ModelConfig:
     # coefficients reads z_ti = phi(s_ti) in place of the score s_ti, W(t,i) = sum_r c_r(x_t) z_ti^r.
     # "identity" (z = s) is every historical recipe; "softplus" z = log(1 + exp(s)), so a very negative
     # score gives z near 0 and a weight near c_0; "abs" z = |s|. No parameter is added. Runs on the blocked
-    # backend alone (training on its causal strips), without a forget gate or score biases; every other
-    # backend rejects it, and auto never resolves it.
+    # backend (training on its causal strips) or on the Mosaic transformed query-polynomial kernels
+    # (mosaic_score_transform_supported), without a forget gate or score biases; every other backend
+    # rejects it, and auto never resolves it.
     attention_score_transform: Literal["identity", "softplus", "abs"] = "identity"
     # The start of the order-0 offset b_0 of diagonal tanh query coefficients, c_0(x_t) = b_0 + a_0
     # tanh(x_t w_0), in place of Taylor's 1 (null). With attention_coefficient_amplitude_initial 0, c_0
@@ -276,7 +277,7 @@ class ModelConfig:
         if getattr(self, "attention_score_bias", "none") != "none":
             return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
         if getattr(self, "attention_score_transform", "identity") != "identity":
-            return False  # No kernel evaluates a transformed polynomial input; the blocked backend does.
+            return False  # Transforms run on their own kernels (mosaic_score_transform_supported).
         taylor = (self.attention_normalization and integer_degree and degree >= 1
                   and self.attention_coefficients == "fixed" and self.quadratic_mode == "fixed"
                   and self.attention_fixed_coefficients is None and self.attention_fixed_square_factors is None
@@ -314,7 +315,7 @@ class ModelConfig:
         if getattr(self, "attention_score_bias", "none") != "none":
             return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
         if getattr(self, "attention_score_transform", "identity") != "identity":
-            return False  # No kernel evaluates a transformed polynomial input.
+            return False  # Transforms take no forget gate.
         input_free = self.attention_forget_gate_conditioning == "none"
         coefficients = (self.attention_coefficient_conditioning == "static" and self.attention_coefficients == "learned"
                         and self.attention_coefficient_parameterization == "direct" if input_free else
@@ -366,6 +367,38 @@ class ModelConfig:
             elif not score_bias_supported(self.attention_degree, self.qk_head_dim, rows, gate=gate, shift=shift):
                 problem = (f"H100's {implementation_name(gate, shift)} kernels do not hold degree "
                            f"{self.attention_degree} at Q/K width {self.qk_head_dim} in shared memory")
+        return problem
+
+    def mosaic_score_transform_supported(self) -> bool:
+        """Whether the Mosaic transformed query-polynomial kernels implement this recipe: the tanh query
+        polynomial evaluated at a transformed score (``mosaic_score_transform_problem``). Only an explicit
+        ``mosaic`` backend selects them; ``auto`` never does, and transformed recipes reject it."""
+        return self.mosaic_score_transform_problem() is None
+
+    def mosaic_score_transform_problem(self) -> str | None:
+        """Why the Mosaic transformed query-polynomial kernels cannot run this recipe, or None. They are the
+        query polynomial's kernels with phi(s) evaluated in their tiles, on H100 and B300 alike, so they take
+        the recipes those kernels take (``mosaic_supported``'s query case: RoPE, Q/K widths 8-128, value width
+        64, the degrees ``query_degree_supported`` fits at the recipe's length) with diagonal tanh query
+        coefficients and no forget gate or score biases. Backend resolution checks the GPU and length."""
+        from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+        transform = getattr(self, "attention_score_transform", "identity")
+        if transform == "identity":
+            return "the recipe has no score transform"
+        problem = _query_coefficient_problem(self)
+        if problem is None and self.positional_encoding != "rope":
+            problem = "the Mosaic query-polynomial kernels run RoPE recipes"
+        if problem is None and (self.attention_forget_gate or self.attention_score_bias != "none"):
+            problem = "it takes no forget gate or score biases"
+        if problem is None and self.qk_head_dim not in WIDTHS:
+            problem = f"Q/K width {self.qk_head_dim} is not one of {WIDTHS}"
+        if problem is None and self.value_head_dim != VALUE_WIDTH:
+            problem = f"value width {self.value_head_dim} is not {VALUE_WIDTH}"
+        if problem is None and not query_degree_supported(self.attention_degree, self.qk_head_dim, self.max_seq_len,
+                                                          transform=transform):
+            problem = (f"the kernels do not hold degree {self.attention_degree} at Q/K width {self.qk_head_dim} "
+                       f"and {self.max_seq_len} tokens in shared memory")
         return problem
 
     def path_fused_supported(self) -> bool:
@@ -989,10 +1022,12 @@ def _query_coefficient_problem(model) -> str | None:
 
 
 def _validate_score_transform(model: ModelConfig) -> None:
-    """A score transform (attention/score_transform.py) runs on the blocked backend alone, for diagonal tanh
-    query coefficients with RoPE or no positional encoding, without a forget gate or score biases; allocation
-    and acceptance train it on the causal strips. A constant-coefficient start sets b_0's initial value of
-    the same coefficients on any backend. The identity transform and a null start change nothing."""
+    """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
+    coefficients with RoPE or no positional encoding, without a forget gate or score biases (allocation and
+    acceptance train it on the causal strips there), or on the Mosaic transformed query-polynomial kernels for
+    the recipes they take (``mosaic_score_transform_problem``). A constant-coefficient start sets b_0's
+    initial value of the same coefficients on any backend. The identity transform and a null start change
+    nothing."""
     from scaffolds.transformer.attention.score_transform import TRANSFORMS
 
     transform, start = model.attention_score_transform, model.attention_coefficient_constant_initial
@@ -1017,9 +1052,13 @@ def _validate_score_transform(model: ModelConfig) -> None:
         problem = "it does not combine with per-degree score biases"
     if problem is not None:
         raise ValueError(f"The {transform} score transform does not fit this recipe: {problem}")
-    if model.attention_backend != "blocked":
-        raise ValueError(f"A score transform runs on attention_backend blocked alone (its scan and causal strips); "
-                         f"{model.attention_backend!r} never evaluates it")
+    if model.attention_backend not in ("blocked", "mosaic"):
+        raise ValueError(f"A score transform runs on attention_backend blocked (its scan and causal strips) or mosaic "
+                         f"(the transformed query-polynomial kernels); {model.attention_backend!r} never evaluates it")
+    if model.attention_backend == "mosaic":
+        problem = model.mosaic_score_transform_problem()
+        if problem is not None:
+            raise ValueError(f"Backend 'mosaic' cannot run the {transform} score transform: {problem}")
 
 
 @dataclass

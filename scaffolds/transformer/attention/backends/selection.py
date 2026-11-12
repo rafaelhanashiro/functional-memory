@@ -41,9 +41,11 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         # Nothing may resolve them to a kernel that ignores the biases.
         raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
                          f"{request!r} never selects them")
-    if getattr(model_config, "attention_score_transform", "identity") != "identity" and request != "blocked":
+    if getattr(model_config, "attention_score_transform", "identity") != "identity" and request not in (
+            "blocked", "mosaic"):
         # Nor may a transformed polynomial input reach a kernel that evaluates the untransformed polynomial.
-        raise ValueError(f"A score transform runs on an explicit blocked backend alone; {request!r} never selects it")
+        raise ValueError(f"A score transform runs on an explicit blocked or mosaic backend; {request!r} never "
+                         "selects it")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if getattr(model_config, "positional_encoding", "rope") == "path":

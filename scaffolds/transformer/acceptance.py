@@ -111,6 +111,8 @@ MOSAIC_SCORE_BIAS_TESTS = "scaffolds/transformer/tests/test_mosaic_score_bias.py
 SCORE_BIAS_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_bias_strips.py"
 SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_score_transform.py"
 SCORE_TRANSFORM_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_transform_strips.py"
+SCORE_TRANSFORM_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_transform_lowering.py"
+MOSAIC_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_mosaic_score_transform.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -170,13 +172,20 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # on GPUs those kernels are not qualified on, which would fail acceptance.
             return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
     transform = model.get("attention_score_transform", "identity")
-    if transform != "identity":
+    if transform != "identity" and resolved_backend == "mosaic":
+        # The Mosaic transformed query-polynomial kernels. CPU: the FP64 references through the scan and the
+        # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
+        # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the
+        # strips at production precision, beside the query kernels' own cases, which the backbone adds.
+        paths.extend((SCORE_TRANSFORM_TESTS, SCORE_TRANSFORM_LOWERING_TESTS) if cpu else (MOSAIC_SCORE_TRANSFORM_TESTS,))
+    elif transform != "identity":
         implementation = model.get("attention_blocked_implementation", "scan")
         if resolved_backend != "blocked" or implementation != "strips":
-            # Only the blocked backend evaluates the transform, and of its implementations only the strips have a
-            # GPU qualification for training it; the scan is its reference.
-            raise ValueError(f"A score transform trains on the blocked backend's causal strips; this recipe resolves "
-                             f"{resolved_backend!r} with attention_blocked_implementation: {implementation}")
+            # The blocked backend and the Mosaic kernels evaluate the transform, and of the blocked
+            # implementations only the strips have a GPU qualification for training it; the scan is its reference.
+            raise ValueError(f"A score transform trains on the Mosaic transformed query-polynomial kernels or the "
+                             f"blocked backend's causal strips; this recipe resolves {resolved_backend!r} with "
+                             f"attention_blocked_implementation: {implementation}")
         if not cpu:
             # The strips are plain JAX on any GPU: the transform's production-precision qualification and the
             # strips' existing one for the tanh query polynomial (with score biases). The backbone's other GPU

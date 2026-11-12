@@ -391,11 +391,13 @@ class MultiHeadAttention(nnx.Module):
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
                 or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
-                or attention_degree < 1 or positional_encoding not in ("rope", "none") or backend != "blocked"
+                or attention_degree < 1 or positional_encoding not in ("rope", "none")
+                or backend not in ("blocked", "mosaic") or backend == "mosaic" and positional_encoding != "rope"
                 or attention_forget_gate or attention_score_bias != "none"):
             raise ValueError("A score transform requires diagonal tanh query coefficients of unnormalized polynomial "
                              "attention with RoPE or no positional encoding, without selected orders, coefficient "
-                             "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend")
+                             "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend, or "
+                             "with RoPE on the mosaic backend")
         self.attention_score_transform = attention_score_transform
         self.hidden_size = hidden_size
         self.num_heads = num_heads

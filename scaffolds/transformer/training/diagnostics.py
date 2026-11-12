@@ -521,8 +521,10 @@ def attention_identity(config) -> dict:
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
         score_bias = getattr(config.model, "attention_score_bias", "none")
+        transform = getattr(config.model, "attention_score_transform", "identity")
         identity.update({
-            # Score biases run their own kernels, which name themselves.
+            # Score biases run their own kernels, which name themselves; a score transform runs the query
+            # polynomial's kernels with phi(s) in their tiles.
             "attention_implementation": (implementation_name("endpoint" if endpoint and per_order else "none",
                                                              SHIFT_OF_MODE[score_bias])
                                          if score_bias != "none"
@@ -532,6 +534,8 @@ def attention_identity(config) -> dict:
                                          else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
                                          else "pallas_mosaic_gpu_query_polynomial_query_decay" if gate
                                          else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
+                                         else f"pallas_mosaic_gpu_query_polynomial_{transform}_scores"
+                                         if transform != "identity"
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
                                          if not normalized else "pallas_mosaic_gpu"),

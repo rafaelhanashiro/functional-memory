@@ -751,19 +751,49 @@ def test_score_transform_recipes_qualify_the_strips_and_no_kernel(transform, sta
 
 @pytest.mark.parametrize("cpu", (True, False), ids=("cpu", "gpu"))
 @pytest.mark.parametrize("backend,implementation", (
-    ("blocked", "scan"), ("blocked", None), ("mosaic", "strips"), ("fused", "strips")))
-def test_score_transform_recipes_off_the_strips_are_refused(cpu, backend, implementation):
+    ("blocked", "scan"), ("blocked", None), ("fused", "strips"), ("cudnn", None)))
+def test_score_transform_recipes_off_the_strips_and_kernels_are_refused(cpu, backend, implementation):
     """The scan, the transform's reference and the field's default, has no GPU qualification for training it,
-    and no other backend evaluates it: both stages refuse instead of qualifying computations the run would not
-    train on."""
+    and no backend but the blocked one and Mosaic evaluates it: both stages refuse instead of qualifying
+    computations the run would not train on."""
     spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
     model = _score_transform_model("softplus", attention_backend=backend)
     if implementation is None:
         del model["attention_blocked_implementation"]
     else:
         model["attention_blocked_implementation"] = implementation
-    with pytest.raises(ValueError, match="score transform trains on the blocked backend's causal strips"):
+    with pytest.raises(ValueError, match="score transform trains on the Mosaic transformed query-polynomial kernels "
+                                         "or the blocked backend's causal strips"):
         preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+
+
+@pytest.mark.parametrize("start", (None, 0.0))
+@pytest.mark.parametrize("transform", ("softplus", "abs"))
+def test_score_transform_recipes_on_mosaic_qualify_the_transformed_kernels(transform, start):
+    """CPU: the transform's FP64 references, start, refusals and diagnostics, and the transformed kernels' tile
+    mathematics, shared memory and lowering, beside the backbone's CPU checks; never the strips' checks. GPU: the
+    transformed kernels against FP64 and the strips, beside the query kernels' own cases (the backbone's
+    selection, not part of this spec), at the kernels' precision; an adapter's own GPU tests are kept."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
+    model = _score_transform_model(transform, attention_backend="mosaic", attention_blocked_implementation="scan",
+                                   attention_coefficient_constant_initial=start)
+    config = {"model": model, "train": {"gradient_event_capture": True}}
+    cpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    gpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False)
+    assert {preflight.SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_LOWERING_TESTS, preflight.GRADIENT_EVENT_TESTS,
+            preflight.QUERY_TANH_POLYNOMIAL_TESTS} <= set(cpu)
+    assert not {preflight.MOSAIC_SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS,
+                preflight.BLOCKED_STRIPS_TESTS, preflight.SCORE_BIAS_STRIPS_TESTS} & set(cpu)
+    assert gpu[0] == "own_gpu_test.py" and preflight.MOSAIC_SCORE_TRANSFORM_TESTS in gpu
+    assert not {preflight.SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_LOWERING_TESTS,
+                preflight.SCORE_TRANSFORM_STRIPS_TESTS, preflight.SCORE_BIAS_STRIPS_TESTS} & set(gpu)
+    selected = preflight.attention_test_paths(config, "mosaic", False)
+    assert {"scaffolds/transformer/tests/test_mosaic_query.py",
+            "scaffolds/transformer/tests/test_mosaic_repeatability.py"} <= set(selected)
+    assert preflight.mosaic_test_options(config, "mosaic") == ("--mosaic-precision", "bf16")
+    for path in (preflight.MOSAIC_SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_LOWERING_TESTS):
+        module = (preflight.ROOT / path).read_text()
+        assert ("pytestmark = pytest.mark.gpu" in module) is (path == preflight.MOSAIC_SCORE_TRANSFORM_TESTS)
 
 
 @pytest.mark.parametrize("backend", ("blocked", "mosaic"))

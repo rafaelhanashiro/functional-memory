@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra3b54e2489f8/config.yaml",
+    "sha256": "adcdb8b7e740ccba18fb7f2bb58fa61fbfdbd14b8012af7d340084b9230387e8"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-dk64-w-decay-softplus-input",
+  "name": "query-m8-dk64-w-decay-softplus-input",
+  "record_schema_version": 1,
+  "run_id": "ra3b54e2489f8",
+  "status": "planned"
+}

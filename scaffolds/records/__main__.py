@@ -138,11 +138,11 @@ def main() -> None:
                 )
             if (model["attention_score_transform"] != "identity" and model["attention_backend"] == "blocked"
                     and model["attention_blocked_implementation"] != "strips"):
-                # Validation refuses every other backend. Also with --allow-scan-blocked-attention: acceptance
-                # refuses the scan for a transform.
+                # Validation refuses every backend but blocked and mosaic. Also with --allow-scan-blocked-attention:
+                # acceptance refuses the scan for a transform.
                 parser.error(
-                    "a score transform trains on the blocked backend's causal strips, the only computation with a "
-                    "GPU qualification for it; this recipe sets "
+                    "a score transform on the blocked backend trains on its causal strips, the only blocked "
+                    "computation with a GPU qualification for it; this recipe sets "
                     f"model.attention_blocked_implementation: {model['attention_blocked_implementation']}."
                 )
             if (model["attention_backend"] == "fused" and config.model.mosaic_supported()

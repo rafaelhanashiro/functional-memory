@@ -499,8 +499,10 @@ def test_accepted_recipes_and_rejected_training_options():
                      attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
                      rngs=nnx.Rngs(0))
     MultiHeadAttention(16, 2, 2, 8, 8, **arguments, attention_score_transform="softplus")
-    for changes in ({"backend": "mosaic"}, {"attention_coefficient_activation": "sigmoid"},
-                    {"attention_forget_gate": True}, {"positional_encoding": "path"}):
+    MultiHeadAttention(16, 2, 2, 8, 8, **{**arguments, "backend": "mosaic"}, attention_score_transform="softplus")
+    for changes in ({"backend": "fused"}, {"backend": "mosaic", "positional_encoding": "none"},
+                    {"attention_coefficient_activation": "sigmoid"}, {"attention_forget_gate": True},
+                    {"positional_encoding": "path"}):
         with pytest.raises(ValueError, match="score transform"):
             MultiHeadAttention(16, 2, 2, 8, 8, **{**arguments, **changes}, attention_score_transform="softplus")
     with pytest.raises(ValueError, match="Unknown attention score transform"):
@@ -514,14 +516,48 @@ def test_accepted_recipes_and_rejected_training_options():
 def test_backend_resolution_never_falls_back():
     model = _config("softplus").model
     assert resolve_attention_backend(model, platform="gpu") == resolve_attention_backend(model, platform="cpu") == "blocked"
-    for request in ("auto", "fused", "mosaic", "xla", "cudnn", "manual"):
+    for request in ("auto", "fused", "xla", "cudnn", "manual"):
         with pytest.raises(ValueError, match="score transform"):
             resolve_attention_backend(SimpleNamespace(attention_backend=request, attention_score_transform="abs"),
                                       platform="gpu")
-    # A transformed recipe is no kernel's: Mosaic support is withdrawn even at a shape the kernels hold.
+    # Only an explicit mosaic backend selects the transformed kernels: auto, which follows mosaic_supported, never
+    # does, even at a shape the kernels hold.
     shaped = replace(model, qk_head_dim=64, value_head_dim=64, max_seq_len=128)
     assert not shaped.mosaic_supported() and not shaped.mosaic_decay_supported()
+    assert shaped.mosaic_score_transform_supported() and not model.mosaic_score_transform_supported()
     assert replace(shaped, attention_score_transform="identity").mosaic_supported()
+    assert not replace(shaped, attention_score_transform="identity").mosaic_score_transform_supported()
+    mosaic = replace(shaped, attention_backend="mosaic")
+    assert resolve_attention_backend(mosaic, dtype="bfloat16", platform="gpu") == "mosaic"
+    for dtype, platform, message in (("bfloat16", "cpu", "requires a GPU"), ("float32", "gpu", "bfloat16")):
+        with pytest.raises(ValueError, match=message):
+            resolve_attention_backend(mosaic, dtype=dtype, platform=platform)
+    with pytest.raises(ValueError, match="divisible by 128"):
+        resolve_attention_backend(mosaic, dtype="bfloat16", platform="gpu", sequence_length=200)
+
+
+@pytest.mark.parametrize("changes,problem", (
+    ({}, None),
+    ({"value_head_dim": 32}, "value width 32"),
+    ({"qk_head_dim": 48}, "Q/K width 48"),
+    ({"positional_encoding": "none"}, "RoPE"),
+    ({"attention_degree": 13}, "degree 13"),
+    ({"attention_degree": 12, "max_seq_len": 4096}, "degree 12"),
+))
+def test_mosaic_recipes_run_where_the_query_kernels_run(changes, problem):
+    """On attention_backend mosaic a transform runs where the query polynomial's kernels run: RoPE, their widths,
+    and the degrees they hold at the recipe's length; everything else is refused with the reason."""
+    settings = {**dict(attention_backend="mosaic", qk_head_dim=64, value_head_dim=64, max_seq_len=128), **changes}
+    for transform in TRANSFORMS:
+        if problem is None:
+            config = _config(transform, 0. if transform == "softplus" else None, **settings)
+            config.train.dtype = "bfloat16"
+            validate_config(config)
+            assert config.model.mosaic_score_transform_problem() is None
+            assert replace(config.model, attention_score_transform="identity").mosaic_supported()
+            continue
+        with pytest.raises(ValueError, match=f"Backend 'mosaic' cannot run the {transform} score transform: .*{problem}"):
+            _config(transform, **settings)
 
 
 def test_every_other_kernel_and_backend_refuses_a_transform():
@@ -546,7 +582,7 @@ def test_every_other_kernel_and_backend_refuses_a_transform():
     for arguments in refusals:
         with pytest.raises(ValueError, match="score transform"):
             attention_core(q, k, v, backend="blocked", **arguments, **transform)
-    for backend in ("fused", "mosaic", "manual"):
+    for backend in ("fused", "manual"):  # the Mosaic dispatch is in test_score_transform_lowering.py
         with pytest.raises(ValueError, match="score transform"):
             query_polynomial_attention(q, k, v, c, backend=backend, **transform)
     for decay in (dict(decay_mode="query_distance", log_decay=-jnp.ones(q.shape[:3])),
@@ -573,8 +609,9 @@ def test_every_other_kernel_and_backend_refuses_a_transform():
 ))
 def test_records_create_allocates_transforms_on_the_strips(tmp_path, monkeypatch, capsys, backend, implementation):
     """A fresh transformed recipe trains on the blocked backend's causal strips, which a blocked recipe that
-    leaves the implementation unset receives; the scan, the transform's reference, is refused even with the
-    scan's opt-out flag, and validation refuses every other backend before allocation."""
+    leaves the implementation unset receives, or on an explicit mosaic backend's transformed kernels, whose recipe
+    keeps the inert scan default; the scan, the transform's reference, is refused even with the scan's opt-out
+    flag, and validation refuses every other backend before allocation."""
     from scaffolds.records.__main__ import main
 
     recipe = yaml.safe_load((RUNS / CONTROL / "config.yaml").read_text())
@@ -587,7 +624,13 @@ def test_records_create_allocates_transforms_on_the_strips(tmp_path, monkeypatch
     source.write_text(yaml.safe_dump(recipe))
     study = tmp_path / "study"
     monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(study), "--config", str(source)])
-    if backend != "blocked":
+    if backend == "mosaic":
+        main()
+        run = Path(capsys.readouterr().out.strip())
+        model = yaml.safe_load((run / "config.yaml").read_text())["model"]
+        assert (model["attention_score_transform"], model["attention_coefficient_constant_initial"]) == ("softplus", 0.)
+        assert (model["attention_backend"], model["attention_blocked_implementation"]) == ("mosaic", "scan")
+    elif backend != "blocked":
         with pytest.raises(ValueError, match="score transform"):
             main()
         assert not study.exists()
@@ -598,7 +641,7 @@ def test_records_create_allocates_transforms_on_the_strips(tmp_path, monkeypatch
             with pytest.raises(SystemExit) as failure:
                 main()
             error = capsys.readouterr().err
-            assert failure.value.code == 2 and "the only computation with a GPU qualification" in error
+            assert failure.value.code == 2 and "the only blocked computation with a GPU qualification" in error
             assert not study.exists()
     else:
         main()
