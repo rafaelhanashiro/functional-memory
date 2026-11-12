@@ -109,7 +109,7 @@ is tracked in [the RBF exploratory topic](../../results/exploratory/rbf_basis/RE
 | 3 | `re530e0627233` | complete: 10B tokens |
 | 5 | `r1b62a76f9b55` | complete: 10B tokens |
 | 9 | `r46c3479f9681` | complete: 10B tokens |
-| 20 | `rc28d7b48dc72` | running: job `223900` |
+| 20 | `rc28d7b48dc72` | complete: 10B tokens |
 
 For every count, centers are evenly spaced on `[-6, 6]`, widths are one, and
 `rbf(c, 1)(s) = exp(-0.5 * (s-c)**2)`. The first three center grids are nested;
@@ -196,10 +196,10 @@ All other model, data, and optimizer settings match the RBF recipe above.
 
 | RBF count | Run ID | Status |
 | --- | --- | --- |
-| 3 | `r4614f6fff21f` | submitted: job `224475` |
-| 5 | `r0fbe4040cc36` | submitted: job `224474` |
-| 9 | `r6e1b71e49350` | submitted: job `224473` |
-| 20 | `r8f7f83e9b6ee` | acceptance checks: job `224472` |
+| 3 | `r4614f6fff21f` | complete: 3.999B tokens |
+| 5 | `r0fbe4040cc36` | complete: 3.999B tokens |
+| 9 | `r6e1b71e49350` | complete: 3.999B tokens |
+| 20 | `r8f7f83e9b6ee` | complete: 3.999B tokens |
 
 Home cluster is **Kennel**, worktree `worktrees/rbf-chinchilla`, branch
 `codex/rbf-chinchilla`. Each run uses one H100 in `standard`, with CPU/GPU
@@ -282,8 +282,9 @@ done
 ### RBFs on Rafael's 200M / 4B recipe
 
 The matched cohort takes the executed exponential-control recipe
-`experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml`, source
-`36b074480751897c8b8f9754cbc13c22594024be`, and changes the scalar attention
+`r83139ea7389c` (its recipe is preserved at
+`experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml` in source
+`36b074480751897c8b8f9754cbc13c22594024be`), and changes the scalar attention
 function and coefficient parameterization. It uses 15 layers, width 896, 14 heads,
 width-64 Q/K/V, truncated reference initialization, FP32 norm statistics, per-layer
 Q/K RMSNorm gains, seed 42, and per-head output RMSNorm. The optimizer retains
@@ -305,14 +306,16 @@ random stream also gives the same initial query projections. Centers and widths
 remain fixed. Fixed/static/query parameter counts match the corresponding
 degree-eight polynomial variants.
 
-`experiments.attention_scaling.rbf_matched` verifies the reference recipe's SHA256
+`experiments.attention_scaling.rbf_matched` verifies the frozen fixed-control recipe's SHA256
 and rejects every difference outside the declared RBF choices and run/logging
 identity. Its acceptance adds relative-coefficient chain-rule checks and
 full-context H100 parity for Q/K RMSNorm, RoPE, the RBF operation and output RMSNorm,
 followed by the shared initialization audit, full-recipe pilot and exact resume.
 The backbone hash must equal the reference run's saved CPU initialization audit
 (`bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b`).
-Runs live in the `codex/rbf-rafael-4b` worktree on Kennel and use one H100 each.
+All three runs completed on one H100 each on Kennel. Their records identify the
+retained artifacts; the frozen fixed-control recipe preserves the audited shared
+settings independently of the reference study's current layout.
 Native offline W&B history is retained while project permissions are unresolved.
 Findings belong in the [RBF exploratory topic](../../results/exploratory/rbf_basis/README.md).
 

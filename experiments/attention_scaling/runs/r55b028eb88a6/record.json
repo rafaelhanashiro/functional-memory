@@ -75,7 +75,7 @@
       "size_bytes": 227
     },
     {
-      "path": "experiments/attention_scaling/runs/r55b028eb88a6/training.log",
+      "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-learned-9/experiments/attention_scaling/runs/r55b028eb88a6/training.log",
       "sha256": "d8c38e6e6ee22620d8448c8301f40f978b9a8917f80487b44be3573c0f7e5e38",
       "size_bytes": 707231
     }
@@ -391,7 +391,7 @@
   },
   "label": "200m-rbf9-static-learned-headrms-qknorm-triton-chinchilla1x-seed0",
   "log": {
-    "path": "experiments/attention_scaling/runs/r55b028eb88a6/training.log",
+    "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-learned-9/experiments/attention_scaling/runs/r55b028eb88a6/training.log",
     "sha256": "d8c38e6e6ee22620d8448c8301f40f978b9a8917f80487b44be3573c0f7e5e38",
     "size_bytes": 707231
   },
@@ -494,7 +494,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "experiments/attention_scaling/runs/r55b028eb88a6/checkpoints/7627",
+    "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-learned-9/experiments/attention_scaling/runs/r55b028eb88a6/checkpoints/7627",
     "sha256": "f7d2e648a91a9f574a786344c34c8a845cf43081d2ac5955eebeac84ac5962ca",
     "size_bytes": 2198679872,
     "step": 7627,

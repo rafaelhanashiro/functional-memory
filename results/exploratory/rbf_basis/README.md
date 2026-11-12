@@ -4,101 +4,33 @@ Opened: **2026-10-21**. Home cluster: **Kennel**.
 
 ## Question and method
 
-How does the number of fixed scalar Gaussian RBFs approximating `exp(score)`
-affect unnormalized-attention language-model quality and computational cost
-when each head uses output RMSNorm?
-The [study](../../../experiments/attention_scaling/README.md#fixed-rbf-basis-counts)
-owns the full method, frozen recipes, and launch commands.
+How do the number of scalar Gaussian RBFs and learning their coefficients affect
+unnormalized-attention language-model quality and computational cost with
+per-head output RMSNorm? The [study](../../../experiments/attention_scaling/README.md#fixed-rbf-basis-counts)
+owns the frozen recipes, methods, and exact launch commands. All 13 production
+runs below completed. They remain exploratory and enter no canonical selection.
 
-## Runs
+The scalar functions approximate `exp(score)` under a Gaussian fitting measure.
+Centers and widths stay fixed. Fixed coefficients retain their fitted values;
+learned coefficients are either static per layer/head or conditioned on the query
+activation. Fit quality alone is not a language-model result.
 
-| RBF count | Run ID | Status |
-| --- | --- | --- |
-| 3 | `re530e0627233` | complete: 10B tokens |
-| 5 | `r1b62a76f9b55` | complete: 10B tokens |
-| 9 | `r46c3479f9681` | complete: 10B tokens |
-| 20 | `rc28d7b48dc72` | running: job `223900` |
+## Fixed coefficients at 10B tokens
 
-Each run is an independent seed-zero execution of the shared 200M-scale,
-10B-token recipe. Gaussian L2 fit diagnostics are stored in each frozen
-configuration; they are not language-model results. The comparison selects existing baseline runs from the maintained attention-scaling collection; no new baseline training is allocated.
+All four fixed-RBF runs completed 10,000,269,312 training tokens. Their terminal
+validation perplexities are **13.950, 13.615, 13.621, and 13.585** for 3, 5, 9,
+and 20 RBFs, respectively. Twenty RBFs is best among these single-seed RBF runs,
+but exp with matching head RMSNorm remains stronger at **13.411**.
 
-### 1× Chinchilla cohort
-
-Four fresh seed-zero runs use the same RBF fits with 3,998,744,576 training
-tokens (20 per total trainable parameter, rounded to a full batch), a matching
-7,627-update cosine schedule, and 160-update warmup. Model, data, initialization,
-and remaining optimizer settings are unchanged. They have no measured quality
-outcomes yet. Their learning curves and terminal results must remain distinct
-from the 10B-token cohort; an intermediate point on a longer learning-rate
-schedule is not a completed 1× training run.
-
-| RBF count | Run ID | Status |
-| --- | --- | --- |
-| 3 | `r4614f6fff21f` | submitted: job `224475` |
-| 5 | `r0fbe4040cc36` | submitted: job `224474` |
-| 9 | `r6e1b71e49350` | submitted: job `224473` |
-| 20 | `r8f7f83e9b6ee` | acceptance checks: job `224472` |
-
-### Learned 9-RBF comparison
-
-Two fresh 1× runs test whether learning the nine fitted coefficients improves
-quality: static per-layer/head weights (`r55b028eb88a6`) and query-dependent
-`b + a*tanh(x W)` weights (`r564c8c864d15`). Both initialize at the same fitted
-kernel as fixed control `r6e1b71e49350`; centers and widths stay fixed.
-The [study recipe](../../../experiments/attention_scaling/README.md#learned-9-rbf-coefficients-at-1-chinchilla)
-specifies initialization, exact budgets and launch commands. Both runs completed
-on 2026-10-25, with finite diagnostics and their terminal checkpoint also validation
-best. Their measurements remain outside the canonical attention-scaling selection.
-
-| Coefficients | Run ID | Training tokens | Terminal validation NLL | Terminal validation PPL |
-| --- | --- | ---: | ---: | ---: |
-| Static learned | `r55b028eb88a6` | 3,998,744,576 | 2.764058 | 15.864093 |
-| Query-dependent learned | `r564c8c864d15` | 4,028,104,704 | 2.757587 | 15.761758 |
-
-Query dependence lowers terminal perplexity by 0.65% in these seed-zero runs.
-Its additional parameters also receive additional training tokens under the same
-20-tokens-per-parameter convention. At the common 7,600-update checkpoint
-(3,984,588,800 tokens), perplexities are 15.866787 and 15.774150, respectively;
-their learning-rate schedules still differ with their total budgets. This small
-single-seed difference does not establish a robust advantage. Both retain native
-offline W&B histories for upload once project permissions permit it. The open
-decision includes whether to promote coefficient learning and input dependence.
-
-## Findings and open decision
-
-The 3-, 5-, and 9-RBF runs completed 10,000,269,312 tokens. Their terminal validation perplexities are 13.9501, 13.6150, and 13.6213; each terminal checkpoint is also validation best. The 20-RBF run is still training, with validation perplexity 13.6394 at 9,437,184,000 tokens. These are seed-zero observations without a selected matched baseline. Median throughput over the last five validation intervals is 192,383, 184,216, 166,527, and 112,053 tokens/s, respectively. Training intervals include checkpoint work and exclude validation. The runs use one H100 each in Kennel's standard queue, with unnormalized attention, per-head output
-RMSNorm, QK normalization, the native Triton backend, and microbatch 16.
-Data access is verified. The recipes request online W&B logging, but creation
-in the configured project is denied for account `ltorroba`; training retains
-its local logs and canonical measurements. Production is gated on
-GPU kernel checks, a full-recipe pilot, and checkpoint resumption. The initial
-comparison will report validation NLL against training tokens, throughput,
-numerical failures, and the observed score ranges relative to the fitting
-measure. Failed and incomplete coordinates will remain visible.
-
-The comparison below uses the exact baseline IDs already selected by
-`results/attention_scaling/selection.yaml`, `degree_chart.yaml`, and
-`output_scaling.yaml`. All selected dot-product models match shape, initialization,
-QK normalization, optimizer settings, training schedule, global batch, seed, and
-train/evaluation data hashes. The normalized references do not use head RMSNorm;
-the exp and learned degree-4 controls do. RBF coefficients, centers, and widths
-are **fixed**, whereas the polynomial control learns its coefficients per layer
-and head. Gated DeltaNet is an architecture reference with its own reference
-initialization and 210.8M parameters, 5.5% more than RBF. Historical backends,
-microbatches, rematerialization, GPU counts, and GPU models differ, so this is a
-quality comparison, not a measured runtime comparison.
-
-The completed 5-RBF and 9-RBF models are nearly tied (13.615 versus 13.621).
-Five fixed RBFs are 0.116 PPL below plain softmax and 0.024 below the learned
-degree-4 polynomial with head RMSNorm. The latter gap is too small to establish
-an advantage from one seed. Exp with matching head RMSNorm remains stronger:
-13.411, or 0.204 below 5-RBF. The 3-RBF model is weaker at 13.950. The 20-RBF
-point is explicitly incomplete at 9.437B tokens and is not a terminal result.
-Terminal and validation-best checkpoints coincide for every completed selected
-run. Ten billion tokens are 2.501× the 20-tokens-per-total-parameter convention
-for the 199,916,704-parameter RBF model. The 1× cohort is a separate training
-schedule and is not included in this figure.
+The exact baseline IDs are pinned in `selection.yaml`. The dot-product models
+match shape, reference initialization, QK normalization, optimizer schedule,
+global batch, seed, and training/evaluation data hashes. Normalized references
+omit output RMSNorm; the exp and learned degree-four controls use it. RBF
+coefficients are fixed, while the polynomial control learns its coefficients.
+Gated DeltaNet is an architecture reference with its own initialization and
+210.8M parameters, 5.5% more than RBF. Historical backends, microbatches,
+rematerialization, GPU counts, and GPU models differ: this compares quality,
+not measured runtime. A single seed does not establish a robust advantage.
 
 ![RBF and existing baseline validation perplexities](comparison.png)
 
@@ -112,7 +44,7 @@ schedule and is not included in this figure.
 | Fixed RBF, 3 functions + head RMSNorm | `re530e0627233` | 10.000 | 13.950 | terminal |
 | Fixed RBF, 5 functions + head RMSNorm | `r1b62a76f9b55` | 10.000 | 13.615 | terminal |
 | Fixed RBF, 9 functions + head RMSNorm | `r46c3479f9681` | 10.000 | 13.621 | terminal |
-| Fixed RBF, 20 functions + head RMSNorm | `rc28d7b48dc72` | 9.437 | 13.639 | incomplete: latest pinned validation |
+| Fixed RBF, 20 functions + head RMSNorm | `rc28d7b48dc72` | 10.000 | 13.585 | terminal |
 | Softmax | `rdf00da0866a8` | 10.000 | 13.731 | terminal |
 | Fixed Taylor, degree 4 | `r67e1c33d19fa` | 10.000 | 13.927 | terminal |
 | Fixed Taylor, degree 8 | `r10baef5d8428` | 10.000 | 13.741 | terminal |
@@ -120,26 +52,85 @@ schedule and is not included in this figure.
 | Gated DeltaNet (210.8M parameters) | `rdf74e4289926` | 10.000 | 13.594 | terminal |
 <!-- END RBF COMPARISON -->
 
-The open decision is whether to promote the fixed-basis comparison and the
-learned-coefficient experiments into the canonical attention-scaling collection.
-The 10B-token figure above uses fixed coefficients; the learned 1× results are
-reported separately above.
+## Shorter-budget cohorts
+
+### Original 1× recipe
+
+Four fixed-basis runs use 3,998,744,576 tokens, 7,627 cosine-schedule updates and
+160 warmup updates. Two learned 9-RBF runs use the same model and optimization
+recipe, with raw learned coefficients. The query-dependent model has additional
+parameters and receives 4,028,104,704 tokens under the same 20-tokens-per-parameter
+budget convention. It also has a slightly longer learning-rate schedule.
+
+Static learning lowers perplexity from **16.058 to 15.864** relative to fixed
+9-RBF. Query dependence reaches **15.762**. The latter difference is a modest
+single-seed gain with a small token-budget difference. An intermediate checkpoint
+from a 10B-token schedule is not a matched 1× control.
+
+### Matched recipe
+
+Three 9-RBF runs share Rafael's executed 15-layer, width-896 recipe, seed 42,
+reference initialization, QK RMSNorm, optimizer, evaluation, and exactly
+**3,968,860,160 tokens**. Learning uses relative fitted coefficients:
+`c_j = s_j theta_j` for static weights and
+`c_j(x) = s_j [b_j + a_j tanh(w_j^T x)]` for query-dependent weights.
+The initial query projections match the audited polynomial reference's random draw.
+
+Final perplexities are **14.635 fixed, 14.366 learned static, and 14.440
+query-dependent**. Both learned variants improve on the fixed control; static
+learning is better than query dependence in this matched, single-seed comparison.
+These results cannot be directly compared with the original 1× cohort, which has
+a different backbone, initialization, learning rate, seed, and evaluation recipe.
+The table distinguishes terminal metrics from validation-best checkpoints.
+
+<!-- BEGIN RBF COHORTS -->
+| Recipe | Coefficients | Run ID | Tokens (B) | Terminal PPL | Best PPL (step) |
+| --- | --- | --- | ---: | ---: | ---: |
+| Original 1× | Fixed 3-RBF | `r4614f6fff21f` | 3.999 | 16.614 | 16.614 (7,627) |
+| Original 1× | Fixed 5-RBF | `r0fbe4040cc36` | 3.999 | 16.064 | 16.064 (7,627) |
+| Original 1× | Fixed 9-RBF | `r6e1b71e49350` | 3.999 | 16.058 | 16.058 (7,627) |
+| Original 1× | Fixed 20-RBF | `r8f7f83e9b6ee` | 3.999 | 16.011 | 16.011 (7,627) |
+| Original 1× | 9-RBF, learned static | `r55b028eb88a6` | 3.999 | 15.864 | 15.864 (7,627) |
+| Original 1× | 9-RBF, learned query | `r564c8c864d15` | 4.028 | 15.762 | 15.762 (7,683) |
+| Matched recipe | 9-RBF, fixed | `r4ef941dde7b9` | 3.969 | 14.635 | 14.630 (7,500) |
+| Matched recipe | 9-RBF, static | `rd3711311e629` | 3.969 | 14.366 | 14.363 (7,500) |
+| Matched recipe | 9-RBF, query | `r77e00510b1b0` | 3.969 | 14.440 | 14.437 (7,500) |
+<!-- END RBF COHORTS -->
+
+[Exact shorter-budget values](cohorts.csv)
+
+## Implementation and limitations
+
+The [scaffold qualification](../../../scaffolds/transformer/validation/README.md#native-triton-scalar-attention)
+records the compiled-accumulation and native Triton speed measurements, independent
+forward/gradient checks, and H100 pilots. The kernel uses an inlined scalar-function
+callback, streaming rescaling, and fused per-head RMSNorm with the corresponding
+epsilon adjustment. Synthetic compute benchmarks exclude data loading, evaluation,
+checkpointing, and compilation; they are separate from scientific quality results.
+
+Canonical measurements and execution records live under each run. Checkpoints and
+logs remain on Kennel at their recorded locations. W&B histories are retained
+locally where online project permissions prevented upload; W&B is not the source
+of these tables. The completed runs retain their original recipes and source commits.
+
+## Open decision
+
+Whether to promote fixed-basis attention, coefficient learning, or input dependence
+into maintained comparisons remains open. Larger basis counts improve the completed
+10B results modestly; learning helps both shorter-budget cohorts, while the benefit
+of query dependence changes with the recipe. More seeds and matched compute/quality
+comparisons are needed before selecting a preferred mechanism.
 
 ## Regeneration
 
-The explicit run selection and comparison settings are pinned in `selection.yaml`;
-canonical measurements remain under the runs. The script verifies all plotted
-source hashes, data hashes, model shapes, reference initialization, optimizer
-settings, and evaluation recipes before rendering. Run from the worktree root:
+`selection.yaml` names and pins every reported run. Measurements remain under their
+runs. From the repository root:
 
 ```bash
-scaffolds/transformer/.venv/bin/python results/exploratory/rbf_basis/compare.py
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python results/exploratory/rbf_basis/compare.py
 ```
 
-After deliberately updating selected run outputs, refresh their pins with
-`python -m scaffolds.records refresh results/exploratory/rbf_basis`, then rerun
-the comparison. The CSV, PNG, PDF, and generated table reproduce byte-identically.
-The 20-RBF run's pinned partial observations must be updated from its owning
-worktree when terminal results become available; do not infer completion from
-another run. Refresh the study index with
-`python -m scaffolds.records index experiments/attention_scaling`.
+The script verifies source hashes and comparison settings, then regenerates the
+CSV tables, PNG/PDF figure, and README tables byte-identically. After a deliberate
+selection or measurement update, refresh pins with
+`python -m scaffolds.records refresh results/exploratory/rbf_basis` first.

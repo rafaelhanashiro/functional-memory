@@ -71,7 +71,7 @@
       "size_bytes": 213
     },
     {
-      "path": "experiments/attention_scaling/runs/r873f76c0a542/training.log",
+      "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log",
       "sha256": "cdd8fc0c62a3df49856f894f93949e8b3e2dcb741f1b3556e7fbc93427a49b8a",
       "size_bytes": 30528
     }
@@ -437,7 +437,7 @@
   "home_cluster": "kennel",
   "label": "200m-rbf-n20-unnormalized-headrms-qknorm-dk64-seed0",
   "log": {
-    "path": "experiments/attention_scaling/runs/r873f76c0a542/training.log",
+    "path": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-sweep/experiments/attention_scaling/runs/r873f76c0a542/training.log",
     "sha256": "cdd8fc0c62a3df49856f894f93949e8b3e2dcb741f1b3556e7fbc93427a49b8a",
     "size_bytes": 30528
   },

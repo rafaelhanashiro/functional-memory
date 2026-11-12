@@ -1,0 +1,177 @@
+{
+  "data": {
+    "batch_size": 256,
+    "dataset_config": "sample-100BT",
+    "dataset_name": "HuggingFaceFW/fineweb-edu",
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "sequence_length": 2049,
+    "shuffle_seed": 0,
+    "source": "packed",
+    "split": "train",
+    "synthetic_vocab_size": 32000,
+    "text_field": "text",
+    "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+    "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+  },
+  "model": {
+    "attention_backend": "triton_scalar",
+    "attention_basis": {
+      "basis": [
+        {
+          "center": -6.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -4.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -3.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -1.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 0.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 1.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 3.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 4.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 6.0,
+          "kind": "rbf",
+          "width": 1.0
+        }
+      ],
+      "check_order": 256,
+      "coefficients": [
+        0.7842980450462962,
+        -0.1523710791787486,
+        0.06293250466768532,
+        0.057376729248309444,
+        0.38759739950223415,
+        1.574309886972801,
+        7.516279945564808,
+        30.74141419377182,
+        176.47302400187155
+      ],
+      "diagnostics": {
+        "check_condition_number": 12.422514763841642,
+        "condition_number": 12.422514763841649,
+        "l2_error": 0.026884360282285136,
+        "negative_mass_estimate": 0.0,
+        "quadrature_converged": true,
+        "rank": 9,
+        "relative_l2_error": 0.009890203436898776,
+        "relative_quadrature_change": 7.659704595254442e-16,
+        "relative_target_norm_error": 3.3306690738754696e-16
+      },
+      "mean": 0.0,
+      "quadrature_order": 128,
+      "rcond": 1e-12,
+      "std": 1.0,
+      "target": "exp",
+      "version": 1
+    },
+    "attention_coefficient_activation": "identity",
+    "attention_coefficient_amplitude_initial": 1.0,
+    "attention_coefficient_conditioning": "static",
+    "attention_coefficient_initialization": "taylor",
+    "attention_coefficient_parameterization": "direct",
+    "attention_coefficient_projection_initial_std": 0.0,
+    "attention_coefficient_sharing": "global",
+    "attention_coefficient_tanh_bias": false,
+    "attention_coefficients": "fixed",
+    "attention_degree": null,
+    "attention_denominator_constant": "fixed",
+    "attention_denominator_degree": null,
+    "attention_denominator_parameterization": "direct",
+    "attention_fixed_coefficients": null,
+    "attention_fixed_square_factors": null,
+    "attention_mechanism": "dot_product",
+    "attention_normalization": false,
+    "attention_output_scaling": "head_rms_norm",
+    "dropout": 0.0,
+    "gdn_conv_size": 4,
+    "gdn_erase_mode": "tied",
+    "gdn_polynomial_degree": 1,
+    "gdn_write_activation": "sigmoid",
+    "gla_chunk_size": 64,
+    "gla_gate_rank": 16,
+    "gla_gate_tau": 16.0,
+    "gla_inner_chunk_size": 16,
+    "gla_use_rope": true,
+    "hidden_size": 1024,
+    "initialization": "transformer_reference",
+    "intermediate_size": 3008,
+    "kind": "transformer",
+    "max_seq_len": 2048,
+    "num_heads": 16,
+    "num_kv_heads": 16,
+    "num_layers": 10,
+    "qk_head_dim": 64,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": null,
+    "qk_norm_sharing": "per_head",
+    "quadratic_mode": "fixed",
+    "quadratic_sharing": "global",
+    "remat": true,
+    "rms_norm_eps": 1e-06,
+    "rope_theta": 10000.0,
+    "tie_embeddings": false,
+    "value_head_dim": 64,
+    "vocab_size": 32000
+  },
+  "optim": {
+    "beta1": 0.9,
+    "beta2": 0.95,
+    "coefficient_penalty": 0.0,
+    "coefficient_penalty_denominator": true,
+    "grad_clip_norm": 1.0,
+    "learning_rate": 0.0003,
+    "min_learning_rate": 3e-05,
+    "total_steps": 7627,
+    "warmup_steps": 160,
+    "weight_decay": 0.1,
+    "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+  },
+  "train": {
+    "checkpoint_dir": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/experiments/attention_scaling/runs/r6e1b71e49350/checkpoints",
+    "ckpt_every": 500,
+    "dtype": "bfloat16",
+    "eval_batches": 7,
+    "eval_every": 400,
+    "log_every": 10,
+    "micro_batch_size": 16,
+    "seed": 0,
+    "source_commit": "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+    "wandb_dir": null,
+    "wandb_entity": "rafah-massachusetts-institute-of-technology",
+    "wandb_group": "attention_scaling",
+    "wandb_mode": "online",
+    "wandb_project": "functional-memory",
+    "wandb_run_name": "200m-rbf-n09-unnormalized-headrms-qknorm-dk64-triton-chinchilla1x-seed0",
+    "workdir": "/data/cl/u/lucastor/home/git/functional-memory/worktrees/rbf-chinchilla/experiments/attention_scaling/runs/r6e1b71e49350"
+  }
+}

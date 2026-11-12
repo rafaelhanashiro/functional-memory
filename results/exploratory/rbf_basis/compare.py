@@ -132,6 +132,52 @@ def render(rows):
     plt.close(fig)
 
 
+def cohort_summary():
+    """Report the explicitly selected shorter-budget cohorts separately."""
+    selection = yaml.safe_load((HERE / "selection.yaml").read_text())
+    by_role = {entry["role"]: entry for entry in selection["runs"]}
+    rows = []
+    for cohort in selection["cohorts"]:
+        entries = [by_role[role] for role in cohort["roles"]]
+        verify_pinned_runs(ROOT, entries)
+        for entry in entries:
+            run = ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
+            config = yaml.safe_load((run / "config.yaml").read_text())
+            assert config["model"]["initialization"] == cohort["initialization"]
+            assert load_run(run)["status"] == "complete"
+            terminal = read_json(run / "completion.json")
+            best = read_json(run / "best_validation.json")
+            measurements = [json.loads(line) for line in (run / "metrics.jsonl").read_text().splitlines()]
+            assert measurements[-1]["validation_nll"] == terminal["validation_nll"]
+            assert measurements[-1]["step"] == terminal.get("step", terminal.get("final_step"))
+            rows.append({
+                "cohort": cohort["label"], "role": entry["role"], "run_id": entry["run_id"],
+                "label": entry["label"], "status": "complete", "metric_scope": "terminal",
+                "training_tokens": terminal["training_tokens"],
+                "terminal_validation_nll": terminal["validation_nll"],
+                "terminal_validation_perplexity": terminal["validation_perplexity"],
+                "best_validation_step": best["step"],
+                "best_validation_perplexity": best["validation_perplexity"],
+            })
+    with (HERE / "cohorts.csv").open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    table = ["<!-- BEGIN RBF COHORTS -->",
+             "| Recipe | Coefficients | Run ID | Tokens (B) | Terminal PPL | Best PPL (step) |",
+             "| --- | --- | --- | ---: | ---: | ---: |"]
+    for row in rows:
+        table.append(f"| {row['cohort']} | {row['label']} | `{row['run_id']}` | "
+                     f"{row['training_tokens']/1e9:.3f} | {row['terminal_validation_perplexity']:.3f} | "
+                     f"{row['best_validation_perplexity']:.3f} ({row['best_validation_step']:,}) |")
+    table.append("<!-- END RBF COHORTS -->")
+    path = HERE / "README.md"
+    text = path.read_text()
+    start = text.index(table[0])
+    end = text.index(table[-1], start) + len(table[-1])
+    path.write_text(text[:start] + "\n".join(table) + text[end:])
+
+
 def main():
     rows = collect()
     with (HERE / "summary.csv").open("w", newline="") as stream:
@@ -150,6 +196,7 @@ def main():
     start = text.index("<!-- BEGIN RBF COMPARISON -->")
     end = text.index("<!-- END RBF COMPARISON -->", start) + len("<!-- END RBF COMPARISON -->")
     path.write_text(text[:start] + "\n".join(table) + text[end:])
+    cohort_summary()
     print(f"Verified {len(rows)} selected runs; wrote comparison and summary.")
 
 

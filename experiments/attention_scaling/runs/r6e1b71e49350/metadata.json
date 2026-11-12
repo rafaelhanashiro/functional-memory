@@ -1,0 +1,1555 @@
+{
+  "attention_backend": "triton_scalar",
+  "attention_backend_requested": "triton_scalar",
+  "attention_basis": {
+    "basis": [
+      {
+        "center": -6.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -4.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -3.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": -1.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 0.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 1.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 3.0,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 4.5,
+        "kind": "rbf",
+        "width": 1.0
+      },
+      {
+        "center": 6.0,
+        "kind": "rbf",
+        "width": 1.0
+      }
+    ],
+    "check_order": 256,
+    "coefficients": [
+      0.7842980450462962,
+      -0.1523710791787486,
+      0.06293250466768532,
+      0.057376729248309444,
+      0.38759739950223415,
+      1.574309886972801,
+      7.516279945564808,
+      30.74141419377182,
+      176.47302400187155
+    ],
+    "diagnostics": {
+      "check_condition_number": 12.422514763841642,
+      "condition_number": 12.422514763841649,
+      "l2_error": 0.026884360282285136,
+      "negative_mass_estimate": 0.0,
+      "quadrature_converged": true,
+      "rank": 9,
+      "relative_l2_error": 0.009890203436898776,
+      "relative_quadrature_change": 7.659704595254442e-16,
+      "relative_target_norm_error": 3.3306690738754696e-16
+    },
+    "mean": 0.0,
+    "quadrature_order": 128,
+    "rcond": 1e-12,
+    "std": 1.0,
+    "target": "exp",
+    "version": 1
+  },
+  "attention_coefficient_sharing": "global",
+  "attention_coefficients": "fixed",
+  "attention_degree": null,
+  "attention_diagnostics": {
+    "attention_backend": "triton_scalar",
+    "attention_backend_requested": "triton_scalar",
+    "attention_basis": {
+      "basis": [
+        {
+          "center": -6.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -4.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -3.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": -1.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 0.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 1.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 3.0,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 4.5,
+          "kind": "rbf",
+          "width": 1.0
+        },
+        {
+          "center": 6.0,
+          "kind": "rbf",
+          "width": 1.0
+        }
+      ],
+      "check_order": 256,
+      "coefficients": [
+        0.7842980450462962,
+        -0.1523710791787486,
+        0.06293250466768532,
+        0.057376729248309444,
+        0.38759739950223415,
+        1.574309886972801,
+        7.516279945564808,
+        30.74141419377182,
+        176.47302400187155
+      ],
+      "diagnostics": {
+        "check_condition_number": 12.422514763841642,
+        "condition_number": 12.422514763841649,
+        "l2_error": 0.026884360282285136,
+        "negative_mass_estimate": 0.0,
+        "quadrature_converged": true,
+        "rank": 9,
+        "relative_l2_error": 0.009890203436898776,
+        "relative_quadrature_change": 7.659704595254442e-16,
+        "relative_target_norm_error": 3.3306690738754696e-16
+      },
+      "mean": 0.0,
+      "quadrature_order": 128,
+      "rcond": 1e-12,
+      "std": 1.0,
+      "target": "exp",
+      "version": 1
+    },
+    "attention_coefficient_sharing": "global",
+    "attention_coefficients": "fixed",
+    "attention_degree": null,
+    "attention_formula": "sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values, then per-head RMSNorm over value channels with a learned gain",
+    "attention_implementation": "triton_scalar",
+    "attention_kernel": "fixed_basis_unnormalized",
+    "attention_normalization": false,
+    "attention_output_normalization": "head_rms_norm",
+    "attention_output_scaling": "head_rms_norm",
+    "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+    "attention_score_scale": "1/sqrt(d_k)",
+    "attention_signed": true,
+    "format": "shared-transformer-attention-diagnostics",
+    "issues": [],
+    "kernel_values": "unshifted_fixed_basis",
+    "layers": [
+      {
+        "cancellation_ratio_max": 1.0000673532485962,
+        "cancellation_ratio_mean": 1.0000015497207642,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24630737304688,
+        "kernel_min": -0.0002841983805410564,
+        "layer": 0,
+        "min_abs_weight_sum": 3.8030049800872803,
+        "negative_kernel_count": 116256,
+        "negative_kernel_fraction": 0.003463007975369692,
+        "negative_weight_count": 116256,
+        "negative_weight_fraction": 0.003463007975369692,
+        "row_count": 32768,
+        "score_max": 7.488665580749512,
+        "score_min": -6.755040645599365,
+        "weight_sum_max": 17039.65234375,
+        "weight_sum_min": 3.8030049800872803
+      },
+      {
+        "cancellation_ratio_max": 1.000335931777954,
+        "cancellation_ratio_mean": 1.00001859664917,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24630737304688,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 1,
+        "min_abs_weight_sum": 0.46966230869293213,
+        "negative_kernel_count": 518148,
+        "negative_kernel_fraction": 0.015434477478265762,
+        "negative_weight_count": 518148,
+        "negative_weight_fraction": 0.015434477478265762,
+        "row_count": 32768,
+        "score_max": 7.050461769104004,
+        "score_min": -9.557530403137207,
+        "weight_sum_max": 28414.23828125,
+        "weight_sum_min": 0.46966230869293213
+      },
+      {
+        "cancellation_ratio_max": 1.00021493434906,
+        "cancellation_ratio_mean": 1.0000149011611938,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24630737304688,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 2,
+        "min_abs_weight_sum": 0.05658239871263504,
+        "negative_kernel_count": 423506,
+        "negative_kernel_fraction": 0.012615302577614784,
+        "negative_weight_count": 423506,
+        "negative_weight_fraction": 0.012615302577614784,
+        "row_count": 32768,
+        "score_max": 6.7728400230407715,
+        "score_min": -8.041702270507812,
+        "weight_sum_max": 13797.9501953125,
+        "weight_sum_min": 0.05658239871263504
+      },
+      {
+        "cancellation_ratio_max": 1.0001599788665771,
+        "cancellation_ratio_mean": 1.000016212463379,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24624633789062,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 3,
+        "min_abs_weight_sum": 6.489101409912109,
+        "negative_kernel_count": 509344,
+        "negative_kernel_fraction": 0.015172225423157215,
+        "negative_weight_count": 509344,
+        "negative_weight_fraction": 0.015172225423157215,
+        "row_count": 32768,
+        "score_max": 7.18743896484375,
+        "score_min": -7.5228776931762695,
+        "weight_sum_max": 3771.866943359375,
+        "weight_sum_min": 6.489101409912109
+      },
+      {
+        "cancellation_ratio_max": 1.0003045797348022,
+        "cancellation_ratio_mean": 1.0000135898590088,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24606323242188,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 4,
+        "min_abs_weight_sum": 2.8999745845794678,
+        "negative_kernel_count": 451260,
+        "negative_kernel_fraction": 0.013442032970488071,
+        "negative_weight_count": 451260,
+        "negative_weight_fraction": 0.013442032970488071,
+        "row_count": 32768,
+        "score_max": 7.239249229431152,
+        "score_min": -11.504265785217285,
+        "weight_sum_max": 7499.38671875,
+        "weight_sum_min": 2.8999745845794678
+      },
+      {
+        "cancellation_ratio_max": 1.0001367330551147,
+        "cancellation_ratio_mean": 1.0000110864639282,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24627685546875,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 5,
+        "min_abs_weight_sum": 5.230009078979492,
+        "negative_kernel_count": 408597,
+        "negative_kernel_fraction": 0.01217119675129652,
+        "negative_weight_count": 408597,
+        "negative_weight_fraction": 0.01217119675129652,
+        "row_count": 32768,
+        "score_max": 7.146868705749512,
+        "score_min": -9.433947563171387,
+        "weight_sum_max": 12193.6494140625,
+        "weight_sum_min": 5.230009078979492
+      },
+      {
+        "cancellation_ratio_max": 1.0001434087753296,
+        "cancellation_ratio_mean": 1.000013828277588,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.2462921142578,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 6,
+        "min_abs_weight_sum": 2.9378392696380615,
+        "negative_kernel_count": 487407,
+        "negative_kernel_fraction": 0.014518771320581436,
+        "negative_weight_count": 487407,
+        "negative_weight_fraction": 0.014518771320581436,
+        "row_count": 32768,
+        "score_max": 6.435929298400879,
+        "score_min": -8.056187629699707,
+        "weight_sum_max": 16616.982421875,
+        "weight_sum_min": 2.9378392696380615
+      },
+      {
+        "cancellation_ratio_max": 1.0001403093338013,
+        "cancellation_ratio_mean": 1.0000107288360596,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24623107910156,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 7,
+        "min_abs_weight_sum": 0.8663484454154968,
+        "negative_kernel_count": 433642,
+        "negative_kernel_fraction": 0.012917231768369675,
+        "negative_weight_count": 433642,
+        "negative_weight_fraction": 0.012917231768369675,
+        "row_count": 32768,
+        "score_max": 7.459799289703369,
+        "score_min": -10.57177734375,
+        "weight_sum_max": 16388.466796875,
+        "weight_sum_min": 0.8663484454154968
+      },
+      {
+        "cancellation_ratio_max": 1.0003390312194824,
+        "cancellation_ratio_mean": 1.0000133514404297,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.2462921142578,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 8,
+        "min_abs_weight_sum": 2.6359963417053223,
+        "negative_kernel_count": 500150,
+        "negative_kernel_fraction": 0.014898356981575489,
+        "negative_weight_count": 500150,
+        "negative_weight_fraction": 0.014898356981575489,
+        "row_count": 32768,
+        "score_max": 7.484430313110352,
+        "score_min": -8.277116775512695,
+        "weight_sum_max": 24906.99609375,
+        "weight_sum_min": 2.6359963417053223
+      },
+      {
+        "cancellation_ratio_max": 1.0001667737960815,
+        "cancellation_ratio_mean": 1.0000090599060059,
+        "causal_entry_count": 33570816,
+        "invalid_kernel_count": 0,
+        "invalid_output_count": 0,
+        "invalid_score_count": 0,
+        "invalid_weight_sum_count": 0,
+        "kernel_max": 187.24630737304688,
+        "kernel_min": -0.00028420149465091527,
+        "layer": 9,
+        "min_abs_weight_sum": 5.943395137786865,
+        "negative_kernel_count": 390488,
+        "negative_kernel_fraction": 0.011631770059466362,
+        "negative_weight_count": 390488,
+        "negative_weight_fraction": 0.011631770059466362,
+        "row_count": 32768,
+        "score_max": 7.988710880279541,
+        "score_min": -7.979283809661865,
+        "weight_sum_max": 52303.390625,
+        "weight_sum_min": 5.943395137786865
+      }
+    ],
+    "m0_qk_parameter_note": null,
+    "qk_norm": true,
+    "qk_norm_eps": 1e-06,
+    "qk_norm_initial_scale": 8.0,
+    "qk_norm_parameter_count": 160,
+    "qk_norm_scale": {
+      "effective": [
+        [
+          [
+            7.830480930184152
+          ],
+          [
+            7.792478694009596
+          ],
+          [
+            7.701179441013187
+          ],
+          [
+            8.99394060534835
+          ],
+          [
+            9.044326984931786
+          ],
+          [
+            8.266050851690865
+          ],
+          [
+            7.997271095356553
+          ],
+          [
+            8.369614293641604
+          ],
+          [
+            8.014302671851736
+          ],
+          [
+            8.620442515788207
+          ],
+          [
+            9.378899650801548
+          ],
+          [
+            8.265985816203447
+          ],
+          [
+            7.579267905674958
+          ],
+          [
+            7.704336351107922
+          ],
+          [
+            8.204818028500618
+          ],
+          [
+            8.151267037538812
+          ]
+        ],
+        [
+          [
+            11.331020221042438
+          ],
+          [
+            12.38263041699606
+          ],
+          [
+            9.559596042399452
+          ],
+          [
+            11.515691292619382
+          ],
+          [
+            11.836946965075176
+          ],
+          [
+            10.605891664920547
+          ],
+          [
+            12.470694747268997
+          ],
+          [
+            9.858216625123998
+          ],
+          [
+            7.953546542621433
+          ],
+          [
+            13.996690189259734
+          ],
+          [
+            8.179241784030795
+          ],
+          [
+            10.19882521991296
+          ],
+          [
+            9.357354975871926
+          ],
+          [
+            11.727228347615245
+          ],
+          [
+            11.209243479066275
+          ],
+          [
+            9.811220297005136
+          ]
+        ],
+        [
+          [
+            12.135742495363003
+          ],
+          [
+            10.237531576024201
+          ],
+          [
+            8.2398829547304
+          ],
+          [
+            8.522640263672601
+          ],
+          [
+            12.937454356832227
+          ],
+          [
+            8.898608944269027
+          ],
+          [
+            7.959685250679881
+          ],
+          [
+            8.07952286142051
+          ],
+          [
+            10.830984947727778
+          ],
+          [
+            10.407832236361546
+          ],
+          [
+            10.289368654370483
+          ],
+          [
+            8.435266036619845
+          ],
+          [
+            10.365686503677408
+          ],
+          [
+            11.678094197521178
+          ],
+          [
+            10.144304476207614
+          ],
+          [
+            11.204618350048982
+          ]
+        ],
+        [
+          [
+            10.940513612172749
+          ],
+          [
+            8.340592701390033
+          ],
+          [
+            8.592347590760369
+          ],
+          [
+            9.816255497956732
+          ],
+          [
+            10.960956629916854
+          ],
+          [
+            10.992342735920525
+          ],
+          [
+            9.596835060900524
+          ],
+          [
+            9.316033038322349
+          ],
+          [
+            9.629348486226956
+          ],
+          [
+            11.786096973565984
+          ],
+          [
+            11.490131130937723
+          ],
+          [
+            9.453381056935331
+          ],
+          [
+            11.107233782038543
+          ],
+          [
+            9.584343505246354
+          ],
+          [
+            10.762828526452822
+          ],
+          [
+            10.068697104214916
+          ]
+        ],
+        [
+          [
+            13.257210050909963
+          ],
+          [
+            9.957326490505668
+          ],
+          [
+            8.797206122788864
+          ],
+          [
+            11.059275961428481
+          ],
+          [
+            10.839000814335535
+          ],
+          [
+            8.507923337477603
+          ],
+          [
+            9.799968294249457
+          ],
+          [
+            11.954342467497563
+          ],
+          [
+            10.117831325712642
+          ],
+          [
+            10.325944136063185
+          ],
+          [
+            13.102830726374512
+          ],
+          [
+            13.943215924525656
+          ],
+          [
+            10.698635755206373
+          ],
+          [
+            9.985800663051533
+          ],
+          [
+            8.815983337514993
+          ],
+          [
+            8.589037730729233
+          ]
+        ],
+        [
+          [
+            10.815244317667947
+          ],
+          [
+            12.924746171874805
+          ],
+          [
+            8.96460276295709
+          ],
+          [
+            9.463043789228436
+          ],
+          [
+            10.570453930558905
+          ],
+          [
+            10.7065306982057
+          ],
+          [
+            8.898695930035895
+          ],
+          [
+            12.005311517476825
+          ],
+          [
+            11.364170413908809
+          ],
+          [
+            9.052272256748585
+          ],
+          [
+            9.435257120040369
+          ],
+          [
+            9.218573014217808
+          ],
+          [
+            10.658645993806454
+          ],
+          [
+            9.193288186544988
+          ],
+          [
+            11.498585476108634
+          ],
+          [
+            11.91331973586132
+          ]
+        ],
+        [
+          [
+            11.235614531183156
+          ],
+          [
+            12.907710552868048
+          ],
+          [
+            11.854643760524045
+          ],
+          [
+            9.44735164669239
+          ],
+          [
+            12.294845001619823
+          ],
+          [
+            10.943915522878584
+          ],
+          [
+            10.347397203337515
+          ],
+          [
+            10.739139124751258
+          ],
+          [
+            9.293305479908769
+          ],
+          [
+            9.530712345703074
+          ],
+          [
+            8.857469041892122
+          ],
+          [
+            10.144957516704464
+          ],
+          [
+            9.234230799874876
+          ],
+          [
+            12.010227074287467
+          ],
+          [
+            8.037818417843663
+          ],
+          [
+            12.333519974290981
+          ]
+        ],
+        [
+          [
+            12.702672696813668
+          ],
+          [
+            8.694589116080053
+          ],
+          [
+            10.330179467133561
+          ],
+          [
+            12.534556515312625
+          ],
+          [
+            11.31234916732742
+          ],
+          [
+            11.288707080793056
+          ],
+          [
+            11.238725024373135
+          ],
+          [
+            11.561906355313674
+          ],
+          [
+            12.042837411400367
+          ],
+          [
+            8.679086909928209
+          ],
+          [
+            9.59303305222558
+          ],
+          [
+            11.365999425898492
+          ],
+          [
+            12.082306794602342
+          ],
+          [
+            11.669919645336295
+          ],
+          [
+            10.527624573730549
+          ],
+          [
+            14.127550690543782
+          ]
+        ],
+        [
+          [
+            10.67893913455512
+          ],
+          [
+            11.066138879277208
+          ],
+          [
+            9.65933941601789
+          ],
+          [
+            10.521690141226143
+          ],
+          [
+            9.730355527828019
+          ],
+          [
+            11.300248477780423
+          ],
+          [
+            10.289383373440936
+          ],
+          [
+            11.91769752979248
+          ],
+          [
+            11.22362803480364
+          ],
+          [
+            9.908024402351197
+          ],
+          [
+            9.359247027383297
+          ],
+          [
+            12.861689690452211
+          ],
+          [
+            11.570661788914908
+          ],
+          [
+            10.841104572876857
+          ],
+          [
+            9.207056733544293
+          ],
+          [
+            13.065739460319989
+          ]
+        ],
+        [
+          [
+            8.663403724102078
+          ],
+          [
+            9.171341122005575
+          ],
+          [
+            12.973952543592963
+          ],
+          [
+            9.742735410161453
+          ],
+          [
+            10.32872152925286
+          ],
+          [
+            8.689377205595138
+          ],
+          [
+            8.541794651585322
+          ],
+          [
+            8.590461060038729
+          ],
+          [
+            9.479552999106277
+          ],
+          [
+            9.772496983770235
+          ],
+          [
+            10.184639475665412
+          ],
+          [
+            13.23725852541726
+          ],
+          [
+            8.812280577705282
+          ],
+          [
+            9.041614721526921
+          ],
+          [
+            11.150762095302783
+          ],
+          [
+            11.729037492108372
+          ]
+        ]
+      ],
+      "effective_coefficient_names": [
+        "alpha"
+      ],
+      "finite": true,
+      "raw": [
+        [
+          [
+            2.0580239295959473
+          ],
+          [
+            2.05315899848938
+          ],
+          [
+            2.0413734912872314
+          ],
+          [
+            2.1965510845184326
+          ],
+          [
+            2.2021377086639404
+          ],
+          [
+            2.112156867980957
+          ],
+          [
+            2.0791003704071045
+          ],
+          [
+            2.124607801437378
+          ],
+          [
+            2.0812277793884277
+          ],
+          [
+            2.1541364192962646
+          ],
+          [
+            2.238462448120117
+          ],
+          [
+            2.1121490001678467
+          ],
+          [
+            2.025416612625122
+          ],
+          [
+            2.041783332824707
+          ],
+          [
+            2.1047215461730957
+          ],
+          [
+            2.0981733798980713
+          ]
+        ],
+        [
+          [
+            2.427544116973877
+          ],
+          [
+            2.5162947177886963
+          ],
+          [
+            2.2575454711914062
+          ],
+          [
+            2.4437105655670166
+          ],
+          [
+            2.4712257385253906
+          ],
+          [
+            2.3614096641540527
+          ],
+          [
+            2.523381471633911
+          ],
+          [
+            2.2883052825927734
+          ],
+          [
+            2.073617935180664
+          ],
+          [
+            2.6388208866119385
+          ],
+          [
+            2.1015994548797607
+          ],
+          [
+            2.322272539138794
+          ],
+          [
+            2.2361626625061035
+          ],
+          [
+            2.4619133472442627
+          ],
+          [
+            2.416738748550415
+          ],
+          [
+            2.283526659011841
+          ]
+        ],
+        [
+          [
+            2.496155023574829
+          ],
+          [
+            2.3260605335235596
+          ],
+          [
+            2.1089861392974854
+          ],
+          [
+            2.142726182937622
+          ],
+          [
+            2.560126543045044
+          ],
+          [
+            2.1858949661254883
+          ],
+          [
+            2.0743894577026367
+          ],
+          [
+            2.0893328189849854
+          ],
+          [
+            2.382411003112793
+          ],
+          [
+            2.3425586223602295
+          ],
+          [
+            2.331111192703247
+          ],
+          [
+            2.1324212551116943
+          ],
+          [
+            2.3385009765625
+          ],
+          [
+            2.457714796066284
+          ],
+          [
+            2.3169124126434326
+          ],
+          [
+            2.4163260459899902
+          ]
+        ],
+        [
+          [
+            2.392472743988037
+          ],
+          [
+            2.1211342811584473
+          ],
+          [
+            2.150871992111206
+          ],
+          [
+            2.2840397357940674
+          ],
+          [
+            2.3943395614624023
+          ],
+          [
+            2.3971989154815674
+          ],
+          [
+            2.2614333629608154
+          ],
+          [
+            2.231736898422241
+          ],
+          [
+            2.26481556892395
+          ],
+          [
+            2.4669206142425537
+          ],
+          [
+            2.44148850440979
+          ],
+          [
+            2.2463724613189697
+          ],
+          [
+            2.4075965881347656
+          ],
+          [
+            2.2601308822631836
+          ],
+          [
+            2.376098394393921
+          ],
+          [
+            2.309431314468384
+          ]
+        ],
+        [
+          [
+            2.5845415592193604
+          ],
+          [
+            2.2983086109161377
+          ],
+          [
+            2.174434185028076
+          ],
+          [
+            2.4032695293426514
+          ],
+          [
+            2.383150815963745
+          ],
+          [
+            2.140997886657715
+          ],
+          [
+            2.282379150390625
+          ],
+          [
+            2.4810945987701416
+          ],
+          [
+            2.3142993450164795
+          ],
+          [
+            2.3346595764160156
+          ],
+          [
+            2.5728282928466797
+          ],
+          [
+            2.634993076324463
+          ],
+          [
+            2.3701162338256836
+          ],
+          [
+            2.301164150238037
+          ],
+          [
+            2.1765663623809814
+          ],
+          [
+            2.150486707687378
+          ]
+        ],
+        [
+          [
+            2.3809566497802734
+          ],
+          [
+            2.5591437816619873
+          ],
+          [
+            2.193283796310425
+          ],
+          [
+            2.24739408493042
+          ],
+          [
+            2.358062744140625
+          ],
+          [
+            2.370853900909424
+          ],
+          [
+            2.1859047412872314
+          ],
+          [
+            2.485349178314209
+          ],
+          [
+            2.4304654598236084
+          ],
+          [
+            2.2030158042907715
+          ],
+          [
+            2.2444534301757812
+          ],
+          [
+            2.2212202548980713
+          ],
+          [
+            2.3663713932037354
+          ],
+          [
+            2.2184736728668213
+          ],
+          [
+            2.4422240257263184
+          ],
+          [
+            2.4776570796966553
+          ]
+        ],
+        [
+          [
+            2.41908860206604
+          ],
+          [
+            2.5578248500823975
+          ],
+          [
+            2.472719669342041
+          ],
+          [
+            2.245734453201294
+          ],
+          [
+            2.5091800689697266
+          ],
+          [
+            2.3927836418151855
+          ],
+          [
+            2.3367350101470947
+          ],
+          [
+            2.3738949298858643
+          ],
+          [
+            2.2292943000793457
+          ],
+          [
+            2.254519462585449
+          ],
+          [
+            2.1812610626220703
+          ],
+          [
+            2.31697678565979
+          ],
+          [
+            2.222917318344116
+          ],
+          [
+            2.4857585430145264
+          ],
+          [
+            2.084157705307007
+          ],
+          [
+            2.5123207569122314
+          ]
+        ],
+        [
+          [
+            2.5418124198913574
+          ],
+          [
+            2.162700891494751
+          ],
+          [
+            2.3350696563720703
+          ],
+          [
+            2.528489351272583
+          ],
+          [
+            2.4258949756622314
+          ],
+          [
+            2.4238028526306152
+          ],
+          [
+            2.419365406036377
+          ],
+          [
+            2.4477157592773438
+          ],
+          [
+            2.4884700775146484
+          ],
+          [
+            2.160916328430176
+          ],
+          [
+            2.2610371112823486
+          ],
+          [
+            2.430626392364502
+          ],
+          [
+            2.4917421340942383
+          ],
+          [
+            2.457014560699463
+          ],
+          [
+            2.3540027141571045
+          ],
+          [
+            2.6481268405914307
+          ]
+        ],
+        [
+          [
+            2.3682734966278076
+          ],
+          [
+            2.4038898944854736
+          ],
+          [
+            2.267925262451172
+          ],
+          [
+            2.3534388542175293
+          ],
+          [
+            2.2752504348754883
+          ],
+          [
+            2.4248247146606445
+          ],
+          [
+            2.3311126232147217
+          ],
+          [
+            2.478024482727051
+          ],
+          [
+            2.4180212020874023
+          ],
+          [
+            2.2933449745178223
+          ],
+          [
+            2.2363648414611816
+          ],
+          [
+            2.554253101348877
+          ],
+          [
+            2.448472738265991
+          ],
+          [
+            2.383344888687134
+          ],
+          [
+            2.219970226287842
+          ],
+          [
+            2.569993495941162
+          ]
+        ],
+        [
+          [
+            2.1591076850891113
+          ],
+          [
+            2.216083526611328
+          ],
+          [
+            2.562943696975708
+          ],
+          [
+            2.276521921157837
+          ],
+          [
+            2.334928512573242
+          ],
+          [
+            2.1621012687683105
+          ],
+          [
+            2.1449711322784424
+          ],
+          [
+            2.1506524085998535
+          ],
+          [
+            2.2491371631622314
+          ],
+          [
+            2.279572010040283
+          ],
+          [
+            2.320880651473999
+          ],
+          [
+            2.583035469055176
+          ],
+          [
+            2.1761462688446045
+          ],
+          [
+            2.2018377780914307
+          ],
+          [
+            2.4115078449249268
+          ],
+          [
+            2.4620676040649414
+          ]
+        ]
+      ],
+      "raw_parameter_names": [
+        "gamma"
+      ]
+    },
+    "qk_norm_sharing": "per_head",
+    "query_block_size": 128,
+    "sample": {
+      "diagnostic_pass_contributes_to_validation_loss": false,
+      "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "num_sequences": 1,
+      "prediction_tokens": 2048,
+      "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+      "selection": "first_heldout_sequence",
+      "sequence_index": 0,
+      "source": "packed"
+    },
+    "step": 7627,
+    "valid": true,
+    "version": 1
+  },
+  "attention_formula": "sum_j c_j b_j(s), s = QK^T / sqrt(d_k), causal weighted values, then per-head RMSNorm over value channels with a learned gain",
+  "attention_implementation": "triton_scalar",
+  "attention_kernel": "fixed_basis_unnormalized",
+  "attention_normalization": false,
+  "attention_output_normalization": "head_rms_norm",
+  "attention_output_scaling": "head_rms_norm",
+  "attention_score_formula": "exp(gamma) * <q, k> / (||q|| ||k||), gamma learned, |score| <= exp(gamma)",
+  "attention_score_scale": "1/sqrt(d_k)",
+  "attention_signed": true,
+  "checkpoint_retention": {
+    "best_checkpoint_step": 7627,
+    "completion_sha256": "f280e1aa8dc7b46345dd3c929d67d5578f92240bf15106e82cfee63be70de34d",
+    "format": "shared-transformer-checkpoint-retention",
+    "seed": 0,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 7627,
+    "validation_nll": 2.7762024785791124,
+    "version": 1
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "sequence_length": 2049,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "devices": [
+    "cuda:0"
+  ],
+  "diagnostic_sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "error": null,
+  "execution_runtime": {
+    "batch_transfer": "host_to_shard",
+    "devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3",
+        "platform": "gpu"
+      }
+    ],
+    "environment": {
+      "NCCL_P2P_DISABLE": null,
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": null,
+      "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "state_transfer": "direct"
+  },
+  "m0_qk_parameter_note": null,
+  "next_train_sequence": 1952512,
+  "numerical_failure_path": null,
+  "parameter_count": 199916704,
+  "qk_head_dim": 64,
+  "qk_norm": true,
+  "qk_norm_eps": 1e-06,
+  "qk_norm_initial_scale": 8.0,
+  "qk_norm_parameter_count": 160,
+  "qk_norm_sharing": "per_head",
+  "query_block_size": 128,
+  "retained_best_checkpoint_step": 7627,
+  "retained_terminal_checkpoint_step": 7627,
+  "rng_state": {
+    "completed_updates": 7627,
+    "seed": 0
+  },
+  "runtime_history": [
+    {
+      "runtime": {
+        "batch_transfer": "host_to_shard",
+        "devices": [
+          {
+            "id": 0,
+            "kind": "NVIDIA H100 80GB HBM3",
+            "platform": "gpu"
+          }
+        ],
+        "environment": {
+          "NCCL_P2P_DISABLE": null,
+          "TRANSFORMER_HOST_STAGING": "0",
+          "XLA_FLAGS": null,
+          "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+          "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+        },
+        "state_transfer": "direct"
+      },
+      "slurm_job_id": "224473",
+      "timestamp_utc": "2026-10-23T21:17:50.171091+00:00"
+    }
+  ],
+  "scaffold_ofm_source_commit": "8977f529e83efc688daf96cdcfd365ebbce2afa8",
+  "seed": 0,
+  "slurm_job_id": "224473",
+  "slurm_restart_count": 0,
+  "source_commit": "4e6919c8dabf6510317e9c64d2f3219e15b27810",
+  "status": "complete",
+  "step": 7627,
+  "target_steps": 7627,
+  "target_tokens": 3998744576,
+  "training_tokens": 3998744576,
+  "updated_utc": "2026-10-24T04:10:45.719190+00:00",
+  "validation_nll": 2.7762024785791124,
+  "validation_perplexity": 16.05792470126983,
+  "value_head_dim": 64
+}
