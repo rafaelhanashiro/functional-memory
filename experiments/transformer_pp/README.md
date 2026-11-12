@@ -1439,10 +1439,11 @@ gradient against FP64 and the strips), beside the Mosaic query kernels' GPU test
 weight precision.
 
 The kernels run on H100 alone: B300 refuses them before tracing a kernel, and the adapter refuses
-any other GPU type before acceptance starts. At the per-GPU shape (16 sequences of 2,048 tokens, 14
-heads of width 64), one attention forward and backward at degree twelve takes 11.7 ms on an H100
-SXM, against 11.2 ms for the per-order query-distance kernels, on which `rfe140c073b2f` trained at
-5.15 s per update. The run should train at about 5.3 s per update, about 11 hours for 7,570 updates;
+any other GPU type before acceptance starts. On one H100 PCIe the run's update benchmarks 1.06%
+slower than that of `rfe140c073b2f` (the per-order query-distance kernels at degree twelve), which
+trained at 5.15 s per update on an H100 SXM. On SXM the run should train at about 5.2 s per update,
+about 10.9 hours for 7,570 updates
+([validation record](../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11));
 the pilot measures the update time and refuses an allocation the run would not fit.
 
 Home cluster: **Kennel**. From the isolated `claude/per-order-cumulative-mosaic` worktree, after
