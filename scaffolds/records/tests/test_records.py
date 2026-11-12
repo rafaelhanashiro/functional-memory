@@ -355,6 +355,25 @@ def test_index_exposes_score_transforms_and_identity_for_model_recipes_that_pred
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_exposes_a_constant_coefficient_start_only_where_a_recipe_sets_one(tmp_path):
+    study = tmp_path / "study"
+    model = {"attention_degree": 8, "attention_coefficient_initialization": "taylor"}
+    runs = {"legacy": create_run(study, {"model": model}),
+            **{str(start): create_run(study, {"model": {**model, "attention_coefficient_constant_initial": start}})
+               for start in (None, 0.0, -0.5)},
+            # A coefficient table starts from its parent's coefficients, not the recipe's.
+            "table": create_run(study, {"model": {**model, "attention_coefficient_constant_initial": 0.0},
+                                        "oracle": {"parameterization": "static_coefficients"}})}
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert {name: (rows[run.name]["coefficient_initialization"], rows[run.name]["coefficient_constant_initial"])
+            for name, run in runs.items()} == {
+        "legacy": ("taylor", ""), "None": ("taylor", ""), "0.0": ("taylor", "0.0"), "-0.5": ("taylor", "-0.5"),
+        "table": ("mean_parent_token_coefficients", "")}
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
     run = create_run(tmp_path / "study", recipe(), "label")
     update_record(run, {"execution": {"hardware": "H100", "acceptance": {"passed": 10}}})

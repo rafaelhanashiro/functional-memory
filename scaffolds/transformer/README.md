@@ -755,7 +755,8 @@ parameter-free function of the score instead of the score itself (`attention/sco
 - Records: the attention identity records `attention_score_transform` and `attention_coefficient_constant_initial`
   when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; W&B tags the run
   `score_transform_<name>` and `coefficient_constant_start`. `runs.csv` has an `attention_score_transform`
-  column (`identity` for every model recipe that predates it). Untransformed recipes trace identical programs.
+  column (`identity` for every model recipe that predates it) and a `coefficient_constant_initial` column
+  (empty unless the recipe sets the start). Untransformed recipes trace identical programs.
 - Diagnostics: the scan of the same kernel, forward only on the fixed diagnostic sample, reports
   `coefficients.score_transform`: per layer and head the raw scores' and the inputs' moments and extrema, the
   fraction of raw scores below zero, and the fraction of causal pairs at which the polynomial decreases in its
