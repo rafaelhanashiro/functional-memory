@@ -57,17 +57,23 @@ diagnostics), and validation, identity, parameter count and test selection of al
 seed-42 initialization fingerprints of `r95a5691d293f`, `r25fffc16c2f3`, `r227b0ed7c605` and `r8dc6e147601c`.
 All identical.
 
-**GPU qualification** (job 244010 on `mastiff`, one H100 PCIe, GPU-b1e23521 at bus 61:00.0, driver
-560.35.05, 350 W cap; commit `fe0c2a97` under the launcher's runtime: the CUDA 12 environment and the locked
-toolkit's ptxas 12.9.86). The compact record is
-[runs/score-transform-kernels/record.json](runs/score-transform-kernels/record.json), with the SHA256 of each
-JUnit, log and report in the ignored `logs/score-transform-kernels/244010/`.
+**GPU qualification** (jobs 244010 and 244157 on `mastiff`, both on one H100 PCIe, GPU-b1e23521 at bus
+61:00.0, driver 560.35.05, 350 W cap; commits `fe0c2a97` and `261dfa47`, one frozen execution set `f09ea1f1`,
+under the launcher's runtime: the CUDA 12 environment and the locked toolkit's ptxas 12.9.86). The compact
+record is [runs/score-transform-kernels/record.json](runs/score-transform-kernels/record.json), with the SHA256
+of each JUnit, log and report in the ignored `logs/score-transform-kernels/<job>/`.
 
 - Acceptance's GPU stage for `ra3b54e2489f8` (`-m gpu --mosaic-precision bf16` over its modules in acceptance's
   order): 116 passed, none skipped or failed, in 431 s: `mosaic_query` 44, `mosaic_repeatability` 3,
   `mosaic_score_transform` 48, `input_dependent_coefficients` 5, `query_tanh_polynomial` 16
   (`coefficient_scale` has no GPU case). The FP32-precision (`bf16x3`) cases of
   `tests/test_mosaic_score_transform.py`, which BF16 deselects, passed separately: 48.
+- Job 244157 ran `tests/test_mosaic_score_transform.py` again at both precisions (48 and 48 passed) and the
+  query family's Mosaic GPU modules at BF16, the
+  [score-bias kernels'](#score-bias-mosaic-kernels-on-h100-2026-11-11) set: 187 passed, none skipped or failed
+  (`mosaic_query` 44, `mosaic_repeatability` 3, `per_order_decay` 24, `mosaic_score_bias` 57, `score_bias` 4,
+  `endpoint_decay` 30, `input_dependent_coefficients` 5, `query_tanh_polynomial` 16, `coefficient_forms` 3,
+  `query_distance_decay` 1).
 - Accuracy against the module's NumPy FP64 all-pairs reference (explicit `phi(s)^r`, `phi'` the logistic function
   or `sign(s)`, every gradient, the coefficient gradient order by order), largest relative L2 over degrees 1, 2,
   4, 8 and 12 at 512 tokens with unit and wide (`N(0, 9)`) scores and signed coefficients, and the production
@@ -100,7 +106,8 @@ JUnit, log and report in the ignored `logs/score-transform-kernels/244010/`.
 
   The forward and dQ kernels spill nothing; every kernel launches with 168 registers (the compute warpgroups
   raise theirs to 232) at PTX ISA 8.8. Through the entry points, forward plus every VJP takes 3.04 ms (query),
-  3.84 ms (softplus) and 3.16 ms (abs).
+  3.84 ms (softplus) and 3.16 ms (abs). Job 244157 measured 0.93 s (query), 1.23 s (softplus) and 1.01 s (abs)
+  × 240 on the same GPU.
 - Full-shape pilot (`benchmarks/qualify_training.py pilot --no-references --continue-updates 1`: acceptance's pilot
   worker on a copy of `ra3b54e2489f8`, the production batch of 16 micro-batches of 16 × 2,048 tokens, 20
   updates, validation with the transform diagnostics and a checkpoint at update 20; frozen-execution check
@@ -110,13 +117,26 @@ JUnit, log and report in the ignored `logs/score-transform-kernels/244010/`.
   update (median of updates 2–20; 3.64–3.74), first update 40.2 s; acceptance projects 8.26 hours for 7,570
   updates (training 7.81, evaluation 0.21, checkpoints 0.17); allocator peak 30.3 GiB of 59.4. Acceptance's
   resume (update 21 in a fresh process from the pilot's checkpoint) passed its audit: loss 8.997, first update
-  41.3 s, peak 29.9 GiB. The control's pilot on another of `mastiff`'s H100 PCIe GPUs took 3.52 s per update
-  (7.83 hours; [score-bias Mosaic kernels](#score-bias-mosaic-kernels-on-h100-2026-11-11)).
-- Time limit: the projection plus two hours, rounded up: 11 hours; acceptance refuses a granted GPU whose own
-  projection exceeds 9 hours.
-- Not run on a GPU: B300 (`akita` was down), B200 and H100 SXM (fully allocated). B300's kernels run the same
-  tile functions and lower on the host (above), but no Blackwell GPU has run them, so the run's adapter admits
-  H100 alone.
+  41.3 s, peak 29.9 GiB.
+- Same-GPU pilots (job 244157, `--continue-updates 0`, each copy in a temporary directory outside the
+  repository): the run again took 3.715 s per update (3.63–3.74; 8.27 hours; peak 30.3 GiB) and its control
+  `r25fffc16c2f3` (acceptance's default adapter) 3.411 s (3.35–3.45; 7.63 hours; peak 30.3 GiB), both with
+  finite losses and valid diagnostics. Softplus adds 0.30 s per update (8.9%), the kernels' difference × 240
+  (0.30 s). The 350 W power cap was active in 96% of both pilots' busy one-second samples (342–344 W, median SM
+  clock 1,425–1,463 MHz of 1,755, 42–65 °C). The control's pilot on another of `mastiff`'s H100 PCIe GPUs took
+  3.52 s per update ([score-bias Mosaic kernels](#score-bias-mosaic-kernels-on-h100-2026-11-11)), 3% more than
+  on this one.
+- H100 SXM estimate (no SXM was free): the control's recipe trains at 2.32 s per update on an H100 SXM
+  (`ra15cbb16beb7`, the same update at 2.5 times the budget; median over its validation windows of training
+  throughput) and its even-order variant `r698f9a157a94` at 2.28 s on `dogo`, 1.47–1.50 times faster than the
+  control's pilot here. Scaled by the softplus/control ratio the run takes 2.49–2.53 s per update: 5.7–5.8 hours
+  with the PCIe pilot's evaluation and checkpoint time.
+- Time limit: the H100 PCIe, the slower GPU type the run may receive, sets it: its projection (8.26–8.27 hours)
+  plus two hours, rounded up: 11 hours, within `standard`'s 24 (an SXM alone would need 8); acceptance refuses a
+  granted GPU whose own projection exceeds 9 hours.
+- Not run on a GPU: B300 (`akita` was down), B200 and H100 SXM (fully allocated during both jobs). B300's kernels
+  run the same tile functions and lower on the host (above), but no Blackwell GPU has run them, so the run's
+  adapter admits H100 alone.
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml \
@@ -135,6 +155,15 @@ Q=(experiments/transformer_pp/runs/ra3b54e2489f8/config.yaml --directory <dir> -
    --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100)
 JAX_PLATFORMS=cuda "$PY" -m $QT pilot "${Q[@]}" --no-references --continue-updates 1 --limit-hours 8 10 12 14 16 20 24
 JAX_PLATFORMS=cuda "$PY" -m $QT resume "${Q[@]}"
+# Job 244157: the control's pilot (acceptance's default adapter), and the query family's modules at BF16.
+JAX_PLATFORMS=cuda "$PY" -m $QT pilot experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml --directory <dir> \
+  --experiment transformer_pp --gpu-type H100 --no-references --continue-updates 0
+T=scaffolds/transformer/tests
+JAX_PLATFORMS=cuda,cpu "$PY" -m pytest -q -s -rA -c scaffolds/transformer/pyproject.toml --import-mode=importlib \
+  -m gpu --mosaic-precision bf16 $T/test_mosaic_query.py $T/test_mosaic_repeatability.py $T/test_per_order_decay.py \
+  $T/test_mosaic_score_bias.py $T/test_score_bias.py $T/test_endpoint_decay.py \
+  $T/test_input_dependent_coefficients.py $T/test_query_tanh_polynomial.py $T/test_coefficient_forms.py \
+  $T/test_query_distance_decay.py $T/test_coefficient_scale.py
 ```
 
 ### Score transforms on the causal strips (2026-11-12)

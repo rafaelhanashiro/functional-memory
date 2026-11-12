@@ -1753,24 +1753,30 @@ control `r25fffc16c2f3` (validation-best 14.323; exp `r6a76e7fbde45` 14.257, fix
   beside the query kernels' own Mosaic cases (`tests/test_mosaic_query.py`, `tests/test_mosaic_repeatability.py`
   and the tanh query modules the control's acceptance ran), at BF16. A skipped test fails acceptance.
 
-**GPU qualification and time limit.** One H100 PCIe of `mastiff` ran the qualification (job 244010, commit
-`fe0c2a97`; [validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)):
+**GPU qualification and time limit.** Two jobs on one H100 PCIe of `mastiff` qualified the kernels and timed
+the run (jobs 244010 and 244157, commits `fe0c2a97` and `261dfa47`, one frozen execution set;
+[validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)):
 acceptance's GPU stage for this run passed (116 cases, none skipped; the transformed kernels within 2.8e-3
-relative L2 of FP64 and of the strips, the coefficient gradients within 1.1e-6 per order), and its 20-update
-pilot (acceptance's own worker, with validation, diagnostics and a checkpoint) had finite losses and valid
-diagnostics, with acceptance's resume passing its audit:
+relative L2 of FP64 and of the strips, the coefficient gradients within 1.1e-6 per order), the transform module
+passed again at both weight precisions (96 cases), and the query family's Mosaic GPU modules passed (187 cases).
+Acceptance's 20-update pilot (its own worker, with validation, diagnostics and a checkpoint) had finite losses and
+valid diagnostics, and acceptance's resume passed its audit. Job 244157 piloted the run and its control on the
+same GPU (job 244010's pilot of the run there: 3.71 s per update, 8.26 hours):
 
-| Run | s/update | Projected hours (7,570 updates) | Allocator peak GiB |
-| --- | ---: | ---: | ---: |
-| `ra3b54e2489f8` | 3.71 (3.64–3.74) | 8.26 | 30.3 |
+| Recipe | s/update, H100 PCIe | Projected hours (7,570 updates), H100 PCIe | H100 SXM estimate, hours | Allocator peak GiB |
+| --- | ---: | ---: | ---: | ---: |
+| `ra3b54e2489f8` | 3.72 (3.63–3.74) | 8.27 | 5.7–5.8 | 30.3 |
+| control `r25fffc16c2f3` | 3.41 (3.35–3.45) | 7.63 | – | 30.3 |
 
-The control took 3.52 s per update on another of `mastiff`'s H100 PCIe GPUs; on this one the softplus kernels'
-240 calls per update take 0.29 s more than the query kernels'. The default allocator share (59.4 GiB on an
-H100) holds the run. The limit is the projection plus two hours, rounded up: 11 hours, within `standard`'s 24;
-acceptance projects again on the granted GPU and refuses the allocation if that projection exceeds 9 hours. No
-Blackwell GPU ran the transformed kernels (`akita` was down, `shiba` allocated), so the run trains on H100
-alone. Submit it from the isolated `claude/score-transforms-mosaic` worktree after committing the frozen
-execution set:
+Softplus adds 0.30 s per update (8.9%), its kernels' extra time over the query kernels' 240 calls per update.
+No H100 SXM was free: the estimate scales the control recipe's update on an H100 SXM in production (2.32 s for
+`ra15cbb16beb7`, the same update at 2.5 times the budget; 2.28 s for the even-order `r698f9a157a94` on `dogo`) by
+that ratio. The default allocator share (59.4 GiB on an H100) holds the run. The H100 PCIe is the slower GPU type
+the run may receive, so the limit is its projection plus two hours, rounded up: 11 hours, within `standard`'s 24
+(an SXM alone would need 8); acceptance projects again on the granted GPU and refuses the allocation if that
+projection exceeds 9 hours. No Blackwell GPU ran the transformed kernels (`akita` was down, `shiba` allocated),
+so the run trains on H100 alone. Submit it from the isolated `claude/score-transforms-mosaic` worktree after
+committing the frozen execution set:
 
 ```bash
 # H100 only. Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): drop mastiff from

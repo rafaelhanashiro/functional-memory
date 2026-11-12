@@ -78,7 +78,8 @@ The primary is its control's recipe with the transform, the zero constant start 
 runs it keeps its control's attention implementation: the Mosaic query-polynomial kernels, here their
 transformed family, which evaluates `softplus(s)` inside the same causal tiles
 ([validation](../../../../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)),
-on H100 alone. On an H100 PCIe its pilot projects 8.3 hours, where the blocked strips would take 23–30.
+on H100 alone. On an H100 PCIe its pilot projects 8.3 hours (an H100 SXM about 5.8), where the blocked strips
+would take 23–30.
 Recipe, acceptance checks and launch command:
 [study README](../../../README.md#reference-shape-softplus-run).
 
