@@ -26,10 +26,12 @@ weight `c_0`. Then `W = p(z)` (forward and dV), `dS = p'(z) (dP phi'(s))` (dQ an
 `dc_r = sum_i dP z^r`. Vectors, shared memory, rings, BF16 weight products, masking (masked entries enter at
 `s = 0` and leave as zero) and failure rows are the query family's: a causal score that overflows to `-inf`
 makes its row NaN, as in the query kernels and the blocked reference. Backend selection admits these kernels on
-H100 (sm90) alone, as it admits the score biases. The 12-layer width-640 transform runs keep the strips (next
-section); the reference-shape softplus run `ra3b54e2489f8` trains on these kernels.
+H100 (sm90) alone, as it admits the score biases, and the entry point refuses B300's before tracing them
+(`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint without backend selection. The
+12-layer width-640 transform runs keep the strips (next section); the reference-shape softplus run
+`ra3b54e2489f8` trains on these kernels.
 
-**CPU tests** (`857f9006`, `JAX_PLATFORMS=cpu`): `tests/test_score_transform_lowering.py` 63 passed: the
+**CPU tests** (`e185c0c5`, `JAX_PLATFORMS=cpu`): `tests/test_score_transform_lowering.py` 65 passed: the
 families' counts and flags are the query family's (approximate math for softplus alone) and so is their support
 predicate, for degrees 0–14, every width and 256, 2,048 and 4,096 tokens; every H100 kernel lowers for cuda on
 the host in exactly the shared memory `hopper_smem_bytes` counts (the query family's: 106,608, 77,904 and 70,704
@@ -45,12 +47,12 @@ its row NaN in the tile functions of the query family and both transforms, with 
 its row's coefficient sums of orders >= 1 nonfinite and every other row finite, as the blocked scan and strips
 make the row of a `q.k` that overflows to ±inf; backend selection resolves a transformed recipe on `mosaic` on
 sm90 and refuses it on sm10x, where the untransformed recipe still resolves to `mosaic` and the strips run the
-transform; the identity's programs on Mosaic unchanged through `attention_core` and
+transform, and the entry point refuses B300's kernels before tracing them and runs H100's; the identity's programs on Mosaic unchanged through `attention_core` and
 `query_polynomial_attention`, and the transform reaching the transformed kernels from `attention_core` and from
 every layer of a two-layer model. `tests/test_score_transform.py` 81 passed (Mosaic recipes accepted where the
 query kernels run and refused with the reason elsewhere, backend resolution, allocation), `tests/test_acceptance.py`
 164 and the adapter's 187. The whole CPU suite: every scaffold, study and result test but the two-device stage
-and state rank's, 5,051 tests, 5,050 passed and one skipped (`test_regeneration_is_byte_identical`, whose
+and state rank's, 5,053 tests, 5,052 passed and one skipped (`test_regeneration_is_byte_identical`, whose
 archives live in the primary checkout); the two-device stage 25 passed and five skipped, which need four host
 devices and passed with four; state rank's suite in its own environment 225 passed and three skipped, which need
 CUDA.
@@ -65,21 +67,22 @@ scan's and strips' 276 programs, 40 small models (programs, losses, gradients, p
 diagnostics), and validation, identity, parameter count and test selection of all 462 run recipes (only the two
 12-layer width-640 transform recipes' refusal text for a hypothetical `fused` resolution differs); and the
 seed-42 initialization fingerprints of `r95a5691d293f`, `r25fffc16c2f3`, `r227b0ed7c605` and `r8dc6e147601c`.
-All identical. Against `e2d5aac4`, the set the GPU jobs below ran, `857f9006` changes only `query_softplus`'s
+All identical. Against `e2d5aac4`, the set the GPU jobs below ran, `e185c0c5` changes only `query_softplus`'s
 programs: the jaxprs of every family's H100 and B300 kernels at degrees 1 and 8, Q/K width 64 and both precisions
 (336, 64 of them B300's score-bias refusals alike), and the lowered Mosaic modules of the query, abs and softplus
-entry points' forward and VJP at degree eight on both architectures, are identical but for softplus's 28 kernels
-and 4 modules.
+entry points' forward and VJP at degree eight on both architectures (B300 admitted for the comparison), are
+identical but for softplus's 28 kernels and 4 modules.
 
 **GPU qualification** (jobs 244010 and 244157 on `mastiff`, both on one H100 PCIe, GPU-b1e23521 at bus
 61:00.0, driver 560.35.05, 350 W cap; commits `fe0c2a97` and `261dfa47`, one frozen execution set `f09ea1f1`,
 under the launcher's runtime: the CUDA 12 environment and the locked toolkit's ptxas 12.9.86). The compact
 record is [runs/score-transform-kernels/record.json](runs/score-transform-kernels/record.json), with the SHA256
 of each JUnit, log and report in the ignored `logs/score-transform-kernels/<job>/`. The current frozen execution
-set, `c909c7ef` at `857f9006`, differs from `f09ea1f1` in softplus's input (the same for every finite score, NaN
-at `-inf`), backend selection's H100-only admission, the tests and the scaffold README, and no GPU has run it:
-acceptance's GPU stage at launch runs the transform module (50 BF16 cases, among them an overflowing score in
-three rows) and the query kernels' modules on the granted H100 before training, and its pilot projects again.
+set, `c90aa961` at `e185c0c5`, differs from `f09ea1f1` in softplus's input (the same for every finite score, NaN
+at `-inf`), the H100-only admission (backend selection and the entry point), the tests and the scaffold README,
+and no GPU has run it: acceptance's GPU stage at launch runs the transform module (50 BF16 cases, among them an
+overflowing score in three rows) and the query kernels' modules on the granted H100 before training, and its
+pilot projects again.
 
 - Acceptance's GPU stage for `ra3b54e2489f8` (`-m gpu --mosaic-precision bf16` over its modules in acceptance's
   order): 116 passed, none skipped or failed, in 431 s: `mosaic_query` 44, `mosaic_repeatability` 3,
@@ -153,7 +156,7 @@ three rows) and the query kernels' modules on the granted H100 before training, 
   plus two hours, rounded up: 11 hours, within `standard`'s 24 (an SXM alone would need 8); acceptance refuses a
   granted GPU whose own projection exceeds 9 hours.
 - No B200, B300 or H100 SXM has run these kernels. B300's kernels run the same tile functions and lower on the
-  host (above); backend selection and the run's adapter admit H100 alone.
+  host (above); backend selection, the entry point and the run's adapter admit H100 alone.
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml \
