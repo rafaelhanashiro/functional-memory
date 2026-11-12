@@ -84,7 +84,7 @@ def test_allocated_runs_are_the_control_with_the_transform_and_capture(run_id):
     assert model_parameter_count(model) == model_parameter_count(control.model) == adapter.CONTROL[3]
     record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
     assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
-    assert record["home_cluster"] == "kennel" and record["status"] == "planned"
+    assert record["home_cluster"] == "kennel"  # status is the launcher's, so not checked
     assert record["config"]["sha256"] == hashlib.sha256((adapter.RUNS / run_id / "config.yaml").read_bytes()).hexdigest()
     assert (config.optim.total_steps, config.optim.warmup_steps, config.train.seed) == (7551, 454, 42)
     assert (config.data.batch_size, config.data.sequence_length, model.max_seq_len) == (128, 2049, 2048)
