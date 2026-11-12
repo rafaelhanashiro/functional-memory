@@ -1,13 +1,15 @@
 """Qualify per-order cumulative FoX gates against pinned shared-gate reference recipes."""
+import argparse
 from dataclasses import fields, replace
 from functools import partial
 import hashlib
 from pathlib import Path
+import sys
 
 import yaml
 
 from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import Config, config_to_dict
+from scaffolds.transformer.configs import Config, config_to_dict, load_config
 from scaffolds.transformer.configs.base import ModelConfig, validate_config
 from scaffolds.transformer.configs.loader import _update_dataclass
 
@@ -38,6 +40,9 @@ MANIFEST_SHA256 = {
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir",
                   "wandb_mode")
 GATE_PARAMETERS = ("forget_gate_kernel", "forget_gate_log_rate", "forget_gate_dt_bias")
+# The Mosaic per-order cumulative kernels are qualified on H100 and refuse every other GPU before tracing a
+# kernel; the causal strips are plain JAX.
+MOSAIC_GPU_TYPES = ("H100",)
 
 
 def manifest_sha256(path) -> str | None:
@@ -80,20 +85,25 @@ def control_config(degree: int) -> Config:
 
 
 def check_recipe(config: Config) -> None:
-    """Only per-order gates (and the causal strips) differ from the degree's shared-gate reference."""
+    """Only per-order gates and their implementation (the causal strips, or the Mosaic kernels on H100) differ
+    from the degree's shared-gate reference."""
     validate_config(config)
     model = config.model
     if not model.attention_forget_gate_per_order or model.attention_forget_gate_mode != "cumulative":
         raise ValueError("This comparison requires per-order cumulative FoX gates")
-    if model.attention_blocked_implementation != "strips":
+    if model.attention_backend == "blocked" and model.attention_blocked_implementation != "strips":
         # The GPU tests qualify per-order cumulative decay through the strips at the production context.
         raise ValueError("Per-order cumulative gates train on the blocked backend's causal strips")
     control = control_config(model.attention_degree)
     run = CONTROLS[model.attention_degree][0]
     actual, expected = config_to_dict(config), config_to_dict(control)
     actual["model"]["attention_forget_gate_per_order"] = False
-    # The causal strips compute the scan's arithmetic, on which the controls trained.
+    # The causal strips compute the scan's arithmetic, on which the controls trained. The Mosaic per-order
+    # cumulative kernels compute the same weights, rounded once to BF16 for the tensor cores, and never run the
+    # blocked implementation.
     actual["model"]["attention_blocked_implementation"] = expected["model"]["attention_blocked_implementation"]
+    if model.attention_backend == "mosaic":
+        actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
     for key, digest in MANIFEST_SHA256.items():
         path, control_path = actual["data"].pop(key), expected["data"].pop(key)
         if path != control_path and manifest_sha256(path) != digest:
@@ -183,7 +193,22 @@ def experiment_spec(config: Config, *, entry_module: str):
                    check_config=check_recipe, check_initialization=check_initialization)
 
 
+def require_gpu_type(argv) -> None:
+    """Refuse a Mosaic recipe on a GPU other than H100 before acceptance starts. The launcher's --runtime-env
+    query names no GPU type and so takes acceptance's default."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("config", nargs="?", type=Path)
+    parser.add_argument("--gpu-type", default="H100")  # acceptance's own default
+    args = parser.parse_known_args(argv)[0]
+    if (args.config is not None and args.gpu_type.upper() not in MOSAIC_GPU_TYPES
+            and load_config(args.config).model.attention_backend == "mosaic"):
+        raise ValueError(f"The Mosaic per-order cumulative kernels run only on {', '.join(MOSAIC_GPU_TYPES)}, not "
+                         f"on {args.gpu_type}. Submit this recipe with GPU types {','.join(MOSAIC_GPU_TYPES)}.")
+
+
 def main(argv=None) -> None:
+    argv = sys.argv[1:] if argv is None else list(argv)
+    require_gpu_type(argv)
     run_acceptance(partial(experiment_spec, entry_module=__name__), argv)
 
 

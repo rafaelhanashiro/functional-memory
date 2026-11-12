@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r95bfff096cd4/config.yaml",
+    "sha256": "9ce111625f41908714b3383dc4d9a66779e62149ccb34609ebbcd0f45e2bfb03"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-per-order-forget-gate-no-rope-wdecay",
+  "name": "query-m12-per-order-forget-gate-no-rope-wdecay",
+  "record_schema_version": 1,
+  "run_id": "r95bfff096cd4",
+  "status": "planned"
+}
