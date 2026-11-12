@@ -64,7 +64,9 @@ skipped:
 | 243502 | GPU-3729cb75, bus C1:00.0 | `593e7267` | 16 | 287 | `7097f45d9b0e4b4fd774421a18ff847b141f37886ae8a8242ebb31c0af7569e2` |
 | 243529 | GPU-750d4329, bus 01:00.0 | `1fa151b7` | 16 | 168 | `24aa205cdbc030feb2601bb864509f104a2c9c34bb7eab503fb7cab97806f26b` |
 
-The two commits share one frozen execution set (`b72a61cd`). The transform cases measured the same on both GPUs:
+The two commits share one frozen execution set (`b72a61cd`). `3c0ae7e7` changes it only by a run-index column
+(`scaffolds/records`, with its test) and the scaffold README; the runs' launcher (`kennel.sbatch`), acceptance,
+training and retention never call the index. The transform cases measured the same on both GPUs:
 1.007–1.011x their floors, largest elements 0.47–0.86 roundoffs, coefficient gradients 7.0–9.3e-7 per order. The
 score-bias cases stayed at 1.007–1.009x. No B200, B300 or H100 SXM ran the stage.
 
