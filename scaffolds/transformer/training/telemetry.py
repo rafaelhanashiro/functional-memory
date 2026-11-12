@@ -142,6 +142,26 @@ def reduce_devices(values: dict[str, jax.Array], reductions: dict[str, str],
     return reduced
 
 
+def single_device_statistics(statistics: dict[str, jax.Array], reductions: dict[str, str], params, grads,
+                             updated_params) -> dict[str, jax.Array]:
+    """One device's update statistics, keyed as in data-parallel training.
+
+    ``statistics`` holds the recorded values, stacked over microbatches when the update
+    accumulates them. Mean squares become RMS after the microbatch reduction, as
+    ``reduce_devices`` does after its cross-device mean.
+    """
+    reduced = reduce_microbatches(statistics, reductions)
+    values = {key: jnp.sqrt(value) if reductions[key] == "rms" else value for key, value in reduced.items()}
+    values.update(update_statistics(params, grads, updated_params))
+    return values
+
+
+@jax.jit
+def pack(statistics: dict[str, jax.Array]) -> jax.Array:
+    """Named statistics as one vector in sorted key order, fetched by the host in one transfer."""
+    return jnp.stack([statistics[key] for key in sorted(statistics)])
+
+
 _GROUP_RULES = (
     ("embedding", re.compile(r"token_embedding")),
     ("output_head", re.compile(r"lm_head")),
@@ -159,7 +179,7 @@ _GROUP_RULES = (
     ("qk_norm_scale", re.compile(r"qk_norm_log_scale")),
     ("qk_norm_gains", re.compile(r"qk_norm_[qk]_gain")),
     ("attention_output_norm", re.compile(r"output_norm_scale|o_norm_scale")),
-    ("attention_coefficients", re.compile(r"coefficient|polynomial|basis|denominator")),
+    ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator|spline|basis")),
     ("norm_scales", re.compile(r"(attention_norm|ffn_norm|final_norm)/")),
 )
 

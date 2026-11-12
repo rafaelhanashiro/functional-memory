@@ -1,0 +1,25 @@
+{
+  "check": "query-only continuation restored parameters and Adam history",
+  "runs": {
+    "r6186c797b4db": {
+      "child_config_sha256": "6947fbb66d8adb096f01027c7a4e1a13f2d3a0835abf77f840c5157a0a9f3590",
+      "continuation": {
+        "backbone_optimizer_count": 7500,
+        "backbone_optimizer_sha256": "ecc46546cca7fc165a8b4b72391c95dc3d6a0748fda6f4d9524faefbdde2c906",
+        "backbone_parameters_sha256": "5c8bbce27fc08f56460278abacc02c507793efc4ed005722253f3699b9493e5d",
+        "data_start_sequence": 1920000,
+        "new_coefficient_optimizer_count": 0,
+        "parent_checkpoint_sha256": "f1c896b4461bec910cf355d7b4e672b0c94155e6d0613e558c8e5db069f07679",
+        "parent_config_sha256": "9a1898124fb001b12bcd22a73126b74c63bee444bc6a3638cd576e2a088c548d",
+        "parent_optimizer_sha256": "ecc46546cca7fc165a8b4b72391c95dc3d6a0748fda6f4d9524faefbdde2c906",
+        "parent_parameters_sha256": "5c8bbce27fc08f56460278abacc02c507793efc4ed005722253f3699b9493e5d",
+        "parent_step": 7500,
+        "seed": 42
+      },
+      "parameter_count": 199396276,
+      "parameter_sha256": "52c3f7fbcb8d66e1a4e02275b176ad5326d19f4a84930576380dcc0101e75d85",
+      "parent_data_identity_sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba"
+    }
+  },
+  "status": "passed"
+}

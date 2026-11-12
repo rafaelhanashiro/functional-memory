@@ -1,0 +1,227 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/ra9834409e40a/completion.json",
+      "sha256": "69f849242745f8beeb0bc7c92c7707cea043b185cf368103d7634e5a4516fc8d",
+      "size_bytes": 4116
+    },
+    {
+      "path": "experiments/transformer_pp/runs/ra9834409e40a/metadata.json",
+      "sha256": "848453cf4cdf04542ccc667b26e11cf12689a67c9f9bb39502ca46f1d704b54e",
+      "size_bytes": 725
+    },
+    {
+      "path": "experiments/transformer_pp/runs/ra9834409e40a/metrics.jsonl",
+      "sha256": "48a2fee317699d604666287ec8d2362e6866f7f50dd9d3c9abbeeae1d3a66794",
+      "size_bytes": 1028796
+    },
+    {
+      "path": "experiments/transformer_pp/runs/ra9834409e40a/training.log",
+      "sha256": "d97140878f1fa8abf0212a0ad3bf4c4aa86129f7bd352ee865c24ecd9709030b",
+      "size_bytes": 12735
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "exit_code": 0,
+      "finished_utc": "2026-11-04T05:49:05.503478+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 PCIe",
+      "node": "mastiff.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+      "slurm_job_id": "234173",
+      "source_commit": "120437c6c40ab287c1b5b15d9ba0b52599b714e5",
+      "started_utc": "2026-11-04T05:22:43.807612+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "optax": "0.2.8",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/completion.json",
+    "sha256": "69f849242745f8beeb0bc7c92c7707cea043b185cf368103d7634e5a4516fc8d",
+    "size_bytes": 4116
+  },
+  "condition": "context_length/extrapolation_ablation_16k_long_documents",
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/config.yaml",
+    "sha256": "961e26b412ab1dbd772a2302a432928f58465be8e2215e4deb6bf76ce07de10e"
+  },
+  "evaluation_outcome": {
+    "finished_utc": "2026-11-04T05:49:02.894017+00:00",
+    "interpretation": "The validation-best query + W decay (m = 4) checkpoint scored per position at 16,384 tokens on the 608 long documents of r313eb59e1d5f (rows 9,657-10,264 of fineweb_12b_long_documents_seq16385/train, first appearances the model never trained on), with each query restricted to its most recent 2,048 keys (window) or with every key farther than 2,047 tokens given the RoPE phase of distance 2,047 (clamp), beside an unmodified control that must match r313eb59e1d5f's first 2,048 positions. Only the attention call changes; no gradient or optimizer update.",
+    "measurements": [
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 18.756,
+        "length": "training",
+        "mode": "full",
+        "nll": 2.6884245758661374,
+        "perplexity": 14.708485554792587,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 3.607269095873278e-06,
+        "seconds": 80.8,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 61.773,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "first_batch_seconds_including_compile": 10.953,
+        "length": "training",
+        "mode": "clamp",
+        "nll": 2.6884245758661374,
+        "perplexity": 14.708485554792587,
+        "prediction_tokens": 9961472,
+        "recorded_validation_nll": 2.6884281831352332,
+        "replay_absolute_error": 3.607269095873278e-06,
+        "seconds": 94.3,
+        "sequence_length": 2049,
+        "sequences": 4864,
+        "source_run_id": "rca97cc9db8f2",
+        "subsequent_batch_count": 303,
+        "subsequent_batches_seconds": 83.111,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 17.451,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "mode": "full",
+        "nll": 6.149538375423665,
+        "nll_beyond_training_length": 6.6474698237760546,
+        "nll_within_training_length": 2.664018236956939,
+        "perplexity": 468.5010652508318,
+        "prediction_tokens": 9961472,
+        "reference_mean_nll_absolute_error": 1.950284777230138e-06,
+        "reference_prefix_mean_nll_absolute_error": 1.3025129814270286e-05,
+        "seconds": 397.0,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 378.45,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 8.094,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "mode": "window",
+        "nll": 3.2609682788500463,
+        "nll_beyond_training_length": 3.346246856263348,
+        "nll_within_training_length": 2.664018236956939,
+        "perplexity": 26.074772573882516,
+        "prediction_tokens": 9961472,
+        "seconds": 388.3,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 377.349,
+        "window": 2048
+      },
+      {
+        "checkpoint_step": 7500,
+        "consumed_stream_tokens": 3970798080,
+        "first_batch_seconds_including_compile": 10.721,
+        "first_unseen_row": 9657,
+        "length": "evaluation",
+        "mode": "clamp",
+        "nll": 5.85536286352841,
+        "nll_beyond_training_length": 6.311269238752906,
+        "nll_within_training_length": 2.664018236956939,
+        "perplexity": 349.1015532950768,
+        "prediction_tokens": 9961472,
+        "seconds": 576.2,
+        "sequence_length": 16385,
+        "sequences": 608,
+        "source_run_id": "rca97cc9db8f2",
+        "start_sequence": 9657,
+        "subsequent_batch_count": 607,
+        "subsequent_batches_seconds": 564.149,
+        "window": 2048
+      }
+    ],
+    "optimizer_updates": 0,
+    "status": "complete"
+  },
+  "experiment_kind": "per_position_evaluation",
+  "home_cluster": "kennel",
+  "label": "query-m4-w-decay-extrapolation-ablation-16k-long-documents",
+  "log": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/training.log",
+    "sha256": "d97140878f1fa8abf0212a0ad3bf4c4aa86129f7bd352ee865c24ecd9709030b",
+    "size_bytes": 12735
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/metadata.json",
+    "sha256": "848453cf4cdf04542ccc667b26e11cf12689a67c9f9bb39502ca46f1d704b54e",
+    "size_bytes": 725
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/ra9834409e40a/metrics.jsonl",
+    "sha256": "48a2fee317699d604666287ec8d2362e6866f7f50dd9d3c9abbeeae1d3a66794",
+    "size_bytes": 1028796
+  },
+  "name": "query-m4-w-decay-extrapolation-ablation-16k-long-documents",
+  "record_schema_version": 1,
+  "run_id": "ra9834409e40a",
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 PCIe",
+    "node": "mastiff.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation/scaffolds/transformer/.venv/bin/python",
+    "slurm_job_id": "234173",
+    "source_commit": "120437c6c40ab287c1b5b15d9ba0b52599b714e5",
+    "started_utc": "2026-11-04T05:22:43.807612+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--gres=gpu:1",
+      "--cpus-per-task=8",
+      "--mem=96G",
+      "--time=04:00:00",
+      "--exclude=collie,samoyed,doodle,terrier,shiba",
+      "--job-name=ra9834409e40a",
+      "--output=experiments/transformer_pp/runs/ra9834409e40a/training.log",
+      "--error=experiments/transformer_pp/runs/ra9834409e40a/training.log",
+      "experiments/transformer_pp/results/exploratory/extrapolation_ablation/evaluate.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/extrapolation-ablation",
+      "120437c6c40ab287c1b5b15d9ba0b52599b714e5",
+      "ra9834409e40a"
+    ],
+    "partition": "standard,long",
+    "slurm_job_id": "234173",
+    "submitted_utc": "2026-11-04T05:21:47.317273+00:00"
+  }
+}

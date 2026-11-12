@@ -21,6 +21,9 @@ results/<analysis>/
 results/exploratory/
   README.md                 open exploratory topics and the date each opened
   <topic>/                  README.md, optional selection.yaml and figures
+results/diagnostics/
+  README.md                 closed diagnostic records of training behavior
+  <topic>/                  README.md, selection.yaml, figures and their plot.py
 results/simplified/
   README.md                 purpose, sources, regeneration commands
   <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
@@ -40,15 +43,24 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 ```
 
 - The established 10B-token shared-Transformer attention experiments belong to
-  `experiments/attention_scaling/`. The user-requested 200M / 4B-token setup is isolated
-  in `experiments/transformer_200m_4b/`, including its `recipe.yaml`, run membership,
-  `runs/<run_id>/`, execution helpers, and flat `results/` collection. Add runs there
-  deliberately; do not reproduce the old grid automatically. Reusable implementations
-  remain in the shared scaffolds. Its nested results follow all selection, provenance,
-  and regeneration rules below; old studies and result selections retain their recipes.
+  `experiments/attention_scaling/`. The user-requested Transformer++ study is isolated in
+  `experiments/transformer_pp/`. The study is its recipe's rules, not their values: model
+  shape and token budget are per-run settings, 1× Chinchilla is defined per shape, and
+  `experiments/transformer_pp/derive_recipe.py` derives a run's recipe from a partner run.
+  Its name is its recipe: call it
+  Transformer++ in READMEs, indexes, figures, and reports, never by its size or token budget
+  ("200M", "4B", "1x"), and name model shapes by structure (for example the 12-layer
+  width-640 shape). The study holds its `recipe.yaml`, run membership,
+  `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
+  diagnostics belong under `experiments/transformer_pp/results/exploratory/<topic>/`,
+  with their runs in the same study. Add runs deliberately; do not reproduce the old
+  grid automatically. Reusable implementations remain in the shared scaffolds.
+  Its nested results follow all selection, provenance, and regeneration rules below;
+  old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
-  degree, width, coefficient parameterization, sharing, and seed distinguish runs
-  within this study; do not create a new study directory for a sweep or mechanism.
+  degree, key width, model shape (depth and width), token budget, coefficient
+  parameterization, sharing, and seed distinguish runs within this study; do not create
+  a new study directory for a sweep, mechanism, or model shape.
   `experiments/state_rank/` is a separate scientific question. Comparisons and their
   explicit primary/control run selections belong under the applicable `results/`.
 - A study groups a scientific question. Varying several axes (for example key width,
@@ -72,10 +84,17 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Two attention questions have their own canonical collections at the user's request:
+  Five attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
-  static ones) and `results/gdn_polynomial/` (polynomial Gated DeltaNet). Do not create
-  a result directory for any other mechanism or sweep unless the user asks. Learning curves and
+  static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet),
+  `results/rational_polynomial/` (separate learned denominator polynomials), and the
+  Transformer++ study's `experiments/transformer_pp/results/degree_scaling/`
+  (perplexity against polynomial degree for four coefficient families) and
+  `experiments/transformer_pp/results/model_scale/` (attention variants at a smaller
+  model shape against their reference-shape partners). Do not
+  create a result directory for any other mechanism or sweep unless the user asks.
+  Each canonical collection stands alone: never merge one into another, and never fold
+  a newly canonical experiment into an existing collection. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -84,18 +103,31 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   figure, table, finding, or status report; `results/attention_scaling/collect.py`
   rejects them.
 - Exploratory experiments, whose place in the canonical results is not yet decided,
-  report under `results/exploratory/<topic>/`, one directory per question with flat
+  report under their applicable `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date
   opened; an optional selection YAML of explicit run IDs with roles, pinned by
   `scaffolds.records refresh`; and optional figures or tables that regenerate from
   it. Tests are not required. Their runs live in their study like any other run, with
   the usual lifecycle, records, and retained artifacts, and enter no canonical
-  selection. `results/exploratory/README.md` lists the open topics; mention them in
-  status updates. A topic ends in one of two ways: promote it (move its selection,
-  findings, and code into the canonical collection, add tests, and delete the topic),
-  or discard it (delete the topic and its runs with their artifacts). Exploratory
+  selection. The applicable `results/exploratory/README.md` lists the open topics;
+  the root exploratory index may link to study-local topics. Mention open topics in
+  status updates. A topic ends in one of two ways: promote it or discard it.
+  Promoting makes the topic its own canonical collection, `results/<topic>/`: move its
+  selection, findings, and code there, add regeneration code and tests, list it in the
+  root README and in the canonical collections above, and delete the topic. A promoted
+  topic is never merged into an existing canonical collection, even a related one.
+  Discarding deletes the topic and its runs with their artifacts. At the user's request,
+  a topic that records training behavior rather than comparing mechanisms may instead
+  close as a diagnostic (below). Exploratory
   topics are exempt from the one-collection rule and from tests, not from the
   provenance rules.
+- `results/diagnostics/<topic>/` holds closed records of training behavior (for
+  example gradient spikes) that compare no mechanisms and feed no comparison. Each has
+  flat files: a short README with the question, runs, findings, and limits; a selection
+  YAML of explicit run IDs pinned by `scaffolds.records refresh`; and figures or tables
+  that regenerate from it. A diagnostic has no open decision and needs no tests. Its
+  runs live in their study with the usual lifecycle and records and enter no canonical
+  selection. `results/diagnostics/README.md` lists the topics.
 - `results/simplified/<analysis>/` holds presentation figures: simplified, easy-to-read
   versions of a canonical collection's figures for sending to people outside the
   project. They read that collection's selections and code (no selection, findings, or
@@ -192,12 +224,34 @@ scaffolds/<capability>/      shared implementation, tests, and environment
 
 ## Scaffold and runtime separation
 
-- New dot-product Transformer experiments must enable QK normalization unless the
-  user explicitly requests plain QK scores. Set `model.qk_norm: true` in the frozen
-  recipe; do not inherit `false` when copying a legacy run. GLA and degree-zero
-  attention do not use QK normalization. Preserve historical recipes and resume
-  settings unchanged; a QK-normalized rerun receives a fresh run ID. Fresh CLI
-  allocation of an explicitly requested plain-score run requires `--allow-plain-qk`.
+- New training runs use one GPU by default, and independent runs have no scheduling
+  dependencies on one another. Use multiple GPUs only when explicitly requested or
+  needed because the model does not fit on one GPU. Keep the scientific global batch
+  size fixed through gradient accumulation; GPU count is execution provenance, not a
+  model hyperparameter. Changes to an existing run's allocation preserve its frozen
+  recipe and checkpoint and require acceptance on the new allocation.
+- On Kennel, use the permitted `standard` and `long` GPU allowances before submitting
+  overflow to `sweep`. Prefer `standard` for allocations that fit its time limit and
+  use the available `long` allowance too; a scientific sweep does not imply the Slurm
+  `sweep` partition. Check live partition, QoS, and account limits and count the user's
+  running and queued GPU allocations across worktrees before choosing partitions.
+  Use `sweep` only after the applicable higher-priority allowances are allocated or
+  committed to eligible jobs. Leave `nice` at its default unless deliberately ordering
+  jobs; do not add a blanket priority penalty. See `CLUSTERS.md` for current limits
+  and launcher defaults.
+- New dot-product Transformer experiments use QK RMSNorm with a learned positive
+  score scale per layer and head: `model.qk_norm: true`, `qk_norm_type: rms_norm`,
+  `qk_norm_sharing: per_layer`, `qk_norm_initial_scale: null`, and
+  `qk_norm_head_scale: true`. RMSNorm statistics are per token/head; Q/K channel
+  gains remain per layer and shared across heads, with a separate `exp(gamma)`
+  multiplier per head on Q before RoPE. Do not inherit an older QK setup when
+  copying a run. `scaffolds.records create` fills omitted settings with this
+  canonical setup and rejects explicit older settings unless the user requests
+  that comparison (`--allow-legacy-qk-normalization`). Explicitly requested plain
+  scores require `qk_norm: false` and `--allow-plain-qk`. GLA and degree-zero
+  attention do not use QK normalization. Preserve historical recipes, checkpoint
+  diagnostic parents, and resume settings unchanged; changed normalization
+  requires a fresh run ID. Runtime config defaults retain historical semantics.
 - New Transformer experiments use their attention mechanism's reference
   initialization (`transformer_reference` for dot-product attention, `gla_reference`,
   `gated_deltanet_reference`) unless the user explicitly requests Flax defaults, and
@@ -214,12 +268,28 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   inherit `fused` when copying a legacy recipe. Fresh allocation of such a recipe with
   `fused` requires `--allow-triton-attention`. Historical recipes and resumptions keep
   their backend.
+- New dot-product attention experiments whose attention trains on the blocked backend
+  (RoPE or no positional encoding; PaTH, GDN and GLA keep their own code) use its causal
+  strips (`model.attention_blocked_implementation: strips`: the scan's arithmetic over
+  causal 512-query strips, with FP32 dK/dV sums) unless the user explicitly requests the
+  scan; do not inherit `scan` when copying a recipe. `scaffolds.records create` fills it in
+  for recipes on the blocked or auto backend, and fresh allocation of such a recipe with
+  `scan` requires `--allow-scan-blocked-attention`. Evaluation diagnostics and kernel
+  qualification keep using the scan. Historical recipes and resumptions keep their
+  implementation.
 - New unnormalized attention experiments use per-head RMSNorm output scaling
   (`model.attention_output_scaling: head_rms_norm`) unless the user explicitly requests
   otherwise; it improved every unnormalized kernel tested
   ([attention scaling results](results/attention_scaling/README.md)). This is a practice
   for new runs: historical recipes and resumptions keep their settings, and the
   scaffold's default stays `none`.
+- New dense query-coefficient experiments always use
+  `model.attention_coefficient_readout_scale: 1/sqrt(K)`, where K is
+  `model.attention_coefficient_feature_count` (or degree + 1 when omitted).
+  Thus K=5 uses 0.4472135954999579 and K=9 uses 1/3. This scales the dense
+  mixing term and is separate from the polynomial's factorial order scaling.
+  Use the corresponding scaled runs as controls for new comparisons. Historical
+  recipes and resumptions keep their recorded settings.
 - Experiments sharing a model family use one shared model, attention, data pipeline,
   optimizer, trainer, evaluation, and checkpoint implementation. Keep cluster names,
   GPU-model workarounds, and transport policy out of model definitions, optimizer
@@ -326,3 +396,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   outputs, and duplicated documentation. An older active worktree keeps its frozen
   execution layout until its jobs finish; migrate retained artifacts into this layout
   when integrating it, without editing live execution paths.
+- Renaming a study folder is `git mv experiments/<old> experiments/<new>` followed by
+  `python -m scaffolds.records rename-study experiments/<new> --from <old> --to <new>`,
+  which repoints run records, selections, and `sweep.yaml`; frozen recipes and execution
+  history keep their recorded paths. A branch that predates the rename merges with
+  `git -c merge.directoryRenames=true merge <branch>`, and the same command then
+  handles the runs it added. Another cluster moves its artifact tree and repoints its
+  runs with `--artifact-root`.

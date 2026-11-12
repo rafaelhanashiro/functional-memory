@@ -31,6 +31,39 @@ to resume a run with an absent or different policy identifier. Reproduce or resu
 historical runs using their recorded source commit; loading an old recipe for a new
 run uses the canonical policy. Existing scientific records are unchanged.
 
+## Continuation from a pretrained Taylor checkpoint
+
+An optional `continuation` recipe section pins `parent_config`, its
+`parent_config_sha256`, `parent_checkpoint`, its `parent_checkpoint_sha256`, and
+`parent_step`. Packed data additionally pins `parent_data_identity_sha256`, the
+SHA256 of `data_identity.json` beside the parent recipe. Empty defaults preserve
+ordinary training. Continuations use zero warmup and equal peak/minimum learning
+rates; `optim.total_steps` is the absolute ending step, including the parent steps.
+
+To extend an already learned static or query model without changing its attention,
+set `continuation.preserve_all_parameters: true` and leave
+`continuation.new_parameter_learning_rate: null`. Every learned coefficient and
+projection, along with its Adam moments and clock, is restored. All parameters use
+the continuation's constant `optim.learning_rate`; no coefficient optimizer is
+created or reset. This mode requires an identical model recipe except for the
+execution backend and preserves the parent's weight-decay policy.
+
+The shared trainer restores every pretrained parameter and its Adam moments/count
+without change, continues the parent's batch cursor and RNG clock, and independently
+evaluates and checkpoints the starting state before the first new update. A child
+may retain fixed Taylor or introduce direct static or query-conditioned coefficients.
+Query continuations use `c_r(x) = (b_r + a_r tanh(x W_r)) / r!`, with `b_r = 1`
+and either zero amplitudes or zero projections, so every input starts at Taylor.
+Both coefficient and amplitude scales must be `factorial`; an inner tanh bias is
+not supported for continuations. Zero amplitudes with random projections initially
+learn through the amplitudes; the projections begin receiving gradients once those
+amplitudes move.
+New coefficients use a separate Adam state whose moments and bias-correction count
+start at zero; global clipping still acts once on the combined averaged gradient.
+Backbone/data recipe changes are rejected, and `continuation.json` records verified
+parent/backbone hashes. Subsequent resumptions restore the child's full checkpoint
+through the normal trainer. Acceptance pilots are offset by the parent step.
+
 ## Model, runtime, and launch scripts
 
 The model and trainer share one implementation across clusters. Generic device
@@ -64,11 +97,102 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
 
+`model.attention_forget_gate: true` adds the existing per-layer/head gate
+`log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
+the pre-attention RMSNorm activation, to softmax, unnormalized exponential, and
+unnormalized nonlinear query-polynomial attention ([Forget gate](#forget-gate) lists
+positions and backends). `attention_forget_gate_mode: cumulative` (the historical
+default) multiplies weights by `exp(L_t - L_i)`, where `L_t = sum_{j<=t} log(alpha_j)`.
+For query polynomials on the blocked backend, the `query_distance` mode instead
+multiplies by `exp((t-i) * log(alpha_t))`; only the current query chooses the decay rate.
+On softmax and the unnormalized exponential the mode adds `(t-i) * log(alpha_t)` to every
+score ([Forget gate](#forget-gate)).
+Both modes apply attenuation after the polynomial, keep diagonal attenuation one,
+and preserve the coefficient generator and attention-output normalization.
+They share identical parameters and initialization: the gate projection decays,
+while `A_log` and `b_dt` do not. The separate coefficient-projection decay switch
+retains its existing behavior. New-mode GPU acceptance compares outputs and all
+operand gradients against an explicit dense reference at 2,048 tokens.
+
+Input-form `query_distance` gates also support two independent options on the
+blocked backend. `attention_forget_gate_conditioning: query_key` adds
+`forget_gate_key_kernel` and uses the endpoint rate
+`exp(A_log) * softplus(wq·x_t + wk·x_i + b_dt)`. The key projection starts at zero
+and takes weight decay, exactly recovering the query-only control initially.
+Compact query/key projections pass to the attention core; pair rates and causal
+statistics are evaluated within query blocks. Polynomial coefficients stay
+query-conditioned. On softmax and the unnormalized exponential the same query-key rate
+adds `(t-i) * log(alpha_ti)` to every score ([Forget gate](#forget-gate)); the bounded
+sigmoid rate below stays with the query polynomials.
+
+With query-only gating, `attention_forget_gate_rate_activation: sigmoid` replaces
+softplus by sigmoid, giving a positive rate bounded by learned `exp(A_log)`.
+Initialization preserves the rate/projection draws and sets `b_dt = logit(dt)`
+from the original Mamba-2 `dt` draw, matching the control's zero-input rate.
+Rates on nonzero inputs need not match. Both new fields default to the historical
+`query`/`softplus` behavior; combining key dependence with sigmoid is unqualified
+and rejected. Gate diagnostics report endpoint rates over causal pairs when
+key-conditioned, otherwise over query tokens.
+
+`attention_forget_gate_per_order: true` gives every order, including zero, its
+own softplus query-distance gate on the blocked backend or the Mosaic decay kernels
+(see `attention_backend: mosaic` below for their GPU limits). With query-only
+coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
+The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
+`query_key` adds `wk_r·x_i` inside softplus. With `attention_forget_gate_mode:
+cumulative` (query conditioning, blocked backend only) each order instead keeps its
+own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
+`sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)` ([Forget gate](#forget-gate)). Gate arrays
+add an order axis before their final channel axis. All orders initially duplicate
+the shared gate's draw; key projections start at zero. The copies then learn
+independently. Projection matrices receive WD; rates and biases remain exempt.
+Diagnostics retain the layer, head, and order axes. Sigmoid rates, other gate
+forms, and other backends reject this option, and Mosaic rejects cumulative
+per-order gates. Existing recipes default to a shared gate.
+
+`attention_forget_gate_conditioning: none` is the input-free gate of learned static
+coefficients: `lambda = exp(A_log) * softplus(b_dt)` per layer and head reads no token,
+so every weight is `sum_r c_r s_ti^r exp(-(t-i) lambda)`. It keeps the query gate's
+`A_log` and `b_dt` arrays, names and Gated DeltaNet draws (both exempt from weight decay)
+and drops its projection; with a rate that reads no token, cumulative and query-distance
+decay coincide. It requires learned direct `per_head` static coefficients with the Taylor
+start and every order, the input form with softplus rates in `query_distance` mode, RoPE or
+no positional encoding, and the blocked (scan or strips) or Mosaic backend;
+`attention_forget_gate_per_order: true` gives each order its own copy of the gate. The model
+passes the represented coefficients and `-lambda` to the query-coefficient decay operation,
+broadcast to every query and token, so their gradients sum back to `c`, `A_log` and `b_dt`;
+on Mosaic these are the `query_decay` and `per_order_query_decay` kernels. Diagnostics report
+each layer's, head's (and order's) rate and half-life `ln 2 / lambda` beside the coefficients.
+Static coefficients reject every gate that reads tokens, and query coefficients reject this one.
+Acceptance adds `tests/test_input_free_gate.py` to both test stages of these recipes: on CPU,
+outputs and every gradient against FP64 through the scan and the strips, the model's operands,
+initialization, masks, diagnostics, recipe rules, and H100 kernel lowering at 2,048 tokens; on
+the GPU, the Mosaic path against FP64 at 2,048 tokens, duplicated orders against the shared
+kernels, and a two-layer model against the FP32 blocked model.
+
+`attention_forget_gate_form: input` (the default) is that gate. The `constant` form
+drops its token dependence: one learned log rate per layer and head,
+`log(alpha_t) = -exp(A_log)`, so every weight decays as `exp(-exp(A_log) * (t - i))`,
+ALiBi's linear bias in log space; softmax and the exponential add `-exp(A_log) * (t - i)`
+to every score, which for softmax is ALiBi. Rates start at ALiBi's slopes `2^(-8h/H)` for
+heads `h = 1..H`, identically in each layer, and are exempt from weight decay.
+`attention_forget_gate_constant_rate: fixed` holds them at those slopes with no trainable
+parameter (`learned`, the default and the meaning of recipes without the field, trains them);
+the fixed rate and the learned rate's start are one FP32 array, `forget_gate.alibi_log_rate`.
+The constant form is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend (scan or strips);
+configuration rejects it with `query_distance` or PaTH, and a fixed rate with any other form.
+The `sigmoid` form is the Forgetting Transformer's original
+gate, `alpha_t = sigmoid(x_t w_f + b_f)`, with the paper's initialization (`w_f ~ N(0, 0.02^2)`,
+`b_f = 0`) and weight decay on `w_f` only; it equals the input form with `exp(A_log) = 1` and the
+projection negated. It is qualified for softmax, the exponential, and query polynomials with the
+cumulative mode under RoPE or no positional encoding on the blocked backend.
+
 `attention/multihead.py` owns Q/K/V projections, RoPE, head layout, and the output
 projection. `attention/core.py` dispatches complete operations on post-RoPE
 `[batch, time, heads, channels]` arrays. Q/K use `d_K`; the output has V's shape
 and dtype. Mechanisms live in `softmax.py`, `taylor.py`,
-`learned_quadratic.py`, `learned_polynomial.py`, and `unnormalized.py`. Their implementations live under `attention/backends/`.
+`learned_quadratic.py`, `learned_polynomial.py`, `unnormalized.py`, and `spline.py`. Their implementations live under `attention/backends/`.
 Fused kernels consume Q/K/V directly and retain their custom backward passes.
 The interface does not require a materialized attention matrix.
 
@@ -81,6 +205,7 @@ The existing scientific configuration fields remain supported:
 | Nonnegative `attention_degree`, `attention_normalization: false` | Unnormalized fixed Taylor `p_m(QKᵀ / sqrt(d_K)) V`; odd degrees permit signed weights |
 | `attention_degree: m >= 1`, `attention_normalization: false`, `attention_coefficients: learned` | Unnormalized `sum_r c_r (QKᵀ / sqrt(d_K))^r V` with every coefficient learned from `1/r!`; signed |
 | The preceding settings plus `attention_coefficient_conditioning: query`, `attention_coefficient_activation: tanh`, `attention_coefficient_sharing: per_head` | Query-dependent signed coefficients `c_r(x_t) = b_r + a_r tanh(w_r^T x_t)`, independently per layer and head; direct parameterization, fused or blocked |
+| `attention_degree: p >= 1`, `attention_normalization: false`, `attention_coefficients: learned`, `attention_kernel_basis: bspline`, `attention_spline_knots: [u_0, ..., u_K]` | Unnormalized `sum_j theta_j B_j(QKᵀ / sqrt(d_K)) V` on a fixed degree-`p` B-spline basis with `K + p` functions, static or tanh query-conditioned `theta`; blocked only ([B-spline score function](#b-spline-score-function)) |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned` | Normalized `sum_r c_r s^r V / rowsum` with every coefficient learned from `1/r!`; signed weights and row sums; fused or blocked |
 | Even `attention_degree: m >= 2`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: sum_of_squares` | Normalized `(q1(s)^2 + q2(s)^2) V / rowsum` with `deg q1 = m/2`, `deg q2 = m/2 - 1` learned and initialized to reproduce `T_m` exactly; nonnegative weights, positive row sums; fused or blocked |
 | `attention_degree: m >= 1`, `attention_normalization: true`, `attention_coefficients: learned`, `attention_coefficient_parameterization: rational` | Normalized `p_a(s) V / sum_j p_b(s_j)` with a learned numerator `p_a(s) = sum_r a_r s^r` and a learned denominator with constant 1 of degree `attention_denominator_degree` (default `m`): signed `1 + sum_r b_r s^r`, or nonnegative `(1 + sum_r u_r s^r)^2 + (sum_r w_r s^r)^2` (`attention_denominator_parameterization: sum_of_squares`); fused or blocked |
@@ -160,7 +285,17 @@ coefficients, so the penalty is the only shrinkage they receive.
 `per_head` stores `[num_layers, num_heads, 2]`. Each layer keeps its own projections.
 Learned polynomial coefficients are the `polynomial_coefficients` array: `[m + 1]`
 with `attention_coefficient_sharing: global`, `[num_layers, num_heads, m + 1]` with
-`per_head`, FP32, without weight decay. The blocked reference evaluates them by
+`per_head`, FP32, without weight decay. For learned static/direct or diagonal tanh-query polynomials,
+`attention_coefficient_orders: [0, 2, 4, 6, 8]` stores only five entries and fixes
+all omitted orders at zero. Orders must be strictly increasing and include the
+configured highest degree. Taylor initialization retains `1/r!` on these orders;
+with `attention_coefficient_scale: factorial`, the stored entries start at one
+and divide by the factorial of their actual order, not their compact array index.
+The existing attention kernels receive the expanded monomial vector, with exactly
+zero omitted coefficients. Query generators store and project only the selected
+columns of W and entries of a,b (and an optional inner bias); projection weight
+decay still applies to W only. Both bias and amplitude scaling use the selected
+orders' factorials before expanding the effective coefficients. The blocked reference evaluates them by
 Horner's rule with or without normalization. Without normalization,
 `attention/backends/fused_learned_polynomial.py` is the fused kernel, whose custom
 backward also returns each head's coefficient gradient `sum_{i>=j} S_ij^r (dY_i · V_j)`.
@@ -349,54 +484,66 @@ and excluded from weight decay. Both variants expose coefficient diagnostics.
 
 ### QK normalization
 
-QK-norm is required for new dot-product experiments unless the user explicitly
-requests plain QK scores. A recipe that leaves `qk_norm` unset gets `true`; frozen
-new recipes record `qk_norm: true`. To run an explicitly requested plain-score
-experiment, set `qk_norm: false` and pass `--allow-plain-qk` when allocating it with
-`python -m scaffolds.records create`. This prevents copied legacy recipes from
-silently retaining plain `q·k / sqrt(d_K)` scores. Historical recipes and resumptions
-retain their recorded settings. GLA rejects `qk_norm: true`, and degree 0, which
-never reads Q or K, resolves
-it to `false`. It composes with every dot-product mechanism above and
-changes only the score. The default `qk_norm_type: cosine_log_scale` preserves the
-historical implementation. Q and K are unit-normalized per head in FP32,
-`x̂ = x / sqrt(||x||² + qk_norm_eps)`, and the score becomes
+New dot-product experiments allocated with `python -m scaffolds.records create`
+use `qk_norm: true`, `qk_norm_type: rms_norm`, `qk_norm_sharing: per_layer`,
+`qk_norm_initial_scale: null`, and `qk_norm_head_scale: true`. The allocator fills
+omitted fields with these settings and rejects copied older settings unless
+`--allow-legacy-qk-normalization` explicitly opts into that comparison. Plain
+scores require `qk_norm: false` and `--allow-plain-qk`. GLA and degree-zero
+attention do not use QK normalization. Historical config loading, checkpoint
+resumption, and checkpoint-based diagnostics preserve their recorded settings;
+the runtime's defaults remain `cosine_log_scale` with head scaling disabled.
 
-```text
-s_ij = exp(γ) · <q_i, k_j> / (||q_i|| ||k_j||),   |s_ij| <= exp(γ)
-```
+RMSNorm applies `g_Q * q / sqrt(mean(q²) + eps)` and
+`g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for each
+token and head and computed in FP32; each layer's two gain vectors have
+`qk_head_dim` entries and broadcast across heads. The FP32 arrays
+`qk_norm_q_gain` and `qk_norm_k_gain`, both `[num_layers, qk_head_dim]`, initialize
+to one and receive no weight decay. Channel gains generally do not commute with
+RoPE, so their placement before RoPE is part of this mode's definition.
 
-The kernels are untouched: `attention/multihead.py` feeds the mechanism
-`q' = exp(γ) sqrt(d_K) q̂` and `k' = k̂` (`attention/qk_norm.py`), whose
-`q'·k' / sqrt(d_K)` is the cosine score, so the blocked reference, the fused
-Pallas/Triton kernels, cuDNN softmax, and all diagnostics see `s_ij` directly. The
-normalization precedes RoPE, which is orthogonal, so the order is immaterial. The
-log scale `γ` is the `qk_norm_log_scale` array, `[1]` with `qk_norm_sharing: global`
-or `[num_layers, num_heads, 1]` with `per_head` (default), FP32, without weight
-decay, initialized at `log(qk_norm_initial_scale)`; `null` (default) selects
-`sqrt(d_K)`, the scale of RMSNorm-style QK-norm at initialization. The learned scale
-is log-parametrized so the optimizer moves it multiplicatively and it stays positive
-(a negative scale is a sign flip that the key projection absorbs). Because cosine
-scores ignore Q/K magnitudes, the model can sharpen attention only through `γ`,
-and rescaling the Q or K projection leaves the operator unchanged. Every
-validation records `γ` and `exp(γ)` for each layer and head in `metrics.jsonl`
-under `attention_diagnostics.qk_norm_scale`; W&B receives their mean, minimum,
-and maximum. Recipes and metadata identify the option with `qk_norm`,
-`qk_norm_sharing`, `qk_norm_initial_scale`, and `qk_norm_eps`. GLA and degree 0
-do not use it.
+With `qk_norm_head_scale: true`, the model also multiplies normalized Q by
+`exp(gamma)` once before RoPE. Each layer/head learns its own scalar in
+`qk_norm_head_log_scale` (`[num_layers, num_heads, 1]`, FP32, no weight decay).
+Zero initialization gives scale one and preserves the original RMSNorm function
+exactly. Q/K channel gains stay shared across heads; the additional scalar permits
+independent score magnitudes. The kernels retain `QKᵀ / sqrt(d_K)`, so this scale
+multiplies the score once, for softmax, exp, and polynomial kernels alike.
+Validation records channel gains in `attention_diagnostics.qk_norm_gains` and
+head log scales/effective scales in `attention_diagnostics.qk_norm_head_scales`;
+W&B mirrors their mean, minimum, and maximum. Historical RMSNorm recipes with
+`qk_norm_head_scale: false` have no additional scalar or parameter array.
 
-The alternative `qk_norm_type: rms_norm` requires `qk_norm_sharing: per_layer`
-and `qk_norm_initial_scale: null`. It applies `g_Q * q / sqrt(mean(q²) + eps)`
-and `g_K * k / sqrt(mean(k²) + eps)` before RoPE. Statistics are independent for
-each token and head and computed in FP32; each layer's two gain vectors have
-`qk_head_dim` entries and broadcast across heads. The model owns the FP32 arrays
-`qk_norm_q_gain` and `qk_norm_k_gain`, both shaped `[num_layers, qk_head_dim]`,
-initialized to one and excluded from weight decay. There is no scalar log scale;
-the existing kernels retain their `QKᵀ / sqrt(d_K)` scaling. Channel gains generally
-do not commute with RoPE, so their placement before RoPE is part of this mode's
-definition. Validation retains every gain under `attention_diagnostics.qk_norm_gains`
-and W&B mirrors Q/K gain means, minima, and maxima. Adding this mode does not change
-the arithmetic or parameter trees of historical cosine-score recipes.
+`qk_norm_token_scale: cosine` (default `none`; requires the head scale) gives each
+query its own bounded log scale from the attention input `x_t`, the activation after
+the block's pre-attention RMSNorm: `delta_th = a_h cos(w_h, x_t)`, and Q is multiplied
+by `exp(gamma_h + delta_th)` instead of `exp(gamma_h)`. Each layer/head owns a direction
+`qk_norm_token_scale_kernel` (`[num_layers, num_heads, hidden_size]`, drawn
+`N(0, 1/hidden_size)` from the mechanism stream; only its direction matters) and an
+amplitude `qk_norm_token_scale_amplitude` (`[num_layers, num_heads, 1]`, initially zero),
+both FP32 and exempt from weight decay by default. Set
+`qk_norm_token_scale_kernel_weight_decay: true` to apply `optim.weight_decay` to the
+direction `w_h` only; the amplitude remains exempt. This policy also applies to the
+new-parameter optimizer in continuations and is recorded in attention diagnostics.
+Both vectors are normalized as `v / sqrt(||v||² + eps)`
+with `qk_norm_eps`, so `|delta| <= |a_h|` without saturation, and a zero amplitude
+reproduces the head-scaled model exactly. The gate restores the per-token query-norm
+freedom that RMSNorm removes; a per-query temperature of the degree-`m` Taylor kernel is
+the same operation. Validation records amplitudes, direction norms, and the realized
+`delta` statistics in `attention_diagnostics.qk_norm_token_scales`; W&B mirrors the
+amplitudes. A continuation may introduce the gate beside a fixed-Taylor parent and give
+it its own constant learning rate (`continuation.new_parameter_learning_rate`).
+
+The historical `qk_norm_type: cosine_log_scale` normalizes Q and K per head in
+FP32 as `x̂ = x / sqrt(||x||² + qk_norm_eps)`, then feeds
+`q' = exp(gamma) sqrt(d_K) q̂` and `k' = k̂` to the unchanged kernels. Its score is
+`exp(gamma) * <q̂, k̂>`. The scalar `qk_norm_log_scale` is `[1]` with
+`qk_norm_sharing: global` or `[num_layers, num_heads, 1]` with `per_head`, FP32
+without weight decay. It initializes at `log(qk_norm_initial_scale)`, or at
+`log(sqrt(d_K))` when that setting is null. Validation retains these scales under
+`attention_diagnostics.qk_norm_scale`. Unlike channel gains, unit normalization
+and the scalar commute with RoPE. Existing cosine-score recipes retain their
+arithmetic and parameter trees.
 
 ### Input-dependent polynomial coefficients
 
@@ -425,9 +572,21 @@ changes the read at `t`; it does not add write gates, forgetting, or delta corre
 `query_polynomial_kernel` has shape `[layers, heads, hidden_size, m+1]`, while
 `query_polynomial_bias` and the tanh-only `query_polynomial_amplitude` have shape
 `[layers, heads, m+1]`. These FP32 model-owned arrays are excluded from weight
-decay. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
+decay, except that `model.attention_coefficient_kernel_weight_decay: true` decays the
+kernel `W` with `optim.weight_decay`. The kernel starts at zero, the bias at `b_r = 1/r!`, and the tanh amplitude
 at one, without consuming RNG draws. The backbone keeps its canonical
 initialization and the initial attention kernel is the degree-`m` Taylor polynomial.
+For learned query-conditioned tanh coefficients with diagonal readout,
+`optim.query_coefficient_learning_rate_scale` (default `1.0`) multiplies the learning
+rate of the stored bias `b` and amplitude `a` at every layer, head, and order. It
+scales the completed Adam update after global gradient clipping; the projection
+`W` and all other parameters keep the base schedule. Both `a` and `b` remain
+excluded from weight decay. A value of `3.0` gives them three times both peak and
+minimum LR with the same warmup and cosine horizon, without changing their forward
+factorial scaling or optimizer moments. The optimizer state layout stays unchanged.
+The multiplier is frozen in each run's recipe and supports ordinary checkpoint
+resumption. Checkpoint continuations from a different recipe use their existing
+`continuation.new_parameter_learning_rate` option instead.
 For tanh, `attention_coefficient_amplitude_initial` (default 1) sets the starting
 `a_r`, and `attention_coefficient_projection_initial_std` (default 0) draws each kernel
 entry from `N(0, std^2)`. The draw uses a mechanism stream derived from the seed
@@ -439,6 +598,41 @@ keeps the Taylor start, while the amplitude's gradient `tanh(w_r^T x_t)` is nonz
 `c_r = b_r + a_r tanh(w_r^T x_t + beta_r)`, stored as `query_polynomial_tanh_bias`
 (`[layers, heads, m+1]`, FP32, no weight decay) and starting at zero, so a constant
 shift of the pre-activation need not be read from `x_t` through `w_r`.
+`attention_coefficient_gate: sigmoid` (default `none`) gates every order independently
+per layer and head: `c~_r(x_t) = 2 g_r(x_t) c_r(x_t)` with
+`g_r(x_t) = sigmoid(U_r^T x_t + beta_r)`, where `x_t` is the coefficient generator's input.
+The kernel `query_polynomial_gate_kernel` (`U`, `[layers, heads, hidden_size, m+1]`) and
+the bias `query_polynomial_gate_bias` (`beta`, `[layers, heads, m+1]`) are FP32, start at
+exactly zero, and draw no random numbers, so every other parameter keeps the ungated
+recipe's initialization. The fixed factor 2 normalizes the gate: `2 g_r` is exactly 1 at
+the start, preserving the ungated function and its derivatives with respect to `W`, `a`
+and `b`, and ranges over `(0, 2)` thereafter, so an order can be suppressed or amplified;
+the gate never starts near saturation. `U` follows
+`attention_coefficient_kernel_weight_decay`, like `W`; `beta` never decays. The gate is
+applied inside the coefficient generator, so every backend receives the gated `c~`
+unchanged, with no distance-dependent decay or row-sum division. It is qualified for
+diagonal tanh query coefficients with RoPE, without selected orders, an inner tanh bias, a
+forget gate, continuation, or a query learning-rate scale. Diagnostics report the gate,
+the ungated `c`, the order tilt `log g_r - mean_r log g_r`, and each order's contribution
+`c~_r s_ti^r` over causal pairs, since a small gate alone does not show suppression.
+`attention_coefficient_gate: gdn` multiplies instead by Gated DeltaNet's decay without a
+distance exponent, `c~_r(x_t) = alpha_r(x_t) c_r(x_t)` with
+`alpha_r(x_t) = exp(-exp(A_log_r) softplus(w_r^T x_t + dt_bias_r))` in `(0, 1]`, computed in
+FP32 per layer, head and order. Its arrays are `query_polynomial_gate_kernel` (`w`,
+`[layers, heads, hidden_size, m+1]`), `query_polynomial_gate_log_rate` (`A_log`) and
+`query_polynomial_gate_dt_bias` (`[layers, heads, m+1]`), with the input-form forget gate's
+initialization (`w` uniform in `+-1/sqrt(hidden_size)`, `exp(A_log)` uniform on `(0, 16)`,
+`softplus(dt_bias)` log-uniform on `[0.001, 0.1]`), drawn once per layer and head from the
+mechanism stream and copied to every order. Every order therefore starts with the same
+`alpha_t`, which per-head output RMSNorm cancels up to its epsilon: the normalized output is
+the ungated one times `sqrt((ms + eps alpha^2) / (ms + eps))`, with `ms` the gated head output's
+mean square. `w` follows `attention_coefficient_kernel_weight_decay`; `A_log` and `dt_bias`
+never decay. Nonfinite gate inputs give NaN rather than a saturated gate. The qualification
+restrictions are the sigmoid gate's, and diagnostics report `alpha` in the gate fields
+together with `exp(A_log)`, `softplus(dt_bias)` and `||w_r||`.
+`acceptance.gdn_gate_start_parity` checks a recipe's initial logits against its ungated
+counterpart: to FP32 rounding with the RMSNorm epsilon at `1e-30`, and within the epsilon's
+bound at the recipe's.
 `attention_coefficient_amplitude_scale: factorial` (tanh only; default `none`) uses the
 effective amplitude `a_r/r!`, `c_r = b_r + (a_r/r!) tanh(w_r^T x_t)`, with no new
 parameters. Because Adam's step is invariant to the gradient's scale, order `r`'s
@@ -454,11 +648,41 @@ To scale the entire query-dependent coefficient, enable both factorial options:
 `c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)] / r!`, with stored `b_r = 1` and
 `a_r = 0` for a Taylor start. Static coefficients need only
 `attention_coefficient_scale: factorial`.
+`attention_coefficient_readout: dense` replaces diagonal tanh amplitudes with a
+matrix that mixes all tanh features into every polynomial order. With both
+factorial options enabled, `c_r(x) = [b_r + sum_j V_rj tanh(w_j^T x)] / r!`.
+It requires query-only tanh conditioning. `attention_coefficient_feature_count`
+sets the number of features `K` independently of the degree; null uses `m+1`.
+`query_polynomial_kernel` then has shape `[layers, heads, hidden_size, K]`, and
+`query_polynomial_mixing` has shape `[layers, heads, m+1, K]` (FP32, no weight
+decay), replacing the amplitude array. For `K = m+1`, initialization places the
+requested amplitude on the mixing diagonal, exactly reproducing the diagonal
+readout. Other `K` require zero initial amplitude and start mixing at zero.
+The bias and backbone initialization stay unchanged. Diagonal remains the
+runtime default for old checkpoints.
+
+`attention_coefficient_readout_scale` (default `1.0`) multiplies only the dense
+input-dependent term: `c_r = [b_r + scale * sum_j V_rj tanh(w_j^T x)] / r!`.
+For example, `1/3` reduces the effective mixing contribution while leaving the
+Taylor bias unchanged. It must be positive and finite; values other than one
+require dense readout. Diagnostics record the stored and effective mixing.
+
+`training.coefficient_distillation_model` provides native teacher-input capture,
+free-table checkpoint streaming, Taylor-preserving dense student construction,
+packed generator parameters, and ordinary student evaluation. Teacher capture
+observes the attention module's actual normalized input and exposes both joint
+and independently compiled forward checks. `training.coefficient_distillation_regression`
+fits packed generators against factorial-coordinate targets. Each layer/head has
+its own mean loss and gradient clipping before Adam; deployment uses the same
+production coefficient projection. Dataset selection, fitting budgets, and result
+interpretation belong to the calling study.
+
 `attention_coefficient_conditioning: query_key` (tanh only) multiplies each key's
 degree-`r` term by a per-key factor, `sum_(i<=t) sum_r c_r(x_t) f_r(x_i) s_ti^r v_i` with
 `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` from the key token's activation
 (`key_polynomial_kernel` `[layers, heads, hidden_size, m+1]`, `key_polynomial_amplitude`
-`[layers, heads, m+1]`; drawn and started like `W` and `a`, so the start is unchanged).
+`[layers, heads, m+1]`; drawn, started, and decayed like `W` and `a`, so the start is
+unchanged).
 With both factorial options enabled its entire pair coefficient is
 `[b_r + a_r tanh(w_r^T x_t)] [1 + a^k_r tanh(w_k_r^T x_i)] / r!`.
 The key factor is dimensionless and receives no second factorial division.
@@ -470,8 +694,8 @@ the factor folded into degree-specific values. The per-order path rounds each pa
 output to V's dtype before summing, which at degree one corrupts the gradient after head
 RMSNorm. Diagnostics report the key factors beside the query coefficients.
 
-For H100 BF16 query-key attention at context 2048, Q/K and value width 64, and
-degree 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
+For H100 and B300 BF16 query-key attention at context 2048, Q/K and value width 64,
+and degree 4, 8 or 12, the fused backend uses 32-by-32 backward tiles and keeps the
 original forward tiles. Other devices and shapes keep their original geometry.
 The arithmetic precision and coefficient parameterization are unchanged.
 Kernel timings and qualification are in the
@@ -485,6 +709,278 @@ Per-head output RMSNorm remains an independent option through
 `attention_output_scaling: head_rms_norm`. Validation diagnostics report the
 actual input-dependent coefficient means, standard deviations, minima, and
 maxima on the fixed diagnostic sample, separately from projection parameters.
+
+For direct coefficient adaptation with a frozen backbone, unnormalized direct learned
+static and query-only models expose
+`logits, c = model(tokens, return_coefficients=True)`. The returned FP32 `c` has
+shape `[layers, batch, time, heads, m+1]` and contains the actual coefficients used
+in that forward pass, after bias and amplitude scaling. Static coefficients are
+broadcast across examples and query positions, with the normal forward unchanged.
+Calling `model(tokens, query_coefficients=c)` replaces the static coefficients or
+bypasses the query coefficient generator and uses
+these effective values directly, without further factorial scaling or tanh.
+Each example and query has its own polynomial, shared across its causal keys.
+All other attention operations and model parameters are unchanged; gradients flow
+through the frozen layers to the supplied array. Optimize only this array to keep
+the backbone fixed. Both operations support JIT, require `model.remat: false`, and
+can be combined to return the supplied coefficients. Capture and `return_diagnostics`
+are mutually exclusive. Query-key conditioning rejects both operations.
+
+`training.coefficient_fit` runs fixed-input adaptation from a pinned pretrained
+checkpoint. Its `free_per_example_query_coefficients` mode optimizes captured
+coefficient tables; `query_coefficient_generator` mode optimizes only the original
+query generator's bias, amplitude, projection, and optional inner tanh bias, and for
+a query-key parent also its trained key projection and amplitude (key factors carry
+no factorial scaling). A query-key parent's model is restored unchanged, and its
+restored forward must agree with the blocked reference backend before fitting.
+Generator mode accepts one sequence or a fixed batch. It recomputes all activations
+through the frozen backbone and uses native stored parameter coordinates, keeping
+factorial scaling inside the model. `shared_batch_query_coefficients` optimizes
+one `[layer,query,head,order]` table shared across every fitting sequence. It
+initializes from the arithmetic mean of captured effective coefficients across
+the full fitting batch and records original-parent and projected-initial losses
+separately. A scan computes microbatch gradients at the same table, averages them
+over the complete batch, and then performs one clipping/Adam update in factorial
+coordinates. It never maintains a separate coefficient table or optimizer for
+each sequence. `static_coefficients` uses the same optimizer over one
+`[layer,head,order]` table, shared across query positions as well as sequences.
+Its initialization averages captured effective coefficients over all fitting
+sequences and query positions. This mode accepts one sequence or a full batch
+without changing its trainable parameter count. All modes verify input identity, forward
+replay, an improving update, frozen-parameter checksums, and exact checkpoint
+resume before fitting. The study provides the frozen recipe and launches:
+`python -m scaffolds.transformer.training.coefficient_fit --run <run-directory>`.
+The retained best checkpoint contains only fitted parameters and references the
+source checkpoint for the frozen backbone. Per-update measurements are fitting
+metrics; no held-out evaluation is implied. Shared-table qualification checks
+original replay before projection and compares the training forward with the
+projected model; changing the initial function is not counted as fitting progress.
+
+### Coefficient release schedule
+
+A release schedule keeps learned coefficients at their initial values for the first
+part of training, then releases them (`training/coefficient_release.py`). It
+applies to learned direct static coefficients (`polynomial_coefficients`, `[m+1]` or
+`[layers, heads, m+1]`) and to diagonal tanh query coefficients without an inner
+bias (`query_polynomial_bias` and `query_polynomial_amplitude`, `[layers, heads, m+1]`,
+and `query_polynomial_kernel`, `[layers, heads, hidden_size, m+1]`). Every array must
+store all orders `0..m` on its last axis, so `attention_coefficient_orders` is
+rejected, as are query-key conditioning, dense readout, other activations,
+continuations, and non-Taylor initialization. Order `r` is entry `r` of that axis:
+static `c_r`, or the query generator's `b_r`, `a_r`, and column `r` of `W` together.
+All other parameters, including QK gains, head score scales, output RMSNorm gains,
+and forget-gate parameters, train from the first update.
+
+| Setting | Meaning |
+| --- | --- |
+| `optim.coefficient_release_schedule` | `all` or `by_order`; null (default) trains the coefficients from the first update |
+| `optim.coefficient_release_step` | first release, with `0 < step < optim.total_steps` |
+| `optim.coefficient_release_end_step` | `by_order` only: the last order's release, `step < end < optim.total_steps` |
+
+Counts `k` are optimizer updates on the learning-rate schedule's own clock: the update
+with count `k` is logged as step `k + 1` and uses `schedule(k)`. Order `r` is frozen
+for `k < s_r` and trains for `k >= s_r`. `all` sets `s_r` to the release step for every
+order; `by_order` sets `s_r = step + floor(r (end - step) / m)`, lowest order first.
+With step 455, end 1500 and `m = 8`, orders 0-8 release at 455, 585, 716, 846, 977,
+1108, 1238, 1369, and 1500.
+
+Freezing has two masks, both functions of the update count alone. A frozen entry's
+gradient is zeroed after microbatch and data-parallel averaging, before global-norm
+clipping and AdamW: it adds nothing to the clip norm, the rest of the model trains
+exactly as if those coefficients had no gradient, and its Adam moments stay exactly
+zero. Its final update is zeroed after AdamW, so decoupled weight decay cannot shrink
+a decayed `W` (`attention_coefficient_kernel_weight_decay`). Frozen entries stay
+bitwise equal to their initial values until release. A released entry starts from
+zero moments while bias correction keeps the global count: with betas (0.9, 0.95) and a
+steady gradient, its first update is 0.45 of a steady Adam step, and later ones overshoot
+it by up to 10% (20 updates after release) before settling. It joins the shared
+learning-rate schedule at its current value (`b` and `a` times
+`optim.query_coefficient_learning_rate_scale`, when set), with no separate warmup, Adam
+clock, or learning rate. The logged `gradient_norm_pre_clip`, clipping scale, numerical
+update checks, and telemetry use the masked gradient that clipping sees.
+
+The release wraps the unchanged clipping and AdamW chain, reading the schedule's count
+from its state, so the optimizer state layout is the same with or without a schedule
+and a checkpoint resume continues the schedule exactly. It names the arrays it freezes
+and raises before the first update if any is missing, rather than letting it train.
+Without a schedule, the optimizer and train steps are built exactly as before. The
+training log prints
+`coefficient_release_schedule=by_order release_updates=455,585,...` at start and
+`coefficient_release update=455 step=456 orders=0` at each release; W&B receives
+`train/coefficient_trainable_orders` at that step and the tag
+`coefficient_release_all` or `coefficient_release_by_order`. The attention identity
+and formula, recorded in metrics and metadata, include the schedule and every
+`s_r` (`coefficient_release_counts`) only when one is set, and `runs.csv` has
+`coefficient_release_schedule`, `coefficient_release_step`, and
+`coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
+`tests/test_coefficient_release.py` for every recipe with a schedule.
+
+### B-spline score function
+
+`attention_kernel_basis: bspline` (default `polynomial`, the monomials above) replaces the
+score polynomial by a fixed B-spline basis (`attention/spline.py`). The attention output is
+`sum_(i<=t) f(s_ti) v_i` with `f(s) = sum_j theta_j B_j(s)` and the usual scores `s_ti`
+(after QK normalization, head scale, and RoPE), unnormalized and signed; per-head output
+RMSNorm remains a separate option.
+
+- Basis: `B_j` are the B-splines of degree `p = attention_degree` on the distinct knots
+  `attention_spline_knots` (`u_0 < ... < u_K`, strictly increasing), clamped: the knot
+  vector repeats each endpoint `p + 1` times. There are `K + p = len(knots) + degree - 1`
+  coefficients, never `degree + 1`: degree 4 on `[-32, -6, 0, 6, 32]` (knot vector
+  `[-32 x5, -6, 0, 6, 32 x5]`) has eight, `B_0..B_7`. `f` is a degree-`p` polynomial on each
+  interval with `p - 1` continuous derivatives at the simple interior knots. The same basis
+  serves every layer, head, and token; knots are not learned.
+- Extrapolation: outside `[u_0, u_K]` `f` continues its first or last polynomial piece. Scores
+  are never clipped and `f` is never zeroed.
+- Coefficients (FP32, never factorial-scaled):
+
+  | Conditioning | Arrays (per layer and head) | Weight decay |
+  | --- | --- | --- |
+  | `static` | `spline_coefficients` `[layers, heads, K + p]`: `theta` | none |
+  | `query`, `attention_coefficient_activation: tanh` | `query_spline_bias` `b` and `query_spline_amplitude` `a`, `[layers, heads, K + p]`; `query_spline_kernel` `W`, `[layers, heads, hidden_size, K + p]` | `W` only, with `attention_coefficient_kernel_weight_decay: true` |
+
+  The query form is the monomial diagonal tanh generator with `K + p` outputs,
+  `theta_j(x_t) = b_j + a_j tanh(w_j^T x_t)` from the pre-attention RMSNorm activation, with
+  no inner tanh bias and no key factors; `attention_coefficient_amplitude_initial` and
+  `attention_coefficient_projection_initial_std` set `a` and the `N(0, std^2)` draw of `W` from
+  the mechanism stream, as for monomial coefficients.
+- Initialization (`attention_coefficient_initialization: taylor`, the only start): `theta`
+  (or `b`) holds the exact B-spline coefficients of `T_p(s) = sum_(r<=p) s^r / r!`, derived by
+  blossoming in rationals (`spline.taylor_coefficients`, which checks every piece) and rounded
+  once to FP32, so `f = T_p` on the whole line, extrapolation included. Degree 4 on the knots
+  above gives `[116131/3, 38029/6, -931/6, 38, -42, 2351/6, 63935/6, 49697]`; with `a = 0` the
+  query form starts at the same function. The tests require the FP32 start to reproduce `T_4`
+  within 5e-6 relative inside the knots and 1e-6 outside; the error is largest near `T_4`'s
+  minimum (0.27 at `s = -1.6`), where the B-spline terms cancel: `sum_j |theta_j B_j(s)|` is
+  166 times `T_4` there.
+- FP32 storage quantizes updates: a step changes a stored coefficient only when it exceeds half
+  the coefficient's FP32 spacing. Wide knots make the end coefficients large: above, `theta_0`
+  and `theta_7` (or `b_0` and `b_7`) start at `T_4(-32) = 38710.33` and `T_4(32) = 49697`,
+  spacing `2^-8`. Adam steps are at most about 1.17 times the learning rate with betas
+  (0.9, 0.95), so at learning rates below about 1.7e-3 these coefficients never move and the
+  static `f(±32)` stays `T_4(±32)`; `theta_1` and `theta_6` (spacing 4.9e-4 and 9.8e-4) move by
+  whole spacings, only while steps exceed half of one. Even in exact arithmetic Adam moves a
+  coefficient by at most about 1.17 times the summed learning rate.
+- Evaluation: a fixed linear map (`spline.piece_matrix`, exact in rationals, then rounded to
+  the compute dtype) takes `theta` to each piece's local polynomial
+  `sum_r P_jr (s - c_j)^r`, once per head (static) or per query token and head (query), before
+  any per-score work. The centre `c_j` is the point of the piece nearest zero (`-6, 0, 0, 6`
+  above), where scores concentrate, so most evaluations use a small local variable; at the
+  Taylor start each piece's local polynomial is `T_p` expanded at `c_j`, the two central ones
+  `T_p` itself. A score selects its piece by comparison with the interior
+  knots (`s < u_1`, ..., `s >= u_(K-1)`; a NaN score stays NaN) and is evaluated by Horner's
+  rule in FP32.
+- Backends: the blocked backend only (`attention_backend: blocked`), with either
+  implementation: the spline is a kernel branch of the per-block arithmetic that the scan and
+  the causal strips share, so diagnostics (from the scan) and training (strips) run one copy.
+  Invalid rows follow the signed learned polynomial's rules: a nonfinite score or kernel
+  poisons its row. No fused, Mosaic, or cuDNN kernel implements the basis, and configuration
+  rejects them and `auto`. Per score the spline costs more than a monomial kernel (piece
+  selection and a select per Horner coefficient in the forward, per-piece coefficient sums in
+  the backward), so its throughput and memory come from measurement, not from monomial runs:
+  qualify it on each GPU type before production with
+  `validation/blocked_strips_qualification.py` (the kernel stage has static and query spline
+  cases; the model stage times a recipe's full micro-step), and the acceptance pilot projects
+  each run's runtime.
+- Restrictions: unnormalized dot-product attention with RoPE or no positional encoding;
+  learned direct `per_head` coefficients; no forget gate, PaTH, fixed coefficients,
+  `attention_coefficient_orders`, factorial coefficient or amplitude scales, coefficient
+  penalty, query readout LR scale, coefficient release schedule, or coefficient override and
+  capture (all defined on monomial orders); continuations only with
+  `continuation.preserve_all_parameters`. Historical recipes, which lack both fields, keep
+  the monomial basis and resume unchanged.
+- Diagnostics: each layer records the pooled fractions of measured causal scores that each
+  piece evaluates (`spline_piece_<j>_fraction`) and that lie below `u_0` or above `u_K`
+  (`spline_below_range_fraction`, `spline_above_range_fraction`, the polynomial
+  continuation), beside the usual score and kernel extrema. `spline_score_coverage` holds the
+  same fractions and the score extrema per layer and head; `coefficients` reports static
+  `theta` (`B0..B7`), or the query generator's `b`, `a`, the column norms of `W`, and the
+  generated `theta` on the diagnostic sample. Run metadata records the basis, knots, knot
+  vector, piece centres, the exact initial coefficients, and the formula
+  (`attention_kernel: learned_spline_unnormalized` or `query_spline_unnormalized`); the run
+  index names the family `spline`.
+- Acceptance adds `tests/test_spline_attention.py` to both test stages of spline recipes. CPU:
+  values and gradients against an independent Cox-de Boor reference, the exact Taylor start and
+  its FP32 reproduction, continuity at the knots, both end knots and extrapolation, attention
+  and gradients of Q, K, V, `theta`, and the generator against a dense float64 reference
+  through the scan and the strips, parameter ownership, initialization, weight decay, and
+  scan/strips model equivalence. GPU: production precision with BF16 Q/K/V at 2,048 tokens and
+  width 64, scores in every piece and both continuations, against the scan's arithmetic in
+  FP64: the strips' output and Q/K/V gradients and the scan's output within 1.25 times the
+  BF16 rounding floor, and the coefficient gradients within 1e-4.
+
+### Forget gate
+
+`attention_forget_gate: true` adds the Forgetting Transformer's decay with Gated DeltaNet's
+per-head gate (`attention/forget_gate.py`): `log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias)`
+from the block's normalized input, with GDN's initialization (`exp(A_log)` uniform on (0, 16),
+`softplus(dt_bias)` log-uniform on [0.001, 0.1]); `w_alpha` takes weight decay, `A_log` and
+`dt_bias` do not. With `L_t = sum_(j<=t) log alpha_j` (FP32), each weight from key `i` to query
+`t` is multiplied by `prod_(j=i+1..t) alpha_j = exp(L_t - L_i)`, one difference per pair:
+
+| Kernel | Gated weight | Positions | Backends |
+| --- | --- | --- | --- |
+| softmax | `softmax_i(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
+| unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
+| nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
+| learned static coefficients, input-free gate | `p(s_ti) exp(-(t-i) lambda)` | RoPE or none | `blocked`, `mosaic` |
+
+`attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
+original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the
+paper's code (`w_f ~ N(0, 0.02^2)` from the mechanism stream, `b_f = 0`, so every gate starts near
+1/2); `w_f` takes weight decay and `b_f` does not. The decay enters each kernel as above.
+Softmax and the exponential take the cumulative mode with the input, sigmoid, or constant gate
+form, or the query-distance mode with the input form (below); the sigmoid and constant forms need
+RoPE or no positional encoding.
+`attention_forget_gate_form: constant` gives every head one rate, `log alpha_t = -m_h` at every
+token, so `L_t - L_i = -m_h (t - i)`: softmax with this decay is ALiBi (Press et al., 2022) and the
+exponential gains ALiBi's bias. `m_h = exp(A_log)` is learned from ALiBi's slopes `2^(-8 h / H)`,
+or, with `attention_forget_gate_constant_rate: fixed`, held at those slopes in every layer with no
+parameter. This geometric rule is the paper's for every `H`; ALiBi's code uses it only when `H` is a
+power of two (for 14 heads it takes `2^-1..2^-8` and `2^-0.5, 2^-1.5, ..., 2^-5.5`). `tests/test_constant_decay.py` checks both kernels against FP64 ALiBi through the scan
+and the strips; acceptance runs it for every constant-form recipe on CPU and, for softmax and the
+exponential, its 2,048-token BF16 strips case on the GPU.
+
+`attention_forget_gate_mode: query_distance` with the input gate replaces `L_t - L_i` by
+`(t - i) log alpha_t`, the query's own rate times the key distance: softmax and the unnormalized
+exponential add it to every score, ALiBi with a learned, input-dependent slope per query token
+(softmax's row maximum is taken over the decayed logits). It takes the softplus rate with query
+conditioning or its query-key form (below), RoPE or no positional encoding, and the blocked backend
+(scan or strips); PaTH, bounded rates, per-order gates, the other gate forms, and other backends
+are rejected. A nonfinite or positive raw `log alpha_t` poisons its query's row. Its parameters and
+their initialization are cumulative FoX's. `tests/test_exponential_query_distance.py` checks both
+kernels against FP64 all-pairs references through the scan and the strips; acceptance runs it for
+these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+
+`attention_forget_gate_conditioning: query_key` gives that gate the query polynomials' endpoint
+rate: each pair reads both of its tokens, `log alpha_ti = -exp(A_log) softplus(x_t w_query +
+x_i w_key + dt_bias)`, and softmax and the exponential add `(t - i) log alpha_ti` to its score.
+Only the token projections reach the attention core; pair rates are evaluated inside the score
+blocks, and a nonfinite projection or log rate poisons the rows of the causal pairs it enters (its
+query's row, the rows from a key's token on, or every row of a rate's head). The key projection
+`w_key` (`forget_gate_key_kernel`, per layer and head) starts at zero and takes weight decay, so the
+model starts exactly as its query-gate counterpart; it adds `num_layers * num_heads * hidden_size`
+parameters (188,160 in the Transformer++ shape). Diagnostics report `log alpha_ti` over every
+causal pair. `tests/test_exponential_query_key.py` checks both kernels against FP64 all-pairs
+references through the scan and the strips; acceptance runs it for these recipes on CPU and its
+2,048-token BF16 strips cases on the GPU, and `tests/test_endpoint_decay.py` on CPU only (its GPU
+cases qualify the query polynomials' kernels).
+
+`attention_forget_gate_per_order: true` with the cumulative mode gives every order `r` of
+nonlinear query coefficients (including zero) its own input gate and sum `L_tr`:
+`W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, each block evaluating one order's
+`[B, H, Q, K]` factor at a time. It takes query conditioning, RoPE or no positional encoding,
+and the blocked backend (scan or strips); Mosaic has no cumulative kernels. The gates start as
+copies of the shared draw, so the model starts as cumulative FoX; each extra order adds
+`(hidden_size + 2) * num_layers * num_heads` parameters (188,580 in the Transformer++ shape). A
+nonfinite `log alpha` poisons the rows from its token on, as for a shared gate.
+`tests/test_per_order_cumulative.py` checks degrees four and eight against FP64; acceptance runs it
+for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+
+`positional_encoding: none` skips RoPE, so positions enter only through the causal mask
+and the decay. Diagnostics report each head's `log alpha` statistics (per order for per-order
+gates, with their half-lives) and the gate's parameters (for a fixed rate, the slopes); `runs.csv`
+has an `attention_forget_gate_constant_rate` column, empty without the constant form.
 
 ### PaTH position encoding
 
@@ -500,14 +996,25 @@ convolution with SiLU, and L2 normalization per head, and
 (projections N(0, 0.02^2), the convolution with PyTorch's default variance, a zero bias),
 so the backbone keeps the softmax control's weights; all but the bias take weight decay.
 
+Set `attention_forget_gate: true` to combine PaTH with FoX (PaTH-FoX). With `L` the
+cumulative per-token log forget gate, softmax and the exponential add `L_t - L_s` to each
+transported score, and the tanh query polynomial multiplies its weight by `exp(L_t - L_s)`,
+on the blocked reference and the fused kernels alike. The public `path_attention` and
+`fused_path_attention` APIs accept this optional FP32 `[batch, time, heads]` array as
+`log_decay` for every kernel; its gradients propagate through the cumulative sum into the
+gate parameters. Causal differences are masked before exponentiation, and gate values are
+never factored into separate global exponentials. The fused backward adds O(BTH)
+gate-gradient buffers. Only `attention_forget_gate_mode: cumulative` with the input gate
+form composes with PaTH; configuration rejects `query_distance` and the constant form with PaTH.
+
 `attention_backend: blocked` runs `attention/path.py`, the authors' chunked algorithm in
 JAX: a UT transform per 128-token chunk, then a sweep over chunk distance that scores each
 query chunk against the key chunk behind it and moves the queries through that chunk's
 Householder product. Automatic differentiation of a rematerialized forward pass gives the
-derivative. It supports softmax (normalized, with a running maximum) and tanh
-query-conditioned unnormalized polynomials, is tested against the definition and the
-authors' PyTorch reference, and is the reference for the fused kernels and their
-diagnostics.
+derivative. It supports softmax (normalized, with a running maximum), the unnormalized
+exponential, and tanh query-conditioned unnormalized polynomials, each with the forget
+gate above. It is tested against the definition and the authors' PyTorch reference (with and
+without their gate), and is the reference for the fused kernels and their diagnostics.
 
 `attention_backend: fused` runs FLA's fused Triton kernels
 (`attention/backends/fla_path_attention.py`, through `triton_port`, below). Softmax
@@ -519,20 +1026,28 @@ query polynomial uses the same launches with FLA's six softmax-dependent kernels
 by a fork (`fla_path_polynomial_kernels.py`): `o_t = sum_s p_t(s_ts) v_s` without
 normalization, so no running maximum, normalizer, or `delta`; the backward's softmax
 derivative becomes `dS_ts = p_t'(s_ts) dP_ts / sqrt(d_K)`, and the kernels that visit a
-(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. Transport, Householder, and
-UT-transform arithmetic are FLA's. It needs an sm90+ GPU, `train.dtype: bfloat16` (with
-FP32 tiles one of FLA's kernels exceeds the shared memory), a prediction length divisible
-by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to 64 on B300, where FLA's dq
-kernel fails to launch at width 128), and degree 1-4; `auto` selects
-it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
+(query, key) block also return `dc_r(t) = sum_s s_ts^r dP_ts`. The unnormalized
+exponential is FLA's softmax output times its row sum `2^lse` (FLA's base-2 log-sum-exp);
+its derivative is FLA's softmax backward given `do 2^lse` and `delta = 0`, which is exact
+because the row sum's own derivative cancels `delta`. For softmax and the exponential,
+the forget gate enables FLA's own gate path in six of the kernels (`USE_G`, `USE_GATE`);
+FLA adds its gate to the unscaled scores, so the kernels receive `L sqrt(d_K)`, and the
+four kernels that form its gradient each write a separate FP32 part that the wrapper sums.
+The polynomial fork multiplies each weight by `exp(L_t - L_s)` itself and receives `L`.
+Transport, Householder, and UT-transform arithmetic are FLA's. It needs an sm90+ GPU,
+`train.dtype: bfloat16` (with FP32 tiles one of FLA's kernels exceeds the shared memory), a
+prediction length divisible by 128, equal Q/K and value widths of 16, 32, 64, or 128 (up to
+64 on B300, where FLA's dq kernel fails to launch at width 128), and degree 1-4; `auto`
+selects it there and the JAX implementation elsewhere. A row with a nonfinite output becomes NaN,
 as in `path.py`; a softmax score of -inf gets zero weight, as in FlashAttention. FLA
 rounds several intermediates to BF16 (dw and dbeta are stored in BF16): against FP32 its
 errors in the output and the q, k, v gradients are 1.5-3 times the JAX implementation's,
 and in dw, dbeta, and the coefficient gradients about 8 times (all below 1e-2 at the
 production shape). Its backward accumulates dk, dv, dw, and the split products'
-gradient with FP32 atomic additions, so dk, dv, dw, and dbeta are not bitwise repeatable;
-outputs, dq, and the coefficient gradients are. Accuracy, speed, and training pilots are
-in [validation](validation/README.md#fused-path-attention-kernels).
+gradient (and the gate's) with FP32 atomic additions, so dk, dv, dw, dbeta, and the decay
+gradient are not bitwise repeatable; outputs, dq, and the coefficient gradients are.
+Accuracy, speed, and training pilots are in
+[validation](validation/README.md#fused-path-attention-kernels).
 
 ### Unnormalized output scaling
 
@@ -558,7 +1073,8 @@ divisor cannot be driven through zero by a signed kernel. Its gain `w` is the
 excluded from weight decay. Run metadata and W&B tags name the option.
 
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
-and weight-decay policy. The model registers each array once and selects the
+and weight-decay policy; `repeat_initial_axis` makes a named random draw once without that
+axis and repeats it along the axis, the copies training independently afterwards. The model registers each array once and selects the
 appropriate device-array arguments for each layer. Gradients from shared uses
 accumulate into one parameter and optimizer state. The existing
 `quadratic_coefficients` checkpoint key and backbone initialization order are
@@ -804,11 +1320,73 @@ shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 1
 2,048 tokens), with Q/K width 8, 16, 32, 64, or
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
-shapes; `auto` then uses the fused kernels. Diagnostics come from the blocked reference,
+shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
+sigmoid query polynomials, and the input-free gate of learned static coefficients (on the same
+query-decay kernels, every query's coefficients and rates equal), run on the Mosaic decay
+kernels only when `mosaic` is requested (`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
+kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
+(`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
+per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel
+for shapes `api.blackwell_supported` rejects: above degree 7 (query) or 6 (query–key) at
+`d_K = 64` and 2,048 tokens. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
 run's weight precision (`--mosaic-precision`).
+
+`model.attention_blocked_implementation` chooses how the blocked backend runs dot-product
+attention with RoPE or no positional encoding. Both choices live in
+`attention/backends/reference.py` and evaluate the same per-block arithmetic, one shared
+function: the same scores, kernels, normalizations, and invalid-row rules for every mechanism.
+
+| Value | Function | Execution |
+| --- | --- | --- |
+| `scan` (default) | `blocked_dot_product_attention` | Checkpointed scan of 128-query blocks, each against all keys. Autodiff sums each block's K and V cotangents in the input dtype: BF16 dK and dV carry 1.8-2.8x the BF16 rounding floor at 2,048 tokens ([validation](validation/README.md)). |
+| `strips` | `strip_dot_product_attention` | Causal 512-query strips (`STRIP_SIZE`; the last may be shorter), each against its key prefix only, each under `jax.checkpoint` so its backward recomputes it. K, V, and the other per-key operands are converted to FP32 once before the strips, so their cotangents sum in FP32 and round once. |
+
+- Precision: the products read the BF16 values (exact in FP32 and TF32) with FP32
+  accumulation, weights stay FP32, and the output has V's dtype, as in the scan. dQ has no sum
+  across strips. Every conversion of a BF16 operand to FP32 (each strip's queries; K, V, and
+  the other operands once) and of the output back to V's dtype is written with
+  `reduce_precision` (`_rounded_to`). With the default `xla_allow_excess_precision`, XLA GPU
+  removes an f32 -> bf16 -> f32 conversion pair, so plain conversions next to the model's FP32
+  math (QK RMSNorm, RoPE, head RMSNorm) would hand the forward unrounded FP32 values and the
+  backward's recomputation the saved BF16 ones. `tests/test_blocked_strips_h100.py` checks the
+  roundings in compile-only H100 programs (it skips without the CUDA plugin; acceptance does not
+  run it).
+- Memory: a strip's working set is FP32 [batch, heads, 512, keys] blocks, 4x the scan's
+  128-query rows, and K and V are kept in FP32 for the backward. Compile-only H100 estimates of
+  one update's temporary memory on the blocked backend, scan then strips: the 15-layer
+  width-896 softmax recipe at micro-batch 16, 23.6 and 26.0 GB; FoX query m = 4 there, 26.8 and
+  26.1 GB; 10-layer width-1024 recipes with 16 heads at micro-batch 64, query m = 4 66.1 and
+  82.4 GB (73.9 GB with 256-query strips) and normalized learned m = 4 63.3 and 57.2 GB. A
+  recipe near a GPU's limit may need a smaller micro-batch; gradient accumulation keeps its
+  scientific batch.
+- The one intended difference: masked keys are never multiplied, so a nonfinite V entry poisons
+  the rows from the start of its strip onward. The scan multiplies every key's V by each block's
+  weights, and a masked zero weight times NaN or inf poisons every row.
+- The strips' checkpoints keep CSE prevention on. Unlike the scan's loop body, unrolled strips
+  have no loop boundary: without it XLA merges each recomputation with its forward and keeps
+  every layer's scores until its backward. The strips assume a static sequence length.
+- Diagnostics (`return_diagnostics`) still come from the scan, forward only, as for the fused
+  kernels. Kernels are still qualified against the scan, and the coefficient fit's
+  blocked-reference check runs it whatever the parent recipe sets.
+- PaTH, Gated DeltaNet, and GLA keep their own blocked code and reject `strips`. Other resolved
+  backends ignore the field, so `auto` recipes use the strips wherever they resolve to `blocked`.
+- Historical recipes and resumptions keep `scan`, the default. `scaffolds.records create` writes
+  `strips` into fresh dot-product recipes (RoPE or no positional encoding) on the `blocked` or
+  `auto` backend that leave the field unset, and rejects an explicit `scan` there unless
+  `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep the inert `scan`,
+  so they match their historical partners. A launcher that allocates copied recipes with
+  `create_run` for the blocked backend applies the same rule
+  (`configs.base.fresh_recipe_uses_blocked_strips`), as the Transformer++ continuation launcher
+  does.
+- The field is an execution setting, like the backend: a continuation, including one that
+  preserves all parameters, may train on the strips from a parent that trained on the scan.
+- Run metadata records `attention_implementation: blocked_causal_strips`,
+  `attention_blocked_implementation`, `attention_strip_size`, and the diagnostic scan
+  (`diagnostic_backend`, `diagnostic_query_block_size`). Acceptance adds
+  `tests/test_blocked_strips.py` to the CPU tests of recipes that train on the strips.
 
 The requested and resolved implementations are recorded in run metadata. The
 resolved backend is stored in the run configuration and reused on resume, even
@@ -905,6 +1483,32 @@ these execution records while preserving `config.yaml`. Metrics stay in
 Shared helpers regenerate the study's `runs.csv` index. Figures and comparisons
 belong under `results/<comparison>/` and select run IDs explicitly.
 
+### Packed-data tools
+
+A packed corpus is one token stream of documents, each followed by an end-of-document
+token, cut into fixed rows. Both tools check every source shard against its manifest
+checksum, write a new packed corpus that `PackedBatchIterator` reads, and record the source
+manifest and its SHA256 in the new manifest's metadata.
+
+```bash
+# The same stream re-cut into rows of another length (metadata.repacked_from).
+python -m scaffolds.transformer.data.repack SOURCE/manifest.json DESTINATION --sequence-length 4097
+# One row per complete document of at least sequence_length - 1 tokens whose first
+# --opening-tokens tokens (default 1,024) no earlier document begins with, in stream order:
+# an end-of-document token, then the document's first sequence_length - 1 tokens
+# (metadata.long_documents_from).
+python -m scaffolds.transformer.data.long_documents SOURCE/manifest.json DESTINATION --sequence-length 16385
+```
+
+`long_documents` also writes `documents.npy`, every complete document's
+`[start, length, first_start]` in the stream (where its opening first appears), and
+`rows.npy`, each row's document; the manifest pins both by SHA256. Every row is the first
+appearance of its document.
+Offsets are stream tokens, which repacking preserves, so a run that trained on rows
+`[0, n)` of a corpus with row length L consumed stream tokens `[0, n * L)`. The rows it never
+saw, in content as well as in position, are the suffix from `first_unseen_row(manifest,
+n * L)`, and `row_documents(manifest)` gives each row's document.
+
 ### Weights & Biases
 
 `training/tracking.py` mirrors committed metrics to the private W&B project
@@ -924,7 +1528,8 @@ Gradient diagnostics are standard for every mechanism. At each normal log step,
 W&B plots `train/gradient_norm_pre_clip`, `train/gradient_norm_post_clip`,
 `train/gradient_clip_scale`, and `train/gradient_clipped`. The norm is taken after
 all microbatch and data-parallel averaging, before clipping, and includes any
-coefficient penalty in the training objective. The optimizer already computes
+coefficient penalty in the training objective; under a coefficient release schedule
+it excludes still-frozen coefficient entries, as clipping does. The optimizer already computes
 this norm for its numerical checks; logging adds no gradient-tree reduction.
 Retained training logs keep the sampled norm and clipping scale. Each validation
 event in `metrics.jsonl` stores the norm count, mean, maximum, and clipped fraction
@@ -934,8 +1539,9 @@ The default saved workspace from `views.experiment_workspace` includes gradient
 norm plots on a logarithmic axis and separate clipping-scale/fraction plots.
 Historical runs without these measurements retain unknown gradient diagnostics.
 
-Training telemetry (`training/telemetry.py`) is standard for data-parallel training
-with `model.remat: false`. Every update returns, in one packed vector:
+Training telemetry (`training/telemetry.py`) is standard for training with
+`model.remat: false`, on one GPU or several. Every update's statistics reach the host
+in one packed vector:
 
 | Statistic | Reduction over microbatches and GPUs |
 | --- | --- |
@@ -951,8 +1557,10 @@ projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
 attention coefficients, and other. `update_norm` is the actual parameter change
 after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
 statistics only. Recording never changes the update: on CPU the update is
-bit-identical with and without it, and on GPU the differences match GPU
-nondeterminism between identical updates.
+bit-identical with and without it, on one device and on two, and on GPU the
+differences match GPU nondeterminism between identical updates. Statistics of one
+batch are the same whether its equal-sized microbatches run on one device or split
+across several.
 
 Each log line adds the smallest `attention_output_head_rms_min`, largest
 `head_rms_norm_gain_max`, and largest `residual_max_abs` over layers; W&B receives
@@ -971,6 +1579,44 @@ results code built with the `views` dependency group
 (`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
 ## Launch, acceptance, retention, and analysis
+
+Both shared launchers default to one GPU. Independent training runs are submitted
+without inter-run dependencies. Keep the recipe's global batch size fixed; the
+training runtime uses gradient accumulation for the configured microbatch. On one
+device the whole update, all of its microbatches, is one compiled step (a `lax.scan`),
+as in the data-parallel step; dispatching each microbatch separately had left a single
+GPU idle for about 40% of every update. An
+explicit multi-GPU allocation must override both Slurm's `--gres` request and the
+launcher's fourth positional argument (`GPU_COUNT`), for example `--gres=gpu:2`
+and `2` on Kennel, or `--gres=gpu:h200:2` and `2` on ORCD. Allocation changes are
+recorded as runtime provenance and trigger acceptance for that allocation.
+Kennel defaults to `--partition=standard,long` with a 24-hour allocation. Submitters
+use the available standard and long allowances before placing overflow in sweep,
+checking current limits and queued/running allocations as documented in
+[CLUSTERS.md](../../CLUSTERS.md). Longer jobs explicitly request `--partition=long`
+and an appropriate time limit. Routine launches add no artificial nice penalty.
+The Kennel launcher resolves Slurm's granted `TimeLimit` through
+`scaffolds/launch/allocation.py` and exports `TRANSFORMER_ALLOCATION_SECONDS`.
+Acceptance records this budget and includes it in its identity, so a shorter
+allocation cannot reuse a passed runtime gate from a longer one. The projected
+runtime must fit with a two-hour reserve. ORCD deliberately resumes across its
+6-hour or 12-hour allocations, so it retains the adapter's `allocation_hours`
+qualification horizon (48 hours by default) instead of limiting full training to
+one backfilled allocation. Other callers use that same fallback unless they set
+the runtime override; this budget never changes the recipe.
+
+The runtime projection separates the disposable pilot's elapsed time (including
+startup and compilation, counted once) from production work. The pilot enables
+`run_training(..., profile_timing=True)` to warm diagnostics and evaluation
+separately, then measure diagnostics once per validation and at least three warm
+global evaluation batches. Median warm update, diagnostic, and batch timings are
+multiplied only by their corresponding production counts; checkpoint estimates
+use the largest measured write time. The pilot's updates never replace production
+updates. Continuations count their remaining updates and baseline validation.
+`runtime-projection.json` and `pilot.json` expose the component costs, with the
+projection also printed before the allocation check. The two-hour reserve covers
+other acceptance work and runtime variation. Normal training leaves profiling off;
+its validation data, metrics, optimizer, and update sequence are unchanged.
 
 Studies configure these shared modules with execution modules at their root
 (for example `experiments/<study>/acceptance.py`):
@@ -1048,3 +1694,8 @@ accumulation, packed-data cursors, interruption and resume, checkpoint audits,
 acceptance, and retention. GPU-marked tests exercise the fused forward and backward
 implementations; without the locked toolkit, a node's older `ptxas` rejects the Triton
 kernels' PTX and the Gated DeltaNet and GLA kernel tests fail.
+
+Each command runs its tests in one process. `tests/conftest.py` clears JAX's caches after
+any test that leaves the process holding more than half of `vm.max_map_count` memory
+mappings, and stops the run with an explicit error if clearing cannot keep it below nine
+tenths.

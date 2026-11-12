@@ -128,7 +128,7 @@ def benchmark(args):
                   "Fresh initialization and optimizer; the scientific recipe and learning-rate horizon are unchanged.",
                   "Steady completion intervals include data loading, transfer, update checks, and ordinary logging.",
                   "Warmup, initialization, evaluation, and checkpoint writes are outside steady measurements.",
-                  "Single-GPU training omits the per-group telemetry used by data-parallel training."]}
+                  "Training telemetry is recorded as in production training (unless model.remat)."]}
     write_report(output, report)
     originals = {name: getattr(loop, name) for name in ("train_step", "accumulated_train_step")}
     last_end = None

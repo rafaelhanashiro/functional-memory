@@ -1,4 +1,4 @@
-"""Qualified H100 backward tiles, including the composed head-RMSNorm gradient."""
+"""H100/B300 backward tiles, including the composed head-RMSNorm gradient."""
 
 from functools import partial
 import math
@@ -36,14 +36,25 @@ def _device(kind="NVIDIA H100 80GB HBM3", capability="9.0"):
 @pytest.mark.parametrize("updates,device,expected", [
     ({}, _device(), (32, 32)),
     ({"degree": 12}, _device("NVIDIA H100 PCIe"), (32, 32)),
-    ({"degree": 4}, _device(), (64, 64)),
+    ({"degree": 4}, _device(), (32, 32)),
+    ({"degree": 6}, _device(), (64, 64)),
     ({"degree": 16}, _device(), (64, 64)),
     ({"time": 1024}, _device(), (64, 64)),
     ({"dtype": jnp.float32}, _device(), (64, 64)),
     ({"dq": 32}, _device(), (64, 64)),
     ({"dv": 32}, _device(), (64, 64)),
     ({}, _device("NVIDIA H200", "9.0"), (64, 64)),
-    ({}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({}, _device("NVIDIA B300 SXM6 AC", "10.3"), (32, 32)),
+    ({"degree": 12}, _device("NVIDIA B300 SXM6 AC", "10.3"), (32, 32)),
+    ({"degree": 4}, _device("NVIDIA B300", "10.3"), (32, 32)),
+    ({"degree": 6}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({"time": 1024}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({"dtype": jnp.float32}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({"dq": 32}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({"dv": 32}, _device("NVIDIA B300", "10.3"), (64, 64)),
+    ({}, _device("NVIDIA B300", "10.0"), (64, 64)),
+    ({}, _device("NVIDIA B200", "10.0"), (64, 64)),
+    ({}, _device("NVIDIA B200", "10.3"), (64, 64)),
     ({}, _device("cpu", None), (64, 64)),
 ])
 def test_tuned_tile_selection_is_limited_to_qualified_shapes_and_devices(monkeypatch, updates, device, expected):
@@ -55,6 +66,63 @@ def test_tuned_tile_selection_is_limited_to_qualified_shapes_and_devices(monkeyp
     assert kernel._tile_sizes(64, 64) == (64, 64)
 
 
+@pytest.mark.parametrize("devices,expected", [
+    ([], (64, 64)),
+    ([_device("NVIDIA B300", "10.3"), _device("NVIDIA B300 SXM6 AC", "10.3")], (32, 32)),
+    ([_device("NVIDIA B300", "10.3"), _device("NVIDIA H200", "9.0")], (64, 64)),
+    ([_device("NVIDIA B300", "10.3"), _device()], (64, 64)),
+])
+def test_tuned_tile_selection_requires_a_nonempty_qualified_device_family(monkeypatch, devices, expected):
+    monkeypatch.setattr(kernel.jax, "local_devices", lambda: devices)
+    assert kernel._backward_tile_sizes(64, 64, degree=8, time=2048, dtype=jnp.bfloat16,
+                                       interpret=False) == expected
+
+
+@pytest.mark.parametrize("cpu", (True, False))
+@pytest.mark.parametrize("backend", ("fused", "blocked", "mosaic"))
+def test_fused_query_key_acceptance_requires_tiling_checks(cpu, backend):
+    from scaffolds.transformer import acceptance
+    spec = acceptance.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    config = {"model": {"attention_coefficient_conditioning": "query_key"}}
+    paths = acceptance.test_paths(spec, config, resolved_backend=backend, cpu=cpu)
+    assert (acceptance.QUERY_KEY_TILING_TESTS in paths) == (backend == "fused" and cpu)
+
+
+@pytest.mark.parametrize("devices,degree,expected", [
+    ([_device()], 8, True),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 8, True),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 12, True),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 4, True),
+    ([_device("NVIDIA B300 SXM6 AC", "10.3")], 6, False),
+    ([_device("NVIDIA H200", "9.0")], 8, False),
+    ([_device("NVIDIA A100", "8.0")], 8, False),
+    ([_device("NVIDIA B200", "10.0")], 8, False),
+    ([_device("NVIDIA B300", "10.3"), _device("NVIDIA H200", "9.0")], 8, False),
+    ([], 8, False),
+])
+def test_gpu_acceptance_follows_selected_geometry_without_skipping_fallbacks(monkeypatch, devices, degree, expected):
+    from scaffolds.transformer import acceptance
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    monkeypatch.setattr(kernel.jax, "local_devices", lambda: devices)
+    config = Config()
+    config.model.attention_coefficient_conditioning = "query_key"
+    config.model.attention_degree = degree
+    config.model.qk_head_dim = config.model.value_head_dim = 64
+    config.data.sequence_length = 2049
+    config.train.dtype = "bfloat16"
+    spec = acceptance.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    runtime_paths = acceptance._runtime_test_paths(config, "fused")
+    gpu_paths = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="fused", cpu=False,
+                                      runtime_test_paths=runtime_paths)
+    assert (acceptance.QUERY_KEY_TILING_TESTS in gpu_paths) == expected
+    assert acceptance.QUERY_KEY_POLYNOMIAL_TESTS in gpu_paths
+    cpu_paths = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="fused", cpu=True,
+                                      runtime_test_paths=runtime_paths)
+    assert acceptance.QUERY_KEY_TILING_TESTS in cpu_paths
+    assert acceptance._runtime_test_paths(config, "blocked") == ()
+
+
 def test_interpreter_does_not_inspect_hardware_and_preserves_tile_override(monkeypatch):
     def forbidden():
         raise AssertionError("Interpreter must not inspect hardware")
@@ -64,12 +132,16 @@ def test_interpreter_does_not_inspect_hardware_and_preserves_tile_override(monke
                                      interpret=True) == (16, 32)
 
 
-def _requires_h100():
+def _requires_qualified_gpu():
     if jax.default_backend() != "gpu":
-        pytest.skip("Requires an H100 allocation")
+        pytest.skip("Requires an H100 or B300 allocation")
     devices = jax.local_devices()
-    if not all(getattr(d, "compute_capability", None) == "9.0" and "H100" in d.device_kind for d in devices):
-        pytest.skip("This launch geometry is qualified on H100 only")
+    h100 = all(getattr(d, "compute_capability", None) == "9.0"
+               and d.device_kind.startswith("NVIDIA H100") for d in devices)
+    b300 = all(getattr(d, "compute_capability", None) == "10.3"
+               and d.device_kind.startswith("NVIDIA B300") for d in devices)
+    if not devices or not (h100 or b300):
+        pytest.skip("This launch geometry requires an H100 or B300 device family")
 
 
 def _inputs(degree, *, time, dtype):
@@ -112,10 +184,10 @@ def _compare_all(actual, expected, tolerance):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 @pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16))
 def test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64(monkeypatch, degree, dtype):
-    _requires_h100()
+    _requires_qualified_gpu()
     operands, cotangent = _inputs(degree, time=67, dtype=dtype)
     # Exercise the optimized backward's 32-token boundaries in a compact FP64
     # comparison, independent of the production-only selector restriction.
@@ -129,9 +201,9 @@ def test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64(monkeypatch, 
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original(monkeypatch, degree):
-    _requires_h100()
+    _requires_qualified_gpu()
     assert kernel._backward_tile_sizes(64, 64, degree=degree, time=2048, dtype=jnp.bfloat16,
                                        interpret=False) == (32, 32)
     operands, cotangent = _inputs(degree, time=2048, dtype=jnp.bfloat16)
@@ -149,9 +221,9 @@ def test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original(
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_production_prefix_and_gradients_are_causal(degree):
-    _requires_h100()
+    _requires_qualified_gpu()
     operands, cotangent = _inputs(degree, time=2048, dtype=jnp.bfloat16)
     prefix = 67  # Cross both the original and optimized tile boundaries.
     cotangent = cotangent.at[:, prefix:].set(0)
@@ -167,9 +239,9 @@ def test_gpu_tuned_production_prefix_and_gradients_are_causal(degree):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("degree", (8, 12))
+@pytest.mark.parametrize("degree", (4, 8, 12))
 def test_gpu_tuned_future_nonfinite_keys_and_factors_leave_prefix_finite(degree):
-    _requires_h100()
+    _requires_qualified_gpu()
     q = jnp.ones((1, 2048, 1, 64), jnp.bfloat16)
     coefficients = jnp.ones((1, 2048, 1, degree + 1), jnp.float32)
     factors = jnp.ones_like(coefficients)

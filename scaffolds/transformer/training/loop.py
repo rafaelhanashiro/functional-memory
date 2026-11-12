@@ -61,6 +61,7 @@ from scaffolds.transformer.training.metrics import (
     ValidationMetricsStore,
     write_json_atomic,
 )
+from scaffolds.transformer.training.coefficient_release import coefficient_release, mask_frozen_gradients
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
 from scaffolds.transformer.training.numerics import checked_update_loss, requires_update_checks, update_numerics
 from scaffolds.transformer.training.randomness import model_forward_rngs
@@ -92,83 +93,124 @@ def _penalty_arguments(coefficient_penalty: float, coefficient_penalty_denominat
 
 
 def loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0,
-                   coefficient_penalty_denominator: bool = True):
+                   coefficient_penalty_denominator: bool = True, telemetry_reductions: dict[str, str] | None = None):
     """The batch's NLL and the gradient of NLL + coefficient_penalty * coefficient penalty sum.
 
-    The returned loss is the task NLL alone; the penalty enters only the gradient.
+    The returned loss is the task NLL alone; the penalty enters only the gradient. With
+    ``telemetry_reductions`` (a dict filled at trace time with each statistic's reduction),
+    also return the forward pass's recorded activation statistics.
     """
     inputs = batch[:, :-1]
     targets = batch[:, 1:]
 
     def loss_fn(params):
         model = nnx.merge(state.graphdef, params)
-        logits = model(
-            inputs,
-            deterministic=False,
-            rngs=model_forward_rngs(rng),
-        )
+        statistics = None
+        if telemetry_reductions is None:
+            logits = model(
+                inputs,
+                deterministic=False,
+                rngs=model_forward_rngs(rng),
+            )
+        else:
+            with telemetry.collect() as collector:
+                logits = model(
+                    inputs,
+                    deterministic=False,
+                    rngs=model_forward_rngs(rng),
+                )
+            telemetry_reductions.update(collector.reductions)
+            statistics = collector.values
         nll = cross_entropy_loss(logits, targets)
         if coefficient_penalty:
             penalty = coefficient_penalty_sum(params, model.config, include_denominator=coefficient_penalty_denominator)
-            return nll + coefficient_penalty * penalty, nll
-        return nll, nll
+            return nll + coefficient_penalty * penalty, (nll, statistics)
+        return nll, (nll, statistics)
 
-    # Params are a pure NNX State; using JAX's transform also permits this
-    # computation inside a device-side accumulation scan.
-    (_, nll), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
-    return nll, grads
+    # ``state.params`` is a pure NNX State pytree, so the base JAX transform also
+    # traces inside the accumulation scan (an NNX transform rejects the outer trace's Params).
+    (_, (nll, statistics)), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
+    if telemetry_reductions is None:
+        return nll, grads
+    return nll, grads, statistics
 
 
-@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator"))
+def _telemetry_options(collect_telemetry: bool) -> tuple[dict[str, str] | None, dict]:
+    """A step's trace-time reduction record and the keyword that enables recording."""
+    reductions = {} if collect_telemetry else None
+    return reductions, ({"telemetry_reductions": reductions} if collect_telemetry else {})
+
+
+@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
+                                   "collect_telemetry"))
 def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False,
-               coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True):
-    loss, grads = loss_and_grads(state, batch, rng,
-                                 **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+               coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
+               collect_telemetry: bool = False):
+    """One update. With ``collect_telemetry``, also return, last, the update's named statistics."""
+    reductions, recording = _telemetry_options(collect_telemetry)
+    loss, grads, *statistics = loss_and_grads(state, batch, rng, **recording,
+                                              **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+    grads = mask_frozen_gradients(state, grads)
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
+    outputs = (updated, checked_loss)
     if check_all_gradients:
-        return updated, checked_loss, update_numerics(grads, updated.params, loss)
-    return updated, checked_loss
+        outputs += (update_numerics(grads, updated.params, loss),)
+    if collect_telemetry:
+        outputs += (telemetry.single_device_statistics(statistics[0], reductions, state.params, grads, updated.params),)
+    return outputs
 
 
-@partial(nnx.jit, static_argnames=("coefficient_penalty", "coefficient_penalty_denominator"))
 def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Array, *, coefficient_penalty: float = 0.0,
-                              coefficient_penalty_denominator: bool = True):
-    return loss_and_grads(state, batch, rng, **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
+                              coefficient_penalty_denominator: bool = True,
+                              telemetry_reductions: dict[str, str] | None = None):
+    """One microbatch of ``accumulated_train_step``; traced inside its scan, so not jitted itself."""
+    recording = {"telemetry_reductions": telemetry_reductions} if telemetry_reductions is not None else {}
+    return loss_and_grads(state, batch, rng, **recording,
+                          **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
 
 
-@nnx.jit
-def apply_gradients_step(state: TrainState, grads):
-    return state.apply_gradients(grads=grads)
-
-
-@partial(jax.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator"))
+@partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
+                                   "collect_telemetry"))
 def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False,
-                           coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True):
-    """Accumulate on device, then clip and apply exactly one optimizer update."""
+                           coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
+                           collect_telemetry: bool = False):
+    """One compiled update over ``batches`` (``[microbatches, sequences, tokens]``) and their ``rngs``.
+
+    A scan accumulates the microbatch gradients on the device, so the host dispatches one
+    program per update. Dispatching one program per microbatch, plus one addition per
+    parameter for every partial sum, left a single GPU idle for about 40% of each update.
+    With ``collect_telemetry``, also return, last, the update's named statistics.
+    """
     if len(batches) == 0 or len(batches) != len(rngs):
         raise ValueError("Accumulation requires nonempty batches and one RNG per microbatch")
+    penalty = _penalty_arguments(coefficient_penalty, coefficient_penalty_denominator)
+    reductions, recording = _telemetry_options(collect_telemetry)
 
-    def accumulate(carry, inputs):
+    def accumulate(carry, values):
         loss_sum, grad_sum = carry
-        batch, rng = inputs
-        loss, grads = loss_and_grads(
-            state, batch, rng, **_penalty_arguments(coefficient_penalty, coefficient_penalty_denominator))
-        return (loss_sum + loss, jax.tree_util.tree_map(jnp.add, grad_sum, grads)), None
+        batch, rng = values
+        loss, grads, *statistics = microbatch_loss_and_grads(state, batch, rng, **penalty, **recording)
+        return ((loss_sum + loss.astype(loss_sum.dtype), jax.tree_util.tree_map(jnp.add, grad_sum, grads)),
+                statistics[0] if collect_telemetry else None)
 
-    initial = (jnp.zeros((), jnp.float32), jax.tree_util.tree_map(jnp.zeros_like, state.params))
-    (loss_sum, grad_sum), _ = jax.lax.scan(accumulate, initial, (batches, rngs))
-
-    scale = jnp.asarray(1.0 / len(batches), dtype=loss_sum.dtype)
-    grads = jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum)
+    zero_grads = jax.tree_util.tree_map(jnp.zeros_like, state.params)
+    (loss_sum, grad_sum), stacked_statistics = jax.lax.scan(
+        accumulate, (jnp.zeros((), dtype=jnp.float32), zero_grads), (batches, rngs))
+    scale = jnp.asarray(1.0 / batches.shape[0], dtype=loss_sum.dtype)
+    grads = mask_frozen_gradients(state, jax.tree_util.tree_map(lambda grad: grad * scale, grad_sum))
     loss = loss_sum * scale
     updated = state.apply_gradients(grads=grads)
     checked_loss = checked_update_loss(state.params, grads, updated.params, loss,
                                       check_all_gradients=check_all_gradients)
+    outputs = (updated, checked_loss)
     if check_all_gradients:
-        return updated, checked_loss, update_numerics(grads, updated.params, loss)
-    return updated, checked_loss
+        outputs += (update_numerics(grads, updated.params, loss),)
+    if collect_telemetry:
+        outputs += (telemetry.single_device_statistics(stacked_statistics, reductions, state.params, grads,
+                                                       updated.params),)
+    return outputs
 
 
 @nnx.jit
@@ -342,7 +384,14 @@ def resolve_packed_data_cursor(
                 f"Packed-data identity does not match the existing run: {identity_path}"
             )
     else:
-        if start_step != 0:
+        if config.continuation.parent_checkpoint and start_step == config.continuation.parent_step:
+            parent_identity_path = Path(config.continuation.parent_config).parent / "data_identity.json"
+            parent_identity_bytes = parent_identity_path.read_bytes()
+            if hashlib.sha256(parent_identity_bytes).hexdigest() != config.continuation.parent_data_identity_sha256:
+                raise ValueError("Continuation parent data identity hash changed")
+            if json.loads(parent_identity_bytes) != identity:
+                raise ValueError("Continuation dataset differs from its parent")
+        elif start_step != 0:
             raise ValueError(
                 "Cannot resume packed data without the current scaffold's data identity"
             )
@@ -359,6 +408,7 @@ def evaluate(
     data_parallel: DataParallelFunctions | None = None,
     eval_seed: int = 0,
     micro_batch_size: int | None = None,
+    batch_seconds: list[float] | None = None,
 ) -> float:
     """Mean token NLL, with bounded evaluation memory and a fixed data prefix."""
     if num_batches < 1:
@@ -366,6 +416,7 @@ def evaluate(
     nll_sum, token_count = 0.0, 0
     eval_rng = jax.random.PRNGKey(eval_seed)
     for batch_index in range(num_batches):
+        batch_start = time.perf_counter() if batch_seconds is not None else None
         batch = next(eval_iter)
         micro_size = micro_batch_size or len(batch)
         for offset in range(0, len(batch), micro_size):
@@ -379,6 +430,10 @@ def evaluate(
             count = micro_batch.shape[0] * (micro_batch.shape[1] - 1)
             nll_sum += float(loss) * count
             token_count += count
+        if batch_seconds is not None:
+            # float(loss) synchronizes every microbatch. Include the global
+            # batch's data fetch, transfers, and all bounded-memory forwards.
+            batch_seconds.append(time.perf_counter() - batch_start)
     return nll_sum / token_count
 
 
@@ -552,7 +607,7 @@ def _perplexity(config, state, step, nll, sample, provenance, *, diagnostics=Non
 
 
 def run_training(config: Config, *, resume: bool = True, stop_after_step: int | None = None,
-                 audit_checkpoint: bool = False) -> dict:
+                 audit_checkpoint: bool = False, profile_timing: bool = False) -> dict:
     """Train with an exact packed-data cursor and transactional local validation metrics."""
     validate_config(config)
     resolve_workdir(config)
@@ -574,7 +629,7 @@ def run_training(config: Config, *, resume: bool = True, stop_after_step: int | 
         validate_resume_progress(config, manager.latest_step())
         try:
             return _run_training(config, manager, layout, devices, resume=resume, end_step=end_step,
-                                 audit_checkpoint=audit_checkpoint)
+                                 audit_checkpoint=audit_checkpoint, profile_timing=profile_timing)
         except BaseException as error:
             _write_status(config, status="failed", error=f"{type(error).__name__}: {error}")
             raise
@@ -587,9 +642,13 @@ def _update_audit(step, batches, rng):
     return {"step": step, "batch_sha256": state_sha256(batches), "rng_sha256": state_sha256(rng)}
 
 
-def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False):
+def _run_training(config, manager, layout, devices, *, resume, end_step, audit_checkpoint=False,
+                  profile_timing=False):
     runtime_start = time.perf_counter()
     timing = {"train_step_seconds": [], "evaluation_seconds": [], "checkpoint_seconds": []}
+    if profile_timing:
+        timing.update(setup_seconds=0.0, diagnostic_warmup_seconds=0.0, evaluation_warmup_seconds=0.0,
+                      diagnostic_seconds=[], evaluation_batch_seconds=[])
     check_all_gradients = requires_update_checks(config.model)
     completion_path = config.train.workdir / "completion.json"
     latest_before = manager.latest_step()
@@ -600,7 +659,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         validated_eval_manifest = load_packed_manifest(config.data.eval_manifest)
     # Check data identity on all entries, including an already completed run.
     start_sequence = resolve_packed_data_cursor(
-        config, latest_before or 0,
+        config, latest_before if latest_before is not None else config.continuation.parent_step,
         validated_train_manifest=validated_train_manifest,
         validated_eval_manifest=validated_eval_manifest,
     )
@@ -638,6 +697,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     restored_step = None
     if resume:
         state, restored_step = restore_latest_checkpoint(manager, state)
+    fresh_continuation = restored_step is None and bool(config.continuation.parent_checkpoint)
+    if fresh_continuation:
+        from scaffolds.transformer.training.continuation import initialize_continuation_state
+        state, continuation_audit = initialize_continuation_state(config, state)
+        write_json_atomic(config.train.workdir / "continuation.json", continuation_audit)
     start_step = int(state.step)
     if end_step < start_step:
         raise ValueError("stop_after_step precedes restored training step")
@@ -660,6 +724,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     print(f"param_count={parameter_count} restored_step={restored_step} packed_data_start_sequence={start_sequence}", flush=True)
     print(f"data_parallel_devices={layout.device_count} global_batch_size={layout.global_batch_size} "
           f"global_micro_batch_size={layout.global_micro_batch_size} grad_accum_steps={layout.grad_accum_steps}", flush=True)
+    release = coefficient_release(config)
+    if release is not None:
+        print(f"coefficient_release_schedule={release.schedule} "
+              f"release_updates={','.join(map(str, release.counts))} "
+              f"trainable_orders={release.trainable_orders(start_step)}", flush=True)
     penalty_weight = config.optim.coefficient_penalty
     penalty_options = _penalty_arguments(penalty_weight, config.optim.coefficient_penalty_denominator)
     penalty_sum = (jax.jit(partial(coefficient_penalty_sum, model=config.model,
@@ -667,12 +736,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                    if penalty_weight else None)
     penalty_value = None
     data_parallel = None
-    # Telemetry is standard for data-parallel training; recording cannot cross remat.
-    collect_telemetry = layout.device_count > 1 and not config.model.remat
+    # Telemetry is standard on one GPU and several; recording cannot cross remat.
+    collect_telemetry = not config.model.remat
+    telemetry_options = {"collect_telemetry": True} if collect_telemetry else {}
+    telemetry_keys: list[str] = []
     if layout.device_count > 1:
         data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients,
                                                     collect_telemetry=collect_telemetry, **penalty_options)
         state = put_replicated(state, data_parallel.replicated_sharding)
+        telemetry_keys = data_parallel.telemetry_keys
     train_iter = make_train_iterator(
         replace(config.data, batch_size=layout.global_micro_batch_size),
         start_sequence=start_sequence, validated_manifest=validated_train_manifest,
@@ -683,6 +755,58 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     _write_status(config, diagnostic_sample=diagnostic_provenance)
     wandb_run, wandb_run_id = tracking.init_run(
         config, tracking.runtime_settings(layout.device_count, jax.devices()[0].device_kind))
+    diagnostics_warmed = evaluation_warmed = False
+
+    def collect_diagnostics():
+        nonlocal diagnostics_warmed
+        if not profile_timing:
+            return attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+        if not diagnostics_warmed:
+            warmup_start = time.perf_counter()
+            warmup = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+            timing["diagnostic_warmup_seconds"] = time.perf_counter() - warmup_start
+            diagnostics_warmed = True
+            # The first call includes compilation and ordinary work. An invalid
+            # result must reach the existing failure path, never be discarded.
+            if not warmup["valid"]:
+                return warmup
+        diagnostic_start = time.perf_counter()
+        report = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+        timing["diagnostic_seconds"].append(time.perf_counter() - diagnostic_start)
+        return report
+
+    def evaluate_prefix(num_batches, *, batch_seconds=None):
+        return evaluate(
+            state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest), num_batches,
+            data_parallel=data_parallel, eval_seed=config.train.seed,
+            micro_batch_size=layout.global_micro_batch_size,
+            **({"batch_seconds": batch_seconds} if batch_seconds is not None else {}),
+        )
+
+    def collect_evaluation():
+        nonlocal evaluation_warmed
+        if not profile_timing:
+            return evaluate_prefix(config.train.eval_batches)
+        if not evaluation_warmed:
+            warmup_start = time.perf_counter()
+            warmup_loss = evaluate_prefix(1)
+            timing["evaluation_warmup_seconds"] = time.perf_counter() - warmup_start
+            evaluation_warmed = True
+            if not math.isfinite(warmup_loss):
+                return warmup_loss
+        samples = timing["evaluation_batch_seconds"]
+        eval_loss = evaluate_prefix(config.train.eval_batches, batch_seconds=samples)
+        if not math.isfinite(eval_loss):
+            return eval_loss
+        # A pilot can validate on one global batch. Replay its fixed prefix to
+        # obtain at least three warm samples without consuming any training data
+        # or changing the validation average, sequence indices, or RNG seeds.
+        for _ in range(max(0, 3 - len(samples))):
+            profile_loss = evaluate_prefix(1, batch_seconds=samples)
+            if not math.isfinite(profile_loss):
+                return profile_loss
+        return eval_loss
+
     try:
         metrics_store = ValidationMetricsStore(config.train.workdir)
         _recover_pending_validation(metrics_store=metrics_store, latest_checkpoint_step=manager.latest_step(),
@@ -698,7 +822,65 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         telemetry_window = telemetry.TelemetryWindow()
         telemetry_values = previous_telemetry = None
         attempt_id = f"{os.environ.get('SLURM_JOB_ID', 'local')}:{os.environ.get('SLURM_RESTART_COUNT', '0')}:{uuid.uuid4().hex[:8]}"
+        if profile_timing:
+            jax.block_until_ready(state)
+            timing["setup_seconds"] = time.perf_counter() - runtime_start
+        if fresh_continuation:
+            # Measure the child itself before its first update. Persist the baseline
+            # transactionally so it can remain the validation-best checkpoint.
+            baseline_start = time.perf_counter()
+            diagnostics = collect_diagnostics()
+            if not diagnostics["valid"]:
+                _fail_numerics(config, state, start_step, "Invalid continuation baseline diagnostics",
+                               diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics)
+            eval_loss = collect_evaluation()
+            if not math.isfinite(eval_loss):
+                _fail_numerics(config, state, start_step, "Nonfinite continuation baseline validation loss",
+                               diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics, loss=eval_loss)
+            eval_ppl = _perplexity(config, state, start_step, eval_loss, diagnostic_sample,
+                                   diagnostic_provenance, diagnostics=diagnostics)
+            record = {
+                "schema_version": METRICS_SCHEMA_VERSION, "event": "validation",
+                "event_id": f"validation:{start_step}", "attempt_id": attempt_id,
+                "timestamp_utc": datetime.now(UTC).isoformat(), "step": start_step,
+                "checkpoint_step": start_step, "continuation_updates": 0,
+                "training_tokens": start_step * tokens_per_step,
+                "training_window_start_step": start_step, "train_nll_sample_count": 0,
+                "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
+                "validation_batches": config.train.eval_batches,
+                "validation_sequences": config.train.eval_batches * config.data.batch_size,
+                "validation_tokens": config.train.eval_batches * tokens_per_step,
+                "learning_rate": float(schedule(start_step)), "parameter_count": parameter_count,
+                "qk_head_dim": config.model.qk_head_dim, "value_head_dim": config.model.value_head_dim,
+                **attention_identity(config), "attention_diagnostics": diagnostics,
+                "source_commit": config.train.source_commit or None,
+                "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+                "slurm_restart_count": int(os.environ.get("SLURM_RESTART_COUNT", "0")),
+                "wandb_run_id": wandb_run_id, "is_best": True,
+            }
+            timing["evaluation_seconds"].append(time.perf_counter() - baseline_start)
+            checkpoint_start = time.perf_counter() if profile_timing else None
+            metrics_store.stage(record)
+            if not save_checkpoint(manager, start_step, state, metrics={
+                "validation_nll": eval_loss, "validation_perplexity": eval_ppl,
+                "has_validation": True, "training_tokens": start_step * tokens_per_step,
+            }):
+                raise RuntimeError("Failed to save continuation baseline")
+            manager.wait_until_finished()
+            if profile_timing:
+                timing["checkpoint_seconds"].append(time.perf_counter() - checkpoint_start)
+            best_nll = eval_loss
+            write_json_atomic(config.train.workdir / "best_validation.json", _best_validation_record(record))
+            metrics_store.commit(record, latest_checkpoint_step=manager.latest_step(),
+                                 mirror=lambda event: tracking.log_validation(wandb_run, event))
+            print(f"continuation_baseline step={start_step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f}", flush=True)
+            window_time = time.perf_counter()
         for step in trange(start_step + 1, end_step + 1, desc="train"):
+            if release is not None and (released := release.released_at(step - 1)):
+                # This step's update, optimizer count step - 1, is the first to train these orders.
+                print(f"coefficient_release update={step - 1} step={step} "
+                      f"orders={','.join(map(str, released))}", flush=True)
+                tracking.log_coefficient_release(wandb_run, step, release.trainable_orders(step - 1))
             train_step_start = time.perf_counter()
             step_rng = jax.random.fold_in(rng, step)
             if data_parallel is not None:
@@ -711,19 +893,24 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batch[None], step_rng)
                 step_result = (train_step(state, batch, step_rng, check_all_gradients=True,
-                                          **penalty_options) if check_all_gradients
-                               else train_step(state, batch, step_rng, **penalty_options))
+                                          **penalty_options, **telemetry_options) if check_all_gradients
+                               else train_step(state, batch, step_rng, **penalty_options, **telemetry_options))
             else:
                 batches = jnp.asarray(np.stack([next(train_iter) for _ in range(layout.grad_accum_steps)]))
                 if audit is not None and step == start_step + 1:
                     audit["first_update"] = _update_audit(step, batches, step_rng)
                 micro_rngs = jax.random.split(step_rng, layout.grad_accum_steps)
                 step_result = (accumulated_train_step(state, batches, micro_rngs, check_all_gradients=True,
-                                                      **penalty_options)
+                                                      **penalty_options, **telemetry_options)
                                if check_all_gradients
-                               else accumulated_train_step(state, batches, micro_rngs, **penalty_options))
+                               else accumulated_train_step(state, batches, micro_rngs, **penalty_options,
+                                                           **telemetry_options))
             state, loss, *numerical_metrics = step_result
             telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
+            if telemetry_vector is not None and data_parallel is None:
+                # The single-device step returns its statistics by name; pack them for one transfer.
+                telemetry_keys = sorted(telemetry_vector)
+                telemetry_vector = telemetry.pack(telemetry_vector)
             is_log = step == start_step + 1 or step % config.train.log_every == 0
             is_eval = evaluation_due(config, step)
             is_checkpoint = is_eval or step % config.train.ckpt_every == 0 or step == end_step
@@ -731,11 +918,11 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             loss_value = float(loss)
             # The host scalar synchronizes the update. Keep early measurements
             # so pilots can separate compilation from steady training speed.
-            if len(timing["train_step_seconds"]) < 8:
+            if len(timing["train_step_seconds"]) < (32 if profile_timing else 8):
                 timing["train_step_seconds"].append(time.perf_counter() - train_step_start)
             if telemetry_vector is not None:
                 previous_telemetry = telemetry_values
-                telemetry_values = dict(zip(data_parallel.telemetry_keys,
+                telemetry_values = dict(zip(telemetry_keys,
                                             np.asarray(jax.device_get(telemetry_vector)).tolist(), strict=True))
             if not math.isfinite(loss_value):
                 _fail_numerics(config, state, step,
@@ -746,7 +933,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                                   "preceding_update": previous_telemetry}
                                                  if telemetry_values is not None else None))
             # This is the already-computed norm of the full, averaged gradient
-            # before the optimizer clips it, including any coefficient penalty.
+            # before the optimizer clips it, including any coefficient penalty and
+            # excluding coefficient entries a release schedule still freezes.
             gradient_norm = (float(np.asarray(jax.device_get(numerical_metrics[0]))[1])
                              if numerical_metrics else None)
             if gradient_norm is not None:
@@ -754,7 +942,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             clipped = gradient_norm is not None and gradient_norm > config.optim.grad_clip_norm
             clip_scale = config.optim.grad_clip_norm / gradient_norm if clipped else 1.0
             if telemetry_values is not None:
-                spike = telemetry_window.add(step, data_parallel.telemetry_keys,
+                spike = telemetry_window.add(step, telemetry_keys,
                                              list(telemetry_values.values()), gradient_norm)
                 if spike is not None:
                     print(f"gradient_spike step={step} gradient_norm={gradient_norm:.6f} "
@@ -785,16 +973,12 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 evaluation_start = time.perf_counter()
                 if not train_losses:
                     train_losses.append(loss_value)
-                diagnostics = attention_diagnostics(state, config, diagnostic_sample, diagnostic_provenance)
+                diagnostics = collect_diagnostics()
                 if not diagnostics["valid"]:
                     _fail_numerics(config, state, step,
                                    f"Invalid attention diagnostics at step {step}: {'; '.join(diagnostics['issues'])}",
                                    diagnostic_sample, diagnostic_provenance, diagnostics=diagnostics)
-                eval_loss = evaluate(
-                    state, make_eval_iterator(config.data, validated_manifest=validated_eval_manifest),
-                    config.train.eval_batches, data_parallel=data_parallel, eval_seed=config.train.seed,
-                    micro_batch_size=layout.global_micro_batch_size,
-                )
+                eval_loss = collect_evaluation()
                 if not math.isfinite(eval_loss):
                     _fail_numerics(config, state, step,
                                    f"Nonfinite validation loss at step {step}: {eval_loss}",
@@ -831,7 +1015,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                         "gradient_clip_norm": config.optim.grad_clip_norm,
                     } if gradient_norms else {}),
                     **({"train_coefficient_penalty": penalty_value} if penalty_value is not None else {}),
-                    **(telemetry_window.summary(data_parallel.telemetry_keys) if collect_telemetry else {}),
+                    **(telemetry_window.summary(telemetry_keys) if collect_telemetry else {}),
                     "learning_rate": float(schedule(step - 1)), "tokens_per_second": throughput,
                     "tokens_per_second_per_device": throughput / layout.device_count,
                     "training_interval_seconds": interval_seconds, "parameter_count": parameter_count,

@@ -30,9 +30,10 @@ query token. Static controls learn a constant `c_r = b_r`. Every run starts at
 | Tanh, zero-amplitude start, `b_r` and `a_r` divided by `r!` | m = 8: `r50be104c2a9e`; m = 12: `r5b013b1a762b` | as the wide draw, with `c_r = (b~_r + a~_r tanh(w_r^T x_t))/r!`, `b~_r` from 1 | Mosaic kernel |
 | Static learned, `c_r = c~_r/r!` | m = 8: `rc9d269a084ce`; m = 12: `r6c2b0b793143` | stored `c~_r` from 1 (the Taylor start) | Mosaic kernel |
 | Fixed Taylor, nothing learned | m = 8: `r4836c6eba58f`; m = 12: `ra2e7161fdf4a` | `c_r = 1/r!` | Mosaic kernel |
+| Tanh query-key, `b_r` and `a_r` divided by `r!` | m = 8: `r0b7141a987dc`; m = 12: `r95c5dea57a89` (one-pass Triton kernel, H100 tiles) | as the scaled query-only runs, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` | one-pass Triton kernel |
 | Tanh query-key | `rba839e6386b7`, `r0aab2b77017f`, `r4a7c601b4b1f`, `r4e3f4097a60e`; m = 8: `r66db587096c4` (one-pass Triton kernel) | as the wide draw, times `f_r(x_i) = 1 + a^k_r tanh(w_k_r^T x_i)` with `a^k_r = 0` | blocked reference (m = 1), Mosaic kernel once per order |
 
-All 45 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
+All 47 runs are complete at 19,074 updates (10.0B tokens) with the shared recipe:
 `transformer_reference` initialization, QK normalization, unnormalized attention,
 per-head output RMSNorm, `d_K = d_V = 64`, 10 layers, width 1024, 16 heads, seed 0,
 BF16, effective batch 256, global microbatch 64, learning rate 3e-4 to 3e-5 with 400
@@ -111,6 +112,13 @@ coefficients settle near Taylor with a lower constant term (about `0.8/r!`) and 
 orders (1.2–1.6×); scaled query-only coefficients share that mean and vary 13–25% across
 tokens at the constant and top orders.
 
+**With scaling, key dependence helps at degree 12.** Query–key with `b_r` and `a_r` divided by
+`r!` (the key factor `f_r = 1 + a^k_r tanh(w_k_r^T x_i)` is already relative to `c_r`) ends at
+13.40 at m = 8, level with scaled query-only (13.40), and at 13.36 at m = 12: 0.03 below scaled
+query-only, 0.04 below fixed Taylor and 0.05 below exp with head RMSNorm, ahead of every run at
+every validation from update 3,000. Its key factors vary most at the constant and top orders,
+like the query coefficients, which vary about half as much as in scaled query-only.
+
 **The learned coefficients are essentially static.** From the zero-amplitude start,
 `b` stays near its Taylor values, the amplitudes stay small (median `|a_r|` 0.06–0.11)
 and the coefficients barely vary across tokens: their standard deviation across the
@@ -164,11 +172,13 @@ their ratios can act.
 | 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel | 2.600935 | 13.476329 | +0.11% | 13.476329 | 19,074 |
 | 8 | tanh, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!, Mosaic kernel | 2.595216 | 13.399484 | -0.46% | 13.399484 | 19,074 |
 | 8 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d) | 2.601888 | 13.489182 | +0.21% | 13.489182 | 19,074 |
+| 8 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r! | 2.594966 | 13.396138 | -0.48% | 13.396138 | 19,074 |
 | 12 | static | 2.629312 | 13.864233 |  | 13.864233 | 19,074 |
 | 12 | static, c_r = c~_r/r! | 2.595142 | 13.398488 | -3.36% | 13.398488 | 19,074 |
 | 12 | fixed Taylor | 2.595674 | 13.405613 | -3.31% | 13.405613 | 19,074 |
 | 12 | tanh, zero-amplitude start, W ~ N(0, 1/d), amplitude a_r/r!, Mosaic kernel | 2.645080 | 14.084577 | +1.59% | 14.084577 | 19,074 |
 | 12 | tanh, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r!, Mosaic kernel | 2.594410 | 13.388686 | -3.43% | 13.388686 | 19,074 |
+| 12 | tanh query-key, zero-amplitude start, W ~ N(0, 1/d), b_r and a_r divided by r! | 2.592462 | 13.362636 | -3.62% | 13.362636 | 19,074 |
 
 <!-- END GENERATED RESULTS -->
 
@@ -192,7 +202,8 @@ most a few hundredths; and at degree 8 query-dependent coefficients are worse th
 static. Order scaling (`c_r = b_r + a_r tanh(.)/r!`) removes most of the degree-8 deficit
 but only ties static; scaling `b_r` too removes the remaining deficit and the degree-12 loss,
 and then every learned variant, query-dependent or not, ends within 0.02 of exp and of fixed
-Taylor. Still open: whether order-scaled query–key coefficients (running) change this.
+Taylor, except scaled query–key at degree 12, which is 0.05 (0.4%) below exp. Still open:
+whether that gain survives further seeds and larger budgets.
 
 ## Regeneration
 

@@ -27,15 +27,25 @@ import yaml
 RUN_ID = re.compile(r"r[0-9a-f]{12}\Z")
 INDEX_COLUMNS = (
     "run_id", "label", "status", "home_cluster", "model_id", "condition",
-    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim",
+    "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim", "value_head_dim",
+    "num_layers", "hidden_size", "num_heads", "intermediate_size", "parameter_count",
     "gdn_erase_mode", "gdn_write_activation",
-    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm", "initialization",
-    "coefficient_mode", "coefficient_conditioning", "coefficient_activation", "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing",
+    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
+    "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "qk_norm_token_scale", "initialization",
+    "coefficient_mode", "coefficient_conditioning", "coefficient_activation",
+    "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
+    "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
+    "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
+    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order",
+    "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
-    "coefficient_penalty_denominator",
-    "quadratic_mode", "weight_decay_policy", "seed", "training_steps", "prediction_tokens",
+    "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
+    "coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step",
+    "quadratic_mode", "weight_decay_policy", "seed", "batch_size", "peak_learning_rate", "training_steps",
+    "prediction_tokens", "context_length",
     "source_commit",
     "terminal_step", "terminal_validation_nll", "terminal_validation_perplexity",
+    "terminal_fit_nll", "terminal_fit_perplexity",
     "feature_selection", "active_features", "terminal_validation_relative_output_rms", "best_validation_relative_output_rms",
     "config", "record", "metrics",
 )
@@ -409,9 +419,12 @@ def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kerne
         "learned_polynomial_rational": "learned_polynomial",
         "fixed_polynomial": "polynomial", "fixed_polynomial_unnormalized": "polynomial",
         "fixed_polynomial_sum_of_squares": "polynomial",
+        "learned_spline_unnormalized": "spline", "query_spline_unnormalized": "spline",
     }
     if kernel in families:
         return families[kernel]
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        return "spline"
     if model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None:
         return "polynomial"
     if model.get("attention_coefficients") == "learned" or model.get("quadratic_mode") in {"positive", "unrestricted"}:
@@ -462,7 +475,22 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
     sharing = _first(record.get("coefficient_sharing"), metadata.get("attention_coefficient_sharing"), model.get("attention_coefficient_sharing"), model.get("quadratic_sharing"))
     budget = (optim.get("total_steps"), data.get("batch_size"), data.get("sequence_length"))
     prediction_tokens = budget[0] * budget[1] * (budget[2] - 1) if all(type(value) is int for value in budget) else None
+    if config.get("experiment_kind") == "teacher_activation_coefficient_distillation":
+        # Updates fit coefficient targets on repeated teacher activations; they
+        # are not additional language-model pretraining tokens.
+        prediction_tokens = None
     fit = config.get("fit", {}) if config.get("experiment_kind") == "frozen_pretrained_head_distillation" else {}
+    oracle = config.get("oracle", {})
+    shared_batch_coefficients = (isinstance(oracle, dict)
+                                 and oracle.get("parameterization") == "shared_batch_query_coefficients")
+    static_coefficients = isinstance(oracle, dict) and oracle.get("parameterization") == "static_coefficients"
+    free_coefficients = (isinstance(oracle, dict)
+                         and oracle.get("parameterization") == "free_per_example_query_coefficients")
+    coefficient_table = shared_batch_coefficients or static_coefficients or free_coefficients
+    if free_coefficients:
+        mode = "learned"
+        kernel = "learned_polynomial_unnormalized"
+        sharing = "per_layer_per_head_per_sequence_per_position"
 
     def relative_output_rms(rows):
         if not isinstance(rows, list) or not rows:
@@ -479,37 +507,76 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "model_id": _first(model_id, record.get("model_id"), metadata.get("model_id")),
         "condition": _first(condition_name, record.get("condition"), metadata.get("condition")),
         "attention_mechanism": _first(model.get("attention_mechanism"), metadata.get("attention_mechanism")),
-        "attention_family": _attention_family(model, record, kernel),
+        "attention_family": "learned_polynomial" if free_coefficients else _attention_family(model, record, kernel),
         "attention_kernel": kernel,
         "gdn_erase_mode": _first(model.get("gdn_erase_mode"), get("gdn_erase_mode"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "gdn_write_activation": _first(model.get("gdn_write_activation"), get("gdn_linear_write_activation"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
         "qk_head_dim": _first(model.get("qk_head_dim"), record.get("qk_head_dim"), metadata.get("qk_head_dim")),
+        "value_head_dim": model.get("value_head_dim"),
+        "num_layers": model.get("num_layers"), "hidden_size": model.get("hidden_size"),
+        "num_heads": model.get("num_heads"), "intermediate_size": model.get("intermediate_size"),
+        "parameter_count": metadata.get("parameter_count"),
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),
         "qk_norm": _first(model.get("qk_norm"), record.get("qk_norm"), metadata.get("qk_norm")),
+        "qk_norm_type": model.get("qk_norm_type"),
+        "qk_norm_sharing": model.get("qk_norm_sharing"),
+        "qk_norm_head_scale": model.get("qk_norm_head_scale"),
+        "qk_norm_token_scale": model.get("qk_norm_token_scale"),
         "initialization": model.get("initialization"),
         "coefficient_mode": mode,
-        "coefficient_conditioning": model.get("attention_coefficient_conditioning"),
-        "coefficient_activation": model.get("attention_coefficient_activation"),
-        "coefficient_parameterization": _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
-        "coefficient_initialization": model.get("attention_coefficient_initialization"),
+        "coefficient_conditioning": "sequence_position" if free_coefficients else "none" if static_coefficients else "position" if shared_batch_coefficients else model.get("attention_coefficient_conditioning"),
+        "coefficient_activation": "identity" if coefficient_table else model.get("attention_coefficient_activation"),
+        "coefficient_readout": None if coefficient_table else model.get("attention_coefficient_readout"),
+        "coefficient_feature_count": None if coefficient_table else model.get("attention_coefficient_feature_count"),
+        "coefficient_readout_scale": None if coefficient_table else model.get("attention_coefficient_readout_scale"),
+        "coefficient_kernel_weight_decay": None if coefficient_table else model.get("attention_coefficient_kernel_weight_decay"),
+        "coefficient_gate": None if coefficient_table else model.get("attention_coefficient_gate"),
+        "attention_forget_gate": model.get("attention_forget_gate"),
+        "attention_forget_gate_per_order": model.get("attention_forget_gate_per_order", False)
+            if model.get("attention_forget_gate") else None,
+        "attention_forget_gate_mode": model.get("attention_forget_gate_mode", "cumulative")
+            if model.get("attention_forget_gate") else None,
+        "attention_forget_gate_form": model.get("attention_forget_gate_form", "input")
+            if model.get("attention_forget_gate") else None,
+        # Constant (ALiBi-style) decay only: its slopes learned (the default) or fixed.
+        "attention_forget_gate_constant_rate": model.get("attention_forget_gate_constant_rate", "learned")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "constant"
+            else None,
+        "attention_forget_gate_conditioning": model.get("attention_forget_gate_conditioning", "query")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
+        "attention_forget_gate_rate_activation": model.get("attention_forget_gate_rate_activation", "softplus")
+            if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
+        "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
+        "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         "coefficient_sharing": sharing,
+        "coefficient_orders": json.dumps(model["attention_coefficient_orders"], separators=(",", ":"))
+            if not coefficient_table and model.get("attention_coefficient_orders") is not None else None,
         "denominator_degree": model.get("attention_denominator_degree"),
         "denominator_parameterization": model.get("attention_denominator_parameterization"),
         "denominator_constant": model.get("attention_denominator_constant"),
         "coefficient_penalty": optim.get("coefficient_penalty"),
         "coefficient_penalty_denominator": optim.get("coefficient_penalty_denominator"),
+        "query_coefficient_learning_rate_scale": optim.get("query_coefficient_learning_rate_scale"),
+        "coefficient_release_schedule": optim.get("coefficient_release_schedule"),
+        "coefficient_release_step": optim.get("coefficient_release_step"),
+        "coefficient_release_end_step": optim.get("coefficient_release_end_step"),
         "quadratic_mode": model.get("quadratic_mode"),
         "weight_decay_policy": optim.get("weight_decay_policy"),
         "seed": _first(train.get("seed"), config.get("seed"), condition_seed, record.get("seed"), metadata.get("seed")),
+        "batch_size": data.get("batch_size") if optim.get("total_steps") is not None else None,
+        "peak_learning_rate": optim.get("learning_rate"),
         "training_steps": _first(optim.get("total_steps"), fit.get("steps")), "prediction_tokens": prediction_tokens,
+        "context_length": model.get("max_seq_len") if optim.get("total_steps") is not None else None,
         "source_commit": _first(record.get("source_commit"), metadata.get("source_commit"), train.get("source_commit")),
         "terminal_step": _first(terminal.get("step"), record.get("training_updates"), get("step")),
         "terminal_validation_nll": _first(record.get("terminal_validation_nll"), get("validation_nll")),
         "terminal_validation_perplexity": _first(record.get("terminal_validation_perplexity"), get("validation_perplexity")),
+        "terminal_fit_nll": _first(record.get("terminal_fit_nll"), get("fit_nll")),
+        "terminal_fit_perplexity": _first(record.get("terminal_fit_perplexity"), get("fit_perplexity")),
         "feature_selection": fit.get("variant"), "active_features": fit.get("budget"),
         "terminal_validation_relative_output_rms": relative_output_rms(completion.get("terminal_validation")),
         "best_validation_relative_output_rms": relative_output_rms(completion.get("best_validation")),
@@ -517,6 +584,99 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "record": f"runs/{record['run_id']}/record.json",
         "metrics": f"runs/{record['run_id']}/metrics.jsonl" if metrics_path.exists() else "",
     }
+
+
+# Record subtrees that describe past executions rather than where retained files
+# live now: submission commands, Slurm attempts, resolved runtime configurations,
+# and the acceptance directories whose tests a later attempt reused.
+EXECUTION_HISTORY = ("submission", "analysis_submissions", "attempts", "execution", "acceptance.summary")
+
+
+def rename_study_paths(record: Mapping[str, Any], old: str, new: str, roots: tuple[str, ...] = ()) -> tuple[dict[str, Any], int]:
+    """Point a record's retained-file locations at a renamed study folder.
+
+    Repository-relative paths under ``experiments/<old>/``, absolute paths under
+    ``<root>/experiments/<old>/`` for each of ``roots``, and ``parent_study``/``study``
+    names equal to ``old`` move to ``new``. Locations under other roots (another
+    cluster's artifact root, a worktree) and the subtrees in ``EXECUTION_HISTORY``
+    stay as they are. Returns the rewritten record and the number of changed strings.
+    """
+    prefixes = [(f"experiments/{old}/", f"experiments/{new}/")]
+    prefixes += [(f"{root.rstrip('/')}/experiments/{old}/", f"{root.rstrip('/')}/experiments/{new}/") for root in roots]
+    count = 0
+
+    def visit(value: Any, path: list[str]) -> Any:
+        nonlocal count
+        dotted = ".".join(path)
+        if any(dotted == key or dotted.startswith(key + ".") for key in EXECUTION_HISTORY):
+            return value
+        if isinstance(value, dict):
+            return {key: visit(item, path + [key]) for key, item in value.items()}
+        if isinstance(value, list):
+            return [visit(item, path + ["[]"]) for item in value]
+        if isinstance(value, str):
+            if path and path[-1] in ("parent_study", "study") and value == old:
+                count += 1
+                return new
+            for before, after in prefixes:
+                if value.startswith(before):
+                    count += 1
+                    return after + value[len(before):]
+                if value == before[:-1]:
+                    count += 1
+                    return after[:-1]
+        return value
+
+    return visit(deepcopy(dict(record)), []), count
+
+
+def rename_study(study: str | Path, old: str, new: str, artifact_roots: tuple[str, ...] = ()) -> list[str]:
+    """Rewrite records, selections, and the membership file after ``git mv experiments/<old> experiments/<new>``.
+
+    ``study`` is the renamed folder. The checkout root always counts as a root whose
+    ``experiments/<old>/`` tree moved; ``artifact_roots`` adds others (for example a
+    cluster's artifact root, after moving that tree too). Frozen recipes are inputs
+    and keep their paths; execution history keeps its paths; the record says where
+    each retained file lives now. Returns one line per changed file.
+    """
+    study = _study_path(study).resolve()
+    root = _repository(study)
+    if root is None:
+        raise ValueError(f"Not inside a Git checkout: {study}")
+    roots = (str(root), *artifact_roots)
+    changes: list[str] = []
+    for run in sorted(path for path in (study / "runs").iterdir() if path.is_dir()):
+        record_path = run / "record.json"
+        if not record_path.is_file():
+            continue
+        original = record_path.read_text()
+        record = json.loads(original)
+        renamed, count = rename_study_paths(record, old, new, roots)
+        if count:
+            if json.dumps(record, indent=2, sort_keys=True) + "\n" != original:
+                raise ValueError(f"{record_path} is not in the records' canonical JSON style; rewrite it by hand")
+            _atomic_write(record_path, json.dumps(renamed, indent=2, sort_keys=True) + "\n")
+            changes.append(f"{run.name}: {count} locations")
+    study_pattern = re.compile(rf"^(\s*-?\s*study: ){re.escape(old)}$", re.MULTILINE)
+    for directory in (root / "results", study / "results"):
+        if not directory.is_dir():
+            continue
+        for selection in sorted(directory.rglob("*.yaml")):
+            if "temp" in selection.relative_to(root).parts:
+                continue
+            text = selection.read_text()
+            updated = study_pattern.sub(rf"\g<1>{new}", text.replace(f"experiments/{old}/", f"experiments/{new}/"))
+            if updated != text:
+                _atomic_write(selection, updated)
+                changes.append(str(selection.relative_to(root)))
+    sweep = study / "sweep.yaml"
+    if sweep.is_file():
+        text = sweep.read_text()
+        updated = re.sub(rf"^experiment: {re.escape(old)}$", f"experiment: {new}", text, flags=re.MULTILINE)
+        if updated != text:
+            _atomic_write(sweep, updated)
+            changes.append(str(sweep.relative_to(root)))
+    return changes
 
 
 def regenerate_index(study: str | Path) -> Path:

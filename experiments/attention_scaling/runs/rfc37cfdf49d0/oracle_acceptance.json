@@ -1,0 +1,45 @@
+{
+  "checkpoint_resume_exact": true,
+  "completed_utc": "2026-10-23T05:27:43.357595+00:00",
+  "cross_compilation_nll_atol": 0.002,
+  "cross_compilation_nll_rtol": 0.0,
+  "device": "NVIDIA H100 80GB HBM3",
+  "external_evaluation_max_nll_error": 0.00074005126953125,
+  "external_evaluation_nll": 2.614255905151367,
+  "external_forward_repeated_exactly": true,
+  "frozen_parameter_sha256": "3d9481dbe10853c39aa2ef1da4e640424775ba187e8459b3f1d26cbfe4c3dfe3",
+  "gradient_norm_max": 0.03600258380174637,
+  "gradient_norm_min": 0.02645847760140896,
+  "independent_graph_diagnostics": {
+    "all_logits_finite": true,
+    "external_nll": [
+      2.531898021697998,
+      2.775045156478882,
+      2.770657539367676,
+      2.5374186038970947,
+      2.5769846439361572,
+      2.3456621170043945,
+      2.6182565689086914,
+      2.758124828338623
+    ],
+    "logit_max_absolute_error": 0.25,
+    "logit_relative_rms_error": 0.004337679129093885,
+    "original_nll": [
+      2.532381296157837,
+      2.77522611618042,
+      2.7701807022094727,
+      2.536858081817627,
+      2.577528953552246,
+      2.3455820083618164,
+      2.6183526515960693,
+      2.7585806846618652
+    ],
+    "repeated_external_logit_max_absolute_error": 0.0
+  },
+  "max_logit_replay_error": 0.0,
+  "one_update_nll": 2.498356342315674,
+  "parent_nll": 2.614105463027954,
+  "separate_training_forward_nll": 2.6145758628845215,
+  "status": "passed",
+  "training_forward_max_nll_error": 0.0015976428985595703
+}

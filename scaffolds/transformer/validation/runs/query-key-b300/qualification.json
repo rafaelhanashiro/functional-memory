@@ -1,0 +1,62 @@
+{
+  "format": "b300-query-key-qualification",
+  "schema_version": 1,
+  "status": "qualified",
+  "source_commit": "1d9bc8f81128174b11aa312f1c3832538391166b",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "environment": "cuda13 (.venv-cuda13 synced from the lock)",
+  "slurm": {
+    "job_id": 233107,
+    "partition": "debug",
+    "node": "akita",
+    "finished": "2026-11-02T19:35:29-05:00",
+    "elapsed": "00:06:00"
+  },
+  "hardware": {
+    "gpu": "NVIDIA B300 SXM6 AC",
+    "gpu_count": 1,
+    "driver": "580.126.20"
+  },
+  "command": "sbatch --partition=debug --gres=gpu:b300:1 --cpus-per-task=8 --mem=96G --time=00:30:00 --job-name=qk-b300-qualify --output=scaffolds/transformer/validation/logs/query-key-b300/%x-%j.log scaffolds/transformer/validation/qualify_query_key_b300.sbatch 1d9bc8f81128174b11aa312f1c3832538391166b",
+  "scope": {
+    "dtype": "bfloat16 at the production context; FP32 and BF16 inputs against FP64 references for small cases",
+    "context": 2048,
+    "qk_head_dim": 64,
+    "value_head_dim": 64,
+    "degrees": [
+      2,
+      4,
+      8,
+      12
+    ],
+    "backward_tiles": "32-by-32 at degrees 4, 8 and 12 on H100 and B300; original geometry otherwise"
+  },
+  "tests": {
+    "passed": 19,
+    "failed": 0,
+    "duration_seconds": 341.139,
+    "results": "gpu-tests.xml",
+    "cases": [
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[float32-4]",
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[float32-8]",
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[float32-12]",
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[bfloat16-4]",
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[bfloat16-8]",
+      "test_gpu_tuned_head_rmsnorm_and_all_gradients_match_small_fp64[bfloat16-12]",
+      "test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original[4]",
+      "test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original[8]",
+      "test_gpu_tuned_production_context_head_rmsnorm_matches_blocked_and_original[12]",
+      "test_gpu_tuned_production_prefix_and_gradients_are_causal[4]",
+      "test_gpu_tuned_production_prefix_and_gradients_are_causal[8]",
+      "test_gpu_tuned_production_prefix_and_gradients_are_causal[12]",
+      "test_gpu_tuned_future_nonfinite_keys_and_factors_leave_prefix_finite[4]",
+      "test_gpu_tuned_future_nonfinite_keys_and_factors_leave_prefix_finite[8]",
+      "test_gpu_tuned_future_nonfinite_keys_and_factors_leave_prefix_finite[12]",
+      "test_full_context_qk_rms_backend[query_key-2-fused]",
+      "test_full_context_qk_rms_backend[query_key-4-fused]",
+      "test_full_context_qk_rms_backend[query_key-8-fused]",
+      "test_full_context_qk_rms_backend[query_key-12-fused]"
+    ]
+  },
+  "limitation": "Kernel correctness only. It measures neither throughput nor full-budget stability; each production allocation still runs its own acceptance."
+}

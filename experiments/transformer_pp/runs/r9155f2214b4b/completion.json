@@ -1,0 +1,12 @@
+{
+  "cases": [
+    "2k_model_at_2k",
+    "2k_model_at_4k",
+    "4k_model_at_4k",
+    "2k_model_at_16k"
+  ],
+  "finished_utc": "2026-11-03T20:37:49.979898+00:00",
+  "interpretation": "Share of each late query's |w| per key-distance bin, beside the share of keys in the bin, and n_eff/n, for query + W decay (m = 4) trained at 2,048 tokens (within and past its length) and at 4,096 tokens; averaged over queries, heads and rows per layer. No gradient or optimizer update.",
+  "optimizer_updates": 0,
+  "status": "complete"
+}

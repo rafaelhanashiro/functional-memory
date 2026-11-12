@@ -38,13 +38,22 @@ def test_preflight_rejects_recipe_drift(section, name, value):
 def test_query_generator_matches_rafaels_degree_eight_parameters_and_random_draw():
     import jax
     import numpy as np
-    from experiments.attention_scaling.rbf_matched import ROOT
-    from scaffolds.transformer.configs import load_config
+    from dataclasses import replace
     from scaffolds.transformer.attention.parameters import (
         attention_parameter_specs, initial_attention_parameter_values, mechanism_key,
     )
     ours = recipe("query").model
-    reference = load_config(ROOT / "experiments/transformer_200m_4b/runs/r98d5895c02d0/config.yaml").model
+    # The executed degree-eight reference used this factorial-scaled generator.
+    # Keep the audit independent of the reference study's directory and run retention.
+    reference = replace(
+        reference_config().model, attention_basis=None, attention_degree=8,
+        attention_backend="mosaic", attention_coefficients="learned",
+        attention_coefficient_initialization="taylor", attention_coefficient_sharing="per_head",
+        attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
+        attention_coefficient_scale="factorial", attention_coefficient_amplitude_scale="factorial",
+        attention_coefficient_amplitude_initial=0.0,
+        attention_coefficient_projection_initial_std=1 / (896 ** 0.5),
+    )
     names = ("attention_coefficient_activation", "attention_coefficient_conditioning",
              "attention_coefficient_sharing", "attention_coefficient_amplitude_initial",
              "attention_coefficient_projection_initial_std", "attention_coefficient_tanh_bias")

@@ -48,6 +48,12 @@ query-conditioned or static-coefficient unnormalized polynomial attention of deg
 rejected with `model.attention_backend: fused` unless
 `--allow-triton-attention` is supplied; set `mosaic` (or `auto`) before allocating.
 
+A dot-product recipe with RoPE or no positional encoding on the `blocked` or `auto` backend
+trains on the blocked backend's causal strips: an omitted
+`model.attention_blocked_implementation` resolves to `strips`, and an explicit `scan` is
+rejected unless `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep
+the inert `scan`.
+
 Commit prepared recipes and study membership before production launch. A study’s
 frozen execution set includes all of its registered input recipes. Allocate the
 whole sweep before any jobs can run or requeue.
@@ -78,6 +84,8 @@ whole sweep before any jobs can run or requeue.
   raw metrics, including attention family, coefficient conditioning, home cluster,
   and training budget. Coefficient conditioning distinguishes static learned
   coefficients from coefficients predicted from the incoming query activation.
+  `coefficient_orders` lists explicitly selected polynomial powers as a JSON array;
+  it stays empty when the recipe does not restrict the powers.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 
@@ -103,7 +111,21 @@ PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh
 ```
 
 `refresh` rewrites the input pins, lists each change, and preserves the roles in a
-`runs` list. Grids pin exactly their `cells`; array analyses pin exactly their
+`runs` list. Renaming a study folder (`git mv experiments/<old> experiments/<new>`) is
+followed by
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m scaffolds.records rename-study experiments/<new> --from <old> --to <new>
+```
+
+which points every run record's retained-file locations (repository-relative, and
+absolute under this checkout), every selection under `results/` and the study's
+`results/`, and `sweep.yaml` at the new folder. Frozen recipes keep their recorded
+paths, as do execution history (submission commands, attempts, resolved runtime
+configurations) and locations on other roots; after moving a cluster's artifact tree,
+`--artifact-root <root>` moves those locations too. A branch that predates the rename
+merges with `git -c merge.directoryRenames=true merge <branch>`, after which the same
+command handles the runs it added. Grids pin exactly their `cells`; array analyses pin exactly their
 `collections` and comparison baseline/condition roles. A figure whose inputs changed
 fails verification until its selection is refreshed. In Python,
 `selections.run_sources(root, study, run_id)`

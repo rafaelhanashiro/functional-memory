@@ -94,6 +94,25 @@ def test_orcd_launcher_time_limit_fits_both_partitions():
     assert hours("time-min") <= 6 < hours("time") <= 48
 
 
+@pytest.mark.parametrize("launcher", LAUNCHERS[:2])
+@pytest.mark.parametrize("override", (None, "", "2", "4"))
+def test_transformer_gpu_defaults_match_allocation_and_allow_explicit_overrides(launcher, override):
+    source = (ROOT / launcher).read_text()
+    requested = int(re.search(r"^#SBATCH --gres=gpu(?::[A-Za-z0-9_]+)?:(\d+)$", source, re.M).group(1))
+    # Execute argument parsing without entering the worktree or touching hardware.
+    parsing = source[source.index("set -euo pipefail"):source.index("EXECUTION_ROOT=")]
+    args = ["acceptance.module", "config.yaml", "launch-commit"]
+    if override is not None:
+        args.append(override)
+    result = subprocess.run(
+        ["bash", "-c", parsing + '\nprintf "%s\\n" "$GPU_COUNT"\n', "launcher", *args],
+        check=True, text=True, capture_output=True,
+    )
+    expected = int(override) if override else requested
+    assert requested == 1
+    assert int(result.stdout.strip()) == expected
+
+
 @pytest.mark.parametrize("name", ("orcd", "kennel"))
 def test_launcher_requeues_its_worker_before_the_time_limit(tmp_path, name):
     launcher = (ROOT / f"scaffolds/transformer/launchers/{name}.sbatch").read_text()

@@ -56,6 +56,8 @@ def config_to_dict(config: Config) -> dict[str, Any]:
         values["model"]["attention_fixed_coefficients"] = list(config.model.attention_fixed_coefficients)
     if config.model.attention_fixed_square_factors is not None:
         values["model"]["attention_fixed_square_factors"] = list(config.model.attention_fixed_square_factors)
+    if config.model.attention_spline_knots is not None:
+        values["model"]["attention_spline_knots"] = list(config.model.attention_spline_knots)
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -68,6 +70,10 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
     normalized = []
     for value in (left, right):
         value = copy.deepcopy(value)
+        value.setdefault("continuation", {"parent_config": "", "parent_config_sha256": "",
+                                          "parent_checkpoint": "", "parent_checkpoint_sha256": "",
+                                          "parent_data_identity_sha256": "",
+                                          "parent_step": 0})
         value.setdefault("model", {}).setdefault("attention_degree", None)
         value["model"].setdefault("attention_basis", None)
         value["model"].setdefault("attention_normalization", True)
@@ -87,6 +93,11 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("quadratic_sharing", "global")
         # Runs recorded before QK-norm existed trained without it, whatever the current default.
         value["model"].setdefault("qk_norm", False)
+        value["model"].setdefault("qk_norm_head_scale", False)
+        value["model"].setdefault("qk_norm_token_scale", "none")
+        value["model"].setdefault("qk_norm_token_scale_kernel_weight_decay", False)
+        value["continuation"].setdefault("new_parameter_learning_rate", None)
+        value["continuation"].setdefault("preserve_all_parameters", False)
         value["model"].setdefault("attention_coefficients", "fixed")
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
         if isinstance(fixed_coefficients, (tuple, list)):
@@ -94,23 +105,46 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         fixed_square_factors = value["model"].setdefault("attention_fixed_square_factors", None)
         if isinstance(fixed_square_factors, (tuple, list)):
             value["model"]["attention_fixed_square_factors"] = list(fixed_square_factors)
+        value["model"].setdefault("attention_kernel_basis", "polynomial")
+        spline_knots = value["model"].setdefault("attention_spline_knots", None)
+        if isinstance(spline_knots, (tuple, list)):
+            value["model"]["attention_spline_knots"] = [float(knot) for knot in spline_knots]
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_denominator_degree", None)
         value["model"].setdefault("attention_denominator_parameterization", "direct")
         value["model"].setdefault("attention_denominator_constant", "fixed")
         value.setdefault("optim", {}).setdefault("coefficient_penalty_denominator", True)
+        value["optim"].setdefault("query_coefficient_learning_rate_scale", 1.0)
+        for key in ("coefficient_release_step", "coefficient_release_schedule", "coefficient_release_end_step"):
+            value["optim"].setdefault(key, None)
         value["model"].setdefault("attention_coefficient_sharing", "global")
         value["model"].setdefault("attention_coefficient_conditioning", "static")
         value["model"].setdefault("attention_coefficient_activation", "identity")
+        value["model"].setdefault("attention_coefficient_readout", "diagonal")
+        value["model"].setdefault("attention_coefficient_readout_scale", 1.0)
+        value["model"].setdefault("attention_coefficient_feature_count", None)
         value["model"].setdefault("attention_coefficient_amplitude_initial", 1.0)
         value["model"].setdefault("attention_coefficient_projection_initial_std", 0.0)
         value["model"].setdefault("attention_coefficient_tanh_bias", False)
+        value["model"].setdefault("attention_coefficient_gate", "none")
+        value["model"].setdefault("attention_coefficient_kernel_weight_decay", False)
+        value["model"].setdefault("attention_forget_gate", False)
+        value["model"].setdefault("attention_forget_gate_mode", "cumulative")
+        value["model"].setdefault("attention_forget_gate_form", "input")
+        value["model"].setdefault("attention_forget_gate_constant_rate", "learned")
+        value["model"].setdefault("attention_forget_gate_conditioning", "query")
+        value["model"].setdefault("attention_forget_gate_rate_activation", "softplus")
+        value["model"].setdefault("attention_forget_gate_per_order", False)
         value["model"].setdefault("positional_encoding", "rope")
+        value["model"].setdefault("attention_blocked_implementation", "scan")
         value["model"].setdefault("path_w_rank", 32)
         value["model"].setdefault("path_conv_size", 3)
         value["model"].setdefault("attention_coefficient_amplitude_scale", "none")
         value["model"].setdefault("attention_coefficient_scale", "none")
+        orders = value["model"].setdefault("attention_coefficient_orders", None)
+        if isinstance(orders, (tuple, list)):
+            value["model"]["attention_coefficient_orders"] = list(orders)
         value.setdefault("optim", {}).setdefault("coefficient_penalty", 0.0)
         for key, default in (("qk_norm", False), ("qk_norm_type", "cosine_log_scale"),
                              ("qk_norm_sharing", "per_head"),

@@ -1,0 +1,6 @@
+{
+  "capacity_best_retained": false,
+  "retained": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_200m_4b/runs/rec777591a61b/checkpoints/0",
+  "selection": "validation best",
+  "teacher_cache_retained": false
+}

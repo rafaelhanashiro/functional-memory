@@ -13,7 +13,8 @@ from flax import nnx
 
 from scaffolds.transformer.data.loaders import make_eval_iterator
 from scaffolds.transformer.data.packed import manifest_fingerprint
-from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE
+from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE, STRIP_SIZE
+from scaffolds.transformer.training.coefficient_release import coefficient_release
 from scaffolds.transformer.training.numerics import (
     has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
     has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
@@ -39,6 +40,9 @@ def _initialization_text(model) -> str:
     initialization = getattr(model, "attention_coefficient_initialization", "taylor")
     if getattr(model, "attention_basis", None) is not None:
         return "fitted basis coefficients"
+    orders = getattr(model, "attention_coefficient_orders", None)
+    if initialization == "taylor" and orders is not None:
+        return f"1/r! for r in {list(orders)}; omitted orders fixed at zero"
     return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
 
 
@@ -148,12 +152,27 @@ def attention_identity(config) -> dict:
     conditioning = config.model.attention_coefficient_conditioning
     query_conditioned = conditioning in ("query", "query_key")
     key_conditioned = conditioning == "query_key"
-    query_tanh = query_conditioned and config.model.attention_coefficient_activation == "tanh"
+    activation = config.model.attention_coefficient_activation
+    # Affine generators b + a*f(x W) (tanh, affine_sigmoid); pure ones f(x W) (sigmoid, pure_tanh).
+    query_tanh = query_conditioned and activation in ("tanh", "affine_sigmoid")
+    query_sigmoid = query_conditioned and activation in ("sigmoid", "pure_tanh")
+    feature = "sigmoid" if activation in ("sigmoid", "affine_sigmoid") else "tanh"
+    coefficient_gate = getattr(config.model, "attention_coefficient_gate", "none")
+    forget_gate = getattr(config.model, "attention_forget_gate", False)
+    gate_mode = getattr(config.model, "attention_forget_gate_mode", "cumulative")
+    forget_gate_form = getattr(config.model, "attention_forget_gate_form", "input")
+    # ALiBi's slopes held fixed: the constant form without a trainable parameter.
+    fixed_rate = (forget_gate_form == "constant"
+                  and getattr(config.model, "attention_forget_gate_constant_rate", "learned") == "fixed")
+    gate_conditioning = getattr(config.model, "attention_forget_gate_conditioning", "query")
+    gate_rate_activation = getattr(config.model, "attention_forget_gate_rate_activation", "softplus")
+    gate_per_order = getattr(config.model, "attention_forget_gate_per_order", False)
     rational = has_rational_kernel(config.model)
     fixed_polynomial = has_fixed_polynomial(config.model)
     fixed_square_factors = has_fixed_square_factors(config.model)
     sharing = config.model.attention_coefficient_sharing
     initialized = _initialization_text(config.model)
+    spline = getattr(config.model, "attention_kernel_basis", "polynomial") == "bspline"
     identity = {
         "attention_degree": degree,
         "attention_normalization": normalized,
@@ -259,7 +278,7 @@ def attention_identity(config) -> dict:
                 "value; attention uses c_r = c~_r / r!"))
     if is_signed_kernel(config.model):
         identity["attention_signed"] = True
-    if learned_polynomial:
+    if learned_polynomial and not spline:
         optim = getattr(config, "optim", None)
         penalty = getattr(optim, "coefficient_penalty", 0.0)
         penalize_denominator = rational and getattr(optim, "coefficient_penalty_denominator", True)
@@ -267,11 +286,21 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        elif config.model.attention_coefficient_orders is not None:
+            per_polynomial = len(config.model.attention_coefficient_orders) * (
+                config.model.hidden_size + 2 + int(config.model.attention_coefficient_tanh_bias)
+                if query_conditioned else 1)
+        elif query_sigmoid:
+            features = config.model.attention_coefficient_feature_count or degree + 1
+            per_polynomial = features * config.model.hidden_size + (
+                (degree + 1) * features if config.model.attention_coefficient_readout == "dense" else 0)
         else:
             per_polynomial = (degree + 1) * (
                 config.model.hidden_size + 1 + int(query_tanh)
                 + int(query_tanh and config.model.attention_coefficient_tanh_bias)
                 + (config.model.hidden_size + 1 if key_conditioned else 0)
+                + (config.model.hidden_size + 1 if coefficient_gate == "sigmoid" else 0)
+                + (config.model.hidden_size + 2 if coefficient_gate == "gdn" else 0)
                 if query_conditioned else 1)
         identity.update({
             "attention_coefficients": "learned",
@@ -282,6 +311,8 @@ def attention_identity(config) -> dict:
                 1 if sharing == "global" else config.model.num_layers * config.model.num_heads),
             "coefficient_penalty": penalty,
         })
+        if config.model.attention_coefficient_orders is not None:
+            identity["attention_coefficient_orders"] = list(config.model.attention_coefficient_orders)
         if rational:
             identity["coefficient_penalty_denominator"] = penalize_denominator
         if penalty:
@@ -290,16 +321,44 @@ def attention_identity(config) -> dict:
                 "a_0^2 + sum_(r>=2) r^2 a_r^2" + (" + sum_(r>=1) r^2 b_r^2" if penalize_denominator else "")
                 + "; a_1 unpenalized" + ("; denominator unpenalized" if rational and not penalize_denominator else "")
                 + "; validation loss and recorded NLL exclude it")
-    if query_conditioned:
+    if spline:
+        identity.update(spline_identity(config.model))
+    if query_conditioned and not spline:
         amplitude = config.model.attention_coefficient_amplitude_initial
         spread = config.model.attention_coefficient_projection_initial_std
         inner_bias = query_tanh and config.model.attention_coefficient_tanh_bias
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
             ", beta initially 0" if inner_bias else "")
-        amplitude_scale = config.model.attention_coefficient_amplitude_scale if query_tanh else "none"
-        tanh_formula = ("c(x_t) = b + (a/r!)*tanh(x_t W" if amplitude_scale == "factorial" else "c(x_t) = b + a*tanh(x_t W") + (
-            " + beta)" if inner_bias else ")")
+        amplitude_scale = (config.model.attention_coefficient_amplitude_scale
+                           if query_tanh or query_sigmoid else "none")
+        tanh_formula = (f"c(x_t) = b + (a/r!)*{feature}(x_t W" if amplitude_scale == "factorial"
+                        else f"c(x_t) = b + a*{feature}(x_t W") + (" + beta)" if inner_bias else ")")
+        if config.model.attention_coefficient_readout == "dense":
+            readout_scale = config.model.attention_coefficient_readout_scale
+            tanh_formula = (f"c_r(x_t) = b_r + sum_j (V_rj/r!)*{feature}(x_t W_j" if amplitude_scale == "factorial"
+                            else f"c_r(x_t) = b_r + sum_j V_rj*{feature}(x_t W_j") + (
+                                " + beta_j)" if inner_bias else ")")
+            if readout_scale != 1.0:
+                tanh_formula = tanh_formula.replace("b_r + sum_j", f"b_r + {readout_scale:.9g} * sum_j")
+            features = config.model.attention_coefficient_feature_count or config.model.attention_degree + 1
+            tanh_formula += f", j = 1..{features}"
+            tanh_start = (tanh_start.replace("a initially", "V initially diagonal with entries")
+                          if features == config.model.attention_degree + 1
+                          else tanh_start.replace("a initially 0", "V initially zero"))
+            identity["attention_coefficient_readout"] = "dense"
+            identity["attention_coefficient_feature_count"] = features
+            if readout_scale != 1.0:
+                identity["attention_coefficient_readout_scale"] = readout_scale
+        if query_sigmoid:
+            dense = config.model.attention_coefficient_readout == "dense"
+            factorial = "/r!" if amplitude_scale == "factorial" else ""
+            tanh_formula = (f"c_r(x_t) = sum_j (V_rj{factorial})*{feature}(x_t W_j), j = 1..{features}" if dense
+                            else f"c_r(x_t) = {feature}(x_t W_r){factorial}")
+            if dense and readout_scale != 1.0:
+                tanh_formula = tanh_formula.replace("= sum_j", f"= {readout_scale:.9g} * sum_j")
+            tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
+                ", V initially the identity" if dense else "")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -309,16 +368,120 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_gate": coefficient_gate} if coefficient_gate != "none" else {}),
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
+            **({"attention_coefficient_kernel_weight_decay": True}
+               if config.model.attention_coefficient_kernel_weight_decay else {}),
+            **({"attention_forget_gate": True,
+                "attention_forget_gate_mode": gate_mode,
+                **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),
+                **({"attention_forget_gate_constant_rate": "fixed"} if fixed_rate else {}),
+                **({"attention_forget_gate_conditioning": gate_conditioning} if gate_conditioning != "query" else {}),
+                **({"attention_forget_gate_rate_activation": gate_rate_activation} if gate_rate_activation != "softplus" else {}),
+                "forget_gate_parameter_count": (0 if fixed_rate else 1 if forget_gate_form == "constant" else
+                                                config.model.hidden_size + 1 if forget_gate_form == "sigmoid" else
+                                                (2 if gate_conditioning == "query_key" else 1) * config.model.hidden_size + 2)
+                * config.model.num_layers * config.model.num_heads} if forget_gate else {}),
             attention_formula=((f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) f_r(x_i) s_ti^r v_i" if key_conditioned
+                                else f"sum_(i<=t) sum_(r<={degree}) 2 g_r(x_t) c_r(x_t) s_ti^r v_i"
+                                if coefficient_gate == "sigmoid"
+                                else f"sum_(i<=t) sum_(r<={degree}) alpha_r(x_t) c_r(x_t) s_ti^r v_i"
+                                if coefficient_gate == "gdn"
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
-                               + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; "
-                                  if query_tanh else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
+                               + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; " if query_tanh
+                                  else f"{tanh_formula} per layer/head, {tanh_start}; " if query_sigmoid
+                                  else "c(x_t) = x_t W + b per layer/head, W initially zero, b initially (1,1); ")
+                               + ("g_r(x_t) = sigmoid(x_t U_r + beta_r) per layer/head/order, U and beta initially 0, "
+                                  "so 2 g_r is 1 at initialization and ranges over (0, 2); "
+                                  if coefficient_gate == "sigmoid" else
+                                  "alpha_r(x_t) = exp(-exp(A_log_r) softplus(x_t w_r + dt_bias_r)) per "
+                                  "layer/head/order, with Gated DeltaNet's initialization drawn once per layer/head "
+                                  "and copied to every order, so all orders share alpha at initialization; "
+                                  if coefficient_gate == "gdn" else "")
                                + ("f(x_i) = 1 + a_k*tanh(x_i W_k) per layer/head, W_k drawn like W and a_k starting "
                                   "like a; x_t and x_i are the key and query tokens' activations"
                                   if key_conditioned else "x_t is the activation")
-                               + " after the block input RMSNorm"),
+                               + " after the block input RMSNorm"
+                               + (f"; retained orders {list(config.model.attention_coefficient_orders)}, "
+                                  "omitted orders fixed at zero" if config.model.attention_coefficient_orders is not None else "")
+                               + (("; each weight is multiplied by exp(-m_h (t - i)), " + FIXED_ALIBI_TEXT
+                                   if fixed_rate else
+                                   "; each weight is multiplied by exp(-exp(A_log) (t - i)) per layer/head, "
+                                   "A_log starting at ALiBi's log slopes" if forget_gate_form == "constant" else
+                                   ("; each weight is multiplied by exp((t-i) log alpha_t), log alpha_t = "
+                                    if gate_mode == "query_distance" else
+                                    "; each weight is multiplied by prod_(j=i+1..t) alpha_j, log alpha_t = ")
+                                   + (SIGMOID_GATE_TEXT if forget_gate_form == "sigmoid" else
+                                      "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                                      "DeltaNet's initialization")) if forget_gate else "")),
+        )
+    input_free_gate = forget_gate and gate_conditioning == "none"
+    if input_free_gate:
+        # Learned static coefficients with the input-free query-distance gate (one rate per layer/head).
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            attention_forget_gate_conditioning="none",
+            forget_gate_parameter_count=2 * config.model.num_layers * config.model.num_heads,
+            attention_formula=(f"sum_(i<=t) sum_(r<={degree}) c_r s_ti^r exp(-(t-i) lambda) v_i, "
+                               f"s_ti = Q_t K_i^T / sqrt(d_k); learned c ({sharing}) initialized at {initialized}; "
+                               "lambda = exp(A_log) softplus(dt_bias) per layer/head, read from no token, with Gated "
+                               "DeltaNet's initialization"),
+        )
+    if gate_per_order:
+        identity["attention_forget_gate_per_order"] = True
+        identity["forget_gate_parameter_count"] *= degree + 1
+        identity["attention_formula"] = (
+            f"sum_(i<=t) sum_(r=0..{degree}) c_r s_ti^r exp(-(t-i) lambda_r) v_i; lambda_r = exp(A_log_r) "
+            f"softplus(dt_bias_r), read from no token; learned c ({sharing}) initialized at {initialized}; "
+            "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized by duplicating "
+            "the shared gate" if input_free_gate else (
+                # Each order's own cumulative decay, prod_(j=i+1..t) alpha_jr = exp(L_tr - L_ir).
+                f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r prod_(j=i+1..t) alpha_jr v_i; "
+                "log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r)"
+                if gate_mode == "cumulative" else
+                f"sum_(i<=t) sum_(r=0..{degree}) c_r(x_t) s_ti^r exp(-(t-i) lambda_tir) v_i; "
+                "lambda_tir = exp(A_log_r) softplus(x_t w_query_r + "
+                + ("x_i w_key_r + " if gate_conditioning == "query_key" else "")
+                + "dt_bias_r)") + (
+                "; c_r uses the configured query-only coefficient generator and factorial scales; "
+                "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
+                "by duplicating the shared gate; x is the pre-attention RMSNorm activation"))
+    if forget_gate and not query_conditioned and not input_free_gate:
+        # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
+        # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
+        # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
+        # in the query-distance mode, (t - i) log alpha_t of the input gate, or with query_key
+        # conditioning (t - i) log alpha_ti, the pair's rate reading both tokens.
+        sigmoid_gate = forget_gate_form == "sigmoid"
+        constant = forget_gate_form == "constant"
+        endpoint = gate_conditioning == "query_key"
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            **({"attention_forget_gate_form": forget_gate_form} if forget_gate_form != "input" else {}),
+            **({"attention_forget_gate_constant_rate": "fixed"} if fixed_rate else {}),
+            **({"attention_forget_gate_conditioning": gate_conditioning} if endpoint else {}),
+            forget_gate_parameter_count=(0 if fixed_rate else 1 if constant else
+                                         (2 if endpoint else 1) * config.model.hidden_size + (1 if sigmoid_gate else 2))
+            * config.model.num_layers * config.model.num_heads,
+            attention_formula=(("causal_softmax" if normalized else "causal_exp")
+                               + "(QK^T / sqrt(d_k) + D) V, D_ti = "
+                               + ("-m_h (t - i), " + FIXED_ALIBI_TEXT if fixed_rate else
+                                  "-exp(A_log) (t - i) per layer/head, A_log starting at ALiBi's log slopes"
+                                  if constant else
+                                  "(t - i) log alpha_ti, log alpha_ti = -exp(A_log) softplus(x_t w_query + x_i w_key "
+                                  "+ dt_bias) per layer/head, w_key initialized zero and the other gate parameters "
+                                  "with Gated DeltaNet's initialization; x_t and x_i are the query and key tokens' "
+                                  "activations after the block input RMSNorm"
+                                  if endpoint else
+                                  ("(t - i) log alpha_t, log alpha_t = " if gate_mode == "query_distance"
+                                   else "sum_(j=i+1..t) log alpha_j, log alpha_t = ")
+                                  + (SIGMOID_GATE_TEXT if sigmoid_gate else
+                                     "-exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                                     "DeltaNet's initialization")
+                                  + "; x_t is the activation after the block input RMSNorm")),
         )
     if mode != "fixed":
         identity.update({
@@ -386,7 +549,7 @@ def attention_identity(config) -> dict:
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
         identity.update({
             "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
-                                         "pallas_triton_query_polynomial" if query_tanh else
+                                         "pallas_triton_query_polynomial" if query_tanh or query_sigmoid else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
             "query_block_size": block_q,
@@ -398,9 +561,17 @@ def attention_identity(config) -> dict:
         from scaffolds.transformer.attention.backends.mosaic.api import default_precision
 
         # Tiles differ between the Hopper and Blackwell kernels; the GPU is recorded with the hardware.
+        gate = config.model.attention_forget_gate
+        endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
+        per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
         identity.update({
-            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
-                                         else "pallas_mosaic_gpu_query_polynomial" if query_tanh
+            "attention_implementation": ("pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
+                                         if endpoint and per_order
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
+                                         else "pallas_mosaic_gpu_query_polynomial_endpoint_decay" if endpoint
+                                         else "pallas_mosaic_gpu_query_polynomial_query_decay" if gate
+                                         else "pallas_mosaic_gpu_query_polynomial_per_degree_values" if key_conditioned
+                                         else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
                                          if not normalized else "pallas_mosaic_gpu"),
             # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
@@ -412,6 +583,17 @@ def attention_identity(config) -> dict:
         })
     elif config.model.attention_backend in ("manual", "xla", "cudnn"):
         identity.update({
+            "query_block_size": None,
+            "diagnostic_backend": "blocked",
+            "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
+        })
+    elif (config.model.attention_backend == "blocked"
+          and getattr(config.model, "attention_blocked_implementation", "scan") == "strips"):
+        # Causal query strips with FP32 dK/dV sums train; diagnostics come from the historical scan.
+        identity.update({
+            "attention_implementation": "blocked_causal_strips",
+            "attention_blocked_implementation": "strips",
+            "attention_strip_size": STRIP_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "blocked",
             "diagnostic_query_block_size": QUERY_BLOCK_SIZE,
@@ -431,8 +613,10 @@ def attention_identity(config) -> dict:
             "path_chunk_size": CHUNK_SIZE,
             "query_block_size": None,
             "diagnostic_backend": "jax_path_chunked_ut_transform",
-            **({"attention_implementation": ("fla_parallel_path_attention_triton" if model.path_kernel() == "softmax"
-                                             else "fla_parallel_path_query_polynomial_triton"),
+            **({"attention_implementation": {"softmax": "fla_parallel_path_attention_triton",
+                                             "exp": "fla_parallel_path_attention_triton_times_row_sum",
+                                             "query_polynomial": "fla_parallel_path_query_polynomial_triton",
+                                             }[model.path_kernel()],
                 # FLA sizes its tiles from the GPU's shared memory: 64-token UT-transform chunks and
                 # key blocks, 128-token query blocks, and 512-token splits on H100 and B300.
                 "path_chunk_size": None, "path_split_size": SPLIT, "key_block_size": None,
@@ -442,6 +626,110 @@ def attention_identity(config) -> dict:
                 "PaTH: s_ts = q_t^T H_t ... H_(s+1) k_s / sqrt(d_k), H_t = I - beta_t w_t w_t^T; "
                 "w_t = L2norm(SiLU(causal_conv(x_t W_down W_up))) per head, beta_t = 2 sigmoid(x_t W_beta + b); no RoPE"),
         })
+        if "attention_formula" in identity:
+            identity["attention_formula"] = identity["attention_formula"].replace(
+                "s_ti = Q_t K_i^T / sqrt(d_k)", "s_ti = q_t^T H_t ... H_(i+1) k_i / sqrt(d_k)")
+        if model.attention_forget_gate:
+            identity["attention_implementation"] += "_forget_gate"
+    if (forget_gate and query_conditioned and not input_free_gate
+            and (gate_conditioning != "query" or gate_rate_activation != "softplus")):
+        # Query polynomials' endpoint variants; softmax, the exponential and the input-free gate state
+        # theirs above.
+        prefix = identity["attention_formula"].split("; each weight is multiplied")[0]
+        if gate_conditioning == "query_key":
+            gate_formula = ("exp(-(t-i) exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)) per layer/head; "
+                            "w_key initialized zero, other gate parameters use Gated DeltaNet initialization")
+        else:
+            gate_formula = ("exp(-(t-i) exp(A_log) sigmoid(x_t w_query + dt_bias)) per layer/head; "
+                            "sigmoid(dt_bias) matches the legacy softplus bias draw at zero input")
+        identity["attention_formula"] = prefix + "; each weight is multiplied by " + gate_formula
+    release = coefficient_release(config)
+    if release is not None:
+        identity.update(_release_identity(config, release, identity["attention_formula"]))
+    return identity
+
+
+def _release_identity(config, release, formula: str) -> dict:
+    """The coefficient release schedule, recorded only for recipes that set one."""
+    optim, degree = config.optim, config.model.attention_degree
+    start, end = optim.coefficient_release_step, optim.coefficient_release_end_step
+    entries = ("b_r, a_r, and column r of W" if config.model.attention_coefficient_conditioning == "query"
+               else "c_r")
+    counts = list(release.counts)
+    when = (f"s_r = {start} for every order" if release.schedule == "all" else
+            f"s_r = {start} + floor(r ({end} - {start}) / {degree}) = {counts}, lowest order first")
+    return {
+        "coefficient_release_schedule": release.schedule,
+        "coefficient_release_step": start,
+        **({"coefficient_release_end_step": end} if release.schedule == "by_order" else {}),
+        "coefficient_release_counts": counts,
+        "attention_formula": (
+            f"{formula}; order r's stored coefficients ({entries}) stay at their initial values for "
+            f"optimizer updates k < s_r (gradient zeroed before clipping, update zeroed after AdamW) "
+            f"and train for k >= s_r, the update logged as step k + 1, {when}"),
+    }
+
+
+def spline_identity(model) -> dict:
+    """The B-spline score function's basis, start, parameters, and formula (attention/spline.py)."""
+    from scaffolds.transformer.attention.spline import (
+        basis_count, clamped_knot_vector, piece_centres, taylor_coefficients,
+    )
+
+    degree, knots = model.attention_degree, tuple(model.attention_spline_knots)
+    count = basis_count(knots, degree)
+    query = model.attention_coefficient_conditioning == "query"
+    shown = "[" + ", ".join(f"{knot:g}" for knot in knots) + "]"
+    basis = (f"f(s) = sum_(j<{count}) theta_j B_j(s), B_j the degree-{degree} B-splines on the knots {shown} "
+             f"with each endpoint repeated {degree + 1} times (C^{degree - 1} at the interior knots); outside "
+             f"[{knots[0]:g}, {knots[-1]:g}] f continues its first or last polynomial piece")
+    start = f"the exact B-spline coefficients of T_{degree}(s) = sum_(r<={degree}) s^r / r!, so f = T_{degree}"
+    if query:
+        spread = model.attention_coefficient_projection_initial_std
+        amplitude = model.attention_coefficient_amplitude_initial
+        generator = (f"theta_j(x_t) = b_j + a_j*tanh(x_t W_j) per layer/head, "
+                     + (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero")
+                     + f", a initially {amplitude:g}, b initially {start}; "
+                     "x_t is the activation after the block input RMSNorm")
+        formula = f"sum_(i<=t) f_t(s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k); {basis}; {generator}"
+        per_layer_head = count * (model.hidden_size + 2)
+    else:
+        formula = (f"sum_(i<=t) f(s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k); {basis}; "
+                   f"theta learned per layer/head, initially {start}")
+        per_layer_head = count
+    identity = {
+        "attention_kernel": "query_spline_unnormalized" if query else "learned_spline_unnormalized",
+        "attention_kernel_basis": "bspline",
+        "attention_formula": formula,
+        "attention_score_scale": "1/sqrt(d_k)",
+        "attention_output_normalization": False,
+        "attention_signed": True,
+        "attention_spline_knots": list(knots),
+        "attention_spline_knot_vector": [float(knot) for knot in clamped_knot_vector(knots, degree)],
+        "attention_spline_basis_count": count,
+        "attention_spline_extrapolation": "first_and_last_pieces_continued",
+        "attention_spline_evaluation": ("per-piece local polynomials sum_r P_jr (s - c_j)^r from a fixed exact "
+                                        "linear map of theta, Horner's rule in the compute dtype (FP32)"),
+        "attention_spline_piece_centres": [float(centre) for centre in piece_centres(knots)],
+        "attention_spline_initial_coefficients": [str(value) for value in taylor_coefficients(knots, degree)],
+        "attention_coefficients": "learned",
+        "attention_coefficient_parameterization": "direct",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficient_count": per_layer_head * model.num_layers * model.num_heads,
+        "attention_coefficient_conditioning": model.attention_coefficient_conditioning,
+        "coefficient_penalty": 0.0,
+    }
+    if query:
+        identity.update(
+            attention_coefficient_activation="tanh",
+            attention_coefficient_input="pre_attention_rmsnorm_activation",
+            attention_coefficient_projection_dtype="float32",
+            attention_coefficient_amplitude_initial=model.attention_coefficient_amplitude_initial,
+            attention_coefficient_projection_initial_std=model.attention_coefficient_projection_initial_std,
+            **({"attention_coefficient_kernel_weight_decay": True}
+               if model.attention_coefficient_kernel_weight_decay else {}),
+        )
     return identity
 
 
@@ -450,7 +738,7 @@ def qk_norm_identity(model) -> dict:
     from scaffolds.transformer.attention.qk_norm import initial_scale
 
     if model.qk_norm_type == "rms_norm":
-        return {
+        identity = {
             "qk_norm": True,
             "qk_norm_type": "rms_norm",
             "qk_norm_sharing": "per_layer",
@@ -461,10 +749,39 @@ def qk_norm_identity(model) -> dict:
             "qk_norm_gain_shared_across_heads": True,
             "qk_norm_stats_dtype": "float32",
             "attention_score_formula": (
-                "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), "
-                "RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); "
-                "independent Q/K channel gains per layer, shared across heads"),
+                ("<g_Q * q / sqrt(mean(q^2) + eps), g_K * k / sqrt(mean(k^2) + eps)> / sqrt(d_K); "
+                 if model.positional_encoding == "none" else
+                 "<RoPE(g_Q * q / sqrt(mean(q^2) + eps)), RoPE(g_K * k / sqrt(mean(k^2) + eps))> / sqrt(d_K); ")
+                + "independent Q/K channel gains per layer, shared across heads"),
+            **({"positional_encoding": "none"} if model.positional_encoding == "none" else {}),
         }
+        if model.qk_norm_head_scale:
+            identity.update(
+                qk_norm_head_scale=True,
+                qk_norm_head_scale_sharing="per_head",
+                qk_norm_head_scale_shape=[model.num_layers, model.num_heads, 1],
+                qk_norm_head_scale_initial=1.0,
+                qk_norm_parameter_count=identity["qk_norm_parameter_count"] + model.num_layers * model.num_heads,
+                attention_score_formula="exp(gamma_h) * " + identity["attention_score_formula"]
+                                        + "; gamma_h learned independently per layer/head, initially zero",
+            )
+            if getattr(model, "qk_norm_token_scale", "none") == "cosine":
+                gate_count = model.num_layers * model.num_heads * (model.hidden_size + 1)
+                identity.update(
+                    qk_norm_token_scale="cosine",
+                    qk_norm_token_scale_input="pre_attention_rmsnorm_activation",
+                    qk_norm_token_scale_shape=[model.num_layers, model.num_heads, model.hidden_size + 1],
+                    qk_norm_token_scale_initial_amplitude=0.0,
+                    qk_norm_token_scale_kernel_weight_decay=getattr(
+                        model, "qk_norm_token_scale_kernel_weight_decay", False),
+                    qk_norm_token_scale_amplitude_weight_decay=False,
+                    qk_norm_parameter_count=identity["qk_norm_parameter_count"] + gate_count,
+                    attention_score_formula="exp(a_h cos(w_h, x_t)) * " + identity["attention_score_formula"]
+                                            + "; a_h learned per layer/head, initially zero; w_h drawn "
+                                            "N(0, 1/hidden_size), direction only; x_t is the attention input "
+                                            "after the block input RMSNorm",
+                )
+        return identity
     return {
         "qk_norm": True,
         "qk_norm_type": "cosine_log_scale",
@@ -539,10 +856,14 @@ def polynomial_coefficient_report(params, config) -> dict:
         effective = np.concatenate([numerator, expanded if constant == "learned" else expanded[..., 1:]], axis=-1)
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
-        raw_names = [f"c{order}" for order in range(raw.shape[-1])]
+        orders = config.model.attention_coefficient_orders
+        raw_names = [f"c{order}" for order in (range(raw.shape[-1]) if orders is None else orders)]
         effective = raw
+        if orders is not None:
+            effective = np.zeros((*raw.shape[:-1], config.model.attention_degree + 1), dtype=np.float64)
+            effective[..., list(orders)] = raw
         if getattr(config.model, "attention_coefficient_scale", "none") == "factorial":
-            effective = raw / np.asarray([math.factorial(order) for order in range(raw.shape[-1])], np.float64)
+            effective = effective / np.asarray([math.factorial(order) for order in range(effective.shape[-1])], np.float64)
     if has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
@@ -563,16 +884,20 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial", amplitude_scale="none",
-                             coefficient_scale="none", projection_coefficients=None) -> dict:
+                             coefficient_scale="none", projection_coefficients=None,
+                             readout_scale=1.0, activation="tanh", orders=None) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
     effective coefficients. Summary arrays have shape [layers,heads,degree+1].
     """
-    bias = np.asarray(jax.device_get(params[f"{prefix}_bias"][...]), dtype=np.float64)
+    bias = (np.asarray(jax.device_get(params[f"{prefix}_bias"][...]), dtype=np.float64)
+            if f"{prefix}_bias" in params else None)
     kernel = np.asarray(jax.device_get(params[f"{prefix}_kernel"][...]), dtype=np.float64)
     amplitude = (np.asarray(jax.device_get(params[f"{prefix}_amplitude"][...]), dtype=np.float64)
                  if f"{prefix}_amplitude" in params else None)
+    mixing = (np.asarray(jax.device_get(params[f"{prefix}_mixing"][...]), dtype=np.float64)
+              if f"{prefix}_mixing" in params else None)
     inner_bias = (np.asarray(jax.device_get(params[f"{prefix}_tanh_bias"][...]), dtype=np.float64)
                   if f"{prefix}_tanh_bias" in params else None)
     key_amplitude = (np.asarray(jax.device_get(params["key_polynomial_amplitude"][...]), dtype=np.float64)
@@ -584,23 +909,42 @@ def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial", a
     report = {
         "conditioning": "query",
         "sample": "fixed_diagnostic_sample",
-        "effective_coefficient_names": [_coefficient_name(r) for r in range(bias.shape[-1])],
+        "effective_coefficient_names": [_coefficient_name(r) for r in range(summaries["mean"].shape[-1])],
         "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
-        "projection_bias": _serializable(bias),
+        **({"projection_bias": _serializable(bias)} if bias is not None else {}),
         "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
-        "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+        "finite": bool((bias is None or np.isfinite(bias).all()) and np.isfinite(kernel).all()
                        and (amplitude is None or np.isfinite(amplitude).all())
+                       and (mixing is None or np.isfinite(mixing).all())
                        and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
     if amplitude is not None:
-        report.update(activation="tanh", modulation_amplitude=_serializable(amplitude))
+        report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
-            factorials = np.asarray([math.factorial(r) for r in range(amplitude.shape[-1])], dtype=np.float64)
+            factorials = np.asarray([math.factorial(r) for r in
+                                     (range(amplitude.shape[-1]) if orders is None else orders)], dtype=np.float64)
             report.update(modulation_amplitude_scale="1/r!",
                           effective_modulation_amplitude=_serializable(amplitude / factorials))
+    if activation in ("sigmoid", "pure_tanh"):
+        report.update(activation=activation)
+        if mixing is None and amplitude_scale == "factorial":
+            report[f"{activation}_feature_scale"] = "1/r!"
+    if mixing is not None:
+        report.update(activation=activation, readout="dense", modulation_mixing=_serializable(mixing),
+                      modulation_mixing_axes=["layer", "head", "output_order", "feature"])
+        effective_mixing = mixing * readout_scale
+        if amplitude_scale == "factorial":
+            factorials = np.asarray([math.factorial(r) for r in range(mixing.shape[-2])], dtype=np.float64)
+            report.update(modulation_amplitude_scale="1/r!",
+                          effective_modulation_mixing=_serializable(effective_mixing / factorials[:, None]))
+        elif readout_scale != 1.0:
+            report["effective_modulation_mixing"] = _serializable(effective_mixing)
+        if readout_scale != 1.0:
+            report["readout_scale"] = readout_scale
     if coefficient_scale == "factorial":
-        factorials = np.asarray([math.factorial(r) for r in range(bias.shape[-1])], dtype=np.float64)
+        factorials = np.asarray([math.factorial(r) for r in
+                                 (range(bias.shape[-1]) if orders is None else orders)], dtype=np.float64)
         report.update(projection_bias_scale="1/r!", effective_projection_bias=_serializable(bias / factorials))
     if coefficient_scale == "projection" or amplitude_scale == "projection":
         scale = np.asarray(projection_coefficients, dtype=np.float32).astype(np.float64)
@@ -612,6 +956,8 @@ def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial", a
         if amplitude_scale == "projection" and amplitude is not None:
             report.update(modulation_amplitude_scale="fitted_basis",
                           effective_modulation_amplitude=_serializable(amplitude * scale))
+    if orders is not None:
+        report["stored_parameter_orders"] = list(orders)
     if inner_bias is not None:
         report["tanh_bias"] = _serializable(inner_bias)
     if key_amplitude is not None:
@@ -629,6 +975,241 @@ def query_coefficient_report(params, raw_layers, *, prefix="query_polynomial", a
         report["finite"] = bool(report["finite"] and np.isfinite(key_amplitude).all() and np.isfinite(key_kernel).all()
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
+
+def _float32_serializable(array):
+    """_serializable at FP32 precision: each value's shortest round-trip FP32 decimal, which
+    halves the JSON of FP32 statistics without losing any of their information."""
+    if array.ndim == 0:
+        value = np.float32(array)
+        return float(str(value)) if np.isfinite(value) else json_number(value)
+    return [_float32_serializable(value) for value in array]
+
+
+def coefficient_gate_report(params, raw_layers, gate: str = "sigmoid") -> dict:
+    """Per-order coefficient gates on the pinned diagnostic sample, arrays [layers, heads, degree+1].
+
+    The coefficient report's effective_summary describes the gated c~ = 2 g c (GDN: alpha c).
+    A small gate alone does not show suppression, because c can compensate: read the gate, the
+    ungated c, c~ and the contributions together. The log tilt (log g_r - mean_r log g_r)
+    ignores a factor shared by all orders, which per-head output RMSNorm cancels. Only nonfinite
+    gate parameters or gates are issues; contributions are measurements. Values are stored at
+    the FP32 precision in which they are computed and stored.
+    """
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float32)
+    stack = lambda name: np.stack([np.asarray(layer[f"coefficient_gate_{name}"], dtype=np.float32)
+                                   for layer in raw_layers])
+    kernel = get("query_polynomial_gate_kernel")
+    gates = {statistic: stack(statistic) for statistic in ("mean", "std", "min", "max")}
+    tilt = {statistic: stack(f"log_tilt_{statistic}") for statistic in ("mean", "std")}
+    ungated = {statistic: stack(f"ungated_{statistic}") for statistic in ("mean", "std")}
+    contributions = {statistic: stack(f"contribution_{statistic}") for statistic in ("rms", "abs_mean", "row_share")}
+    if gate == "gdn":
+        log_rate, dt_bias = get("query_polynomial_gate_log_rate"), get("query_polynomial_gate_dt_bias")
+        with np.errstate(over="ignore"):
+            rate, softplus_dt_bias = np.exp(log_rate), np.logaddexp(np.float32(0), dt_bias)
+        parameters = {"gate_rate_exp_A_log": _float32_serializable(rate),
+                      "gate_softplus_dt_bias": _float32_serializable(softplus_dt_bias)}
+        arrays = (kernel, log_rate, dt_bias)
+        formula = "c~_r(x_t) = alpha_r(x_t) c_r(x_t), alpha_r(x_t) = exp(-exp(A_log_r) softplus(x_t w_r + dt_bias_r))"
+    elif gate == "sigmoid":
+        bias = get("query_polynomial_gate_bias")
+        parameters, arrays = {"gate_bias": _float32_serializable(bias)}, (kernel, bias)
+        formula = "c~_r(x_t) = 2 g_r(x_t) c_r(x_t), g_r(x_t) = sigmoid(x_t U_r + beta_r)"
+    else:
+        raise ValueError(f"Unknown attention coefficient gate: {gate!r}")
+    return {
+        "formula": formula + "; contribution c~_r(x_t) s_ti^r over causal pairs i <= t, with row_share its mean "
+                   "share of each row's sum over orders of |contribution|; attention_kernel_abs_mean is the mean "
+                   "|sum_r c~_r(x_t) s_ti^r| over the same pairs",
+        "axes": ["layer", "head", "order"],
+        "attention_kernel_abs_mean_axes": ["layer", "head"],
+        "order_names": [_coefficient_name(r) for r in range(kernel.shape[-1])],
+        **parameters,
+        "gate_kernel_l2": _float32_serializable(np.linalg.norm(kernel.astype(np.float64), axis=-2)),
+        "gate_summary": {name: _float32_serializable(values) for name, values in gates.items()},
+        "gate_log_tilt_summary": {name: _float32_serializable(values) for name, values in tilt.items()},
+        "ungated_coefficient_summary": {name: _float32_serializable(values) for name, values in ungated.items()},
+        "contribution_summary": {name: _float32_serializable(values) for name, values in contributions.items()},
+        "attention_kernel_abs_mean": _float32_serializable(stack("attention_kernel_abs_mean")),
+        "finite": bool(all(np.isfinite(array).all() for array in arrays)
+                       and all(np.isfinite(values).all() for values in gates.values())),
+    }
+
+
+def spline_pieces(knots) -> list[str]:
+    """The score ranges each B-spline piece evaluates; the end pieces include the continuation."""
+    edges = ["-inf", *(f"{knot:g}" for knot in knots[1:-1]), "inf"]
+    return [f"[{left}, {right})" if left != "-inf" else f"({left}, {right})" for left, right in zip(edges, edges[1:])]
+
+
+def spline_layer_coverage(raw) -> dict:
+    """One layer's pooled score coverage: the fraction each piece evaluates and outside the end knots."""
+    pieces = np.asarray(raw["spline_piece_count"], dtype=np.float64)
+    total = pieces.sum()
+    coverage = {f"spline_piece_{index}_fraction": json_number(count / total)
+                for index, count in enumerate(pieces.sum(axis=0))}
+    coverage["spline_below_range_fraction"] = json_number(np.sum(raw["spline_below_range_count"]) / total)
+    coverage["spline_above_range_fraction"] = json_number(np.sum(raw["spline_above_range_count"]) / total)
+    return coverage
+
+
+def spline_coverage_report(raw_layers, config) -> dict:
+    """Per layer/head fractions of the measured causal scores each B-spline piece evaluates and of
+    those outside [u_0, u_K] (polynomial continuation), with the per-head score extrema."""
+    knots = list(config.model.attention_spline_knots)
+    pieces = np.stack([np.asarray(layer["spline_piece_count"], np.float64) for layer in raw_layers])
+    totals = pieces.sum(axis=-1)
+    below = np.stack([np.asarray(layer["spline_below_range_count"], np.float64) for layer in raw_layers])
+    above = np.stack([np.asarray(layer["spline_above_range_count"], np.float64) for layer in raw_layers])
+    extrema = {name: np.stack([np.asarray(layer[f"spline_score_{name}"], np.float64) for layer in raw_layers])
+               for name in ("min", "max")}
+    return {
+        "sample": "fixed_diagnostic_sample",
+        "pieces": spline_pieces(knots),
+        "knot_range": [knots[0], knots[-1]],
+        "axes": ["layer", "head", "piece"],
+        "causal_score_count": _serializable(totals),
+        "piece_fraction": _serializable(pieces / totals[..., None]),
+        "below_range_fraction": _serializable(below / totals),
+        "above_range_fraction": _serializable(above / totals),
+        "score_min": _serializable(extrema["min"]),
+        "score_max": _serializable(extrema["max"]),
+    }
+
+
+def spline_coefficient_report(params, raw_layers, config) -> dict:
+    """B-spline coefficients theta: static per layer/head, or the query generator's b, a, column
+    norms of W, and the generated theta on the diagnostic sample ([layers, heads, basis])."""
+    from scaffolds.transformer.attention.spline import basis_count
+
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+    names = [f"B{index}" for index in range(basis_count(config.model.attention_spline_knots,
+                                                         config.model.attention_degree))]
+    if config.model.attention_coefficient_conditioning != "query":
+        theta = get("spline_coefficients")
+        return {"basis": "bspline", "raw_parameter_names": names, "raw": _serializable(theta),
+                "effective_coefficient_names": names, "effective": _serializable(theta),
+                "finite": bool(np.isfinite(theta).all())}
+    bias, amplitude, kernel = (get(name) for name in ("query_spline_bias", "query_spline_amplitude",
+                                                      "query_spline_kernel"))
+    summaries = {statistic: np.stack([np.asarray(layer[f"spline_coefficient_{statistic}"], np.float64)
+                                      for layer in raw_layers]) for statistic in ("mean", "std", "min", "max")}
+    return {
+        "basis": "bspline",
+        "conditioning": "query",
+        "sample": "fixed_diagnostic_sample",
+        "formula": "theta_j(x_t) = b_j + a_j*tanh(x_t W_j)",
+        "effective_coefficient_names": names,
+        "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
+        "projection_bias": _serializable(bias),
+        "activation": "tanh",
+        "modulation_amplitude": _serializable(amplitude),
+        "projection_kernel_l2": _serializable(np.linalg.norm(kernel, axis=-2)),
+        "finite": bool(np.isfinite(bias).all() and np.isfinite(amplitude).all() and np.isfinite(kernel).all()
+                       and all(np.isfinite(values).all() for values in summaries.values())),
+    }
+
+
+SIGMOID_GATE_TEXT = ("log sigmoid(x_t w_f + b_f) per layer/head, with the Forgetting Transformer's initialization "
+                     "w_f ~ N(0, 0.02^2), b_f = 0")
+FIXED_ALIBI_TEXT = "m_h = 2^(-8 h / H) for head h = 1..H, ALiBi's slopes fixed in every layer (no parameters)"
+
+
+def forget_gate_report(params, raw_layers, *, form: str = "input", conditioning: str = "query",
+                       rate_activation: str = "softplus", constant_rate: str = "learned",
+                       mode: str = "cumulative") -> dict:
+    """Forget gate rates exp(A_log), softplus(dt_bias), and log alpha on the diagnostic sample ([L,H],
+    or [L,H,R] for per-order gates, whose formula names the decay ``mode``)."""
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+    sample = {statistic: np.stack([np.asarray(layer[f"forget_gate_log_alpha_{statistic}"], np.float64)
+                                   for layer in raw_layers]) for statistic in ("mean", "min", "max")}
+    with np.errstate(divide="ignore"):
+        half_life = np.log(0.5) / sample["mean"]
+    if form == "constant" and constant_rate == "fixed":
+        from scaffolds.transformer.attention.forget_gate import alibi_log_rate
+
+        # The model's FP32 log rates, the same in every layer; nothing is trained.
+        rate = np.broadcast_to(np.exp(np.asarray(alibi_log_rate(sample["mean"].shape[-1]), np.float64)[:, 0]),
+                               sample["mean"].shape)
+        return {
+            "formula": "log alpha_t = -m_h, " + FIXED_ALIBI_TEXT + "; weights decay as exp(-m_h (t - i))",
+            "fixed_rate": _serializable(rate),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(all(np.isfinite(values).all() for values in sample.values())),
+        }
+    if conditioning == "none":
+        # One rate per layer and head (and order) that reads no token: the parameters give it exactly.
+        rate = np.exp(get("forget_gate_log_rate")[..., 0])
+        dt = np.logaddexp(0.0, get("forget_gate_dt_bias")[..., 0])
+        decay = rate * dt
+        with np.errstate(divide="ignore"):
+            half_lives = np.log(2.0) / decay
+        per_order = decay.ndim == 3
+        return {
+            "formula": ("log alpha_r = -exp(A_log_r) softplus(dt_bias_r), read from no token; degree-r weight "
+                        "multiplied by exp(-(t-i) lambda_r)" if per_order else
+                        "log alpha = -exp(A_log) softplus(dt_bias), read from no token; weights multiplied by "
+                        "exp(-(t-i) lambda)"),
+            **({"axes": ["layer", "head", "polynomial_order"]} if per_order else {}),
+            "rate_exp_A_log": _serializable(rate),
+            "softplus_dt_bias": _serializable(dt),
+            "decay_rate": _serializable(decay),
+            "half_life_tokens": _serializable(half_lives),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(decay).all() and all(np.isfinite(values).all() for values in sample.values())),
+        }
+    if form == "sigmoid":
+        bias, kernel = get("forget_gate_bias")[..., 0], get("forget_gate_kernel")
+        return {
+            "formula": "log alpha_t = log sigmoid(x_t w_f + b_f) (Forgetting Transformer)",
+            "bias": _serializable(bias),
+            "sigmoid_bias": _serializable(1.0 / (1.0 + np.exp(-bias))),
+            "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(bias).all() and np.isfinite(kernel).all()
+                           and all(np.isfinite(values).all() for values in sample.values())),
+        }
+    rate = np.exp(get("forget_gate_log_rate")[..., 0])
+    if form == "constant":
+        return {
+            "formula": "log alpha_t = -exp(A_log); weights decay as exp(-exp(A_log) (t - i))",
+            "rate_exp_A_log": _serializable(rate),
+            "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+            "mean_half_life_tokens": _serializable(half_life),
+            "finite": bool(np.isfinite(rate).all() and all(np.isfinite(values).all() for values in sample.values())),
+        }
+    bias, kernel = get("forget_gate_dt_bias")[..., 0], get("forget_gate_kernel")
+    dt = np.exp(-np.logaddexp(0.0, -bias)) if rate_activation == "sigmoid" else np.logaddexp(0.0, bias)
+    report = {
+        "formula": f"log alpha_t = -exp(A_log) {rate_activation}(x_t w_alpha + dt_bias)",
+        "rate_exp_A_log": _serializable(rate),
+        f"{rate_activation}_dt_bias": _serializable(dt),
+        "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+        "log_alpha_sample": {name: _serializable(values) for name, values in sample.items()},
+        "mean_half_life_tokens": _serializable(half_life),
+        "finite": bool(np.isfinite(rate).all() and np.isfinite(bias).all() and np.isfinite(dt).all()
+                       and np.isfinite(kernel).all() and all(np.isfinite(values).all() for values in sample.values())),
+    }
+    if conditioning == "query_key":
+        key_kernel = get("forget_gate_key_kernel")
+        report.update(formula="log alpha_ti = -exp(A_log) softplus(x_t w_query + x_i w_key + dt_bias)",
+                      sample_domain="all causal query-key pairs in the diagnostic sample, including diagonal",
+                      key_kernel_l2=_serializable(np.linalg.norm(key_kernel, axis=-1)))
+        report["finite"] = bool(report["finite"] and np.isfinite(key_kernel).all())
+    if kernel.ndim == 4 and mode == "cumulative":
+        report["axes"] = ["layer", "head", "polynomial_order"]
+        report["formula"] = ("log alpha_tr = -exp(A_log_r) softplus(x_t w_alpha_r + dt_bias_r); degree-r weight "
+                             "multiplied by prod_(j=i+1..t) alpha_jr")
+    elif kernel.ndim == 4:
+        report["axes"] = ["layer", "head", "polynomial_order"]
+        report["formula"] = ("log alpha_tir = -exp(A_log_r) softplus(x_t w_query_r + "
+                             + ("x_i w_key_r + " if conditioning == "query_key" else "")
+                             + "dt_bias_r); degree-r weight multiplied by exp((t-i) log alpha_tir)")
+    return report
+
 
 def qk_norm_scale_report(params, config) -> dict:
     """Record the log scales gamma and the score bounds exp(gamma), shared ([1]) or per layer and head ([L, H, 1])."""
@@ -655,6 +1236,41 @@ def qk_norm_gain_report(params) -> dict:
         "effective": _serializable(gains),
         "axes": ["layer", "channel", "query_or_key"],
         "finite": bool(np.all(np.isfinite(gains))),
+    }
+
+
+def qk_norm_token_scale_report(params, raw_layers) -> dict:
+    """Per-token gate amplitudes a_h ([L,H,1]) and the realized log scale delta on the diagnostic sample."""
+    amplitude = np.asarray(jax.device_get(params["qk_norm_token_scale_amplitude"][...]), dtype=np.float64)
+    kernel = np.asarray(jax.device_get(params["qk_norm_token_scale_kernel"][...]), dtype=np.float64)
+    sample = {statistic: np.stack([np.asarray(layer[f"token_scale_log_delta_{statistic}"], np.float64)
+                                   for layer in raw_layers]) for statistic in ("mean", "std", "min", "max")}
+    return {
+        "formula": "delta_th = a_h cos(w_h, x_t); query scale exp(gamma_h + delta_th)",
+        "raw_parameter_names": ["a_h"],
+        "raw": _serializable(amplitude),
+        "effective_coefficient_names": ["a_h"],
+        "effective": _serializable(amplitude),
+        "axes": ["layer", "head", "scalar"],
+        "kernel_l2": _serializable(np.linalg.norm(kernel, axis=-1)),
+        "log_delta_sample": {name: _serializable(values) for name, values in sample.items()},
+        "finite": bool(np.isfinite(amplitude).all() and np.isfinite(kernel).all()
+                       and all(np.isfinite(values).all() for values in sample.values())),
+    }
+
+
+def qk_norm_head_scale_report(params) -> dict:
+    """Independent score multipliers on top of the retained RMSNorm gains."""
+    raw = np.asarray(jax.device_get(params["qk_norm_head_log_scale"][...]), dtype=np.float64)
+    with np.errstate(over="ignore"):
+        effective = np.exp(raw)
+    return {
+        "raw_parameter_names": ["gamma_h"],
+        "raw": _serializable(raw),
+        "effective_coefficient_names": ["alpha_h"],
+        "effective": _serializable(effective),
+        "axes": ["layer", "head", "scalar"],
+        "finite": bool(np.isfinite(raw).all() and np.isfinite(effective).all()),
     }
 
 
@@ -721,7 +1337,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_")):
+            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
+                                "coefficient_gate_", "spline_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -731,6 +1348,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 issues.append(f"layer {index}: nonfinite {name}")
             elif name.startswith("invalid_") and number != 0:
                 issues.append(f"layer {index}: {name}={int(number)}")
+        if "spline_piece_count" in raw:
+            layer.update(spline_layer_coverage(raw))
         sum_key = "normalizer_min" if config.model.attention_normalization else "weight_sum_min"
         positivity_fields = (() if config.model.attention_mechanism in ("gla", "gated_deltanet")
                              else ("kernel_min", sum_key))
@@ -752,19 +1371,41 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     if len(layers) != config.model.num_layers:
         issues.append(f"Expected {config.model.num_layers} layers, got {len(layers)}")
     coefficient_report = None
+    spline = getattr(config.model, "attention_kernel_basis", "polynomial") == "bspline"
     if config.model.quadratic_mode != "fixed":
         coefficient_report = quadratic_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite quadratic coefficients")
+    elif spline:
+        coefficient_report = spline_coefficient_report(params, raw_layers, config)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite B-spline coefficients or projection parameters")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
         coefficient_report = query_coefficient_report(
             params, raw_layers, prefix="query_basis" if config.model.attention_basis is not None else "query_polynomial",
+            projection_coefficients=(config.model.attention_basis["coefficients"]
+                                     if config.model.attention_basis is not None else None),
             amplitude_scale=config.model.attention_coefficient_amplitude_scale,
             coefficient_scale=config.model.attention_coefficient_scale,
-            projection_coefficients=(config.model.attention_basis["coefficients"]
-                                     if config.model.attention_basis is not None else None))
+            readout_scale=config.model.attention_coefficient_readout_scale,
+            activation=config.model.attention_coefficient_activation,
+            orders=config.model.attention_coefficient_orders)
         if not coefficient_report["finite"]:
-            issues.append("Nonfinite query-dependent coefficients or projection parameters")
+            issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
+        if getattr(config.model, "attention_forget_gate", False):
+            coefficient_report["forget_gate"] = forget_gate_report(
+                params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"),
+                conditioning=getattr(config.model, "attention_forget_gate_conditioning", "query"),
+                rate_activation=getattr(config.model, "attention_forget_gate_rate_activation", "softplus"),
+                constant_rate=getattr(config.model, "attention_forget_gate_constant_rate", "learned"),
+                mode=getattr(config.model, "attention_forget_gate_mode", "cumulative"))
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
+        if getattr(config.model, "attention_coefficient_gate", "none") != "none":
+            coefficient_report["coefficient_gates"] = coefficient_gate_report(
+                params, raw_layers, gate=config.model.attention_coefficient_gate)
+            if not coefficient_report["coefficient_gates"]["finite"]:
+                issues.append("Nonfinite coefficient gate parameters or gates")
     elif config.model.attention_basis is not None and config.model.attention_coefficients == "learned":
         values = np.asarray(jax.device_get(params["basis_coefficients"][...]), dtype=np.float64)
         effective = values
@@ -780,6 +1421,11 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
+        if getattr(config.model, "attention_forget_gate", False):
+            # Static coefficients take only the input-free gate: its rates and half-lives per layer, head (and order).
+            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers, conditioning="none")
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
     elif has_fixed_polynomial(config.model):
         values = np.asarray(config.model.attention_fixed_coefficients, dtype=np.float32)
         coefficient_report = {
@@ -807,13 +1453,34 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         }
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed square factors")
+    if getattr(config.model, "attention_forget_gate", False) and coefficient_report is None:
+        # Softmax and the exponential have no coefficients; their forget gate is reported alone (a
+        # query-key gate over every causal pair, with its key projection).
+        coefficient_report = {"forget_gate": forget_gate_report(
+            params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"),
+            conditioning=getattr(config.model, "attention_forget_gate_conditioning", "query"),
+            rate_activation=getattr(config.model, "attention_forget_gate_rate_activation", "softplus"),
+            constant_rate=getattr(config.model, "attention_forget_gate_constant_rate", "learned"),
+            mode=getattr(config.model, "attention_forget_gate_mode", "cumulative"))}
+        if not coefficient_report["forget_gate"]["finite"]:
+            issues.append("Nonfinite forget gate parameters or decay")
     scale_report = None
     gain_report = None
+    head_scale_report = None
+    token_scale_report = None
     if config.model.qk_norm:
         if config.model.qk_norm_type == "rms_norm":
             gain_report = qk_norm_gain_report(params)
             if not gain_report["finite"]:
                 issues.append("Nonfinite QK RMSNorm gains")
+            if config.model.qk_norm_head_scale:
+                head_scale_report = qk_norm_head_scale_report(params)
+                if not head_scale_report["finite"]:
+                    issues.append("Nonfinite QK RMSNorm head scales")
+            if getattr(config.model, "qk_norm_token_scale", "none") != "none":
+                token_scale_report = qk_norm_token_scale_report(params, raw_layers)
+                if not token_scale_report["finite"]:
+                    issues.append("Nonfinite per-token QK scale gate")
         else:
             scale_report = qk_norm_scale_report(params, config)
             if not scale_report["finite"]:
@@ -850,8 +1517,16 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     if config.model.attention_basis is not None:
         report["kernel_values"] = ("unshifted_query_basis" if config.model.attention_coefficient_conditioning == "query" else "unshifted_learned_basis"
                                    if config.model.attention_coefficients == "learned" else "unshifted_fixed_basis")
+    if spline:
+        report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"
+                                   else "unshifted_spline")
+        report["spline_score_coverage"] = spline_coverage_report(raw_layers, config)
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     if gain_report is not None:
         report["qk_norm_gains"] = gain_report
+    if head_scale_report is not None:
+        report["qk_norm_head_scales"] = head_scale_report
+    if token_scale_report is not None:
+        report["qk_norm_token_scales"] = token_scale_report
     return report

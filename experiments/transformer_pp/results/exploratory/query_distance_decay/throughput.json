@@ -1,0 +1,333 @@
+{
+ "format": "query-distance-decay-throughput",
+ "version": 1,
+ "source_commit": "6de6510b",
+ "benchmark": "scaffolds/transformer/benchmarks/benchmark_decay.py",
+ "notes": "Medians over warmed repetitions on one GPU per node; each recipe's update ran in its own process. Recipes are the frozen configurations of the named runs with model.attention_backend replaced; the update is 16 accumulated microbatches of 16 x 2,049 tokens plus AdamW.",
+ "nodes": [
+  {
+   "node": "dogo",
+   "device": "NVIDIA H100 80GB HBM3",
+   "slurm_job_id": "235093",
+   "attention_ms": {
+    "query_polynomial/mosaic": {
+     "forward_ms": 0.672,
+     "forward_backward_ms": 1.607
+    },
+    "query_polynomial/blocked": {
+     "forward_ms": 6.881,
+     "forward_backward_ms": 19.705
+    },
+    "query_decay/mosaic": {
+     "forward_ms": 0.765,
+     "forward_backward_ms": 2.729
+    },
+    "query_decay/blocked": {
+     "forward_ms": 7.045,
+     "forward_backward_ms": 21.443
+    },
+    "endpoint_decay/mosaic": {
+     "forward_ms": 1.082,
+     "forward_backward_ms": 3.359
+    },
+    "endpoint_decay/blocked": {
+     "forward_ms": 11.211,
+     "forward_backward_ms": 35.747
+    }
+   },
+   "kernels_ms": {
+    "query": {
+     "forward": 0.55,
+     "dq": 0.846,
+     "dkv": 0.818
+    },
+    "query_decay": {
+     "forward": 0.672,
+     "dq": 1.006,
+     "dkv": 1.727
+    },
+    "endpoint_decay": {
+     "forward": 0.916,
+     "dq": 1.659,
+     "dkv": 1.707
+    }
+   },
+   "updates": [
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 13.4173,
+     "seconds_per_update": [
+      13.4173,
+      13.3949,
+      13.418,
+      13.3958,
+      13.4179
+     ],
+     "projected_hours_7570_updates": 28.21,
+     "allocator_peak_gib": 29.02,
+     "compile_seconds": 81.8
+    },
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.5016,
+     "seconds_per_update": [
+      2.5037,
+      2.5016,
+      2.5061,
+      2.5016,
+      2.4994
+     ],
+     "projected_hours_7570_updates": 5.26,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 49.5
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (control)",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 8.6949,
+     "seconds_per_update": [
+      8.6924,
+      8.7056,
+      8.6949,
+      8.7049,
+      8.6933
+     ],
+     "projected_hours_7570_updates": 18.28,
+     "allocator_peak_gib": 27.1,
+     "compile_seconds": 84.2
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.2383,
+     "seconds_per_update": [
+      2.2325,
+      2.2386,
+      2.2383,
+      2.2408,
+      2.2369
+     ],
+     "projected_hours_7570_updates": 4.71,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 55.4
+    },
+    {
+     "recipe_run": "rca97cc9db8f2",
+     "recipe": "query polynomial + W decay, no gate (RoPE)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 1.9439,
+     "seconds_per_update": [
+      1.9392,
+      1.9439,
+      1.9398,
+      1.9492,
+      1.9451
+     ],
+     "projected_hours_7570_updates": 4.09,
+     "allocator_peak_gib": 26.73,
+     "compile_seconds": 48.3
+    },
+    {
+     "recipe_run": "r4f169e5370da",
+     "recipe": "bounded query sigmoid rate",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 8.6891,
+     "seconds_per_update": [
+      8.6792,
+      8.6891,
+      8.6894,
+      8.6797,
+      8.6929
+     ],
+     "projected_hours_7570_updates": 18.27,
+     "allocator_peak_gib": 27.07,
+     "compile_seconds": 76.6
+    },
+    {
+     "recipe_run": "r4f169e5370da",
+     "recipe": "bounded query sigmoid rate",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.2395,
+     "seconds_per_update": [
+      2.2356,
+      2.2395,
+      2.2398,
+      2.2463,
+      2.2362
+     ],
+     "projected_hours_7570_updates": 4.71,
+     "allocator_peak_gib": 26.78,
+     "compile_seconds": 51.9
+    }
+   ]
+  },
+  {
+   "node": "mastiff",
+   "device": "NVIDIA H100 PCIe",
+   "slurm_job_id": "235094",
+   "attention_ms": {
+    "query_polynomial/mosaic": {
+     "forward_ms": 0.938,
+     "forward_backward_ms": 2.106
+    },
+    "query_polynomial/blocked": {
+     "forward_ms": 10.651,
+     "forward_backward_ms": 33.481
+    },
+    "query_decay/mosaic": {
+     "forward_ms": 1.01,
+     "forward_backward_ms": 3.318
+    },
+    "query_decay/blocked": {
+     "forward_ms": 10.771,
+     "forward_backward_ms": 37.528
+    },
+    "endpoint_decay/mosaic": {
+     "forward_ms": 1.376,
+     "forward_backward_ms": 4.267
+    },
+    "endpoint_decay/blocked": {
+     "forward_ms": 17.198,
+     "forward_backward_ms": 51.575
+    }
+   },
+   "kernels_ms": {
+    "query": {
+     "forward": 0.759,
+     "dq": 1.072,
+     "dkv": 1.054
+    },
+    "query_decay": {
+     "forward": 0.833,
+     "dq": 1.292,
+     "dkv": 1.972
+    },
+    "endpoint_decay": {
+     "forward": 1.204,
+     "dq": 2.255,
+     "dkv": 2.279
+    }
+   },
+   "updates": [
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 20.2631,
+     "seconds_per_update": [
+      20.2242,
+      20.2631,
+      20.2601,
+      20.2858,
+      20.2704
+     ],
+     "projected_hours_7570_updates": 42.61,
+     "allocator_peak_gib": 28.97,
+     "compile_seconds": 86.1
+    },
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.8417,
+     "seconds_per_update": [
+      3.8417,
+      3.8367,
+      3.8413,
+      3.8465,
+      3.8591
+     ],
+     "projected_hours_7570_updates": 8.08,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 59.4
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (control)",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 14.7402,
+     "seconds_per_update": [
+      14.708,
+      14.7215,
+      14.7418,
+      14.7442,
+      14.7402
+     ],
+     "projected_hours_7570_updates": 31.0,
+     "allocator_peak_gib": 27.15,
+     "compile_seconds": 94.7
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.4143,
+     "seconds_per_update": [
+      3.4025,
+      3.4118,
+      3.4143,
+      3.4241,
+      3.4163
+     ],
+     "projected_hours_7570_updates": 7.18,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 74.6
+    },
+    {
+     "recipe_run": "rca97cc9db8f2",
+     "recipe": "query polynomial + W decay, no gate (RoPE)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.0422,
+     "seconds_per_update": [
+      3.0323,
+      3.0463,
+      3.0422,
+      3.0502,
+      3.0303
+     ],
+     "projected_hours_7570_updates": 6.4,
+     "allocator_peak_gib": 26.73,
+     "compile_seconds": 83.8
+    },
+    {
+     "recipe_run": "r4f169e5370da",
+     "recipe": "bounded query sigmoid rate",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 14.7739,
+     "seconds_per_update": [
+      14.7457,
+      14.7739,
+      14.7732,
+      14.7924,
+      14.7856
+     ],
+     "projected_hours_7570_updates": 31.07,
+     "allocator_peak_gib": 27.12,
+     "compile_seconds": 90.5
+    },
+    {
+     "recipe_run": "r4f169e5370da",
+     "recipe": "bounded query sigmoid rate",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.3972,
+     "seconds_per_update": [
+      3.404,
+      3.3972,
+      3.3902,
+      3.397,
+      3.4085
+     ],
+     "projected_hours_7570_updates": 7.14,
+     "allocator_peak_gib": 26.78,
+     "compile_seconds": 65.4
+    }
+   ]
+  }
+ ]
+}

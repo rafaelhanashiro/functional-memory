@@ -1,0 +1,69 @@
+{
+  "acceptance": {
+    "checkpoint_resume_exact": true,
+    "cross_compilation_nll_atol": 0.002,
+    "external_forward_repeated_exactly": true,
+    "frozen_parameter_scope": "all_pretrained_parameters",
+    "gradient_norm_max": 0.06549191474914551,
+    "gradient_norm_min": 0.06549191474914551,
+    "max_logit_replay_error": 0.0,
+    "training_forward_max_nll_error": 0.0001556873321533203,
+    "training_forward_reference": "projected_coefficients"
+  },
+  "date": "2026-10-24",
+  "device": "NVIDIA H100 80GB HBM3",
+  "first_update_reduced_loss": true,
+  "runtime": {
+    "coefficient_layout": "layer,head,order",
+    "coefficient_shape": [
+      15,
+      14,
+      9
+    ],
+    "coefficient_storage": "effective_monomial_coefficients",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device_count": 1,
+    "device_kind": "NVIDIA H100 80GB HBM3",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "NCCL_P2P_DISABLE": null,
+      "XLA_FLAGS": null
+    },
+    "microbatch_size": 1,
+    "node": "dogo.csail.mit.edu",
+    "optimizer_coordinates": "factorial(order)*monomial_coefficient",
+    "optimizer_updates_per_step": 1,
+    "original_parent_nll": 2.602165699005127,
+    "parameterization": "static_coefficients",
+    "projected_initial_nll": 2.6115036010742188,
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-coefficient-fit-4b/scaffolds/transformer/.venv/bin/python",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "224916",
+    "slurm_partition": "debug",
+    "source_commit": "0f41845e9c5720c581f32c2d2be40fe7935232fe",
+    "trainable_parameter_count": 1890,
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "shape": {
+    "coefficients": [
+      15,
+      14,
+      9
+    ],
+    "microbatch_size": 1,
+    "sequences": 1
+  },
+  "source_commit": "0f41845e9c5720c581f32c2d2be40fe7935232fe",
+  "sources": {
+    "scaffolds/transformer/training/coefficient_fit.py": "2ec0636d7a07d0abdeeed3c787a3485b03a86442a7e24506aae9274e56bbde08",
+    "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+  },
+  "status": "passed"
+}

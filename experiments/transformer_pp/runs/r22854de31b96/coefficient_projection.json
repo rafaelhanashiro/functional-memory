@@ -1,0 +1,20 @@
+{
+  "coefficient_shape": [
+    15,
+    14,
+    9
+  ],
+  "interpretation": "Projection changes the model; fitting improvement starts after projection.",
+  "maximum_capture_logit_error": 0.0,
+  "method": "arithmetic mean of original effective coefficients across all fitting sequences and query positions",
+  "parent_external_replay_nll": 2.602165699005127,
+  "parent_nll": 2.602165699005127,
+  "parent_per_sequence_nll": [
+    2.602165699005127
+  ],
+  "projected_initial_nll": 2.6115036010742188,
+  "projected_per_sequence_nll": [
+    2.6115036010742188
+  ],
+  "sequence_count": 1
+}

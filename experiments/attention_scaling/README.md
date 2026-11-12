@@ -2,12 +2,46 @@
 
 How do attention family, key dimension, polynomial degree, normalization, and
 coefficient learning affect language-model quality and cost? This study contains
-all Transformer attention executions: softmax, exponential, Taylor, Hermite,
+the established 10B-token Transformer attention executions: softmax, exponential, Taylor, Hermite,
 learned polynomial attention, GLA, and Gated DeltaNet.
 
 [Combined comparisons](../../results/attention_scaling/README.md) ·
 [Run index](runs.csv) · [Study membership](sweep.yaml) ·
 [Shared implementation](../../scaffolds/transformer/README.md)
+
+## Fixed-input coefficient oracle
+
+Two exploratory coefficient-only fits on **Kennel** use the retained degree-eight
+query-only checkpoint `r50be104c2a9e`, step 19,074. `rec7a01f3282c` fits one sequence;
+`rfc37cfdf49d0` fits a full batch of 256, with separate coefficients for every
+example, layer, head, query and order. All pretrained parameters stay frozen. The
+[exploratory collection](../../results/exploratory/coefficient_oracle/README.md)
+documents the question, fixed-input selection, convergence rule and interpretation.
+These runs enter no canonical comparison.
+
+Both fits are complete. Their compact measurements and provenance live with their
+run IDs; retained checkpoints and logs remain on Kennel. Fresh executions use new
+run IDs in an isolated worktree, with its CUDA 12 and CUDA 13 environments synced
+from its own lock as described in [CLUSTERS.md](../../CLUSTERS.md).
+The allocation command for this pair was:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle prepare \
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/attention_scaling/runs/r50be104c2a9e
+```
+
+After committing the frozen inputs, the two executions were submitted with:
+
+```bash
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.attention_scaling.launch_coefficient_oracle submit \
+  rec7a01f3282c rfc37cfdf49d0 --partition standard,long
+```
+
+Each job requests one B300 or H100, microbatches the fixed inputs, checks the frozen
+execution set on every start/requeue, qualifies checkpoint capture and replay before
+fitting, and saves resumable progress on a time-limit signal. The launcher selects
+CUDA 13 on B300 and CUDA 12 on H100. Fit-only metrics are kept distinct from held-out
+validation metrics; the retained best coefficients are needed to reproduce the fit.
 
 ## Frozen pretrained-head polynomial sparsity
 
@@ -334,7 +368,8 @@ numerator and a separate denominator polynomial of its own degree, optionally
 nonnegative and with its constant fixed at 1 or learned (`attention_denominator_*`), optionally starting at linear
 attention (`attention_coefficient_initialization`) and with a penalty on high-order
 coefficients in the training loss (`optim.coefficient_penalty`, with or without the
-denominator). QK normalization changes
+denominator); outcomes are in the
+[rational polynomial comparison](../../results/rational_polynomial/README.md). QK normalization changes
 the scores independently of normalization of the attention weights. Unnormalized
 attention may rescale each head's output before the output projection, by `1/t` or
 by a per-head RMSNorm (`attention_output_scaling`). GLA uses its
@@ -725,6 +760,12 @@ scaled (`r50be104c2a9e`), and fixed unnormalized Taylor with head RMSNorm at m =
 (`ra2e7161fdf4a`) and m = 8 (`r4836c6eba58f`), the start of the scaled runs with nothing learned. They launch with the
 command above, `PARTITION=standard,long` and `GPUS=1`, ahead of the query–key runs.
 
+Query–key with both scales (`attention_coefficient_scale` and
+`attention_coefficient_amplitude_scale: factorial`; the key factor is already relative to
+`c_r`) runs at m = 8 (`r0b7141a987dc`) and m = 12 (`r95c5dea57a89`) on the one-pass Triton
+kernel with its H100 backward tiles (`--allow-triton-attention`), one H100 each on
+`standard`; B300 keeps the slower original geometry.
+
 ### PaTH position encoding, softmax and tanh m = 2, 4
 
 Three single-B300 runs replace RoPE with PaTH (`positional_encoding: path`, see the
@@ -823,20 +864,15 @@ and kernel benchmarks are documented in the linked scaffold validation record.
 These runs add polynomial memory (`model.gdn_polynomial_degree`), narrower keys, or a tanh
 linear write (`model.gdn_write_activation: tanh`) to independent-erase GDN; the
 [polynomial GDN comparison](../../results/gdn_polynomial/README.md) defines the model and
-holds the findings. Home cluster: Kennel. Each run executes from its own worktree, and
-its record's `submission` holds the exact launch command, source commit, and working
-directory.
+holds the findings. Home cluster: Kennel. Each record's `submission` holds the exact
+launch command, source commit, and working directory; the completed runs' retained
+checkpoints and logs are in their run directories here.
 
-| Run | Variant | d_K | Worktree | Status |
-| --- | --- | ---: | --- | --- |
-| `rd40af7956426` | quadratic | 64 | `worktrees/gdn-quadratic` | complete |
-| `r83c3394eb730` | cubic | 64 | `worktrees/gdn-cubic` | training |
-| `ra79e66bd9121` | cubic | 16 | `worktrees/gdn-small-width` | complete |
-| `ra98612db06d4` | cubic | 8 | `worktrees/gdn-small-width` | complete |
-| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | `worktrees/gdn-small-width` | held |
-| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | `worktrees/gdn-small-width` | held |
-| `r1d67ac6f0223`, `r4f60c2ce2f1f` | quartic | 16, 8 | `worktrees/gdn-quartic` | held |
-| `rf65d38ec0552` | tanh linear write | 64 | `worktrees/gdn-tanh-write` | complete |
-
-The records here are copies of the worktree records; a worktree's own record stays
-authoritative until its branch merges.
+| Run | Variant | d_K | Status |
+| --- | --- | ---: | --- |
+| `rd40af7956426` | quadratic | 64 | complete |
+| `ra79e66bd9121` | cubic | 16 | complete |
+| `ra98612db06d4` | cubic | 8 | complete |
+| `rae2329afb5bd`, `r5c9701488368` | independent erase, `m = 1` | 16, 8 | cancelled before training |
+| `rf885f946fc9b`, `r2fb020d67c0d` | quadratic | 16, 8 | cancelled before training |
+| `rf65d38ec0552` | tanh linear write | 64 | complete |

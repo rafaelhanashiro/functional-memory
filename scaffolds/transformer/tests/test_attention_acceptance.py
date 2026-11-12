@@ -97,6 +97,10 @@ def test_reference_gla_does_not_require_a_fused_kernel():
      "attention_coefficient_conditioning": "query", "attention_coefficient_sharing": "per_head",
      "attention_normalization": False, "attention_output_scaling": "head_rms_norm",
      "qk_norm": True, "initialization": "transformer_reference"},
+    {"attention_degree": 4, "attention_normalization": False,
+     "attention_output_scaling": "head_rms_norm", "qk_norm": True,
+     "qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer", "qk_norm_head_scale": True,
+     "qk_norm_token_scale": "cosine", "qk_norm_token_scale_kernel_weight_decay": True},
     {"attention_degree": 2, "attention_fixed_coefficients": (0.5, 1.0, 0.5)},
 ])
 def test_shared_initialization_check_accepts_each_parameter_ownership(changes):

@@ -79,8 +79,8 @@ def test_nonfinite_update_is_a_structured_numerical_failure(tmp_path, monkeypatc
     actual_step = loop.accumulated_train_step
 
     def poisoned_step(state, *args, **kwargs):
-        state, loss, numerics = actual_step(state, *args, **kwargs)
-        return state, jnp.asarray(jnp.nan, dtype=loss.dtype), numerics
+        state, loss, numerics, *statistics = actual_step(state, *args, **kwargs)
+        return state, jnp.asarray(jnp.nan, dtype=loss.dtype), numerics, *statistics
 
     monkeypatch.setattr(loop, "accumulated_train_step", poisoned_step)
     with pytest.raises(FloatingPointError, match="optimizer update at step 1"):

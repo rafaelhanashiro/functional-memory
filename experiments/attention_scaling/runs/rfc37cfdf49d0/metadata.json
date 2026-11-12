@@ -1,0 +1,44 @@
+{
+  "best_fit_nll": 0.00306233623996377,
+  "best_nll": 0.00306233623996377,
+  "best_step": 2484,
+  "finished_utc": "2026-10-23T07:15:44.562358+00:00",
+  "fit_nll": 0.0030709244310855865,
+  "fit_perplexity": 1.003075644549989,
+  "frozen_parameters_unchanged": true,
+  "initial_nll": 2.662276268005371,
+  "interpretation": "Fixed-input coefficient fitting, not held-out generalization.",
+  "learning_rate_reduced_at": 2000,
+  "nll_reduction": 2.6592139317654073,
+  "oracle_runtime": {
+    "coefficient_layout": "example,layer,query,head,order",
+    "coefficient_storage": "effective_monomial_coefficients",
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "device_count": 1,
+    "device_kind": "NVIDIA H100 80GB HBM3",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/lib/python3.11/site-packages/nvidia/cuda_nvcc",
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": null,
+      "NCCL_P2P_DISABLE": null,
+      "XLA_FLAGS": null
+    },
+    "microbatch_size": 8,
+    "node": "dogo.csail.mit.edu",
+    "optimizer_coordinates": "factorial(order)*monomial_coefficient",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-oracle/scaffolds/transformer/.venv/bin/python",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "224104",
+    "slurm_partition": "standard",
+    "source_commit": "2e77d06b3f9e7830c1fbccccec7dcf95ce9ab9b8",
+    "trainable_parameter_count": 754974720,
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "status": "complete",
+  "step": 2500
+}

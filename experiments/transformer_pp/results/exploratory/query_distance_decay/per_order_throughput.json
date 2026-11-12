@@ -1,0 +1,578 @@
+{
+ "format": "query-distance-decay-throughput",
+ "version": 1,
+ "source_commit": "b38c116f",
+ "benchmark": "scaffolds/transformer/benchmarks/benchmark_decay.py",
+ "notes": "Medians over warmed repetitions on one GPU per node; each recipe's update ran in its own process. Recipes are the frozen configurations of the named runs with model.attention_backend replaced; the update is 16 accumulated microbatches of 16 x 2,049 tokens plus AdamW. Attention and kernel times use 16 x 2,048 tokens, 14 heads, d_K = d_V = 64, degree 4.",
+ "nodes": [
+  {
+   "node": "dogo",
+   "device": "NVIDIA H100 80GB HBM3",
+   "slurm_job_id": "239611",
+   "attention_ms": {
+    "query_polynomial/mosaic": {
+     "forward_ms": 0.636,
+     "forward_backward_ms": 1.606
+    },
+    "query_polynomial/blocked": {
+     "forward_ms": 6.769,
+     "forward_backward_ms": 19.548
+    },
+    "query_decay/mosaic": {
+     "forward_ms": 0.762,
+     "forward_backward_ms": 2.73
+    },
+    "query_decay/blocked": {
+     "forward_ms": 7.112,
+     "forward_backward_ms": 21.142
+    },
+    "endpoint_decay/mosaic": {
+     "forward_ms": 1.05,
+     "forward_backward_ms": 3.409
+    },
+    "endpoint_decay/blocked": {
+     "forward_ms": 11.177,
+     "forward_backward_ms": 35.481
+    },
+    "per_order_query_decay/mosaic": {
+     "forward_ms": 1.278,
+     "forward_backward_ms": 4.246
+    },
+    "per_order_query_decay/blocked": {
+     "forward_ms": 11.688,
+     "forward_backward_ms": 27.782
+    },
+    "per_order_endpoint_decay/mosaic": {
+     "forward_ms": 3.127,
+     "forward_backward_ms": 12.019
+    },
+    "per_order_endpoint_decay/blocked": {
+     "forward_ms": 18.793,
+     "forward_backward_ms": 67.552
+    }
+   },
+   "kernels_ms": {
+    "query": {
+     "forward": 0.551,
+     "dq": 0.84,
+     "dkv": 0.803
+    },
+    "query_decay": {
+     "forward": 0.659,
+     "dq": 1.014,
+     "dkv": 1.778
+    },
+    "endpoint_decay": {
+     "forward": 0.931,
+     "dq": 1.666,
+     "dkv": 1.753
+    },
+    "per_order_query_decay": {
+     "forward": 1.154,
+     "dq": 2.278,
+     "dkv": 2.092
+    },
+    "per_order_endpoint_decay": {
+     "forward": 2.942,
+     "dq": 6.125,
+     "dkv": 6.117
+    }
+   },
+   "updates": [
+    {
+     "recipe_run": "rca97cc9db8f2",
+     "recipe": "query polynomial + W decay, no gate (RoPE)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 1.9521,
+     "seconds_per_update": [
+      1.9521,
+      1.9491,
+      1.9521,
+      1.9573,
+      1.9545
+     ],
+     "projected_hours_7570_updates": 4.1,
+     "allocator_peak_gib": 26.73,
+     "compile_seconds": 31.0
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.2371,
+     "seconds_per_update": [
+      2.2321,
+      2.2371,
+      2.2363,
+      2.2393,
+      2.2415
+     ],
+     "projected_hours_7570_updates": 4.7,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 34.4
+    },
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.5006,
+     "seconds_per_update": [
+      2.5104,
+      2.4992,
+      2.5028,
+      2.5006,
+      2.5002
+     ],
+     "projected_hours_7570_updates": 5.26,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 39.9
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.7576,
+     "seconds_per_update": [
+      2.7545,
+      2.7619,
+      2.7554,
+      2.7576,
+      2.7579
+     ],
+     "projected_hours_7570_updates": 5.8,
+     "allocator_peak_gib": 27.0,
+     "compile_seconds": 39.4
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 11.5817,
+     "seconds_per_update": [
+      11.5901,
+      11.5937,
+      11.578,
+      11.5803,
+      11.5817
+     ],
+     "projected_hours_7570_updates": 24.35,
+     "allocator_peak_gib": 27.46,
+     "compile_seconds": 57.0
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 5.1924,
+     "seconds_per_update": [
+      5.1924,
+      5.1843,
+      5.2065,
+      5.1903,
+      5.1998
+     ],
+     "projected_hours_7570_updates": 10.92,
+     "allocator_peak_gib": 27.01,
+     "compile_seconds": 38.5
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 22.4728,
+     "seconds_per_update": [
+      22.4802,
+      22.4769,
+      22.4566,
+      22.4505,
+      22.4728
+     ],
+     "projected_hours_7570_updates": 47.26,
+     "allocator_peak_gib": 28.26,
+     "compile_seconds": 60.4
+    }
+   ]
+  },
+  {
+   "node": "mastiff",
+   "device": "NVIDIA H100 PCIe",
+   "slurm_job_id": "239612",
+   "attention_ms": {
+    "query_polynomial/mosaic": {
+     "forward_ms": 0.959,
+     "forward_backward_ms": 2.14
+    },
+    "query_polynomial/blocked": {
+     "forward_ms": 10.538,
+     "forward_backward_ms": 33.407
+    },
+    "query_decay/mosaic": {
+     "forward_ms": 0.99,
+     "forward_backward_ms": 3.283
+    },
+    "query_decay/blocked": {
+     "forward_ms": 10.655,
+     "forward_backward_ms": 37.589
+    },
+    "endpoint_decay/mosaic": {
+     "forward_ms": 1.349,
+     "forward_backward_ms": 4.506
+    },
+    "endpoint_decay/blocked": {
+     "forward_ms": 17.085,
+     "forward_backward_ms": 51.551
+    },
+    "per_order_query_decay/mosaic": {
+     "forward_ms": 1.717,
+     "forward_backward_ms": 5.746
+    },
+    "per_order_query_decay/blocked": {
+     "forward_ms": 17.646,
+     "forward_backward_ms": 42.817
+    },
+    "per_order_endpoint_decay/mosaic": {
+     "forward_ms": 3.998,
+     "forward_backward_ms": 15.89
+    },
+    "per_order_endpoint_decay/blocked": {
+     "forward_ms": 26.859,
+     "forward_backward_ms": 105.015
+    }
+   },
+   "kernels_ms": {
+    "query": {
+     "forward": 0.766,
+     "dq": 1.067,
+     "dkv": 1.052
+    },
+    "query_decay": {
+     "forward": 0.827,
+     "dq": 1.282,
+     "dkv": 2.01
+    },
+    "endpoint_decay": {
+     "forward": 1.179,
+     "dq": 2.147,
+     "dkv": 2.256
+    },
+    "per_order_query_decay": {
+     "forward": 1.509,
+     "dq": 2.915,
+     "dkv": 2.711
+    },
+    "per_order_endpoint_decay": {
+     "forward": 3.719,
+     "dq": 7.89,
+     "dkv": 7.948
+    }
+   },
+   "updates": [
+    {
+     "recipe_run": "rca97cc9db8f2",
+     "recipe": "query polynomial + W decay, no gate (RoPE)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.0691,
+     "seconds_per_update": [
+      3.0478,
+      3.0645,
+      3.0691,
+      3.0691,
+      3.0818
+     ],
+     "projected_hours_7570_updates": 6.45,
+     "allocator_peak_gib": 26.73,
+     "compile_seconds": 32.8
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.4841,
+     "seconds_per_update": [
+      3.4719,
+      3.4762,
+      3.4841,
+      3.4949,
+      3.5074
+     ],
+     "projected_hours_7570_updates": 7.33,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 34.6
+    },
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 3.9753,
+     "seconds_per_update": [
+      3.9505,
+      3.9739,
+      3.9753,
+      3.986,
+      3.9997
+     ],
+     "projected_hours_7570_updates": 8.36,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 34.6
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 4.3779,
+     "seconds_per_update": [
+      4.3573,
+      4.3602,
+      4.3779,
+      4.3866,
+      4.4079
+     ],
+     "projected_hours_7570_updates": 9.21,
+     "allocator_peak_gib": 27.0,
+     "compile_seconds": 37.1
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 19.5682,
+     "seconds_per_update": [
+      18.5576,
+      19.3476,
+      20.0835,
+      19.5682,
+      19.857
+     ],
+     "projected_hours_7570_updates": 41.15,
+     "allocator_peak_gib": 27.27,
+     "compile_seconds": 55.8
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 7.7029,
+     "seconds_per_update": [
+      7.7006,
+      7.6807,
+      7.7029,
+      7.7211,
+      7.7824
+     ],
+     "projected_hours_7570_updates": 16.2,
+     "allocator_peak_gib": 27.01,
+     "compile_seconds": 38.0
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 39.7153,
+     "seconds_per_update": [
+      39.5194,
+      39.6567,
+      39.743,
+      39.7153,
+      40.0089
+     ],
+     "projected_hours_7570_updates": 83.51,
+     "allocator_peak_gib": 29.64,
+     "compile_seconds": 61.2
+    }
+   ]
+  },
+  {
+   "node": "akita",
+   "device": "NVIDIA B300 SXM6 AC",
+   "slurm_job_id": "239622",
+   "attention_ms": {
+    "query_polynomial/mosaic": {
+     "forward_ms": 1.269,
+     "forward_backward_ms": 2.231
+    },
+    "query_polynomial/blocked": {
+     "forward_ms": 4.41,
+     "forward_backward_ms": 11.32
+    },
+    "query_decay/mosaic": {
+     "forward_ms": 1.364,
+     "forward_backward_ms": 3.824
+    },
+    "query_decay/blocked": {
+     "forward_ms": 4.636,
+     "forward_backward_ms": 13.764
+    },
+    "endpoint_decay/mosaic": {
+     "forward_ms": 2.026,
+     "forward_backward_ms": 8.334
+    },
+    "endpoint_decay/blocked": {
+     "forward_ms": 7.065,
+     "forward_backward_ms": 20.027
+    },
+    "per_order_query_decay/mosaic": {
+     "forward_ms": 2.701,
+     "forward_backward_ms": 15.718
+    },
+    "per_order_query_decay/blocked": {
+     "forward_ms": 6.955,
+     "forward_backward_ms": 17.905
+    },
+    "per_order_endpoint_decay/mosaic": {
+     "forward_ms": 5.229,
+     "forward_backward_ms": 39.579
+    },
+    "per_order_endpoint_decay/blocked": {
+     "forward_ms": 14.298,
+     "forward_backward_ms": 52.244
+    }
+   },
+   "kernels_ms": {
+    "query": {
+     "forward": 1.251,
+     "dq": 1.535,
+     "dk": 1.383,
+     "dv": 1.229
+    },
+    "query_decay": {
+     "forward": 1.351,
+     "dq": 2.699,
+     "dk": 1.531,
+     "dv": 1.239
+    },
+    "endpoint_decay": {
+     "forward": 1.923,
+     "dq": 5.259,
+     "dk": 2.846,
+     "dv": 1.872
+    },
+    "per_order_query_decay": {
+     "forward": 2.63,
+     "dq": 9.143,
+     "dk": 5.335,
+     "dv": 3.112
+    },
+    "per_order_endpoint_decay": {
+     "forward": 5.204,
+     "dq": 18.612,
+     "dk": 15.889,
+     "dv": 6.141
+    }
+   },
+   "updates": [
+    {
+     "recipe_run": "rca97cc9db8f2",
+     "recipe": "query polynomial + W decay, no gate (RoPE)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 1.2198,
+     "seconds_per_update": [
+      1.2198,
+      1.2181,
+      1.2207,
+      1.2196,
+      1.2244
+     ],
+     "projected_hours_7570_updates": 2.57,
+     "allocator_peak_gib": 26.73,
+     "compile_seconds": 43.0
+    },
+    {
+     "recipe_run": "r3e26412b2811",
+     "recipe": "query-only softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 1.6115,
+     "seconds_per_update": [
+      1.5998,
+      1.6053,
+      1.6115,
+      1.6197,
+      1.6198
+     ],
+     "projected_hours_7570_updates": 3.39,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 50.3
+    },
+    {
+     "recipe_run": "r02f984133092",
+     "recipe": "endpoint query-key softplus rate (shared-gate control)",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 2.8355,
+     "seconds_per_update": [
+      2.8357,
+      2.8389,
+      2.8355,
+      2.8349,
+      2.8333
+     ],
+     "projected_hours_7570_updates": 5.96,
+     "allocator_peak_gib": 26.81,
+     "compile_seconds": 54.2
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 4.8007,
+     "seconds_per_update": [
+      4.8003,
+      4.8003,
+      4.8049,
+      4.8107,
+      4.8007
+     ],
+     "projected_hours_7570_updates": 10.09,
+     "allocator_peak_gib": 27.12,
+     "compile_seconds": 54.5
+    },
+    {
+     "recipe_run": "r507193d47450",
+     "recipe": "per-order query softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 6.5578,
+     "seconds_per_update": [
+      6.5562,
+      6.5666,
+      6.5648,
+      6.5548,
+      6.5578
+     ],
+     "projected_hours_7570_updates": 13.79,
+     "allocator_peak_gib": 27.41,
+     "compile_seconds": 73.7
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "mosaic",
+     "median_seconds_per_update": 10.9363,
+     "seconds_per_update": [
+      10.9392,
+      10.9363,
+      10.9351,
+      10.937,
+      10.9334
+     ],
+     "projected_hours_7570_updates": 23.0,
+     "allocator_peak_gib": 27.01,
+     "compile_seconds": 75.6
+    },
+    {
+     "recipe_run": "r03be769d2069",
+     "recipe": "per-order query-key softplus rates",
+     "attention_backend": "blocked",
+     "median_seconds_per_update": 16.7276,
+     "seconds_per_update": [
+      16.7281,
+      16.7144,
+      16.7318,
+      16.724,
+      16.7276
+     ],
+     "projected_hours_7570_updates": 35.17,
+     "allocator_peak_gib": 29.33,
+     "compile_seconds": 81.5
+    }
+   ]
+  }
+ ]
+}

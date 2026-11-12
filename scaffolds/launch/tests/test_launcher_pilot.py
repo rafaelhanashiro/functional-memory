@@ -61,10 +61,12 @@ def test_attempt_records_the_execution_limit_without_changing_recipe(tmp_path, m
                        LAUNCHER.read_text(), re.S).group(1)
     monkeypatch.setattr("sys.argv", ["-", str(run), str(config), "launch", "H100", "4", "toy", stop])
     monkeypatch.setenv("SLURM_JOB_ID", "123")
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", "86400")
     monkeypatch.setattr(frozen, "frozen_hash", lambda *args: "frozen")
     monkeypatch.setattr(subprocess, "check_output", lambda *args, **kwargs: "JobId=123")
     exec(compile(source, str(LAUNCHER), "exec"), {})
     record = load_run(run)
     assert record["attempts"][-1]["stop_after_step"] == (int(stop) if stop else None)
+    assert record["attempts"][-1]["allocation_seconds"] == 86400
     assert record["status"] == "acceptance"
     assert config.read_bytes() == original

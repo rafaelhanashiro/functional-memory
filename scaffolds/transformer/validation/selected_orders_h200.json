@@ -1,0 +1,40 @@
+{
+  "backend": "mosaic",
+  "context_length": 2048,
+  "orders": [
+    0,
+    1,
+    3,
+    5,
+    7
+  ],
+  "qk_head_dim": 64,
+  "qualifications": [
+    {
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-07T20:07:38.986334+00:00",
+      "conditioning": "query",
+      "cpu_tests_passed": 501,
+      "degree": 7,
+      "device_kinds": [
+        "NVIDIA H200"
+      ],
+      "gpu_count": 1,
+      "gpu_tests_passed": 72,
+      "gpu_type": "H200",
+      "pilot_seconds_per_training_update": 2.0835420433431864,
+      "projected_hours": 4.567072092152408,
+      "run_id": "r0bdac8e1b97b",
+      "slurm_job_id": "28215378",
+      "source_commit": "0c9eed33474af7e4b7e398393b4a29b8ed51a934",
+      "status": "passed"
+    }
+  ]
+}

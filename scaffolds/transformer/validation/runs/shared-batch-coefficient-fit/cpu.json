@@ -1,0 +1,23 @@
+{
+  "checks": [
+    "shared table has no sequence axis",
+    "arithmetic-mean projection",
+    "full-batch mean gradient and single Adam update",
+    "microbatch partition invariance",
+    "factorial optimizer coordinates",
+    "frozen source parameters",
+    "exact checkpoint resume",
+    "original and projected loss separation",
+    "existing generator and independent-coefficient regression checks"
+  ],
+  "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_shared_coefficient_fit.py scaffolds/transformer/tests/test_coefficient_generator_fit.py experiments/attention_scaling/tests/test_coefficient_oracle.py",
+  "date": "2026-10-24",
+  "platform": "cpu",
+  "seconds": 39.52,
+  "sources": {
+    "scaffolds/transformer/tests/test_shared_coefficient_fit.py": "2665922de844bb452addb87b1cdbe1017f424f1135a7101042f4a4ec94bc27ab",
+    "scaffolds/transformer/training/coefficient_fit.py": "d3ec1704ae0214beb10c7cc5c1c4d4278183dec59f6b9a1df9f31f8b517e88d6"
+  },
+  "status": "passed",
+  "tests_passed": 13
+}

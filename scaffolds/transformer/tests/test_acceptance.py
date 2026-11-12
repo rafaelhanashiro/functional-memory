@@ -58,7 +58,8 @@ def test_scratch_pilot_overrides_early_evaluation_without_mutating_production_re
     assert scratch.train.eval_every == 20 and scratch.train.eval_early_every is None
     assert scratch.train.eval_early_until == 0 and evaluation_due(scratch, 20)
     assert scratch.optim.total_steps == 7570
-    assert captured["options"] == {"resume": True, "stop_after_step": 20, "audit_checkpoint": True}
+    assert captured["options"] == {"resume": True, "stop_after_step": 20, "audit_checkpoint": True,
+                                   "profile_timing": True}
     assert path.read_bytes() == original
     frozen = load_config(path)
     assert (frozen.train.eval_every, frozen.train.eval_early_every, frozen.train.eval_early_until) == (500, 100, 1500)
@@ -74,6 +75,89 @@ def test_acceptance_rejects_skipped_or_empty_test_reports(tmp_path):
         preflight.require_passing_tests(report)
     report.write_text('<testsuite><testcase name="a"/><testcase name="b"/></testsuite>')
     assert preflight.require_passing_tests(report) == 2
+
+
+def timing_profile():
+    return {"runtime_seconds": 600.0, "setup_seconds": 80.0,
+            "diagnostic_warmup_seconds": 40.0, "evaluation_warmup_seconds": 50.0,
+            "train_step_seconds": [100.0, 2.0, 2.0, 2.0, 20.0],
+            "diagnostic_seconds": [3.0, 3.0, 9.0],
+            "evaluation_batch_seconds": [5.0, 5.0, 15.0],
+            "evaluation_seconds": [98.0], "checkpoint_seconds": [6.0, 7.0]}
+
+
+def projection_config():
+    from scaffolds.transformer.configs import Config
+    config = Config()
+    config.optim.total_steps = 7570
+    config.train.eval_every = config.train.ckpt_every = 500
+    config.train.eval_early_every, config.train.eval_early_until = 100, 1500
+    config.train.eval_batches = 19
+    return config
+
+
+def test_projection_separates_once_only_costs_from_validation_and_batch_work():
+    config = projection_config()
+    timing = timing_profile()
+    result = preflight.project_runtime(timing, config)
+    assert result["counts"] == {"training_updates": 7570, "validation_events": 28,
+                                "batches_per_validation": 19, "checkpoint_events": 28}
+    assert result["components_seconds"] == {
+        "pilot_overhead": 600, "training": 2 * 7570, "diagnostics": 3 * 28,
+        "evaluation": 5 * 19 * 28, "checkpointing": 7 * 28,
+    }
+    assert result["projected_seconds"] == 600 + 2 * 7570 + 3 * 28 + 5 * 19 * 28 + 7 * 28
+    assert result["reserve_seconds"] == 7200
+    # Cold evaluation combines compilation and diagnostics, so it cannot be scaled
+    # like warmed batches. Increasing actual once-only pilot cost adds exactly once.
+    timing["evaluation_seconds"] = [1e9]
+    assert preflight.project_runtime(timing, config) == result
+    timing["runtime_seconds"] += 17
+    timing["diagnostic_warmup_seconds"] += 17
+    assert preflight.project_runtime(timing, config)["projected_seconds"] == result["projected_seconds"] + 17
+
+
+def test_more_validation_batches_only_scale_warm_batch_work():
+    config = projection_config()
+    full = preflight.project_runtime(timing_profile(), config)
+    config.train.eval_batches = 1
+    small = preflight.project_runtime(timing_profile(), config)
+    assert full["projected_seconds"] - small["projected_seconds"] == 18 * 28 * 5
+    for name in ("pilot_overhead", "training", "diagnostics", "checkpointing"):
+        assert full["components_seconds"][name] == small["components_seconds"][name]
+
+
+@pytest.mark.parametrize("name", ("train_step_seconds", "diagnostic_seconds", "evaluation_batch_seconds",
+                                  "checkpoint_seconds"))
+@pytest.mark.parametrize("bad", (None, [], [0.0], [-1.0], [float("nan")], [float("inf")], [True], ["2"]))
+def test_projection_rejects_missing_or_invalid_measurements(name, bad):
+    timing = timing_profile()
+    timing[name] = bad
+    with pytest.raises(RuntimeError, match=name):
+        preflight.project_runtime(timing, projection_config())
+
+
+def test_projection_rejects_cold_training_sample_without_warm_updates():
+    timing = timing_profile()
+    timing["train_step_seconds"] = [100.0]
+    with pytest.raises(RuntimeError, match="warm training updates"):
+        preflight.project_runtime(timing, projection_config())
+
+
+@pytest.mark.parametrize("count", (1, 2))
+def test_projection_rejects_incomplete_warm_batch_profile(count):
+    timing = timing_profile()
+    timing["evaluation_batch_seconds"] = [1.0] * count
+    with pytest.raises(RuntimeError, match="at least three"):
+        preflight.project_runtime(timing, projection_config())
+
+
+@pytest.mark.parametrize("bad", (None, 0, -1, float("nan"), float("inf"), True, "600"))
+def test_projection_rejects_invalid_once_only_cost(bad):
+    timing = timing_profile()
+    timing["runtime_seconds"] = bad
+    with pytest.raises(RuntimeError, match="runtime_seconds"):
+        preflight.project_runtime(timing, projection_config())
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares", "fixed", "fixed_square"))
@@ -121,6 +205,28 @@ def test_query_conditioning_requires_its_checks_even_with_an_empty_adapter(cpu, 
         preflight.INPUT_DEPENDENT_COEFFICIENT_TESTS,)
     config["model"]["attention_coefficient_conditioning"] = "static"
     assert preflight.test_paths(spec, config, resolved_backend=backend, cpu=cpu) == ()
+
+
+@pytest.mark.parametrize("continuation", (False, True))
+def test_query_temperature_acceptance_requires_gate_and_decay_checks(continuation):
+    config = {"model": {"qk_norm_token_scale": "cosine"},
+              "continuation": {"parent_checkpoint": "parent" if continuation else ""}}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    assert "scaffolds/transformer/tests/test_token_query_scale.py" in paths
+    assert "scaffolds/transformer/tests/test_token_scale_weight_decay.py" in paths
+    assert ("scaffolds/transformer/tests/test_token_scale_continuation.py" in paths) == continuation
+    assert preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False) == ()
+
+
+def test_fox_continuation_requires_backbone_restoration_and_projection_decay_checks():
+    config = {"model": {"attention_forget_gate": True, "positional_encoding": "none"},
+              "continuation": {"parent_checkpoint": "parent"}}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, config, resolved_backend="blocked", cpu=True)
+    assert "scaffolds/transformer/tests/test_forget_gate_continuation.py" in paths
+    assert "scaffolds/transformer/tests/test_continuation.py" in paths
+    assert "scaffolds/transformer/tests/test_continuation_acceptance.py" in paths
 
 
 @pytest.mark.parametrize("conditioning,kernel_tests", (("static", "mosaic_taylor"), ("query", "mosaic_query")))
@@ -263,6 +369,37 @@ def test_a_requeue_onto_another_gpu_model_repeats_the_runs_own_acceptance(tmp_pa
     assert json.loads((tmp_path / "identity.json").read_text())["device_kinds"] == ["NVIDIA H100 NVL"]
 
 
+def test_returning_to_the_passed_gpu_model_reuses_its_pilot_after_the_checkpoint_was_removed(tmp_path, monkeypatch,
+                                                                                             capsys):
+    """H200 and H200 NVL share one GPU type. An attempt on the other model re-records the test stages;
+    back on the first model, its pilot and resume still pass, and their checkpoint is already gone."""
+    from types import SimpleNamespace
+    from scaffolds.transformer.configs import Config, config_to_dict
+
+    allocated = {"model": "NVIDIA H200"}
+
+    def worker(spec, args, name, output, **unused):
+        if name == "hardware":
+            return {"attention_backend": "fused", "device_kinds": [allocated["model"]] * args.gpu_count}
+        raise RuntimeError(f"ran {name}")
+
+    monkeypatch.setattr(preflight, "_run_worker", worker)
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    experiment = {"identity": "launcher", "source_commit": "a" * 40, "config": config_to_dict(Config()),
+                  "gpu_type": "H200", "dependency_lock_sha256": "b" * 64, "runtime": {"TRANSFORMER_HOST_STAGING": "0"}}
+    args = SimpleNamespace(directory=tmp_path, config=tmp_path / "recipe.yaml", gpu_count=1, gpu_type="H200")
+    first = preflight.on_devices(experiment, ["NVIDIA H200"])
+    for name in (*preflight.CHECKS, "success"):
+        preflight.record(tmp_path / f"{name}.json", first)
+    for name, _, _ in preflight.TEST_STAGES:
+        preflight.record(tmp_path / f"{name}.json", preflight.on_devices(experiment, ["NVIDIA H200 NVL"]))
+    assert not (tmp_path / "pilot").exists()
+    preflight._run(spec, args, experiment)
+    output = capsys.readouterr().out
+    assert "matching_acceptance_passed=" not in output and "acceptance_success=" in output
+    assert all(preflight.passed(tmp_path / f"{name}.json", first) for name in (*preflight.CHECKS, "success"))
+
+
 def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(monkeypatch):
     monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "auto")
     with pytest.raises(ValueError, match="resolved"):
@@ -270,6 +407,55 @@ def test_runtime_identity_requires_resolved_transfer_policy_and_records_toolkit(
     monkeypatch.setenv("TRANSFORMER_HOST_STAGING", "0")
     monkeypatch.setenv("CUDA_HOME", "/locked/nvidia/cuda_nvcc")
     assert preflight.runtime_identity()["CUDA_HOME"] == "/locked/nvidia/cuda_nvcc"
+
+
+def test_runtime_allocation_budget_overrides_the_adapter_fallback(monkeypatch):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), allocation_hours=48)
+    monkeypatch.delenv("TRANSFORMER_ALLOCATION_SECONDS", raising=False)
+    assert preflight.allocation_seconds(spec) == 48 * 3600
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(7 * 24 * 3600))
+    assert preflight.allocation_seconds(spec) == 7 * 24 * 3600
+    # The same long single-GPU run fits the requested week, but not the old fallback.
+    preflight.require_allocation_budget(65 * 3600, preflight.allocation_seconds(spec))
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(48 * 3600))
+    with pytest.raises(RuntimeError, match="48h allocation"):
+        preflight.require_allocation_budget(65 * 3600, preflight.allocation_seconds(spec))
+    # A backfilled allocation must use its actual shorter limit, not the requested one.
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(6 * 3600))
+    with pytest.raises(RuntimeError, match="6h allocation"):
+        preflight.require_allocation_budget(5 * 3600, preflight.allocation_seconds(spec))
+
+
+@pytest.mark.parametrize("value", ["", "0", "-1", "1.5", "nan", "inf", "UNLIMITED", " 3600", "٣٦٠٠"])
+def test_invalid_runtime_allocation_budget_is_rejected(monkeypatch, value):
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", value)
+    with pytest.raises(ValueError, match="positive integer"):
+        preflight.allocation_seconds(preflight.AcceptanceSpec(entry_module="unused", cpu_tests=()))
+
+
+def test_acceptance_budget_changes_invalidate_passed_gate_but_preserve_test_cache(tmp_path, monkeypatch):
+    import json
+    from scaffolds.transformer.configs import Config
+
+    config = Config()
+    config.train.source_commit = "auto"
+    monkeypatch.setattr(preflight, "load_config", lambda path: config)
+    monkeypatch.setattr(preflight, "sha256", lambda path: "fixture-sha256")
+    monkeypatch.setenv("SHARED_TRANSFORMER_SOURCE_COMMIT", "a" * 40)
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(168 * 3600))
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=())
+    original = preflight.on_devices(preflight.identity(spec, tmp_path / "recipe.yaml", 1, "H100"), ["H100"])
+    cache = tmp_path / "success.json"
+    preflight.record(cache, original)
+    assert json.loads(cache.read_text())["allocation_seconds"] == 168 * 3600
+    assert preflight.passed(cache, original)
+    monkeypatch.setenv("TRANSFORMER_ALLOCATION_SECONDS", str(48 * 3600))
+    changed = preflight.on_devices(preflight.identity(spec, tmp_path / "recipe.yaml", 1, "H100"), ["H100"])
+    assert changed["allocation_seconds"] == 48 * 3600
+    assert changed["config"] == original["config"]
+    assert not preflight.passed(cache, changed)
+    assert preflight.stage_identity(original, "gpu-tests", ["kernel.py"], ["-m", "gpu"], cpu=False) == (
+        preflight.stage_identity(changed, "gpu-tests", ["kernel.py"], ["-m", "gpu"], cpu=False))
 
 
 def test_resume_audit_requires_identical_state_batch_and_rng():
@@ -355,3 +541,53 @@ def test_unnormalized_static_mosaic_runs_require_their_kernel_tests():
 ])
 def test_mosaic_gpu_tests_cover_only_the_precision_in_use(model, backend, expected):
     assert preflight.mosaic_test_options({"model": model}, backend) == expected
+
+
+def test_test_processes_accept_the_mosaic_precision_option(pytestconfig):
+    assert pytestconfig.getoption("--mosaic-precision") in (None, "bf16", "bf16x3")
+
+
+@pytest.mark.parametrize("model,backend,cpu,selected", [
+    ({"attention_blocked_implementation": "strips"}, "blocked", True, True),
+    ({"attention_blocked_implementation": "strips", "attention_forget_gate": True}, "blocked", False, False),
+    ({"attention_blocked_implementation": "strips", "attention_degree": 2}, "fused", True, False),
+    ({"attention_blocked_implementation": "scan"}, "blocked", True, False),
+    ({}, "blocked", True, False),
+])
+def test_recipes_training_on_blocked_strips_require_their_cpu_tests(model, backend, cpu, selected):
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend=backend, cpu=cpu)
+    assert (preflight.BLOCKED_STRIPS_TESTS in paths) == selected
+
+
+@pytest.mark.parametrize("model,cpu,selected", [
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "scan"}, True, True),
+    ({"attention_kernel_basis": "bspline", "attention_blocked_implementation": "strips"}, False, True),
+    ({"attention_kernel_basis": "polynomial"}, True, False),
+    ({"attention_kernel_basis": "polynomial"}, False, False),
+    ({}, True, False),
+])
+def test_spline_recipes_require_their_tests(model, cpu, selected):
+    """Both stages: the CPU checks, and the GPU stage's production precision."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=())
+    paths = preflight.test_paths(spec, {"model": model}, resolved_backend="blocked", cpu=cpu)
+    assert (preflight.SPLINE_ATTENTION_TESTS in paths) == selected
+
+
+def test_spline_production_recipe_selects_spline_strips_and_query_tests():
+    """The query spline recipe's shared acceptance runs the spline, strips, and generator tests on
+    CPU, and the spline's production precision on the GPU."""
+    from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
+    from scaffolds.transformer.tests.test_spline_attention import QUERY_CONTROL, spline_model
+
+    config = Config(model=ModelConfig(**spline_model(QUERY_CONTROL)))
+    config.data.sequence_length = 2049
+    spec = preflight.attention_spec(config, entry_module="unused")
+    paths = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=True)
+    for required in (preflight.SPLINE_ATTENTION_TESTS, preflight.BLOCKED_STRIPS_TESTS,
+                     preflight.INPUT_DEPENDENT_COEFFICIENT_TESTS, preflight.QUERY_TANH_POLYNOMIAL_TESTS):
+        assert required in paths
+    assert spec.required_backend == "blocked"
+    gpu = preflight.test_paths(spec, config_to_dict(config), resolved_backend="blocked", cpu=False)
+    assert preflight.SPLINE_ATTENTION_TESTS in gpu and preflight.BLOCKED_STRIPS_TESTS not in gpu

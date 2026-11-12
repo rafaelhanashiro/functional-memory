@@ -15,7 +15,6 @@ degrees:
 - 1
 - 2
 - 3
-- 4
 runs:
 - run_id: r668a588ddc0b
   role: reference
@@ -329,54 +328,6 @@ runs:
     best_validation.json:
       path: experiments/attention_scaling/runs/ra79e66bd9121/best_validation.json
       sha256: f009f32629431a3e7410a509a7dce15ae1ae910371170359d7ada30967e2d936
-- run_id: r83c3394eb730
-  role: primary
-  label: polynomial, m=3
-  mechanism: gated_deltanet
-  d_k: 64
-  erase: independent
-  write: sigmoid
-  degree: 3
-  control: rf7341031e3d5
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r83c3394eb730/config.yaml
-      sha256: 11f43dfe6b2430f53f4d584bffef9aed9e8ec94296bc7c26d16b67dd207de0ab
-    metrics.jsonl:
-      path: experiments/attention_scaling/runs/r83c3394eb730/metrics.jsonl
-      sha256: ceef6ba5d0a06231bc6aa4a426a616b329de2265a468f368809bc458992ad078
-    metadata.json:
-      path: experiments/attention_scaling/runs/r83c3394eb730/metadata.json
-      sha256: d346f2d529fa872cc366764ce50f5fcedfabdfdf4c1bb776b5673feb460281e1
-    best_validation.json:
-      path: experiments/attention_scaling/runs/r83c3394eb730/best_validation.json
-      sha256: bd5a2c35ed07fab2217a52db7435d2ac5ace5b848fdb07d6b893d818f0ec2264
-- run_id: r4f60c2ce2f1f
-  role: primary
-  label: polynomial, m=4
-  mechanism: gated_deltanet
-  d_k: 8
-  erase: independent
-  write: sigmoid
-  degree: 4
-  control: r5c9701488368
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r4f60c2ce2f1f/config.yaml
-      sha256: 91879ac1bad557cb7360d290d2a6df7f058f62c96e01738a5075d66ac6a3882e
-- run_id: r1d67ac6f0223
-  role: primary
-  label: polynomial, m=4
-  mechanism: gated_deltanet
-  d_k: 16
-  erase: independent
-  write: sigmoid
-  degree: 4
-  control: rae2329afb5bd
-  sources:
-    config.yaml:
-      path: experiments/attention_scaling/runs/r1d67ac6f0223/config.yaml
-      sha256: debafe0b58e41c631f384817c7ff1158e96cb2f51f86fa1690b96b976849c0c6
 - run_id: rf65d38ec0552
   role: variant
   label: independent erase, tanh write, m=1

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml
 
-from . import create_run, load_study, regenerate_index, run_directory, validate_record
+from . import create_run, load_study, regenerate_index, rename_study, run_directory, validate_record
 from .selections import refresh_selection
 
 
@@ -21,12 +21,21 @@ def main() -> None:
         help="explicitly opt a fresh dot-product experiment out of canonical QK normalization",
     )
     create.add_argument(
+        "--allow-legacy-qk-normalization", action="store_true",
+        help="explicitly preserve a fresh comparison's older QK normalization instead of RMSNorm with per-head scaling",
+    )
+    create.add_argument(
         "--allow-flax-default-init", action="store_true",
         help="explicitly opt a fresh experiment out of its mechanism's reference initialization",
     )
     create.add_argument(
         "--allow-triton-attention", action="store_true",
         help="explicitly keep the fused Triton kernels for a fresh recipe that a Mosaic GPU kernel implements",
+    )
+    create.add_argument(
+        "--allow-scan-blocked-attention", action="store_true",
+        help="explicitly keep the historical blocked scan for a fresh dot-product recipe on the blocked "
+             "(or auto) backend instead of causal strips",
     )
     index = commands.add_parser("index")
     index.add_argument("study", type=Path)
@@ -40,16 +49,60 @@ def main() -> None:
     )
     refresh = commands.add_parser("refresh", help="re-pin a result's selections to its runs' scientific files")
     refresh.add_argument("result", type=Path, nargs="+")
+    rename = commands.add_parser(
+        "rename-study",
+        help="after `git mv experiments/<old> experiments/<new>`, point run records, result selections, and "
+             "sweep.yaml at the new folder; frozen recipes and execution history keep their paths")
+    rename.add_argument("study", type=Path, help="the renamed study folder, experiments/<new>")
+    rename.add_argument("--from", dest="old", required=True, metavar="OLD", help="the previous folder name")
+    rename.add_argument("--to", dest="new", required=True, metavar="NEW", help="the new folder name")
+    rename.add_argument(
+        "--artifact-root", action="append", default=[], metavar="ROOT",
+        help="another root whose experiments/<old>/ tree was moved as well, such as a cluster's artifact root")
     args = parser.parse_args()
     if args.command == "create":
         recipe = yaml.safe_load(args.config.read_text())
         if not isinstance(recipe, dict):
             parser.error("--config must contain a YAML mapping")
         if isinstance(recipe.get("model"), dict):
-            from scaffolds.transformer.configs import config_to_dict, load_config
+            from scaffolds.transformer.configs import Config, config_to_dict, load_config
+            from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips
             from scaffolds.transformer.models.initialization import REFERENCE
-            unset = "initialization" not in recipe["model"]
-            config = load_config(args.config)
+            supplied_model = recipe["model"]
+            unset = "initialization" not in supplied_model
+            canonical_qk = {"qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
+                            "qk_norm_initial_scale": None, "qk_norm_head_scale": True}
+            use_canonical_qk = (
+                supplied_model.get("attention_mechanism", "dot_product") == "dot_product"
+                and supplied_model.get("attention_degree") != 0
+                and supplied_model.get("qk_norm") is not False
+                and not args.allow_legacy_qk_normalization)
+            # Dot-product attention with RoPE or no positional encoding that can train on the
+            # blocked backend (blocked or auto) uses its causal strips. PaTH, GLA, and Gated
+            # DeltaNet have their own blocked code; other backends keep the inert scan default.
+            use_strips = fresh_recipe_uses_blocked_strips(supplied_model)
+            if use_canonical_qk:
+                incompatible = [key for key, value in canonical_qk.items()
+                                if key in supplied_model and supplied_model[key] != value]
+                if incompatible:
+                    parser.error(
+                        "new dot-product runs use QK RMSNorm with per-head scaling; this recipe has "
+                        f"noncanonical values for {', '.join(incompatible)}. Use the canonical settings "
+                        "or --allow-legacy-qk-normalization only for an explicitly requested comparison."
+                    )
+
+            def fresh_config():
+                # Apply allocation defaults before validating partial input recipes.
+                # Ordinary load_config and historical checkpoint settings are unchanged.
+                config = Config()
+                if use_canonical_qk:
+                    for key, value in canonical_qk.items():
+                        setattr(config.model, key, value)
+                if use_strips:
+                    config.model.attention_blocked_implementation = "strips"
+                return config
+
+            config = load_config(args.config, config_factory=fresh_config)
             recipe = config_to_dict(config)
             model = recipe["model"]
             if unset:
@@ -76,6 +129,13 @@ def main() -> None:
                     "model.attention_backend: fused. Use mosaic (or auto), or --allow-triton-attention "
                     "only when the Triton kernels were explicitly requested."
                 )
+            if (use_strips and model["attention_blocked_implementation"] == "scan"
+                    and not args.allow_scan_blocked_attention):
+                parser.error(
+                    "new dot-product runs on the blocked backend train on its causal strips; this recipe sets "
+                    "model.attention_blocked_implementation: scan. Use strips (or leave it unset), or "
+                    "--allow-scan-blocked-attention only when the scan was explicitly requested."
+                )
             recipe["train"]["source_commit"] = "auto"
             study = args.study.parent if args.study.name == "sweep.yaml" else args.study
             recipe["train"]["wandb_group"] = study.name
@@ -88,6 +148,9 @@ def main() -> None:
             print("\n".join(f"{result}/{change}" for change in changes) or f"{result}: selections already current")
     elif args.command == "index":
         print(regenerate_index(args.study))
+    elif args.command == "rename-study":
+        changes = rename_study(args.study, args.old, args.new, tuple(args.artifact_root))
+        print("\n".join(changes) or f"{args.study}: nothing referenced experiments/{args.old}")
     else:
         study = args.study.parent if args.study.name == "sweep.yaml" else args.study
         runs = ([run_directory(study, run) for run in args.runs] if args.runs

@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "recorded_utc": "2026-10-23T22:14:09.780571+00:00",
+  "source_commit": "f19feb3",
+  "platform": "cpu",
+  "checks": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_override.py",
+      "passed": 9,
+      "seconds": 62.45
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=1 scaffolds/transformer/.venv/bin/python -m pytest -q experiments/attention_scaling/tests/test_coefficient_oracle.py scaffolds/transformer/tests/test_coefficient_scale.py scaffolds/transformer/tests/test_qk_rms_norm.py",
+      "passed": 37,
+      "seconds": 85.42
+    }
+  ]
+}

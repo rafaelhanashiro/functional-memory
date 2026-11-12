@@ -58,7 +58,8 @@ def validate_resume_progress(config: Config, latest_checkpoint_step: int | None)
         if metadata.get("status") in {"running", "paused"}:
             recorded_step = max(recorded_step, int(metadata.get("step", 0)))
 
-    available_step = latest_checkpoint_step if latest_checkpoint_step is not None else 0
+    available_step = (latest_checkpoint_step if latest_checkpoint_step is not None
+                      else config.continuation.parent_step)
     if recorded_step > available_step:
         available = "no checkpoint is available" if latest_checkpoint_step is None else (
             f"the latest available checkpoint is step {latest_checkpoint_step}"

@@ -14,7 +14,9 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
   run experiments through Slurm, not directly on compute nodes.
 - **Repository:** `/data/cl/u/rafah/home/projects/functional-memory`.
 - **Datasets:** `/data/cl/u/rafah/home/datasets` (alongside `projects`);
-  packed FineWeb is in `fineweb_12b`.
+  packed FineWeb is in `fineweb_12b`, and the first appearance of each of its documents of at
+  least 16,384 tokens, one per row with its stream position, is in
+  `fineweb_12b_long_documents_seq16385` (see its README).
 - **Storage:** keep persistent files on NFS under `/data/cl/u/rafah`.
 - **Artifact root:** the primary checkout; retained checkpoints and logs live in
   `experiments/<study>/runs/<run_id>/` there.
@@ -28,17 +30,67 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 | --- | --- | --- |
 | `debug` | 2 hours | Quick checks; at most 2 GPUs per user |
 | `standard` | 24 hours | Normal jobs; at most 4 GPUs per user |
-| `long` | 7 days | Longer/larger jobs; avoid monopolizing the cluster |
-| `sweep` | 7 days | Low-priority sweeps using spare capacity |
+| `long` | 7 days | Additional normal capacity and longer jobs, within the live allowance |
+| `sweep` | 7 days | Overflow after the permitted `standard` and `long` allowances are used |
 
-GPU types currently include A6000, A100, H100, and B300; use `sinfo` to inspect
+GPU types currently include A6000, A100, H100, B200, and B300; use `sinfo` to inspect
 nodes before choosing hardware. On 2026-09-22 they were: `akita` 8×B300;
 `dogo` and `mastiff` 8×H100 each; `collie` 2×A100 and `samoyed` 10×A100;
-`doodle` 9×A6000 and `terrier` 10×A6000. Nodes define no Slurm features, so
+`doodle` 9×A6000 and `terrier` 10×A6000. `shiba` (8×B200, in `standard`, `long`,
+`sweep`, and `debug`) appeared by 2026-10-27. Nodes define no Slurm features, so
 accept either B300 or H100 by requesting `--gres=gpu:N` and excluding the
-A100/A6000 nodes; A6000 training is markedly slower in this project's tests. General priority is `debug > standard > long > sweep`.
+A100/A6000 nodes and `shiba`; A6000 training is markedly slower in this project's
+tests, and the transformer launcher accepts only B300 and H100, so a job granted
+a B200 exits within seconds. General priority is `debug > standard > long > sweep`.
 Use periodic checkpoints and `--requeue`. Live `standard`/`long` grace time is
-60 seconds (the supplied PDFs say 120); `sweep` has no grace period.
+60 seconds (the supplied PDFs say 120); `sweep` has no grace period. A job whose
+node fails (`NODE_FAIL`, node `NOT_RESPONDING`) stays `COMPLETING` until Slurm reaps
+it and then requeues under its old job ID, so `scancel` it before resubmitting its
+run; otherwise two jobs train the same run directory. A GPU that stops responding
+(`nvidia-smi`: "Unknown Error") hangs its job until the stall check requeues it, and
+Slurm can hand the same free GPU to the requeued job, so exclude the node until the GPU
+is reset. `mastiff`'s H100 at bus `41:00.0` did this on 2026-11-05; the node's reboot on
+2026-11-06 restored it (no uncorrected ECC errors or pending row remaps). On 2026-11-10
+two jobs failed within seconds on a `mastiff` H100 with `CUDA_ERROR_ECC_UNCORRECTABLE`
+when JAX opened the device (UUID `GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5`); Slurm keeps
+granting the idle GPU, so a job that lands on it fails at start-up until the admins reset it.
+
+**Scheduling policy:** use the full permitted `standard` and `long` allowances before
+`sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
+too; submit only overflow to `sweep` once the applicable higher-priority allowances
+are allocated or committed to eligible jobs. Before each batch of submissions,
+inspect the user's running and queued GPU requests across worktrees and the live
+partition, QoS, and account limits. A busy cluster or a pending `Priority` reason does
+not itself justify choosing `sweep`. A scientific sweep can run in `standard` or
+`long`. Do not apply a blanket `--nice=1000` penalty; leave `nice` at its default
+unless deliberately ordering jobs.
+
+The partition/QoS check on **2026-10-23** confirmed `standard`'s four-GPU-per-user cap,
+24-hour limit, and priority tier 4; `long` has a seven-day limit and tier 2, and
+`sweep` has tier 1. No numeric `long` GPU allowance was verified: the partition
+references a `long` QoS not listed by `sacctmgr show qos`, so recheck the live limits
+instead of assuming a cap or unlimited capacity. Useful checks are:
+
+```bash
+squeue -u "$USER" -o '%.18i %.12P %.9T %.22b %.40R'
+scontrol show partition standard
+scontrol show partition long
+sacctmgr show qos format=Name,MaxTRESPerUser,MaxJobsPerUser,MaxSubmitJobsPerUser
+sacctmgr show assoc where user="$USER" format=Cluster,Account,User,Partition,QOS,DefaultQOS,MaxTRESPerJob,MaxJobs,MaxSubmitJobs
+```
+
+Training runs default to one GPU, with independent runs scheduled separately.
+`scaffolds/transformer/launchers/kennel.sbatch` defaults to `--partition=standard,long`,
+a 24-hour allocation, and `--gres=gpu:1`; its `GPU_COUNT` argument defaults to 1.
+Request `--partition=long` and a suitable limit explicitly for allocations longer
+than 24 hours. Preserve the global batch through gradient accumulation.
+An explicit multi-GPU run must set both the Slurm GPU request and `GPU_COUNT` to
+the same count; use it only when requested or needed to fit the model.
+The Kennel launcher reads the granted wall-clock limit from `scontrol show job`
+and passes it to acceptance as `TRANSFORMER_ALLOCATION_SECONDS`. Acceptance uses
+that limit instead of the adapter's fallback budget. ORCD keeps the adapter's
+qualification horizon because training intentionally resumes across allocations.
+
 The Transformer Kennel launcher requeues ten minutes before the time limit and
 resumes the latest checkpoint. For `standard`, submit with
 `TRANSFORMER_ALLOCATION_HOURS=24` and `--time=24:00:00`; acceptance checks that
@@ -109,6 +161,34 @@ evaluation, and fresh-process resume for `d_K=8,m=4`. This does not qualify the
 remaining A100 grid or a new attention mechanism. Evidence and limitations are
 recorded in `scaffolds/transformer/validation/README.md`.
 
+### Monitoring selected runs
+
+`scaffolds/launch/run_monitor.py` is a lightweight, read-only observer for explicitly
+selected runs. It combines canonical records with `squeue` and `sacct`, follows the
+latest submission through retries, and queues significant updates to an existing
+Codex chat with `codex queue --thread <id> --message <text> --resume`. Delivery
+depends on the user's Codex daemon and account remaining available; a successful
+queue command with a resume warning is recorded as unconfirmed, not as a resumed
+agent. Verify a real delivery when installing a monitor.
+
+Keep its JSON configuration, lock, state and log outside the repository. Required
+configuration keys are `thread_id`, `state_path`, `codex`, `end_utc` (UTC ISO8601)
+and `runs`, whose entries have absolute `path` and optional `label` and
+`control_run_id`. Validate observations with:
+
+```bash
+python3 -m scaffolds.launch.run_monitor --config /absolute/monitor/config.json --dry-run
+```
+
+After testing, cron can invoke a frozen copy of the standard-library helper every
+five minutes on the login node; no GPU allocation is needed. The observer reports
+state changes, failures, stalls and six-hour progress summaries, with duplicate
+suppression. By default, training inactivity is flagged after 20 minutes and
+acceptance inactivity after 60 minutes. Failed runs stay observed for retries.
+Monitoring disables itself after both selected runs complete or its configured
+deadline, after queuing the corresponding update; remove its owned cron entry
+when disabled. Record the installed helper's source hash beside its configuration.
+
 ## ORCD / Engaging (MIT)
 
 - **Login:** `ssh rafah@orcd-login.mit.edu`, using MIT authentication/Duo.
@@ -153,12 +233,12 @@ CPUs in `mit_normal_gpu`, 4 GPUs in `mit_preemptable`. H200 nodes have 8 GPUs,
 
 ### ORCD launch policy
 
-`scaffolds/transformer/launchers/orcd.sbatch` requests 2×H200 in either
-`mit_preemptable` or `mit_normal_gpu`, whichever frees first. Because the caps are
-per user, 2-GPU jobs can hold three allocations (six GPUs) at once, while 4-GPU jobs
-fit only in `mit_preemptable`. Every job asks for 12 hours with
-`--time-min=06:00:00`, so a whole 200M run fits one `mit_preemptable` allocation, and
-Slurm's backfill can still start the job in `mit_normal_gpu`, trimming its limit to
+`scaffolds/transformer/launchers/orcd.sbatch` defaults to one H200 in either
+`mit_preemptable` or `mit_normal_gpu`, whichever frees first. Its `GPU_COUNT`
+argument also defaults to 1. Independent single-GPU runs let Slurm use the available
+per-user capacity; explicit multi-GPU overrides must change both the resource request
+and `GPU_COUNT`. Every job asks for 12 hours with `--time-min=06:00:00`.
+Slurm's backfill can start the job in `mit_normal_gpu`, trimming its limit to
 that partition's 6-hour maximum (on 2026-10-05 a 12-hour request with a lower
 `--time-min` started there with a 6-hour limit). Ten minutes before its limit a job
 requeues itself and resumes from its latest checkpoint, losing at most one checkpoint
@@ -166,10 +246,15 @@ interval. `mit_preemptable` preempts without grace time (`GraceTime=0`) whenever
 higher-tier job needs the node, which also loses up to one checkpoint interval;
 `mit_normal_gpu` never preempts. On 2026-10-08 and 09, GPU 0 of `node3009` and of
 `node3209` (8×H100 each) ran at 90–93°C, throttled to 345 MHz, and slowed 2-GPU jobs
-about 3.5×; exclude both until they are repaired. The 2×H100 NVL nodes (`node1708`,
+about 3.5×; exclude both until they are repaired. On 2026-10-29 an H100 of `node2900`
+ran at 86°C under thermal slowdown at 540 MHz and slowed a one-GPU 200M run about
+2.6×; exclude it as well. The 2×H100 NVL nodes (`node1708`,
 `node1709`) train the 200M recipe about 1.6× slower than H100 80GB HBM3.
 A requeue or preemption resets the job's submit time and with it its queue age, so
-later runs of the same sweep can overtake it. H200 uses direct device transfer. Order a
+later runs of the same sweep can overtake it. H200 uses direct device transfer. ORCD nodes
+keep Linux's default `vm.max_map_count` of 65,530 memory mappings per process, which
+one-process JAX test stages reach without the cache clearing in
+`scaffolds/transformer/tests/conftest.py`. Order a
 sweep's runs with `sbatch --nice`: 1000 priority points equal about 8 hours of queue age.
 
 Acceptance shares passed test stages through the worktree's

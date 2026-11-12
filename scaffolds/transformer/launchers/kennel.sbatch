@@ -6,15 +6,18 @@
 #     scaffolds/transformer/launchers/kennel.sbatch \
 #     experiments.<study>.acceptance \
 #     experiments/<study>/runs/<run>/config.yaml "$(git rev-parse HEAD)" [GPU_COUNT] [GPU_TYPES] [STOP_AFTER_STEP]
+# One GPU is the default. For an explicit multi-GPU run, override both --gres and GPU_COUNT.
+# Fill the standard/long allowance before using sweep; see CLUSTERS.md.
+# Jobs requiring more than 24 hours must override --partition=long and --time.
 #SBATCH --job-name=transformer
-#SBATCH --partition=sweep
+#SBATCH --partition=standard,long
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=256G
-#SBATCH --gres=gpu:4
-#SBATCH --exclude=collie,samoyed,doodle,terrier
-#SBATCH --time=2-00:00:00
+#SBATCH --gres=gpu:1
+#SBATCH --exclude=collie,samoyed,doodle,terrier,shiba
+#SBATCH --time=1-00:00:00
 #SBATCH --signal=B:USR1@600
 #SBATCH --requeue
 #SBATCH --open-mode=append
@@ -22,7 +25,7 @@ set -euo pipefail
 ADAPTER="${1:?Expected the experiment acceptance module}"
 CONFIG="${2:?Expected experiments/<study>/runs/<run>/config.yaml}"
 LAUNCH_COMMIT="${3:?Expected the launch commit}"
-GPU_COUNT="${4:-4}"
+GPU_COUNT="${4:-1}"
 GPU_TYPES="${5:-B300,H100}"
 STOP_AFTER_STEP="${6:-}"
 if [[ -n "$STOP_AFTER_STEP" && ! "$STOP_AFTER_STEP" =~ ^[1-9][0-9]*$ ]]; then
@@ -73,6 +76,9 @@ if [[ ! -x "$PYTHON" ]]; then
   exit 1
 fi
 echo "cuda_environment=$TRANSFORMER_CUDA_ENVIRONMENT python=$PYTHON"
+TRANSFORMER_ALLOCATION_SECONDS="$("$PYTHON" scaffolds/launch/allocation.py "$SLURM_JOB_ID")"
+export TRANSFORMER_ALLOCATION_SECONDS
+echo "allocation_seconds=$TRANSFORMER_ALLOCATION_SECONDS"
 LOGS="$RUN_ROOT/.runtime"
 CACHE="$EXECUTION_ROOT/.cache/$EXPERIMENT"
 export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT"
@@ -145,6 +151,7 @@ attempt = {
     "config_sha256": hashlib.sha256(Path(config).read_bytes()).hexdigest(),
     "home_cluster": "kennel", "gpu_type": gpu_type, "gpu_count": int(gpu_count),
     "stop_after_step": int(stop_after_step) if stop_after_step else None,
+    "allocation_seconds": int(os.environ["TRANSFORMER_ALLOCATION_SECONDS"]),
     "slurm_job_id": os.environ["SLURM_JOB_ID"], "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
     "slurm_partition": os.environ.get("SLURM_JOB_PARTITION"), "started_utc": datetime.now(UTC).isoformat(),
     "acceptance_directory": str((run_root / ".runtime" / "acceptance" / f"{gpu_type}-{gpu_count}").resolve()),

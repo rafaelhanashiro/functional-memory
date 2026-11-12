@@ -8,8 +8,10 @@ from scaffolds.transformer.acceptance import attention_spec, main as run_accepta
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 ROOT = Path(__file__).resolve().parents[2]
-REFERENCE = ROOT / "experiments/transformer_200m_4b/runs/r83139ea7389c/config.yaml"
-REFERENCE_SHA256 = "9bcd49b8acb9b34aed37c21e51fe201d7b3e1859b1c7ffe0ddefc6881587726d"
+# The frozen fixed-RBF control preserves the audited shared recipe, independently
+# of the reference study's later restructuring. Its backbone hash is checked below.
+REFERENCE = ROOT / "experiments/attention_scaling/runs/r4ef941dde7b9/config.yaml"
+REFERENCE_SHA256 = "ad0836f38b0b053f033aedc02af54626445fc64d9ae71f7cf12326f7496bcf64"
 REFERENCE_COMMIT = "36b074480751897c8b8f9754cbc13c22594024be"
 # From the executed reference's CPU initialization-result.json acceptance audit.
 REFERENCE_BACKBONE_SHA256 = "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b"

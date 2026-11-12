@@ -147,8 +147,12 @@ def test_odd_finite_loss_invalid_gradient_persists_scientific_failure(tmp_path, 
     config = odd_config(tmp_path, degree)
     config.train.log_every = config.train.eval_every = config.train.ckpt_every = 4
 
-    def finite_loss_invalid_gradient(state, *args):
-        return jnp.array(2.0), jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), state.params)
+    actual = loop.microbatch_loss_and_grads
+
+    def finite_loss_invalid_gradient(state, *args, **kwargs):
+        # Keep the step's telemetry statistics; replace only the loss and gradient.
+        _, _, *statistics = actual(state, *args, **kwargs)
+        return jnp.array(2.0), jax.tree.map(lambda value: jnp.full_like(value, jnp.inf), state.params), *statistics
 
     # Accumulation now traces the differentiation boundary into its scan.
     monkeypatch.setattr(loop, "loss_and_grads", finite_loss_invalid_gradient)

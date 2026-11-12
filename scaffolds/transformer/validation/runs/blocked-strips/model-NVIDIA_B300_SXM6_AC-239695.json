@@ -1,0 +1,78 @@
+{
+  "stage": "model",
+  "micro_batch": 16,
+  "cases": [
+    {
+      "recipe": "experiments/transformer_pp/runs/r82a80d3091e2/config.yaml",
+      "implementation": "scan",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 329.4241135008633,
+        "p10_ms": 328.6074408941204,
+        "p90_ms": 330.2047725970624,
+        "samples_ms": [
+          328.28769701882266,
+          329.44326801225543,
+          329.4049589894712,
+          330.03102999646217,
+          329.36683599837124,
+          330.1905519911088,
+          328.7444739835337,
+          330.2379540109541
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 118.78809848902165,
+        "compiled_memory": {
+          "argument_size_in_bytes": 798471400,
+          "output_size_in_bytes": 798341460,
+          "temp_size_in_bytes": 26843879544,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 3035528
+        },
+        "kernels": 2412
+      },
+      "nll": 10.509981155395508,
+      "grad_norm": 2.0180089473724365,
+      "seconds_per_update": 5.270785816013813,
+      "peak_bytes_in_use": 31026256128,
+      "device": "NVIDIA B300 SXM6 AC"
+    },
+    {
+      "recipe": "experiments/transformer_pp/runs/r82a80d3091e2/config.yaml",
+      "implementation": "strips",
+      "micro_batch": 16,
+      "timing": {
+        "median_ms": 244.29556999530178,
+        "p10_ms": 235.75524100742768,
+        "p90_ms": 246.23679319920484,
+        "samples_ms": [
+          231.17154301144183,
+          247.68384301569313,
+          245.43121000169776,
+          243.85003800853156,
+          245.61662899213843,
+          244.741101982072,
+          237.71968300570734,
+          240.02500998903997
+        ],
+        "warmup": 2,
+        "iterations": 8,
+        "compile_seconds": 92.78852359601296,
+        "compiled_memory": {
+          "argument_size_in_bytes": 798471400,
+          "output_size_in_bytes": 798341460,
+          "temp_size_in_bytes": 26130337616,
+          "alias_size_in_bytes": 0,
+          "generated_code_size_in_bytes": 3629156
+        },
+        "kernels": 3454
+      },
+      "nll": 10.510003089904785,
+      "grad_norm": 2.018073320388794,
+      "seconds_per_update": 3.9087291199248284,
+      "peak_bytes_in_use": 30312714240,
+      "device": "NVIDIA B300 SXM6 AC"
+    }
+  ]
+}

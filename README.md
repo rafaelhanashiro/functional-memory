@@ -1,36 +1,41 @@
 # Functional memory
 
-Browse `results/` for figures, comparisons, and findings. `experiments/` stores the
+Browse the result collections below for figures, comparisons, and findings. `experiments/` stores the
 runs behind them: one permanent ID per execution, with its recipe, measurements,
 provenance, checkpoint, and log together. A study can vary several settings at once;
 a result collection can combine runs from several studies.
 
 | Study | Results | Run data and reproduction |
 | --- | --- | --- |
-| 200M / 4B-token reference: QK RMSNorm, truncated initialization, selected LR | [Isolated comparisons](experiments/transformer_200m_4b/results/README.md) | [Recipe and runs](experiments/transformer_200m_4b/README.md) |
-| Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [All attention runs](experiments/attention_scaling/README.md) |
-| Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [All attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
-| Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [All attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
+| Attention scaling: softmax, Taylor, Hermite, learned polynomials, and Gated DeltaNet | [Heatmaps and degree curves](results/attention_scaling/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
+| Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
+| Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
+| Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
+| Transformer++: attention variants under its recipe, with model shape and token budget per run | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
+| Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-8` | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
+| Transformer++ model scale: eight attention variants at the 12-layer width-640 shape against their reference-shape partners | [Comparison across shapes](experiments/transformer_pp/results/model_scale/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#model-scale) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
-[`results/exploratory/`](results/exploratory/README.md).
+[`results/exploratory/`](results/exploratory/README.md). Closed diagnostic records of
+training behavior, such as gradient spikes, are in
+[`results/diagnostics/`](results/diagnostics/README.md).
 
-The established 10B-token attention settings vary within
-`experiments/attention_scaling/runs/<run_id>/`. The new 200M / 4B-token setup keeps
-its recipe, runs, and results together in `experiments/transformer_200m_4b/` and
-reuses the same scaffolds. Within each setup, mechanisms and sweeps share one run pool.
-The [run index](experiments/attention_scaling/runs.csv) exposes the settings,
+The established 10B attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
+The separately requested Transformer++ study owns its recipe, runs, results, and exploratory
+diagnostics under `experiments/transformer_pp/`; the folder keeps its original name. Mechanisms and sweeps remain
+runs within their applicable study. The [10B run index](experiments/attention_scaling/runs.csv)
+and [Transformer++ run index](experiments/transformer_pp/runs.csv) expose the settings,
 home cluster, training budget, status, and outcome. Each result collection selects
 its inputs explicitly, so the same run can participate in several comparisons.
 
-The maintained attention results are the combined heatmap and degree plot in
+The maintained 10B attention results are the combined heatmap and degree plot in
 `results/attention_scaling/`, the input-dependent coefficient comparison in
-`results/input_dependent_coefficients/`, and the polynomial GDN comparison in
-`results/gdn_polynomial/`. The complete run inventory, learning-curve data,
-coefficient diagnostics, and execution metadata remain under
-`experiments/attention_scaling/`; result directories organize the comparisons we
-want to present, rather than individual sweeps.
+`results/input_dependent_coefficients/`, the polynomial GDN comparison in
+`results/gdn_polynomial/`, and the rational polynomial comparison in
+`results/rational_polynomial/`. Run inventories, learning-curve data, coefficient
+diagnostics, and execution metadata remain under their studies; result directories
+organize the comparisons we want to present.
 
 ```text
 results/<analysis>/

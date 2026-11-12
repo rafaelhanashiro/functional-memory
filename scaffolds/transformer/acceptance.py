@@ -32,12 +32,13 @@ import os
 from pathlib import Path
 import shlex
 import shutil
+import statistics
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
-from scaffolds.transformer.training.cadence import scheduled_work_counts
+from scaffolds.transformer.training.cadence import evaluation_due, scheduled_work_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKS = ("cpu-tests", "cpu-distributed-tests", "gpu-tests", "initialization", "pilot", "resume")
@@ -54,11 +55,44 @@ RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHO
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
+DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
+SIGMOID_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_sigmoid_coefficients.py"
+COEFFICIENT_FORM_TESTS = "scaffolds/transformer/tests/test_coefficient_forms.py"
+QUERY_DISTANCE_DECAY_TESTS = "scaffolds/transformer/tests/test_query_distance_decay.py"
+PER_ORDER_DECAY_TESTS = "scaffolds/transformer/tests/test_per_order_decay.py"
+PER_ORDER_CUMULATIVE_TESTS = "scaffolds/transformer/tests/test_per_order_cumulative.py"
+EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential_query_distance.py"
+EXPONENTIAL_QUERY_KEY_TESTS = "scaffolds/transformer/tests/test_exponential_query_key.py"
+ENDPOINT_DECAY_TESTS = "scaffolds/transformer/tests/test_endpoint_decay.py"
+INPUT_FREE_GATE_TESTS = "scaffolds/transformer/tests/test_input_free_gate.py"
+CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
+SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
+DENSE_MIXING_SCALE_TESTS = "scaffolds/transformer/tests/test_dense_mixing_scale.py"
+QK_HEAD_SCALE_TESTS = "scaffolds/transformer/tests/test_qk_head_scale.py"
+QK_HEAD_SCALE_BACKEND_TESTS = (
+    "scaffolds/transformer/tests/test_qk_rms_attention_backends.py::test_full_context_qk_rms_head_scale_backend")
+QUERY_KEY_HEAD_SCALE_DEGREES = (4, 8, 12)
+COEFFICIENT_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gates.py"
+COEFFICIENT_GATE_GPU_TESTS = ("test_gated_coefficients_through_mosaic_match_fp64",
+                              "test_gated_mosaic_model_matches_float32_blocked_model")
+COEFFICIENT_GATE_DEGREES = (8, 10)
+COEFFICIENT_GDN_GATE_TESTS = "scaffolds/transformer/tests/test_coefficient_gdn_gates.py"
+COEFFICIENT_GDN_GATE_GPU_TESTS = ("test_gdn_gated_coefficients_through_mosaic_match_fp64",
+                                  "test_gdn_gated_mosaic_model_matches_float32_blocked_model")
+COEFFICIENT_GDN_GATE_DEGREES = (4,)
 COEFFICIENT_SCALE_TESTS = "scaffolds/transformer/tests/test_coefficient_scale.py"
+COEFFICIENT_RELEASE_TESTS = "scaffolds/transformer/tests/test_coefficient_release.py"
 PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_path_attention.py"
 PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_path_attention_fused.py"
+FORGET_GATE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_forget_gate_attention.py"
+BLOCKED_STRIPS_TESTS = "scaffolds/transformer/tests/test_blocked_strips.py"
+SPLINE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_spline_attention.py"
+FOX_PATH_ATTENTION_TESTS = "scaffolds/transformer/tests/test_fox_path_attention.py"
+FOX_PATH_MODEL_TESTS = "scaffolds/transformer/tests/test_fox_path_model.py"
+FOX_PATH_ATTENTION_FUSED_TESTS = "scaffolds/transformer/tests/test_fox_path_attention_fused.py"
 TRITON_PORT_TESTS = "scaffolds/transformer/tests/test_triton_port.py"
 QUERY_KEY_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_key_polynomial.py"
+QUERY_KEY_TILING_TESTS = "scaffolds/transformer/tests/test_query_key_tiling.py"
 TANH_WRITE_GDN_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write.py"
 TANH_WRITE_GDN_KERNEL_TESTS = "scaffolds/transformer/tests/test_gdn_tanh_write_kernel.py"
 POLYNOMIAL_GDN_TESTS = "scaffolds/transformer/tests/test_polynomial_gdn.py"
@@ -88,11 +122,13 @@ class AcceptanceSpec:
     allocation_hours: float = 48
     allow_requeue: bool = False
     """Launcher guarantees checkpoint resumption across allocation time limits."""
+    """Qualification horizon; launchers can override it at runtime."""
     select_tests: Callable | None = None
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
 
 
-def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
+def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool,
+               runtime_test_paths: tuple[str, ...] = ()) -> tuple[str, ...]:
     """Include the resolved mechanism's required checks even if an adapter omits them."""
     paths = list(spec.cpu_tests if cpu else spec.gpu_tests)
     if spec.select_tests is not None:
@@ -105,10 +141,110 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if model.get("attention_basis") is not None and model.get("attention_coefficients") == "learned":
         paths.append("scaffolds/transformer/tests/test_learned_basis.py")
 
+    if not cpu:
+        paths.extend(runtime_test_paths)
+    if cpu and config.get("continuation", {}).get("parent_checkpoint"):
+        paths.extend(("scaffolds/transformer/tests/test_continuation.py",
+                      "scaffolds/transformer/tests/test_continuation_acceptance.py"))
+    if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
+        paths.append(COEFFICIENT_RELEASE_TESTS)
+    model = config["model"]
+    if model.get("attention_forget_gate_per_order", False):
+        cumulative = model.get("attention_forget_gate_mode", "cumulative") == "cumulative"
+        if cpu or not cumulative:
+            # The per-order gates' parameters and starts; on the GPU, the query-distance kernels.
+            paths.append(PER_ORDER_DECAY_TESTS)
+        if cumulative:
+            # Each order's own cumulative decay on the blocked backend: FP64 references on CPU, and
+            # the strips' production precision at degrees four and eight on the GPU.
+            paths.append(PER_ORDER_CUMULATIVE_TESTS)
+    if cpu and model.get("qk_norm_token_scale", "none") != "none":
+        paths.extend(("scaffolds/transformer/tests/test_token_query_scale.py",
+                      "scaffolds/transformer/tests/test_token_scale_weight_decay.py"))
+        if config.get("continuation", {}).get("parent_checkpoint"):
+            paths.append("scaffolds/transformer/tests/test_token_scale_continuation.py")
+    if (cpu and model.get("attention_forget_gate", False)
+            and config.get("continuation", {}).get("parent_checkpoint")):
+        paths.append("scaffolds/transformer/tests/test_forget_gate_continuation.py")
+    if (model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "constant"
+            and (cpu or model.get("attention_degree") is None)):
+        # On GPU, the softmax and exponential ALiBi cases at the production context.
+        paths.append(CONSTANT_DECAY_TESTS)
+    if (cpu and model.get("attention_forget_gate", False)
+            and model.get("attention_forget_gate_form", "input") == "sigmoid"):
+        paths.append(SIGMOID_GATE_TESTS)
+    exponential_endpoint = (model.get("attention_degree") is None
+                            and model.get("attention_forget_gate_conditioning", "query") == "query_key")
+    if ((model.get("attention_forget_gate_conditioning", "query") != "query"
+            or model.get("attention_forget_gate_rate_activation", "softplus") != "softplus"
+            or resolved_backend == "mosaic" and model.get("attention_forget_gate", False))
+            and (cpu or not exponential_endpoint)):
+        # Also the GPU qualification of the Mosaic decay kernels for every query-distance gate. Its GPU
+        # cases are the query polynomials' kernels, so softmax and the exponential, whose query-key gate
+        # shares only the blocked endpoint arithmetic checked here on CPU, take their own GPU cases below.
+        paths.append(ENDPOINT_DECAY_TESTS)
+    if model.get("attention_forget_gate", False) and model.get("attention_forget_gate_conditioning", "query") == "none":
+        # Static coefficients under the input-free gate: CPU references through the blocked scan and
+        # strips, and on the GPU the Mosaic decay kernels through the production dispatch.
+        paths.append(INPUT_FREE_GATE_TESTS)
+    if (model.get("attention_coefficient_readout", "diagonal") == "dense"
+            and (model.get("qk_norm_head_scale", False) or model.get("attention_coefficient_readout_scale", 1.0) != 1.0)
+            and (cpu or resolved_backend == "mosaic")):
+        paths.append(DENSE_MIXING_SCALE_TESTS)
+    if cpu and model.get("qk_norm_head_scale", False):
+        paths.append(QK_HEAD_SCALE_TESTS)
+    if (cpu and resolved_backend == "blocked"
+            and model.get("attention_blocked_implementation", "scan") == "strips"):
+        # Training on causal strips: their equivalence with the scan and their FP32 dK/dV sums.
+        paths.append(BLOCKED_STRIPS_TESTS)
+    if model.get("attention_kernel_basis", "polynomial") == "bspline":
+        # CPU: the B-spline score function against an independent Cox-de Boor reference, its
+        # exact Taylor start, parameters, and scan/strips equivalence. GPU: production precision
+        # of the strips and the scan's forward against FP64.
+        paths.append(SPLINE_ATTENTION_TESTS)
+    if (not cpu and model.get("qk_norm_head_scale", False)
+            and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "fixed"
+            and model.get("attention_fixed_coefficients") is None
+            and model.get("attention_fixed_square_factors") is None
+            and (model.get("attention_degree"), resolved_backend) in ((None, "fused"), (4, "mosaic"))):
+        degree = model.get("attention_degree")
+        family = "exp" if degree is None else "fixed"
+        paths.append(f"{QK_HEAD_SCALE_BACKEND_TESTS}[{family}-{degree or 0}-{resolved_backend}]")
+    if (not cpu and model.get("qk_norm_head_scale", False)
+            and model.get("attention_mechanism", "dot_product") == "dot_product"
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "learned"
+            and model.get("attention_coefficient_conditioning", "static") == "query_key"
+            and model.get("attention_coefficient_activation", "identity") == "tanh"
+            and resolved_backend == "fused"):
+        # Every qualified degree runs together, so runs at different degrees share one
+        # GPU stage and a failure surfaces before any of them trains. A degree without
+        # a parametrized case has no node id, so acceptance fails closed.
+        degrees = sorted({*QUERY_KEY_HEAD_SCALE_DEGREES, int(model["attention_degree"])})
+        paths.extend(f"{QK_HEAD_SCALE_BACKEND_TESTS}[query_key-{degree}-fused]" for degree in degrees)
+    # The forget gate on softmax and the exponential (blocked; PaTH-FoX is in the PaTH tests), and
+    # on the PaTH query polynomial (FoX-PaTH's own tests).
+    exponential_gate = model.get("attention_forget_gate", False) and model.get("attention_degree") is None
+    if exponential_gate:
+        paths.append(FORGET_GATE_ATTENTION_TESTS)
+        if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
+            # (t - i) log alpha_t on every score: FP64 references on CPU, and the strips'
+            # production precision on the GPU.
+            paths.append(EXPONENTIAL_QUERY_DISTANCE_TESTS)
+            if model.get("attention_forget_gate_conditioning", "query") == "query_key":
+                # The pair rate (t - i) log alpha_ti: likewise on CPU and on the GPU.
+                paths.append(EXPONENTIAL_QUERY_KEY_TESTS)
     if model.get("positional_encoding", "rope") == "path":
         paths.append(PATH_ATTENTION_TESTS)
         if resolved_backend == "fused":
             paths.extend((PATH_ATTENTION_FUSED_TESTS, *((TRITON_PORT_TESTS,) if cpu else ())))
+        if model.get("attention_forget_gate", False) and not exponential_gate:
+            paths.extend((FOX_PATH_ATTENTION_TESTS, FOX_PATH_MODEL_TESTS))
+            if resolved_backend == "fused":
+                paths.append(FOX_PATH_ATTENTION_FUSED_TESTS)
     if (model.get("attention_mechanism") == "gated_deltanet"
             and model.get("gdn_write_activation", "sigmoid") == "tanh"):
         if cpu:
@@ -129,10 +265,37 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     conditioning = model.get("attention_coefficient_conditioning", "static")
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
-        if model.get("attention_coefficient_activation", "identity") == "tanh":
+        activation = model.get("attention_coefficient_activation", "identity")
+        if activation in ("tanh", "sigmoid", "pure_tanh", "affine_sigmoid"):
+            # Every nonlinear generator runs on the same query-coefficient kernels as tanh.
             paths.append(QUERY_TANH_POLYNOMIAL_TESTS)
+        if activation == "tanh" and model.get("attention_coefficient_readout", "diagonal") == "dense":
+            paths.append(DENSE_QUERY_READOUT_TESTS)
+        if activation == "sigmoid":
+            paths.append(SIGMOID_COEFFICIENT_TESTS)
+        if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
+            paths.append(COEFFICIENT_FORM_TESTS)
+        if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
+            paths.append(QUERY_DISTANCE_DECAY_TESTS)
         if conditioning == "query_key":
             paths.append(QUERY_KEY_POLYNOMIAL_TESTS)
+            if resolved_backend == "fused" and cpu:
+                paths.append(QUERY_KEY_TILING_TESTS)
+    coefficient_gate = model.get("attention_coefficient_gate", "none")
+    if coefficient_gate != "none":
+        tests, gpu_tests, qualified = (
+            (COEFFICIENT_GDN_GATE_TESTS, COEFFICIENT_GDN_GATE_GPU_TESTS, COEFFICIENT_GDN_GATE_DEGREES)
+            if coefficient_gate == "gdn" else
+            (COEFFICIENT_GATE_TESTS, COEFFICIENT_GATE_GPU_TESTS, COEFFICIENT_GATE_DEGREES))
+        if cpu:
+            paths.append(tests)
+        else:
+            # Every qualified degree runs together, so runs at different degrees share one GPU
+            # stage; a degree without a parametrized case has no node id and fails closed.
+            degrees = sorted({*qualified, int(model["attention_degree"])})
+            paths.extend(f"{tests}::{test}[{degree}]" for test in gpu_tests for degree in degrees)
+    if model.get("attention_coefficient_orders") is not None:
+        paths.append("scaffolds/transformer/tests/test_coefficient_orders.py")
     if model.get("attention_coefficient_scale", "none") != "none":
         paths.append(COEFFICIENT_SCALE_TESTS)
     if (resolved_backend == "fused" and model.get("attention_mechanism", "dot_product") == "dot_product"
@@ -142,6 +305,26 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                  or model.get("attention_fixed_square_factors") is not None)):
         paths.append(NORMALIZED_POLYNOMIAL_TESTS)
     return tuple(dict.fromkeys(paths))
+
+
+def _runtime_test_paths(config, resolved_backend: str) -> tuple[str, ...]:
+    """Require implementation-specific GPU checks only when that implementation is selected.
+
+    The backend owns device and shape eligibility; acceptance does not duplicate
+    its hardware policy. CPU selector checks are always included by test_paths.
+    """
+    if (resolved_backend == "fused" and config.model.attention_mechanism == "dot_product"
+            and config.model.attention_coefficient_conditioning == "query_key"):
+        import jax.numpy as jnp
+        from scaffolds.transformer.attention.backends.fused_query_key_polynomial import _backward_tile_sizes
+
+        tiles = _backward_tile_sizes(
+            config.model.qk_head_dim, config.model.value_head_dim,
+            degree=config.model.attention_degree, time=config.data.sequence_length - 1,
+            dtype=jnp.dtype(config.train.dtype), interpret=False)
+        if tiles == (32, 32):
+            return (QUERY_KEY_TILING_TESTS,)
+    return ()
 
 
 def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
@@ -250,10 +433,12 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
     return AcceptanceSpec(
         entry_module=entry_module,
         cpu_tests=tuple(f"scaffolds/transformer/tests/test_{name}.py" for name in (
-            "model", "training", "telemetry", "checkpoint_audit", "parameter_policy")),
+            "model", "training", "telemetry", "checkpoint_audit", "parameter_policy",
+            "query_coefficient_learning_rate", "runtime_timing")),
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
-        check_initialization=(None if config.model.attention_mechanism in ("gla", "gated_deltanet")
+        check_initialization=(None if (config.model.attention_mechanism in ("gla", "gated_deltanet")
+                                      or continuation_start_step(config))
                               else matches_softmax_backbone_initialization),
         runtime_env=runtime_env,
         select_tests=attention_test_paths,
@@ -280,6 +465,28 @@ def runtime_identity() -> dict:
     return {"TRANSFORMER_HOST_STAGING": host_staging, **{key: os.environ.get(key) for key in RUNTIME_KEYS}}
 
 
+def allocation_seconds(spec: AcceptanceSpec) -> int:
+    """Resolve the launcher's granted wall-clock budget without changing the recipe."""
+    value = os.environ.get("TRANSFORMER_ALLOCATION_SECONDS")
+    if value is not None:
+        if not value.isascii() or not value.isdecimal() or int(value) <= 0:
+            raise ValueError("TRANSFORMER_ALLOCATION_SECONDS must be a positive integer")
+        return int(value)
+    seconds = spec.allocation_hours * 3600
+    if not math.isfinite(seconds) or seconds <= 0 or int(seconds) != seconds:
+        raise ValueError("AcceptanceSpec.allocation_hours must yield a positive finite integer number of seconds")
+    return int(seconds)
+
+
+def require_allocation_budget(projected_seconds: float, limit_seconds: int) -> None:
+    """Keep the existing two-hour allowance for acceptance and runtime overhead."""
+    if not math.isfinite(projected_seconds) or projected_seconds < 0:
+        raise RuntimeError("Pilot has no valid projected runtime")
+    if projected_seconds > limit_seconds - 2 * 3600:
+        raise RuntimeError(f"Pilot projects beyond a {limit_seconds / 3600:g}h allocation "
+                           f"with a 2h reserve: {projected_seconds / 3600:.2f} hours")
+
+
 def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: str) -> dict:
     # The launcher exports its launch commit; analysis commits may have advanced HEAD since.
     source = os.environ.get("SHARED_TRANSFORMER_SOURCE_COMMIT") or subprocess.check_output(
@@ -300,6 +507,7 @@ def identity(spec: AcceptanceSpec, config_path: Path, gpu_count: int, gpu_type: 
         "gpu_count": gpu_count, "gpu_type": gpu_type.upper(),
         "runtime": runtime_identity(),
         "timing_policy": {"allocation_hours": spec.allocation_hours, "allow_requeue": spec.allow_requeue},
+        "allocation_seconds": allocation_seconds(spec),
     }
     return _sealed(payload)
 
@@ -330,7 +538,8 @@ def record(path: Path, experiment: dict, **fields) -> None:
         "identity": experiment["identity"], "source_commit": experiment["source_commit"],
         "status": "passed", "completed_utc": datetime.now(UTC).isoformat(),
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
-        "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"), **fields,
+        "slurm_restart_count": os.environ.get("SLURM_RESTART_COUNT", "0"),
+        "allocation_seconds": experiment.get("allocation_seconds"), **fields,
     })
 
 
@@ -401,6 +610,83 @@ def validate_resume_audit(initial: dict, resumed: dict) -> None:
         raise RuntimeError("Restarted training changed the next batch or RNG")
 
 
+def continuation_start_step(config) -> int:
+    """The absolute update at which a fresh child starts; ordinary runs start at zero."""
+    continuation = config.get("continuation", {}) if isinstance(config, dict) else config.continuation
+    if isinstance(continuation, dict):
+        return int(continuation["parent_step"]) if continuation.get("parent_checkpoint") else 0
+    return int(continuation.parent_step) if continuation.parent_checkpoint else 0
+
+
+def remaining_work_counts(config) -> tuple[int, int]:
+    """Count the child's baseline and scheduled evaluations/checkpoint writes."""
+    start = continuation_start_step(config)
+    if start == 0:
+        return scheduled_work_counts(config)
+    total = config.optim.total_steps
+    evaluations = {step for step in range(start + 1, total + 1) if evaluation_due(config, step)}
+    checkpoints = evaluations | {
+        step for step in range(start + 1, total + 1) if step % config.train.ckpt_every == 0
+    } | {total}
+    # A fresh continuation first evaluates and saves its restored baseline.
+    return len(evaluations) + 1, len(checkpoints) + 1
+
+
+def project_runtime(timing: dict, config) -> dict:
+    """Project a full execution from separately warmed pilot measurements.
+
+    The disposable pilot (including startup, warmups, and its training updates)
+    is charged once. It does not replace any production updates. Diagnostics
+    recur per validation; only evaluation batches scale with ``eval_batches``.
+    """
+    def samples(name: str) -> list[float]:
+        values = timing.get(name)
+        if (not isinstance(values, list) or not values
+                or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                       or not math.isfinite(value) or value <= 0 for value in values)):
+            raise RuntimeError(f"Pilot requires positive finite {name}; rerun its timing profile")
+        return values
+
+    pilot = timing.get("runtime_seconds")
+    if (isinstance(pilot, bool) or not isinstance(pilot, (int, float))
+            or not math.isfinite(pilot) or pilot <= 0):
+        raise RuntimeError("Pilot requires a positive finite runtime_seconds")
+    updates = samples("train_step_seconds")[1:]  # First update includes compilation.
+    if not updates:
+        raise RuntimeError("Pilot has no synchronized warm training updates")
+    batches = samples("evaluation_batch_seconds")
+    if len(batches) < 3:
+        raise RuntimeError("Pilot requires at least three warm evaluation_batch_seconds samples")
+    rates = {
+        "training_update": statistics.median(updates),
+        "diagnostics": statistics.median(samples("diagnostic_seconds")),
+        "evaluation_batch": statistics.median(batches),
+        "checkpoint": max(samples("checkpoint_seconds")),
+    }
+    evaluations, checkpoints = remaining_work_counts(config)
+    counts = {
+        "training_updates": config.optim.total_steps - continuation_start_step(config),
+        "validation_events": evaluations,
+        "batches_per_validation": config.train.eval_batches,
+        "checkpoint_events": checkpoints,
+    }
+    if counts["training_updates"] <= 0:
+        raise RuntimeError("Pilot runtime projection requires remaining training updates")
+    components = {
+        "pilot_overhead": float(pilot),
+        "training": rates["training_update"] * counts["training_updates"],
+        "diagnostics": rates["diagnostics"] * evaluations,
+        "evaluation": rates["evaluation_batch"] * config.train.eval_batches * evaluations,
+        "checkpointing": rates["checkpoint"] * checkpoints,
+    }
+    projected = sum(components.values())
+    if not math.isfinite(projected):
+        raise RuntimeError("Pilot has no finite projected runtime")
+    return {"method": "warm_components_v1", "counts": counts, "seconds_per_unit": rates,
+            "components_seconds": components, "projected_seconds": projected,
+            "reserve_seconds": 2 * 3600}
+
+
 def initialization_facts(config) -> dict:
     """Parameter count and hash of the initialization training will use."""
     import jax
@@ -410,12 +696,30 @@ def initialization_facts(config) -> dict:
     from scaffolds.transformer.training.checkpointing import state_sha256
 
     config.model.attention_backend = "blocked"  # Initialization does not depend on the backend.
-    rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
-    params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)
+    continuation = None
+    if continuation_start_step(config):
+        from scaffolds.transformer.training.continuation import initialize_continuation_state
+
+        state, continuation = initialize_continuation_state(config)
+        params = state.params
+        if int(state.step) != continuation_start_step(config):
+            raise RuntimeError("Continuation initialization did not preserve the parent step")
+        for kind in ("parameters", "optimizer"):
+            if continuation[f"parent_{kind}_sha256"] != continuation[f"backbone_{kind}_sha256"]:
+                raise RuntimeError(f"Continuation changed the parent's backbone {kind}")
+        from scaffolds.transformer.training.optim import continuation_introduces_parameters
+
+        if (continuation_introduces_parameters(config)
+                and continuation.get("new_coefficient_optimizer_count") != 0):
+            raise RuntimeError("New parameters must start with a fresh optimizer clock")
+    else:
+        rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
+        params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)
     count = sum(leaf.size for leaf in jax.tree.leaves(params))
     if count != model_parameter_count(config.model):
         raise RuntimeError(f"Initialized parameter count {count} differs from the model formula")
-    return {"parameter_count": count, "parameter_sha256": state_sha256(params)}
+    return {"parameter_count": count, "parameter_sha256": state_sha256(params),
+            **({"continuation": continuation} if continuation is not None else {})}
 
 
 def matches_softmax_initialization(config) -> dict:
@@ -435,18 +739,30 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_basis=None,
                                            attention_coefficient_parameterization="direct",
-                                           attention_coefficient_conditioning="static",
+                                           attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
+                                           attention_coefficient_feature_count=None,
+                                           attention_coefficient_readout_scale=1.0,
                                            attention_coefficient_activation="identity",
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_gate="none",
+                                           attention_coefficient_kernel_weight_decay=False,
+                                           attention_forget_gate=False,
+                                           attention_forget_gate_per_order=False,
+                                           attention_forget_gate_mode="cumulative",
+                                           attention_forget_gate_form="input",
+                                           attention_forget_gate_constant_rate="learned",
+                                           attention_forget_gate_conditioning="query",
+                                           attention_forget_gate_rate_activation="softplus",
                                            positional_encoding="rope",
                                            attention_coefficient_amplitude_scale="none",
-                                           attention_coefficient_scale="none",
+                                           attention_coefficient_scale="none", attention_coefficient_orders=None,
                                            attention_coefficient_initialization="taylor",
                                            attention_denominator_degree=None,
                                            attention_denominator_parameterization="direct",
-                                           attention_denominator_constant="fixed"))
+                                           attention_denominator_constant="fixed",
+                                           attention_kernel_basis="polynomial", attention_spline_knots=None))
     expected = initialization_facts(control)
     if actual != expected:
         raise RuntimeError(f"Initialization differs from the exact-softmax counterpart: {actual} != {expected}")
@@ -485,13 +801,23 @@ def matches_softmax_backbone_initialization(config) -> dict:
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None, attention_basis=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
-        attention_coefficient_conditioning="static",
+        attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
+        attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,
         attention_coefficient_activation="identity", attention_coefficient_amplitude_initial=1.0,
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_gate="none",
+        attention_coefficient_kernel_weight_decay=False, attention_forget_gate=False,
+        attention_forget_gate_per_order=False,
+        attention_forget_gate_mode="cumulative", attention_forget_gate_form="input",
+        attention_forget_gate_constant_rate="learned",
+        attention_forget_gate_conditioning="query", attention_forget_gate_rate_activation="softplus",
         positional_encoding="rope",
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
+        attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
-        attention_denominator_constant="fixed", qk_norm=False))
+        attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
+        qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
+        attention_kernel_basis="polynomial", attention_spline_knots=None))
     actual, expected = flat_parameters(replace(config, model=replace(config.model))), flat_parameters(control)
     added = {(spec.name,) for spec in specs}
     if set(actual) - set(expected) != added or set(expected) - set(actual):
@@ -510,7 +836,86 @@ def matches_softmax_backbone_initialization(config) -> dict:
         "mechanism_parameters": {spec.name: {"shape": list(actual[(spec.name,)].shape), "initial": list(spec.initial),
                                              **({"initial_std": spec.initial_std} if spec.initial_std else {}),
                                              **({"random_stream_name": spec.random_stream_name} if spec.random_stream_name else {}),
+                                             **({"initializer": spec.initializer} if spec.initializer else {}),
+                                             **({"repeat_initial_axis": spec.repeat_initial_axis}
+                                                if spec.repeat_initial_axis is not None else {}),
                                              "weight_decay": spec.weight_decay} for spec in specs},
+    }
+
+
+# Rounding allowance for initial logits that differ only in FP32 rounding: 2^-16, 256 units in
+# the last place, relative to the largest logit.
+GATE_START_ROUNDING = 2.0 ** -16
+
+
+def gdn_gate_start_parity(config, tokens) -> dict:
+    """Initial logits of a GDN coefficient-gate recipe against the same recipe without the gate.
+
+    Every order of a head starts with the same multiplier alpha_t, so the head's output before
+    its RMSNorm is alpha_t y_t and the norm returns g y_t / sqrt(ms(y_t) + eps / alpha_t^2):
+    the ungated output times rho = sqrt((ms + eps alpha_t^2) / (ms + eps)), with ms the gated
+    output's mean square. Hence 1 - rho <= delta_l = eps / (ms_l + eps), where ms_l, the
+    smallest ms of any head at any position of layer l, comes from training telemetry. Both
+    recipes run in FP32 on the blocked reference. With every RMSNorm epsilon at 1e-30 the norm
+    cancels alpha exactly and the logits must agree to GATE_START_ROUNDING relative to the
+    largest logit. At the recipe's epsilon they must agree within sum_l delta_l plus that
+    allowance: every head output of layer l moves by at most delta_l of itself, and the
+    tolerance lets each layer's relative change reach the logits undiminished.
+    """
+    from dataclasses import replace
+
+    import jax
+    import numpy as np
+    from flax import nnx
+
+    from scaffolds.transformer.attention.input_dependent import GDN_GATE_PARAMETERS
+    from scaffolds.transformer.models import build_model
+    from scaffolds.transformer.training import telemetry
+
+    model = config.model
+    if model.attention_coefficient_gate != "gdn" or model.attention_output_scaling != "head_rms_norm":
+        raise ValueError("GDN gate start parity applies to GDN-gated recipes with head RMSNorm output scaling")
+    rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
+
+    def run(gate, eps):
+        built = build_model(replace(model, attention_backend="blocked", attention_coefficient_gate=gate,
+                                    rms_norm_eps=eps), nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0)))
+        with telemetry.collect() as collector:
+            logits = np.asarray(built(tokens), np.float64)
+        squares = [float(value) ** 2 for key, value in sorted(collector.values.items())
+                   if key.endswith("/attention_output_head_rms_min")]
+        return built, logits, squares
+
+    gated, logits, squares = run("gdn", model.rms_norm_eps)
+    _, control, _ = run("none", model.rms_norm_eps)
+    _, epsilon_free, _ = run("gdn", 1e-30)
+    _, control_epsilon_free, _ = run("none", 1e-30)
+    if len(squares) != model.num_layers or not all(np.isfinite(values).all() for values in (
+            squares, logits, control, epsilon_free, control_epsilon_free)):
+        raise RuntimeError("Initial logits or head output telemetry are missing or nonfinite")
+    scale = float(np.max(np.abs(control)))
+    deltas = [model.rms_norm_eps / (square + model.rms_norm_eps) for square in squares]
+    difference = float(np.max(np.abs(logits - control))) / scale
+    epsilon_free_difference = float(np.max(np.abs(epsilon_free - control_epsilon_free))) / scale
+    tolerance = sum(deltas) + GATE_START_ROUNDING
+    if epsilon_free_difference > GATE_START_ROUNDING:
+        raise RuntimeError(f"Without the RMSNorm epsilon the initial logits differ by {epsilon_free_difference:.3g} "
+                           f"of the largest logit, beyond FP32 rounding ({GATE_START_ROUNDING:.3g})")
+    if difference > tolerance:
+        raise RuntimeError(f"Initial logits differ by {difference:.3g} of the largest logit, beyond the RMSNorm "
+                           f"epsilon bound {tolerance:.3g}")
+    for name in GDN_GATE_PARAMETERS:
+        values = np.asarray(getattr(gated, name)[...])
+        if not np.array_equal(values, np.broadcast_to(values[..., :1], values.shape)):
+            raise RuntimeError(f"{name} does not start as one draw repeated over the orders")
+    return {
+        "tokens": int(np.size(tokens)), "backend": "blocked", "dtype": "float32",
+        "rms_norm_eps": model.rms_norm_eps, "largest_ungated_logit": scale,
+        "head_output_relative_change_bound": deltas,
+        "logit_difference_relative_to_largest": difference, "tolerance_relative_to_largest": tolerance,
+        "epsilon_free_logit_difference_relative_to_largest": epsilon_free_difference,
+        "epsilon_free_rms_norm_eps": 1e-30, "rounding_tolerance_relative_to_largest": GATE_START_ROUNDING,
+        "gate_parameters_repeat_one_draw_over_orders": True,
     }
 
 
@@ -547,10 +952,11 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
             raise RuntimeError(f"Expected {args.gpu_count} {args.gpu_type} GPUs; got {devices}")
         packages = ("jax", "flax", "optax", "orbax-checkpoint")
         config = load_config(args.config)
+        backend = resolve_attention_backend(
+            config.model, dtype=config.train.dtype, sequence_length=config.data.sequence_length - 1)
         return {"devices": [str(d) for d in devices], "device_kinds": [d.device_kind for d in devices],
                 "versions": {name: version(name) for name in packages},
-                "attention_backend": resolve_attention_backend(
-                    config.model, dtype=config.train.dtype, sequence_length=config.data.sequence_length - 1)}
+                "attention_backend": backend, "runtime_test_paths": _runtime_test_paths(config, backend)}
     if args.worker == "initialization":
         config = load_config(args.config)
         facts = initialization_facts(config)
@@ -564,20 +970,26 @@ def _worker(spec: AcceptanceSpec, args, experiment: dict) -> dict:
         config.train.workdir = args.directory / "pilot"
         config.train.checkpoint_dir = None
         config.train.wandb_mode = "disabled"
-        config.train.eval_every = spec.pilot_steps
+        config.train.eval_every = continuation_start_step(config) + spec.pilot_steps
         # The scratch worker needs validation at its own stop, regardless of a
         # production recipe's denser early cadence. Never edit the frozen recipe.
         config.train.eval_early_every = None
         config.train.eval_early_until = 0
         config.train.eval_batches = 1
         # Model, context, batch, seed, LR schedule, and step horizon are the production recipe's.
-        return run_training(config, resume=True, stop_after_step=args.stop_after_step, audit_checkpoint=True)
+        return run_training(config, resume=True, stop_after_step=args.stop_after_step,
+                            audit_checkpoint=True, profile_timing=True)
     raise ValueError(args.worker)
 
 
 def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
+    start_step = continuation_start_step(experiment["config"])
+    pilot_stop = start_step + spec.pilot_steps
+    resume_stop = pilot_stop + 1
+    if start_step and resume_stop > experiment["config"]["optim"]["total_steps"]:
+        raise ValueError("The remaining training budget must include the pilot and its resume update")
     hardware = _run_worker(spec, args, "hardware", directory / "hardware.json", stop=spec.pilot_steps)
     experiment = on_devices(experiment, hardware["device_kinds"])
     write_json(directory / "identity.json", experiment)
@@ -590,7 +1002,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             path = directory / f"{stage}.json"
             if passed(path, experiment):
                 continue
-            paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu)
+            paths = test_paths(spec, experiment["config"], resolved_backend=hardware["attention_backend"], cpu=cpu,
+                               runtime_test_paths=tuple(hardware.get("runtime_test_paths", ())))
             if not cpu:
                 selection = (*selection, *mosaic_test_options(experiment["config"], hardware["attention_backend"]))
             if not paths:
@@ -631,40 +1044,36 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             # A preempted pilot may have saved a checkpoint without timing; restart it.
             if (directory / "pilot").exists():
                 shutil.rmtree(directory / "pilot")
-            outcome = _run_worker(spec, args, "pilot", directory / "pilot-result.json", stop=spec.pilot_steps)
-            if outcome["final_step"] != spec.pilot_steps or outcome["data_parallel_devices"] != args.gpu_count:
+            outcome = _run_worker(spec, args, "pilot", directory / "pilot-result.json", stop=pilot_stop)
+            if (outcome["final_step"] != pilot_stop or outcome["data_parallel_devices"] != args.gpu_count
+                    or outcome.get("start_step", 0) != start_step):
                 raise RuntimeError(f"Incomplete full-recipe pilot: {outcome}")
             if spec.required_backend is not None and outcome["attention_backend"] != spec.required_backend:
                 raise RuntimeError(f"Production requires backend {spec.required_backend!r}; resolved {outcome['attention_backend']!r}")
             records = [json.loads(line) for line in (directory / "pilot/metrics.jsonl").read_text().splitlines()]
-            validation = next(row for row in records if row["step"] == spec.pilot_steps)
+            validation = next(row for row in records if row["step"] == pilot_stop)
             if not math.isfinite(validation["validation_nll"]) or not validation["attention_diagnostics"]["valid"]:
                 raise RuntimeError("Pilot validation or attention diagnostics failed")
-            timing = outcome["timing"]
-            steady = timing["train_step_seconds"][1:]
-            if not steady or any(not math.isfinite(x) or x <= 0 for x in steady):
-                raise RuntimeError("Pilot has no valid synchronized steady update timing")
-            config = experiment["config"]
-            total = config["optim"]["total_steps"]
-            evaluations, checkpoints = scheduled_work_counts(load_config(args.config))
-            # Compilation once plus conservative evaluation and checkpoint costs.
-            projected = (timing["runtime_seconds"] + max(steady) * total
-                         + max(timing["evaluation_seconds"]) * config["train"]["eval_batches"] * evaluations
-                         + max(timing["checkpoint_seconds"]) * checkpoints)
-            allocation = validate_allocation_timing(spec, config, timing, projected)
-            record(path, experiment, outcome=outcome, validation=validation,
-                   projected_hours=projected / 3600, **allocation)
-            print(f"projected_training_hours={projected / 3600:.2f} allocation={allocation}", flush=True)
+            projection = project_runtime(outcome["timing"], load_config(args.config))
+            # Keep the component costs even when the budget gate rejects the allocation.
+            write_json(directory / "runtime-projection.json", projection)
+            print(f"acceptance_runtime_projection={json.dumps(projection, sort_keys=True)}", flush=True)
+            projected = projection["projected_seconds"]
+            allocation = validate_allocation_timing(
+                replace(spec, allocation_hours=experiment["allocation_seconds"] / 3600),
+                experiment["config"], outcome["timing"], projected)
+            record(path, experiment, outcome=outcome, validation=validation, projected_hours=projected / 3600,
+                   runtime_projection=projection, **allocation)
         stage = "resume"
         path = directory / f"{stage}.json"
         if not passed(path, experiment):
-            outcome = _run_worker(spec, args, "pilot", directory / "resume-result.json", stop=spec.pilot_steps + 1)
+            outcome = _run_worker(spec, args, "pilot", directory / "resume-result.json", stop=resume_stop)
             restored = outcome["restored_step"]
             # A retry after the resumed checkpoint was committed can already be at the next step.
-            if (restored not in (spec.pilot_steps, spec.pilot_steps + 1) or outcome["final_step"] != spec.pilot_steps + 1
+            if (restored not in (pilot_stop, resume_stop) or outcome["final_step"] != resume_stop
                     or outcome["data_start_sequence"] != restored * experiment["config"]["data"]["batch_size"]):
                 raise RuntimeError(f"Pilot resume did not preserve optimizer and data position: {outcome}")
-            if restored == spec.pilot_steps:
+            if restored == pilot_stop:
                 validate_resume_audit(json.loads((directory / "pilot.json").read_text())["outcome"], outcome)
             record(path, experiment, outcome=outcome)
         reused = {name: json.loads((directory / f"{name}.json").read_text()).get("reused_from")
@@ -672,11 +1081,15 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
         reused = {name: origin for name, origin in reused.items() if origin}
         record(directory / "success.json", experiment, checks=list(CHECKS), hardware=hardware,
                **({"reused_tests": reused} if reused else {}))
-        shutil.rmtree(directory / "pilot")  # The disposable pilot checkpoint is no longer needed.
+        # The disposable pilot checkpoint is no longer needed. An earlier attempt that passed this
+        # same pilot and resume removed it already when every remaining stage is reused here.
+        if (directory / "pilot").exists():
+            shutil.rmtree(directory / "pilot")
         print(f"acceptance_success={directory / 'success.json'}", flush=True)
     except BaseException as error:
         write_json(directory / "failure.json", {"identity": experiment["identity"], "stage": stage,
                    "error": f"{type(error).__name__}: {error}", "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+                   "allocation_seconds": experiment.get("allocation_seconds"),
                    "failed_utc": datetime.now(UTC).isoformat()})
         raise
 
@@ -707,7 +1120,7 @@ def main(spec: AcceptanceSpec | Callable, argv=None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config", nargs="?", type=Path)
     parser.add_argument("--directory", type=Path)
-    parser.add_argument("--gpu-count", type=int, default=4)
+    parser.add_argument("--gpu-count", type=int, default=1)
     parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--worker", choices=("hardware", "initialization", "pilot"))
     parser.add_argument("--output", type=Path)
