@@ -1,15 +1,16 @@
 # Per-degree score biases
 
-Opened: 2026-11-11. Status: **allocated, not yet trained**; the trial at the 12-layer width-640 shape
-goes first.
+Opened: 2026-11-11. Status: **allocated, not yet trained**; the trials at the 12-layer width-640
+shape go first.
 
 Does giving every order `r = 1..8` of the tanh query polynomial its own signed shift of the score,
 `(s_ti + beta_r)^r` in place of `s_ti^r`, improve validation perplexity, with RoPE and with
 per-order query–key distance gates without positional encoding? Which shift form matters: a
 constant per order, one that depends on the query token, or one that depends on both tokens?
 
-First, one trial at the 12-layer width-640 shape: the query shift on the RoPE control there. The six
-reference-shape runs follow only if it beats its control ([open decision](#open-decision)).
+First, two trials at the 12-layer width-640 shape: the static and the query shift on the RoPE
+control there. The six reference-shape runs follow only if a trial beats its control
+([open decision](#open-decision)).
 
 ## Runs
 
@@ -24,10 +25,11 @@ reference-shape runs follow only if it beats its control ([open decision](#open-
 | Primary | `r75dccfcf072e` | `query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key` | query–key | Kennel |
 | Control | `r227b0ed7c605` | `query-m8-per-order-query-key-gate-nope-wd` | – | Kennel |
 | Trial | `r8dc6e147601c` | `query-m8-w-decay-l12-d640-score-bias-query` | query | Kennel |
+| Trial | `rb4e5457ef2a0` | `query-m8-w-decay-l12-d640-score-bias-static` | static | Kennel |
 | Control | `r95a5691d293f` | `query-m8-w-decay-l12-d640` | – | Kennel |
 
 The [selection](selection.yaml) names each role and pins the runs' scientific files; the primaries
-and the trial pin only their recipes until they train. The controls' validation-best perplexities:
+and the trials pin only their recipes until they train. The controls' validation-best perplexities:
 
 | Control | Backbone | Shape | GPU | Update | Validation-best PPL |
 | --- | --- | --- | --- | ---: | ---: |
@@ -52,12 +54,12 @@ budget. The six reference-shape runs (7,570 updates) train on the blocked backen
 which evaluate each shifted power directly rather than expanding it in powers of `s`; both of their
 controls trained on the Mosaic kernels. Each trains on one B200, B300 or H100 SXM, the gated
 query–key run on a B200 or B300 only (its update needs 147 GiB); on a B200 the six project 9.5–79
-hours. The trial (7,551 updates of 128 × 2,048 tokens) keeps its control's attention settings and
-trains on one H100 on the Mosaic score-bias kernels, which also form each shifted power directly.
+hours. The trials (7,551 updates of 128 × 2,048 tokens) keep their control's attention settings and
+train on one H100 on the Mosaic score-bias kernels, which also form each shifted power directly.
 Recipe, parameter counts, acceptance checks, measured update times and launch commands:
 [study README](../../../README.md#per-degree-score-biases).
 
-**Gradient-event capture.** After warmup (update 455; 454 for the trial), an update whose finite
+**Gradient-event capture.** After warmup (update 455; 454 for the trials), an update whose finite
 pre-clip gradient norm exceeds `max(1, 5 × median)` of the previous 100 norms (once 20 exist) saves
 the exact state it started from, with its batch and RNG coordinates; at most three states are kept
 per run (the first event and the two largest later ones), and every event is logged in the run's
@@ -69,7 +71,7 @@ order, the shifts' and shifted scores' moments and extremes, the fractions of sh
 zero and within `1e-3` of zero, and each order's term `T_r = c_r G_r (s + beta_r)^r`; per layer and
 order, shifted-score histograms on [-16, 16] pooled over heads; and per layer and head, how much the
 orders cancel, per pair (`sum_r |T_r| / |sum_r T_r|`) and per output (`sum_r ||o_r|| / ||o||`).
-The reference-shape runs train, and their acceptance pilots run, on the causal strips; the trial on
+The reference-shape runs train, and their acceptance pilots run, on the causal strips; the trials on
 the Mosaic kernels. Positive shifted scores do not imply positive weights: the coefficients `c_r` are
 signed, so an order's term can be negative with a positive shifted score.
 
@@ -83,15 +85,15 @@ signed, so an order's term can be negative with a positive shifted score.
   BF16 (7 stored mantissa bits) for their products, while the strips keep them as FP32 values whose
   products run as TF32 (10 stored mantissa bits) under JAX's default precision. No control is
   retrained on the strips, so this difference is not measured here.
-- The trial and its control both round the weights to BF16 on Mosaic kernels, but on different
-  kernels and GPUs: the trial's H100 row-shift score-bias kernels against the control's B300
+- The trials and their control all round the weights to BF16 on Mosaic kernels, but on different
+  kernels and GPUs: the trials' H100 row-shift score-bias kernels against the control's B300
   query-polynomial kernels.
 
 ## Open decision
 
-The trial decides whether the six reference-shape runs are submitted: only if its validation-best
-perplexity beats its control's 17.592 by clearly more than seed noise, taken as about 0.25% (below
-about 17.548). Once the submitted runs complete: promote the topic to its own canonical collection,
+The trials decide whether the six reference-shape runs are submitted: only if a trial's
+validation-best perplexity beats its control's 17.592 by clearly more than seed noise, taken as about
+0.25% (below about 17.548). Once the submitted runs complete: promote the topic to its own canonical collection,
 or discard it with its runs and their artifacts.
 
 Refresh the selection after the runs' scientific files change:

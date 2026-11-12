@@ -18,7 +18,7 @@ from scaffolds.transformer import acceptance
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 # The allocated runs: control, score-bias mode, and label. The reference-shape runs train on the blocked strips,
-# the trial on the Mosaic kernels.
+# the trials on the Mosaic kernels.
 STRIPS_RUNS = {
     "rb70f9e57190f": ("query", "static", "query-m8-dk64-w-decay-score-bias-static"),
     "r891870ef80e9": ("query", "query", "query-m8-dk64-w-decay-score-bias-query"),
@@ -31,7 +31,9 @@ STRIPS_RUNS = {
                       "query-m8-per-order-query-key-gate-nope-wd-score-bias-query-key"),
 }
 TRIAL = "r8dc6e147601c"
-FROZEN_RUNS = {**STRIPS_RUNS, TRIAL: ("query_l12_d640", "query", "query-m8-w-decay-l12-d640-score-bias-query")}
+TRIALS = {TRIAL: ("query_l12_d640", "query", "query-m8-w-decay-l12-d640-score-bias-query"),
+          "rb4e5457ef2a0": ("query_l12_d640", "static", "query-m8-w-decay-l12-d640-score-bias-static")}
+FROZEN_RUNS = {**STRIPS_RUNS, **TRIALS}
 BACKBONES = tuple(adapter.CONTROLS)
 REFERENCE_BACKBONES = ("query", "per_order_query_key_gate")
 CAPTURE_FIELDS = tuple(adapter.CAPTURE_POLICY)
@@ -107,12 +109,12 @@ def test_allocated_runs_are_their_controls_with_score_biases_and_capture(run_id)
     adapter.check_recipe(config)
     assert adapter.control_name(config) == name and config.model.attention_score_bias == mode
     implementation = (config.model.attention_backend, config.model.attention_blocked_implementation)
-    assert implementation == (("mosaic", "scan") if run_id == TRIAL else ("blocked", "strips"))
+    assert implementation == (("mosaic", "scan") if run_id in TRIALS else ("blocked", "strips"))
     assert {key: getattr(config.train, key) for key in CAPTURE_FIELDS} == adapter.CAPTURE_POLICY
     # The capture policy's other fields hold their defaults, so only the switch differs in the recipe. The
     # reference-shape runs' attention implementation is the blocked strips, where both of their controls trained
-    # on the Mosaic kernels; the trial keeps its control's Mosaic settings.
-    moved = (set() if run_id == TRIAL else
+    # on the Mosaic kernels; the trials keep their control's Mosaic settings.
+    moved = (set() if run_id in TRIALS else
              {"model.attention_backend", "model.attention_blocked_implementation"})
     assert scientific_differences(config, control) == {
         "model.attention_score_bias", "train.gradient_event_capture", *moved}
@@ -521,7 +523,7 @@ def test_the_pilot_must_train_on_the_runs_backend(monkeypatch, tmp_path, run_id,
 
 
 # Each run's GPU types and allocator share (the validation record's full-recipe pilots at micro-batch 16 for the
-# strips; the trial trains on the Mosaic score-bias kernels, which run only on H100).
+# strips; the trials train on the Mosaic score-bias kernels, which run only on H100).
 HARDWARE = {
     "rb70f9e57190f": (("B200", "B300", "H100"), None),
     "r891870ef80e9": (("B200", "B300", "H100"), None),
@@ -530,6 +532,7 @@ HARDWARE = {
     "rbf5d3bd6059c": (("B200", "B300", "H100"), "0.95"),
     "r75dccfcf072e": (("B200", "B300"), "0.95"),
     TRIAL: (("H100",), None),
+    "rb4e5457ef2a0": (("H100",), None),
 }
 
 
@@ -539,7 +542,7 @@ def recipe_path(run_id):
 
 @pytest.mark.parametrize("run_id", FROZEN_RUNS)
 def test_each_run_has_its_qualified_gpu_types_and_allocator_share(run_id):
-    """The trial trains on H100 alone, and of the strips runs only the gated query_key recipe (147 GiB) is kept
+    """The trials train on H100 alone, and of the strips runs only the gated query_key recipe (147 GiB) is kept
     off the H100; the gated recipes raise the allocator's share to 0.95, through the spec's runtime environment,
     which the launcher exports and acceptance records."""
     types, fraction = HARDWARE[run_id]
