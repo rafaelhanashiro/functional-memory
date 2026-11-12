@@ -1,6 +1,20 @@
 {
  "format": "score-transform-mosaic-kernels-qualification",
  "schema_version": 1,
+ "current_frozen_execution": {
+  "sha256": "c909c7efb8ba9ea384e2761bdd8f032bef2525cc722e258abf5baffb8e76b600",
+  "source_commit": "857f9006b010df87235c058c7d913c7d5d4c42b0",
+  "gpu_jobs_frozen_execution_sha256": "f09ea1f12e058b0fe5ccc9278292d372cf2a33d65e47062b42e0ba584a18808f",
+  "differences": [
+   "softplus's input (s + max(-s, 0)) + ln(1 + y) in place of max(s, 0) + ln(1 + y): the same for every finite score, NaN at s = -inf, so a causal score that overflows makes its row NaN as in the query kernels and the blocked reference",
+   "backend selection admits the transformed kernels on sm90 alone",
+   "tests: the nonfinite-score and selection CPU cases, and the GPU case of an overflowing score in three rows",
+   "the scaffold README"
+  ],
+  "unchanged_programs_against": "e2d5aac41358486f8f990aea42580a899a402f13",
+  "unchanged_programs": "the jaxprs of every family's H100 and B300 kernels at degrees 1 and 8, Q/K width 64 and both precisions (336; B300's 64 score-bias refusals alike), and the lowered Mosaic modules of the query, abs and softplus entry points' forward and VJP at degree eight on both architectures (12): identical but for query_softplus's 28 kernels and 4 modules",
+  "gpu": "no GPU has run this set; acceptance's GPU stage at launch runs tests/test_mosaic_score_transform.py (50 BF16 cases) and the query kernels' modules on the granted H100 before training, and its pilot projects again"
+ },
  "slurm_job_id": "244010",
  "node": "mastiff",
  "device": {

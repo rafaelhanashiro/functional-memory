@@ -1742,8 +1742,10 @@ control `r25fffc16c2f3` (validation-best 14.323; exp `r6a76e7fbde45` 14.257, fix
 - Kernels: the Mosaic transformed query-polynomial kernels
   (`mosaic.api.transformed_query_polynomial_attention`, family `query_softplus`), the control's query kernels
   with `softplus(s)` evaluated in their causal tiles from `ex2`/`lg2.approx` and `dS = dP p'(z) sigmoid(s)`,
-  with the control's BF16 weight products. On the blocked strips this shape would take 23–30 hours on an H100
-  PCIe. Diagnostics as above, from the blocked scan of the same kernel.
+  with the control's BF16 weight products; a causal score that overflows to `-inf` makes its row NaN, as in the
+  query kernels and the blocked reference. Backend selection admits these kernels on H100 alone (no Blackwell
+  GPU has run them), so the run and its evaluations need an H100. On the blocked strips this shape would take
+  23–30 hours on an H100 PCIe. Diagnostics as above, from the blocked scan of the same kernel.
 - Acceptance: the adapter pins `r25fffc16c2f3` (recipe SHA256 `ffa72e4d`, seed-42 fingerprint `bacacd7e`,
   200,150,806 parameters) and requires the recipe to equal it but for the transform, the zero start, capture,
   and execution locations and labels, with the control's `mosaic` and `scan`. It refuses every GPU type but
@@ -1759,6 +1761,10 @@ the run (jobs 244010 and 244157, commits `fe0c2a97` and `261dfa47`, one frozen e
 acceptance's GPU stage for this run passed (116 cases, none skipped; the transformed kernels within 2.8e-3
 relative L2 of FP64 and of the strips, the coefficient gradients within 1.1e-6 per order), the transform module
 passed again at both weight precisions (96 cases), and the query family's Mosaic GPU modules passed (187 cases).
+The current frozen execution set (`857f9006`) differs from theirs in softplus's input at `-inf` (the same for
+every finite score), backend selection's H100-only admission, tests and documentation. No GPU has run it, so
+acceptance's GPU stage at launch, which runs the transform module's 50 BF16 cases (among them an overflowing
+score) with the query kernels' modules, is its first GPU check.
 Acceptance's 20-update pilot (its own worker, with validation, diagnostics and a checkpoint) had finite losses and
 valid diagnostics, and acceptance's resume passed its audit. Job 244157 piloted the run and its control on the
 same GPU (job 244010's pilot of the run there: 3.71 s per update, 8.26 hours):
@@ -1774,9 +1780,8 @@ No H100 SXM was free: the estimate scales the control recipe's update on an H100
 that ratio. The default allocator share (59.4 GiB on an H100) holds the run. The H100 PCIe is the slower GPU type
 the run may receive, so the limit is its projection plus two hours, rounded up: 11 hours, within `standard`'s 24
 (an SXM alone would need 8); acceptance projects again on the granted GPU and refuses the allocation if that
-projection exceeds 9 hours. No Blackwell GPU ran the transformed kernels (`akita` was down, `shiba` allocated),
-so the run trains on H100 alone. Submit it from the isolated `claude/score-transforms-mosaic` worktree after
-committing the frozen execution set:
+projection exceeds 9 hours. No Blackwell GPU has run the transformed kernels, so the run trains on H100 alone.
+Submit it from the isolated `claude/score-transforms-mosaic` worktree after committing the frozen execution set:
 
 ```bash
 # H100 only. Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): drop mastiff from

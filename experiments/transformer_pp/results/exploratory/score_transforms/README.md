@@ -69,10 +69,6 @@ updates of 256 × 2,048 tokens), against the RoPE query control there:
 | `r6a76e7fbde45` | exp, RoPE | B300 | 7,500 | 14.257 |
 | `ra7ee8a4b2544` | fixed Taylor `m = 8`, RoPE | H100 | 7,500 | 14.218 |
 
-The sum-of-squares query polynomial at degree eight (`reeefbcc19abf`, 14.196) is a further comparison point;
-its record is on the branch `claude/poly-two-lines-sos`, not in this checkout, so the selection does not pin
-it.
-
 The primary is its control's recipe with the transform, the zero constant start and gradient-event capture
 (200,150,806 parameters, every initial array the control's but `b_0 = 0`). Unlike the 12-layer width-640
 runs it keeps its control's attention implementation: the Mosaic query-polynomial kernels, here their
