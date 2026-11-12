@@ -1451,9 +1451,11 @@ committing its frozen execution set, submit it on `standard` with 24 hours. The 
 only the H100 SXM node `dogo`, not the H100 PCIe node `mastiff`:
 
 ```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
+# unless another job holds that GPU.
 run=r95bfff096cd4
 sbatch --parsable --partition=standard --time=1-00:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-  --exclude=akita,shiba,collie,samoyed,doodle,terrier,mastiff --job-name="$run" \
+  --exclude=akita,shiba,collie,samoyed,doodle,terrier --job-name="$run" \
   --output="experiments/transformer_pp/runs/$run/training.log" \
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_cumulative_acceptance \
