@@ -1744,7 +1744,8 @@ sbatch --parsable --partition=long --time=12:00:00 --gres=gpu:1 --cpus-per-task=
 Added 2026-11-12. With a very negative score the degree-eight query polynomial gives a large weight (odd
 orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
 key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
-the 12-layer width-640 shape? Question, roles, decision rule and results: the
+the 12-layer width-640 shape? Softplus cleared the topic's 0.5% bar and continues at the reference shape;
+abs did not. Question, roles, decision rule, findings and diagnostics: the
 [score_transforms topic](results/exploratory/score_transforms/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
@@ -1753,10 +1754,12 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
     W(t,i) = sum_(r=0..8) c_r(x_t) z_ti^r
     o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
 
-| Run | Label | `phi(s)` | `b_0` start | Parameters |
-| --- | --- | --- | --- | ---: |
-| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 |
-| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 |
+| Run | Label | `phi(s)` | `b_0` start | Parameters | Validation-best PPL (update) | Terminal PPL | vs control | vs exp |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 | 17.488 (7,551) | 17.488 | −0.59% | −0.36% |
+| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 | 17.941 (7,551) | 17.941 | +1.98% | +2.22% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
+| `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1792,7 +1795,9 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
   transform at production precision, degree eight, 2,048 tokens, against host FP64) and the strips'
   score-bias qualification `tests/test_score_bias_strips.py`, nothing else. A skipped test fails acceptance.
 
-Home cluster: **Kennel**. One GPU per run; the two jobs have no scheduling dependency.
+Home cluster: **Kennel**. Both runs are complete, each trained on one H100 PCIe; each record holds its launch
+commit, attempts, and the artifact-root locations of its validation-best checkpoint, kept gradient-event
+states and log. One GPU per run; the two jobs have no scheduling dependency.
 
 **GPU qualification and time limit.** Two H100 PCIe GPUs of `mastiff` ran the qualification (jobs 243502 and
 243529, commits `593e7267` and `1fa151b7`, one frozen execution set;
