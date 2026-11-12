@@ -331,6 +331,10 @@ At m = 4 on the earlier QK setup:
 - Query tied fixed Taylor with cosine per-head QK normalization; with per-layer RMSNorm
   it trailed by 0.5%.
 
+Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, at the 12-layer
+width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
+([score_biases](results/exploratory/score_biases/README.md)).
+
 ## Exploratory diagnostics
 
 The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
@@ -1574,10 +1578,11 @@ scales unchanged), every order `r = 1..8` reads its own shifted score; order zer
 | query | `b_r + a_r tanh(u_r . x_t)` | `b`, `a` [12, 10, 8]; `u` [12, 10, 8, 640] | 616,320 |
 
 `b` starts at 0, `a` at 1 and `u` at 0, so every shift starts at exactly zero: each trial starts as the
-control's function, and `u` receives gradients from the first update. Nothing is drawn for these arrays,
-so every other initial array is the control's. AdamW decay 0.1 applies to `u` only, never to `b` or `a`;
-every other optimizer group, the coefficient-`W` decay and the output RMSNorm are the control's. The
-shifts are signed, and so are the coefficients: a positive shifted score does not imply a positive weight.
+control's function, and the query trial's `u` receives gradients from the first update. Nothing is drawn
+for these arrays, so every other initial array is the control's. AdamW decay 0.1 applies to `u` only,
+never to `b` or `a`; every other optimizer group, the coefficient-`W` decay and the output RMSNorm are the
+control's. The shifts are signed, and so are the coefficients: a positive shifted score does not imply a
+positive weight.
 
 | Run | Label | Mode | Parameters | Validation-best PPL (update) | Terminal PPL | vs control |
 | --- | --- | --- | ---: | ---: | ---: | ---: |

@@ -71,7 +71,7 @@ The query trial's log also holds a row for update 2,626, superseded by its resum
 trial keeps its three captured pre-update states (query 580, 608, 793; static 561, 2,831, 7,461), listed
 in its record.
 
-Learned shifts and weights on the diagnostic sequence, by order `r`:
+Learned shifts on the diagnostic sequence, by order `r`:
 
 | Quantity | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -89,9 +89,9 @@ Learned shifts and weights on the diagnostic sequence, by order `r`:
   (warmup ends at 454), fell behind by update 800, during its three largest gradient events (580, 608,
   793), and stayed 3.4–3.8% behind from update 2,000 to the end.
 - **The query shift spiked more.** It clipped 17 updates after update 600, against 2 in the static trial
-  and 2 in the control. The large early spikes are not specific to it: the static trial reached 6.25 at
-  update 561, and the control 3.40 between updates 5,501 and 6,000. All three runs clip one update between
-  7,001 and 7,500 (1.46–1.69; update 7,461 in both trials).
+  and 2 in the control. Large spikes are not specific to it: the static trial reached 6.25 at update 561
+  and the control 3.40 between updates 5,501 and 6,000. All three runs clip one update between 7,001 and
+  7,500 (1.46–1.69; update 7,461 in both trials).
 - **The static shift tied.** It was ahead by up to 4.4% through update 800, within 0.6% from update 900,
   and within 0.07% from update 3,000 to the end.
 - **The learned shifts are mostly negative.** In the query trial, orders 1–5 shift by −0.28 to −0.59 on
