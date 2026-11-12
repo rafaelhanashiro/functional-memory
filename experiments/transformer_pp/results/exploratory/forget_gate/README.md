@@ -329,14 +329,16 @@ exp below 0.5% therefore does not separate the degree from the implementation; a
   10 clipped, m = 4 9.2, 52.7 and 3.5 with 24. Between updates 101 and 2,500 m = 12's window maxima
   stay at or below 12.2 (update 1,403), and after 4,000 at or below 4.4. The series' two other window
   maxima above 100 came earlier: m = 8 199.0 at updates 801–900 and m = 4 169.6 at 501–600. With one
-  seed per degree, the spikes cannot be tied to the gap.
+  seed per degree, the spikes cannot be tied to the gap; other gated polynomial runs spiked as high
+  as 1,425 ([gated_gradient_spikes](../gated_gradient_spikes/README.md)).
 - **The long ranges spread over the top orders.** At update 7,570 the median half-life over the 210
   layer-heads is 0.47–1.19 tokens for orders 0–6, 2.31–2.67 for orders 7–9 (13, 26 and 34 heads
   above 100 tokens) and 3.81–5.79 for orders 10–12 (43, 42 and 50 heads above 100).
 - **Cumulative per-order gates still beat query-distance ones, by less.** 13.665 is 0.61% below the
-  per-order query gates at m = 12 (`rfe140c073b2f`, 13.750, in
-  [query_distance_decay](../query_distance_decay/README.md)), both on the Mosaic kernels; the
-  0.90% and 1.07% margins at m = 4 and 8 compare the strips with Mosaic.
+  per-order query gates at m = 12 (`rfe140c073b2f`, 13.750) and 0.12% below the per-order query–key
+  gates (`rc2f9273c49cc`, 13.681), all on the Mosaic kernels (in
+  [query_distance_decay](../query_distance_decay/README.md)); the 0.90% and 1.07% margins at m = 4
+  and 8 compare the strips with Mosaic.
 - **Cost:** 8.68 s per update on the H100 PCIe (median of its 500-update windows; the pilot measured
   7.82 s, and the validation record benchmarks 7.70 s against 25.11 s on the strips), 18.2 hours of
   training.
@@ -346,5 +348,5 @@ exp below 0.5% therefore does not separate the degree from the implementation; a
 Determine whether combining FoX and PaTH improves on either alone with projection
 weight decay. Per-order gates bring the degree-eight query polynomial level with FoX exp; degree
 twelve's best is 0.24% above degree eight and 0.27% above FoX exp, inside the 0.5% the
-implementation change can explain. Decide whether to separate degree from implementation (a second seed, or degree
-eight on the Mosaic kernels), then promote this question or discard it.
+implementation change can explain. Decide whether to separate degree from implementation (a second
+seed, or degree eight on the Mosaic kernels), then promote this question or discard it.
