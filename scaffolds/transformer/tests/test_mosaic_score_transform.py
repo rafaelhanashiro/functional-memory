@@ -12,7 +12,8 @@ wide (N(0, 9): a sixth below -3, where softplus is close to e^s, and some beyond
 N(0, 1)/r!. At the production context (2,048 tokens, d_K = 64, degree eight) the production dispatch,
 ``attention_core`` on backend mosaic, is also compared with the blocked backend's causal strips at production
 precision, the computation the 12-layer width-640 transform runs trained on (``test_score_transform_strips``
-qualifies them within 1.2 times BF16's rounding floor of FP64), under the same bounds.
+qualifies them within 1.2 times BF16's rounding floor of FP64), under the same bounds. A causal score that
+overflows FP32 to -inf makes its row NaN in the kernels as in the strips.
 """
 from functools import partial
 import math
@@ -242,6 +243,34 @@ def test_nonfinite_weight_poisons_its_row_even_with_zero_values(transform):
     finite = np.ones(output.shape[:3], bool)
     finite[0, 100, 1] = False
     assert np.isfinite(output[finite]).all()
+
+
+@pytest.mark.parametrize("transform", TRANSFORMS)
+def test_an_overflowing_score_poisons_its_row_as_in_the_strips(transform):
+    """A causal pair whose FP32 score overflows to -inf (q_t = 2^100 e_j and k_i = -2^100 e_j, in a channel no other
+    token of the head uses) makes its row NaN, as the query kernels and the blocked reference make it: softplus takes
+    -inf to a NaN input, not to its limit 0, which would give the pair the finite weight c_0. One such pair in each
+    of three rows (on the diagonal, far below it, and the last row; two heads); every other row is finite and
+    bitwise the run's without the overflowing entries, and the causal strips make the same rows NaN."""
+    (q, k, v, c), _ = _inputs(8, 64, "unit")
+    pairs = ((100, 100, 0, 0), (300, 37, 1, 1), (511, 450, 0, 2))  # query, key, head, channel
+    for _, _, head, channel in pairs:
+        q, k = q.at[:, :, head, channel].set(0), k.at[:, :, head, channel].set(0)
+    poisoned_q, poisoned_k = q, k
+    for query, key, head, channel in pairs:
+        poisoned_q = poisoned_q.at[0, query, head, channel].set(2.0 ** 100)
+        poisoned_k = poisoned_k.at[0, key, head, channel].set(-(2.0 ** 100))
+    attend = jax.jit(_mosaic(transform))
+    clean = np.asarray(attend(q, k, v, c).astype(jnp.float32))
+    poisoned = np.asarray(attend(poisoned_q, poisoned_k, v, c).astype(jnp.float32))
+    expected = np.zeros(poisoned.shape[:3], bool)
+    for query, _, head, _ in pairs:
+        expected[0, query, head] = True
+    np.testing.assert_array_equal(np.isnan(poisoned).all(-1), expected)
+    assert np.isfinite(clean).all() and np.isfinite(poisoned[~expected]).all()
+    np.testing.assert_array_equal(poisoned[~expected], clean[~expected])
+    strips = np.asarray(jax.jit(_strips(transform))(poisoned_q, poisoned_k, v, c).astype(jnp.float32))
+    np.testing.assert_array_equal(np.isnan(strips).all(-1), expected)
 
 
 @pytest.mark.parametrize("transform", TRANSFORMS)

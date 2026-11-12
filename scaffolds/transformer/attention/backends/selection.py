@@ -41,8 +41,8 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         # Nothing may resolve them to a kernel that ignores the biases.
         raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
                          f"{request!r} never selects them")
-    if getattr(model_config, "attention_score_transform", "identity") != "identity" and request not in (
-            "blocked", "mosaic"):
+    transformed = getattr(model_config, "attention_score_transform", "identity") != "identity"
+    if transformed and request not in ("blocked", "mosaic"):
         # Nor may a transformed polynomial input reach a kernel that evaluates the untransformed polynomial.
         raise ValueError(f"A score transform runs on an explicit blocked or mosaic backend; {request!r} never "
                          "selects it")
@@ -115,6 +115,9 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
             (capability not in (9, 10), f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x"),
             (score_bias and capability != 9,
              f"Mosaic score-bias attention is qualified on H100 (sm90) only, got sm{capability}x"),
+            # B300's transformed query-polynomial kernels lower but no Blackwell GPU has run them.
+            (transformed and capability != 9,
+             f"Mosaic transformed query-polynomial attention is qualified on H100 (sm90) only, got sm{capability}x"),
             (length % multiple, f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}"),
         ) if failed]
         if not problems:

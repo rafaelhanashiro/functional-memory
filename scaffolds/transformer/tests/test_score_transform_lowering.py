@@ -9,8 +9,9 @@ architectures' entry points lower forward and with every gradient; the entry poi
 transforms and the operands the query kernels refuse; and the tile mathematics of ``common`` (the functions the
 kernels call on each tile) on whole causal matrices in FP64, against explicit all-pairs references, with the
 kernels' masking of a tile crossing the diagonal: very negative and very positive scores, exact zeros, masked
-entries holding huge scores, and special values. The kernels' numerics on GPUs are qualified by
-``tests/test_mosaic_score_transform.py``.
+entries holding huge scores, and special values; a nonfinite causal score (-inf from an overflowed dot product,
++inf, NaN) makes its row NaN, as the blocked reference does; and backend selection admits the transformed kernels
+on H100 alone. The kernels' numerics on GPUs are qualified by ``tests/test_mosaic_score_transform.py``.
 """
 import math
 
@@ -240,8 +241,8 @@ def test_tile_mathematics_match_explicit_float64(transform, degree, case):
 @pytest.mark.parametrize("dtype", (jnp.float32, jnp.float64), ids=("fp32", "fp64"))
 def test_transform_values_and_derivatives_at_special_scores(dtype):
     """softplus(s) and sigmoid(s), |s| and sign(s): exactly 1/2 at s = 0 for softplus within one rounding, and
-    abs's derivative exactly 0 there (attention/score_transform.py's convention); limits at +-inf; zero once
-    e^s underflows; NaN for NaN."""
+    abs's derivative exactly 0 there (attention/score_transform.py's convention); limits at +inf; zero once
+    e^s underflows; NaN for NaN, and softplus's input NaN at -inf (not its limit 0, a finite weight)."""
     with jax.enable_x64(dtype == jnp.float64):
         special = jnp.asarray([0., -0., 1e-30, -1e-30, 1., -1., 4.158, -4.158, 30., -30., 88., -88., 104., -104., 1e30,
                                -1e30, jnp.inf, -jnp.inf, jnp.nan], dtype)
@@ -261,7 +262,7 @@ def test_transform_values_and_derivatives_at_special_scores(dtype):
     np.testing.assert_allclose(z[finite], want_z, rtol=rtol, atol=tiny)
     np.testing.assert_allclose(slope[finite], want_slope, rtol=max(rtol, 1e-12), atol=tiny)
     assert abs(slope[0] - .5) <= unit and abs(slope[1] - .5) <= unit and z[0] == z[1]
-    assert z[-3] == np.inf and slope[-3] == 1. and z[-2] == 0. and slope[-2] == 0.
+    assert z[-3] == np.inf and slope[-3] == 1. and np.isnan(z[-2]) and slope[-2] == 0.
     assert np.isnan(z[-1]) and np.isnan(slope[-1])
     assert (z[finite] >= 0).all() and (slope[finite] >= 0).all() and (slope[finite] <= 1).all()
     # Far below zero e^s (and so both values) underflows to zero rather than going negative or NaN.
@@ -269,6 +270,55 @@ def test_transform_values_and_derivatives_at_special_scores(dtype):
     np.testing.assert_array_equal(z_abs[:-1], np.abs(s[:-1]))
     np.testing.assert_array_equal(sign[:-1], np.sign(s[:-1]))
     assert sign[0] == 0. and sign[1] == 0. and np.isnan(z_abs[-1])
+
+
+@pytest.mark.parametrize("score", (-np.inf, np.inf, np.nan), ids=("-inf", "+inf", "nan"))
+@pytest.mark.parametrize("transform", ("identity", *TRANSFORMS))
+def test_a_nonfinite_causal_score_makes_its_row_nan_as_in_the_blocked_reference(transform, score):
+    """A causal score of -inf (an FP32 dot product that overflowed), +inf or NaN makes its row NaN in the tile
+    functions every kernel calls (weights, then the query family's per-row statistic and finish), for the query
+    family and both transforms, and the pair's score gradient and its row's coefficient sums of orders >= 1 are
+    nonfinite; every other row stays finite, and a masked entry holding the same score (the kernels replace it by
+    zero) changes nothing. The blocked scan and strips, given q.k overflowing to -inf or +inf at the same pair,
+    make the same row NaN."""
+    from scaffolds.transformer.attention.core import attention_core
+
+    family = {"identity": common.QUERY, **FAMILIES}[transform]
+    rng = np.random.default_rng(3)
+    time, degree, row, column = 8, 2, 5, 2
+    causal = np.tril(np.ones((time, time), bool))
+    s = rng.standard_normal((time, time))
+    s[row, column] = s[1, 3] = score  # (1, 3) is a masked entry
+    tile = jnp.asarray(np.where(causal, s, 0.), jnp.float32)
+    dp = jnp.asarray(np.where(causal, rng.standard_normal((time, time)), 0.), jnp.float32)
+    c = rng.standard_normal((degree + 1, time))
+    rows = [jnp.broadcast_to(jnp.asarray(x, jnp.float32)[:, None], (time, time)) for x in c]
+    weights = jnp.where(causal, common.forward_weights(family, degree, tile, rows), 0.)
+    statistic = common.forward_statistic(family, weights).sum(axis=1)
+    output = np.asarray(common.forward_finish(family, degree, jnp.ones((time, 4), jnp.float32), statistic)[0])
+    np.testing.assert_array_equal(np.isnan(output).all(axis=1), np.arange(time) == row)
+    assert np.isfinite(np.delete(output, row, axis=0)).all()
+    ds, sums = common.dq_terms(family, degree, tile, dp, rows)
+    ds, sums = np.asarray(ds), np.asarray(jnp.stack(sums))
+    others = np.ones((time, time), bool)
+    others[row, column] = False
+    assert not np.isfinite(ds[row, column]) and np.isfinite(ds[others]).all()
+    assert not np.isfinite(sums[1:, row]).any() and np.isfinite(np.delete(sums, row, axis=1)).all()
+    if np.isnan(score):
+        return
+    # One channel that only this query and key use: q.k = +-2^200 overflows FP32 at this pair alone.
+    q = np.concatenate([np.zeros((1, time, 1, 1)), rng.standard_normal((1, time, 1, 7))], axis=-1)
+    k = np.concatenate([np.zeros((1, time, 1, 1)), rng.standard_normal((1, time, 1, 7))], axis=-1)
+    q[0, row, 0, 0], k[0, column, 0, 0] = 2. ** 100, np.sign(score) * 2. ** 100
+    v = rng.standard_normal((1, time, 1, 4))
+    coefficients = c.T[None, :, None, :]
+    for implementation in ("scan", "strips"):
+        reference = attention_core(
+            *(jnp.asarray(x, jnp.float32) for x in (q, k, v)), backend="blocked", blocked_implementation=implementation,
+            attention_degree=degree, attention_normalization=False,
+            query_polynomial_coefficients=jnp.asarray(coefficients, jnp.float32),
+            attention_coefficient_activation="tanh", score_transform=transform)
+        np.testing.assert_array_equal(np.isnan(np.asarray(reference[0, :, 0])).all(axis=-1), np.arange(time) == row)
 
 
 # Dispatch: the model, attention_core and query_polynomial_attention reach the transformed kernels on backend
@@ -340,12 +390,56 @@ def test_mosaic_dispatch_reaches_the_transformed_kernels(transform, monkeypatch)
             "score_transform_decreasing_count", "query_coefficient_mean"} <= set(diagnostics)
 
 
+def _mosaic_model(transform):
+    """A two-layer recipe of the tanh query polynomial at degree eight with the transform, on backend mosaic."""
+    from scaffolds.transformer.configs import ModelConfig
+
+    return ModelConfig(
+        vocab_size=32, max_seq_len=128, num_layers=2, hidden_size=32, num_heads=2, num_kv_heads=2, qk_head_dim=64,
+        value_head_dim=64, intermediate_size=64, attention_backend="mosaic", attention_degree=8,
+        attention_normalization=False, attention_coefficients="learned", attention_coefficient_sharing="per_head",
+        attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
+        attention_coefficient_amplitude_initial=0., attention_coefficient_projection_initial_std=.2,
+        attention_coefficient_amplitude_scale="factorial", attention_coefficient_scale="factorial",
+        attention_output_scaling="head_rms_norm", qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
+        qk_norm_head_scale=True, initialization="transformer_truncated_reference",
+        attention_score_transform=transform,
+        attention_coefficient_constant_initial=0. if transform == "softplus" else None)
+
+
+@pytest.mark.parametrize("capability", (9, 10))
+@pytest.mark.parametrize("transform", TRANSFORMS)
+def test_backend_selection_admits_the_transformed_kernels_on_h100_alone(transform, capability, monkeypatch):
+    """No Blackwell GPU has run the transformed kernels, so an explicit mosaic backend resolves a transformed recipe
+    on an H100 (sm90) and refuses it with the reason on a B200 or B300 (sm10x), as it refuses the score biases;
+    there the untransformed recipe still resolves to mosaic, and the blocked strips still run the transform."""
+    from dataclasses import replace
+
+    from scaffolds.transformer.attention.backends import selection
+
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    model = _mosaic_model(transform)
+
+    def resolve(model):
+        return selection.resolve_attention_backend(model, dtype="bfloat16", sequence_length=256)
+
+    if capability == 9:
+        assert resolve(model) == "mosaic"
+    else:
+        with pytest.raises(ValueError, match=r"transformed query-polynomial attention is qualified on H100 \(sm90\) "
+                                             r"only, got sm10x"):
+            resolve(model)
+    assert resolve(replace(model, attention_score_transform="identity")) == "mosaic"
+    assert resolve(replace(model, attention_backend="blocked", attention_blocked_implementation="strips")) == "blocked"
+
+
 @pytest.mark.parametrize("transform", TRANSFORMS)
 def test_model_layers_train_on_the_transformed_kernels(transform, monkeypatch):
     """A two-layer model on backend mosaic (resolved as on an H100) reaches the transformed kernels in every layer
     of its loss and gradient program, and its attention identity names them."""
     from scaffolds.transformer.attention.backends import selection
-    from scaffolds.transformer.configs import Config, ModelConfig, validate_config
+    from scaffolds.transformer.configs import Config, validate_config
     from scaffolds.transformer.training import loop
     from scaffolds.transformer.training.diagnostics import attention_identity
     from scaffolds.transformer.training.state import create_state
@@ -358,17 +452,7 @@ def test_model_layers_train_on_the_transformed_kernels(transform, monkeypatch):
     transformed = api.transformed_query_polynomial_attention
     monkeypatch.setattr(api, "transformed_query_polynomial_attention",
                         lambda *a, **kw: calls.append(kw["transform"]) or transformed(*a, **kw))
-    model = ModelConfig(
-        vocab_size=32, max_seq_len=128, num_layers=2, hidden_size=32, num_heads=2, num_kv_heads=2, qk_head_dim=64,
-        value_head_dim=64, intermediate_size=64, attention_backend="mosaic", attention_degree=8,
-        attention_normalization=False, attention_coefficients="learned", attention_coefficient_sharing="per_head",
-        attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
-        attention_coefficient_amplitude_initial=0., attention_coefficient_projection_initial_std=.2,
-        attention_coefficient_amplitude_scale="factorial", attention_coefficient_scale="factorial",
-        attention_output_scaling="head_rms_norm", qk_norm=True, qk_norm_type="rms_norm", qk_norm_sharing="per_layer",
-        qk_norm_head_scale=True, initialization="transformer_truncated_reference",
-        attention_score_transform=transform,
-        attention_coefficient_constant_initial=0. if transform == "softplus" else None)
+    model = _mosaic_model(transform)
     config = Config(model=model)
     config.data.sequence_length, config.data.synthetic_vocab_size = 129, 32
     config.optim.total_steps, config.optim.warmup_steps = 4, 0

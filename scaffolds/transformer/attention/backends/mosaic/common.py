@@ -181,7 +181,8 @@ def polynomial_and_derivative(s, coefficients):
 #                 vectors of query. dS = G p'(z) phi'(s), phi' = sigmoid(s) (1/2 at s = 0) or sign(s) (0 at
 #                 s = 0), and the dQ sums are dc_r = sum_i G z^r (``transformed_score``). Masked entries
 #                 evaluate phi at their zero score, finite for finite coefficients, and the kernels zero their
-#                 weights and score gradients as for query, so these families need no ``Pair``.
+#                 weights and score gradients as for query, so these families need no ``Pair``. A nonfinite
+#                 causal score gives a nonfinite z (softplus's -inf too), so its row is NaN as for query.
 TAYLOR, QUERY = "taylor", "query"
 QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
 TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS)
@@ -331,13 +332,16 @@ def transformed_score(family, s, *, slope=False):
     the cubic series of ln(1 + y), relative error < 1e-6, replaces the approximate log, whose absolute error
     would dominate small y), and sigmoid(s) = e^(min(s, 0) - ln(1 + y)) from one more exp2: 1/2 at s = 0, and
     far below zero e^s to the FP32 rounding of its exponent (about 6e-8 |s| relative), zero once that
-    underflows. Abs: z = |s| and sign(s), 0 at s = 0. Finite for every finite score; a NaN score gives NaN."""
+    underflows. Abs: z = |s| and sign(s), 0 at s = 0. z is finite for every finite score and nonfinite for every
+    nonfinite one: +inf at +inf, NaN at NaN, and NaN at -inf, where softplus's limit 0 would give the pair the
+    finite weight c_0. A causal score that overflowed therefore makes its row NaN, as for query and the blocked
+    reference."""
     if family == QUERY_ABS:
         z = jnp.abs(s)
         return z, (jnp.where(s > 0.0, 1.0, 0.0) - jnp.where(s < 0.0, 1.0, 0.0) if slope else None)
     y = jnp.exp2(jnp.abs(s) * -LOG2E)
     log1p = jnp.where(y < _SERIES, y * (1.0 - y * (0.5 - y * (1.0 / 3.0))), jnp.log(1.0 + y))
-    z = jnp.maximum(s, 0.0) + log1p
+    z = (s + jnp.maximum(-s, 0.0)) + log1p  # s + max(-s, 0) is max(s, 0) exactly for finite s, NaN at s = -inf
     return z, (jnp.exp2((jnp.minimum(s, 0.0) - log1p) * LOG2E) if slope else None)
 
 
