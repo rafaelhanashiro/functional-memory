@@ -614,6 +614,113 @@ JAX_PLATFORMS=cuda "$PY" -m $QT pilot "${Q[@]}" --no-references
 JAX_PLATFORMS=cuda "$PY" -m $QT resume "${Q[@]}"
 ```
 
+### Per-order cumulative gates on Mosaic (2026-11-11)
+
+`attention_backend: mosaic` runs per-order cumulative query gates on H100's Mosaic kernels, family
+`per_order_cumulative_decay` (`api.per_order_cumulative_decay_attention`;
+[README](../README.md#forget-gate)). Each causal tile forms order r's FP32 difference
+`L_tr - L_ir` before scaling it to base 2; the dQ kernel sums `dc_r`, the dK/dV kernel sums `G W_r`
+over each key's queries, and `dL_r = c_r dc_r` minus that sum. B300 refuses the family before
+tracing a kernel, and `auto` never selects it.
+
+On CPU, the 41 checks of `tests/test_mosaic_per_order_cumulative.py` and the 123 of
+`tests/test_per_order_cumulative.py` passed: tile mathematics against FP64 at degrees 1, 4 and 12
+(sums near -3,000 included), lowering in exactly the counted shared memory (at degree 12 and
+`d_K = 64`, 125,040 forward, 95,312 dQ and 95,280 dK/dV bytes of 232,448; one byte less fails), the
+entry point's operands, refusals and gradient assembly, dispatch, recipe rules, and acceptance
+selection. Mutations that scale each sum before subtracting, drop the masked-query guard, flip
+`dL`'s sign, or drop the nonfinite-to-NaN step fail 6, 1, 2 and 2 checks. Existing mechanisms are
+unchanged against `ea40604b`: identical jaxprs, kernel bodies included, for 341 programs (every
+existing Mosaic family's forward and VJP on H100 and B300 at degrees 1-12 and widths 8-128, the
+query-polynomial dispatch on the scan, the strips and Mosaic, `attention_core`'s gates, and eight
+small models' losses and gradients); identical support predicates over degrees 0-14, every width,
+and 128-8,192 tokens; and identical validation, recipe, attention identity, acceptance selection,
+Mosaic test options and parameter count for all 456 run recipes (399 valid). Only
+`mosaic_decay_supported()` changes, to true, for the blocked per-order cumulative recipes
+`r319b83140040` and `rf8fc9ab2cecc`, whose backend stays blocked.
+
+GPU checks ran on one H100 PCIe (`mastiff`) with the locked CUDA 12.9 environment (nvcc 12.9.86,
+cuBLAS 12.9.2.10, cuDNN 9.22), JAX 0.10.0 and driver 560.35.05; H100 SXM (`dogo`) was reserved.
+The kernel code is identical at the three commits. Every check passed, none skipped:
+
+| `-m gpu` module | Passed | Job, commit |
+| --- | ---: | --- |
+| `test_mosaic_per_order_cumulative.py` | 31 | 243152, `514db91b` |
+| `test_per_order_decay.py` | 24 | 243152, `514db91b` |
+| `test_endpoint_decay.py` | 30 | 243168, `db2ac208` |
+| `test_input_free_gate.py` | 8 | 243168, `db2ac208` |
+| `test_mosaic_query.py` | 79 | 243168, `db2ac208` |
+| `test_mosaic_repeatability.py` | 6 | 243168, `db2ac208` |
+| `test_per_order_cumulative.py` | 3 | 243168, `db2ac208` |
+
+**Production context.** [`per_order_cumulative_context.py`](per_order_cumulative_context.py)
+(job 243189, commit `f7500a94`) runs one micro-batch of the degree-twelve recipe's attention,
+[16, 2048, 14, 64] in BF16, through `attention_core` on Mosaic and on the causal strips, against
+FP64 (the test oracle's formulas evaluated on the GPU; 3e-15 from the host oracle on one head).
+Q and K rows have unit RMS (QK RMSNorm's scale) and the coefficients are near Taylor. L comes from
+the recipe's gate at initialization, or from trained-like gates: per head and order a mean
+`|log alpha|` log-uniform on [1e-3, 70] with log-normal token spread, the range of
+`rf8fc9ab2cecc`'s final per-order gates. Relative L2 × 1e3 of the output and the Q, K and V
+gradients:
+
+| Gates, scores | Lowest L | Mosaic − strips | Mosaic − FP64 | Strips − FP64 | BF16 floor |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Initialization, unit scale | -2.4e3 | 2.62-2.65 | 2.34 | 1.67 | 1.66 |
+| Trained, unit scale | -1.6e5 | 2.60-2.62 | 2.34-2.35 | 1.67 | 1.66 |
+| Trained, Q doubled | -1.6e5 | 2.74-2.82 | 2.32-2.35 | 1.67-1.68 | 1.65-1.67 |
+
+Mosaic sits at 1.39-1.42× the BF16 rounding floor, the level of every Mosaic query family with
+BF16 weights (accuracy table below), and the strips at 1.01×. On the last case H100's per-order
+query-distance kernels, given the same per-token `log alpha`, differ from the strips by
+2.71-2.76e-3. The FP32 coefficient and log-decay gradients agree with FP64 within 1.3e-6 (Mosaic)
+and 1.5e-6 (strips) order by order, the log-decay gradient measured against the larger of its norm
+and `c dc`'s, and with each other within 6.8e-7. Every output and gradient is finite.
+
+**Speed** with [`benchmarks/benchmark_decay.py`](../benchmarks/benchmark_decay.py) on the same
+H100 PCIe, degree 12, 16 sequences of 2,048 tokens, 14 heads, widths 64; milliseconds, each kernel
+called alone (job 243189) and the jitted attention forward and backward (job 243168):
+
+| Family | Forward | dQ | dK/dV | Attention, forward + backward |
+| --- | ---: | ---: | ---: | ---: |
+| Per-order query distance, Mosaic | 3.12 | 8.69 | 6.43 | 15.58 |
+| Per-order cumulative, Mosaic | 3.40 | 5.83 | 9.63 | 15.68 |
+| Per-order cumulative, causal strips | | | | 74.74 |
+
+Complete updates (16 micro-batches of 16 × 2,049 synthetic tokens and AdamW, median of five after
+two warm-up updates, each recipe in its own process; job 243168):
+
+| Recipe | Backend | s/update | Allocator peak | Compile |
+| --- | --- | ---: | ---: | ---: |
+| `r95bfff096cd4`, per-order cumulative, degree 12 | Mosaic | 7.70 | 29.1 GiB | 37 s |
+| `r95bfff096cd4` | causal strips | 25.11 | 33.3 GiB | 128 s |
+| `rfe140c073b2f`, per-order query distance, degree 12 | Mosaic | 7.62 | 28.4 GiB | 37 s |
+| `r20fe6fe864bc`, per-order query distance, degree 8 | Mosaic | 5.86 | 27.8 GiB | 36 s |
+
+The seven benchmark updates' losses agree within 1e-5 between Mosaic and the strips.
+`rfe140c073b2f` trained at 5.15 s per update on H100 SXM (median of its validation windows) and
+`r20fe6fe864bc` at 5.70 s on H100 PCIe, 0.97 of its benchmark. `r95bfff096cd4`'s update takes
+1.06% longer than `rfe140c073b2f`'s, so it projects to 5.2 s per update on SXM, 10.9 hours for
+7,570 updates, and to 7.5-7.7 s on PCIe, 15.8-16.2 hours. It trained at 8.68 s per update on H100
+PCIe (job 243318, median of its 500-update validation windows), 1.13 times its benchmark. Records:
+[runs/per-order-cumulative-mosaic/](runs/per-order-cumulative-mosaic/).
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m "not gpu" \
+  scaffolds/transformer/tests/test_mosaic_per_order_cumulative.py \
+  scaffolds/transformer/tests/test_per_order_cumulative.py
+# In one H100 allocation with its environment's python as $PY, from the worktree root:
+$PY -m pytest -q -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu \
+  scaffolds/transformer/tests/test_mosaic_per_order_cumulative.py  # and the modules above
+PYTHONPATH=$PWD $PY scaffolds/transformer/validation/per_order_cumulative_context.py --output context.json
+$PY -m scaffolds.transformer.benchmarks.benchmark_decay kernels --degree 12 \
+  --families per_order_query_decay per_order_cumulative_decay --output kernels.json
+$PY -m scaffolds.transformer.benchmarks.benchmark_decay attention --degree 12 \
+  --families per_order_query_decay per_order_cumulative_decay --output attention.json
+$PY -m scaffolds.transformer.benchmarks.benchmark_decay update \
+  experiments/transformer_pp/runs/r95bfff096cd4/config.yaml --output update.json  # --backend blocked: strips
+```
+
 ### Query-key gates on softmax and the exponential (2026-11-10)
 
 `model.attention_forget_gate_conditioning: query_key` now applies to the query-distance gate of

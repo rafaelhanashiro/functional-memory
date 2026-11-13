@@ -11,7 +11,8 @@ returns dQ and, for families with per-query sums, those sums [n, batch, heads, t
 ``dkv`` returns dK and dV. Callers validate shapes; ``scale`` is 1 / sqrt(d_K) for the
 unpadded width. Decay families also take per-key FP32 ``key_vectors`` [n, batch, heads, time]
 (streamed with each K tile, or loaded once with a CTA's keys in ``dkv``), see the distance
-t-i in every tile, and ``dkv`` also returns their per-key sums [n, batch, heads, time].
+t-i in every tile (the per-order cumulative family reads each endpoint's own sums instead),
+and ``dkv`` also returns their per-key sums [n, batch, heads, time].
 Families with per-head scalars take ``head_constants`` [heads, width] FP32. Per-order
 families form dV and dK together after S and dP, evaluating each order's decay once.
 Score-bias families (``common.accumulates``) add their per-order dQ and dK sums directly to
@@ -35,13 +36,13 @@ WGS = 2
 def _pair(family, shape, offset, keys, causal, *, transposed=False, heads=()):
     """``common.Pair`` of a decay or score-bias family's tile, else None: for decay families the
     FP32 query-minus-key distance of each entry, from the tile's loop-invariant local pattern plus
-    ``offset`` (the distance of its first entry); score biases without a gate need no distance.
-    Transposed tiles hold keys in rows; ``keys`` are broadcast per-key vectors and ``heads``
-    per-head scalars."""
+    ``offset`` (the distance of its first entry); score biases without a gate and the cumulative
+    family need no distance. Transposed tiles hold keys in rows; ``keys`` are broadcast per-key
+    vectors and ``heads`` per-head scalars."""
     if not common.has_pair(family):
         return None
     distance = None
-    if family in common.DECAY_FAMILIES:
+    if family in common.DECAY_FAMILIES and family != common.PER_ORDER_CUMULATIVE_DECAY:
         rows, cols = (plgpu.broadcasted_iota(jnp.float32, shape, d, layout=L) for d in (0, 1))
         local = cols - rows if transposed else rows - cols
         distance = local + offset.astype(jnp.float32)
