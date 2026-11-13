@@ -22,8 +22,12 @@ CHANGES = {
                            attention_coefficient_amplitude_scale="none"),
     "hermite": dict(attention_coefficient_initialization="hermite"),
 }
-# A sum-of-squares run at degree twelve copies the query run of that degree.
-DEGREE_PARTNERS = {("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
+# A sum-of-squares run at degree twelve copies the query run of that degree. Degree sixteen, beyond
+# the Mosaic kernels, copies the degree-twelve sum-of-squares run on the blocked backend's strips.
+DEGREE_PARTNERS = {("sum_of_squares", 16): ("r3d52b7ab43d1", "9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa"),
+                   ("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
+DEGREE_CHANGES = {("sum_of_squares", 16): dict(attention_degree=16, attention_backend="blocked",
+                                              attention_blocked_implementation="strips")}
 PATH_FIELDS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode")
 
 
@@ -51,6 +55,7 @@ def check_recipe(config):
     name = form(config)
     expected = config_to_dict(replace(partner_config(name, config.model.attention_degree)))
     expected["model"].update(CHANGES[name])
+    expected["model"].update(DEGREE_CHANGES.get((name, config.model.attention_degree), {}))
     actual = config_to_dict(config)
     if name == "static_gate":
         if config.model.attention_degree not in (4, 8):
