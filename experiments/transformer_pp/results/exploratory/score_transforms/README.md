@@ -110,6 +110,8 @@ updates of 256 × 2,048 tokens), against the RoPE query control there:
 | --- | --- | --- | --- | --- |
 | Primary | `ra3b54e2489f8` | `query-m8-dk64-w-decay-softplus-input` | softplus, `c_0` from 0 | Kennel |
 | Control | `r25fffc16c2f3` | `query-m8-dk64-w-decay` | `s` | Kennel |
+| Primary, `m = 12` | `r9eb845aae5bb` | `query-m12-dk64-w-decay-softplus-input` | softplus, `c_0` from 0 | Kennel |
+| Control, `m = 12` | `r0fceea0627c8` | `query-m12-dk64-w-decay` (validation-best 14.226) | `s` | Kennel |
 | Reference | `r6a76e7fbde45` | `exp-head-scale` | – (exp) | Kennel |
 | Reference | `ra7ee8a4b2544` | `fixed-m8-head-scale` | `s`, fixed Taylor `m = 8` | Kennel |
 
@@ -143,12 +145,12 @@ Recipe, acceptance checks and launch command:
 ## Open decision
 
 A primary counts as a win only if its validation-best perplexity beats its control's by at least 0.5%
-(17.504 or below against 17.592 at the 12-layer width-640 shape; 14.251 or below against 14.323 at the
-reference shape). Softplus (17.488) cleared it at the 12-layer width-640 shape and continues at the
-reference shape; abs (17.941) did not and gets no further runs. The reference-shape primary is also
-compared with exp (14.257) and fixed Taylor at degree eight (14.218). Once the reference-shape run
-completes: promote the topic to its own canonical collection, or discard it with its runs and their
-artifacts.
+(17.504 or below against 17.592 at the 12-layer width-640 shape; at the reference shape 14.251 or below against
+14.323 at degree eight and 14.155 or below against 14.226 at degree twelve). Softplus (17.488) cleared it at the
+12-layer width-640 shape and continues at the reference shape; abs (17.941) did not and gets no further runs.
+The reference-shape primaries are also compared with exp (14.257) and with fixed Taylor at their degree (14.218
+at eight, 14.309 at twelve). Once the reference-shape runs complete: promote the topic to its own canonical
+collection, or discard it with its runs and their artifacts.
 
 Refresh the selection after the runs' scientific files change:
 

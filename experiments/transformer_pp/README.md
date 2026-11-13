@@ -1834,6 +1834,32 @@ sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-t
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
 
+### Reference shape: softplus at degree twelve
+
+Added 2026-11-12 at the user's request: `r9eb845aae5bb` (`query-m12-dk64-w-decay-softplus-input`), the softplus
+run at degree twelve, against the RoPE query control at that degree, `r0fceea0627c8` (validation-best 14.226;
+exp 14.257, fixed Taylor at degree twelve 14.309, sum of squares at degree twelve 14.165).
+
+- Recipe: `ra3b54e2489f8`'s with `attention_degree: 12`, so the control's with the transform, the zero
+  constant start and gradient-event capture. 200,905,126 parameters; every initial array is the control's but
+  `b_0 = 0`.
+- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) selects the control by depth,
+  width, degree and update count and pins `r0fceea0627c8` (recipe SHA256 `785e3530`, seed-42 fingerprint
+  `9ece0056`, 200,905,126 parameters); otherwise as for the degree-eight run. The transformed kernels' GPU
+  module covers degree twelve, and the kernels run on H100 alone.
+- Time limit: 13 hours, the degree-eight run's 8.3 hours on an H100 PCIe with room for the larger degree, plus
+  acceptance's two-hour reserve. It was submitted to take the degree-eight run's H100 when that job ends:
+
+```bash
+run=r9eb845aae5bb
+sbatch --parsable --partition=standard --time=13:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,shiba,dogo,collie,samoyed,doodle,terrier --dependency=afterany:<the degree-eight job> \
+  --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+```
+
 ## Coefficient forms and the degree-twelve Taylor control
 
 Five runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
@@ -1890,4 +1916,61 @@ submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-
 # Degree twelve, from claude/poly-two-lines-sos, on long with --gres=gpu:1 and GPU types B300,H100:
 # submit r3d52b7ab43d1 coefficient_forms_acceptance
 submit r6adefb42f443 coefficient_forms_acceptance
+```
+
+## The 12-layer width-640 shape at the reference token count
+
+Added 2026-11-12 at the user's request. Fifteen runs train the 12-layer width-640 shape on the reference
+shape's token count, twice the shape's 1x budget, at degrees eight and twelve. Question, comparisons and
+results: the [matched_tokens topic](results/exploratory/matched_tokens/README.md).
+
+- Recipes: each 1x run at the shape derived with `derive_recipe.py --budget 2` and allocated with
+  `scaffolds.records create`: 15,103 updates, warmup 908, validation every 200 updates through 3,000 and every
+  1,000 after; batch, learning rate, seed and data order unchanged. Where the 1x run has another degree, only
+  `attention_degree` changes. The softplus and sum-of-squares runs are the 2x query runs with their
+  reference-shape counterparts' changes. The forget-gate runs use the causal strips, the blocked
+  implementation for new runs.
+- Sources: query `r95a5691d293f`, static `r94e0f2b8cff9`, fixed Taylor `r2c432bd3a2a4`, FoX query
+  `r3d14b598d88f`, exp `r3e2fa2532c23`, softmax `rf81c96f76a1d`, FoX exp `ra5dfd978d3bd`:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <1x run> --budget 2 --output /tmp/<label>.yaml
+```
+
+- Acceptance: the shared adapter for query, static, fixed Taylor, exp, softmax and the forget-gate runs.
+  [`score_transform_acceptance`](score_transform_acceptance.py) covers the softplus runs and pins the 2x query
+  runs `r3759b2a57a54` and `r0f6d929e5992` as their controls (recipe SHA256, seed-42 fingerprint, parameter
+  count). [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares runs,
+  with the same 2x query runs as partners.
+- Kernels and GPUs: Mosaic for the polynomials (the softplus runs' transformed kernels on H100 alone), fused
+  Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs. Each run uses one B300 or
+  H100 and depends on no other run.
+- Time limits: 12 hours for the Mosaic, exp and softmax runs, 24 for FoX exp and 36 for FoX query. These are
+  the 1x runs' speeds doubled, with room for an H100 PCIe and degree twelve. Acceptance projects again on the
+  granted GPU and refuses an allocation whose projection exceeds the limit less two hours.
+
+Home cluster: **Kennel**. Branch `claude/l12-d640-reference-tokens`: `claude/score-transforms-mosaic`
+(the transformed kernels) with `main` and `claude/poly-two-lines-sos` (the sum-of-squares form) merged. The
+runs were submitted on `long` from the worktree root after the frozen execution set was committed:
+
+```bash
+submit() {  # partition, time, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$5" \
+    --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+ANY=collie,samoyed,doodle,terrier,shiba
+for run in rbf05f7baab5e r656e8e652b72; do submit long 36:00:00 acceptance B300,H100 $ANY $run; done
+submit long 24:00:00 acceptance B300,H100 $ANY re634d82ee479
+for run in r3759b2a57a54 r0f6d929e5992 rd920368a922e r3bb5b8bd5c6a rd77db79142e6 rffab7c4eeac5 \
+           r3cca4c13edab r84f325593209; do
+  submit long 12:00:00 acceptance B300,H100 $ANY $run
+done
+for run in rc6a7e50d27e1 r53d5bbcac16f; do submit long 12:00:00 score_transform_acceptance H100 akita,$ANY $run; done
+for run in rccd2cb5e8bab r08be7093202a; do
+  submit long 12:00:00 coefficient_forms_acceptance B300,H100 $ANY $run
+done
 ```
