@@ -158,11 +158,84 @@ def _norm_figure(data: dict, out: Path) -> None:
     _save(fig, out, f"head_w_norms_m{degree}")
 
 
+def _combined_figure(datasets: list[dict], out: Path) -> None:
+    """The same a/b/W histories, grouped into one three-row section per SoS degree."""
+    datasets = sorted(datasets, key=lambda data: data["degree"])
+    assert [data["degree"] for data in datasets] == [8, 12]
+    assert len({(data["layer"], data["head"]) for data in datasets}) == 1
+    fig = plt.figure(figsize=(20, 13.8))
+    row_settings = (("a", 0., "Amplitude a"), ("b", 1., "Bias b"),
+                    ("w_l2", None, r"$\|W_j\|_2$"))
+    for data, (bottom, top, heading) in zip(datasets, ((.555, .835, .865), (.13, .445, .475))):
+        degree, steps = data["degree"], data["steps"]
+        half = degree // 2
+        grid = fig.add_gridspec(3, half + 1, left=.065, right=.985,
+                               bottom=bottom, top=top, hspace=.22, wspace=.16)
+        fig.text(.055, heading, rf"$m={degree}$", fontsize=21, fontweight="bold", color=INK)
+        fig.text(.145, heading, f"U degree {half} · V degree {half - 1}", fontsize=13, color="#5a6672")
+        for row, (name, initial, label) in enumerate(row_settings):
+            low, high = data[name].min(), data[name].max()
+            if initial is not None:
+                low, high = min(low, initial), max(high, initial)
+            padding = .09 * max(high - low, .1)
+            for power in range(half + 1):
+                ax = fig.add_subplot(grid[row, power])
+                for coordinate, (factor, order) in enumerate(data["coordinates"]):
+                    if order == power:
+                        ax.plot(steps, data[name][:, coordinate], color=COLORS[factor], lw=1.9,
+                                marker="o", markersize=2.4, markeredgewidth=0)
+                if initial is not None:
+                    ax.axhline(initial, color="#929ba5", lw=.8, ls=(0, (4, 3)), zorder=0)
+                    ax.scatter([0], [initial], color="#616d79", marker="D", s=18,
+                               zorder=4, clip_on=False)
+                ax.set_xlim(0, steps[-1])
+                ax.set_ylim(low - padding, high + padding)
+                ax.set_xticks([0, 2500, 5000, 7500])
+                ax.xaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+                ax.yaxis.set_major_locator(MaxNLocator(4))
+                ax.grid(axis="y", color="#e4e8eb", linewidth=.65)
+                ax.spines[["top", "right"]].set_visible(False)
+                ax.spines[["bottom", "left"]].set_color("#b2bac3")
+                ax.tick_params(colors="#4d5965", labelsize=9,
+                               labelbottom=row == 2, labelleft=power == 0)
+                if row == 0:
+                    suffix = " · U only" if power == half else ""
+                    ax.set_title(rf"Factor power $j={power}$" + suffix, loc="left",
+                                 fontsize=12, color=INK, pad=9)
+                if power == 0:
+                    ax.set_ylabel(label, fontsize=13, color=INK, labelpad=12)
+                if row == 2:
+                    ax.set_xlabel("Training update", fontsize=10)
+    fig.add_artist(Line2D([.055, .985], [.505, .505], transform=fig.transFigure,
+                          color="#dbe2e8", lw=1.2))
+    fig.suptitle(r"Transformer++ · SoS · learned $a$, $b$, and $W$ norms",
+                 x=.055, y=.98, ha="left", color=INK, fontsize=25, fontweight="bold")
+    data = datasets[0]
+    fig.text(.055, .94,
+             rf"Layer {data['layer'] + 1}, head {data['head'] + 1} · $p_t(s)=U_t(s)^2+V_t(s)^2$"
+             rf" · $F_j(x)=f_j[1+b_j+a_j\tanh(W_j^\top x)]/2$",
+             fontsize=13, color="#5a6672")
+    handles = [Line2D([], [], color=COLORS[factor], lw=2, marker="o", markersize=4,
+                      label=f"{factor} factor") for factor in ("U", "V")]
+    handles.append(Line2D([], [], color="#929ba5", ls="--", marker="D", markersize=4,
+                           label="Analytic initialization: a = 0, b = 1"))
+    fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(.05, .923),
+               frameon=False, ncol=3, fontsize=12, columnspacing=2.6)
+    fig.text(.055, .035,
+             "Raw SoS factor-generator parameters; no factorial or Taylor-factor rescaling. "
+             "W norms are over 896 input channels. Shared linear y-scale within each section's row.\n"
+             "28 saved snapshots, updates 100–7,570. Step-zero a/b diamonds are analytic; "
+             "no step-zero W norm was saved. Lines connect recorded snapshots.",
+             color="#687583", fontsize=11, linespacing=1.7)
+    _save(fig, out, "head_parameters_combined")
+
+
 def plot(root: Path, out: Path, selection: dict) -> None:
     settings = selection["settings"]["single_head_parameters"]
     datasets = [_load(root, entry, settings) for entry in selection["runs"]]
     summary = []
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 11, "pdf.fonttype": 42}):
+        _combined_figure(datasets, out)
         for data in datasets:
             _figure(data, out)
             _norm_figure(data, out)

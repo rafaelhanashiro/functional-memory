@@ -119,6 +119,13 @@ parameters are compatible with the sum-of-squares constraint.
 analytic a/b initialization, first recorded values, terminal values, and recorded
 extrema for a, b, and the W norm. PDFs accompany all figures.
 
+[Combined SoS image](head_parameters_combined.png) ([PDF](head_parameters_combined.pdf))
+puts the same a, b, and W-norm histories into two sections, for m=8 and m=12.
+Each section has three rows and one column per factor power, retaining blue U
+and orange V curves. Its raw data, layer/head selection, initialization markers,
+and scaling are identical to the separate figures; axes are shared within each
+section's row. The standard regeneration command below also produces this image.
+
 ### Projection-vector norms
 
 For these diagonal tanh generators, **a, b, and W are the only learned
