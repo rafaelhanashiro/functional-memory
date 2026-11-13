@@ -1,14 +1,61 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r41a4c74c5f58/.runtime/acceptance/B200-1",
+      "allocation": "JobId=244554 JobName=r41a4c74c5f58 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20046 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-13T09:38:53 EligibleTime=2026-11-13T09:38:53 AccrueTime=2026-11-13T09:38:53 StartTime=2026-11-13T09:38:53 EndTime=2026-11-14T09:38:53 Deadline=N/A PreemptEligibleTime=2026-11-13T11:38:53 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-13T09:38:53 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2766611 ReqNodeList=shiba ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r41a4c74c5f58/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r41a4c74c5f58/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml",
+      "config_sha256": "851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "52af77095aa516a0e150b16c4c902e3cc7ca82e9",
+      "slurm_job_id": "244554",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-13T14:38:58.319648+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml",
     "sha256": "851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110"
   },
+  "frozen_execution_sha256": "d068a0428b4825e4618158b48a99e532e7d01d0da49c1ff255bdaf2b34304f65",
   "home_cluster": "kennel",
   "label": "query-sos-core-m8-softplus-rope-w-decay",
+  "log_path": "experiments/transformer_pp/runs/r41a4c74c5f58/training.log",
   "name": "query-sos-core-m8-softplus-rope-w-decay",
   "parameter_count": 200150806,
   "record_schema_version": 1,
   "run_id": "r41a4c74c5f58",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "52af77095aa516a0e150b16c4c902e3cc7ca82e9",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard",
+      "--nodelist=shiba",
+      "--exclude=collie,samoyed,doodle,terrier,akita,mastiff,dogo",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r41a4c74c5f58",
+      "--output=experiments/transformer_pp/runs/r41a4c74c5f58/training.log",
+      "--error=experiments/transformer_pp/runs/r41a4c74c5f58/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.softplus_sos_acceptance",
+      "experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml",
+      "52af77095aa516a0e150b16c4c902e3cc7ca82e9",
+      "1",
+      "B200"
+    ],
+    "partition": "standard",
+    "slurm_job_id": "244554",
+    "submitted_utc": "2026-11-13T14:38:53.830843+00:00"
+  }
 }

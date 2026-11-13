@@ -23,8 +23,8 @@ Both primaries have the same 200,150,806 learned parameters and start from the
 SoS control's exact parameter arrays. The core starts at T_8, so the initial
 kernels are T_8(z) and z T_8(z). The direct-softplus control instead starts at
 T_8(z)-1; its constant coefficient remains learnable. These are not identical
-function starts. The user explicitly chose an eight-degree core and total
-degree nine for the prefactor variant.
+function starts. The prefactor variant retains the degree-eight core and
+increases the total degree to nine.
 
 The first primary tends to its query-dependent h_t(0) for very negative scores.
 The second has a structurally zero constant coefficient and tends to zero. Both

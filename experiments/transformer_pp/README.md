@@ -1819,9 +1819,10 @@ cancellation, so algebraic nonnegativity is not a floating-point guarantee.
 The [acceptance adapter](softplus_sos_acceptance.py) pins the SoS control recipe,
 checks exact initial parameter fingerprints and counts, and requires CPU tests,
 GPU forward/backward reference checks, the full-shape pilot, and fresh-process
-resume. Hardware admission is H100 or B200; B200 must pass the new transformed
-Mosaic qualification before these jobs are submitted for production. B300 remains
-unqualified for the transformed kernels. Qualification, from this worktree:
+resume. Hardware admission is H100 or B200. The transformed Mosaic and SoS kernel
+qualification passed all 102 cases on B200
+([validation record](../../scaffolds/transformer/validation/README.md#softplus--query-sos-on-mosaic-b200-kernels-2026-11-13));
+B300 remains unqualified for the transformed kernels. Qualification, from this worktree:
 
 ```bash
 mkdir -p scaffolds/transformer/validation/logs
