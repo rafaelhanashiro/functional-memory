@@ -1,4 +1,4 @@
-# Forget gate on query coefficients (m = 4 and 8)
+# Forget gate on query coefficients (m = 4, 8 and 12)
 
 Opened 2026-10-27.
 
@@ -304,15 +304,16 @@ terminal is update 7,570:
 | Comparison: per-order gates | `r319b83140040` | 4 | causal strips, B300 | 17.56 | 14.93 | 13.767 | 13.767 |
 | Target: FoX exp | `r183f08346ddc` | — | blocked scan, H100 SXM | 17.40 | 14.77 | **13.628** | 13.630 |
 
-**Limitation: the step to degree twelve also changes implementation and GPU.** The strips keep FP32
+**Limitation: the step to degree twelve also changes implementation and GPU type.** The strips keep FP32
 attention weights; the Mosaic kernels round weights and score gradients once to BF16 for the tensor
 cores. On one micro-batch of this recipe, Mosaic's output and gradients differ from FP64 by
 1.39–1.42 times the BF16 rounding floor, the strips' by 1.01 times
 ([validation record](../../../../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11)).
 No matched pair measures what that does to training for this gate. Same-recipe tanh runs on the
-blocked reference and on the fused Triton kernels, on different GPUs, differed by up to 0.1 PPL,
-0.4–0.5% at m = 3 and 4 (input-dependent coefficients collection). A difference from m = 8 or FoX
-exp below 0.5% therefore does not separate the degree from the implementation; a best PPL at least
+blocked reference (one B300) and on the fused Triton kernels (four B300s) differed by up to 0.1 PPL,
+0.4–0.5% at m = 3 and 4 (input-dependent coefficients collection), which bounds an implementation
+change, not a change of GPU type. A difference from m = 8 or FoX exp below 0.5% therefore does not
+separate the degree from the implementation; a best PPL at least
 0.5% below both (13.56 or lower) exceeds that variation.
 
 - **Degree twelve neither passes FoX exp nor improves on degree eight.** Its best, 13.665, is 0.74%
