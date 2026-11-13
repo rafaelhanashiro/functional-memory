@@ -116,8 +116,41 @@ the projected inputs and their activation distributions. Negative generator
 parameters are compatible with the sum-of-squares constraint.
 
 [head_parameter_summary.csv](head_parameter_summary.csv) gives each coordinate's
-initialization, first recorded value, terminal value, and recorded extrema.
-PDFs accompany both figures.
+analytic a/b initialization, first recorded values, terminal values, and recorded
+extrema for a, b, and the W norm. PDFs accompany all figures.
+
+### Projection-vector norms
+
+For these diagonal tanh generators, **a, b, and W are the only learned
+coefficient-generator parameters**. The Taylor square factors f are fixed;
+there is no extra inner tanh bias, dense mixing matrix, or coefficient gate.
+
+The same head's W figures read `projection_kernel_l2`. The executed diagnostic
+computes `np.linalg.norm(kernel, axis=-2)` for the
+`[layer, head, input_channel, factor_coordinate]` parameter array. Thus each
+curve is the Euclidean norm of one 896-dimensional projection vector in
+`tanh(W_j^T x)`, with the same U/V factor-power indexing as a and b. It is not a
+matrix spectral norm, a norm of all the head's projections combined, or an
+average over tokens. No factorial or Taylor-factor rescaling is applied.
+
+![Degree-eight projection norms for layer eight, head one](head_w_norms_m8.png)
+
+![Degree-twelve projection norms for layer eight, head one](head_w_norms_m12.png)
+
+All 28 norm snapshots are finite and nonnegative. Over the saved history, norms
+range from 0.9707 to 1.6091 at degree eight and 0.9517 to 1.8566 at degree twelve.
+Terminal ranges are 1.4190–1.5836 and 1.2096–1.8259, respectively. Degree-eight
+norms generally grow from around one, then flatten or decline slightly;
+degree twelve shows more variation among factors. For example, U_2 decreases
+from 1.4590 at update 1,500 to 1.2096 at the end even while its amplitude grows.
+There is no sampled projection-norm explosion in this head.
+
+No step-zero W norm was saved. The recipe draws each entry with standard
+deviation `1/sqrt(896)`, giving `sqrt(E[||W_j||_2^2])=1`; that is not the exact
+initial norm of any particular draw and is not plotted as a measurement.
+Norms alone cannot establish tanh saturation: that depends on the distribution
+of `W_j^T x`, including the direction of W and the input correlations. Changes
+in projection direction are also invisible to these norm histories.
 
 ## What the coefficients mean
 

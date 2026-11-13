@@ -21,6 +21,12 @@ settings:
     fields:
       a: modulation_amplitude
       b: projection_bias
+      w_l2: projection_kernel_l2
+    w_norm:
+      convention: Euclidean norm of each W vector over the input-channel axis
+      input_dimension: 896
+      initialization: no saved step-zero norm; individual Gaussian draws have different
+        initial norms
     coordinate_convention: U_0,...,U_(m/2),V_0,...,V_(m/2-1); factor powers, not expanded
       polynomial orders
     scaling: raw learned parameters; no factorial or Taylor-factor rescaling
