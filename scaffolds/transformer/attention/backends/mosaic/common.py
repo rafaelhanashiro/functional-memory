@@ -154,15 +154,22 @@ def polynomial_and_derivative(s, coefficients):
 #                             D_r = 2^((t-i) l_tr log2(e)) (vectors m+1..2m+1 hold l_tr log2(e)).
 #   per_order_endpoint_decay: D_r = exp((t-i) a_r softplus(u_tr + v_ir)): u_t0..u_tm as vectors
 #                             m+1..2m+1, v_i0..v_im as key vectors, a_r = -exp(A_hr) as head scalars.
-# Callers validate gates per token: an invalid rate or endpoint input arrives as NaN, which makes
-# every weight it touches NaN. Decay kernels compile with approximate exp2/log2 (``approx_math``).
-# They also receive a ``Pair``: the distance t-i and the per-key vectors of the tile. Their dQ row
-# sums append sum_i G W (t-i) (query) or sum_i G W (t-i) sigmoid(x) and
-# sum_i G W (t-i) log2(1 + e^x) (endpoint), where G = dO V^T, W = p D and x = u_t + v_i; the
-# endpoint dK pass also sums G W (t-i) sigmoid(x) over queries for every key. Per-order families
-# evaluate one order's decay at a time; their dQ sums are dc_r = sum_i G D_r s^r, then per order
-# sum_i G W_r (t-i) (query) or sum_i G W_r (t-i) sigmoid(x_r) and sum_i G W_r (t-i) log2(1 + e^x_r)
-# (endpoint), with W_r = c_r s^r D_r; the endpoint dK pass sums G W_r (t-i) sigmoid(x_r) per order.
+#   per_order_cumulative_decay: D_r = exp(L_tr - L_ir), every order r its own cumulative log decay:
+#                             L_t0..L_tm as vectors m+1..2m+1 and L_i0..L_im as key vectors, whose
+#                             FP32 difference (exact for nearby tokens, however large |L|) the tile
+#                             scales by log2(e).
+# Callers validate gates per token: an invalid rate, endpoint input or cumulative sum arrives as
+# NaN, which makes every weight it touches NaN. Decay kernels compile with approximate exp2/log2
+# (``approx_math``). They also receive a ``Pair``: the distance t-i (none for the cumulative family)
+# and the per-key vectors of the tile. Their dQ row sums append sum_i G W (t-i) (query) or
+# sum_i G W (t-i) sigmoid(x) and sum_i G W (t-i) log2(1 + e^x) (endpoint), where G = dO V^T,
+# W = p D and x = u_t + v_i; the endpoint dK pass also sums G W (t-i) sigmoid(x) over queries for
+# every key. Per-order families evaluate one order's decay at a time; their dQ sums are
+# dc_r = sum_i G D_r s^r, then per order sum_i G W_r (t-i) (query) or sum_i G W_r (t-i) sigmoid(x_r)
+# and sum_i G W_r (t-i) log2(1 + e^x_r) (endpoint), with W_r = c_r s^r D_r; the endpoint dK pass
+# sums G W_r (t-i) sigmoid(x_r) per order. The cumulative family's dQ sums are the dc_r alone and
+# its dK pass sums G W_r per order: L_tr's gradient is c_tr dc_tr less that sum at key t (the
+# caller forms it).
 #   score_bias_*: per-degree score biases, sum_r c_r G_r z_r^r with z_r = s + beta_r for r >= 1 and
 #                 order 0 unshifted, G_r = 1 (score_bias_row, score_bias_pair) or the per-order endpoint
 #                 gate D_r (score_bias_endpoint_*, laid out as per_order_endpoint_decay). Each order's
@@ -188,14 +195,16 @@ QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
 TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS)
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
+PER_ORDER_CUMULATIVE_DECAY = "per_order_cumulative_decay"
 SCORE_BIAS_ROW, SCORE_BIAS_PAIR = "score_bias_row", "score_bias_pair"
 SCORE_BIAS_ENDPOINT_ROW, SCORE_BIAS_ENDPOINT_PAIR = "score_bias_endpoint_row", "score_bias_endpoint_pair"
 GATED_SCORE_BIAS_FAMILIES = (SCORE_BIAS_ENDPOINT_ROW, SCORE_BIAS_ENDPOINT_PAIR)
 PAIR_SHIFT_FAMILIES = (SCORE_BIAS_PAIR, SCORE_BIAS_ENDPOINT_PAIR)
 SCORE_BIAS_FAMILIES = (SCORE_BIAS_ROW, SCORE_BIAS_PAIR, *GATED_SCORE_BIAS_FAMILIES)
-PER_ORDER_FAMILIES = (PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY, *SCORE_BIAS_FAMILIES)
+PER_ORDER_FAMILIES = (PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY,
+                      *SCORE_BIAS_FAMILIES)
 DECAY_FAMILIES = (QUERY_DECAY, ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY,
-                  *GATED_SCORE_BIAS_FAMILIES)
+                  PER_ORDER_CUMULATIVE_DECAY, *GATED_SCORE_BIAS_FAMILIES)
 
 
 def has_pair(family):
@@ -214,8 +223,9 @@ def accumulates(family):
 
 class Pair(NamedTuple):
     """Per-element context of a decay family's tile: FP32 query-minus-key distance (zero on
-    masked entries), per-key FP32 vectors broadcast to the tile, in tiles crossing the
-    diagonal the causal mask (else None), and per-head FP32 scalars."""
+    masked entries; None for the cumulative family, which never reads it), per-key FP32 vectors
+    broadcast to the tile, in tiles crossing the diagonal the causal mask (else None), and
+    per-head FP32 scalars."""
     distance: Any
     keys: tuple = ()
     causal: Any = None
@@ -267,7 +277,8 @@ def vector_counts(family, degree):
         return vectors, vectors, (3 if gated else 1) * orders + (3 if family in PAIR_SHIFT_FAMILIES else 1) * degree
     if family in PER_ORDER_FAMILIES:
         orders = degree + 1
-        return 2 * orders, 2 * orders, (3 if family == PER_ORDER_ENDPOINT_DECAY else 2) * orders
+        sums = {PER_ORDER_QUERY_DECAY: 2, PER_ORDER_ENDPOINT_DECAY: 3, PER_ORDER_CUMULATIVE_DECAY: 1}[family]
+        return 2 * orders, 2 * orders, sums * orders
     extra = {QUERY: 0, QUERY_SOFTPLUS: 0, QUERY_ABS: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
     return degree + 1 + extra, degree + 1 + extra, degree + 1 + extra
 
@@ -286,7 +297,7 @@ def key_counts(family, degree):
         count = (degree + 1 if family in GATED_SCORE_BIAS_FAMILIES else 0) + (
             degree if family in PAIR_SHIFT_FAMILIES else 0)
         return count, count
-    if family == PER_ORDER_ENDPOINT_DECAY:
+    if family in (PER_ORDER_ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY):
         return degree + 1, degree + 1
     return (1, 1) if family == ENDPOINT_DECAY else (0, 0)
 
@@ -377,10 +388,17 @@ def decay(family, degree, vectors, pair, *, slopes=False):
 
 
 def _order_decay(family, degree, vectors, pair, order, *, slopes=False):
-    """One order's ``Decay`` in a per-order family's tile, as ``decay``."""
+    """One order's ``Decay`` in a per-order family's tile, as ``decay``. The cumulative family's
+    exponent is the FP32 difference L_tr - L_ir of the two endpoints' sums (exact between tokens
+    whose sums are within a factor of two), times log2(e): scaling each sum before subtracting
+    would round each by up to |L| log2(e) 2^-24, a weight error of 3e-4 where |L| nears 3,000 (a
+    fast gate at 2,048 tokens). A future key's exponent is positive and may overflow; the causal
+    mask drops it."""
     sigmoid = log2_sp = None
     if family == PER_ORDER_QUERY_DECAY:
         exponent = vectors[degree + 1 + order] * pair.distance
+    elif family == PER_ORDER_CUMULATIVE_DECAY:
+        exponent = (vectors[degree + 1 + order] - pair.keys[order]) * LOG2E
     else:
         x = vectors[degree + 1 + order] + pair.keys[order]
         log2_sp = log2_softplus(x)
@@ -408,11 +426,13 @@ def _per_order_weights(family, degree, s, vectors, pair):
 def _per_order_backward(family, degree, s, dp, vectors, pair, *, rows, weights=False):
     """(dS, W or None, sums) of a per-order tile in one ascending pass over the orders, one decay
     at a time: dS = G sum_r r c_r D_r s^(r-1) and W = sum_r c_r D_r s^r. ``rows`` gives the dQ
-    sums (see above); otherwise the per-key sums of the endpoint dK pass. Orders 0 and 1 start
-    every accumulator in its layout; later orders form a rolled loop (``_per_order_weights``)
-    whose sums reach their order's accumulator through 0/1 masks. A NaN sum at a rolled order (an
-    invalid gate, whose row is NaN already) therefore reaches every rolled order's accumulator."""
+    sums (see above); otherwise the per-key sums of the endpoint and cumulative dK passes. Orders
+    0 and 1 start every accumulator in its layout; later orders form a rolled loop
+    (``_per_order_weights``) whose sums reach their order's accumulator through 0/1 masks. A NaN
+    sum at a rolled order (an invalid gate, whose row is NaN already) therefore reaches every
+    rolled order's accumulator."""
     endpoint = family == PER_ORDER_ENDPOINT_DECAY
+    cumulative = family == PER_ORDER_CUMULATIVE_DECAY
     orders = degree + 1
 
     def evaluate(order, power):
@@ -421,7 +441,13 @@ def _per_order_backward(family, degree, s, dp, vectors, pair, *, rows, weights=F
         weight = vectors[order] * terms.factor
         gds = dp * terms.factor if power is None else dp * terms.factor * power  # G D_r s^r
         sums = [gds.sum(axis=1)] if rows else []
-        if rows or endpoint:  # query-only rates have no per-key gradients
+        if cumulative:
+            if not rows:  # the key side of L_r's gradient: sum over queries of G W_r
+                gw = gds * vectors[order]
+                if pair.causal is not None:  # a masked query's coefficients may be nonfinite
+                    gw = jnp.where(pair.causal, gw, 0.0)
+                sums.append(gw.sum(axis=1))
+        elif rows or endpoint:  # query-only rates have no per-key gradients
             gwd = gds * vectors[order] * pair.distance  # G W_r (t-i)
             if pair.causal is not None:  # a masked query's polynomial may be nonfinite at s = 0
                 gwd = jnp.where(pair.causal, gwd, 0.0)

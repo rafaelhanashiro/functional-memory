@@ -143,15 +143,15 @@ own softplus query-distance gate on the blocked backend or the Mosaic decay kern
 coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
 The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
 `query_key` adds `wk_r·x_i` inside softplus. With `attention_forget_gate_mode:
-cumulative` (query conditioning, blocked backend only) each order instead keeps its
-own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
+cumulative` (query conditioning; the blocked backend, or Mosaic on H100) each order
+instead keeps its own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
 `sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)` ([Forget gate](#forget-gate)). Gate arrays
 add an order axis before their final channel axis. All orders initially duplicate
 the shared gate's draw; key projections start at zero. The copies then learn
 independently. Projection matrices receive WD; rates and biases remain exempt.
 Diagnostics retain the layer, head, and order axes. Sigmoid rates, other gate
-forms, and other backends reject this option, and Mosaic rejects cumulative
-per-order gates. Existing recipes default to a shared gate.
+forms, and other backends reject this option, and Mosaic runs cumulative per-order
+gates on H100 only. Existing recipes default to a shared gate.
 
 `attention_forget_gate_conditioning: none` is the input-free gate of learned static
 coefficients: `lambda = exp(A_log) * softplus(b_dt)` per layer and head reads no token,
@@ -950,12 +950,22 @@ cases qualify the query polynomials' kernels).
 nonlinear query coefficients (including zero) its own input gate and sum `L_tr`:
 `W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, each block evaluating one order's
 `[B, H, Q, K]` factor at a time. It takes query conditioning, RoPE or no positional encoding,
-and the blocked backend (scan or strips); Mosaic has no cumulative kernels. The gates start as
+and the blocked backend (scan or strips) or, on H100, the Mosaic per-order cumulative kernels
+(`attention_backend: mosaic`; `api.per_order_cumulative_decay_attention`, family
+`per_order_cumulative_decay`). They form each order's FP32 difference `L_tr - L_ir` inside the causal
+tiles before scaling it to base 2, which stays exact for nearby tokens however large `|L|` grows
+(scaling each sum first would err by 3e-4 where `|L|` nears 3,000); the dQ kernel sums `dc_r` and the
+dK/dV kernel each key's sum of `G W_r` over its queries, so `dL_r = c_r dc_r` minus that sum. B300
+refuses them before tracing a kernel. The gates start as
 copies of the shared draw, so the model starts as cumulative FoX; each extra order adds
 `(hidden_size + 2) * num_layers * num_heads` parameters (188,580 in the Transformer++ shape). A
 nonfinite `log alpha` poisons the rows from its token on, as for a shared gate.
-`tests/test_per_order_cumulative.py` checks degrees four and eight against FP64; acceptance runs it
-for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+`tests/test_per_order_cumulative.py` checks degrees four, eight, and twelve against FP64; acceptance
+runs it for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU. Mosaic recipes
+add `tests/test_mosaic_per_order_cumulative.py` to both stages: on CPU, the tile mathematics against
+FP64, the kernels' lowering in their counted shared memory, the entry point's gradient assembly and
+refusals, the dispatch, and the recipe rules; on H100, every output and gradient against FP64 and
+the strips, gate extremes, invalid sums, repeatability, and a two-layer model.
 
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics (per order for per-order
@@ -1301,16 +1311,18 @@ shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 1
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
-sigmoid query polynomials, and the input-free gate of learned static coefficients (on the same
-query-decay kernels, every query's coefficients and rates equal), run on the Mosaic decay
-kernels only when `mosaic` is requested (`ModelConfig.mosaic_decay_supported`), and so does the tanh query
-polynomial evaluated at a transformed score, on the query kernels with `phi(s)` in their tiles, on H100 alone
+sigmoid query polynomials, their per-order cumulative query gates, and the input-free gate of
+learned static coefficients (on the same query-decay kernels, every query's coefficients and
+rates equal), run on the Mosaic decay kernels only when `mosaic` is requested
+(`ModelConfig.mosaic_decay_supported`), and so does the tanh query polynomial evaluated at a transformed
+score, on the query kernels with `phi(s)` in their tiles, on H100 alone
 (`ModelConfig.mosaic_score_transform_supported`; [Score transforms](#score-transforms)). Shared gates must fit B300 like the gate-free
 kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
 (`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
 per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel
 for shapes `api.blackwell_supported` rejects: above degree 7 (query) or 6 (query–key) at
-`d_K = 64` and 2,048 tokens. Diagnostics come from the blocked reference,
+`d_K = 64` and 2,048 tokens. The per-order cumulative kernels run on H100 alone; B300 refuses
+them at every shape. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the

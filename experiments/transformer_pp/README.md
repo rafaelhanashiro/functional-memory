@@ -1445,23 +1445,25 @@ runs copy the no-RoPE FoX + W decay runs and change only `attention_forget_gate_
 `W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, where `L_tr = sum_(j<=t) log alpha_jr` and each
 order `r = 0..m` has its own gate (`w_alpha`, `A_log`, `b_dt` per layer and head). Each order's
 gate starts as a copy of the control's shared draw, so each run starts exactly at its control.
-`records create` set the causal strips; Mosaic has no cumulative decay kernels. The degree-eight
-control trained on ORCD; its copy reads Kennel's manifests, which hash identically. Question,
-controls and results are in the
-[forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
+`records create` set the causal strips. The degree-eight control trained on ORCD; its copy reads
+Kennel's manifests, which hash identically. A third run takes the series to degree twelve on the
+Mosaic kernels ([below](#degree-twelve-on-the-mosaic-kernels)). Question, controls and results are
+in the [forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
 
 | Run | Label | Control | Degree | Parameters (added gates) |
 | --- | --- | --- | ---: | ---: |
 | `r319b83140040` | query-m4-per-order-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | 4 | 200,339,386 (754,320) |
 | `rf8fc9ab2cecc` | query-m8-per-order-forget-gate-no-rope-wdecay | `r9353f554b917` | 8 | 201,848,026 (1,508,640) |
+| `r95bfff096cd4` | query-m12-per-order-forget-gate-no-rope-wdecay | `r9353f554b917` at degree 12 (not run) | 12 | 203,356,666 (2,262,960) |
 
 `per_order_cumulative_acceptance` pins each control's recipe by SHA256. It drops the degree-four
 control's retired key `attention_coefficient_key_kernel_weight_decay` only if it is `false`. It
-allows only per-order gates, the strips, execution locations and labels, and manifest copies that
-hash like the controls'. Every order's gate must equal the control's shared draw and every other
-parameter the control's; collapsing the order axes must recover the control's initialization
-fingerprint. Acceptance runs `tests/test_per_order_cumulative.py` on CPU, and its degree-four and
-degree-eight 2,048-token BF16 strips cases against FP64 on the GPU, before training.
+allows only per-order gates, their implementation (the strips, or the Mosaic kernels), execution
+locations and labels, and manifest copies that hash like the controls'. Every order's gate must
+equal the control's shared draw and every other parameter the control's; collapsing the order axes
+must recover the control's initialization fingerprint. Acceptance runs
+`tests/test_per_order_cumulative.py` on CPU, and its 2,048-token BF16 strips cases at degrees four,
+eight and twelve against FP64 on the GPU, before training.
 
 Home cluster: **Kennel**, from the same branch and worktree. Submit each on one B300 or H100 SXM, excluding `mastiff` and `shiba`. Shared FoX trained on the blocked scan at
 5.3 s per update at degree four (B300) and 9.8 s at degree eight (ORCD H100), and per-order gates
@@ -1481,6 +1483,45 @@ submit() {  # run ID, partition, time limit
 }
 submit r319b83140040 '<standard|long>' 24:00:00
 submit rf8fc9ab2cecc long 72:00:00
+```
+
+### Degree twelve on the Mosaic kernels
+
+`r95bfff096cd4` is the degree-eight run `rf8fc9ab2cecc` at degree twelve, trained on the Mosaic
+per-order cumulative kernels (`model.attention_backend: mosaic`; the inert
+`attention_blocked_implementation` keeps `strips`). The kernels form each order's decay
+`exp(L_tr - L_ir)` inside the causal tiles and round the weights and score gradients once to BF16
+for the tensor cores, where the strips keep FP32 weights
+([scaffold README](../../scaffolds/transformer/README.md#forget-gate)). No shared-gate run exists at
+degree twelve, so the adapter's reference is the degree-eight control's recipe with its degree set
+to twelve, built at seed 42 (201,093,706 parameters). Acceptance adds
+`tests/test_mosaic_per_order_cumulative.py` on CPU and its H100 cases on the GPU (every output and
+gradient against FP64 and the strips), beside the Mosaic query kernels' GPU tests at the run's BF16
+weight precision.
+
+The kernels run on H100 alone: B300 refuses them before tracing a kernel, and the adapter refuses
+any other GPU type before acceptance starts. The run is complete. It trained in job 243318 on
+`standard`, on an H100 PCIe (`mastiff`), at 8.68 s per update (median of its 500-update validation
+windows), 18.2 hours for 7,570 updates. The pilot, which measures the update time and refuses an
+allocation the run would not fit, measured 7.82 s; the validation record's update benchmark
+projected 7.5–7.7 s on PCIe and 5.2 s on SXM
+([validation record](../../scaffolds/transformer/validation/README.md#per-order-cumulative-gates-on-mosaic-2026-11-11)).
+
+Home cluster: **Kennel**. Its record holds the launch commit and the partition and node of its
+allocation. From the isolated `claude/per-order-cumulative-mosaic` worktree, after committing its
+frozen execution set, submit it on `standard` with 24 hours. The exclusions leave both H100 nodes,
+`dogo` (SXM) and `mastiff` (PCIe):
+
+```bash
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to --exclude
+# unless another job holds that GPU.
+run=r95bfff096cd4
+sbatch --parsable --partition=standard --time=1-00:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,shiba,collie,samoyed,doodle,terrier --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.per_order_cumulative_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
 
 ## Learned input-free gates for static coefficients
