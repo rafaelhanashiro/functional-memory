@@ -498,85 +498,26 @@ done
 ### Coefficient fitting
 
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)
-compares the fitting capacity of free query coefficients and the trained tanh
-query generator on one sequence, and coefficients shared across a full batch,
-each with its pretrained backbone frozen.
-Run `r3c0f21ab7dce` is the completed free-coefficient fit from the static checkpoint;
-`rd7bf9bc37cb6` is the completed fit of the original query generator from the query-only checkpoint.
-`r0963b3e6610b` fits one position-dependent coefficient table shared across the
-parent recipe's entire 256-sequence batch. Static fits `r22854de31b96` (one
-sequence) and `r5b28697413fa` (full batch) additionally share coefficients across
-query positions. Their fitting metrics enter no canonical pretraining comparison.
+measures how far coefficients alone can fit a fixed batch of 256 or 1,024 sequences
+with the pretrained backbone frozen: free coefficients, the trained query and
+query-key generators, and static coefficients, all on degree-four backbones with
+per-head QK scaling. Fitting metrics enter no canonical pretraining comparison.
 
-Allocate the query-generator fit in its own worktree (once), commit the frozen
-inputs, then submit one B300 or H100 job:
+Allocate a fit in its own worktree, commit the frozen inputs, then submit one B300 or
+H100 job. For example, the query-generator fit on 256 sequences:
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0
-# Commit the allocated recipe and implementation before submitting.
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2b22f2ff6461 \
+  --sequence-count 256
+# Commit the allocated recipe before submitting; resumptions keep its run ID.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  rd7bf9bc37cb6 --partition debug,standard,long --time-limit 02:00:00
-```
-
-Allocate the shared-coefficient batch fit with the same parent in its own worktree:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization shared_batch_query_coefficients
-# Commit frozen inputs before submitting; resumptions retain this run ID.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r0963b3e6610b --partition debug,standard,long --time-limit 02:00:00
-```
-
-Allocate the independent per-sequence batch fit in its own worktree. Run
-`r7505c6d49711` uses the same query-only parent and 256 fitting sequences, with
-separate coefficient tables for every sequence. Its completed fit automatically
-produces the CPU coefficient-shape analysis in the existing exploratory topic.
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization free_per_example_query_coefficients --sequence-count 256
-# Commit frozen inputs before submitting; resumptions retain this run ID.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r7505c6d49711 --partition long --gpu-type B300 --time-limit 06:00:00
-```
-
-Allocate both static fits in one isolated worktree before committing or launching:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization static_coefficients --sequence-count 1
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization static_coefficients --sequence-count 256
-# Commit both recipes and implementation before either independent submission.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r22854de31b96 --partition debug,standard,long --time-limit 02:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r5b28697413fa --partition debug,long --time-limit 02:00:00
+  <run_id> --partition standard --time-limit 24:00:00
 ```
 
 The shared fitting runtime qualifies the frozen-backbone update and checkpoint
 resume before production. The launcher checks frozen inputs at each start and
 requeue and selects the locked CUDA environment for its GPU.
-
-Degree-four query-generator fit `r1f2f749ff099` repeats the same single-sequence
-diagnostic from its trained degree-four parent. It trains only the coefficient
-generator, keeping the backbone frozen. Its settings and findings belong to the
-same [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md).
-In its isolated worktree:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_pp/runs/r49b7943aee1b
-# Already allocated; use this ID for resumptions and commit frozen inputs before launch.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r1f2f749ff099 --partition standard --time-limit 02:00:00
-```
 
 ## Matched Taylor continuations
 
@@ -1187,7 +1128,7 @@ From the repository/worktree root:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/transformer_pp
-scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp r3c0f21ab7dce
+scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp rc95f2055e96d
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/coefficient_oracle
 ```
 

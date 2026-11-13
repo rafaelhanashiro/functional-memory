@@ -164,20 +164,19 @@ def prepare(parent: Path, *, parameterization="query_coefficient_generator", seq
     selection = yaml.safe_load(selection_path.read_text())
     if any(entry["role"] == role for entry in selection["runs"]):
         raise ValueError(f"A {role} fit is already allocated in this topic")
-    reference_run = STUDY / "runs/r3c0f21ab7dce"
-    sequence_identity = json.loads((reference_run / "data_identity.json").read_text())
-    if sequence_identity["manifest_sha256"] != sha256(source["data"]["eval_manifest"]):
-        raise ValueError("The fitting sequence's manifest changed")
+    recorded = yaml.safe_load((STUDY / "sweep.yaml").read_text())["data_manifests"]["eval"]["sha256"]
+    sequence_identity = {"manifest_sha256": sha256(source["data"]["eval_manifest"])}
+    if sequence_identity["manifest_sha256"] != recorded:
+        raise ValueError("The fitting sequences' manifest differs from the study's evaluation manifest")
     microbatch = min(count, 8)
     learning_rate = 0.01 if table else 0.001
-    if table or count > 1:
-        import numpy as np
-        from scaffolds.transformer.data.packed import PackedBatchIterator
-        batch = next(iter(PackedBatchIterator(
-            source["data"]["eval_manifest"], batch_size=count,
-            sequence_length=source["data"]["sequence_length"], start_sequence=0,
-        )))
-        sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
+    import numpy as np
+    from scaffolds.transformer.data.packed import PackedBatchIterator
+    batch = next(iter(PackedBatchIterator(
+        source["data"]["eval_manifest"], batch_size=count,
+        sequence_length=source["data"]["sequence_length"], start_sequence=0,
+    )))
+    sequence_identity["batch_sha256"] = hashlib.sha256(batch.astype(np.int32).tobytes()).hexdigest()
     recipe = deepcopy(source)
     generator_prefix = ("query-generator-dense" if generator_readout == "dense" else
                         "query-key-generator" if query_key else "query-generator")
