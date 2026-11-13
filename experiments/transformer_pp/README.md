@@ -1491,7 +1491,7 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 | `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 |
 | `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 |
 | `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
-| `r7f4cb70b80d6` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
+| `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
 | `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
@@ -1529,6 +1529,6 @@ submit() {  # run, adapter
     "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B300
 }
 submit rb2b70dae4d21 acceptance
-submit r7f4cb70b80d6 coefficient_forms_acceptance
+submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-sos
 submit r6adefb42f443 coefficient_forms_acceptance
 ```
