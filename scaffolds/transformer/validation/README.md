@@ -80,9 +80,10 @@ record is [runs/score-transform-kernels/record.json](runs/score-transform-kernel
 of each JUnit, log and report in the ignored `logs/score-transform-kernels/<job>/`. The current frozen execution
 set, `c90aa961` at `e185c0c5`, differs from `f09ea1f1` in softplus's input (the same for every finite score, NaN
 at `-inf`), the H100-only admission (backend selection and the entry point), the tests and the scaffold README,
-and no GPU has run it: acceptance's GPU stage at launch runs the transform module (50 BF16 cases, among them an
-overflowing score in three rows) and the query kernels' modules on the granted H100 before training, and its
-pilot projects again.
+and job 244414's acceptance ran it on one H100 PCIe of `mastiff` before training `ra3b54e2489f8` (launch commit
+`a54846c5`): its GPU stage passed 118 cases, none skipped or failed, in 485 s (`mosaic_score_transform` 50, among
+them an overflowing score in three rows; `mosaic_query` 44; `mosaic_repeatability` 3;
+`input_dependent_coefficients` 5; `query_tanh_polynomial` 16).
 
 - Acceptance's GPU stage for `ra3b54e2489f8` (`-m gpu --mosaic-precision bf16` over its modules in acceptance's
   order): 116 passed, none skipped or failed, in 431 s: `mosaic_query` 44, `mosaic_repeatability` 3,
