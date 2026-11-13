@@ -18,7 +18,8 @@ BEGIN = "<!-- BEGIN GENERATED RESULTS -->"
 END = "<!-- END GENERATED RESULTS -->"
 ROLES = ("control", "query_distance", "query_key_distance", "bounded_query_distance",
          "per_order_query", "per_order_query_key", "query_distance_m8", "per_order_query_m8",
-         "query_distance_m12", "per_order_query_m12", "per_order_query_key_m8", "per_order_query_key_m12")
+         "query_distance_m12", "per_order_query_m12", "per_order_query_key_m8", "per_order_query_key_m12",
+         "static_per_order_query_key", "static_per_order_query_key_m8")
 # The reference of each role's PPL deltas: the run it differs from by one gate change, by
 # per-order gating, or by degree (four to eight, eight to twelve).
 REFERENCES = (("query_key_distance", "query_distance"), ("bounded_query_distance", "query_distance"),
@@ -26,7 +27,13 @@ REFERENCES = (("query_key_distance", "query_distance"), ("bounded_query_distance
               ("query_distance_m8", "query_distance"), ("per_order_query_m8", "query_distance_m8"),
               ("query_distance_m12", "query_distance_m8"), ("per_order_query_m12", "query_distance_m12"),
               ("per_order_query_key_m8", "per_order_query_m8"),
-              ("per_order_query_key_m12", "per_order_query_m12"))
+              ("per_order_query_key_m12", "per_order_query_m12"),
+              ("static_per_order_query_key", "per_order_query_key"),
+              ("static_per_order_query_key_m8", "per_order_query_key_m8"))
+# Learned static coefficients in place of tanh query coefficients, with the same per-order query-key gates.
+STATIC = dict(attention_coefficient_conditioning="static", attention_coefficient_activation="identity",
+              attention_coefficient_kernel_weight_decay=False, attention_coefficient_amplitude_initial=1.0,
+              attention_coefficient_projection_initial_std=0.0, attention_coefficient_amplitude_scale="none")
 STEPS = 7570
 
 
@@ -114,6 +121,16 @@ def check_recipes(runs: dict) -> None:
         expected["model"]["attention_forget_gate_conditioning"] = "query_key"
         if candidate != expected:
             raise ValueError(f"{role} differs from its per-order query twin beyond query-key gates")
+    for role, twin in (("static_per_order_query_key", "per_order_query_key"),
+                       ("static_per_order_query_key_m8", "per_order_query_key_m8")):
+        candidate = scientific_recipe(runs[role]["config"])
+        expected = scientific_recipe(runs[twin]["config"])
+        expected["model"].update(STATIC)
+        if candidate != expected:
+            differences = [f"{section}.{key}" for section in set(candidate) | set(expected)
+                           for key in set(candidate.get(section, {})) | set(expected.get(section, {}))
+                           if candidate.get(section, {}).get(key) != expected.get(section, {}).get(key)]
+            raise ValueError(f"{role} differs from its query-coefficient twin beyond static coefficients: {differences}")
 
 
 def measurement(row: dict) -> tuple[float, float]:
@@ -222,7 +239,8 @@ def main() -> None:
     lines.extend(["", "Endpoint query–key and bounded-rate variants compare against the query-dependent control.",
                   "Each per-order query gate and the degree-four per-order query–key gate compare against",
                   "their shared-gate controls; the degree-eight and degree-twelve per-order query–key gates",
-                  "against their per-order query twins.",
+                  "against their per-order query twins, and the static-coefficient runs against their",
+                  "per-order query–key twins with tanh query coefficients.",
                   "The degree-eight shared gate compares against the degree-four query-dependent run,",
                   "and the degree-twelve shared gate against the degree-eight one.",
                   "Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison."])
