@@ -520,12 +520,15 @@ def attention_identity(config) -> dict:
         gate = config.model.attention_forget_gate
         endpoint = gate and config.model.attention_forget_gate_conditioning == "query_key"
         per_order = gate and getattr(config.model, "attention_forget_gate_per_order", False)
+        cumulative = per_order and config.model.attention_forget_gate_mode == "cumulative"
         score_bias = getattr(config.model, "attention_score_bias", "none")
         identity.update({
             # Score biases run their own kernels, which name themselves.
             "attention_implementation": (implementation_name("endpoint" if endpoint and per_order else "none",
                                                              SHIFT_OF_MODE[score_bias])
                                          if score_bias != "none"
+                                         else "pallas_mosaic_gpu_query_polynomial_per_order_cumulative_decay"
+                                         if cumulative
                                          else "pallas_mosaic_gpu_query_polynomial_per_order_endpoint_decay"
                                          if endpoint and per_order
                                          else "pallas_mosaic_gpu_query_polynomial_per_order_query_decay" if per_order
