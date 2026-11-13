@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r016b914d927a/config.yaml",
+    "sha256": "729fd30021c0d5e90455bf0bbe95634d377c7b5d391fef7486a64b5f8a2302a8"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m4-sum-of-squares-w-decay",
+  "name": "query-m4-sum-of-squares-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r016b914d927a",
+  "status": "planned"
+}

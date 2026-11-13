@@ -22,8 +22,9 @@ CHANGES = {
                            attention_coefficient_amplitude_scale="none"),
     "hermite": dict(attention_coefficient_initialization="hermite"),
 }
-# A sum-of-squares run at degree twelve copies the query run of that degree.
-DEGREE_PARTNERS = {("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
+# A sum-of-squares run at degree four or twelve copies the query run of that degree.
+DEGREE_PARTNERS = {("sum_of_squares", 4): ("rca97cc9db8f2", "75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58"),
+                   ("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
 PATH_FIELDS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode")
 
 
