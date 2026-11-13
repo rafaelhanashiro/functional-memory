@@ -65,6 +65,15 @@ vector has its own norm, so no exact step-zero value is inserted.
 accompany every PNG. [parameter_summary.csv](parameter_summary.csv) contains
 first/terminal values, recorded extrema, and the terminal coefficient statistics.
 
+[Combined regular-query image](head_parameters_combined.png)
+([PDF](head_parameters_combined.pdf)) shows the same histories in two sections,
+for m=8 and m=12. Each has three rows (a, b, and W norm), with one column per
+actual polynomial order r=0,...,m. It follows the combined SoS figure's layout;
+these columns index direct polynomial coefficients. Blue denotes a and W norms,
+orange denotes b. Raw values and initialization markers match the separate
+figures, with a shared linear y-scale within each section's row. The standard
+`plot.py` regeneration command below also produces this image.
+
 | Range across saved snapshots and orders in this head | Degree 8 | Degree 12 |
 | --- | ---: | ---: |
 | a | −0.9070 to 1.1157 | −1.1125 to 0.8488 |

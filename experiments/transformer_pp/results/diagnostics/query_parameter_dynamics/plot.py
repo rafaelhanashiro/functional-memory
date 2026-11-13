@@ -178,6 +178,74 @@ def figure(data: dict, out: Path, *, norms: bool) -> None:
     save(fig, out, f"head_{'w_norms' if norms else 'parameters'}_m{degree}")
 
 
+def combined_figure(datasets: list[dict], out: Path) -> None:
+    """Match the combined SoS presentation, using direct polynomial orders here."""
+    datasets = sorted(datasets, key=lambda data: data["degree"])
+    assert [data["degree"] for data in datasets] == [8, 12]
+    assert len({(data["layer"], data["head"]) for data in datasets}) == 1
+    fig = plt.figure(figsize=(26, 13.8))
+    row_settings = (("a", 0., "Amplitude a", BLUE), ("b", 1., "Bias b", ORANGE),
+                    ("w_l2", None, r"$\|W_r\|_2$", BLUE))
+    for data, (bottom, top, heading) in zip(datasets, ((.555, .835, .865), (.13, .445, .475))):
+        degree, steps = data["degree"], data["steps"]
+        grid = fig.add_gridspec(3, degree + 1, left=.055, right=.985,
+                               bottom=bottom, top=top, hspace=.22, wspace=.16)
+        fig.text(.045, heading, rf"$m={degree}$", fontsize=21, fontweight="bold", color=INK)
+        fig.text(.125, heading, f"Polynomial orders 0–{degree}", fontsize=13, color="#5a6672")
+        for row, (name, initial, label, color) in enumerate(row_settings):
+            low, high = data[name].min(), data[name].max()
+            if initial is not None:
+                low, high = min(low, initial), max(high, initial)
+            padding = .09 * max(high - low, .1)
+            for order in range(degree + 1):
+                ax = fig.add_subplot(grid[row, order])
+                ax.plot(steps, data[name][:, order], color=color, lw=1.9,
+                        marker="o", markersize=2.4, markeredgewidth=0)
+                if initial is not None:
+                    ax.axhline(initial, color="#929ba5", lw=.8, ls=(0, (4, 3)), zorder=0)
+                    ax.scatter([0], [initial], color="#616d79", marker="D", s=18,
+                               zorder=4, clip_on=False)
+                ax.set_xlim(0, steps[-1])
+                ax.set_ylim(low - padding, high + padding)
+                ax.set_xticks([0, 2500, 5000, 7500], labels=["0", "2.5k", "5k", "7.5k"])
+                ax.yaxis.set_major_locator(MaxNLocator(4))
+                ax.grid(axis="y", color="#e4e8eb", linewidth=.65)
+                ax.spines[["top", "right"]].set_visible(False)
+                ax.spines[["bottom", "left"]].set_color("#b2bac3")
+                ax.tick_params(colors="#4d5965", labelsize=10,
+                               labelbottom=row == 2, labelleft=order == 0)
+                if row == 0:
+                    ax.set_title(rf"$r={order}$", loc="left", fontsize=13, color=INK, pad=9)
+                if order == 0:
+                    ax.set_ylabel(label, fontsize=13, color=INK, labelpad=12)
+                if row == 2:
+                    ax.set_xlabel("Training update", fontsize=10)
+                    ax.get_xticklabels()[0].set_ha("left")
+                    ax.get_xticklabels()[-1].set_ha("right")
+    fig.add_artist(Line2D([.045, .985], [.505, .505], transform=fig.transFigure,
+                          color="#dbe2e8", lw=1.2))
+    fig.suptitle(r"Transformer++ · Regular query · learned $a$, $b$, and $W$ norms",
+                 x=.045, y=.98, ha="left", color=INK, fontsize=25, fontweight="bold")
+    data = datasets[0]
+    fig.text(.045, .94,
+             rf"Layer {data['layer'] + 1}, head {data['head'] + 1} · $c_r(x)=[b_r+a_r\tanh(W_r^\top x)]/r!$"
+             " · RoPE · W decay",
+             fontsize=13, color="#5a6672")
+    handles = [Line2D([], [], color=color, lw=2, marker="o", markersize=4, label=label)
+               for color, label in ((BLUE, "Amplitude a and W norms"), (ORANGE, "Bias b"))]
+    handles.append(Line2D([], [], color="#929ba5", ls="--", marker="D", markersize=4,
+                           label="Analytic initialization: a = 0, b = 1"))
+    fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(.04, .923),
+               frameon=False, ncol=3, fontsize=12, columnspacing=2.6)
+    fig.text(.045, .035,
+             "Raw learned a and b; the 1/r! scaling is applied inside attention, not in these plots. "
+             "W norms are over 896 input channels. Shared linear y-scale within each section's row.\n"
+             "28 saved snapshots, updates 100–7,570. Step-zero a/b diamonds are analytic; "
+             "no step-zero W norm was saved. Lines connect recorded snapshots.",
+             color="#687583", fontsize=11, linespacing=1.7)
+    save(fig, out, "head_parameters_combined")
+
+
 def summary_rows(data: dict, settings: dict) -> list[dict]:
     rows = []
     threshold = float(settings["derived_tanh_moments"]["minimum_absolute_amplitude"])
@@ -211,6 +279,7 @@ def main() -> None:
     assert all(data["sample"] == datasets[0]["sample"] for data in datasets)
     summary = []
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 11, "pdf.fonttype": 42}):
+        combined_figure(datasets, OUT)
         for data in datasets:
             figure(data, OUT, norms=False)
             figure(data, OUT, norms=True)
