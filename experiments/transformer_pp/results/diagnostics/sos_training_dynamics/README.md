@@ -79,6 +79,46 @@ for [degree eight](coefficients_m8_final_taylor_relative.png) and
 [degree twelve](coefficients_m12_final_taylor_relative.png) provide the companion
 views. PDFs are saved alongside every PNG.
 
+## One middle-layer head's amplitudes and biases
+
+The focused view uses **layer 8 of 15, head 1 of 14** (zero-based indices 7, 0)
+for both runs. This is the middle layer and first head, fixed before inspecting
+the histories, rather than selected for unusual behavior. The selection records
+these indices and the exact fields: `modulation_amplitude` for a and
+`projection_bias` for b. All 28 evaluations preserve the raw parameters for every
+generator coordinate; no token averaging or factorial rescaling is applied.
+
+![Degree-eight amplitudes and biases for layer eight, head one](head_parameters_m8.png)
+
+![Degree-twelve amplitudes and biases for layer eight, head one](head_parameters_m12.png)
+
+Each column is a power in a **square factor**, with blue for U and orange for V;
+the top row shows a and the bottom row b, on a shared linear scale within each
+row. These are the parameters in `F_j(x)=f_j[1+b_j+a_j tanh(W_j^T x)]/2`, not
+parameters of the expanded `c_r`. Degree eight has factor coordinates
+`U_0,...,U_4,V_0,...,V_3`; degree twelve has
+`U_0,...,U_6,V_0,...,V_5`. The highest factor power has U only. The generic
+`effective_coefficient_names` stored beside the arrays refer to expanded
+coefficients and must not be used to label the generator coordinates.
+
+Step-zero diamonds and dashed references mark analytic initialization a=0, b=1;
+there is no saved step-zero snapshot. Lines connect the 28 recorded evaluations
+from updates 100 through 7,570. Parameter changes between evaluations are not
+resolved, and this single head does not summarize the full model.
+
+This head has larger parameter drift at degree twelve: recorded a ranges from
+−1.8381 to 2.0958 and b from −0.9411 to 1.4389, versus −0.8638 to 1.0245 and
+0.6836 to 1.3130 at degree eight. Several degree-twelve factors develop opposing
+a and b trends; U_2 ends at a=1.9649, b=−0.9231, and V_4 at a=2.0958,
+b=−0.9411. The curves look gradual at this cadence. They do not establish tanh
+saturation or a causal explanation of training stability; that would require
+the projected inputs and their activation distributions. Negative generator
+parameters are compatible with the sum-of-squares constraint.
+
+[head_parameter_summary.csv](head_parameter_summary.csv) gives each coordinate's
+initialization, first recorded value, terminal value, and recorded extrema.
+PDFs accompany both figures.
+
 ## What the coefficients mean
 
 Suppressing layer/head indices, the generator produces
@@ -136,7 +176,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagno
 
 The script checks scientific input hashes, complete status, model shape, gradient
 window coverage, and the coefficient sample/array invariants. It regenerates all
-PNG/PDF figures and both summary CSVs from committed run measurements; no GPU,
+PNG/PDF figures and the three summary CSVs from committed run measurements; no GPU,
 dataset, checkpoint, or training log is needed. Repeated regeneration is
 byte-identical in the locked environment. To deliberately change selected inputs,
 edit `selection.yaml`, refresh its pins, and regenerate:
