@@ -1644,7 +1644,9 @@ Added 2026-11-12. With a very negative score the degree-eight query polynomial g
 orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
 key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
 the 12-layer width-640 shape, and with softplus at the reference shape ([below](#reference-shape-softplus-run))?
-Question, roles, decision rule and results: the
+Softplus cleared the topic's 0.5% bar at the 12-layer width-640 shape; abs did not. At the reference shape
+softplus at degree eight fell short of it (0.42% below its control, level with exp); a degree-twelve softplus
+run follows. Question, roles, decision rule, findings and diagnostics: the
 [score_transforms topic](results/exploratory/score_transforms/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
@@ -1653,11 +1655,16 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
     W(t,i) = sum_(r=0..8) c_r(x_t) z_ti^r
     o_t = head_RMSNorm(sum_(i<=t) W(t,i) v_i)
 
-| Run | Label | `phi(s)` | `b_0` start | Parameters |
-| --- | --- | --- | --- | ---: |
-| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 |
-| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 |
-| `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 |
+| Run | Label | `phi(s)` | `b_0` start | Parameters | Validation-best PPL (update) | Terminal PPL | vs control | vs exp |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `r1d342ca6e58c` | query-m8-w-decay-l12-d640-softplus-input | `log(1 + exp(s))` | 0 | 99,678,056 | 17.488 (7,551) | 17.488 | −0.59% | −0.36% |
+| `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 | 17.941 (7,551) | 17.941 | +1.98% | +2.22% |
+| `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
+| `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
+| `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 | 14.262 (7,500) | 14.265 | −0.42% | +0.04% |
+
+The reference-shape row compares validation-best perplexity with that shape's control `r25fffc16c2f3`
+(14.323) and exp `r6a76e7fbde45` (14.257).
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1694,19 +1701,14 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
   transform at production precision, degree eight, 2,048 tokens, against host FP64) and the strips'
   score-bias qualification `tests/test_score_bias_strips.py`, nothing else. A skipped test fails acceptance.
 
-Home cluster: **Kennel**. One GPU per run; the two jobs have no scheduling dependency.
+Home cluster: **Kennel**. Both runs are complete, each trained on one H100 PCIe; each record holds its launch
+commit, attempts, and the artifact-root locations of its validation-best checkpoint, kept gradient-event
+states and log. One GPU per run; the two jobs have no scheduling dependency.
 
-**GPU qualification and time limit.** Two H100 PCIe GPUs of `mastiff` ran the qualification (jobs 243502 and
-243529, commits `593e7267` and `1fa151b7`, one frozen execution set;
-[validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12)).
-On both the GPU stage passed (16 cases; transform cases at 1.007–1.011x their BF16 floors). Each recipe's
-20-update pilot (acceptance's own worker, with validation, diagnostics and a checkpoint) had finite losses and
-valid diagnostics, and acceptance's resume (update 21 in a fresh process) passed its audit:
-
-| Run | s/update | Projected hours (7,551 updates) | Allocator peak GiB | Update estimate GiB, H100 / B200 |
-| --- | ---: | ---: | ---: | ---: |
-| `r1d342ca6e58c` | 3.24–3.33 | 7.3–7.5 | 22.9 | 22.2 / 21.6 |
-| `r17a1290cb4ac` | 3.24–3.27 | 7.3–7.4 | 23.6 | 22.8 / 22.4 |
+**GPU qualification and time limit.** The strips' GPU stage, each recipe's 20-update pilot and acceptance's
+fresh-process resume passed on H100 PCIe
+([validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-causal-strips-2026-11-12));
+the pilots project 7.3–7.5 hours for 7,551 updates, with allocator peaks of 22.9 and 23.6 GiB.
 
 The default allocator share (59.4 GiB on an H100) holds either run. The H100 PCIe is the slowest GPU type these
 runs may receive, so each limit is the slowest projection plus two hours, rounded up: 7.5 + 2 gives 10 hours,
@@ -1755,6 +1757,9 @@ control `r25fffc16c2f3` (validation-best 14.323; exp `r6a76e7fbde45` 14.257, fix
   beside the query kernels' own Mosaic cases (`tests/test_mosaic_query.py`, `tests/test_mosaic_repeatability.py`
   and the tanh query modules the control's acceptance ran), at BF16. A skipped test fails acceptance.
 
+Home cluster: **Kennel**. The run is complete, trained on one H100 PCIe; its record holds its launch commit,
+attempt, and the artifact-root locations of its validation-best checkpoint, kept gradient-event state and log.
+
 **GPU qualification and time limit.** Two jobs on one H100 PCIe of `mastiff` qualified the kernels and timed
 the run (jobs 244010 and 244157, commits `fe0c2a97` and `261dfa47`, one frozen execution set;
 [validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)):
@@ -1777,10 +1782,10 @@ that ratio. The default allocator share (59.4 GiB on an H100) holds the run. The
 the run may receive, so the limit is its projection plus two hours, rounded up: 11 hours, within `standard`'s 24
 (an SXM alone would need 8); acceptance projects again on the granted GPU and refuses the allocation if that
 projection exceeds 9 hours. No Blackwell GPU has run the transformed kernels, so the run trains on H100 alone.
-The current frozen execution set (`e185c0c5`) differs from the jobs' in softplus's input at `-inf` (the same for
+The run's frozen execution set (`e185c0c5`) differs from the jobs' in softplus's input at `-inf` (the same for
 every finite score), the H100-only admission (backend selection and the kernels' entry point), tests and
-documentation. No GPU has run it, so acceptance's GPU stage at launch, which runs the transform module's 50 BF16
-cases (among them an overflowing score) with the query kernels' modules, is its first GPU check.
+documentation; acceptance's GPU stage at launch, which ran the transform module's 50 BF16 cases (among them an
+overflowing score) with the query kernels' modules, passed on the run's H100 PCIe.
 Submit it from the isolated `claude/score-transforms-mosaic` worktree after committing the frozen execution set:
 
 ```bash

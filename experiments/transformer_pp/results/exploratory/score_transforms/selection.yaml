@@ -125,6 +125,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/ra3b54e2489f8/config.yaml
       sha256: adcdb8b7e740ccba18fb7f2bb58fa61fbfdbd14b8012af7d340084b9230387e8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metrics.jsonl
+      sha256: 5140f6c7616d040a3d42f2c160ae9bd1dbf05af71d9d1e18d7004417bea55376
+    completion.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/completion.json
+      sha256: c18bfc1c6c466880e0fb95b821bde777a4f80b67d628d1f763f19b4459e5f9b0
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metadata.json
+      sha256: 1acd67f9b01c47658e98407080f6c300a255c6082130e1c193b46d298f679617
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/best_validation.json
+      sha256: f87bb399b3dd68ae8abec08b14a8225198bef5069e04288208fcb056b2584ad3
 - study: transformer_pp
   run_id: r25fffc16c2f3
   role: control_query_m8_rope_w_decay
