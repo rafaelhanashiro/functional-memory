@@ -35,9 +35,12 @@ def has_rational_kernel(model) -> bool:
 
 
 def is_signed_kernel(model) -> bool:
-    """Kernels whose weights may be negative or zero by design."""
+    """Kernels whose weights may be negative or zero by design. Unnormalized sum-of-squares query
+    coefficients count: the kernels evaluate their expanded coefficients, which round below zero near
+    a double root of q1^2 + q2^2."""
     return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
-            or (has_learned_polynomial(model) and not has_sum_of_squares_kernel(model)))
+            or (has_learned_polynomial(model)
+                and (not has_sum_of_squares_kernel(model) or not model.attention_normalization)))
 
 
 def requires_update_checks(model) -> bool:

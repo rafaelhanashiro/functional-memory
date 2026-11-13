@@ -26,9 +26,12 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
                     feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none",
+                    initialization: str = "taylor", parameterization: str = "direct",
                     constant_initial: float | None = None):
-    """b starts at 1/r!, or for diagonal tanh query coefficients with ``constant_initial`` b_0 at that value
-    and b_r at 1/r! for r >= 1; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
+    """b starts at 1/r! (the Hermite start's coefficients under "hermite"; 1 under sum_of_squares,
+    where b + a tanh is relative to the Taylor square factors), or for diagonal tanh query coefficients
+    with ``constant_initial`` b_0 at that value and b_r at 1/r! for r >= 1; W at zero or N(0,
+    projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
@@ -40,6 +43,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     per layer and head and repeated over the orders. kernel_weight_decay decays the projections
     W, W_k, U and w; b, a, a_k, beta, the gate biases, A_log, and V never decay."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
+    from scaffolds.transformer.attention.unnormalized import initial_coefficients
 
     if readout not in ("diagonal", "dense"):
         raise ValueError(f"Unknown coefficient readout: {readout}")
@@ -72,7 +76,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
             initial=tuple(1.0 if output == feature else 0.0 for output in range(count) for feature in range(features)),
             initial_shape=(count, features), sharing="per_head", weight_decay=False,
         ))
-    bias = tuple(1.0 / math.factorial(r) for r in range(count))
+    bias = (1.0,) * count if parameterization == "sum_of_squares" else initial_coefficients(degree, initialization)
     if constant_initial is not None:
         bias = (float(constant_initial), *bias[1:])
     specs = (

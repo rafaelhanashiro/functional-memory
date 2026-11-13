@@ -1833,3 +1833,61 @@ sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-t
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
+
+## Coefficient forms and the degree-twelve Taylor control
+
+Five runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
+and the per-order query–key gate. Each is its partner's recipe with the named change, one seed, at
+the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/poly-two-lines`.
+
+| Run | Label | Partner | Change | GPU |
+| --- | --- | --- | --- | --- |
+| `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 |
+| `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 |
+| `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
+| `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
+| `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | B300 or H100 |
+| `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
+
+- **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
+  per-order gates $D_r$. Only the gate reads the tokens; the coefficients are broadcast to the
+  query-coefficient decay kernels.
+- **Sum of squares:** $p(s) = q_1(s)^2 + q_2(s)^2$ with factors $q_k(x_t) = f_k (1 + g_k(x_t)) / 2$,
+  where $g_k = b_k + a_k \tanh(w_k \cdot x_t)$ and $f$ are the Taylor square factors of
+  `attention/nonnegative_polynomial.py`. At $b = 1$, $a = 0$ it is $T_8$; the $(1 + g)/2$ keeps a step in
+  $g$ at the direct form's first-order effect on the polynomial. The factors are expanded per query
+  to $c_r(x_t)$ for the unchanged Mosaic query kernel, so the parameter count equals the partner's.
+- **Hermite start:** $b_r$ starts at $r!\,c_r$ for the truncated Hermite expansion
+  $e^{1/2}\sum_{n \le 8} \mathrm{He}_n(s) / n!$, the fixed Hermite run `ra040de24096c`'s coefficients.
+
+`coefficient_forms_acceptance` pins each partner recipe and rejects unrelated changes; the fixed Taylor
+run uses the shared adapter. The sum-of-squares run launches from `claude/poly-two-lines-sos`, whose
+diagnostics treat the expanded sum-of-squares kernels as signed: values near a double root of
+$q_1^2 + q_2^2$ round to either sign. Each query-coefficient control ran on B300, so these request B300; the
+per-order query–key kernels above degree six fit only H100.
+
+From the worktree root, after committing the frozen inputs:
+
+```bash
+for run in ra0f402ff6758 r2e25140c75db; do  # H100 on dogo (mastiff is PCIe, too slow for degree 8)
+  sbatch --parsable --partition=standard,long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=mastiff,akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_forms_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+done
+submit() {  # run, adapter
+  sbatch --parsable --partition=standard,long --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --job-name="$1" \
+    --output="experiments/transformer_pp/runs/$1/training.log" \
+    --error="experiments/transformer_pp/runs/$1/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$(git rev-parse HEAD)" 1 B300
+}
+submit rb2b70dae4d21 acceptance
+submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-sos
+# Degree twelve, from claude/poly-two-lines-sos, on long with --gres=gpu:1 and GPU types B300,H100:
+# submit r3d52b7ab43d1 coefficient_forms_acceptance
+submit r6adefb42f443 coefficient_forms_acceptance
+```

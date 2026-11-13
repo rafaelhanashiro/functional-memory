@@ -1,0 +1,11 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3d52b7ab43d1/config.yaml",
+    "sha256": "9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa"
+  },
+  "label": "query-m12-sum-of-squares-w-decay",
+  "name": "query-m12-sum-of-squares-w-decay",
+  "record_schema_version": 1,
+  "run_id": "r3d52b7ab43d1",
+  "status": "planned"
+}

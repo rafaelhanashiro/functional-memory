@@ -122,6 +122,8 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
                 kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
+                initialization=getattr(config, "attention_coefficient_initialization", "taylor"),
+                parameterization=parameterization,
                 readout=getattr(config, "attention_coefficient_readout", "diagonal"),
                 feature_count=getattr(config, "attention_coefficient_feature_count", None),
                 gate=getattr(config, "attention_coefficient_gate", "none"),
