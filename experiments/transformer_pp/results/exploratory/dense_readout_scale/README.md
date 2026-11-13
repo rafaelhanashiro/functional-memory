@@ -50,7 +50,7 @@ Two more runs use $K = 9$ features with $s = 1/3$, at m = 4 (`r04a5b2a3e8dd`) an
   Taylor by 1.3%.
 - No dense variant beats fixed Taylor at m = 4.
 - W decay on the feature projection leaves dense level or slightly worse: 14.739 (K = 5)
-  and 14.798 (K = 9), in [query_optimization](../query_optimization/README.md#projection-decay-across-path-and-dense-generators).
+  and 14.798 (K = 9), in [query_optimization](../query_optimization/README.md#projection-decay-across-generators).
 
 ## Sigmoid coefficients
 

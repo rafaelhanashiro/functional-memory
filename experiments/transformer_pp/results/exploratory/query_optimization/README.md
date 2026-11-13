@@ -63,11 +63,12 @@ in a host loop; the new runs use the shared trainer's compiled accumulation loop
 The averaging, clipping, and AdamW mathematics agree, but floating-point training
 trajectories need not be identical. Small differences warrant confirmation.
 
-## Projection decay across PaTH and dense generators
+## Projection decay across generators
 
-Three degree-four runs apply the same W decay of 0.1 to PaTH and to dense tanh features.
-Each matches its control except for `model.attention_coefficient_kernel_weight_decay:
-true`; for dense, $V$ and $b$ stay exempt. Best validation perplexity; terminal values
+Four degree-four runs apply the same W decay of 0.1 to PaTH, dense tanh features, and
+query-key coefficients. Each matches its control except for the decay flags; for dense,
+$V$ and $b$ stay exempt, and query-key decays both its query and key projections
+(`attention_coefficient_key_kernel_weight_decay`, defined only at the run's source commit). Best validation perplexity; terminal values
 are within 0.007 of it.
 
 | Variant | Control, no W decay | W decay 0.1 | Change |
@@ -75,9 +76,11 @@ are within 0.007 of it.
 | PaTH, query | 14.528 (`r74a50aca921e`) | 14.398 (`r1f2c24c109f9`) | -0.9% |
 | Dense K = 5, $s = 1/\sqrt5$ | 14.710 (`rcaff0dfb095f`) | 14.739 (`rdacb58b7981c`) | +0.2% |
 | Dense K = 9, $s = 1/3$ | 14.782 (`r04a5b2a3e8dd`) | 14.798 (`r753a7e8d3212`) | +0.1% |
+| Query-key | 14.722 (`r501f5cca0d4c`) | 14.818 (`r79d829a16029`) | +0.7% |
 
 - W decay helps PaTH query by 0.9%, twice its gain with RoPE at 1x.
-- It leaves the dense generators level or slightly worse.
+- It leaves the dense generators level or slightly worse, and hurts query-key by 0.7%, more
+  than at 2.5x (+0.07%).
 - The K = 9 control used the older host gradient-accumulation loop; its W-decay run used
   the compiled loop, so that pair also differs in loop.
 
