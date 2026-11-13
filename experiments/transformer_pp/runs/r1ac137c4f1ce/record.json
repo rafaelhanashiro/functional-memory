@@ -1,0 +1,19 @@
+{
+  "checkpoint_retention": "none; reads referenced validation-best checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/config.yaml",
+    "sha256": "ac1e61d6e01a7832450659294b58a35197f705669a04640eb4bbf0233b1b766e"
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "home_cluster": "kennel",
+  "label": "query-m8-m12-head-activation-diagnostic",
+  "name": "query-m8-m12-head-activation-diagnostic",
+  "optimizer_updates": 0,
+  "parent_run_ids": [
+    "r25fffc16c2f3",
+    "r0fceea0627c8"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r1ac137c4f1ce",
+  "status": "planned"
+}
