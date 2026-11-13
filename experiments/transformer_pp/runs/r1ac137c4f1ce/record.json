@@ -1,12 +1,150 @@
 {
+  "acceptance": {
+    "cpu_capture_smoke": {
+      "instrumented_and_plain_loss_exactly_equal": true,
+      "manual_coefficient_max_normalized_error": 1.01e-07,
+      "nonuniform_rmsnorm_gain": true,
+      "nonzero_a_and_b": true,
+      "shape": {
+        "degree": 8,
+        "heads": 2,
+        "hidden_size": 32,
+        "layers": 2,
+        "query_tokens": 16
+      },
+      "status": "passed"
+    },
+    "gpu_kernel_checks": {
+      "duration_seconds": 145.01,
+      "failed": 0,
+      "passed": 6,
+      "record": "scaffolds/transformer/validation/query_activation_probe_b200.json",
+      "skipped": 0,
+      "status": "passed"
+    }
+  },
+  "artifact_directory": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce",
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce/activations.npz",
+      "sha256": "c4a4cc255065d30a230206557d43d313725e4f1a3a21cf372483dee837cae2c4",
+      "size_bytes": 33619464
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/completion.json",
+      "sha256": "b6c80f4b75f8581a9ec191593415eed641d712771eee4c0cd93d2d76c3c92272",
+      "size_bytes": 995
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/metadata.json",
+      "sha256": "5fff6bd1fdcfde78a3c8256223f540d983a297f04327633abcccef6b0cd3b383",
+      "size_bytes": 1669
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/metrics.jsonl",
+      "sha256": "388a3bd9d62b1369a74ea195f4c788c3d2123489b0e8284290070f819d5c6ed2",
+      "size_bytes": 75281
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce/training.log",
+      "sha256": "d4daf10faf197d93300d080b34061466958ff36f99a23414d43d1cb764ba5e00",
+      "size_bytes": 640
+    }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-13T16:57:52.297756+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B200",
+      "node": "shiba.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "debug",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/bin/python",
+      "resolved_attention_backends": {},
+      "slurm_job_id": "244590",
+      "source_commit": "2d7338c088dda88d31974573c9536638c6e43344",
+      "started_utc": "2026-11-13T16:56:49.587833+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
   "checkpoint_retention": "none; reads referenced validation-best checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/completion.json",
+    "sha256": "b6c80f4b75f8581a9ec191593415eed641d712771eee4c0cd93d2d76c3c92272",
+    "size_bytes": 995
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/config.yaml",
     "sha256": "ac1e61d6e01a7832450659294b58a35197f705669a04640eb4bbf0233b1b766e"
   },
   "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "diagnostic_outcome": {
+    "finished_utc": "2026-11-13T16:57:49.271531+00:00",
+    "interpretation": "One frozen validation-best checkpoint per regular query polynomial degree, using the first held-out sequence at layer 8 / head 1 (zero-based indices 7 / 0). Measure pre-attention RMSNorm input norms, coefficient-vector norms, projections, alignment, and tanh saturation through the native Mosaic forward pass. No optimizer state is restored, no gradient is computed, and no parameter is updated.",
+    "models": [
+      {
+        "all_reference_moments_within_tolerance": true,
+        "checkpoint_parameters_match": true,
+        "parent_parameters_unchanged": true,
+        "role": "query_m8"
+      },
+      {
+        "all_reference_moments_within_tolerance": true,
+        "checkpoint_parameters_match": true,
+        "parent_parameters_unchanged": true,
+        "role": "query_m12"
+      }
+    ],
+    "optimizer_updates": 0,
+    "sample_record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "status": "complete"
+  },
+  "frozen_execution_sha256": "dc8e59990dd443962a636b30121da69abfdf37ae81a12f7f36e3d759c83cbdfb",
   "home_cluster": "kennel",
   "label": "query-m8-m12-head-activation-diagnostic",
+  "launch": {
+    "cpus": 8,
+    "elapsed_seconds": 232,
+    "exit_code": "0:0",
+    "gpu_count": 1,
+    "gpu_type": "B200",
+    "memory": "64G",
+    "node": "shiba",
+    "partition": "debug",
+    "qos": "debug",
+    "slurm_gres_index": 2,
+    "slurm_job_id": "244590",
+    "state": "COMPLETED",
+    "time_limit": "00:30:00"
+  },
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce/training.log",
+    "sha256": "d4daf10faf197d93300d080b34061466958ff36f99a23414d43d1cb764ba5e00",
+    "size_bytes": 640
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/metadata.json",
+    "sha256": "5fff6bd1fdcfde78a3c8256223f540d983a297f04327633abcccef6b0cd3b383",
+    "size_bytes": 1669
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r1ac137c4f1ce/metrics.jsonl",
+    "sha256": "388a3bd9d62b1369a74ea195f4c788c3d2123489b0e8284290070f819d5c6ed2",
+    "size_bytes": 75281
+  },
   "name": "query-m8-m12-head-activation-diagnostic",
   "optimizer_updates": 0,
   "parent_run_ids": [
@@ -15,5 +153,34 @@
   ],
   "record_schema_version": 1,
   "run_id": "r1ac137c4f1ce",
-  "status": "planned"
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "query_m12": "mosaic",
+      "query_m8": "mosaic"
+    },
+    "slurm_job_id": "244590",
+    "source_commit": "2d7338c088dda88d31974573c9536638c6e43344",
+    "started_utc": "2026-11-13T16:56:49.587833+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "slurm_job_id": "244590",
+  "source_commit": "2d7338c088dda88d31974573c9536638c6e43344",
+  "status": "complete"
 }

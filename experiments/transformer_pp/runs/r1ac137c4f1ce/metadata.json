@@ -1,0 +1,41 @@
+{
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "query_m12": "mosaic",
+      "query_m8": "mosaic"
+    },
+    "slurm_job_id": "244590",
+    "source_commit": "2d7338c088dda88d31974573c9536638c6e43344",
+    "started_utc": "2026-11-13T16:56:49.587833+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "sample": {
+    "diagnostic_pass_contributes_to_validation_loss": false,
+    "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "num_sequences": 1,
+    "prediction_tokens": 2048,
+    "record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "selection": "first_heldout_sequence",
+    "sequence_index": 0,
+    "source": "packed"
+  },
+  "status": "complete"
+}

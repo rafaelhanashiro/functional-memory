@@ -11,6 +11,17 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
+
+Job `244590` on one B200 in `shiba` ran six existing query-kernel checks under the locked CUDA 13
+environment at `2d7338c0`: **6 passed in 145.01 seconds**. Degrees 8 and 12 at Q/K width 64,
+512 tokens and two heads matched independent NumPy FP64 and Pallas-Triton forward outputs and
+Q/K/V/coefficient VJPs; degree 12 also matched Triton at 2,048 tokens and four heads. Every case
+ran with both BF16 and BF16X3 weight products. The checks preceded the bounded checkpoint
+forward diagnostic; they do not qualify a full training run or optimizer continuation.
+[query_activation_probe_b200.json](query_activation_probe_b200.json) records the exact tests,
+bounds, source and lock, allocation, runtime, and retained-log checksum.
+
 ### Score transforms on the Mosaic query-polynomial kernels (2026-11-12)
 
 Two Mosaic kernel families, `query_softplus` and `query_abs` (`backends/mosaic/common.py`), evaluate the
