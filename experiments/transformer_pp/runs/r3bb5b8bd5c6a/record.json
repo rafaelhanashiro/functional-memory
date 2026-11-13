@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3bb5b8bd5c6a/config.yaml",
+    "sha256": "9e8cbc27c4948213adaf737ee6ec47f26f386e0555fffc0980723cab3771f4f3"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-l12-d640-2x",
+  "name": "softmax-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "r3bb5b8bd5c6a",
+  "status": "planned"
+}

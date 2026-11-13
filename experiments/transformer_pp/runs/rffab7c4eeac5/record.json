@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rffab7c4eeac5/config.yaml",
+    "sha256": "583f8a50bb0ec08b34df225aa33a37ffb22c96ddc215befa6b856d1f5347e45a"
+  },
+  "home_cluster": "kennel",
+  "label": "fixed-m12-l12-d640-2x",
+  "name": "fixed-m12-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "rffab7c4eeac5",
+  "status": "planned"
+}

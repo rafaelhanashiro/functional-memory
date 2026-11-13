@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd920368a922e/config.yaml",
+    "sha256": "85dec8d0b76164b48e6e1031eab74390c91a1342b34c5c45c71ba685cf4bdeb9"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-l12-d640-2x",
+  "name": "exp-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "rd920368a922e",
+  "status": "planned"
+}

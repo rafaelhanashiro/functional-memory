@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd77db79142e6/config.yaml",
+    "sha256": "370f31a7be0cc013481da69144ca296dc6face922d8abd7b9fe77f8ac1773bc7"
+  },
+  "home_cluster": "kennel",
+  "label": "fixed-m8-l12-d640-2x",
+  "name": "fixed-m8-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "rd77db79142e6",
+  "status": "planned"
+}

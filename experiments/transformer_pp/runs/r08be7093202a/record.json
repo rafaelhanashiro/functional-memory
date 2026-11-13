@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r08be7093202a/config.yaml",
+    "sha256": "4683fd9da0993fd319e38e593a4dedafdf9cbe73d26cedf38795e1fa518c2a3f"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-sum-of-squares-w-decay-l12-d640-2x",
+  "name": "query-m12-sum-of-squares-w-decay-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "r08be7093202a",
+  "status": "planned"
+}

@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r656e8e652b72/config.yaml",
+    "sha256": "21e7d20dbd14a6fa50673f76de899515990ea5aa89ea392613e511d097bbf54d"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-forget-gate-no-rope-w-decay-l12-d640-2x",
+  "name": "query-m8-forget-gate-no-rope-w-decay-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "r656e8e652b72",
+  "status": "planned"
+}
