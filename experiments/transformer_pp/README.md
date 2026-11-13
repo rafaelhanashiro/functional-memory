@@ -1841,3 +1841,31 @@ submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-
 # submit rdfc61c988309 coefficient_forms_acceptance
 submit r6adefb42f443 coefficient_forms_acceptance
 ```
+
+## Regular-query coefficient activation diagnostic
+
+`r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
+(`r25fffc16c2f3`) and degree-twelve (`r0fceea0627c8`) validation-best checkpoints at
+step 7,500. It uses the first held-out 2,048-token input and layer 8, head 1 to
+measure pre-attention RMSNorm activations, coefficient projection-vector norms,
+their dot products, and tanh saturation. It preserves each parent's native Mosaic
+forward pass and restores parameters only. The frozen config pins the parent
+recipes, checkpoints, data identity, and saved coefficient measurements.
+
+The [diagnostic record](results/diagnostics/query_parameter_dynamics/README.md)
+contains the findings and regeneration commands. From the isolated diagnostic
+worktree, after committing its execution inputs:
+
+```bash
+run=r1ac137c4f1ce
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launcher selects the worktree's locked CUDA 13 environment on B200 and gates
+inference on six native query-kernel parity checks, including degrees 8 and 12
+at key width 64 and degree 12 at the 2,048-token context. This qualifies the
+forward diagnostic's allocation; it does not establish full training qualification.
