@@ -37,7 +37,7 @@ INDEX_COLUMNS = (
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
     "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
-    "attention_score_transform", "coefficient_parameterization", "coefficient_initialization",
+    "attention_score_transform", "coefficient_parameterization", "coefficient_input_power", "coefficient_initialization",
     "coefficient_constant_initial", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
@@ -583,6 +583,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         # Likewise the polynomial's input transform: a model recipe without the field reads the score itself.
         "attention_score_transform": model.get("attention_score_transform", "identity") if model else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
+        "coefficient_input_power": model.get("attention_coefficient_input_power"),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
         # The order-0 offset's start where a recipe sets one in place of its initialization's; empty otherwise.
         "coefficient_constant_initial": None if coefficient_table else model.get("attention_coefficient_constant_initial"),

@@ -115,13 +115,15 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
             from scaffolds.transformer.attention.input_dependent import parameter_specs
 
             specs = parameter_specs(
-                hidden_size=config.hidden_size, degree=config.attention_degree,
+                hidden_size=config.hidden_size,
+                degree=config.attention_degree - getattr(config, "attention_coefficient_input_power", 0),
                 activation=config.attention_coefficient_activation,
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
                 projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
                 tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
                 kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
+                parameterization=parameterization,
                 readout=getattr(config, "attention_coefficient_readout", "diagonal"),
                 feature_count=getattr(config, "attention_coefficient_feature_count", None),
                 gate=getattr(config, "attention_coefficient_gate", "none"),

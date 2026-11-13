@@ -1,0 +1,14 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml",
+    "sha256": "851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110"
+  },
+  "home_cluster": "kennel",
+  "label": "query-sos-core-m8-softplus-rope-w-decay",
+  "name": "query-sos-core-m8-softplus-rope-w-decay",
+  "parameter_count": 200150806,
+  "record_schema_version": 1,
+  "run_id": "r41a4c74c5f58",
+  "seed": 42,
+  "status": "planned"
+}

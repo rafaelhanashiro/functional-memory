@@ -225,9 +225,9 @@ def test_zero_kernel_values_are_valid_and_only_zero_row_sums_poison_their_rows()
 def test_configuration_validation_backend_selection_and_legacy_equality():
     config = _model_config(4)
     assert config.attention_coefficient_parameterization == "sum_of_squares"
-    for updates, message in ((dict(attention_degree=3), "even attention_degree"),
-                             (dict(attention_degree=1), "even attention_degree"),
-                             (dict(attention_normalization=False), "row-normalized"),
+    for updates, message in ((dict(attention_degree=3), "even core degree"),
+                             (dict(attention_degree=1), "even core degree"),
+                             (dict(attention_normalization=False), "normalized static"),
                              (dict(attention_coefficients="fixed"), "learned polynomial"),
                              (dict(attention_coefficient_parameterization="softplus"), "Unknown coefficient")):
         with pytest.raises(ValueError, match=message):

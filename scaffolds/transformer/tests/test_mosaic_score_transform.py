@@ -41,6 +41,7 @@ def _requires_mosaic_gpu(monkeypatch):
         pytest.skip("Requires an H100 or B300 allocation")
     # These cases qualify the kernels, so they run them on either architecture, admitted or not yet.
     monkeypatch.setattr(api, "TRANSFORM_ARCHITECTURES", ("hopper", "blackwell"))
+    monkeypatch.setattr(api, "TRANSFORM_COMPUTE_CAPABILITIES", ("9.0", "10.0", "10.3"))
 
 
 def _inputs(degree, width, spread, *, time=512, heads=2, seed=31):

@@ -8,20 +8,26 @@ def _runtime_platform():
     return jax.default_backend()
 
 
-def _cuda_compute_capability():
-    """Lowest NVIDIA compute capability among local training devices."""
+def _cuda_compute_capabilities():
+    """Exact NVIDIA capabilities of the local training devices, or None if unknown."""
     import jax
 
     devices = jax.local_devices(backend="gpu")
-    majors = []
+    capabilities = []
     for device in devices:
         capability = getattr(device, "compute_capability", None)
         if callable(capability):
             capability = capability()
         if capability is None:
             return None
-        majors.append(int(str(capability).split(".")[0]))
-    return min(majors) if majors else None
+        capabilities.append(str(capability))
+    return tuple(capabilities) if capabilities else None
+
+
+def _cuda_compute_capability():
+    """Lowest NVIDIA compute-capability major among local training devices."""
+    capabilities = _cuda_compute_capabilities()
+    return min(int(capability.split(".")[0]) for capability in capabilities) if capabilities else None
 
 
 def resolve_attention_backend(model_config, *, dtype="float32", platform=None, sequence_length=None) -> str:
@@ -110,14 +116,21 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         length = model_config.max_seq_len if sequence_length is None else sequence_length
         capability = 9 if platform is not None else _cuda_compute_capability()
         multiple = 128 if capability == 9 else 256
+        transformed_device_supported = False
+        if transformed:
+            from scaffolds.transformer.attention.backends.mosaic.api import transformed_compute_capability_supported
+
+            capabilities = ("9.0",) if platform is not None else _cuda_compute_capabilities()
+            transformed_device_supported = bool(capabilities) and all(
+                transformed_compute_capability_supported(item) for item in capabilities)
         problems = [message for failed, message in (
             (dtype != "bfloat16", "Mosaic attention requires train.dtype=bfloat16"),
             (capability not in (9, 10), f"Mosaic attention requires an H100 (sm90) or B300 (sm10x) GPU, got sm{capability}x"),
             (score_bias and capability != 9,
              f"Mosaic score-bias attention is qualified on H100 (sm90) only, got sm{capability}x"),
-            # B300's transformed query-polynomial kernels lower but no Blackwell GPU has run them.
-            (transformed and capability != 9,
-             f"Mosaic transformed query-polynomial attention is qualified on H100 (sm90) only, got sm{capability}x"),
+            # B200 and B300 share kernels, but only the former is admitted on Blackwell.
+            (transformed and not transformed_device_supported,
+             "Mosaic transformed query-polynomial attention admits H100 (sm90) and B200 (sm100) only"),
             (length % multiple, f"Mosaic attention on sm{capability}x requires sequence length divisible by {multiple}"),
         ) if failed]
         if not problems:

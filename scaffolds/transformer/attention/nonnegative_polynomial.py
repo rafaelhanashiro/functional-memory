@@ -8,12 +8,17 @@ coefficients of q1 and q2 are the learned parameters, one set per layer and head
 the same count as learning c_0..c_m directly; the scale is redundant under row
 normalization, as it is for the direct coefficients.
 
-The kernel is evaluated as q1(s)^2 + q2(s)^2, never through the expanded
+The static kernel is evaluated as q1(s)^2 + q2(s)^2, never through the expanded
 coefficients: expanding a polynomial whose minimum is near zero cancels in
 floating point and can produce small negative values, which would break the
 nonnegativity the parameterization exists to guarantee. Individual kernel values
 may be exactly zero (at a common real root of q1 and q2); only a row sum of zero
 is invalid.
+
+The query-conditioned path instead expands generated factors into FP32 coefficients
+for the query-polynomial kernels. It can therefore round slightly negative near roots;
+its numerical diagnostics treat it as signed. With input_power=1 the expansion is
+multiplied by z through a structural leading zero, representing z h(z), z=softplus(s).
 
 Factors are stored in ascending powers, q1 first: [q1_0, ..., q1_k, q2_0, ..., q2_{k-1}].
 They are initialized so that q1^2 + q2^2 equals the Taylor polynomial
@@ -84,6 +89,34 @@ def effective_coefficients_numpy(factors, degree: int | None = None) -> np.ndarr
         for j in range(q2.shape[-1]):
             out[..., i + j] += q2[..., i] * q2[..., j]
     return out
+
+
+def query_square_coefficients(generated: jax.Array, degree: int, *, input_power: int = 0) -> jax.Array:
+    """Actual coefficients of z^input_power (q1(z)^2 + q2(z)^2), of TOTAL degree ``degree``.
+
+    ``generated`` contains g_j=b_j+a_j tanh(W_j^T x), with core_degree+1 factors,
+    core_degree=degree-input_power. Each factor is f_j (1+g_j)/2 for the fixed Taylor
+    square factors f. Thus g=1 starts h at T_core_degree; input_power=1 starts p at
+    z T_core_degree(z), not T_degree(z). The returned FP32 coefficients already include
+    factorial order scaling. Padding fixes c_0 exactly to zero without a learned parameter.
+    """
+    if type(input_power) is not int or input_power not in (0, 1):
+        raise ValueError("input_power must be the integer 0 or 1")
+    if type(degree) is not int:
+        raise ValueError("The total polynomial degree must be an integer")
+    core_degree = degree - input_power
+    _validate_degree(core_degree)
+    if generated.shape[-1] != core_degree + 1:
+        raise ValueError("Generated square factors must have core_degree + 1 entries")
+    factors = jnp.asarray(taylor_square_factors(core_degree), jnp.float32) * (1 + generated.astype(jnp.float32)) / 2
+    terms = [jnp.zeros(factors.shape[:-1], jnp.float32) for _ in range(core_degree + 1)]
+    for part in split_factors(factors, core_degree):
+        for i in range(part.shape[-1]):
+            for j in range(part.shape[-1]):
+                terms[i + j] = terms[i + j] + part[..., i] * part[..., j]
+    if input_power:
+        terms.insert(0, jnp.zeros_like(terms[0]))
+    return jnp.stack(terms, axis=-1)
 
 
 def _horner(scores: jax.Array, coefficients: jax.Array) -> jax.Array:

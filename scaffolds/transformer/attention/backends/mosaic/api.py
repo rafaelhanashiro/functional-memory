@@ -152,8 +152,12 @@ def default_precision(family: str, degree: int) -> str:
     return BF16X3 if family == TAYLOR and degree % 2 else BF16
 
 
+def _device_compute_capability():
+    return str(jax.devices()[0].compute_capability)
+
+
 def _kernels():
-    capability = jax.devices()[0].compute_capability
+    capability = _device_compute_capability()
     major = int(capability.split(".")[0])
     if capability == "9.0":
         from scaffolds.transformer.attention.backends.mosaic import hopper
@@ -321,10 +325,16 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
 # The kernel family of each score transform (attention/score_transform.py) but the identity, which is
 # query_polynomial_attention itself.
 TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS}
-# Architectures on which a GPU has run the transformed kernels' qualification (tests/test_mosaic_score_transform.py,
-# which admits the architecture it runs on). B300's kernels lower, but no Blackwell GPU has run them; backend
-# selection refuses them there too, and this refusal also covers models built without it (restored checkpoints).
-TRANSFORM_ARCHITECTURES = ("hopper",)
+# Device admission is narrower than the shared kernel architecture: B200 (sm100) uses the Blackwell
+# kernels, but admission does not imply qualification of B300 (sm103). Qualification tests can override
+# these allowlists while exercising a new device before its production runs are permitted.
+TRANSFORM_ARCHITECTURES = ("hopper", "blackwell")
+TRANSFORM_COMPUTE_CAPABILITIES = ("9.0", "10.0")
+
+
+def transformed_compute_capability_supported(capability: str) -> bool:
+    """Whether transformed query-polynomial attention admits this exact GPU capability."""
+    return capability in TRANSFORM_COMPUTE_CAPABILITIES
 
 
 def _transformed_forward(q, k, v, coefficients, family, precision):
@@ -358,15 +368,16 @@ def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: 
     score transform ``transform``: "softplus" (ln(1 + e^s)) or "abs" (|s|), evaluated per causal pair inside the
     tiles. Gradients follow the chain rule through phi, phi' = sigmoid(s) or sign(s) (zero at s = 0), and the
     coefficient gradients are dc_r = sum_i dP z^r. Failure behavior, shapes and precisions are those of
-    ``query_polynomial_attention``, on the architectures in ``TRANSFORM_ARCHITECTURES`` (H100); the identity
-    transform is that operation itself, so it is refused here."""
+    ``query_polynomial_attention``, on H100 (sm90) and B200 (sm100). B300 (sm103) remains unqualified despite
+    sharing the Blackwell kernels. The identity transform is that operation itself, so it is refused here."""
     name = "Mosaic transformed query-polynomial attention"
     if transform not in TRANSFORM_FAMILY:
         raise ValueError(f"{name} takes transform in {tuple(TRANSFORM_FAMILY)}, got {transform!r}")
     _check_query_operands(q, k, v, coefficients, name)
     architecture = _kernels()[0]
-    if architecture not in TRANSFORM_ARCHITECTURES:
-        raise ValueError(f"{name} is qualified on H100 (sm90) only; no GPU has run its {architecture} kernels")
+    if architecture not in TRANSFORM_ARCHITECTURES or (
+            architecture == "blackwell" and not transformed_compute_capability_supported(_device_compute_capability())):
+        raise ValueError(f"{name} admits H100 (sm90) and B200 (sm100) only; this {architecture} device is not admitted")
     family = TRANSFORM_FAMILY[transform]
     precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)

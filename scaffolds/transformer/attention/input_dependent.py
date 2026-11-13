@@ -26,9 +26,10 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                     amplitude_initial: float = 1.0, projection_initial_std: float = 0.0,
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
                     feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none",
-                    constant_initial: float | None = None):
+                    constant_initial: float | None = None, parameterization: str = "direct"):
     """b starts at 1/r!, or for diagonal tanh query coefficients with ``constant_initial`` b_0 at that value
-    and b_r at 1/r! for r >= 1; W at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
+    and b_r at 1/r! for r >= 1; sum_of_squares instead starts every b at 1, relative to fixed Taylor
+    square factors. W starts at zero or N(0, projection_initial_std^2); tanh's a at amplitude_initial
     and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
@@ -51,6 +52,13 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         raise ValueError("Dense coefficient readout requires nonlinear query-only coefficients")
     if constant_initial is not None and (activation != "tanh" or readout != "diagonal" or conditioning != "query"):
         raise ValueError("A constant-coefficient start applies to diagonal tanh query coefficients")
+    if parameterization not in ("direct", "sum_of_squares"):
+        raise ValueError(f"Unknown query coefficient parameterization: {parameterization}")
+    if parameterization == "sum_of_squares" and (constant_initial is not None or degree < 2 or degree % 2
+                                                or activation != "tanh" or readout != "diagonal"
+                                                or conditioning != "query" or tanh_bias or gate != "none"):
+        raise ValueError("Query square factors require an even core degree, diagonal tanh query conditioning, "
+                         "and no constant override, inner bias, or coefficient gate")
     count = degree + 1
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):
@@ -72,7 +80,8 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
             initial=tuple(1.0 if output == feature else 0.0 for output in range(count) for feature in range(features)),
             initial_shape=(count, features), sharing="per_head", weight_decay=False,
         ))
-    bias = tuple(1.0 / math.factorial(r) for r in range(count))
+    bias = ((1.0,) * count if parameterization == "sum_of_squares"
+            else tuple(1.0 / math.factorial(r) for r in range(count)))
     if constant_initial is not None:
         bias = (float(constant_initial), *bias[1:])
     specs = (
