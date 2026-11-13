@@ -1,5 +1,6 @@
 """Unnormalized causal k(QK^T / sqrt(d_k)) V: exp, its Taylor truncation, or a learned polynomial."""
 
+from fractions import Fraction
 import math
 
 import jax
@@ -7,13 +8,23 @@ import jax.numpy as jnp
 
 
 def initial_coefficients(degree: int, initialization: str = "taylor") -> tuple[float, ...]:
-    """Initial c_0..c_m: the Taylor values 1/r!, or linear attention (c_1 = 1, every other 0)."""
+    """Initial c_0..c_m: the Taylor values 1/r!, linear attention (c_1 = 1, every other 0),
+    or the truncated Hermite expansion exp(1/2) sum_{n<=m} He_n(s) / n! in monomials."""
     if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
         raise ValueError("Learned polynomial coefficients require an integer degree >= 1")
     if initialization == "taylor":
         return tuple(1.0 / math.factorial(order) for order in range(degree + 1))
     if initialization == "linear":
         return tuple(1.0 if order == 1 else 0.0 for order in range(degree + 1))
+    if initialization == "hermite":
+        previous, current = [1] + [0] * degree, [0, 1] + [0] * (degree - 1)  # He_0 and He_1, ascending powers
+        total = [Fraction(previous[power]) + current[power] for power in range(degree + 1)]
+        for order in range(2, degree + 1):
+            # He_order = s He_(order-1) - (order-1) He_(order-2)
+            previous, current = current, [(current[power - 1] if power else 0) - (order - 1) * previous[power]
+                                          for power in range(degree + 1)]
+            total = [value + Fraction(term, math.factorial(order)) for value, term in zip(total, current)]
+        return tuple(math.exp(0.5) * float(value) for value in total)
     raise ValueError(f"Unknown coefficient initialization: {initialization}")
 
 

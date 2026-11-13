@@ -1,9 +1,9 @@
 # Degree scaling at 1×
 
 **Question.** How does held-out perplexity change with the polynomial degree
-`m = 1, 2, 3, 4, 5, 6, 7, 8` for fixed Taylor, fixed Hermite, learned static, and query
+`m = 1-8` and `m = 12` for fixed Taylor, fixed Hermite, learned static, and query
 coefficients with projection weight decay, under the Transformer++ recipe at 1×
-Chinchilla?
+Chinchilla? Only Taylor and query have an `m = 12` run.
 
 ![Terminal validation perplexity against polynomial degree for the four coefficient families](degree_scaling.png)
 
@@ -24,12 +24,12 @@ Mosaic kernels.
 - **Query, W decay:** `c_r(x_t) = [b_r + a_r tanh(w_r^T x_t)]/r!` per layer and head,
   starting at Taylor, with AdamW weight decay 0.1 on the projection `w_r`.
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` | `r8a526282ac43` | `r167091e2aeac` | `re12e78d1ded3` | `ra7ee8a4b2544` |
-| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` | `r751e8aaecb78` | `ra040de24096c` |
-| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` | `r3feaf71ff7af` | `r5e6f23bd0533` | `r99ba8f9d26fc` | `r9c69dd7cfc8d` |
-| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` | `r00f1f91a7803` | `rca97cc9db8f2` | `r5de86f9f02da` | `r688344e6dcc6` | `rdb67453630c8` | `r25fffc16c2f3` |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 | m = 12 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Fixed Taylor | `ra7f2fda1c792` | `rdb1c706a5b85` | `r81fad1755b11` | `r816ab0fbe119` | `r8a526282ac43` | `r167091e2aeac` | `re12e78d1ded3` | `ra7ee8a4b2544` | `rb2b70dae4d21` |
+| Fixed Hermite | `rddf0b0173f42` | `rdf6363a4b83c` | `rf378c0e67607` | `rbd0cd771c676` | `rf1993c745e17` | `r3a332ae60437` | `r751e8aaecb78` | `ra040de24096c` | not run |
+| Learned static | `r5c691128699f` | `r99c3ab7d8a77` | `r1f880c4ee659` | `r4339a245820e` | `r3feaf71ff7af` | `r5e6f23bd0533` | `r99ba8f9d26fc` | `r9c69dd7cfc8d` | not run |
+| Query, W decay | `rf9099d70ab3a` | `rd6b4d16d81bb` | `r00f1f91a7803` | `rca97cc9db8f2` | `r5de86f9f02da` | `r688344e6dcc6` | `rdb67453630c8` | `r25fffc16c2f3` | `r0fceea0627c8` |
 
 Four cells reuse completed Kennel runs: Taylor at `m = 4` (B300) and static at `m = 4`
 (H100 PCIe) trained with the earlier host-loop trainer, and query at `m = 2` (B300) and
@@ -62,6 +62,13 @@ recipe check confirms that all four differ from their family only in degree. All
 trained on Kennel: Taylor and static on an H100 PCIe, Hermite on an H100 PCIe (preempted
 twice) and then an H100 SXM, and query on a B300.
 
+At `m = 12`, fixed Taylor (`rb2b70dae4d21`) copies its family's `m = 8` recipe with degree 12,
+and query (`r0fceea0627c8`, from the key-width topic) is the query recipe at degree 12; the
+recipe check confirms both differ from their family only in degree. Degrees 9–11, and
+Hermite and static at 12, were not run. Query trained on a Kennel B300; Taylor trained on
+a B300 to update 1,500 and, after that node failed, resumed from its checkpoint on an
+H100 PCIe.
+
 Hermite at `m = 1` is `exp(1/2)` times Taylor at `m = 1`. The output RMSNorm removes
 that factor, so the two runs train the same function up to the norm's epsilon and
 floating point; their difference measures how far equivalent runs diverge numerically.
@@ -73,30 +80,30 @@ No cell has a second seed.
 
 **Terminal validation perplexity (update 7,570); lowest per degree in bold**
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Fixed Taylor | 19.556 | 15.912 | 15.974 | 14.724 | 14.843 | **14.334** | 14.309 | **14.223** |
-| Fixed Hermite | 19.513 | 16.168 | **15.732** | 14.987 | **14.609** | 14.396 | **14.271** | 14.231 |
-| Learned static | 19.531 | **15.822** | 16.649 | 14.773 | 14.871 | 14.408 | 14.427 | 14.299 |
-| Query, W decay | **19.219** | 15.832 | 16.443 | **14.714** | 15.080 | 14.641 | 14.384 | 14.328 |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 | m = 12 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Fixed Taylor | 19.556 | 15.912 | 15.974 | 14.724 | 14.843 | **14.334** | 14.309 | **14.223** | 14.311 |
+| Fixed Hermite | 19.513 | 16.168 | **15.732** | 14.987 | **14.609** | 14.396 | **14.271** | 14.231 | not run |
+| Learned static | 19.531 | **15.822** | 16.649 | 14.773 | 14.871 | 14.408 | 14.427 | 14.299 | not run |
+| Query, W decay | **19.219** | 15.832 | 16.443 | **14.714** | 15.080 | 14.641 | 14.384 | 14.328 | **14.230** |
 
 **Validation-best perplexity (update 7,500 in every run)**
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Fixed Taylor | 19.541 | 15.907 | 15.968 | 14.722 | 14.841 | 14.328 | 14.304 | 14.218 |
-| Fixed Hermite | 19.495 | 16.164 | 15.722 | 14.984 | 14.602 | 14.393 | 14.268 | 14.225 |
-| Learned static | 19.522 | 15.820 | 16.640 | 14.767 | 14.868 | 14.406 | 14.424 | 14.294 |
-| Query, W decay | 19.205 | 15.827 | 16.436 | 14.709 | 15.074 | 14.637 | 14.379 | 14.323 |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 | m = 12 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Fixed Taylor | 19.541 | 15.907 | 15.968 | 14.722 | 14.841 | 14.328 | 14.304 | 14.218 | 14.309 |
+| Fixed Hermite | 19.495 | 16.164 | 15.722 | 14.984 | 14.602 | 14.393 | 14.268 | 14.225 | not run |
+| Learned static | 19.522 | 15.820 | 16.640 | 14.767 | 14.868 | 14.406 | 14.424 | 14.294 | not run |
+| Query, W decay | 19.205 | 15.827 | 16.436 | 14.709 | 15.074 | 14.637 | 14.379 | 14.323 | 14.226 |
 
-**Change in terminal perplexity from the previous degree**
+**Change in terminal perplexity from the family's previous degree (m = 8 for m = 12)**
 
-| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Fixed Taylor | – | -18.6% | +0.4% | -7.8% | +0.8% | -3.4% | -0.2% | -0.6% |
-| Fixed Hermite | – | -17.1% | -2.7% | -4.7% | -2.5% | -1.5% | -0.9% | -0.3% |
-| Learned static | – | -19.0% | +5.2% | -11.3% | +0.7% | -3.1% | +0.1% | -0.9% |
-| Query, W decay | – | -17.6% | +3.9% | -10.5% | +2.5% | -2.9% | -1.8% | -0.4% |
+| Family | m = 1 | m = 2 | m = 3 | m = 4 | m = 5 | m = 6 | m = 7 | m = 8 | m = 12 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Fixed Taylor | – | -18.6% | +0.4% | -7.8% | +0.8% | -3.4% | -0.2% | -0.6% | +0.6% |
+| Fixed Hermite | – | -17.1% | -2.7% | -4.7% | -2.5% | -1.5% | -0.9% | -0.3% | not run |
+| Learned static | – | -19.0% | +5.2% | -11.3% | +0.7% | -3.1% | +0.1% | -0.9% | not run |
+| Query, W decay | – | -17.6% | +3.9% | -10.5% | +2.5% | -2.9% | -1.8% | -0.4% | -0.7% |
 
 Softmax reference (`r9040f12f3d80`): terminal 14.546, validation-best 14.543 (update 7,500).
 
@@ -104,11 +111,11 @@ Exp reference (`r6a76e7fbde45`): terminal 14.262, validation-best 14.257 (update
 
 <!-- END GENERATED RESULTS -->
 
-- **All thirty-two runs finished the 7,570 updates** with no numerical failure. Every run's
+- **All thirty-four runs finished the 7,570 updates** with no numerical failure. Every run's
   validation-best checkpoint is update 7,500, and its terminal perplexity is at most 0.1%
   higher; both metrics order the cells the same way.
 - **Going from `m = 1` to 2 is the largest step in every family**, 17–19% lower
-  perplexity. Every family is best at `m = 8`.
+  perplexity. Taylor, Hermite and static are best at `m = 8`; query is best at `m = 12`.
 - **At `m = 4`, query (14.714), Taylor (14.724) and static (14.773) lie within 0.4% of
   one another**, inside the resolution below; Hermite (14.987) is 1.5–1.9% higher. All
   four stay 1.2–3.0% above softmax (14.546) and 3.2–5.1% above exp (14.262).
@@ -141,6 +148,10 @@ Exp reference (`r6a76e7fbde45`): terminal 14.262, validation-best 14.257 (update
   within the run-to-run gap, and 2.2% below softmax; static (14.299, −0.9%) and query
   (14.328, −0.4%) stay 0.3–0.5% above exp. The fixed coefficients lead the learned ones by
   0.5–0.7%.
+- **At `m = 12` query improves and fixed Taylor worsens.** Query (14.230, −0.7% from
+  `m = 8`) ends 0.2% below exp (14.262) and 0.6% below fixed Taylor at `m = 12` (14.311,
+  +0.6% from `m = 8`, 0.3% above exp). Query at `m = 12` and Taylor at `m = 8` (14.223)
+  are 0.05% apart, inside the run-to-run gap.
 - **Equivalent runs diverge by about 0.2%.** Taylor and Hermite at `m = 1` end 0.042 apart
   (19.556 and 19.513). Learned static at `m = 1` adds nothing the per-head score scale
   cannot express while its constant coefficient stays positive, which it does in all 210
@@ -162,7 +173,8 @@ Exp reference (`r6a76e7fbde45`): terminal 14.262, validation-best 14.257 (update
   from `m = 4` to 5 for Taylor, static, and query change GPU, trainer loop, or source commit,
   because their `m = 4` cells are the reused Kennel runs; Hermite's does not. The `m = 8`
   column trained on Kennel (H100 PCIe, H100 SXM, B300), so every step from `m = 7` changes
-  GPU and source commit.
+  GPU and source commit. Taylor's step from `m = 8` to 12 also changes GPU (its `m = 12`
+  run moved from a B300 to an H100 PCIe at update 1,500); query's does not (B300 both).
 - The comparison is one 1× budget and schedule. Every `m = 1` run was still closing on
   its `m = 2` run when training ended, and fixed Taylor at `m = 2` overtook `m = 3` only
   after update 6,000, so the ranking may change with more tokens.

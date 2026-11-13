@@ -5,9 +5,9 @@ run IDs and pin their scientific inputs; measurements, recipes, execution record
 and retained artifacts remain under `../runs/`.
 
 The canonical [degree scaling](degree_scaling/README.md) collection plots 1× terminal
-validation perplexity against polynomial degree `m = 1-8` for fixed Taylor, fixed
-Hermite, learned static, and query coefficients with projection weight decay, with
-softmax as the reference level; all thirty-two runs are complete.
+validation perplexity against polynomial degree `m = 1-8` and 12 for fixed Taylor, fixed
+Hermite, learned static, and query coefficients with projection weight decay (Taylor and
+query only at 12), with softmax as the reference level; all thirty-four runs are complete.
 
 The canonical [model scale](model_scale/README.md) collection repeats seven attention
 variants at the 12-layer width-640 shape (98,977,016 parameters at 1×) and compares each
