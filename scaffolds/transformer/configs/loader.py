@@ -154,6 +154,13 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["train"].setdefault("eval_early_until", 0)
         for key in ("wandb_group", "wandb_dir"):
             value["train"].setdefault(key, None)
+        for key, default in (("gradient_event_capture", False), ("gradient_event_factor", 5.0),
+                             ("gradient_event_min_norm", 1.0), ("gradient_event_history", 100),
+                             ("gradient_event_min_history", 20), ("gradient_event_max_states", 3)):
+            value["train"].setdefault(key, default)
+        value["model"].setdefault("attention_score_bias", "none")
+        value["model"].setdefault("attention_score_transform", "identity")
+        value["model"].setdefault("attention_coefficient_constant_initial", None)
         # The W&B mirror mode is an execution setting; wandb_run.json pins the run's identity.
         value["train"].pop("wandb_mode", None)
         normalized.append(value)

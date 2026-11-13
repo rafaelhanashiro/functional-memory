@@ -9,12 +9,17 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 ROOT = Path(__file__).resolve().parent
-# Shared-gate control of each per-order variant, by polynomial degree and gate conditioning.
+# Shared-gate control of each per-order variant, by polynomial degree and gate conditioning. No shared
+# query-key gate run exists at degrees eight and twelve, so the per-order query-key gates there pin the
+# shared query gate and also differ from it by the gate's key conditioning (a key projection starting
+# at zero).
 CONTROLS = {
     (4, "query"): ("r3e26412b2811", "3fa5cddfc7d5633c6f5919b30bda0a1e9eda145e04e891ee6ad9668f03210a26"),
     (4, "query_key"): ("r02f984133092", "3a9b2dbb4a22b364833ab7cbded2e82f920ca823c69f6f6e48fc409080f81131"),
     (8, "query"): ("r9320e5cd3071", "d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f"),
     (12, "query"): ("r47bfe39ce9b4", "bd1078341f708ae52b4efaba766a6c6a98133df01aee36f539a166d2df31be3a"),
+    (8, "query_key"): ("r9320e5cd3071", "d10d77ffe87d39f80247e6b29451c0a144831bf891cb28678009ebad3d02af3f"),
+    (12, "query_key"): ("r47bfe39ce9b4", "bd1078341f708ae52b4efaba766a6c6a98133df01aee36f539a166d2df31be3a"),
 }
 # Initialization fingerprint and parameter count of each degree's query-gate control: degree four's
 # verified by query_distance_decay_acceptance at launch, degree eight's and twelve's computed on CPU from
@@ -40,10 +45,16 @@ def check_recipe(config):
     validate_config(config)
     if not config.model.attention_forget_gate_per_order:
         raise ValueError("This comparison requires independent per-order gates")
-    control = control_config(config.model.attention_forget_gate_conditioning, config.model.attention_degree)
+    conditioning = config.model.attention_forget_gate_conditioning
+    control = control_config(conditioning, config.model.attention_degree)
     actual, expected = config_to_dict(config), config_to_dict(control)
     actual["model"]["attention_forget_gate_per_order"] = False
-    actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
+    if (expected["model"]["attention_forget_gate_conditioning"], conditioning) == ("query", "query_key"):
+        actual["model"]["attention_forget_gate_conditioning"] = "query"
+    # The Mosaic kernels compute the blocked reference's weights, so a blocked control's variant may
+    # use them; a Mosaic control's variant must keep them.
+    if expected["model"]["attention_backend"] != "mosaic":
+        actual["model"]["attention_backend"] = expected["model"]["attention_backend"]
     for recipe in (actual, expected):
         for key in ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode"):
             recipe["train"].pop(key, None)

@@ -155,8 +155,9 @@ def test_invalid_order_gate_poisoning_is_causal(bad):
     {"attention_forget_gate_mode": "cumulative", "attention_forget_gate_conditioning": "query_key"},
     {"attention_forget_gate": False}, {"attention_forget_gate_rate_activation": "sigmoid"}))
 def test_unsupported_per_order_recipes_rejected(changes):
-    # Cumulative per-order gates are qualified with query conditioning on the blocked backend only
-    # (test_per_order_cumulative.py).
+    # Cumulative per-order gates take query conditioning on the blocked backend (test_per_order_cumulative.py)
+    # or, at widths the Mosaic kernels support, on H100's Mosaic kernels (test_mosaic_per_order_cumulative.py);
+    # these recipes' value width (8) has no Mosaic kernel.
     with pytest.raises(ValueError):
         validate_config(_config(attention_forget_gate_per_order=True, **changes))
 

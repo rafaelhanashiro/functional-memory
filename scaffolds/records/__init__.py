@@ -36,8 +36,9 @@ INDEX_COLUMNS = (
     "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
-    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order",
-    "coefficient_parameterization", "coefficient_initialization", "coefficient_sharing", "coefficient_orders",
+    "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
+    "attention_score_transform", "coefficient_parameterization", "coefficient_initialization",
+    "coefficient_constant_initial", "coefficient_sharing", "coefficient_orders",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
     "coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step",
@@ -274,8 +275,18 @@ def _tree_descriptor(directory: Path) -> dict[str, Any]:
     }
 
 
+def _checkpoint_tree(run: Path, directory: str | Path, role: str) -> dict[str, Any]:
+    checkpoint = Path(directory)
+    if not checkpoint.is_absolute() and not checkpoint.is_dir():
+        checkpoint = _artifact_path(run, str(checkpoint))
+    if not checkpoint.is_dir():
+        raise ValueError(f"{role} is unavailable: {checkpoint}")
+    return _tree_descriptor(checkpoint)
+
+
 def capture_artifacts(
     path: str | Path, checkpoint_directory: str | Path | None = None, include_log: bool = False,
+    diagnostic_checkpoints: list[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Hash present raw outputs and return updates for ``update_record``.
 
@@ -285,6 +296,11 @@ def capture_artifacts(
     never substitutes the latest checkpoint for the validation best. Call with
     ``include_log=True`` after training exits and the launcher has flushed its
     final output. ``record.json`` is excluded to avoid a checksum cycle.
+
+    ``diagnostic_checkpoints`` lists other retained checkpoint directories, each a mapping
+    with its ``path``, a nonempty ``justification``, and optional descriptive fields; they
+    become ``diagnostic_checkpoints`` directory descriptors (an empty list records that none
+    are kept). None leaves the record's entry unchanged.
     """
     run = _run_path(path)
     artifacts = []
@@ -298,12 +314,18 @@ def capture_artifacts(
         if artifact.name in {"metrics.jsonl", "metadata.json", "completion.json", "best_validation.json", "retention.json", "data_identity.json", "wandb_run.json"}:
             updates[artifact.stem] = descriptor
     if checkpoint_directory is not None:
-        checkpoint = Path(checkpoint_directory)
-        if not checkpoint.is_absolute() and not checkpoint.is_dir():
-            checkpoint = _artifact_path(run, str(checkpoint))
-        if not checkpoint.is_dir():
-            raise ValueError(f"Selected checkpoint is unavailable: {checkpoint}")
-        updates["selected_checkpoint"] = _tree_descriptor(checkpoint)
+        updates["selected_checkpoint"] = _checkpoint_tree(run, checkpoint_directory, "Selected checkpoint")
+    if diagnostic_checkpoints is not None:
+        descriptors = []
+        for item in diagnostic_checkpoints:
+            if not isinstance(item.get("justification"), str) or not item["justification"].strip():
+                raise ValueError(f"A diagnostic checkpoint requires a justification: {item.get('path')}")
+            tree = _checkpoint_tree(run, item["path"], "Diagnostic checkpoint")
+            fields = {key: value for key, value in item.items() if key != "path"}
+            if overlap := sorted(set(fields) & set(tree)):
+                raise ValueError(f"Diagnostic checkpoint fields {overlap} would replace its directory descriptor")
+            descriptors.append({**fields, **tree})
+        updates["diagnostic_checkpoints"] = descriptors
     if include_log and (run / "training.log").is_file():
         log = run / "training.log"
         updates["log"] = {"path": _stored_path(log), "sha256": _sha256(log), "size_bytes": log.stat().st_size}
@@ -356,6 +378,13 @@ def validate_record(path: str | Path, verify_hashes: bool = True, checkpoint_has
     if not (run / "config.yaml").is_file():
         raise ValueError(f"Missing canonical recipe in {run}")
     _check_outcome(run, record)
+    diagnostics = record.get("diagnostic_checkpoints", [])
+    if not isinstance(diagnostics, list) or any(
+            not isinstance(item, dict) or item.get("kind") != "directory"
+            or not isinstance(item.get("justification"), str) or not item["justification"].strip()
+            for item in diagnostics):
+        raise ValueError(f"{record['run_id']} keeps a diagnostic checkpoint without a directory descriptor "
+                         "and justification")
     result: dict[str, Any] = {"run_id": record["run_id"], "verified": [], "size_checked": [], "unavailable": []}
     if not verify_hashes:
         return result
@@ -548,8 +577,15 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
             if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
         "attention_forget_gate_rate_activation": model.get("attention_forget_gate_rate_activation", "softplus")
             if model.get("attention_forget_gate") and model.get("attention_forget_gate_form", "input") == "input" else None,
+        # Per-degree score biases postdate every recipe that lacks the field, so a model recipe without it
+        # has none; runs without a model recipe (analyses of other runs or pretrained models) leave it empty.
+        "attention_score_bias": model.get("attention_score_bias", "none") if model else None,
+        # Likewise the polynomial's input transform: a model recipe without the field reads the score itself.
+        "attention_score_transform": model.get("attention_score_transform", "identity") if model else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
+        # The order-0 offset's start where a recipe sets one in place of its initialization's; empty otherwise.
+        "coefficient_constant_initial": None if coefficient_table else model.get("attention_coefficient_constant_initial"),
         "coefficient_sharing": sharing,
         "coefficient_orders": json.dumps(model["attention_coefficient_orders"], separators=(",", ":"))
             if not coefficient_table and model.get("attention_coefficient_orders") is not None else None,
@@ -681,7 +717,12 @@ def regenerate_index(study: str | Path) -> Path:
     """Write a byte-stable CSV from registered configs, records, and raw metrics.
 
     Missing legacy settings stay empty. No current model defaults are silently
-    applied to historical runs.
+    applied to historical runs, except in columns of settings that a later option
+    added to a mechanism, where a recipe without the field can only mean the
+    behavior that predates the option: the forget-gate mode, form, constant
+    rate, conditioning, rate activation, and per-order gates of gated recipes,
+    and ``attention_score_bias`` (``none``) and ``attention_score_transform`` (``identity``) of every
+    model recipe.
     """
     study = _study_path(study)
     with _locked(study):

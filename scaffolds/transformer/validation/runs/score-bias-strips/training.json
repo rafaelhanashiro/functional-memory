@@ -1,0 +1,1136 @@
+{
+ "compile_only": {
+  "gated-query-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 66.53,
+   "compile_seconds": 143.7,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 59.65
+  },
+  "gated-query-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 58.68,
+   "compile_seconds": 133.8,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 51.8
+  },
+  "gated-query_key-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 145.71,
+   "compile_seconds": 224.1,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 138.78
+  },
+  "gated-query_key-b200-mb4": {
+   "accumulation_steps": 64,
+   "arguments_outputs_temporaries_GiB": 68.11,
+   "compile_seconds": 289.4,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 4,
+   "target": "b200",
+   "temp_GiB": 61.18
+  },
+  "gated-query_key-b200-mb8": {
+   "accumulation_steps": 32,
+   "arguments_outputs_temporaries_GiB": 91.03,
+   "compile_seconds": 224.4,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 8,
+   "target": "b200",
+   "temp_GiB": 84.1
+  },
+  "gated-query_key-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 144.08,
+   "compile_seconds": 237.2,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 137.15
+  },
+  "gated-query_key-h100-mb4": {
+   "accumulation_steps": 64,
+   "arguments_outputs_temporaries_GiB": 65.01,
+   "compile_seconds": 288.8,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 4,
+   "target": "h100",
+   "temp_GiB": 58.08
+  },
+  "gated-query_key-h100-mb8": {
+   "accumulation_steps": 32,
+   "arguments_outputs_temporaries_GiB": 119.63,
+   "compile_seconds": 245.1,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 8,
+   "target": "h100",
+   "temp_GiB": 112.7
+  },
+  "gated-static-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 66.38,
+   "compile_seconds": 150.5,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 59.56
+  },
+  "gated-static-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 55.4,
+   "compile_seconds": 144.5,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 48.57
+  },
+  "rope-query-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 31.8,
+   "compile_seconds": 47.3,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 25.03
+  },
+  "rope-query-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 31.8,
+   "compile_seconds": 45.4,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 25.03
+  },
+  "rope-query_key-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 46.44,
+   "compile_seconds": 89.9,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 39.63
+  },
+  "rope-query_key-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 46.44,
+   "compile_seconds": 91.6,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 39.63
+  },
+  "rope-static-b200-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 31.54,
+   "compile_seconds": 45.9,
+   "device_kind": "NVIDIA B200",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "b200",
+   "temp_GiB": 24.83
+  },
+  "rope-static-h100-mb16": {
+   "accumulation_steps": 16,
+   "arguments_outputs_temporaries_GiB": 31.54,
+   "compile_seconds": 41.2,
+   "device_kind": "NVIDIA H100 80GB HBM3",
+   "jax": "0.10.0",
+   "micro_batch_size": 16,
+   "target": "h100",
+   "temp_GiB": 24.83
+  }
+ },
+ "failed_pilots": [
+  {
+   "allocator_limit_GiB": 59.41,
+   "device_kinds": [
+    "NVIDIA H100 PCIe"
+   ],
+   "exit": 1,
+   "log": "lane_h100_mastiff.log",
+   "memory_fraction": null,
+   "node": "mastiff",
+   "out_of_memory_request": "141.28GiB",
+   "recipe": "gated-query_key",
+   "slurm_job_id": "242685",
+   "started": "2026-11-11T13:12:04-05:00"
+  },
+  {
+   "allocator_limit_GiB": 59.41,
+   "device_kinds": [
+    "NVIDIA H100 PCIe"
+   ],
+   "exit": 1,
+   "log": "lane_h100_mastiff.log",
+   "memory_fraction": null,
+   "node": "mastiff",
+   "out_of_memory_request": "54.17GiB",
+   "recipe": "gated-query",
+   "slurm_job_id": "242685",
+   "started": "2026-11-11T13:49:03-05:00"
+  }
+ ],
+ "format": "score-bias-strips-training-qualification",
+ "method": "benchmarks/qualify_training.py: acceptance's pilot worker (20 updates of the production batch, 16 micro-batches of 16 x 2,048 tokens, validation with attention diagnostics and a checkpoint at update 20; acceptance.project_runtime for 7,570 updates) and its resume worker (update 21 in a fresh process, acceptance's resume audit) on a copy of each recipe, W&B off; the production launcher's runtime (kennel_runtime.sh, pinned CUDA_HOME)",
+ "raw_reports": "scaffolds/transformer/validation/logs/score-bias-strips (ignored)",
+ "recipes": {
+  "gated-query": {
+   "allocations": {
+    "b200-shiba": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 133.7633056640625,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.510641098022461,
+      "first_update_seconds": 214.82723989803344,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 20.54788928879425,
+      "last_loss": 8.955302238464355,
+      "max_gradient_norm": 15.398070335388184,
+      "median_seconds_per_update": 20.465402425965294,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       20.353939360007644,
+       20.844001170946285
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 67.30426812171936,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 850.9000365168322,
+      "projected_hours": 44.06585246705379,
+      "projection_components_hours": {
+       "checkpointing": 0.06634960489011266,
+       "diagnostics": 0.017308823030131558,
+       "evaluation": 0.714431635923425,
+       "pilot_overhead": 0.23356896861087686,
+       "training": 43.034193434599246
+      },
+      "projection_rates": {
+       "checkpoint": 8.530663485871628,
+       "diagnostics": 2.2254201038740575,
+       "evaluation_batch": 4.834499791963026,
+       "training_update": 20.465402425965294
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 67.21655559539795,
+      "validation_nll_at_pilot_stop": 8.917526662349701,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 6,
+       "misses": 87
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 222.31781531497836,
+      "loss_finite": true,
+      "peak_GiB": 66.70807147026062,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    },
+    "h100-mastiff-memfrac0.95": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 75.24836026132107,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": false,
+       "72h": false,
+       "96h": false
+      },
+      "cuda_environment": "cuda12",
+      "device_kinds": [
+       "NVIDIA H100 PCIe"
+      ],
+      "first_loss": 10.510635375976562,
+      "first_update_seconds": 89.81671622302383,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+      "last5_mean_seconds_per_update": 46.795900154393166,
+      "last_loss": 8.955117225646973,
+      "max_gradient_norm": 15.397857666015625,
+      "median_seconds_per_update": 46.793819590006024,
+      "memory_fraction": "0.95",
+      "min_max_seconds_per_update": [
+       46.655089278996456,
+       46.80677295301575
+      ],
+      "node": "mastiff",
+      "pci_bus_id": "00000000:E1:00.0",
+      "pilot_peak_GiB": 61.77765989303589,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 1188.1119404499768,
+      "projected_hours": 100.06652913267973,
+      "projection_components_hours": {
+       "checkpointing": 0.18701598975115405,
+       "diagnostics": 0.027492226945792533,
+       "evaluation": 1.127295733411512,
+       "pilot_overhead": 0.32772121136416293,
+       "training": 98.39700397120711
+      },
+      "projection_rates": {
+       "checkpoint": 24.04491296800552,
+       "diagnostics": 3.5347148930304684,
+       "evaluation_batch": 7.62831699301023,
+       "training_update": 46.793819590006024
+      },
+      "slurm_job_id": "242685",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 61.77765989303589,
+      "validation_nll_at_pilot_stop": 8.917381703853607,
+      "xla_flags": null
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 2,
+       "misses": 91
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 224.8107519649784,
+      "loss_finite": true,
+      "peak_GiB": 61.067864179611206,
+      "restored_step": 20,
+      "slurm_job_id": "242685"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 44.07,
+    "h100_pcie_projected": 100.07
+   },
+   "recipe": "gated query"
+  },
+  "gated-query_key": {
+   "allocations": {
+    "b200-shiba-memfrac0.95": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 169.433518380858,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": false,
+       "72h": false,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.510641098022461,
+      "first_update_seconds": 366.2535957330838,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "0113d72b024f621fc1fbe7057a44c4e338ec1f1a72344733697302d9ff53c94e",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 36.84521692385897,
+      "last_loss": 8.955273628234863,
+      "max_gradient_norm": 15.406977653503418,
+      "median_seconds_per_update": 36.81590529112145,
+      "memory_fraction": "0.95",
+      "min_max_seconds_per_update": [
+       36.62508367188275,
+       36.86735630687326
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 147.14003586769104,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 1574.7657993468456,
+      "projected_hours": 78.976810935947,
+      "projection_components_hours": {
+       "checkpointing": 0.17502493572731811,
+       "diagnostics": 0.018490864645379284,
+       "evaluation": 0.9336907984952753,
+       "pilot_overhead": 0.43393682213752377,
+       "training": 77.4156675149415
+      },
+      "projection_rates": {
+       "checkpoint": 22.50320602208376,
+       "diagnostics": 2.3773968829773366,
+       "evaluation_batch": 6.318208410870284,
+       "training_update": 36.81590529112145
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "996c4e55542cd1789b0ecf863cf23a9225c7979a",
+      "training_peak_GiB": 147.14003586769104,
+      "validation_nll_at_pilot_stop": 8.917425036430359,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 0,
+       "misses": 93
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 368.50011608586647,
+      "loss_finite": true,
+      "peak_GiB": 146.3477430343628,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 78.98
+   },
+   "recipe": "gated query_key"
+  },
+  "gated-static": {
+   "allocations": {
+    "b200-shiba": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 133.7633056640625,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.510641098022461,
+      "first_update_seconds": 246.77079940703698,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 20.30938932443969,
+      "last_loss": 8.95754623413086,
+      "max_gradient_norm": 15.397649765014648,
+      "median_seconds_per_update": 20.240710983984172,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       20.165554763982072,
+       20.567140175029635
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 66.90035200119019,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 910.6716526509263,
+      "projected_hours": 43.60619333132015,
+      "projection_components_hours": {
+       "checkpointing": 0.0696915233316314,
+       "diagnostics": 0.016956804260973714,
+       "evaluation": 0.71052549743999,
+       "pilot_overhead": 0.24730224274305834,
+       "training": 42.561717263544494
+      },
+      "projection_rates": {
+       "checkpoint": 8.960338714066893,
+       "diagnostics": 2.1801605478394777,
+       "evaluation_batch": 4.808067275909707,
+       "training_update": 20.240710983984172
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 66.90035200119019,
+      "validation_nll_at_pilot_stop": 8.919610440731049,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 6,
+       "misses": 83
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 249.73866437701508,
+      "loss_finite": true,
+      "peak_GiB": 66.6431975364685,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    },
+    "h100-mastiff": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 59.40660095214844,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": false,
+       "72h": false,
+       "96h": false
+      },
+      "cuda_environment": "cuda12",
+      "device_kinds": [
+       "NVIDIA H100 PCIe"
+      ],
+      "first_loss": 10.510635375976562,
+      "first_update_seconds": 241.87885589600774,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "0113d72b024f621fc1fbe7057a44c4e338ec1f1a72344733697302d9ff53c94e",
+      "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+      "last5_mean_seconds_per_update": 46.782382484793196,
+      "last_loss": 8.957660675048828,
+      "max_gradient_norm": 15.397454261779785,
+      "median_seconds_per_update": 46.78829333401518,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       46.727275982964784,
+       46.8145228989888
+      ],
+      "node": "mastiff",
+      "pci_bus_id": "00000000:E1:00.0",
+      "pilot_peak_GiB": 56.38814830780029,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 1366.5158051089966,
+      "projected_hours": 100.0628291219231,
+      "projection_components_hours": {
+       "checkpointing": 0.17611946434403458,
+       "diagnostics": 0.021578684049955985,
+       "evaluation": 1.1025056164752458,
+       "pilot_overhead": 0.3772418741386112,
+       "training": 98.38538348291526
+      },
+      "projection_rates": {
+       "checkpoint": 22.643931129947305,
+       "diagnostics": 2.7744022349943407,
+       "evaluation_batch": 7.460564322012942,
+       "training_update": 46.78829333401518
+      },
+      "slurm_job_id": "242685",
+      "source_commit": "996c4e55542cd1789b0ecf863cf23a9225c7979a",
+      "training_peak_GiB": 56.38814830780029,
+      "validation_nll_at_pilot_stop": 8.919759035110474,
+      "xla_flags": null
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 2,
+       "misses": 87
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 232.15367314202012,
+      "loss_finite": true,
+      "peak_GiB": 56.05352592468262,
+      "restored_step": 20,
+      "slurm_job_id": "242685"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 43.61,
+    "h100_pcie_projected": 100.06
+   },
+   "recipe": "gated static"
+  },
+  "rope-query": {
+   "allocations": {
+    "b200-shiba": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 133.7633056640625,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": true,
+       "36h": true,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.500990867614746,
+      "first_update_seconds": 88.8072904900182,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 4.444104985008016,
+      "last_loss": 9.024801254272461,
+      "max_gradient_norm": 13.284122467041016,
+      "median_seconds_per_update": 4.431914847111329,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       4.335608524037525,
+       4.552311279112473
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 32.50310683250427,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 295.29825170501135,
+      "projected_hours": 9.718893816074447,
+      "projection_components_hours": {
+       "checkpointing": 0.07297150047366611,
+       "diagnostics": 0.012717364705426412,
+       "evaluation": 0.2350129607343115,
+       "pilot_overhead": 0.07885993665194191,
+       "training": 9.3193320535091
+      },
+      "projection_rates": {
+       "checkpoint": 9.382050060899928,
+       "diagnostics": 1.6350897478405386,
+       "evaluation_batch": 1.5903132681269199,
+       "training_update": 4.431914847111329
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 32.50310683250427,
+      "validation_nll_at_pilot_stop": 8.993102133274078,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 6,
+       "misses": 69
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 82.00176318408921,
+      "loss_finite": true,
+      "peak_GiB": 32.03939700126648,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    },
+    "h100-mastiff": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 59.40660095214844,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": true,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda12",
+      "device_kinds": [
+       "NVIDIA H100 PCIe"
+      ],
+      "first_loss": 10.500986099243164,
+      "first_update_seconds": 77.13341082201805,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+      "last5_mean_seconds_per_update": 11.752661081997212,
+      "last_loss": 9.024842262268066,
+      "max_gradient_norm": 13.284104347229004,
+      "median_seconds_per_update": 11.74086104898015,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       11.645832253969274,
+       11.780864867963828
+      ],
+      "node": "mastiff",
+      "pci_bus_id": "00000000:E1:00.0",
+      "pilot_peak_GiB": 32.31877851486206,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 429.3962178659858,
+      "projected_hours": 25.65071182512216,
+      "projection_components_hours": {
+       "checkpointing": 0.2594434892157248,
+       "diagnostics": 0.016239925621064483,
+       "evaluation": 0.5694540506465515,
+       "pilot_overhead": 0.1171526538666674,
+       "training": 24.68842170577215
+      },
+      "projection_rates": {
+       "checkpoint": 33.35702004202176,
+       "diagnostics": 2.087990436994005,
+       "evaluation_batch": 3.8534484630217776,
+       "training_update": 11.74086104898015
+      },
+      "slurm_job_id": "242685",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 32.31877851486206,
+      "validation_nll_at_pilot_stop": 8.993126690387726,
+      "xla_flags": null
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 2,
+       "misses": 73
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 76.99094668898033,
+      "loss_finite": true,
+      "peak_GiB": 32.032429456710815,
+      "restored_step": 20,
+      "slurm_job_id": "242685"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 9.72,
+    "h100_pcie_projected": 25.65
+   },
+   "recipe": "RoPE query"
+  },
+  "rope-query_key": {
+   "allocations": {
+    "b200-shiba": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 133.7633056640625,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": true,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.500990867614746,
+      "first_update_seconds": 151.16815626993775,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 13.168938144948333,
+      "last_loss": 9.024911880493164,
+      "max_gradient_norm": 13.293411254882812,
+      "median_seconds_per_update": 13.154812221881002,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       12.826682270038873,
+       13.180339460959658
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 49.0590455532074,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 600.5297940939199,
+      "projected_hours": 28.30993604793692,
+      "projection_components_hours": {
+       "checkpointing": 0.07842143012003766,
+       "diagnostics": 0.01333845674060285,
+       "evaluation": 0.3926038002059795,
+       "pilot_overhead": 0.16392554985941388,
+       "training": 27.661646811010886
+      },
+      "projection_rates": {
+       "checkpoint": 10.0827553011477,
+       "diagnostics": 1.7149444380775094,
+       "evaluation_batch": 2.6567174450028688,
+       "training_update": 13.154812221881002
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 49.0590455532074,
+      "validation_nll_at_pilot_stop": 8.993215262889862,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 1,
+       "misses": 74
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 195.95911299996078,
+      "loss_finite": true,
+      "peak_GiB": 48.341978549957275,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    },
+    "h100-mastiff": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 59.40660095214844,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": false,
+       "48h": false,
+       "72h": false,
+       "96h": true
+      },
+      "cuda_environment": "cuda12",
+      "device_kinds": [
+       "NVIDIA H100 PCIe"
+      ],
+      "first_loss": 10.500986099243164,
+      "first_update_seconds": 188.12676733004628,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "0113d72b024f621fc1fbe7057a44c4e338ec1f1a72344733697302d9ff53c94e",
+      "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+      "last5_mean_seconds_per_update": 36.755255857377776,
+      "last_loss": 9.024858474731445,
+      "max_gradient_norm": 13.293551445007324,
+      "median_seconds_per_update": 36.74927758297417,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       36.48753745300928,
+       36.773426019004546
+      ],
+      "node": "mastiff",
+      "pci_bus_id": "00000000:E1:00.0",
+      "pilot_peak_GiB": 47.11515188217163,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 1082.7983959999983,
+      "projected_hours": 78.58485056682771,
+      "projection_components_hours": {
+       "checkpointing": 0.18949369057877144,
+       "diagnostics": 0.017327510658910292,
+       "evaluation": 0.8046257236604449,
+       "pilot_overhead": 0.29783939106444857,
+       "training": 77.27556425086513
+      },
+      "projection_rates": {
+       "checkpoint": 24.3634745029849,
+       "diagnostics": 2.2278227990027517,
+       "evaluation_batch": 5.4448357240180485,
+       "training_update": 36.74927758297417
+      },
+      "slurm_job_id": "242685",
+      "source_commit": "996c4e55542cd1789b0ecf863cf23a9225c7979a",
+      "training_peak_GiB": 47.11515188217163,
+      "validation_nll_at_pilot_stop": 8.993179380893707,
+      "xla_flags": null
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 2,
+       "misses": 73
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 181.5439963779645,
+      "loss_finite": true,
+      "peak_GiB": 46.592753887176514,
+      "restored_step": 20,
+      "slurm_job_id": "242685"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 28.31,
+    "h100_pcie_projected": 78.58
+   },
+   "recipe": "RoPE query_key"
+  },
+  "rope-static": {
+   "allocations": {
+    "b200-shiba": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 133.7633056640625,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": true,
+       "36h": true,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda13",
+      "device_kinds": [
+       "NVIDIA B200"
+      ],
+      "first_loss": 10.500990867614746,
+      "first_update_seconds": 82.6689395189751,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-e34bd188-2ec9-a464-607d-86c4006ac913",
+      "last5_mean_seconds_per_update": 4.300690725818276,
+      "last_loss": 9.025656700134277,
+      "max_gradient_norm": 13.284285545349121,
+      "median_seconds_per_update": 4.287505727959797,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       4.200721984962001,
+       4.4712844339665025
+      ],
+      "node": "shiba",
+      "pci_bus_id": "00000000:DF:00.0",
+      "pilot_peak_GiB": 32.03189492225647,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 311.0315692520235,
+      "projected_hours": 9.48911565958962,
+      "projection_components_hours": {
+       "checkpointing": 0.15690989940918776,
+       "diagnostics": 0.01274178642184577,
+       "evaluation": 0.22005378851977486,
+       "pilot_overhead": 0.08373841839001721,
+       "training": 9.015671766848795
+      },
+      "projection_rates": {
+       "checkpoint": 20.174129924038425,
+       "diagnostics": 1.638229682808742,
+       "evaluation_batch": 1.4890857869759202,
+       "training_update": 4.287505727959797
+      },
+      "slurm_job_id": "242699",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 32.03189492225647,
+      "validation_nll_at_pilot_stop": 8.994075655937195,
+      "xla_flags": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 6,
+       "misses": 65
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 84.29482956510037,
+      "loss_finite": true,
+      "peak_GiB": 31.770684719085693,
+      "restored_step": 20,
+      "slurm_job_id": "242699"
+     }
+    },
+    "h100-mastiff": {
+     "pilot": {
+      "all_losses_and_numerics_finite": true,
+      "allocator_limit_GiB": 59.40660095214844,
+      "attention_backend": "blocked",
+      "attention_blocked_implementation": "strips",
+      "attention_diagnostics_valid": true,
+      "attention_implementation": "blocked_causal_strips",
+      "budget_gate": {
+       "120h": true,
+       "168h": true,
+       "24h": false,
+       "36h": true,
+       "48h": true,
+       "72h": true,
+       "96h": true
+      },
+      "cuda_environment": "cuda12",
+      "device_kinds": [
+       "NVIDIA H100 PCIe"
+      ],
+      "first_loss": 10.500986099243164,
+      "first_update_seconds": 72.79622113797814,
+      "frozen_execution_checked": true,
+      "frozen_execution_sha256": "69a6c997e42e7df84eee4551b7e4b6e06b6118555e2a62c59cd3e247a0ff492c",
+      "gpu_uuid": "GPU-cae52cf1-877f-e715-f8e4-d04070ebfc71",
+      "last5_mean_seconds_per_update": 11.404538299993146,
+      "last_loss": 9.02565860748291,
+      "max_gradient_norm": 13.284158706665039,
+      "median_seconds_per_update": 11.393209578993265,
+      "memory_fraction": null,
+      "min_max_seconds_per_update": [
+       11.30703554599313,
+       11.422658324998338
+      ],
+      "node": "mastiff",
+      "pci_bus_id": "00000000:E1:00.0",
+      "pilot_peak_GiB": 32.03176832199097,
+      "pilot_updates": 20,
+      "pilot_wall_seconds": 408.71051071799593,
+      "projected_hours": 24.82527189474577,
+      "projection_components_hours": {
+       "checkpointing": 0.183075762605812,
+       "diagnostics": 0.016006329670975296,
+       "evaluation": 0.5575225189736941,
+       "pilot_overhead": 0.11127936322334184,
+       "training": 23.957387920271948
+      },
+      "projection_rates": {
+       "checkpoint": 23.53831233503297,
+       "diagnostics": 2.057956671982538,
+       "evaluation_batch": 3.77270877500996,
+       "training_update": 11.393209578993265
+      },
+      "slurm_job_id": "242685",
+      "source_commit": "eb139ccae53a974fb628b3a798447c41699b55ca",
+      "training_peak_GiB": 32.03176832199097,
+      "validation_nll_at_pilot_stop": 8.99407583475113,
+      "xla_flags": null
+     },
+     "resume": {
+      "acceptance_resume_audit": "passed",
+      "compile_cache": {
+       "hits": 2,
+       "misses": 69
+      },
+      "data_start_sequence": 5120,
+      "final_step": 21,
+      "first_update_seconds": 72.1477474339772,
+      "loss_finite": true,
+      "peak_GiB": 31.862743377685547,
+      "restored_step": 20,
+      "slurm_job_id": "242685"
+     }
+    }
+   },
+   "hours": {
+    "b200_projected": 9.49,
+    "h100_pcie_projected": 24.83
+   },
+   "recipe": "RoPE static"
+  }
+ },
+ "reports": {
+  "chain.sh": "cb04d16bdb0246058329f4406d9e7bde42cdaf339f9174d97baf46fcbd9cce16",
+  "compile-only/gated-query-b200-mb16.json": "ff86d32f269548b795e4f455aba1750dc44e819aa53a7f6b73801b0fe487a637",
+  "compile-only/gated-query-h100-mb16.json": "05d75bd6dfbe6335f86ffddef799d2a24dfaa0f0cc573a0e49c490759489dc7f",
+  "compile-only/gated-query_key-b200-mb16.json": "33bb9ca3f31fcfc9430ea9b8ee97d8e7ccdcf744d7d76ebb8c02e817fd302711",
+  "compile-only/gated-query_key-b200-mb4.json": "ac16d49aecba13a3dfceb2a411cce4187192cd8dc0d62eb5344faebe4a001663",
+  "compile-only/gated-query_key-b200-mb8.json": "5bfaf830ff261499e5b6943678fc8d1be48863ad731cfb2a27bd4828340f9f7b",
+  "compile-only/gated-query_key-h100-mb16.json": "68b03e88275945efb4bc754158878954b82fe56e2058fca7a8f354ece3cf4ddc",
+  "compile-only/gated-query_key-h100-mb4.json": "f9d9dbd551ac08dc66bc32d15bc6ed109fbcc251bd9117c7c64b1fd52e963377",
+  "compile-only/gated-query_key-h100-mb8.json": "1b128e39304f7870056102d0abf58d7fcb3df2df65557b7ba814a72cf619a277",
+  "compile-only/gated-static-b200-mb16.json": "57206f846b14e9047f0cb7e56d802557c728e15d0463a92c5f8ee3ebcbf3c0ee",
+  "compile-only/gated-static-h100-mb16.json": "a03cbd90f9f97227564e7b696616b15ded2142b8314c61373526e0307bce1aed",
+  "compile-only/rope-query-b200-mb16.json": "132e616b312ef3b10b929eac75bfaec8d83565e8c5bf5a1817d9f26510d342e7",
+  "compile-only/rope-query-h100-mb16.json": "2de36c178a63ff56d2cf67262bf2a2f6063890cf904df0d252f59abe4f9521b4",
+  "compile-only/rope-query_key-b200-mb16.json": "52d0be3092fa6409464ef22bc44d82ba64ee98aee7b1f051cbcf6a8368bcdc7b",
+  "compile-only/rope-query_key-h100-mb16.json": "7364484f8d5853370c2bb43f4d60e4e9826977fb50e7e231df86a37f098afc21",
+  "compile-only/rope-static-b200-mb16.json": "45fafc33e0a30221f0aae05d484c6658afc3d5635e37742f282b548089d8bf99",
+  "compile-only/rope-static-h100-mb16.json": "83d1ad139b3775b847c7369bda5fde355e7ae84b36d659df1d35eeefe1b4995c",
+  "compile_memory.py": "4154cce8d9e853ac0820f5e8573b28f093ae3425f3a9921f6047374590f7a199",
+  "env.sh": "76ff20a873ba904461ad7f8ae47693aa4d5729d77f1da7ff0f9a0e6bbad0ccc5",
+  "gated-query/b200-shiba/pilot.json": "f25a05af64851c644142cf5de1153bec4c83db00a3a494d10151804a85463821",
+  "gated-query/b200-shiba/resume-warm-cache.json": "a875823764bec342d87e6442711ae85809c9f472dfc3a1d9046980f719b871b0",
+  "gated-query/h100-mastiff-memfrac0.95/pilot.json": "01b46f4547541d5fcb82f86a9d2d42cf68fffab37509424a0917abd5cfc9e328",
+  "gated-query/h100-mastiff-memfrac0.95/resume-warm-cache.json": "2553ca0ddcfb56bde2beeb784f7eed934e4bd087b470699345d2ab1de2095455",
+  "gated-query_key/b200-shiba-memfrac0.95/pilot.json": "22d523c30e49550ad7181048f5d28f047f00d3f1c4b91adcf438b0839846a65e",
+  "gated-query_key/b200-shiba-memfrac0.95/resume-warm-cache.json": "87fea1b16fd73b636f76c9e94983a8491c5741155ca89587d3dd6bd56a996b4b",
+  "gated-static/b200-shiba/pilot.json": "0e48d3b57ada4ed305506eacdf99b3166f9a070fd9876f1f7d2d1f02a88020f7",
+  "gated-static/b200-shiba/resume-warm-cache.json": "65e1293146da4505235910512851c53bb09cd839c8c2574012a9468a45271603",
+  "gated-static/h100-mastiff/pilot.json": "3883f2d2731bb808a6f158d1633b0217da9632c9ec513594a7584ccec6bf21dd",
+  "gated-static/h100-mastiff/resume-warm-cache.json": "f6aa2d6f45b80439e9daa730d300f3884525842b0042cef7733f01e0ea8c3b65",
+  "gpu-tests/b200-shiba-242636/log.txt": "0048d5cd65b852e3e2faea78d409426b8d7252ca9bfa72329593a7b16ee77b30",
+  "gpu-tests/b200-shiba-242699/gpu-stage.json": "dccc34e72ce25f44221ca4091011e478a939757d145e66dd176ecb91e4b41ec8",
+  "gpu-tests/b200-shiba-242699/gpu-tests-07e55b6b180f.xml": "ba6d0652faba35a45f912769f621d29ceb42e66d4f94b9020c75c6a017a891ef",
+  "gpu-tests/h100-mastiff-242685/gpu-stage.json": "7b6793a186f42c5ba943f5ef4cc69b35f789d36917061774ef87dd653091c882",
+  "gpu-tests/h100-mastiff-242685/gpu-tests-37987922faea.xml": "52186cce117bfedc9012ddf90e33e2ea5e6fb0c827687727b1ded2ab763b9160",
+  "gpu_stage.py": "9ece7d8c21da817e478e251ec6645a6f4e15214eb26cbd5325d66177749244ea",
+  "gpu_stage.sh": "86a3f26281aaa0f28beaa25e1c4a056c09fd4f70eb82032484f3fe485ca8a268",
+  "lane_b200.sh": "72a40add13fe12e26f392b78bea68a344e837108cab0a1ea37a24e8efb104786",
+  "lane_b200_shiba.log": "14c07e2b5346097c9a929dfa1dcdede6974ba0dffc40409c1df6f51b8626eb23",
+  "lane_h100.sh": "bd4aa707c5abf81cd7061fb75c7056488fb06ce133db50acd050dc9689056aad",
+  "lane_h100_mastiff.log": "aa301bc7cb1e1f176222a34ae57e57a0e56fa3cbb86508fc7f93f1dc08732acb",
+  "qualify.sh": "c43199264bf22a08c760143d087c23752838f7e65460ff24a1c0231694ede4f2",
+  "rope-query/b200-shiba/pilot.json": "fff696fb1d847f53ee2a95d6c587e2590b2b09eab22132b35483a157315e7ac1",
+  "rope-query/b200-shiba/resume-warm-cache.json": "676213ad2c1cbcad0b64101307fccf41d8b47748d637d6a4e08eaf71ccfd886f",
+  "rope-query/h100-mastiff/pilot.json": "219995412dcd834bf56cfe7d2801b9a8bad70f282919917ea4ff1ed573f58ec9",
+  "rope-query/h100-mastiff/resume-warm-cache.json": "c1f7bfe1f7175a3ae962a6a445b3484987fa812b9f198431635b73f5328085c5",
+  "rope-query_key/b200-shiba/pilot.json": "dfeb03321bef7e01c89c36f45c583a93af0f154fa1a794ac284f6978470809ba",
+  "rope-query_key/b200-shiba/resume-warm-cache.json": "9a3f303b64b149afe22a546d0d890aac6f9136052ad230558f700f00d7253d66",
+  "rope-query_key/h100-mastiff/pilot.json": "732516961789bb5290470aae273a20d09897fb866988c8ca9613f18370ff38df",
+  "rope-query_key/h100-mastiff/resume-warm-cache.json": "0593ef0679ba9eb1e082c0ad13d79f300052e1846963d028b3ff186372a3213a",
+  "rope-static/b200-shiba/pilot.json": "c75cce28bacbe4c127cb4a63aa753fb30bfc8710839dd757cbaaef6ba8e77db0",
+  "rope-static/b200-shiba/resume-warm-cache.json": "5490e249d4ca4a7cfaf1fc973476050d8e6eaadc82bc00eecc2164eacb23e1bf",
+  "rope-static/h100-mastiff/pilot.json": "d1be465cd7bbdd155577162a3936f156863e1a60d6cf35ed753d66e2b634566d",
+  "rope-static/h100-mastiff/resume-warm-cache.json": "d15b42861353cb2117112b6895342f6e1c4073769c4d36fd32adaed4d41117ec",
+  "summarize.py": "8c6073fc4dd136608968d51f832e9fe87bcf25421783c19b3ad0671589da5485",
+  "summary.json": "2b3d11f254aa643ad909a5465c3b1e36d3560a09e1734af63eccc4d49bc4bd93",
+  "wait_lane.sh": "eef89b1e63c172e87b9b99723619767fdd8a80aa4cf38d7b84b5bd3e08c87494"
+ },
+ "schema_version": 1
+}

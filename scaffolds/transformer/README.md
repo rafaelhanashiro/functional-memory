@@ -91,7 +91,10 @@ shared implementation ancestry; a run's own source commit is in its `record.json
 
 Kennel launchers source `launchers/kennel_runtime.sh`, which selects host staging
 and disables NCCL peer transport for A100/A6000 allocations. A6000 uses the
-validated 0.90 allocator fraction. Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
+validated 0.90 allocator fraction. Blackwell allocations (B200, B300) run in the CUDA 13
+environment `.venv-cuda13` with collectives on the compute stream; every other GPU runs in
+the CUDA 12 `.venv` ([CLUSTERS.md](../../CLUSTERS.md)). `launchers/kennel.sbatch` accepts the
+GPU types its `GPU_TYPES` argument lists (default `B300,H100`; B200 when listed). Explicit `TRANSFORMER_HOST_STAGING=0` or `1`
 overrides automatic selection. This transport policy does not replace kernel and
 full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
@@ -140,15 +143,15 @@ own softplus query-distance gate on the blocked backend or the Mosaic decay kern
 coefficients the weight is `sum_r c_r(x_t) s_ti^r exp(-(t-i) lambda_tir)`.
 The query variant uses `lambda_tr = exp(A_r) softplus(wq_r·x_t + b_r)`;
 `query_key` adds `wk_r·x_i` inside softplus. With `attention_forget_gate_mode:
-cumulative` (query conditioning, blocked backend only) each order instead keeps its
-own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
+cumulative` (query conditioning; the blocked backend, or Mosaic on H100) each order
+instead keeps its own cumulative sum `L_tr = sum_(j<=t) log(alpha_jr)`, and the weight is
 `sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)` ([Forget gate](#forget-gate)). Gate arrays
 add an order axis before their final channel axis. All orders initially duplicate
 the shared gate's draw; key projections start at zero. The copies then learn
 independently. Projection matrices receive WD; rates and biases remain exempt.
 Diagnostics retain the layer, head, and order axes. Sigmoid rates, other gate
-forms, and other backends reject this option, and Mosaic rejects cumulative
-per-order gates. Existing recipes default to a shared gate.
+forms, and other backends reject this option, and Mosaic runs cumulative per-order
+gates on H100 only. Existing recipes default to a shared gate.
 
 `attention_forget_gate_conditioning: none` is the input-free gate of learned static
 coefficients: `lambda = exp(A_log) * softplus(b_dt)` per layer and head reads no token,
@@ -646,6 +649,152 @@ and formula, recorded in metrics and metadata, include the schedule and every
 `coefficient_release_end_step` columns, empty without a schedule. Acceptance selects
 `tests/test_coefficient_release.py` for every recipe with a schedule.
 
+### Per-degree score biases
+
+`attention_score_bias` (default `none`) gives every order `r = 1..m` of diagonal tanh query
+coefficients its own signed shift of the score (`attention/score_bias.py`); order zero is unchanged:
+
+    W(t,i) = c_0(x_t) G_0(t,i) + sum_(r=1..m) c_r(x_t) G_r(t,i) (s_ti + beta_r(t,i))^r
+
+`c_r` keeps its generator and factorial scales. `G_r = 1`, or each order's endpoint gate
+`exp(-(t-i) exp(A_r) softplus(x_t w_query_r + x_i w_key_r + dt_bias_r))` (the per-order query–key
+gate above). `x` is the attention input after the block's RMSNorm. Each layer, head, and order has its
+own shift:
+
+| Mode | `beta_r(t,i)` | Arrays | Added parameters (15 layers, 14 heads, width 896, `m = 8`) |
+| --- | --- | --- | ---: |
+| `static` | `b_r` | `score_bias_offset` (`b`) | 1,680 |
+| `query` | `b_r + a_r tanh(x_t u_r)` | `b`, `score_bias_amplitude` (`a`), `score_bias_query_kernel` (`u`) | 1,508,640 |
+| `query_key` | `b_r + a_r tanh(x_t u_r + x_i v_r)` | the query mode's and `score_bias_key_kernel` (`v`) | 3,013,920 |
+
+- Arrays: FP32, `[layers, heads, m]` (`b`, `a`) and `[layers, heads, m, hidden_size]` (`u`, `v`). `b`
+  starts at 0, `a` at 1, `u` and `v` at 0, with no random draw, so every shift starts at exactly zero,
+  every other array keeps its initialization, and `u` and `v` receive gradients from the first update.
+  AdamW decays `u` and `v`; `b` and `a` never decay. Telemetry reports them as the `score_bias` group.
+- Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized
+  diagonal tanh query coefficients of degree 1-12, without selected orders, a coefficient gate, or a
+  B-spline basis; RoPE or no positional encoding; and no forget gate or the per-order query–key
+  endpoint gate (input form, `query_distance`, softplus rates). Configuration rejects every other
+  recipe, coefficient release, `optim.query_coefficient_learning_rate_scale` other than 1, and
+  continuations; the model rejects coefficient capture and override.
+- Backends: `mosaic` trains them on H100's score-bias kernels (`backends/mosaic/score_bias.py`; no gate
+  or the endpoint gate, with a row shift for `static` and `query` or a pair shift for `query_key`).
+  Every other GPU refuses those kernels before tracing one, and `ModelConfig.mosaic_score_bias_problem`
+  names a shape H100's shared memory cannot hold. `blocked` (`backends/reference.py`) trains them on any
+  GPU with its causal strips, which `scaffolds.records create` gives a fresh blocked recipe. The scan is
+  their reference for CPU tests and diagnostics, but no GPU test qualifies it for training them:
+  `scaffolds.records create` (also with `--allow-scan-blocked-attention`) and acceptance's test
+  selection refuse a score-bias recipe on the scan. Both form each shifted power directly (the
+  kernels inside their causal tiles, the blocked backend one `[batch, heads, queries, keys]` block per
+  order), never expanding it into powers of `s`, which would change how the orders cancel. `auto`,
+  `fused`, and the other backends reject these recipes, and every other attention path raises on
+  score-bias operands rather than ignoring them.
+- Operands: `static` and `query` pass the row shift `beta_r(t)` `[batch, time, heads, m]`, whose gradient
+  autodiff carries to `b`, `a`, and `u`; `query_key` passes the projections `x u` and `x v`
+  `[batch, time, heads, m]` with `b` and `a` `[heads, m]`, and each pair's shift is formed in its tile.
+- Records: the attention identity records the mode, `score_bias_parameter_count`,
+  `score_bias_weight_decay`, and the formula with `(s_ti + beta_r(t,i))^r`; `attention_implementation`
+  names the kernels (for example `pallas_mosaic_gpu_query_polynomial_pair_score_bias`); W&B tags the run
+  `score_bias_<mode>`. `runs.csv` has an `attention_score_bias` column (`none` for every model recipe
+  that predates it).
+- Diagnostics: at each validation, the blocked reference of the same shifted kernel, forward only on the
+  fixed diagnostic sample, reports `coefficients.score_biases`: the parameters; per layer, head, and
+  order, the moments and extremes of the shifted scores (and of the query or query–key shifts), the
+  fractions of shifted scores below zero and within `1e-3` of zero, and each order's term
+  `T_r = c_r G_r (s + beta_r)^r`; shifted-score histograms on [-16, 16] per layer and order, pooled
+  over heads; and the cancellation across orders per layer and head (`sum_r |T_r| / |sum_r T_r|` per
+  pair, `sum_r ||o_r|| / ||o||` per row). Nonfinite parameters are its only issue. A positive shifted
+  score does not imply a positive weight: the coefficients are signed.
+- Acceptance adds `tests/test_score_bias.py` to the CPU tests of these recipes (FP64 references through
+  the scan and the strips with every gradient, operands, starts, refusals, the model's layers on the
+  strips, and diagnostics). On `mosaic` it adds `tests/test_score_bias_lowering.py` (the H100 kernels'
+  shared memory and tile mathematics lowered on the host) and, on the GPU, `tests/test_mosaic_score_bias.py`
+  with the GPU case of `tests/test_score_bias.py`, at the kernel family's precision, beside the
+  backbone's query and per-order gate checks. On `blocked` the GPU stage is
+  `tests/test_score_bias_strips.py` alone: the strips through `attention_core` at production precision
+  (Q, K, V rounded to BF16 in the program, FP32 operands, degree eight, 2,048 tokens) for every mode on
+  both backbones, with negative and exactly zero shifted scores, against host FP64; the output and dQ,
+  dK, dV within 1.2x their BF16 rounding floors and every FP32 gradient within 1e-4 per order. The
+  backbone's other GPU cases qualify the Triton and Mosaic kernels these runs never execute and can skip
+  or refuse on a GPU those kernels are not qualified on, so they are not selected.
+
+### Score transforms
+
+`attention_score_transform` (default `identity`) evaluates the diagonal tanh query polynomial at a
+parameter-free function of the score instead of the score itself (`attention/score_transform.py`):
+
+    W(t,i) = sum_(r=0..m) c_r(x_t) z_ti^r,    z_ti = phi(s_ti)
+
+| Transform | `phi(s)` | Very negative `s` |
+| --- | --- | --- |
+| `identity` | `s` (every historical recipe) | `c_m s^m` dominates: a large weight of sign `(-1)^m` |
+| `softplus` | `log(1 + exp(s))`, as `max(s, 0) + log1p(exp(-abs(s)))` | `z -> 0`, so `W -> c_0` |
+| `abs` | `abs(s)` | the weight of `-s` |
+
+- Derivatives: `sigmoid(s)` for softplus and `sign(s)` (zero at `s = 0`) for abs, given as JVP rules;
+  autodiff of the softplus formula would give 0 at `s = 0`, since JAX takes `|s|`'s derivative there as 1.
+  Masked entries evaluate `phi` at their zero score and are zeroed as for every kernel; a nonfinite score
+  poisons its row as before.
+- `attention_coefficient_constant_initial` (default null) starts the order-0 offset `b_0` of the same
+  coefficients at its value instead of Taylor's 1 (stored `b_0 * 0!`, every other array unchanged); with
+  `attention_coefficient_amplitude_initial: 0`, `c_0` starts at exactly that value. With 0 and softplus the
+  kernel starts at `sum_(r=1..m) z^r/r!`, the Taylor polynomial of `e^z - 1 = e^s`: about `e^s` for negative
+  scores and `T_m(s) - 1` for large positive ones. Neither field adds a parameter.
+- Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized diagonal tanh
+  query coefficients of degree >= 1, without selected orders, a coefficient gate, or a B-spline basis (both
+  fields); the transform also requires no forget gate, no score biases, and `attention_backend: blocked` (RoPE
+  or no positional encoding) or `mosaic` (`mosaic_score_transform_problem()`: RoPE, and the widths and degrees
+  of the query polynomial's Mosaic kernels at the recipe's length). Configuration rejects coefficient release,
+  `optim.query_coefficient_learning_rate_scale` other than 1, and continuations with either field; the model
+  rejects coefficient capture and override with a transform.
+- Backends: the blocked backend evaluates a transform in its scan and strips, one `[batch, heads, queries,
+  keys]` block at a time; a blocked recipe trains on the strips, which `scaffolds.records create` gives a fresh
+  blocked recipe and requires (also with `--allow-scan-blocked-attention`). An explicit `mosaic` backend runs
+  `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
+  polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
+  `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
+  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. The entry
+  point refuses them there too (`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint
+  without backend selection; `tests/test_mosaic_score_transform.py` admits the GPU it qualifies. Softplus is
+  `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
+  `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
+  `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked
+  reference, where the limit 0 would give the pair the finite weight `c_0`. `sigmoid(s) =
+  e^(min(s, 0) - ln(1 + y))` takes one more `ex2.approx`; abs evaluates no transcendental and keeps the query
+  family's compiler settings.
+  dS is `dP p'(z) phi'(s)` in the dQ and dK passes, and the dQ pass sums `dc_r = sum_i dP z^r`; shared memory,
+  vectors, precision (BF16 weight products), shapes and failure behavior are the query family's, and the
+  identity transform is `query_polynomial_attention` itself. `auto` never selects these kernels
+  (`mosaic_supported()` is false for a transformed recipe; `mosaic_score_transform_supported()` holds where
+  they apply). The fused kernels, `auto`, every other backend, and every other attention path raise on a
+  transform rather than computing the untransformed polynomial. The constant start alone runs on any
+  backend.
+- Records: the attention identity records `attention_score_transform` and `attention_coefficient_constant_initial`
+  when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; on Mosaic the
+  implementation is `pallas_mosaic_gpu_query_polynomial_<name>_scores`; W&B tags the run
+  `score_transform_<name>` and `coefficient_constant_start`. `runs.csv` has an `attention_score_transform`
+  column (`identity` for every model recipe that predates it) and a `coefficient_constant_initial` column
+  (empty unless the recipe sets the start). Untransformed recipes trace identical programs.
+- Diagnostics: the scan of the same kernel, forward only on the fixed diagnostic sample, reports
+  `coefficients.score_transform`: per layer and head the raw scores' and the inputs' moments and extrema, the
+  fraction of raw scores below zero, and the fraction of causal pairs at which the polynomial decreases in its
+  input (`sum_r r c_r(x_t) z^(r-1) < 0`); per layer, histograms of `s` and `z` on [-16, 16] pooled over heads.
+  The coefficient statistics beside it give each order's sign per head. `kernel_values` is
+  `query_polynomial_of_<name>_scores`.
+- Acceptance adds `tests/test_score_transform.py` to the CPU tests of a transformed recipe (FP64 references
+  through the scan and the strips with every gradient, special values, masking, the softplus start, refusals,
+  allocation, the model start, diagnostics). On the blocked backend it adds `tests/test_blocked_strips.py`,
+  whose families include two transforms, and its GPU stage is `tests/test_score_transform_strips.py` (the
+  strips through `attention_core` at production precision, degree eight and 2,048 tokens, for each transform
+  with unit and wide scores, against host FP64: output and dQ, dK, dV within 1.2x their BF16 floors, the
+  coefficient gradient within 1e-4 per order) and the strips' score-bias qualification,
+  `tests/test_score_bias_strips.py`, alone. On Mosaic it adds `tests/test_score_transform_lowering.py` on CPU
+  (counts, support, exact shared memory and lowering of both architectures' kernels, refusals, dispatch, and
+  the tile mathematics in FP64 against explicit references) and `tests/test_mosaic_score_transform.py` to the
+  GPU stage (degrees 1-12, every Q/K width, unit and wide scores, the production context against host FP64
+  and the strips, future-token invariance, NaN rows, repeatability, dispatch), beside the query kernels' own
+  GPU cases. A recipe with only the constant start adds `tests/test_score_transform.py` on CPU.
+
 ### B-spline score function
 
 `attention_kernel_basis: bspline` (default `polynomial`, the monomials above) replaces the
@@ -801,12 +950,22 @@ cases qualify the query polynomials' kernels).
 nonlinear query coefficients (including zero) its own input gate and sum `L_tr`:
 `W_ti = sum_r c_r(x_t) s_ti^r exp(L_tr - L_ir)`, each block evaluating one order's
 `[B, H, Q, K]` factor at a time. It takes query conditioning, RoPE or no positional encoding,
-and the blocked backend (scan or strips); Mosaic has no cumulative kernels. The gates start as
+and the blocked backend (scan or strips) or, on H100, the Mosaic per-order cumulative kernels
+(`attention_backend: mosaic`; `api.per_order_cumulative_decay_attention`, family
+`per_order_cumulative_decay`). They form each order's FP32 difference `L_tr - L_ir` inside the causal
+tiles before scaling it to base 2, which stays exact for nearby tokens however large `|L|` grows
+(scaling each sum first would err by 3e-4 where `|L|` nears 3,000); the dQ kernel sums `dc_r` and the
+dK/dV kernel each key's sum of `G W_r` over its queries, so `dL_r = c_r dc_r` minus that sum. B300
+refuses them before tracing a kernel. The gates start as
 copies of the shared draw, so the model starts as cumulative FoX; each extra order adds
 `(hidden_size + 2) * num_layers * num_heads` parameters (188,580 in the Transformer++ shape). A
 nonfinite `log alpha` poisons the rows from its token on, as for a shared gate.
-`tests/test_per_order_cumulative.py` checks degrees four and eight against FP64; acceptance runs it
-for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU.
+`tests/test_per_order_cumulative.py` checks degrees four, eight, and twelve against FP64; acceptance
+runs it for these recipes on CPU and its 2,048-token BF16 strips cases on the GPU. Mosaic recipes
+add `tests/test_mosaic_per_order_cumulative.py` to both stages: on CPU, the tile mathematics against
+FP64, the kernels' lowering in their counted shared memory, the entry point's gradient assembly and
+refusals, the dispatch, and the recipe rules; on H100, every output and gradient against FP64 and
+the strips, gate extremes, invalid sums, repeatability, and a two-layer model.
 
 `positional_encoding: none` skips RoPE, so positions enter only through the causal mask
 and the decay. Diagnostics report each head's `log alpha` statistics (per order for per-order
@@ -1152,14 +1311,18 @@ shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 1
 128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
-sigmoid query polynomials, and the input-free gate of learned static coefficients (on the same
-query-decay kernels, every query's coefficients and rates equal), run on the Mosaic decay
-kernels only when `mosaic` is requested (`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
+sigmoid query polynomials, their per-order cumulative query gates, and the input-free gate of
+learned static coefficients (on the same query-decay kernels, every query's coefficients and
+rates equal), run on the Mosaic decay kernels only when `mosaic` is requested
+(`ModelConfig.mosaic_decay_supported`), and so does the tanh query polynomial evaluated at a transformed
+score, on the query kernels with `phi(s)` in their tiles, on H100 alone
+(`ModelConfig.mosaic_score_transform_supported`; [Score transforms](#score-transforms)). Shared gates must fit B300 like the gate-free
 kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
 (`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
 per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel
 for shapes `api.blackwell_supported` rejects: above degree 7 (query) or 6 (query–key) at
-`d_K = 64` and 2,048 tokens. Diagnostics come from the blocked reference,
+`d_K = 64` and 2,048 tokens. The per-order cumulative kernels run on H100 alone; B300 refuses
+them at every shape. Diagnostics come from the blocked reference,
 as for the fused kernels. They are the canonical kernels for these mechanisms, and
 `scaffolds.records create` rejects a fresh recipe for them that requests `fused` unless
 `--allow-triton-attention` is supplied. Acceptance runs the Mosaic GPU tests only at the
@@ -1252,7 +1415,7 @@ package files with the uv cache, so an additional environment costs almost no di
 
 ```bash
 uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-# B300 (Blackwell) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
+# Blackwell (B200, B300) environment from the same lock: CUDA 13 with cuBLAS >= 13.2.
 UV_PROJECT_ENVIRONMENT=$PWD/scaffolds/transformer/.venv-cuda13 \
   uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 
@@ -1395,6 +1558,66 @@ submitting to change it), and acceptance pilots never log. Saved workspace views
 results code built with the `views` dependency group
 (`uv sync --project scaffolds/transformer --locked --extra cuda --group views`).
 
+### Gradient-event capture
+
+`train.gradient_event_capture: true` saves the exact state an update started from when its
+pre-clip gradient norm spikes after warmup (`training/gradient_events.py`). The rule and
+retention are recipe fields, fixed before launch:
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `gradient_event_factor` | 5.0 | multiple of the running median the norm must exceed |
+| `gradient_event_min_norm` | 1.0 | floor of the threshold |
+| `gradient_event_history` | 100 | finite pre-clip norms of earlier updates in the median |
+| `gradient_event_min_history` | 20 | earlier norms required before any event |
+| `gradient_event_max_states` | 3 | kept states: the first event and the largest later ones |
+
+- Rule: update *k* is an event when *k* > `optim.warmup_steps`, its norm *g* is finite, at
+  least `min_history` earlier norms are known, and *g* > max(`min_norm`, `factor` × median).
+  The history includes warmup updates and events, and resumes with the checkpoint.
+- Capture: the pre-update state (parameters, Adam moments, `step` *k* − 1) is saved
+  synchronously in the checkpoint manager's `{"state": state}` layout at
+  `<checkpoints>/gradient_events/<k>/<k-1>/default`, with the event's record as
+  `<k>/event.json`. Each `<k>` is a one-step checkpoint-manager root whose step directory
+  names the state's own step; `checkpointing.restore_state(<k>/<k-1>, template)`, or a
+  `StandardCheckpointer` restore of `<k>/<k-1>/default`, reads it back. The run's step
+  manager ignores the non-numeric `gradient_events` root, and Git ignores it with the
+  checkpoints.
+- Log: every event, kept or not, is appended to the run's `gradient_events.jsonl` and printed
+  as `gradient_event`. A record holds the update and pre-update step, loss, pre-clip norm,
+  clip scale, running median and threshold, learning rate, sequence range and microbatch
+  layout, batch and RNG SHA256 (as the checkpoint audit hashes them), seed and RNG
+  derivation, the update's and preceding update's telemetry, device kind and count, backend
+  and implementation, source commit, frozen-execution hash, attempt ID, the pre-update
+  state's SHA256, and whether it was kept and which capture it replaced. The log is
+  append-only: a resume appends a `resume` row with its `restored_step`, and rows that earlier
+  attempts logged for later updates are superseded, because the resumed run repeats them.
+- Retention: a larger later event replaces the smallest kept later event (the first is never
+  replaced); the replaced directory is deleted once no restorable checkpoint references it.
+  A nonfinite update also keeps its pre-update state, outside the cap, before its numerical
+  failure is recorded.
+- Resumption: `gradient_events/state.json` records the history and kept list of each
+  checkpoint a resume may restore, written before that checkpoint's save. A resume restores
+  its checkpoint's snapshot, and deletes and logs (`capture_discarded`, with the reason for
+  each directory) captures that snapshot does not reference: those made after that checkpoint,
+  whose updates it repeats, the capture of a superseded numerical failure, and a capture
+  replaced at or before that checkpoint.
+- Records: a completed run and a numerical failure list their kept captures in `record.json`
+  under `diagnostic_checkpoints`: directory descriptors of `<k>` with SHA256 and a
+  justification ("pre-update state of gradient event at update *k*, norm *g*"). A run that
+  trains again supersedes that list and lists none until it reaches its own outcome, as a
+  first execution does. `retention.py` keeps them and nothing else of the capture root, and
+  lists them in `retention.json` (`retained_gradient_event_updates`). `validate_record`
+  checks them like checkpoints and reports them unavailable on other clusters.
+- Cost: capture never changes training; on CPU losses, gradient norms, and states are
+  bit-identical with and without it, on one device and on two. One-device steps do not
+  donate their input, so holding the pre-update state across the update costs no device
+  memory. The data-parallel step donates it, so each of its updates first copies the state
+  (one more state per device: 2.4 GB for the 15-layer width-896 recipes). An event costs a
+  state hash, and a kept one a synchronous save comparable to a checkpoint save.
+- Acceptance adds `tests/test_gradient_events.py` to the CPU tests of every recipe with capture on
+  (its data-parallel case runs in the two-device stage).
+
 ## Launch, acceptance, retention, and analysis
 
 Both shared launchers default to one GPU. Independent training runs are submitted
@@ -1458,7 +1681,9 @@ Studies configure these shared modules with execution modules at their root
 - `acceptance.py` runs identity-keyed acceptance in the production allocation: CPU
   tests, distributed CPU tests on two forced host devices, and single-GPU kernel tests
   (no skips), an initialization hash, a full-recipe pilot, and an exact fresh-process
-  resume. The identity includes the allocated GPU model, so a requeue onto another
+  resume. The kernel tests run with `JAX_PLATFORMS=cuda,cpu`: CUDA is the default, and
+  the host CPU is there for FP64 references; the workers and training list CUDA alone.
+  The identity includes the allocated GPU model, so a requeue onto another
   model under the same launcher GPU type (H100 NVL after H100 80GB HBM3) repeats
   them. `attention_spec(config, entry_module=...)` selects correctness and kernel
   tests from the recipe and resolved backend, plus the initialization check and
@@ -1472,7 +1697,8 @@ Studies configure these shared modules with execution modules at their root
   reusing run copies the report into its own acceptance directory and records its
   origin in `success.json` under `reused_tests`.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
-  the selection.
+  the selection, keeping a capturing run's kept gradient-event states as recorded
+  diagnostic checkpoints.
 
 Kernel and throughput benchmark scripts live in `benchmarks/`; their results and the
 scaffold's hardware qualification live in [`validation/`](validation/README.md).

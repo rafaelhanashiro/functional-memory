@@ -16,6 +16,7 @@ SCRIPT = Path(__file__).parents[1] / "launchers" / "kennel_runtime.sh"
     ("NVIDIA RTX A6000", None, "1", "1", "0.90"),
     ("NVIDIA H100 PCIe", None, "0", None, None),
     ("NVIDIA B300", None, "0", None, None),
+    ("NVIDIA B200", None, "0", None, None),
     ("NVIDIA A100-PCIE-40GB", "0", "0", None, None),
     ("NVIDIA H100 PCIe", "1", "1", "1", None),
 ])
@@ -46,9 +47,10 @@ def test_kennel_transport_policy(tmp_path, gpu, override, staging, nccl, fractio
      "--xla_gpu_enable_command_buffer= --xla_gpu_disable_async_collectives=ALLCOLLECTIVES"),
     ("NVIDIA B300 SXM6 AC", "--xla_gpu_disable_async_collectives=ALLREDUCE",
      "--xla_gpu_disable_async_collectives=ALLREDUCE"),
+    ("NVIDIA B200", None, "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES"),
     ("NVIDIA H100 80GB HBM3", None, None),
 ])
-def test_b300_collectives_stay_on_the_compute_stream(tmp_path, gpu, existing, expected):
+def test_blackwell_collectives_stay_on_the_compute_stream(tmp_path, gpu, existing, expected):
     executable = tmp_path / "nvidia-smi"
     executable.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_GPU_NAME"\n')
     executable.chmod(0o755)
@@ -85,10 +87,11 @@ def test_kennel_preserves_explicit_allocator_settings(tmp_path, gpu, preallocate
 
 @pytest.mark.parametrize("gpu,environment,directory", [
     ("NVIDIA B300 SXM6 AC", "cuda13", ".venv-cuda13"),
+    ("NVIDIA B200", "cuda13", ".venv-cuda13"),
     ("NVIDIA H100 80GB HBM3", "cuda12", ".venv"),
     ("NVIDIA A100-PCIE-40GB", "cuda12", ".venv"),
 ])
-def test_b300_uses_the_cuda13_environment(tmp_path, gpu, environment, directory):
+def test_blackwell_uses_the_cuda13_environment(tmp_path, gpu, environment, directory):
     executable = tmp_path / "nvidia-smi"
     executable.write_text('#!/bin/sh\nprintf "%s\\n" "$TEST_GPU_NAME"\n')
     executable.chmod(0o755)

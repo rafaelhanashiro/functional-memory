@@ -1,0 +1,57 @@
+question: Are the completed Transformer++ sum-of-squares query-polynomial runs stable
+  during training, and how do their effective coefficients evolve?
+settings:
+  model_shape:
+    num_layers: 15
+    hidden_size: 896
+    num_heads: 14
+  gradient_scope: global norm before clipping; window statistics cover every optimizer
+    update
+  late_training_start_exclusive: 1500
+  coefficient_field: attention_diagnostics.coefficients.effective_summary
+  coefficient_sample: same first held-out sequence; 2048 query tokens per evaluation
+  coefficient_convention: p_t(s) = sum_r c_r(x_t) s^r; c_r already include factorial
+    order scaling
+  terminal_step: 7570
+  comparisons: training behavior of the selected SoS runs only; no mechanism ranking
+runs:
+- study: transformer_pp
+  run_id: reeefbcc19abf
+  role: sos_m8
+  degree: 8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/config.yaml
+      sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metrics.jsonl
+      sha256: d647b2f1e82f45fbd72d0e68be0d03897f7427477fcbb68ab78d7524b0085ffb
+    completion.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/completion.json
+      sha256: e3fae2b3368b9bf83a8ecaf40eba19c127dc51556d4d0802f2bc11600923c0c0
+    metadata.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metadata.json
+      sha256: 622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
+      sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2
+- study: transformer_pp
+  run_id: r3d52b7ab43d1
+  role: sos_m12
+  degree: 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/config.yaml
+      sha256: 9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metrics.jsonl
+      sha256: 894f20027b79ef78b636a615fbdf19db223e12bb91c027a9c055fe0e7587088a
+    completion.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/completion.json
+      sha256: 68f9ccb5f5fde1a03a2bc47172122866eacdce1aa0f17a253db685f10ca4ee51
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metadata.json
+      sha256: 427c3d0111ef74fb313369aae5dd6bca63cb96ec131c6c104f45a1b5cdf60bac
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/best_validation.json
+      sha256: 3b7db607a97f8d8ff8f3447e2a6aed04f54477288fac17b15da4d1ded34bb839

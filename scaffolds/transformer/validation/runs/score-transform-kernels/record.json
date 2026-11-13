@@ -1,0 +1,450 @@
+{
+ "format": "score-transform-mosaic-kernels-qualification",
+ "schema_version": 1,
+ "current_frozen_execution": {
+  "sha256": "c90aa961890d99694c8cd375e624d0781ab8662299106d63a3c534697470a2cc",
+  "source_commit": "e185c0c5d81378e194f73027ebf67a3d831daa84",
+  "gpu_jobs_frozen_execution_sha256": "f09ea1f12e058b0fe5ccc9278292d372cf2a33d65e47062b42e0ba584a18808f",
+  "differences": [
+   "softplus's input (s + max(-s, 0)) + ln(1 + y) in place of max(s, 0) + ln(1 + y): the same for every finite score, NaN at s = -inf, so a causal score that overflows makes its row NaN as in the query kernels and the blocked reference",
+   "backend selection and the entry point (api.TRANSFORM_ARCHITECTURES) admit the transformed kernels on sm90 alone",
+   "tests: the nonfinite-score, selection and entry-point CPU cases, and the GPU case of an overflowing score in three rows (the GPU module admits the architecture it qualifies)",
+   "the scaffold README"
+  ],
+  "unchanged_programs_against": "e2d5aac41358486f8f990aea42580a899a402f13",
+  "unchanged_programs": "the jaxprs of every family's H100 and B300 kernels at degrees 1 and 8, Q/K width 64 and both precisions (336; B300's 64 score-bias refusals alike), and the lowered Mosaic modules of the query, abs and softplus entry points' forward and VJP at degree eight on both architectures, B300 admitted for the comparison (12): identical but for query_softplus's 28 kernels and 4 modules",
+  "gpu": "no GPU has run this set; acceptance's GPU stage at launch runs tests/test_mosaic_score_transform.py (50 BF16 cases) and the query kernels' modules on the granted H100 before training, and its pilot projects again"
+ },
+ "slurm_job_id": "244010",
+ "node": "mastiff",
+ "device": {
+  "kind": "NVIDIA H100 PCIe",
+  "uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356",
+  "pci_bus_id": "00000000:61:00.0",
+  "driver": "560.35.05",
+  "power_limit_W": 350.0,
+  "max_sm_clock_MHz": 1755
+ },
+ "source_commit": "fe0c2a978f7a1c1751a6b6849693e810ae2f9b86",
+ "source_note": "frozen execution set committed (the pilot's frozen-execution check passed); only documentation was uncommitted (study, topic and validation READMEs)",
+ "runtime": "the CUDA 12 environment (.venv) under kennel_runtime.sh, CUDA_HOME at the locked toolkit (ptxas 12.9.86), no XLA flags, XLA_PYTHON_CLIENT_PREALLOCATE=false, default allocator share",
+ "gpu_tests": {
+  "acceptance_stage": {
+   "run": "ra3b54e2489f8",
+   "selection": "acceptance.test_paths(score_transform_acceptance.experiment_spec, recipe, resolved_backend='mosaic', cpu=False) with --mosaic-precision bf16, -m gpu",
+   "modules": {
+    "test_mosaic_query": 44,
+    "test_mosaic_repeatability": 3,
+    "test_mosaic_score_transform": 48,
+    "test_input_dependent_coefficients": 5,
+    "test_query_tanh_polynomial": 16
+   },
+   "passed": 116,
+   "failed": 0,
+   "skipped": 0,
+   "pytest_seconds": 431.4,
+   "junit": "logs/score-transform-kernels/244010/acceptance_gpu.xml",
+   "junit_sha256": "ddd0db56bbacfa3f2e0408e69d4de354653c5160875755a52008e2a15331ecfa",
+   "log_sha256": "c2589b64cfa18dd2301792723eaa47600c3259544e8405eb2650e9c0eed9d5ed"
+  },
+  "fp32_weight_products": {
+   "selection": "tests/test_mosaic_score_transform.py -m gpu --mosaic-precision bf16x3",
+   "passed": 48,
+   "failed": 0,
+   "skipped": 0,
+   "pytest_seconds": 219.3,
+   "junit": "logs/score-transform-kernels/244010/transform_bf16x3.xml",
+   "junit_sha256": "d0066a0855b4a04d83e816f28b9e2a5c75ceb32192173296b442f54267fb12ea",
+   "log_sha256": "a8552d6f653f7226eb83f02ef2195b009b038e0496109ecd5e6c5e68cf228158"
+  },
+  "bounds_relative_l2": {
+   "output": 0.006,
+   "dq": 0.025,
+   "dk": 0.025,
+   "dv": 0.015,
+   "dc_per_order": 0.01
+  },
+  "largest_relative_l2": {
+   "bf16_vs_fp64": {
+    "output": 0.00253,
+    "dq": 0.0027,
+    "dk": 0.00243,
+    "dv": 0.00261,
+    "dc": 1.11e-06
+   },
+   "bf16_production_vs_strips": {
+    "output": 0.00259,
+    "dq": 0.00266,
+    "dk": 0.00273,
+    "dv": 0.00259,
+    "dc": 4.1e-07
+   },
+   "strips_production_vs_fp64": {
+    "output": 0.0017,
+    "dq": 0.00168,
+    "dk": 0.00168,
+    "dv": 0.00167,
+    "dc": 7.72e-07
+   },
+   "bf16x3_vs_fp64": {
+    "output": 0.00169,
+    "dq": 0.00173,
+    "dk": 0.00171,
+    "dv": 0.00183,
+    "dc": 1.11e-06
+   },
+   "bf16x3_production_vs_strips": {
+    "output": 0.000878,
+    "dq": 0.000955,
+    "dk": 0.00102,
+    "dv": 0.000928,
+    "dc": 4.1e-07
+   },
+   "note": "dc is the largest order's; every case, degrees 1, 2, 4, 8, 12 at 512 tokens with unit and wide scores and the production context (2,048 tokens, four heads, degree eight)"
+  }
+ },
+ "kernels_ms": {
+  "shape": "16 x 2,048 tokens, 14 heads, Q/K and value width 64, degree 8, BF16 weight products; median of 20; x240_seconds is an update's 15 layers x 16 micro-batches",
+  "identity": {
+   "forward": 0.829,
+   "dq": 1.701,
+   "dkv": 1.402,
+   "x240_seconds": 0.944
+  },
+  "softplus": {
+   "forward": 1.166,
+   "dq": 2.182,
+   "dkv": 1.791,
+   "x240_seconds": 1.233
+  },
+  "abs": {
+   "forward": 0.823,
+   "dq": 1.758,
+   "dkv": 1.452,
+   "x240_seconds": 0.968
+  },
+  "report": "logs/score-transform-kernels/244010/kernels.json",
+  "report_sha256": "a5bc8662a5da3d6a6eae10daef8d173e1a729e101ff9dd5ca9ac7198339f28c7"
+ },
+ "registers_and_spills": {
+  "columns": ["registers at launch", "spill store bytes", "spill load bytes"],
+  "identity": {
+   "forward": [168, 0, 0],
+   "dq": [168, 0, 0],
+   "dkv": [168, 140, 140]
+  },
+  "softplus": {
+   "forward": [168, 0, 0],
+   "dq": [168, 0, 0],
+   "dkv": [168, 336, 336]
+  },
+  "abs": {
+   "forward": [168, 0, 0],
+   "dq": [168, 0, 0],
+   "dkv": [168, 216, 216]
+  },
+  "ptx_isa": ["8.8"],
+  "note": "compute warpgroups raise their registers to 232 with setmaxnreg",
+  "report": "logs/score-transform-kernels/244010/registers.json",
+  "report_sha256": "90e9544c67064b4cacb63461ca98d01acd1de1dbfce313665db3c57e4f2fc602"
+ },
+ "attention_ms": {
+  "shape": "the public entry points at the kernels' shape: warmed forward, and forward plus every VJP",
+  "identity": {
+   "forward_ms": 1.007,
+   "forward_backward_ms": 3.036
+  },
+  "softplus": {
+   "forward_ms": 1.331,
+   "forward_backward_ms": 3.839
+  },
+  "abs": {
+   "forward_ms": 0.983,
+   "forward_backward_ms": 3.158
+  },
+  "report": "logs/score-transform-kernels/244010/attention.json",
+  "report_sha256": "25fa1c6b3f5ce1abf4b52307012f1977ad795250640bf952734da14fd2fb2baf"
+ },
+ "pilot_command": "python -m scaffolds.transformer.benchmarks.qualify_training pilot RECIPE --directory DIR --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100 --no-references --continue-updates 1 --limit-hours 8 10 12 14 16 20 24",
+ "resume_command": "python -m scaffolds.transformer.benchmarks.qualify_training resume RECIPE --directory DIR --experiment transformer_pp --adapter experiments.transformer_pp.score_transform_acceptance --gpu-type H100 (acceptance's resume worker, update 21 in a fresh process, its audit)",
+ "pilot": {
+  "run": "ra3b54e2489f8",
+  "updates": 20,
+  "attention_backend": "mosaic",
+  "attention_implementation": "pallas_mosaic_gpu_query_polynomial_softplus_scores",
+  "attention_score_transform": "softplus",
+  "all_losses_and_numerics_finite": true,
+  "attention_diagnostics_valid": true,
+  "checkpoint_state_equals_final_state": true,
+  "first_update_seconds": 40.22,
+  "median_seconds_per_update": 3.7141,
+  "min_max_seconds_per_update": [3.6423, 3.7354],
+  "projected_hours": 8.257,
+  "projection_components_hours": {
+   "checkpointing": 0.174,
+   "diagnostics": 0.004,
+   "evaluation": 0.214,
+   "pilot_overhead": 0.056,
+   "training": 7.81
+  },
+  "training_peak_GiB": 30.26,
+  "allocator_limit_GiB": 59.41,
+  "pilot_peak_GiB": 30.26,
+  "validation_nll_update_20": 8.994079,
+  "frozen_execution_sha256": "f09ea1f12e058b0fe5ccc9278292d372cf2a33d65e47062b42e0ba584a18808f",
+  "device_kinds": ["NVIDIA H100 PCIe"],
+  "report": "logs/score-transform-kernels/244010/pilot/pilot.json",
+  "report_sha256": "c27f95549589ced7cdffba10006885ae1f5fb3fc4b0165926466c4437a16aafd",
+  "budget_gate": {
+   "limits_hours": [8, 10, 12, 14, 16, 20, 24],
+   "smallest_passing_hours": 12
+  },
+  "losses_updates_1_3_and_19_20": [10.500998, 10.506226, 10.41728, 9.067461, 9.025658],
+  "resume": {
+   "acceptance_resume_audit": "passed",
+   "restored_step": 20,
+   "final_step": 21,
+   "data_start_sequence": 5120,
+   "first_update_seconds": 41.32,
+   "loss": [8.996881],
+   "peak_GiB": 29.92,
+   "report": "logs/score-transform-kernels/244010/pilot/resume-warm-cache.json",
+   "report_sha256": "365a48abad134278cc03beab8c8bfb16e8acace3b07b527eebc316e8bc28ae30"
+  }
+ },
+ "job_244157": {
+  "slurm_job_id": "244157",
+  "node": "mastiff",
+  "partition": "long",
+  "device": "job 244010's GPU (GPU-b1e23521, bus 61:00.0)",
+  "source_commit": "261dfa47674e2243d7f5dd7d44b3a1b8604b72e2",
+  "source_dirty": false,
+  "frozen_execution_sha256": "f09ea1f12e058b0fe5ccc9278292d372cf2a33d65e47062b42e0ba584a18808f",
+  "runtime": "job 244010's",
+  "runner": {
+   "script": "logs/score-transform-kernels/qualify_gpu2.sh",
+   "sha256": "a0dcad34023c89bc94ad9f00c119ef97f6125db2f57fc2751ed1183cb6e81c6a"
+  },
+  "gpu_tests": {
+   "transform_bf16": {
+    "selection": "tests/test_mosaic_score_transform.py -m gpu --mosaic-precision bf16",
+    "passed": 48,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 197.4,
+    "junit": "logs/score-transform-kernels/244157/transform_bf16.xml",
+    "junit_sha256": "13c34b88b001246d9b3edf14fe796b13a06f0d9f6e0b6b0fdb2453f472c4e3ad",
+    "log_sha256": "c077106234d0b0c0648b177e16174d099b29983c26035c5331f8a9312ae7fa44"
+   },
+   "transform_bf16x3": {
+    "selection": "tests/test_mosaic_score_transform.py -m gpu --mosaic-precision bf16x3",
+    "passed": 48,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 217.5,
+    "junit": "logs/score-transform-kernels/244157/transform_bf16x3.xml",
+    "junit_sha256": "2c3341eb0307241a0ef1fb42567bd8aef35efc50b74479630882762a5a861ae8",
+    "log_sha256": "30cdae13d5a7e8d6f72f0113eecadbe7466979f44c8fe15216608dbb30e2e756"
+   },
+   "query_family_bf16": {
+    "selection": "-m gpu --mosaic-precision bf16 over test_mosaic_query, test_mosaic_repeatability, test_per_order_decay, test_mosaic_score_bias, test_score_bias, test_endpoint_decay, test_input_dependent_coefficients, test_query_tanh_polynomial, test_coefficient_forms, test_query_distance_decay and test_coefficient_scale (no GPU case): the score-bias Mosaic kernels' GPU set",
+    "modules": {
+     "test_mosaic_query": 44,
+     "test_mosaic_repeatability": 3,
+     "test_per_order_decay": 24,
+     "test_mosaic_score_bias": 57,
+     "test_score_bias": 4,
+     "test_endpoint_decay": 30,
+     "test_input_dependent_coefficients": 5,
+     "test_query_tanh_polynomial": 16,
+     "test_coefficient_forms": 3,
+     "test_query_distance_decay": 1
+    },
+    "passed": 187,
+    "failed": 0,
+    "skipped": 0,
+    "pytest_seconds": 754.5,
+    "junit": "logs/score-transform-kernels/244157/query_family_bf16.xml",
+    "junit_sha256": "0f6fb5860b5ed0d1616af1b4df7c70e3e36b0e9573272ef193dee4ff7db03d05",
+    "log_sha256": "0e68b373f65b0f24c91f209e131f268fa087fb983de5293ef31c6a127ae8a8ad"
+   }
+  },
+  "kernels_ms": {
+   "identity": {
+    "forward": 0.842,
+    "dq": 1.658,
+    "dkv": 1.391,
+    "x240_seconds": 0.934
+   },
+   "softplus": {
+    "forward": 1.169,
+    "dq": 2.183,
+    "dkv": 1.772,
+    "x240_seconds": 1.23
+   },
+   "abs": {
+    "forward": 0.832,
+    "dq": 1.779,
+    "dkv": 1.589,
+    "x240_seconds": 1.008
+   },
+   "report": "logs/score-transform-kernels/244157/kernels.json",
+   "report_sha256": "5e72842c1d7e2418f80435a44f1346d48fead60bf81e008e4989c88c837c16cb"
+  },
+  "pilots": {
+   "command": "python -m scaffolds.transformer.benchmarks.qualify_training pilot RECIPE --directory DIR --experiment transformer_pp [--adapter experiments.transformer_pp.score_transform_acceptance] --gpu-type H100 --no-references --continue-updates 0 --limit-hours 8 9 10 11 12 14 24; DIR a temporary directory outside the repository, removed after the reports were kept",
+   "ra3b54e2489f8": {
+    "adapter": "experiments.transformer_pp.score_transform_acceptance",
+    "recipe_sha256": "adcdb8b7e740ccba18fb7f2bb58fa61fbfdbd14b8012af7d340084b9230387e8",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial_softplus_scores",
+    "all_losses_and_numerics_finite": true,
+    "attention_diagnostics_valid": true,
+    "checkpoint_state_equals_final_state": true,
+    "first_update_seconds": 41.53,
+    "median_seconds_per_update": 3.7151,
+    "min_max_seconds_per_update": [
+     3.6331,
+     3.7413
+    ],
+    "projected_hours": 8.269,
+    "projection_components_hours": {
+     "checkpointing": 0.175,
+     "diagnostics": 0.004,
+     "evaluation": 0.219,
+     "pilot_overhead": 0.058,
+     "training": 7.812
+    },
+    "training_peak_GiB": 30.26,
+    "pilot_peak_GiB": 30.26,
+    "allocator_limit_GiB": 59.41,
+    "validation_nll_update_20": 8.994073,
+    "losses_updates_1_3_and_19_20": [
+     10.500997,
+     10.506225,
+     10.417271,
+     9.067447,
+     9.025674
+    ],
+    "budget_gate": {
+     "8h": false,
+     "9h": false,
+     "10h": false,
+     "11h": true,
+     "12h": true,
+     "14h": true,
+     "24h": true
+    },
+    "telemetry_busy_samples": {
+     "samples": 88,
+     "power_W_median": 342.3,
+     "sm_clock_MHz_median": 1462.5,
+     "sm_clock_MHz_range": [
+      1155.0,
+      1755.0
+     ],
+     "temperature_C_range": [
+      44.0,
+      65.0
+     ],
+     "power_cap_active_fraction": 0.955,
+     "file": "logs/score-transform-kernels/244157/telemetry_pilot_softplus.csv",
+     "sha256": "d7a5f16e81397084bf22f67db21c69c3829fdbd39a9384f9806d5931b0cd3399"
+    },
+    "report": "logs/score-transform-kernels/244157/pilot_softplus/pilot.json",
+    "report_sha256": "0aa29d3c266e64383a71c5d82c90135eef8a05cad07923460639a405c0e91f27"
+   },
+   "r25fffc16c2f3": {
+    "adapter": "acceptance.attention_spec (the default)",
+    "recipe_sha256": "ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2",
+    "attention_implementation": "pallas_mosaic_gpu_query_polynomial",
+    "all_losses_and_numerics_finite": true,
+    "attention_diagnostics_valid": true,
+    "checkpoint_state_equals_final_state": true,
+    "first_update_seconds": 38.96,
+    "median_seconds_per_update": 3.4113,
+    "min_max_seconds_per_update": [
+     3.3518,
+     3.4483
+    ],
+    "projected_hours": 7.626,
+    "projection_components_hours": {
+     "checkpointing": 0.195,
+     "diagnostics": 0.001,
+     "evaluation": 0.204,
+     "pilot_overhead": 0.054,
+     "training": 7.173
+    },
+    "training_peak_GiB": 30.26,
+    "pilot_peak_GiB": 30.26,
+    "allocator_limit_GiB": 59.41,
+    "validation_nll_update_20": 8.994073,
+    "losses_updates_1_3_and_19_20": [
+     10.500995,
+     10.506226,
+     10.417242,
+     9.067454,
+     9.025672
+    ],
+    "budget_gate": {
+     "8h": false,
+     "9h": false,
+     "10h": true,
+     "11h": true,
+     "12h": true,
+     "14h": true,
+     "24h": true
+    },
+    "telemetry_busy_samples": {
+     "samples": 80,
+     "power_W_median": 343.8,
+     "sm_clock_MHz_median": 1425.0,
+     "sm_clock_MHz_range": [
+      1155.0,
+      1755.0
+     ],
+     "temperature_C_range": [
+      42.0,
+      64.0
+     ],
+     "power_cap_active_fraction": 0.963,
+     "file": "logs/score-transform-kernels/244157/telemetry_pilot_control.csv",
+     "sha256": "ab97d39bbc78d71ae536c02367089d7fcffbfb1d59442cc7df597489bb5c455f"
+    },
+    "report": "logs/score-transform-kernels/244157/pilot_control/pilot.json",
+    "report_sha256": "682a563bd087d3e37f4252c91ea89c7f37732555c6b0a8ba97584ee5caeafdd0"
+   },
+   "softplus_minus_control_seconds_per_update": 0.304,
+   "softplus_over_control": 1.0891
+  }
+ },
+ "h100_sxm_estimate": {
+  "method": "no H100 SXM was free; the control recipe's H100 SXM production update (median over validation windows of 256 x 2,048 tokens / training tokens per second, evaluation and checkpoints excluded) times job 244157's softplus/control ratio, plus the softplus pilot's non-training components",
+  "ra15cbb16beb7": {
+   "recipe": "the control's at 2.5 times the budget (identical update), ORCD H100 SXM",
+   "control_sxm_seconds_per_update": 2.3234,
+   "windows": 28,
+   "softplus_sxm_seconds_per_update": 2.5303,
+   "projected_hours": 5.777
+  },
+  "r698f9a157a94": {
+   "recipe": "the control's with even orders only, Kennel dogo H100 SXM",
+   "control_sxm_seconds_per_update": 2.2818,
+   "windows": 28,
+   "softplus_sxm_seconds_per_update": 2.485,
+   "projected_hours": 5.681
+  }
+ },
+ "time_limit": {
+  "hours": 11,
+  "projected_hours_h100_pcie": [
+   8.257,
+   8.269
+  ],
+  "projected_hours_h100_sxm_estimate": [
+   5.681,
+   5.777
+  ],
+  "acceptance_projection_limit_hours": 9,
+  "rule": "the slowest GPU type's projection (H100 PCIe) plus two hours, rounded up, within standard's 24 (acceptance requires its own projection on the granted GPU within the limit less two hours)"
+ }
+}

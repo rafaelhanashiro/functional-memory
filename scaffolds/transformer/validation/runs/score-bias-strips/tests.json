@@ -1,0 +1,89 @@
+{
+ "format": "score-bias-strips-gpu-tests",
+ "module": "scaffolds/transformer/tests/test_score_bias_strips.py",
+ "module_sha256": "172bf704055ff6b94c1205eba84e96457e6579142596e94964e7a11358d29cc9",
+ "platforms": "JAX_PLATFORMS=cuda,cpu (host FP64 references)",
+ "schema_version": 1,
+ "selection": [
+  "-m",
+  "gpu"
+ ],
+ "stages": {
+  "b200-shiba-242636": {
+   "device_kinds": [
+    "NVIDIA B200"
+   ],
+   "log": "gpu-tests/b200-shiba-242636/log.txt",
+   "node": "shiba",
+   "pytest_seconds": 216.74,
+   "runtime": "TRANSFORMER_CUDA_ENVIRONMENT=cuda13 (.venv-cuda13), no XLA flags, direct pytest",
+   "skipped": 0,
+   "slowest_case_seconds": 34.97,
+   "slurm_job_id": "242636",
+   "source": "338568f2 with the module as committed in 634aa505 (same SHA256)",
+   "tests_passed": 10
+  },
+  "b200-shiba-242699": {
+   "device_kinds": [
+    "NVIDIA B200"
+   ],
+   "junit": "gpu-tests/b200-shiba-242699/gpu-tests-07e55b6b180f.xml",
+   "junit_sha256": "ba6d0652faba35a45f912769f621d29ceb42e66d4f94b9020c75c6a017a891ef",
+   "node": "shiba",
+   "passed": true,
+   "paths": [
+    "scaffolds/transformer/tests/test_score_bias_strips.py"
+   ],
+   "recipes": [
+    "gated-query_key",
+    "rope-static",
+    "rope-query",
+    "rope-query_key",
+    "gated-static",
+    "gated-query"
+   ],
+   "runner": "gpu_stage.py: acceptance's test selection, stage identity and pytest invocation",
+   "selection": [
+    "-m",
+    "gpu"
+   ],
+   "slowest_case_seconds": 36.495,
+   "slurm_job_id": "242699",
+   "source": "996c4e55",
+   "test_identity": "07e55b6b180fb3aaf4f85ee6c9acdf46dfddaa056469d486ba08acb2b45e991d",
+   "tests_passed": 10,
+   "wall_seconds": 130.8
+  },
+  "h100-mastiff-242685": {
+   "device_kinds": [
+    "NVIDIA H100 PCIe"
+   ],
+   "junit": "gpu-tests/h100-mastiff-242685/gpu-tests-37987922faea.xml",
+   "junit_sha256": "52186cce117bfedc9012ddf90e33e2ea5e6fb0c827687727b1ded2ab763b9160",
+   "node": "mastiff",
+   "passed": true,
+   "paths": [
+    "scaffolds/transformer/tests/test_score_bias_strips.py"
+   ],
+   "recipes": [
+    "gated-query_key",
+    "rope-static",
+    "rope-query",
+    "rope-query_key",
+    "gated-static",
+    "gated-query"
+   ],
+   "runner": "gpu_stage.py: acceptance's test selection, stage identity and pytest invocation",
+   "selection": [
+    "-m",
+    "gpu"
+   ],
+   "slowest_case_seconds": 48.539,
+   "slurm_job_id": "242685",
+   "source": "996c4e55",
+   "test_identity": "37987922faeae0a7caa50a5732682c10c1848377a5f7da95d1032390590916b8",
+   "tests_passed": 10,
+   "wall_seconds": 153.1
+  }
+ }
+}

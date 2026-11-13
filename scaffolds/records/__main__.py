@@ -122,6 +122,29 @@ def main() -> None:
                     "model.initialization: flax_default. Use --allow-flax-default-init only when "
                     "Flax-default initialization was explicitly requested."
                 )
+            if model["attention_score_bias"] != "none" and model["attention_backend"] not in ("mosaic", "blocked"):
+                # Configuration validation rejects the other backends first; this states the rule.
+                parser.error(
+                    "per-degree score biases train on H100's Mosaic score-bias kernels or the blocked backend's "
+                    f"causal strips; this recipe sets model.attention_backend: {model['attention_backend']}."
+                )
+            if (model["attention_score_bias"] != "none" and model["attention_backend"] == "blocked"
+                    and model["attention_blocked_implementation"] != "strips"):
+                # Also with --allow-scan-blocked-attention: acceptance refuses the scan for score biases.
+                parser.error(
+                    "per-degree score biases on the blocked backend train on its causal strips, the only blocked "
+                    "computation with a GPU qualification for them; this recipe sets "
+                    f"model.attention_blocked_implementation: {model['attention_blocked_implementation']}."
+                )
+            if (model["attention_score_transform"] != "identity" and model["attention_backend"] == "blocked"
+                    and model["attention_blocked_implementation"] != "strips"):
+                # Validation refuses every backend but blocked and mosaic. Also with --allow-scan-blocked-attention:
+                # acceptance refuses the scan for a transform.
+                parser.error(
+                    "a score transform on the blocked backend trains on its causal strips, the only blocked "
+                    "computation with a GPU qualification for it; this recipe sets "
+                    f"model.attention_blocked_implementation: {model['attention_blocked_implementation']}."
+                )
             if (model["attention_backend"] == "fused" and config.model.mosaic_supported()
                     and not args.allow_triton_attention):
                 parser.error(

@@ -16,6 +16,9 @@ defaults to ``default_precision``.
   sum_r c_(t,r) s^r with FP32 coefficients for every query and head. A row with a
   nonfinite score or weight, or whose BF16 output overflows, is NaN; coefficient
   gradients are FP32 and stay per query.
+- ``transformed_query_polynomial_attention`` (the blocked reference's ``score_transform``): the
+  same polynomial evaluated at z = phi(s) per causal pair, phi = softplus or abs, inside the tiles of
+  the same kernels, with the chain rule through phi in both gradient passes.
 - ``query_decay_attention`` and ``endpoint_decay_attention`` (the blocked reference's
   query-distance forget gates): the query polynomial times exp((t-i) l), with a per-query
   log rate l_t <= 0 or the endpoint rate l_ti = -exp(A_h) softplus(u_t + v_i). Decay is
@@ -28,6 +31,10 @@ defaults to ``default_precision``.
   vectors per tile; B300 keeps every query's and key's per-order vectors in shared memory and
   raises ValueError, before tracing a kernel, for shapes it cannot hold (``blackwell_supported``:
   at Q/K width 64 and 2,048 tokens, degree 7 query and degree 6 query-key gates fit).
+- ``per_order_cumulative_decay_attention``: the blocked reference's per-order cumulative gates,
+  sum_r c_r s^r exp(L_tr - L_ir) with every order's own cumulative log decay L_r, its FP32
+  difference formed inside the causal tiles. A nonfinite L makes every causal pair it enters
+  NaN. H100 only: B300 raises ValueError before tracing a kernel.
 
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
 128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
@@ -43,8 +50,8 @@ import jax.numpy as jnp
 
 from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import (
-    BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY, PRECISIONS, QUERY,
-    QUERY_DECAY, TAYLOR,
+    BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY,
+    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SOFTPLUS, TAYLOR,
 )
 
 WIDTHS = (8, 16, 32, 64, 128)
@@ -54,19 +61,41 @@ MAX_QUERY_DEGREE = 12  # largest qualified degree; the GPUs must also fit it (qu
 
 
 # The kernel family of a forget gate, by gate conditioning (query or query_key) and whether every
-# polynomial order has its own gate.
+# polynomial order has its own gate, in the query-distance mode; in the cumulative mode, only
+# per-order query gates have kernels.
 DECAY_FAMILY = {("query", False): QUERY_DECAY, ("query_key", False): ENDPOINT_DECAY,
                 ("query", True): PER_ORDER_QUERY_DECAY, ("query_key", True): PER_ORDER_ENDPOINT_DECAY}
+CUMULATIVE_DECAY_FAMILY = {("query", True): PER_ORDER_CUMULATIVE_DECAY}
+# Families qualified on H100 alone: B300 refuses them before building a kernel.
+HOPPER_ONLY_FAMILIES = (PER_ORDER_CUMULATIVE_DECAY,)
 
 
-def query_degree_supported(degree, width, time, *, gate=None, per_order=False):
+def query_degree_supported(degree, width, time, *, gate=None, per_order=False, mode="query_distance",
+                           transform="identity"):
     """Whether the query-coefficient kernels run degree m at this key width and sequence length.
     Shared coefficients and gates must fit B300 (``blackwell_supported``), and so H100: B300's
     dK/dV holds (m+1) FP32 coefficients (and a forget gate's vectors and buffers, for gate
     conditioning ``gate``) for every query in shared memory. Per-order gates must fit H100
     (``hopper_supported``), which stages their vectors per tile; B300 runs the per-order shapes
-    that ``blackwell_supported`` accepts and refuses the others before building a kernel."""
-    family = QUERY if gate is None else DECAY_FAMILY[gate, per_order]
+    that ``blackwell_supported`` accepts and refuses the others before building a kernel. A gate's
+    decay ``mode`` is "query_distance" or "cumulative"; cumulative gates are supported per order
+    with query conditioning alone (``CUMULATIVE_DECAY_FAMILY``), on H100 only. A score
+    ``transform`` other than the identity (``TRANSFORM_FAMILY``) takes no gate and holds the
+    coefficients alone, as the untransformed polynomial does."""
+    if mode not in ("query_distance", "cumulative"):
+        raise ValueError(f"Unknown decay mode: {mode!r}")
+    if gate is None:
+        family = QUERY
+    elif mode == "cumulative":
+        family = CUMULATIVE_DECAY_FAMILY.get((gate, per_order))
+        if family is None:
+            return False
+    else:
+        family = DECAY_FAMILY[gate, per_order]
+    if transform != "identity":
+        if gate is not None or transform not in TRANSFORM_FAMILY:
+            return False
+        family = TRANSFORM_FAMILY[transform]
     if not (1 <= degree <= MAX_QUERY_DEGREE and time > 0):
         return False
     if family in common.PER_ORDER_FAMILIES:
@@ -77,7 +106,10 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False):
 def blackwell_supported(family, degree, width, time):
     """Whether B300's kernels hold a family's buffers in shared memory: its dK/dV keeps every
     query's FP32 vectors (and a decay family's per-key buffers), and a per-order family's forward
-    and dQ also keep every key's per-order vectors, for the whole sequence."""
+    and dQ also keep every key's per-order vectors, for the whole sequence. Never for a family
+    qualified on H100 alone (``HOPPER_ONLY_FAMILIES``)."""
+    if family in HOPPER_ONLY_FAMILIES:
+        return False
     width = max(width, MIN_WIDTH)
     _, vectors, sums = common.vector_counts(family, degree)
     if common.blackwell_dkv_stages(width, VALUE_WIDTH, vectors, time,
@@ -102,6 +134,14 @@ def _check_blackwell_per_order(family, degree, q, name):
     if _kernels()[0] == "blackwell" and not blackwell_supported(family, degree, q.shape[-1], q.shape[1]):
         raise ValueError(f"{name}: degree {degree} at Q/K width {q.shape[-1]} and {q.shape[1]} tokens exceeds "
                          "B300 shared memory; these per-order gates run on H100")
+
+
+def _check_hopper_only(name):
+    """A family qualified on H100 alone (``HOPPER_ONLY_FAMILIES``) is refused on B300 before any
+    kernel is traced. Its B300 kernels would also hold every query's and key's per-order vectors,
+    fitting no degree above seven at Q/K width 64 and 2,048 tokens."""
+    if _kernels()[0] != "hopper":
+        raise ValueError(f"{name} runs on H100 only: its kernels are not qualified on B300")
 
 
 def default_precision(family: str, degree: int) -> str:
@@ -273,6 +313,64 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
         raise ValueError("Mosaic query-polynomial attention requires FP32 coefficients [batch, time, heads, m+1] "
                          f"with 1 <= m <= {MAX_QUERY_DEGREE}, got {coefficients.dtype} {coefficients.shape}")
     return _query(q, k, v, coefficients, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# The query polynomial at a transformed score: sum_r c_r z^r with z = phi(s) per causal pair.
+
+# The kernel family of each score transform (attention/score_transform.py) but the identity, which is
+# query_polynomial_attention itself.
+TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS}
+# Architectures on which a GPU has run the transformed kernels' qualification (tests/test_mosaic_score_transform.py,
+# which admits the architecture it runs on). B300's kernels lower, but no Blackwell GPU has run them; backend
+# selection refuses them there too, and this refusal also covers models built without it (restored checkpoints).
+TRANSFORM_ARCHITECTURES = ("hopper",)
+
+
+def _transformed_forward(q, k, v, coefficients, family, precision):
+    _, kernels = _kernels()
+    out, _ = kernels.forward(_pad(q), _pad(k), v, _coefficient_vectors(coefficients), family=family,
+                             degree=coefficients.shape[-1] - 1, scale=_scale(q), precision=precision)
+    return _cast_output(out, v.dtype)
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(4, 5))
+def _transformed_query(q, k, v, coefficients, family, precision):
+    return _transformed_forward(q, k, v, coefficients, family, precision)
+
+
+def _transformed_query_fwd(q, k, v, coefficients, family, precision):
+    return _transformed_forward(q, k, v, coefficients, family, precision), (q, k, v, coefficients)
+
+
+def _transformed_query_bwd(family, precision, residuals, do):
+    q, k, v, coefficients = residuals
+    grad_q, sums, grad_k, grad_v = _backward(family, coefficients.shape[-1] - 1, precision, q, k, v, do,
+                                             _coefficient_vectors(coefficients))
+    return grad_q, grad_k, grad_v, sums.transpose(1, 3, 2, 0)
+
+
+_transformed_query.defvjp(_transformed_query_fwd, _transformed_query_bwd)
+
+
+def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: str, precision: str | None = None):
+    """Unnormalized causal sum_i p_(b,t,h)(phi(s_ti)) v_i with FP32 coefficients c[B, T, H, m+1], where phi is the
+    score transform ``transform``: "softplus" (ln(1 + e^s)) or "abs" (|s|), evaluated per causal pair inside the
+    tiles. Gradients follow the chain rule through phi, phi' = sigmoid(s) or sign(s) (zero at s = 0), and the
+    coefficient gradients are dc_r = sum_i dP z^r. Failure behavior, shapes and precisions are those of
+    ``query_polynomial_attention``, on the architectures in ``TRANSFORM_ARCHITECTURES`` (H100); the identity
+    transform is that operation itself, so it is refused here."""
+    name = "Mosaic transformed query-polynomial attention"
+    if transform not in TRANSFORM_FAMILY:
+        raise ValueError(f"{name} takes transform in {tuple(TRANSFORM_FAMILY)}, got {transform!r}")
+    _check_query_operands(q, k, v, coefficients, name)
+    architecture = _kernels()[0]
+    if architecture not in TRANSFORM_ARCHITECTURES:
+        raise ValueError(f"{name} is qualified on H100 (sm90) only; no GPU has run its {architecture} kernels")
+    family = TRANSFORM_FAMILY[transform]
+    precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
+    _check_precision(precision)
+    return _transformed_query(q, k, v, coefficients, family, precision)
 
 
 # ----------------------------------------------------------------------------------------
@@ -505,3 +603,58 @@ def per_order_endpoint_decay_attention(q, k, v, coefficients, query_gate_input, 
     log_rate = gate_log_rate[..., 0].astype(jnp.float32)
     rate = jnp.where(jnp.isfinite(log_rate), -jnp.exp(log_rate), jnp.nan)  # [heads, orders]
     return _per_order_endpoint_decay(q, k, v, coefficients, query_gate_input, key_gate_input, rate, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# Per-order cumulative gates: sum_r c_r s^r exp(L_tr - L_ir), each order's own cumulative sum.
+
+def _per_order_cumulative_operands(coefficients, log_decay):
+    # Validate the sums per token (the kernels never test them): a nonfinite one becomes NaN and
+    # poisons every causal pair it enters, as query or as key.
+    sums = _order_vectors(_finite_or_nan(log_decay))
+    return jnp.concatenate([_coefficient_vectors(coefficients), sums]), sums
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(5,))
+def _per_order_cumulative_decay(q, k, v, coefficients, log_decay, precision):
+    vectors, key_vectors = _per_order_cumulative_operands(coefficients, log_decay)
+    return _decay_forward(PER_ORDER_CUMULATIVE_DECAY, q, k, v, vectors, key_vectors, precision,
+                          coefficients.shape[-1] - 1)
+
+
+def _per_order_cumulative_decay_fwd(q, k, v, coefficients, log_decay, precision):
+    output = _per_order_cumulative_decay(q, k, v, coefficients, log_decay, precision)
+    return output, (q, k, v, coefficients, log_decay)
+
+
+def _per_order_cumulative_decay_bwd(precision, residuals, do):
+    q, k, v, coefficients, log_decay = residuals
+    orders = coefficients.shape[-1]
+    vectors, key_vectors = _per_order_cumulative_operands(coefficients, log_decay)
+    grad_q, sums, grad_k, grad_v, key_sums = _backward(PER_ORDER_CUMULATIVE_DECAY, orders - 1, precision, q, k, v,
+                                                       do, vectors, key_vectors)
+    # L_tr enters every causal pair (t, i) of its query with sign +1 and every pair (t', t) of its key
+    # with sign -1: its gradient is c_tr dc_tr less the dK kernel's sum_t' G W_r(t', t).
+    grad_coefficients = sums.transpose(1, 3, 2, 0)
+    return (grad_q, grad_k, grad_v, grad_coefficients,
+            coefficients * grad_coefficients - key_sums.transpose(1, 3, 2, 0))
+
+
+_per_order_cumulative_decay.defvjp(_per_order_cumulative_decay_fwd, _per_order_cumulative_decay_bwd)
+
+
+def per_order_cumulative_decay_attention(q, k, v, coefficients, log_decay, *, precision: str | None = None):
+    """Unnormalized causal sum_i sum_r c_(b,t,h,r) s_ti^r exp(L_(b,t,h,r) - L_(b,i,h,r)) v_i with each
+    order's FP32 cumulative log decay L[B, T, H, m+1] (the cumulative sum over time of
+    ``forget_gate.log_decay`` of per-order parameters). A nonfinite L makes every causal pair it
+    enters NaN: its own row and the rows of every later query. H100 only: B300 raises ValueError
+    before tracing a kernel."""
+    name = "Mosaic per-order cumulative-decay attention"
+    _check_query_operands(q, k, v, coefficients, name)
+    if log_decay.shape != coefficients.shape or log_decay.dtype != jnp.float32:
+        raise ValueError(f"{name} requires FP32 cumulative log decays [batch, time, heads, m+1], "
+                         f"got {log_decay.dtype} {log_decay.shape}")
+    _check_hopper_only(name)
+    precision = default_precision(QUERY, coefficients.shape[-1] - 1) if precision is None else precision
+    _check_precision(precision)
+    return _per_order_cumulative_decay(q, k, v, coefficients, log_decay, precision)
