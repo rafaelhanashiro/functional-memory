@@ -1315,12 +1315,8 @@ activation. Checks cover JIT replay, independent query/example updates, gradient
 through frozen later layers, an improving coefficient update, and unchanged
 pretrained parameters. Run `JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python
 -m pytest -q scaffolds/transformer/tests/test_coefficient_override.py` to repeat.
-[B300 qualification](runs/static-coefficient-override/gpu-b300.json) passed for the
-15-layer, 14-head source: exact capture/external replay and repeatability, finite
-improving coefficient updates, and exact checkpoint continuation. The separate
-fitting graph differed from the original by 0.00089169 nats/token, within the
-recorded BF16 bound of 0.002. The run's `oracle_acceptance.json` retains the full
-qualification measurements; fitting outcomes remain with the scientific run.
+Each fit qualifies itself on its own GPU before production; its `oracle_acceptance.json`
+holds the measurements.
 
 ### Direct query-coefficient capture and override
 
@@ -3280,12 +3276,8 @@ parameter updates as well as free coefficient tables. Its
 identity, selective generator updates, native Adam coordinates without duplicate
 factorial scaling, downstream activation recomputation, group-gradient accounting,
 and exact checkpoint resume. Six generator checks and four existing free-table
-checks pass. [B300 qualification](runs/query-generator-fit/gpu-b300.json)
-passed original-forward replay, all three parameter-group gradients, an improving
-update, frozen-backbone checksums, and exact resumed updates for the full degree-eight
-15-layer model at 2,048 prediction tokens. Separately compiled BF16 training and
-capture forwards differ by 0.00172043 nats, within the explicit 0.002 tolerance;
-the standalone original and restored forward logits match exactly.
+checks pass. Each fit qualifies itself on its own GPU before production; its `oracle_acceptance.json`
+holds the measurements.
 
 ## Coefficients shared across fitting sequences
 
