@@ -77,7 +77,7 @@
       "size_bytes": 193
     },
     {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-two-lines-sos/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
       "sha256": "fb2cea166759f80bf181c6c2609b64a46927fc476feb9218a94d8945130ef732",
       "size_bytes": 724064
     }
@@ -339,11 +339,11 @@
   "home_cluster": "kennel",
   "label": "query-m8-sum-of-squares-w-decay",
   "log": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-two-lines-sos/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
     "sha256": "fb2cea166759f80bf181c6c2609b64a46927fc476feb9218a94d8945130ef732",
     "size_bytes": 724064
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-two-lines-sos/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/reeefbcc19abf/training.log",
   "metadata": {
     "path": "experiments/transformer_pp/runs/reeefbcc19abf/metadata.json",
     "sha256": "622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf",
@@ -442,7 +442,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/poly-two-lines-sos/experiments/transformer_pp/runs/reeefbcc19abf/checkpoints/7500",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/reeefbcc19abf/checkpoints/7500",
     "sha256": "aab74c3943816022d2ae281d7db302ed2bde16b6b697b03db5d0db6b0679d19e",
     "size_bytes": 2202021763,
     "step": 7500,
