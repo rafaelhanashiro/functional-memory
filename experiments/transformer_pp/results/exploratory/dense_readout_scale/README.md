@@ -1,4 +1,4 @@
-# Dense readout scale (m = 4, K = 5)
+# Dense readout scale
 
 Opened 2026-10-29.
 
@@ -16,6 +16,9 @@ features and $V = 0$ at the start, one GPU each; only the readout scale differs.
 | `r0c0f3634685c` | dense-query-m4-k5-head-scale | 1 |
 | `rcaff0dfb095f` | dense-query-m4-k5-head-scale-vdivsqrt5 | $1/\sqrt{5}$ |
 
+Two more runs use $K = 9$ features with $s = 1/3$, at m = 4 (`r04a5b2a3e8dd`) and m = 8
+(`rfccffdd239dd`); their recipes differ from the scaled $K = 5$ run only in $K$, $s$, and degree.
+
 ## Findings
 
 | Run | Best PPL | Terminal |
@@ -24,16 +27,18 @@ features and $V = 0$ at the start, one GPU each; only the readout scale differs.
 | Dense K = 5, $s = 1$ | 14.818 | 14.822 |
 | Fixed Taylor `r816ab0fbe119` | 14.722 | 14.724 |
 | Query (affine tanh) `r2b22f2ff6461` | 14.774 | 14.779 |
+| Dense K = 9, $s = 1/3$ | 14.782 | 14.785 |
+| Dense K = 9, $s = 1/3$, m = 8 | 14.400 | 14.406 |
+| Fixed Taylor m = 8 `ra7ee8a4b2544` | 14.218 | 14.223 |
 
 - The $1/\sqrt{K}$ scale improves dense K = 5 by 0.7% and brings it level
   with fixed Taylor (within 0.1%); unscaled, it was the weakest m = 4 generator.
 - Independent features add incoherently, so the dense term's scale grows with $\sqrt{K}$;
-  under Adam the fixed multiplier also sets the dense term's effective step size. The
-  degree-four K = 9 run on `codex/dense-qk-scale-4b` (`r04a5b2a3e8dd`, scale 1/3, best 14.782)
-  used the same convention and sits 0.5% behind K = 5.
+  under Adam the fixed multiplier also sets the dense term's effective step size.
+- With the same convention, K = 9 trails K = 5 by 0.5% at m = 4. At m = 8 it trails fixed
+  Taylor by 1.3%.
 - No dense variant beats fixed Taylor at m = 4.
 
 ## Open decision
 
-Fold the scaled dense readout into the dense query topic when that branch merges, or
-discard.
+Promote into its own canonical collection, or discard.
