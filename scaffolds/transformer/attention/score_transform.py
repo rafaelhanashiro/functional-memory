@@ -21,9 +21,10 @@ negative score gives a large weight of the sign of (-1)^m.
 Softplus is evaluated as max(s, 0) + log1p(exp(-|s|)), finite for every finite s, with derivative
 sigmoid(s); abs has derivative sign(s), zero at s = 0. Both derivatives are their JVP rules: JAX's
 own derivative of |s| at zero is 1, which would also make the autodiff derivative of the softplus
-formula 0 at s = 0 instead of 1/2. Only the blocked backend evaluates the transform
-(``backends/reference.py``: the scan and the causal strips, which train); every other backend and
-kernel refuses a transformed recipe instead of computing the untransformed polynomial.
+formula 0 at s = 0 instead of 1/2. The blocked backend (``backends/reference.py``: the scan and the causal
+strips) and the Mosaic transformed query-polynomial kernels (``backends/mosaic/api.py``
+``transformed_query_polynomial_attention``, the same derivatives at s = 0) evaluate the transform; every
+other backend and kernel refuses a transformed recipe instead of computing the untransformed polynomial.
 """
 
 import jax

@@ -56,8 +56,9 @@ def attention_core(
     operands (attention/score_bias.py: a row shift, or the query-key pair inputs with their offset
     and amplitude) shift each order r >= 1 of tanh query coefficients; every other kernel rejects them.
     ``score_transform`` (attention/score_transform.py) evaluates tanh query coefficients' polynomial at
-    z = phi(s), without a forget gate, key factors or score biases, on the blocked backend; every other
-    mechanism and backend rejects a transform other than "identity".
+    z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or the Mosaic
+    transformed query-polynomial kernels; every other mechanism and backend rejects a transform other than
+    "identity".
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS

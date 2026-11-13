@@ -742,18 +742,36 @@ parameter-free function of the score instead of the score itself (`attention/sco
   scores and `T_m(s) - 1` for large positive ones. Neither field adds a parameter.
 - Recipes: unnormalized dot-product attention with learned direct `per_head` Taylor-initialized diagonal tanh
   query coefficients of degree >= 1, without selected orders, a coefficient gate, or a B-spline basis (both
-  fields); the transform also requires RoPE or no positional encoding, no forget gate, no score biases, and
-  `attention_backend: blocked`. Configuration rejects coefficient release,
+  fields); the transform also requires no forget gate, no score biases, and `attention_backend: blocked` (RoPE
+  or no positional encoding) or `mosaic` (`mosaic_score_transform_problem()`: RoPE, and the widths and degrees
+  of the query polynomial's Mosaic kernels at the recipe's length). Configuration rejects coefficient release,
   `optim.query_coefficient_learning_rate_scale` other than 1, and continuations with either field; the model
   rejects coefficient capture and override with a transform.
-- Backends: only the blocked backend evaluates a transform (scan and strips, one `[batch, heads, queries,
-  keys]` block at a time); training uses the strips, which `scaffolds.records create` gives a fresh blocked
-  recipe and requires (also with `--allow-scan-blocked-attention`). The fused and Mosaic kernels, `auto`,
-  every other backend, and every other attention path raise on a transform rather than computing the
-  untransformed polynomial; `mosaic_supported()` is false for a transformed recipe. The constant start alone
-  runs on any backend.
+- Backends: the blocked backend evaluates a transform in its scan and strips, one `[batch, heads, queries,
+  keys]` block at a time; a blocked recipe trains on the strips, which `scaffolds.records create` gives a fresh
+  blocked recipe and requires (also with `--allow-scan-blocked-attention`). An explicit `mosaic` backend runs
+  `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
+  polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
+  `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
+  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. The entry
+  point refuses them there too (`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint
+  without backend selection; `tests/test_mosaic_score_transform.py` admits the GPU it qualifies. Softplus is
+  `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
+  `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
+  `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked
+  reference, where the limit 0 would give the pair the finite weight `c_0`. `sigmoid(s) =
+  e^(min(s, 0) - ln(1 + y))` takes one more `ex2.approx`; abs evaluates no transcendental and keeps the query
+  family's compiler settings.
+  dS is `dP p'(z) phi'(s)` in the dQ and dK passes, and the dQ pass sums `dc_r = sum_i dP z^r`; shared memory,
+  vectors, precision (BF16 weight products), shapes and failure behavior are the query family's, and the
+  identity transform is `query_polynomial_attention` itself. `auto` never selects these kernels
+  (`mosaic_supported()` is false for a transformed recipe; `mosaic_score_transform_supported()` holds where
+  they apply). The fused kernels, `auto`, every other backend, and every other attention path raise on a
+  transform rather than computing the untransformed polynomial. The constant start alone runs on any
+  backend.
 - Records: the attention identity records `attention_score_transform` and `attention_coefficient_constant_initial`
-  when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; W&B tags the run
+  when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; on Mosaic the
+  implementation is `pallas_mosaic_gpu_query_polynomial_<name>_scores`; W&B tags the run
   `score_transform_<name>` and `coefficient_constant_start`. `runs.csv` has an `attention_score_transform`
   column (`identity` for every model recipe that predates it) and a `coefficient_constant_initial` column
   (empty unless the recipe sets the start). Untransformed recipes trace identical programs.
@@ -765,12 +783,17 @@ parameter-free function of the score instead of the score itself (`attention/sco
   `query_polynomial_of_<name>_scores`.
 - Acceptance adds `tests/test_score_transform.py` to the CPU tests of a transformed recipe (FP64 references
   through the scan and the strips with every gradient, special values, masking, the softplus start, refusals,
-  allocation, the model start, diagnostics), beside `tests/test_blocked_strips.py`, whose families include two
-  transforms. Its GPU stage is `tests/test_score_transform_strips.py` (the strips through `attention_core` at
-  production precision, degree eight and 2,048 tokens, for each transform with unit and wide scores, against
-  host FP64: output and dQ, dK, dV within 1.2x their BF16 floors, the coefficient gradient within 1e-4 per
-  order) and the strips' score-bias qualification, `tests/test_score_bias_strips.py`, alone. A recipe with
-  only the constant start adds `tests/test_score_transform.py` on CPU.
+  allocation, the model start, diagnostics). On the blocked backend it adds `tests/test_blocked_strips.py`,
+  whose families include two transforms, and its GPU stage is `tests/test_score_transform_strips.py` (the
+  strips through `attention_core` at production precision, degree eight and 2,048 tokens, for each transform
+  with unit and wide scores, against host FP64: output and dQ, dK, dV within 1.2x their BF16 floors, the
+  coefficient gradient within 1e-4 per order) and the strips' score-bias qualification,
+  `tests/test_score_bias_strips.py`, alone. On Mosaic it adds `tests/test_score_transform_lowering.py` on CPU
+  (counts, support, exact shared memory and lowering of both architectures' kernels, refusals, dispatch, and
+  the tile mathematics in FP64 against explicit references) and `tests/test_mosaic_score_transform.py` to the
+  GPU stage (degrees 1-12, every Q/K width, unit and wide scores, the production context against host FP64
+  and the strips, future-token invariance, NaN rows, repeatability, dispatch), beside the query kernels' own
+  GPU cases. A recipe with only the constant start adds `tests/test_score_transform.py` on CPU.
 
 ### B-spline score function
 
@@ -1291,7 +1314,9 @@ shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh 
 sigmoid query polynomials, their per-order cumulative query gates, and the input-free gate of
 learned static coefficients (on the same query-decay kernels, every query's coefficients and
 rates equal), run on the Mosaic decay kernels only when `mosaic` is requested
-(`ModelConfig.mosaic_decay_supported`). Shared gates must fit B300 like the gate-free
+(`ModelConfig.mosaic_decay_supported`), and so does the tanh query polynomial evaluated at a transformed
+score, on the query kernels with `phi(s)` in their tiles, on H100 alone
+(`ModelConfig.mosaic_score_transform_supported`; [Score transforms](#score-transforms)). Shared gates must fit B300 like the gate-free
 kernels. Per-order gates need only fit H100's kernels, which stage their vectors per tile
 (`api.hopper_supported`, every degree to 12). B300's kernels keep every query's and key's
 per-order vectors for the whole sequence. They raise `ValueError` before tracing a kernel

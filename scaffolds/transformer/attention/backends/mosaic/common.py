@@ -183,7 +183,16 @@ def polynomial_and_derivative(s, coefficients):
 #                 (row) or sum_i dbeta_r (1 - tau_r^2), sum_i dbeta_r tau_r, sum_i dbeta_r (pair); the dK
 #                 pass sums the gate's kind, then sum_t dbeta_r (1 - tau_r^2) per order (pair). Every
 #                 summand of a tile crossing the diagonal is selected with the causal mask first.
+#   query_softplus, query_abs: the query polynomial at a transformed score, sum_r c_r z^r with z = phi(s) per
+#                 pair (attention/score_transform.py): z = softplus(s) = ln(1 + e^s) or z = |s|, with the
+#                 vectors of query. dS = G p'(z) phi'(s), phi' = sigmoid(s) (1/2 at s = 0) or sign(s) (0 at
+#                 s = 0), and the dQ sums are dc_r = sum_i G z^r (``transformed_score``). Masked entries
+#                 evaluate phi at their zero score, finite for finite coefficients, and the kernels zero their
+#                 weights and score gradients as for query, so these families need no ``Pair``. A nonfinite
+#                 causal score gives a nonfinite z (softplus's -inf too), so its row is NaN as for query.
 TAYLOR, QUERY = "taylor", "query"
+QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
+TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS)
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
 PER_ORDER_CUMULATIVE_DECAY = "per_order_cumulative_decay"
@@ -270,15 +279,16 @@ def vector_counts(family, degree):
         orders = degree + 1
         sums = {PER_ORDER_QUERY_DECAY: 2, PER_ORDER_ENDPOINT_DECAY: 3, PER_ORDER_CUMULATIVE_DECAY: 1}[family]
         return 2 * orders, 2 * orders, sums * orders
-    extra = {QUERY: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
+    extra = {QUERY: 0, QUERY_SOFTPLUS: 0, QUERY_ABS: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
     return degree + 1 + extra, degree + 1 + extra, degree + 1 + extra
 
 
 def approx_math(family):
     """Whether a family's kernels use the GPU's approximate exp2/log2 (ex2/lg2.approx: about
-    2^-22 relative and absolute error). Only decay families and pair shifts (tanh from exp2)
-    evaluate transcendentals; a row shift evaluates none, so the flag does not change it."""
-    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES
+    2^-22 relative and absolute error). Only decay families, pair shifts (tanh from exp2) and the
+    softplus transform evaluate transcendentals; a row shift evaluates none, so the flag does not
+    change it, and the abs transform, which evaluates none either, keeps query's compiler settings."""
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES or family == QUERY_SOFTPLUS
 
 
 def key_counts(family, degree):
@@ -325,6 +335,35 @@ def log2_softplus(x):
     y = jnp.exp2(jnp.abs(x) * -LOG2E)
     series = y * LOG2E * (1.0 - y * (0.5 - y * (1.0 / 3.0)))
     return jnp.maximum(x, 0.0) * LOG2E + jnp.where(y < _SERIES, series, jnp.log2(1.0 + y))
+
+
+def transformed_score(family, s, *, slope=False):
+    """(z, phi'(s) or None) of a transformed query family's tile, as attention/score_transform.py defines them.
+    Softplus: z = max(s, 0) + ln(1 + y) with y = e^-|s| in (0, 1], from one exp2 and one log (below y = 2^-6
+    the cubic series of ln(1 + y), relative error < 1e-6, replaces the approximate log, whose absolute error
+    would dominate small y), and sigmoid(s) = e^(min(s, 0) - ln(1 + y)) from one more exp2: 1/2 at s = 0, and
+    far below zero e^s to the FP32 rounding of its exponent (about 6e-8 |s| relative), zero once that
+    underflows. Abs: z = |s| and sign(s), 0 at s = 0. z is finite for every finite score and nonfinite for every
+    nonfinite one: abs gives +inf at +-inf, softplus +inf at +inf and NaN at -inf, where its limit 0 would give
+    the pair the finite weight c_0, and both NaN at NaN. A causal score that overflowed therefore makes its row
+    NaN, as for query and the blocked reference."""
+    if family == QUERY_ABS:
+        z = jnp.abs(s)
+        return z, (jnp.where(s > 0.0, 1.0, 0.0) - jnp.where(s < 0.0, 1.0, 0.0) if slope else None)
+    y = jnp.exp2(jnp.abs(s) * -LOG2E)
+    log1p = jnp.where(y < _SERIES, y * (1.0 - y * (0.5 - y * (1.0 / 3.0))), jnp.log(1.0 + y))
+    z = (s + jnp.maximum(-s, 0.0)) + log1p  # s + max(-s, 0) is max(s, 0) exactly for finite s, NaN at s = -inf
+    return z, (jnp.exp2((jnp.minimum(s, 0.0) - log1p) * LOG2E) if slope else None)
+
+
+def _transformed_terms(family, degree, s, dp, vectors, *, rows):
+    """(dS, dQ row sums or []) of a transformed query family's tile, dS = p'(z) (G phi'(s)). In program order the
+    sums dc_r = sum_i G z^r come first, then G phi'(s), then the derivative's recurrence, which therefore holds
+    neither G nor phi'(s) beside it."""
+    z, slope = transformed_score(family, s, slope=True)
+    sums = row_sums(QUERY, degree, z, dp) if rows else []
+    gradient = dp * slope
+    return polynomial_and_derivative(z, vectors)[1] * gradient, sums
 
 
 def decay(family, degree, vectors, pair, *, slopes=False):
@@ -594,6 +633,8 @@ def forward_weights(family, degree, s, vectors, pair=None, terms=None):
     if family in DECAY_FAMILIES:
         terms = decay(family, degree, vectors, pair) if terms is None else terms
         return polynomial(s, vectors[:degree + 1]) * terms.factor
+    if family in TRANSFORMED_QUERY_FAMILIES:
+        return polynomial(transformed_score(family, s)[0], vectors)
     return taylor(s, degree) if family == TAYLOR else polynomial(s, vectors)
 
 
@@ -629,6 +670,8 @@ def value_weights(family, degree, s, vectors, pair=None, terms=None):
         return forward_weights(family, degree, s, vectors, pair, terms)
     if family == TAYLOR:
         return taylor(s, degree) * vectors[1]
+    if family in TRANSFORMED_QUERY_FAMILIES:
+        return polynomial(transformed_score(family, s)[0], vectors)
     return polynomial(s, vectors)
 
 
@@ -664,6 +707,8 @@ def dq_terms(family, degree, s, dp, vectors, pair=None, sums=None):
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=True)
         return ds, sums
+    if family in TRANSFORMED_QUERY_FAMILIES:
+        return _transformed_terms(family, degree, s, dp, vectors, rows=True)
     if family not in DECAY_FAMILIES:
         return score_gradient(family, degree, s, dp, vectors), row_sums(family, degree, s, dp)
     ds, gwd, gd, terms = _decay_gradient(family, degree, s, dp, vectors, pair)
@@ -682,6 +727,8 @@ def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None, sums=None):
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=False)
         return ds, sums
+    if family in TRANSFORMED_QUERY_FAMILIES:
+        return _transformed_terms(family, degree, s, dp, vectors, rows=False)
     if family not in DECAY_FAMILIES:
         return score_gradient(family, degree, s, dp, vectors), []
     ds, gwd, _, terms = _decay_gradient(family, degree, s, dp, vectors, pair, terms)

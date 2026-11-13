@@ -460,8 +460,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     other backend raises, never falling back.
 
     ``score_transform`` (attention/score_transform.py) evaluates the polynomial at z = phi(s) in place of the
-    score s: "softplus" or "abs", without decay or score biases, on the blocked backend alone; the fused and
-    Mosaic kernels raise rather than compute the untransformed polynomial. "identity" changes nothing.
+    score s: "softplus" or "abs", without decay or score biases, on the blocked backend or the Mosaic transformed
+    query-polynomial kernels (``mosaic.transformed_query_polynomial_attention``); the fused kernels raise rather
+    than compute the untransformed polynomial. "identity" changes nothing.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
@@ -499,14 +500,15 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         if backend not in ("blocked", "mosaic"):
             raise ValueError("Per-degree score biases run on the Mosaic score-bias kernels or the blocked "
                              f"backend; {backend!r} has no score-bias kernel")
-    # The historical call is unchanged without a transform; a transform reaches the blocked backend alone.
+    # The historical call is unchanged without a transform; a transform reaches the blocked backend or the Mosaic
+    # transformed query-polynomial kernels.
     transform = {} if validate_transform(score_transform) == "identity" else {"score_transform": score_transform}
     if transform:
         if log_decay is not None or endpoint or bias_kind is not None:
             raise ValueError("A score transform takes no forget gate or per-degree score biases")
-        if backend != "blocked":
-            raise ValueError(f"A score transform runs on the blocked backend alone; {backend!r} has no kernel "
-                             "that evaluates it")
+        if backend not in ("blocked", "mosaic"):
+            raise ValueError(f"A score transform runs on the blocked backend or the Mosaic transformed "
+                             f"query-polynomial kernels; {backend!r} has no kernel that evaluates it")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
         result = blocked_backend_attention(
@@ -550,17 +552,20 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             elif log_decay is not None:
                 attend = partial(mosaic.per_order_query_decay_attention if per_order
                                  else mosaic.query_decay_attention, log_decay=log_decay)
+            elif transform:  # phi(s) is evaluated inside the causal tiles
+                attend = partial(mosaic.transformed_query_polynomial_attention, transform=score_transform)
 
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:
             return output
-        # Diagnostics, including the forget gate's and the score biases', come from the blocked reference
-        # (forward only, on the fixed diagnostic sample) of the same kernel.
+        # Diagnostics, including the forget gate's, the score biases' and the score transform's, come from the
+        # blocked reference (forward only, on the fixed diagnostic sample) of the same kernel.
         _, diagnostics = blocked_dot_product_attention(
             q, k, v, attention_degree=degree, attention_normalization=False,
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
             query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, return_diagnostics=True, **score_bias,
+            **transform,
         )
     else:
         raise ValueError("Query-conditioned polynomial attention requires a blocked, fused or mosaic backend")
