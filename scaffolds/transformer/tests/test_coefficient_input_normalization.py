@@ -259,6 +259,59 @@ def test_training_diagnostics_collect_generator_coordinates_and_baseline_omits_t
                                    layers[0]["coefficient_tanh_derivative_mean"], rtol=2e-6, atol=1e-7)
 
 
+def _assert_generator_gradients(actual, expected, *, rtol):
+    """Compare each generator gradient in the attention helper's [B,T,H,D] layout.
+
+    x is shared across heads, whereas W/b/a own a separate vector or scalar for
+    each head and generator coordinate. Keep those independent comparisons so
+    one missing head or polynomial coordinate cannot hide in a larger norm.
+    """
+    from scaffolds.transformer.tests.test_fused_attention import _assert_relative
+
+    assert len(actual) == len(expected) == 4
+    for name, got, want, rank in zip(("x", "W", "b", "a"), actual, expected, (3, 3, 2, 2), strict=True):
+        got, want = np.asarray(got), np.asarray(want)
+        assert got.shape == want.shape and got.ndim == rank, f"composed d{name}: unexpected shape"
+        if name == "x":
+            _assert_relative(got[:, :, None, :], want[:, :, None, :], rtol=rtol, name="composed dx")
+            continue
+        for coordinate in range(got.shape[-1]):
+            if name == "W":  # [H,D,R] -> [1,D,H,1], one norm per head/coordinate
+                observed = got[..., coordinate].T[None, :, :, None]
+                reference = want[..., coordinate].T[None, :, :, None]
+            else:  # [H,R] -> [1,1,H,1], one scalar per head/coordinate
+                observed = got[:, coordinate][None, None, :, None]
+                reference = want[:, coordinate][None, None, :, None]
+            _assert_relative(observed, reference, rtol=rtol,
+                             name=f"composed d{name} coordinate {coordinate}")
+
+
+def test_generator_gradient_comparison_handles_all_shapes_and_detects_missing_gradients():
+    rng = np.random.default_rng(95)
+    expected = tuple(rng.uniform(.5, 1.5, size=shape) for shape in
+                     ((1, 5, 7), (2, 7, DEGREE + 1), (2, DEGREE + 1), (2, DEGREE + 1)))
+    _assert_generator_gradients(expected, expected, rtol=.025)
+    _assert_generator_gradients(tuple(value * 1.001 for value in expected), expected, rtol=.025)
+    # An entire missing head at one coefficient coordinate must fail independently
+    # of the many correct entries in the rest of the generator.
+    for index in (1, 2, 3):
+        bad = [value.copy() for value in expected]
+        bad[index][1, ..., 4] = 0.
+        with pytest.raises(AssertionError, match="relative L2"):
+            _assert_generator_gradients(bad, expected, rtol=.025)
+    tiny = tuple(value * 1e-14 for value in expected)
+    missing_x = [value.copy() for value in tiny]
+    missing_x[0][:] = 0.
+    with pytest.raises(AssertionError, match="relative L2"):
+        _assert_generator_gradients(missing_x, tiny, rtol=.025)
+    zeros = tuple(np.zeros_like(value) for value in expected)
+    _assert_generator_gradients(zeros, zeros, rtol=.025)
+    nonzero = [value.copy() for value in zeros]
+    nonzero[3][0, 1] = 1e-30
+    with pytest.raises(AssertionError):
+        _assert_generator_gradients(nonzero, zeros, rtol=.025)
+
+
 @pytest.mark.gpu
 @pytest.mark.parametrize("parameterization,precision", (
     ("direct", "bf16"), ("sum_of_squares", "bf16"),
@@ -296,9 +349,5 @@ def test_mosaic_composition_matches_fp64_with_all_gradients(parameterization, pr
     _assert_relative(actual, expected, rtol=.006, name="composed output")
     for name, got, want, tolerance in zip("qkv", gradients[:3], expected_qkvc[:3], (.025, .025, .015), strict=True):
         _assert_relative(got, want, rtol=tolerance, name="composed d" + name)
-    _assert_relative(gradients[3], expected_generator[0], rtol=.025, name="composed dx")
-    for name, got, want in zip(("W", "b", "a"), gradients[4:], expected_generator[1:], strict=True):
-        assert got.dtype == jnp.float32
-        for coordinate in range(DEGREE + 1):
-            _assert_relative(got[..., coordinate], want[..., coordinate], rtol=.025,
-                             name=f"composed d{name} coordinate {coordinate}")
+    assert all(value.dtype == jnp.float32 for value in gradients[3:])
+    _assert_generator_gradients(gradients[3:], expected_generator, rtol=.025)
