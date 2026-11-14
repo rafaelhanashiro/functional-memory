@@ -11,6 +11,18 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Unit-L2 coefficient inputs (2026-11-14)
+
+The coefficient-only normalizer passed 20 new CPU checks, 39 pinned-recipe
+acceptance checks, 224 existing configuration/query regression checks, and four
+parameter-policy checks. Independent analytic/FP64 references cover values and
+VJPs, while full-model captures check unchanged Q/K/V and parameter identity.
+The full reference-shape initial parameter hash matches the controls exactly.
+[coefficient_input_l2.json](coefficient_input_l2.json) records the checks and scope.
+Four composed native Mosaic GPU checks and each allocation's full-shape pilot
+and fresh-process resume are required before production; CPU passage alone does
+not qualify GPU training.
+
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 
 Job `244590` on one B200 in `shiba` ran six existing query-kernel checks under the locked CUDA 13

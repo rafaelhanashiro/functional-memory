@@ -1897,3 +1897,41 @@ native query-kernel parity cases, and then restores parameters without optimizer
 state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSNorm
 gains produces exactly the unchanged forward loss for direct and SoS coefficients.
 The run recipe pins the two parents, checkpoints, data, and reference measurements.
+
+## Coefficient-input L2 experiment
+
+Two fresh Kennel runs test unit-L2 normalization only between the gain-applied
+pre-attention RMSNorm activation and the coefficient projection. Direct query
+`r25a5f78841b2` is paired with `r25fffc16c2f3`; SoS query `r717267afcb78` is paired
+with `reeefbcc19abf`. Both are degree eight at the 15-layer width-896 shape with
+RoPE, canonical QK RMSNorm/head scales, native Mosaic, per-head output RMSNorm,
+seed 42, W decay 0.1, and the controls' complete initialization/optimizer/data
+recipe. W remains trainable without normalization; a and b retain no decay.
+The [exploration](results/exploratory/coefficient_input_norm/README.md) owns the
+selection, observations and open decision.
+
+`coefficient_l2_acceptance` pins each partner recipe and rejects any scientific
+change beyond `attention_coefficient_input_normalization: l2`. It checks the
+complete initial parameter count/hash, softmax-backbone initialization, CPU
+normalization and branch-isolation checks, composed Mosaic forward/gradient
+parity, the full-shape 20-update pilot, and fresh-process optimizer/data resume.
+Only then does the standard launcher start production.
+
+From the isolated `codex/coefficient-l2` worktree, after syncing both locked
+CUDA environments and committing execution inputs:
+
+```bash
+for run in r25a5f78841b2 r717267afcb78; do
+  sbatch --parsable --partition=standard --nodelist=akita --gres=gpu:b300:1 \
+    --cpus-per-task=16 --mem=128G --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.coefficient_l2_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+Each run has one GPU and no dependency on the other. Allocation/runtime choices
+are recorded separately from the frozen recipes. The jobs retain this worktree
+until neither can run or requeue.

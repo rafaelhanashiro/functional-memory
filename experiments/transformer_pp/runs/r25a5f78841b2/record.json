@@ -1,0 +1,22 @@
+{
+  "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "comparison": {
+    "changed_model_fields": {
+      "attention_coefficient_input_normalization": "l2"
+    },
+    "coefficient_parameterization": "direct",
+    "control_config_sha256": "ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2",
+    "control_run_id": "r25fffc16c2f3"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r25a5f78841b2/config.yaml",
+    "sha256": "39944e549f77619ad284c7141ed2582d82c00de8f1c3773fe75882b565c324c8"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-coefficient-input-l2",
+  "name": "query-m8-coefficient-input-l2",
+  "purpose": "Test unit-L2 normalization only at the tanh coefficient-generator input, leaving W trainable and all matched recipe settings fixed.",
+  "record_schema_version": 1,
+  "run_id": "r25a5f78841b2",
+  "status": "planned"
+}

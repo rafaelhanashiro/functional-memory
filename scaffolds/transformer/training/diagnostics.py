@@ -634,6 +634,16 @@ def attention_identity(config) -> dict:
     if (getattr(config.model, "attention_score_transform", "identity") != "identity"
             or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
         identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
+    if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":
+        from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
+        identity.update(
+            attention_coefficient_input="unit_l2_of_pre_attention_rmsnorm_activation",
+            attention_coefficient_input_normalization="l2",
+            attention_coefficient_input_l2_epsilon=COEFFICIENT_INPUT_L2_EPS,
+            attention_formula=identity["attention_formula"] + (
+                "; only the coefficient generator replaces x_t by x_t / max(||x_t||_2, 1e-6), "
+                "after the learned RMSNorm channel gain; Q/K/V receive the original x_t; "
+                "W remains trainable and unnormalized"))
     return identity
 
 
@@ -1014,6 +1024,39 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         report["finite"] = bool(report["finite"] and np.isfinite(key_amplitude).all() and np.isfinite(key_kernel).all()
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
+
+def coefficient_input_report(raw_layers, model) -> dict:
+    """Token summaries of actual generator inputs, before any SoS expansion."""
+    def stack(key):
+        return np.stack([np.asarray(layer[key], np.float32) for layer in raw_layers])
+
+    arrays = {key: stack(key) for key in raw_layers[0]
+              if key.startswith(("coefficient_input_", "coefficient_projection_", "coefficient_tanh_"))}
+    finite = all(np.isfinite(value).all() for value in arrays.values())
+    degree = model.attention_degree
+    labels = ([f"U{r}" for r in range(degree // 2 + 1)]
+              + [f"V{r}" for r in range(degree // 2)]) if model.attention_coefficient_parameterization == "sum_of_squares" else [f"r{r}" for r in range(degree + 1)]
+    from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
+    return {
+        "normalization": model.attention_coefficient_input_normalization,
+        "epsilon": COEFFICIENT_INPUT_L2_EPS,
+        "formula": "x_hat = x / max(||x||_2, epsilon); z_j = W_j^T x_hat; x includes the pre-attention RMSNorm channel gains",
+        "sample": "fixed_diagnostic_sample", "sample_forward_backend": model.attention_backend,
+        "projection_dtype": "float32", "projection_precision": "HIGHEST",
+        "coordinate_labels": labels,
+        "coordinate_definition": "SoS factor generator" if model.attention_coefficient_parameterization == "sum_of_squares" else "polynomial coefficient order",
+        "input_norm_axes": ["layer"], "projection_axes": ["layer", "head", "generator_coordinate"],
+        "input_norms": {kind: {stat: _float32_serializable(arrays[f"{prefix}_{stat}"])
+                              for stat in ("mean", "std", "min", "max")}
+                        for kind, prefix in (("before", "coefficient_input_raw_l2"), ("after", "coefficient_input_l2"))},
+        "projection_summary": {stat: _float32_serializable(arrays[f"coefficient_projection_{stat}"])
+                               for stat in ("mean", "std", "min", "max")},
+        "saturation_absolute_tanh_threshold": .99,
+        "saturation_fraction": _float32_serializable(arrays["coefficient_tanh_saturation_fraction"]),
+        "mean_tanh_derivative": _float32_serializable(arrays["coefficient_tanh_derivative_mean"]),
+        "finite": finite,
+    }
+
 
 def _float32_serializable(array):
     """_serializable at FP32 precision: each value's shortest round-trip FP32 decimal, which
@@ -1507,7 +1550,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         layer = {"layer": index}
         for name, value in raw.items():
             if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
-                                "coefficient_gate_", "spline_", "score_bias_", "score_transform_")):
+                                "coefficient_gate_", "coefficient_input_", "coefficient_projection_",
+                                "coefficient_tanh_", "spline_", "score_bias_", "score_transform_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -1558,6 +1602,10 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             orders=config.model.attention_coefficient_orders)
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
+        if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":
+            coefficient_report["generator_input"] = coefficient_input_report(raw_layers, config.model)
+            if not coefficient_report["generator_input"]["finite"]:
+                issues.append("Nonfinite coefficient-generator inputs or projections")
         if getattr(config.model, "attention_forget_gate", False):
             coefficient_report["forget_gate"] = forget_gate_report(
                 params, raw_layers, form=getattr(config.model, "attention_forget_gate_form", "input"),
