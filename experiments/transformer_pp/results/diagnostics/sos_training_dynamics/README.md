@@ -79,6 +79,86 @@ for [degree eight](coefficients_m8_final_taylor_relative.png) and
 [degree twelve](coefficients_m12_final_taylor_relative.png) provide the companion
 views. PDFs are saved alongside every PNG.
 
+## One middle-layer head's amplitudes and biases
+
+The focused view uses **layer 8 of 15, head 1 of 14** (zero-based indices 7, 0)
+for both runs. This is the middle layer and first head, fixed before inspecting
+the histories, rather than selected for unusual behavior. The selection records
+these indices and the exact fields: `modulation_amplitude` for a and
+`projection_bias` for b. All 28 evaluations preserve the raw parameters for every
+generator coordinate; no token averaging or factorial rescaling is applied.
+
+![Degree-eight amplitudes and biases for layer eight, head one](head_parameters_m8.png)
+
+![Degree-twelve amplitudes and biases for layer eight, head one](head_parameters_m12.png)
+
+Each column is a power in a **square factor**, with blue for U and orange for V;
+the top row shows a and the bottom row b, on a shared linear scale within each
+row. These are the parameters in `F_j(x)=f_j[1+b_j+a_j tanh(W_j^T x)]/2`, not
+parameters of the expanded `c_r`. Degree eight has factor coordinates
+`U_0,...,U_4,V_0,...,V_3`; degree twelve has
+`U_0,...,U_6,V_0,...,V_5`. The highest factor power has U only. The generic
+`effective_coefficient_names` stored beside the arrays refer to expanded
+coefficients and must not be used to label the generator coordinates.
+
+Step-zero diamonds and dashed references mark analytic initialization a=0, b=1;
+there is no saved step-zero snapshot. Lines connect the 28 recorded evaluations
+from updates 100 through 7,570. Parameter changes between evaluations are not
+resolved, and this single head does not summarize the full model.
+
+This head has larger parameter drift at degree twelve: recorded a ranges from
+−1.8381 to 2.0958 and b from −0.9411 to 1.4389, versus −0.8638 to 1.0245 and
+0.6836 to 1.3130 at degree eight. Several degree-twelve factors develop opposing
+a and b trends; U_2 ends at a=1.9649, b=−0.9231, and V_4 at a=2.0958,
+b=−0.9411. The curves look gradual at this cadence. They do not establish tanh
+saturation or a causal explanation of training stability; that would require
+the projected inputs and their activation distributions. Negative generator
+parameters are compatible with the sum-of-squares constraint.
+
+[head_parameter_summary.csv](head_parameter_summary.csv) gives each coordinate's
+analytic a/b initialization, first recorded values, terminal values, and recorded
+extrema for a, b, and the W norm. PDFs accompany all figures.
+
+[Combined SoS image](head_parameters_combined.png) ([PDF](head_parameters_combined.pdf))
+puts the same a, b, and W-norm histories into two sections, for m=8 and m=12.
+Each section has three rows and one column per factor power, retaining blue U
+and orange V curves. Its raw data, layer/head selection, initialization markers,
+and scaling are identical to the separate figures; axes are shared within each
+section's row. The standard regeneration command below also produces this image.
+
+### Projection-vector norms
+
+For these diagonal tanh generators, **a, b, and W are the only learned
+coefficient-generator parameters**. The Taylor square factors f are fixed;
+there is no extra inner tanh bias, dense mixing matrix, or coefficient gate.
+
+The same head's W figures read `projection_kernel_l2`. The executed diagnostic
+computes `np.linalg.norm(kernel, axis=-2)` for the
+`[layer, head, input_channel, factor_coordinate]` parameter array. Thus each
+curve is the Euclidean norm of one 896-dimensional projection vector in
+`tanh(W_j^T x)`, with the same U/V factor-power indexing as a and b. It is not a
+matrix spectral norm, a norm of all the head's projections combined, or an
+average over tokens. No factorial or Taylor-factor rescaling is applied.
+
+![Degree-eight projection norms for layer eight, head one](head_w_norms_m8.png)
+
+![Degree-twelve projection norms for layer eight, head one](head_w_norms_m12.png)
+
+All 28 norm snapshots are finite and nonnegative. Over the saved history, norms
+range from 0.9707 to 1.6091 at degree eight and 0.9517 to 1.8566 at degree twelve.
+Terminal ranges are 1.4190–1.5836 and 1.2096–1.8259, respectively. Degree-eight
+norms generally grow from around one, then flatten or decline slightly;
+degree twelve shows more variation among factors. For example, U_2 decreases
+from 1.4590 at update 1,500 to 1.2096 at the end even while its amplitude grows.
+There is no sampled projection-norm explosion in this head.
+
+No step-zero W norm was saved. The recipe draws each entry with standard
+deviation `1/sqrt(896)`, giving `sqrt(E[||W_j||_2^2])=1`; that is not the exact
+initial norm of any particular draw and is not plotted as a measurement.
+Norms alone cannot establish tanh saturation: that depends on the distribution
+of `W_j^T x`, including the direction of W and the input correlations. Changes
+in projection direction are also invisible to these norm histories.
+
 ## What the coefficients mean
 
 Suppressing layer/head indices, the generator produces
@@ -136,7 +216,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagno
 
 The script checks scientific input hashes, complete status, model shape, gradient
 window coverage, and the coefficient sample/array invariants. It regenerates all
-PNG/PDF figures and both summary CSVs from committed run measurements; no GPU,
+PNG/PDF figures and the three summary CSVs from committed run measurements; no GPU,
 dataset, checkpoint, or training log is needed. Repeated regeneration is
 byte-identical in the locked environment. To deliberately change selected inputs,
 edit `selection.yaml`, refresh its pins, and regenerate:

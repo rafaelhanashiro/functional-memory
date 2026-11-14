@@ -26,6 +26,7 @@ TERMINAL = {
     ("query_w_decay", 4): 14.714, ("query_w_decay", 5): 15.080, ("query_w_decay", 6): 14.641,
     ("query_w_decay", 7): 14.384,
     ("taylor", 8): 14.223, ("hermite", 8): 14.231, ("static", 8): 14.2985, ("query_w_decay", 8): 14.328,
+    ("taylor", 12): 14.311, ("query_w_decay", 12): 14.230,
 }
 
 
@@ -36,7 +37,7 @@ def _digest(path: Path) -> str:
 def test_committed_runs_and_quoted_values():
     rows = load_runs(SELECTION)
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    assert len(rows) == 34 and set(cells) == set(TERMINAL)
+    assert len(rows) == 36 and set(cells) == set(TERMINAL)
     assert {row["terminal_step"] for row in rows} == {7570}
     assert {row["best_validation_step"] for row in rows} == {7500}
     for cell, value in TERMINAL.items():
@@ -66,6 +67,11 @@ def test_committed_runs_and_quoted_values():
     assert cells["hermite", 8]["percent_above_exp"] == pytest.approx(-0.21, abs=5e-3)
     assert cells["query_w_decay", 8]["percent_above_exp"] == pytest.approx(0.46, abs=5e-3)
     assert cells["taylor", 8]["percent_above_softmax"] == pytest.approx(-2.22, abs=5e-3)
+    # m = 12 (Taylor and query only), compared with m = 8: query improves and ends below exp; Taylor worsens.
+    assert cells["query_w_decay", 12]["change_from_previous_degree_percent"] == pytest.approx(-0.69, abs=5e-3)
+    assert cells["taylor", 12]["change_from_previous_degree_percent"] == pytest.approx(0.62, abs=5e-3)
+    assert cells["query_w_decay", 12]["percent_above_exp"] == pytest.approx(-0.23, abs=5e-3)
+    assert cells["taylor", 12]["percent_above_exp"] == pytest.approx(0.34, abs=5e-3)
     # The m = 1 Taylor and Hermite runs train the same function; their gap is the noise scale.
     twin = cells["taylor", 1]["terminal_validation_perplexity"] - cells["hermite", 1]["terminal_validation_perplexity"]
     assert twin == pytest.approx(0.042, abs=5e-4)
@@ -141,6 +147,10 @@ def test_changed_inputs_and_mislabeled_cells_are_rejected():
     del missing["runs"][3]
     with pytest.raises(ValueError, match="exactly one run for every family and degree"):
         load_runs(missing)
+    undeclared = copy.deepcopy(SELECTION)
+    undeclared["settings"]["not_run"] = []
+    with pytest.raises(ValueError, match="exactly one run for every family and degree"):
+        load_runs(undeclared)
 
 
 def test_regenerates_the_committed_outputs_byte_identically(tmp_path):

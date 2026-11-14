@@ -204,7 +204,7 @@ node of every allocation.
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7, 8` for four coefficient families of
+perplexity against polynomial degree `m = 1-8` and 12 (Taylor and query only) for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
@@ -1795,7 +1795,8 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 | `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
 | `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | H100 PCIe |
 | `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | H100 PCIe |
-| `r016b914d927a` | `query-m4-sum-of-squares-w-decay` | `rca97cc9db8f2` | sum-of-squares coefficients | B300 or H100 |
+| `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | H100 PCIe |
+| `r016b914d927a` | `query-m4-sum-of-squares-w-decay` | `rca97cc9db8f2` | sum-of-squares coefficients | H100 SXM |
 | `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
@@ -1838,6 +1839,9 @@ submit rb2b70dae4d21 acceptance
 submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-sos
 # Degree twelve, from claude/poly-two-lines-sos, on long with --gres=gpu:1 and GPU types B300,H100:
 # submit r3d52b7ab43d1 coefficient_forms_acceptance
+# Degree sixteen, from claude/poly-sos-m16, the same way with --time=48:00:00:
+# submit rdfc61c988309 coefficient_forms_acceptance
+submit r6adefb42f443 coefficient_forms_acceptance
 ```
 
 The degree-four run launches from `claude/sos-m4` on `long` with a 16-hour limit: degree-four query runs on an
@@ -1851,5 +1855,60 @@ sbatch --parsable --partition=long --time=16:00:00 --gres=gpu:1 --cpus-per-task=
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_forms_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
-submit r6adefb42f443 coefficient_forms_acceptance
 ```
+
+## Regular-query coefficient activation diagnostic
+
+`r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
+(`r25fffc16c2f3`) and degree-twelve (`r0fceea0627c8`) validation-best checkpoints at
+step 7,500. It uses the first held-out 2,048-token input and layer 8, head 1 to
+measure pre-attention RMSNorm activations, coefficient projection-vector norms,
+their dot products, and tanh saturation. It preserves each parent's native Mosaic
+forward pass and restores parameters only. The frozen config pins the parent
+recipes, checkpoints, data identity, and saved coefficient measurements.
+
+The [diagnostic record](results/diagnostics/query_parameter_dynamics/README.md)
+contains the findings and regeneration commands. From the isolated diagnostic
+worktree, after committing its execution inputs:
+
+```bash
+run=r1ac137c4f1ce
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launcher selects the worktree's locked CUDA 13 environment on B200 and gates
+inference on six native query-kernel parity checks, including degrees 8 and 12
+at key width 64 and degree 12 at the 2,048-token context. This qualifies the
+forward diagnostic's allocation; it does not establish full training qualification.
+
+## SoS coefficient activation diagnostic
+
+`rc3dfb9569345` replays the SoS degree-eight (`reeefbcc19abf`) and degree-twelve
+(`r3d52b7ab43d1`) retained checkpoints at update 7,500 on Kennel. It uses the same
+first held-out sequence and layer 8, head 1 as regular-query probe `r1ac137c4f1ce`.
+The native Mosaic forward is preserved. The capture measures the factor generators
+`g_j = b_j + a_j tanh(W_j^T x)` before expansion into polynomial coefficients;
+raw parameters are checked against the saved training diagnostics. Historical
+expanded-coefficient moments are not compared with factor-generator moments.
+The [SoS exploration](results/exploratory/sum_of_squares/README.md) owns this comparison.
+
+From its isolated worktree after committing the execution inputs:
+
+```bash
+run=rc3dfb9569345
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launch uses the worktree's locked CUDA 13 environment, first verifies six
+native query-kernel parity cases, and then restores parameters without optimizer
+state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSNorm
+gains produces exactly the unchanged forward loss for direct and SoS coefficients.
+The run recipe pins the two parents, checkpoints, data, and reference measurements.

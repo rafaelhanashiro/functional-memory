@@ -1,0 +1,143 @@
+{
+  "allocation": {
+    "cpus": 8,
+    "elapsed_seconds": 232,
+    "exit_code": "0:0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "home_cluster": "kennel",
+    "memory_gib": 64,
+    "node": "shiba.csail.mit.edu",
+    "partition": "debug",
+    "slurm_gres_index": 2,
+    "slurm_job_id": "244590",
+    "slurm_state": "COMPLETED",
+    "time_limit_minutes": 30
+  },
+  "date": "2026-11-13",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "diagnostic_completed": true,
+  "diagnostic_run_id": "r1ac137c4f1ce",
+  "format": "mosaic-query-b200-checkpoint-diagnostic-qualification",
+  "frozen_execution_sha256": "dc8e59990dd443962a636b30121da69abfdf37ae81a12f7f36e3d759c83cbdfb",
+  "launcher": "experiments/transformer_pp/diagnose_query_activations.sbatch",
+  "limitations": [
+    "These six deterministic kernel cases do not qualify full training, optimizer continuation, all degrees or widths, transformed scores, or gated kernels.",
+    "The retained log also contains the subsequent forward diagnostic; kernel qualification is the six-test summary before checkpoint restoration."
+  ],
+  "retained_log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r1ac137c4f1ce/training.log",
+    "sha256": "d4daf10faf197d93300d080b34061466958ff36f99a23414d43d1cb764ba5e00",
+    "size_bytes": 640
+  },
+  "runtime": {
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-head-diagnostic/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "query_m12": "mosaic",
+      "query_m8": "mosaic"
+    },
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Plain query-conditioned polynomial Mosaic kernels at Q/K width 64, qualified for the bounded retained-checkpoint forward diagnostic. No complete training run or optimizer-resume qualification is claimed.",
+  "source_commit": "2d7338c088dda88d31974573c9536638c6e43344",
+  "status": "passed",
+  "test_command": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-64-bf16]",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-64-bf16x3]",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[12-64-bf16]",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[12-64-bf16x3]",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_largest_degree_fits_the_production_context[64-bf16]",
+    "scaffolds/transformer/tests/test_mosaic_query.py::test_largest_degree_fits_the_production_context[64-bf16x3]"
+  ],
+  "tests": {
+    "cases": [
+      {
+        "comparisons": [
+          "NumPy FP64",
+          "Pallas-Triton"
+        ],
+        "degree": 8,
+        "heads": 2,
+        "precisions": [
+          "bf16",
+          "bf16x3"
+        ],
+        "prediction_tokens": 512,
+        "qk_width": 64,
+        "value_width": 64
+      },
+      {
+        "comparisons": [
+          "NumPy FP64",
+          "Pallas-Triton"
+        ],
+        "degree": 12,
+        "heads": 2,
+        "precisions": [
+          "bf16",
+          "bf16x3"
+        ],
+        "prediction_tokens": 512,
+        "qk_width": 64,
+        "value_width": 64
+      },
+      {
+        "comparisons": [
+          "Pallas-Triton"
+        ],
+        "degree": 12,
+        "heads": 4,
+        "precisions": [
+          "bf16",
+          "bf16x3"
+        ],
+        "prediction_tokens": 2048,
+        "qk_width": 64,
+        "value_width": 64
+      }
+    ],
+    "checked_arrays": [
+      "forward output",
+      "dQ",
+      "dK",
+      "dV",
+      "coefficient VJP for every order"
+    ],
+    "failed": 0,
+    "max_element_error_bound": "3 times each relative-L2 bound times the maximum absolute reference value; exact-zero references remain exact",
+    "node_ids": [
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-64-bf16]",
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-64-bf16x3]",
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[12-64-bf16]",
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[12-64-bf16x3]",
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_largest_degree_fits_the_production_context[64-bf16]",
+      "scaffolds/transformer/tests/test_mosaic_query.py::test_largest_degree_fits_the_production_context[64-bf16x3]"
+    ],
+    "observed_errors": "Checks passed; the test runner does not emit individual error magnitudes.",
+    "passed": 6,
+    "relative_l2_bounds_per_batch_head": {
+      "coefficient_VJP_per_order": 0.01,
+      "dK": 0.025,
+      "dQ": 0.025,
+      "dV": 0.015,
+      "output": 0.006
+    },
+    "seconds": 145.01,
+    "skipped": 0
+  }
+}

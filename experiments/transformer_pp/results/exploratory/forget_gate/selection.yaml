@@ -422,3 +422,23 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r95bfff096cd4/best_validation.json
       sha256: a824272510eb60122c201f81da44b44217ecf733af27c1970414363f7d62575c
+- study: transformer_pp
+  run_id: r1f2c24c109f9
+  role: path_projection_decay
+  label: query-m4-path-head-scale-w-decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1f2c24c109f9/config.yaml
+      sha256: 17bbed3929ce93783318bb3033b661ca0a27b5375ff32537778c287d21b19426
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1f2c24c109f9/metrics.jsonl
+      sha256: c1864e845903351973ca2e3ecef1171517e84b8a881328188dda7403c30d7de9
+    completion.json:
+      path: experiments/transformer_pp/runs/r1f2c24c109f9/completion.json
+      sha256: 5605c3313da06fa9ff3f00015da2f10fa7e790ceac512ddeddc338a8a4b22e67
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1f2c24c109f9/metadata.json
+      sha256: 2f29e1edf8040064ffb7e2cca898c605966424d5dcb172a2f7e0dd666b4aa793
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1f2c24c109f9/best_validation.json
+      sha256: 1d15bf18f47bbcd1d3a403d3c5c9a7febb15d30e654febf35f85fe9f931a00fa

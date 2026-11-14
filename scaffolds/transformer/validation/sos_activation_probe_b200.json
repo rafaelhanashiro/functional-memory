@@ -1,0 +1,80 @@
+{
+  "allocation": {
+    "elapsed_seconds": 193,
+    "exit_code": "0:0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "home_cluster": "kennel",
+    "node": "shiba",
+    "partition": "debug",
+    "slurm_job_id": "291",
+    "slurm_state": "COMPLETED"
+  },
+  "cpu_capture_parity": {
+    "captured_loss_equals_plain_loss_exactly": true,
+    "cases": [
+      "direct",
+      "sum_of_squares"
+    ],
+    "degree": 8,
+    "heads": 2,
+    "hidden_size": 32,
+    "layers": 2,
+    "max_generator_reconstruction_errors": [
+      5.6283362802238885e-08,
+      4.697267450644371e-08
+    ],
+    "nonuniform_rmsnorm_gain": true,
+    "nonzero_amplitudes": true,
+    "passed": true,
+    "prediction_tokens": 16
+  },
+  "date": "2026-11-13",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "diagnostic_run_id": "rc3dfb9569345",
+  "format": "mosaic-query-b200-sos-checkpoint-diagnostic-qualification",
+  "frozen_execution_sha256": "4cf39bca0f6ae83e012f7ec48f16febe45dc41605c1416655ec3d39cf47b5efc",
+  "retained_log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rc3dfb9569345/training.log",
+    "sha256": "861d15ef40e591162c94a53a839e815e2d185a0cde4e442cea78db471d5598eb",
+    "size_bytes": 634
+  },
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/sos-saturation-probe/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/sos-saturation-probe/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "sos_m12": "mosaic",
+      "sos_m8": "mosaic"
+    },
+    "slurm_job_id": "291",
+    "source_commit": "3ba809329a2030259ec8ff12453c28172ee9bc59",
+    "started_utc": "2026-11-14T03:52:55.385048+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Native Mosaic query kernels used by a parameters-only forward probe of retained SoS checkpoints, degree8/12,dK64. Does not qualify full training or optimizer continuation.",
+  "source_commit": "3ba809329a2030259ec8ff12453c28172ee9bc59",
+  "status": "passed",
+  "tests": {
+    "definition": "Same six node IDs and bounds as query_activation_probe_b200.json; launcher diagnose_query_activations.sbatch",
+    "failed": 0,
+    "passed": 6,
+    "reference": "scaffolds/transformer/validation/query_activation_probe_b200.json",
+    "seconds": 108.63
+  }
+}

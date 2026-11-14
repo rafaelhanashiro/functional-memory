@@ -25,7 +25,7 @@ optimization differs.
 Controls in the [selection](selection.yaml), all with per-head QK scaling:
 `query-m4-head-scale` (14.779), `static-m4-head-scale` (14.773) and
 `fixed-m4-head-scale` (14.724). Pure sigmoid coefficients are in the
-`sigmoid_coefficients` topic on `claude/sigmoid-coefficients-4b`.
+[dense readout scale and sigmoid topic](../dense_readout_scale/README.md#sigmoid-coefficients).
 
 ## Findings
 
@@ -45,7 +45,7 @@ Validation perplexity (terminal, update 7,570; best at 7,500 in parentheses):
   polynomial with unit-scale coefficients, loses the first thousand updates (PPL 1,516 at
   update 100 against 27 for the affine runs) and never recovers; it was still improving
   at the end, so part of the gap is the start rather than the form.
-- With the pure sigmoid runs 9–12% worse in the `sigmoid_coefficients` topic, every
+- With the pure sigmoid runs 8–12% worse in the [sigmoid topic](../dense_readout_scale/README.md#sigmoid-coefficients), every
   generator that removes the affine terms loses; none of the affine variants beats
   fixed Taylor.
 

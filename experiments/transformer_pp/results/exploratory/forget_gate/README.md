@@ -114,8 +114,8 @@ run), terminal is update 7,570:
   differs only in positional encoding and backend, is 1.6% better.
 - Gate and projection decay together improve ungated PaTH without projection decay
   (`r74a50aca921e`, best 14.528) by 3.0%; the combination is 1.1% below unnormalized exp
-  (`r6a76e7fbde45`, best 14.257). The matched ungated PaTH run with projection decay,
-  `r1f2c24c109f9`, has no recorded result, so the gate's share at equal decay is unmeasured.
+  (`r6a76e7fbde45`, best 14.257). At equal projection decay the gate improves ungated PaTH
+  (`r1f2c24c109f9`, best 14.398) by 2.1%.
 - With PaTH the gate learns longer decays than with RoPE or none: mean half-life
   percentiles 10/25/50/75/90% = 0.4/1.0/5.7/106/198 tokens (38% of heads under two
   tokens, 32% over 64). The fused kernels ran at 5.2 s per update on one H100.

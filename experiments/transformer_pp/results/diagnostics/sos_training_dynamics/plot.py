@@ -16,6 +16,7 @@ from scaffolds.records import load_run
 from scaffolds.records.selections import verify_pinned_runs
 from plot_gradients import plot as plot_gradients
 from plot_coefficients import plot as plot_coefficients
+from plot_head_parameters import plot as plot_head_parameters
 
 
 def main():
@@ -43,6 +44,7 @@ def main():
     })
     plot_gradients(ROOT, OUT, selection)
     plot_coefficients(ROOT, OUT, selection)
+    plot_head_parameters(ROOT, OUT, selection)
     print("Regenerated SoS training dynamics from pinned, completed runs.")
 
 

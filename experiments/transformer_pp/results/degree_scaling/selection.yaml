@@ -1,6 +1,6 @@
-question: How does held-out perplexity change with the polynomial degree m = 1-4 for
-  fixed Taylor, fixed Hermite, learned static, and query coefficients with projection
-  weight decay, under the Transformer++ recipe at 1x Chinchilla?
+question: How does held-out perplexity change with the polynomial degree m = 1-8 and
+  12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with
+  projection weight decay, under the Transformer++ recipe at 1x Chinchilla?
 study: experiments/transformer_pp
 settings:
   metric: terminal_validation_perplexity
@@ -20,6 +20,12 @@ settings:
   - 6
   - 7
   - 8
+  - 12
+  not_run:
+  - family: hermite
+    degree: 12
+  - family: static
+    degree: 12
 data_identity:
   train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
   eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
@@ -766,3 +772,45 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
       sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: rb2b70dae4d21
+  role: primary
+  family: taylor
+  degree: 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/config.yaml
+      sha256: 67b3a130110f39ddf4bab0f69a99d3935afffac5e37ba0b287366f4a9966a588
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/metrics.jsonl
+      sha256: bea8a48bb9d8e5a2e62a2940152dcb1848366a56305fbf23736af118b34ccc68
+    completion.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/completion.json
+      sha256: 8f24ef6db72e3155040a495ebcf498446317cd29feb780cf6dcd4ea1b4837964
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/metadata.json
+      sha256: 47907762560d11f4169b33c6f7322820307729b6882eec0a481cc87b957e2521
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/best_validation.json
+      sha256: ec01286676823d782682b820d7195f68f5628ec0cb2cd809f153d9ab556fff7b
+- study: transformer_pp
+  run_id: r0fceea0627c8
+  role: primary
+  family: query_w_decay
+  degree: 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+      sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metrics.jsonl
+      sha256: 000479e88edd12adbf5180b319433a379c3b5648933414a282aa7b501932e43f
+    completion.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/completion.json
+      sha256: 9b54532be8044ed3fd4e34fe221ce19d2f953edc6b69d3175fbab6aa82e16bcd
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metadata.json
+      sha256: 1e93f2b73f698eb0c7819a627f73355d4474afa20267d213442e3ff9d7790af8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/best_validation.json
+      sha256: 953518103a4f9996ba6baf19ab47ef22d3296c29b9a286d8aed04af444e783ce

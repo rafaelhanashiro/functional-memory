@@ -1,0 +1,21 @@
+{
+  "finished_utc": "2026-11-13T16:57:49.271531+00:00",
+  "interpretation": "One frozen validation-best checkpoint per regular query polynomial degree, using the first held-out sequence at layer 8 / head 1 (zero-based indices 7 / 0). Measure pre-attention RMSNorm input norms, coefficient-vector norms, projections, alignment, and tanh saturation through the native Mosaic forward pass. No optimizer state is restored, no gradient is computed, and no parameter is updated.",
+  "models": [
+    {
+      "all_reference_moments_within_tolerance": true,
+      "checkpoint_parameters_match": true,
+      "parent_parameters_unchanged": true,
+      "role": "query_m8"
+    },
+    {
+      "all_reference_moments_within_tolerance": true,
+      "checkpoint_parameters_match": true,
+      "parent_parameters_unchanged": true,
+      "role": "query_m12"
+    }
+  ],
+  "optimizer_updates": 0,
+  "sample_record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+  "status": "complete"
+}

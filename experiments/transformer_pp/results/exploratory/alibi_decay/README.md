@@ -24,6 +24,7 @@ runs live in the [Transformer++ study](../../../README.md) and enter no canonica
 | Role | Run | Label | Position |
 | --- | --- | --- | --- |
 | Primary: constant decay | `r8d4fc24ef537` | `query-m4-alibi-no-rope` | decay only |
+| Constant decay, W decay | `r69076c8f91c1` | `query-m4-alibi-no-rope-w-decay` | decay only |
 | Control: forget gate | `r82a80d3091e2` | `query-m4-forget-gate-no-rope` | gate only |
 | Reference: forget gate | `r111843b4c7cc` | `query-m4-forget-gate` | RoPE + gate |
 | Reference: fixed Taylor | `r816ab0fbe119` | `fixed-m4-head-scale` | RoPE |
@@ -293,6 +294,7 @@ control completed on the same node.
 | Fixed Taylor `r816ab0fbe119` | RoPE | 14.724 | 14.722 / 7,500 | — |
 | Forget gate `r111843b4c7cc` | RoPE + gate | 14.320 | 14.318 / 7,500 | −2.7% |
 | **Constant decay** `r8d4fc24ef537` | decay only | **14.485** | 14.482 / 7,500 | **−1.6%** |
+| Constant decay, W decay `r69076c8f91c1` | decay only | 14.438 | 14.434 / 7,500 | −1.9% |
 | **Forget gate** `r82a80d3091e2` | gate only | **13.908** | 13.906 / 7,500 | **−5.5%** |
 
 | Validation PPL at update | 1,000 | 2,500 | 5,000 | 7,500 |
@@ -302,6 +304,8 @@ control completed on the same node.
 
 - **A learnable decay with distance helps on its own**: the constant decay beats fixed Taylor
   with RoPE by 1.6% while carrying no positional encoding at all.
+- **W decay adds a little**: weight decay 0.1 on the coefficient projection, with $a$, $b$, and
+  the learned slopes exempt, lowers the constant-decay run by 0.3%.
 - **But it recovers only about 30% of the gate's gain.** The token-dependent gate without RoPE
   reaches 13.91, 4.0% below the constant decay, with the gap present from update 1,000 and
   roughly constant afterwards. The span dependence, not the decay per se, is the main

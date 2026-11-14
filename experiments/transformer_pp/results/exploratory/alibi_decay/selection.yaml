@@ -519,3 +519,23 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r03be769d2069/best_validation.json
       sha256: 22ca1dca58772e8d82a1f35a4280c1d3f1e8b60d0d1dc061c120f72aad5a5037
+- study: transformer_pp
+  run_id: r69076c8f91c1
+  role: constant_decay_w_decay
+  label: query-m4-alibi-no-rope-w-decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r69076c8f91c1/config.yaml
+      sha256: 0c444e3a4a56a507dbb32bc03a42abb83b924ceaa2989e4138b92faa9c37494c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r69076c8f91c1/metrics.jsonl
+      sha256: 40d3e20ab00b87b3e835699c538015b9a79abcc5ca22d768e27028cb653732d4
+    completion.json:
+      path: experiments/transformer_pp/runs/r69076c8f91c1/completion.json
+      sha256: 1b9b33f6404c7c02ac8f76256a2bcac6312725f29a6382ba37dff876c8777d15
+    metadata.json:
+      path: experiments/transformer_pp/runs/r69076c8f91c1/metadata.json
+      sha256: 71627413176ef7dc93433dc62963e2ce9418ecb75c2e6f9e15abc1f91aee8b57
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r69076c8f91c1/best_validation.json
+      sha256: bd18211bb8c74d4e52ed9b65c8a00b1c6be7d47cc9e16d544df1b8aea36fd54d
