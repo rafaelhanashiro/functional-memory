@@ -1784,20 +1784,21 @@ sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-t
 
 ## Coefficient forms and the degree-twelve Taylor control
 
-Five runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
+Eight runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
 and the per-order query–key gate. Each is its partner's recipe with the named change, one seed, at
-the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/poly-two-lines`.
+the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/poly-two-lines` unless a
+launch command below names another.
 
 | Run | Label | Partner | Change | GPU |
 | --- | --- | --- | --- | --- |
-| `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 |
-| `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 |
-| `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
+| `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 SXM, then H100 PCIe from update 800 |
+| `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 SXM, then H100 PCIe from update 5,000 |
+| `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300, then H100 PCIe from update 1,500 |
 | `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | H100 PCIe |
 | `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | H100 PCIe |
 | `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | H100 PCIe |
 | `r016b914d927a` | `query-m4-sum-of-squares-w-decay` | `rca97cc9db8f2` | sum-of-squares coefficients | H100 SXM |
-| `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
+| `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300, then H100 PCIe from update 1,500 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
   per-order gates $D_r$. Only the gate reads the tokens; the coefficients are broadcast to the
@@ -1813,8 +1814,9 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 `coefficient_forms_acceptance` pins each partner recipe and rejects unrelated changes; the fixed Taylor
 run uses the shared adapter. The sum-of-squares run launches from `claude/poly-two-lines-sos`, whose
 diagnostics treat the expanded sum-of-squares kernels as signed: values near a double root of
-$q_1^2 + q_2^2$ round to either sign. Each query-coefficient control ran on B300, so these request B300; the
-per-order query–key kernels above degree six fit only H100.
+$q_1^2 + q_2^2$ round to either sign. The degree-eight and degree-twelve query-coefficient controls ran on
+B300, so these request B300 (the degree-four control ran on H100 SXM); the per-order query–key kernels
+above degree six fit only H100.
 
 From the worktree root, after committing the frozen inputs:
 
@@ -1857,7 +1859,7 @@ sbatch --parsable --partition=long --time=16:00:00 --gres=gpu:1 --cpus-per-task=
   --output="experiments/transformer_pp/runs/$run/training.log" \
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_forms_acceptance \
-  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+  "experiments/transformer_pp/runs/$run/config.yaml" 4b91a7a722f82218d462ff9e03f8223a22b32f1e 1 B300,H100
 ```
 
 ## Regular-query coefficient activation diagnostic

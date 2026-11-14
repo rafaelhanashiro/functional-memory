@@ -16,16 +16,16 @@ explicit selection is [`selection.yaml`](selection.yaml).
 | Role | Run | Recipe | Kernel, GPU |
 | --- | --- | --- | --- |
 | Sum of squares, m = 4 | `r016b914d927a` | query m = 4 (`rca97cc9db8f2`) with sum-of-squares coefficients | Mosaic, H100 SXM |
-| Sum of squares, m = 8 | `reeefbcc19abf` | query m = 8 (`r25fffc16c2f3`) with sum-of-squares coefficients | Mosaic, H100 |
-| Sum of squares, m = 12 | `r3d52b7ab43d1` | query m = 12 (`r0fceea0627c8`) with sum-of-squares coefficients | Mosaic, H100 |
-| Sum of squares, m = 16 | `rdfc61c988309` | the m = 12 run at degree 16 | blocked strips, H100 |
-| Hermite start, m = 8 | `r6adefb42f443` | query m = 8 with `b_r` starting at the fixed Hermite coefficients | Mosaic, B300 then H100 |
+| Sum of squares, m = 8 | `reeefbcc19abf` | query m = 8 (`r25fffc16c2f3`) with sum-of-squares coefficients | Mosaic, H100 PCIe |
+| Sum of squares, m = 12 | `r3d52b7ab43d1` | query m = 12 (`r0fceea0627c8`) with sum-of-squares coefficients | Mosaic, H100 PCIe |
+| Sum of squares, m = 16 | `rdfc61c988309` | the m = 12 run at degree 16 | blocked strips, H100 PCIe |
+| Hermite start, m = 8 | `r6adefb42f443` | query m = 8 with `b_r` starting at the fixed Hermite coefficients | Mosaic, B300 then H100 PCIe |
 | Controls | `rca97cc9db8f2` | query coefficients, m = 4 | Mosaic, H100 SXM |
 | | `r25fffc16c2f3`, `r0fceea0627c8` | query coefficients, m = 8 and 12 | Mosaic, B300 |
 | | `r816ab0fbe119` | fixed Taylor, m = 4 | Mosaic, B300 |
-| | `ra7ee8a4b2544`, `rb2b70dae4d21` | fixed Taylor, m = 8 and 12 | Mosaic, H100; B300 then H100 |
-| | `ra040de24096c` | fixed Hermite, m = 8 | Mosaic, H100 |
-| | `r6a76e7fbde45` | exp | fused |
+| | `ra7ee8a4b2544`, `rb2b70dae4d21` | fixed Taylor, m = 8 and 12 | Mosaic, H100 PCIe; B300 then H100 PCIe |
+| | `ra040de24096c` | fixed Hermite, m = 8 | Mosaic, H100 PCIe then SXM |
+| | `r6a76e7fbde45` | exp | fused, B300 |
 
 **Sum of squares.** Each query's polynomial is `p(s) = q_1(s)^2 + q_2(s)^2`, with `q_1` of degree
 `m/2` and `q_2` of degree `m/2 - 1`: the same `m + 1` coefficients as the direct form. Factor `k`
@@ -72,10 +72,13 @@ Validation-best PPL, at update 7,500 in every run; terminal (update 7,570) in pa
 - **Heads can switch off.** After update 1,500 the smallest pre-RMSNorm head-output RMS reaches
   about `5e-8` (m = 4), `4e-7` (m = 8, 12) and `2e-7` (m = 16), where the head RMSNorm's gain sits
   at its `1/sqrt(eps)` cap of 1,000.
-  The direct form does this too (exactly 0 in the Hermite-start run); fixed Taylor stays above 0.01.
-  The epsilon (`1e-6`) has never been varied.
+  The direct form does this too (exactly 0 in the Hermite-start run); fixed Taylor m = 12 stays
+  above 0.01. The comparison rests on these two runs: the direct-form controls (m = 4, 8 and 12),
+  fixed Taylor m = 4 and 8 and fixed Hermite predate per-update telemetry. The epsilon (`1e-6`)
+  has never been varied.
 - **The Hermite start is not the lever.** Starting the query coefficients at the fixed Hermite
-  polynomial ends 14.371: 0.34% above the Taylor start and 1.03% above fixed Hermite.
+  polynomial reaches validation-best 14.371 (terminal 14.374): 0.34% above the Taylor start and
+  1.03% above fixed Hermite.
 
 The [SoS training-dynamics diagnostic](../../diagnostics/sos_training_dynamics/README.md) records
 the coefficient trajectories of the m = 8 and m = 12 runs.
