@@ -2,19 +2,20 @@
 
 Each run is one control's recipe with ``model.attention_score_transform`` and gradient-event capture under the
 default policy: every order of the polynomial reads z = phi(s) in place of the score s
-(scaffolds/transformer/attention/score_transform.py). The controls are the degree-eight tanh query polynomial with
-RoPE and coefficient-W decay at the 12-layer width-640 shape (``r95a5691d293f``) and at the reference shape
-(``r25fffc16c2f3``); the recipe's depth and width select its control, and a recipe that matches neither is
-refused. A softplus run starts its constant coefficient at zero (``model.attention_coefficient_constant_initial:
+(scaffolds/transformer/attention/score_transform.py). The controls are the tanh query polynomial with RoPE and
+coefficient-W decay: at degree eight at the 12-layer width-640 shape (``r95a5691d293f``) and at the reference shape
+(``r25fffc16c2f3``), at degree twelve at the reference shape (``r0fceea0627c8``), and at degrees eight and twelve at
+the 12-layer width-640 shape with twice its 1x budget (``r3759b2a57a54``, ``r0f6d929e5992``). The recipe's depth,
+width, degree and update count select its control, and a recipe that matches none is refused. A softplus run starts its constant coefficient at zero (``model.attention_coefficient_constant_initial:
 0``), so its kernel starts at sum_(r=1..8) z^r/r!, the Taylor polynomial of e^z - 1 = e^s; an abs run keeps the
 control's Taylor start. No parameter is added and nothing is drawn differently: every initial array is the
 control's, except b_0 = 0 in place of the control's stored 1 in a softplus run.
 
-Both controls trained on B300's Mosaic query-polynomial kernels. The 12-layer width-640 runs train on the blocked
-backend's causal strips (plain JAX, on B200, B300 or H100), the one execution setting beyond locations and labels
-that differs from their control's. The reference-shape runs keep their control's attention settings and train on
-the Mosaic transformed query-polynomial kernels (the control's kernels with phi(s) evaluated in their tiles), on
-the GPU types those kernels are qualified on.
+Every control uses the Mosaic query-polynomial kernels. The 12-layer width-640 runs at the 1x budget train on the
+blocked backend's causal strips (plain JAX, on B200, B300 or H100), the one execution setting beyond locations and
+labels that differs from their control's. The other runs keep their control's attention settings and train on the
+Mosaic transformed query-polynomial kernels (the control's kernels with phi(s) evaluated in their tiles), on the
+GPU types those kernels are qualified on.
 """
 import argparse
 from dataclasses import replace
@@ -37,10 +38,17 @@ CONTROLS = {
                  "72d75524ec107d4acdeb4f77d8cdea838d4c57d54f79aa9c924da4a154b03667", 99_678_056),
     "reference": ("r25fffc16c2f3", "ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2",
                   "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d", 200_150_806),
+    "reference_m12": ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0",
+                      "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16", 200_905_126),
+    "l12_d640_2x": ("r3759b2a57a54", "aa7585f1a530ab4508cdd033d2243af900ae0316950c4b0ab8b46f21371534fb",
+                    "72d75524ec107d4acdeb4f77d8cdea838d4c57d54f79aa9c924da4a154b03667", 99_678_056),
+    "l12_d640_2x_m12": ("r0f6d929e5992", "c4f33f9ad753a7586bf1e1746590ee97d4c2fdf4fc5f5d96bf88e1ee2b89ef1c",
+                        "c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9", 99_986_216),
 }
-# The recipe settings that select each control: depth and width.
-SELECTING_FIELDS = ("model.num_layers", "model.hidden_size")
-CONTROL_SHAPES = {"l12_d640": (12, 640), "reference": (15, 896)}
+# The recipe settings that select each control: depth, width, degree and update count.
+SELECTING_FIELDS = ("model.num_layers", "model.hidden_size", "model.attention_degree", "optim.total_steps")
+CONTROL_SHAPES = {"l12_d640": (12, 640, 8, 7551), "reference": (15, 896, 8, 7570), "reference_m12": (15, 896, 12, 7570),
+                  "l12_d640_2x": (12, 640, 8, 15103), "l12_d640_2x_m12": (12, 640, 12, 15103)}
 # Each transform and the constant-coefficient start its runs require (null: the control's Taylor start).
 STARTS = {"softplus": 0.0, "abs": None}
 # Gradient-event capture, on with the default rule and retention cap (configs/base.py TrainConfig): after
@@ -51,26 +59,30 @@ CAPTURE_POLICY = {"gradient_event_capture": True, "gradient_event_factor": 5.0, 
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir",
                   "wandb_mode")
 TRANSFORM_KEYS = ("attention_score_transform", "attention_coefficient_constant_initial")
-# The attention implementation each control's runs require. The 12-layer width-640 runs train on the blocked
-# strips, where their control trained on Mosaic (scan, inert there); the reference-shape runs keep their
+# The attention implementation each control's runs require. The 12-layer width-640 runs at the 1x budget train on
+# the blocked strips, where their control trained on Mosaic (scan, inert there); the other runs keep their
 # control's Mosaic setting (the blocked field inert at its default).
 STRIPS = {"attention_backend": "blocked", "attention_blocked_implementation": "strips"}
 MOSAIC = {"attention_backend": "mosaic", "attention_blocked_implementation": "scan"}
-BACKENDS = {"l12_d640": STRIPS, "reference": MOSAIC}
+BACKENDS = {"l12_d640": STRIPS, "reference": MOSAIC, "reference_m12": MOSAIC, "l12_d640_2x": MOSAIC,
+            "l12_d640_2x_m12": MOSAIC}
 TRAINS_ON = {"blocked": "the blocked backend's causal strips",
              "mosaic": "the Mosaic transformed query-polynomial kernels"}
 # The GPU types each control's runs train on: the strips are plain JAX and their GPU tests ran on each of these;
 # the transformed Mosaic kernels' GPU tests and pilots ran on these (scaffolds/transformer/validation).
-GPU_TYPES = {"l12_d640": ("B200", "B300", "H100"), "reference": ("H100",)}
-GPU_REASONS = {"l12_d640": "the causal strips' GPU tests run there",
-               "reference": "the Mosaic transformed query-polynomial kernels are qualified there"}
+MOSAIC_REASON = "the Mosaic transformed query-polynomial kernels are qualified there"
+GPU_TYPES = {"l12_d640": ("B200", "B300", "H100"), "reference": ("H100",), "reference_m12": ("H100",),
+             "l12_d640_2x": ("H100",), "l12_d640_2x_m12": ("H100",)}
+GPU_REASONS = {"l12_d640": "the causal strips' GPU tests run there", "reference": MOSAIC_REASON,
+               "reference_m12": MOSAIC_REASON, "l12_d640_2x": MOSAIC_REASON, "l12_d640_2x_m12": MOSAIC_REASON}
 BIAS = "query_polynomial_bias"
 OWN_TESTS = "experiments/transformer_pp/tests/test_score_transform_acceptance.py"
 
 
 def control_name(config: Config) -> str:
-    """The control at the recipe's depth and width; refuse a recipe that matches neither."""
-    selected = (config.model.num_layers, config.model.hidden_size)
+    """The control at the recipe's depth, width, degree and update count; refuse a recipe that matches none."""
+    selected = (config.model.num_layers, config.model.hidden_size, config.model.attention_degree,
+                config.optim.total_steps)
     for name, shape in CONTROL_SHAPES.items():
         if shape == selected:
             return name

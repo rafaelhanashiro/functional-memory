@@ -1,8 +1,8 @@
 """The score-transform runs remain their pinned control with only the transform, a softplus run's constant start,
-gradient-event capture and (at the 12-layer width-640 shape) the blocked strips changed, and start from the
-control's exact initialization but for b_0 = 0 in a softplus run. The 12-layer width-640 runs train on the causal
-strips, on B200, B300 or H100; the reference-shape run trains on the Mosaic transformed query-polynomial kernels,
-like its control on Mosaic, on the GPU types those kernels are qualified on."""
+gradient-event capture and (at the 12-layer width-640 shape's 1x budget) the blocked strips changed, and start from
+the control's exact initialization but for b_0 = 0 in a softplus run. The 12-layer width-640 runs at the 1x budget
+train on the causal strips, on B200, B300 or H100; the other runs train on the Mosaic transformed query-polynomial
+kernels, like their controls on Mosaic, on the GPU types those kernels are qualified on."""
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
@@ -18,9 +18,15 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 # The allocated runs: transform, constant start, label, and control.
 RUNS = {"r1d342ca6e58c": ("softplus", 0.0, "query-m8-w-decay-l12-d640-softplus-input", "l12_d640"),
         "r17a1290cb4ac": ("abs", None, "query-m8-w-decay-l12-d640-abs-input", "l12_d640"),
-        "ra3b54e2489f8": ("softplus", 0.0, "query-m8-dk64-w-decay-softplus-input", "reference")}
-# Each control's shape and schedule: layers, heads, width, updates, warmup, batch.
-SHAPES = {"l12_d640": (12, 10, 640, 7551, 454, 128), "reference": (15, 14, 896, 7570, 455, 256)}
+        "ra3b54e2489f8": ("softplus", 0.0, "query-m8-dk64-w-decay-softplus-input", "reference"),
+        "r9eb845aae5bb": ("softplus", 0.0, "query-m12-dk64-w-decay-softplus-input", "reference_m12"),
+        "rc6a7e50d27e1": ("softplus", 0.0, "query-m8-w-decay-l12-d640-softplus-input-2x", "l12_d640_2x"),
+        "r53d5bbcac16f": ("softplus", 0.0, "query-m12-w-decay-l12-d640-softplus-input-2x", "l12_d640_2x_m12")}
+# Each control's shape and schedule: layers, heads, width, updates, warmup, batch; and its degree.
+SHAPES = {"l12_d640": (12, 10, 640, 7551, 454, 128), "reference": (15, 14, 896, 7570, 455, 256),
+          "reference_m12": (15, 14, 896, 7570, 455, 256), "l12_d640_2x": (12, 10, 640, 15103, 908, 128),
+          "l12_d640_2x_m12": (12, 10, 640, 15103, 908, 128)}
+DEGREES = {"l12_d640": 8, "reference": 8, "reference_m12": 12, "l12_d640_2x": 8, "l12_d640_2x_m12": 12}
 CONTROLS = tuple(adapter.CONTROLS)
 CAPTURE_FIELDS = tuple(adapter.CAPTURE_POLICY)
 
@@ -54,28 +60,34 @@ def scientific_differences(config, other):
 
 @pytest.mark.parametrize("control", CONTROLS)
 def test_pinned_controls_are_the_recorded_runs(control):
+    from scaffolds.transformer.models import model_parameter_count
+
     run, digest, _, count = adapter.CONTROLS[control]
     path = adapter.RUNS / run / "config.yaml"
     assert hashlib.sha256(path.read_bytes()).hexdigest() == digest
     assert json.loads((adapter.RUNS / run / "record.json").read_text())["config"]["sha256"] == digest
-    assert json.loads((adapter.RUNS / run / "completion.json").read_text())["parameter_count"] == count
+    completion = adapter.RUNS / run / "completion.json"
+    if completion.exists():  # a control still training has no completion yet
+        assert json.loads(completion.read_text())["parameter_count"] == count
     config = adapter.control_config(control)
     model = config.model
+    assert model_parameter_count(model) == count
     assert (model.attention_score_transform, model.attention_coefficient_constant_initial) == ("identity", None)
     assert (model.attention_backend, model.attention_blocked_implementation) == ("mosaic", "scan")
-    assert model.attention_degree == 8 and not model.attention_normalization and model.qk_head_dim == 64
+    assert model.attention_degree == DEGREES[control] and not model.attention_normalization and model.qk_head_dim == 64
     assert (model.attention_coefficient_conditioning, model.attention_coefficient_activation) == ("query", "tanh")
     assert model.attention_coefficient_kernel_weight_decay and model.positional_encoding == "rope"
     assert not model.attention_forget_gate and model.attention_score_bias == "none"
     layers, heads, width, steps, warmup, batch = SHAPES[control]
     assert (model.num_layers, model.num_heads, model.hidden_size) == (layers, heads, width)
-    assert adapter.CONTROL_SHAPES[control] == (layers, width) and adapter.control_name(config) == control
+    assert adapter.CONTROL_SHAPES[control] == (layers, width, DEGREES[control], steps)
+    assert adapter.control_name(config) == control
     assert (config.optim.total_steps, config.optim.warmup_steps, config.data.batch_size) == (steps, warmup, batch)
     assert not config.train.gradient_event_capture
     assert adapter.control_bias_start(control) == 1.0  # Taylor's 1/0!, stored times 0! under the factorial scale
 
 
-def test_depth_and_width_select_the_control():
+def test_depth_width_degree_and_updates_select_the_control():
     for control in CONTROLS:
         assert adapter.control_name(variant(control=control)) == control
     config = variant(control="reference")
@@ -120,8 +132,8 @@ def test_allocated_runs_are_the_control_with_the_transform_and_capture(run_id):
 def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
     """Every field but the execution settings and the transform's, changed alone, is rejected by name, with
     validation bypassed so that the adapter's own checks must reject it: the start by the transform's start, the
-    shape's depth and width by the control selection, the attention implementation and capture policy by their
-    own checks, everything else by the control comparison."""
+    depth, width, degree and update count by the control selection, the attention implementation and capture
+    policy by their own checks, everything else by the control comparison."""
     monkeypatch.setattr(adapter, "validate_config", lambda config: None)
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
@@ -131,7 +143,8 @@ def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))
             reason = ("starts its constant coefficient" if key == "attention_coefficient_constant_initial" else
-                      "No score-transform control" if key in ("num_layers", "hidden_size") else
+                      "No score-transform control" if key in ("num_layers", "hidden_size", "attention_degree",
+                                                              "total_steps") else
                       "the recipe must set" if key in adapter.STRIPS else
                       "default policy" if key in CAPTURE_FIELDS else f"'{section}.{key}'")
             try:
@@ -146,7 +159,7 @@ def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
 
 SCIENTIFIC_CHANGES = (
     ("optim", "learning_rate", .002), ("optim", "weight_decay", .2), ("optim", "total_steps", 7571),
-    ("train", "seed", 43), ("train", "eval_every", 1000), ("train", "ckpt_every", 1000), ("data", "batch_size", 64),
+    ("train", "seed", 43), ("train", "eval_every", 1500), ("train", "ckpt_every", 1000), ("data", "batch_size", 64),
     ("model", "attention_degree", 4), ("model", "positional_encoding", "none"), ("model", "qk_norm_head_scale", False),
     ("model", "attention_coefficient_kernel_weight_decay", False), ("model", "attention_output_scaling", "none"),
     ("model", "num_layers", 13), ("model", "hidden_size", 768), ("model", "num_heads", 16),
@@ -462,7 +475,8 @@ def test_qualified_allocations_reach_acceptance(monkeypatch, run_id):
 
 def test_the_gpu_types_are_each_controls_qualified_hardware():
     """The strips' GPU tests ran on B200, B300 and H100; the transformed Mosaic kernels' on H100."""
-    assert adapter.GPU_TYPES == {"l12_d640": ("B200", "B300", "H100"), "reference": ("H100",)}
+    assert adapter.GPU_TYPES == {"l12_d640": ("B200", "B300", "H100"), "reference": ("H100",),
+                                 "reference_m12": ("H100",), "l12_d640_2x": ("H100",), "l12_d640_2x_m12": ("H100",)}
     assert set(adapter.GPU_TYPES) == set(adapter.GPU_REASONS) == set(adapter.CONTROLS) == set(adapter.BACKENDS)
 
 
@@ -485,7 +499,7 @@ def test_full_size_runs_start_as_the_control_but_b0(run_id):
     params = adapter.initial_parameters(config)
     bias = np.asarray(params[adapter.BIAS][...])
     layers, heads = SHAPES[control][:2]
-    assert bias.shape == (layers, heads, 9)
+    assert bias.shape == (layers, heads, DEGREES[control] + 1)
     np.testing.assert_array_equal(bias[..., 1:], 1.0)
     assert (bias[..., 0] == (0.0 if start == 0.0 else 1.0)).all()
     _, _, digest, count = adapter.CONTROLS[control]

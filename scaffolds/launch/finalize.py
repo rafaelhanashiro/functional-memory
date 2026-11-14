@@ -7,12 +7,17 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 
 from scaffolds.records import capture_artifacts, load_run, update_record
 
 STALLED_EXIT_CODE = 124
 """Exit code with which a launcher's watchdog (``watchdog.sh``) ends a job whose log stopped growing."""
+TERMINATED_EXIT_CODE = 128 + signal.SIGTERM
+"""Exit code with which the Kennel launcher ends a job that Slurm sent TERM: on preemption, after which
+Slurm requeues it, at the time limit, or on ``scancel``. The attempt records it and the run keeps its
+status, so a preempted run is not reported failed while it waits to resume."""
 STALL_REQUEUES = 2
 """Stalls after which a run is requeued to resume from its latest checkpoint; a further stall
 fails it, since repeated stalls point to a fault that a requeue may meet again."""
@@ -82,7 +87,7 @@ def finalize_attempt(run: Path, exit_code: int) -> bool:
         changes["status"] = "submitted"
         update_record(run, changes)
         return True
-    if exit_code and record.get("status") in ACTIVE_STATUSES:
+    if exit_code and exit_code != TERMINATED_EXIT_CODE and record.get("status") in ACTIVE_STATUSES:
         changes.update(_stall_failure(exit_code) if exit_code == STALLED_EXIT_CODE else {
             "status": "failed", "error": f"Job process exited with code {exit_code}; see training.log"})
         if (record.get("status") == "acceptance" and attempts

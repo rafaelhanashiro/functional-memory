@@ -1,6 +1,6 @@
 question: Does evaluating the degree-eight tanh query polynomial at softplus(s) or
   |s| in place of the score s improve it at the 12-layer width-640 shape, and softplus
-  at the reference shape?
+  at the reference shape at degrees eight and twelve?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -26,10 +26,13 @@ settings:
   training_context: 2048
   seed: 42
   degree: 8
-  kernel: W(t,i) = sum_(r=0..8) c_r(x_t) z_ti^r, z_ti = phi(s_ti), s_ti = Q_t K_i^T
-    / sqrt(d_K)
+  reference_shape_degrees:
+  - 8
+  - 12
+  kernel: W(t,i) = sum_(r=0..m) c_r(x_t) z_ti^r, z_ti = phi(s_ti), s_ti = Q_t K_i^T
+    / sqrt(d_K), with m the degree
   transforms:
-    softplus: z = log(1 + exp(s)); b_0 starts at 0, so the kernel starts at sum_(r=1..8)
+    softplus: z = log(1 + exp(s)); b_0 starts at 0, so the kernel starts at sum_(r=1..m)
       z^r/r!, the Taylor polynomial of e^z - 1 = e^s
     abs: z = |s|; the control's Taylor start
   allowed_differences:
@@ -40,15 +43,19 @@ settings:
     mosaic) and model.attention_blocked_implementation (strips; control scan)'
   backend: 12-layer width-640 primaries on the blocked backend's causal strips, their
     control on B300's Mosaic query-polynomial kernels, the exp reference on B300's
-    fused Triton kernels; the reference-shape primary on the Mosaic transformed query-polynomial
-    kernels (H100), its control on B300's Mosaic query-polynomial kernels, the exp
-    reference on B300's fused Triton kernels and fixed Taylor on H100's Mosaic query-polynomial
-    kernels; diagnostics on the forward-only blocked scan
+    fused Triton kernels; the reference-shape primaries on the Mosaic transformed
+    query-polynomial kernels (H100), their controls on B300's Mosaic query-polynomial
+    kernels, the exp reference on B300's fused Triton kernels, fixed Taylor at degree
+    eight on H100's Mosaic query-polynomial kernels and fixed Taylor at degree twelve
+    on the Mosaic query-polynomial kernels (B300 to update 1500, then H100); diagnostics
+    on the forward-only blocked scan
   decision: a primary counts as a win only if its validation-best perplexity beats
     its control's by at least 0.5% (17.504 or below against 17.592 at the 12-layer
-    width-640 shape, 14.251 or below against 14.323 at the reference shape); seed
-    noise is about 0.1-0.2%. Each is also compared with exp at its shape (17.550;
-    14.257), and the reference-shape primary with fixed Taylor at degree eight (14.218)
+    width-640 shape; at the reference shape 14.251 or below against 14.323 at degree
+    eight and 14.155 or below against 14.226 at degree twelve); seed noise is about
+    0.1-0.2%. Each is also compared with exp at its shape (17.550; 14.257), the reference-shape
+    primaries with fixed Taylor at their degree (14.218; 14.309), and the degree-twelve
+    primary with the degree-eight one (14.262)
   comparison_groups:
     l12_d640_rope_w_decay:
     - control_query_m8_rope_w_decay_l12_d640
@@ -60,6 +67,12 @@ settings:
     - primary_query_m8_rope_w_decay_softplus_input
     - reference_exp
     - reference_fixed_taylor_m8
+    reference_rope_w_decay_m12:
+    - control_query_m12_rope_w_decay
+    - primary_query_m12_rope_w_decay_softplus_input
+    - primary_query_m8_rope_w_decay_softplus_input
+    - reference_exp
+    - reference_fixed_taylor_m12
 runs:
 - study: transformer_pp
   run_id: r1d342ca6e58c
@@ -221,3 +234,63 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/ra7ee8a4b2544/best_validation.json
       sha256: aed0989fd08f1d9b134287e10d61b3baf008ad39b40ee0790e88ef651923c6db
+- study: transformer_pp
+  run_id: r9eb845aae5bb
+  role: primary_query_m12_rope_w_decay_softplus_input
+  label: softplus input, query m = 12 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9eb845aae5bb/config.yaml
+      sha256: 7ba7f1505f8ad6ccc8e7274ac8a894b9c0de9bdeacea048a57478cd6b65a4873
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9eb845aae5bb/metrics.jsonl
+      sha256: 1b2ad9d2897b0b587f4c1db2b3df0792a812315f073d60cfb0bed79fa6dff6c7
+    completion.json:
+      path: experiments/transformer_pp/runs/r9eb845aae5bb/completion.json
+      sha256: eeb800a2c821357e128dc40fe327b219c9e0db9554166fc2fab56977ac3338eb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9eb845aae5bb/metadata.json
+      sha256: ee56bab1a9760a3bd22afd58eaf96b7f90695a9ea3cc88ab62f47cc3cbfc0a91
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9eb845aae5bb/best_validation.json
+      sha256: 1ca9493614e08012bc7b2bfd97416f1002b9b02840754ea1bc93e98c48a2b8d7
+- study: transformer_pp
+  run_id: r0fceea0627c8
+  role: control_query_m12_rope_w_decay
+  label: query m = 12 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+      sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metrics.jsonl
+      sha256: 000479e88edd12adbf5180b319433a379c3b5648933414a282aa7b501932e43f
+    completion.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/completion.json
+      sha256: 9b54532be8044ed3fd4e34fe221ce19d2f953edc6b69d3175fbab6aa82e16bcd
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metadata.json
+      sha256: 1e93f2b73f698eb0c7819a627f73355d4474afa20267d213442e3ff9d7790af8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/best_validation.json
+      sha256: 953518103a4f9996ba6baf19ab47ef22d3296c29b9a286d8aed04af444e783ce
+- study: transformer_pp
+  run_id: rb2b70dae4d21
+  role: reference_fixed_taylor_m12
+  label: fixed Taylor m = 12
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/config.yaml
+      sha256: 67b3a130110f39ddf4bab0f69a99d3935afffac5e37ba0b287366f4a9966a588
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/metrics.jsonl
+      sha256: bea8a48bb9d8e5a2e62a2940152dcb1848366a56305fbf23736af118b34ccc68
+    completion.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/completion.json
+      sha256: 8f24ef6db72e3155040a495ebcf498446317cd29feb780cf6dcd4ea1b4837964
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/metadata.json
+      sha256: 47907762560d11f4169b33c6f7322820307729b6882eec0a481cc87b957e2521
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rb2b70dae4d21/best_validation.json
+      sha256: ec01286676823d782682b820d7195f68f5628ec0cb2cd809f153d9ab556fff7b
