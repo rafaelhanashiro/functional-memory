@@ -1,0 +1,13 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc3dfb9569345/config.yaml",
+    "sha256": "09ed34df2dd441e7f9b576052c1e84049c91ad048de6b4349759dc726f0ad77f"
+  },
+  "home_cluster": "kennel",
+  "label": "sos_activation_probe_layer8_head1",
+  "name": "sos_activation_probe_layer8_head1",
+  "purpose": "Forward-only SoS checkpoint replay at layer 8/head 1 on the same first held-out sequence and checkpoint step 7500 as regular-query probe r1ac137c4f1ce. Captures pre-expansion factor generators g=b+a*tanh(W^T x). No optimizer state, gradients or parameter updates. One head/sequence cannot establish whole-model saturation or explain performance causally.",
+  "record_schema_version": 1,
+  "run_id": "rc3dfb9569345",
+  "status": "planned"
+}
