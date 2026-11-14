@@ -1844,8 +1844,11 @@ submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-
 submit r6adefb42f443 coefficient_forms_acceptance
 ```
 
-The degree-four run launches from `claude/sos-m4` on `long` with a 16-hour limit: degree-four query runs on an
-H100 PCIe have taken 7.6–10.3 hours, up to 26% above their pilots' projections.
+The degree-four run is complete, trained on one H100 SXM; its record holds its launch commit, attempt, and the
+artifact-root locations of its validation-best checkpoint and log. Its results are in the
+[sum_of_squares topic](results/exploratory/sum_of_squares/README.md). Its launch command, from `claude/sos-m4`
+on `long` with a 16-hour limit (degree-four query runs on an H100 PCIe have taken 7.6–10.3 hours, up to 26%
+above their pilots' projections):
 
 ```bash
 run=r016b914d927a
