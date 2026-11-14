@@ -32,6 +32,7 @@
   "date": "2026-11-14",
   "feature": "coefficient-only unit-L2 input normalization",
   "formula": "x / max(norm(x,2),1e-6), FP32 after pre-attention RMSNorm gain",
+  "frozen_execution_sha256": "6bc342d8bf31ff3b61cb8c25aa7d35f56052ecbbf63d26f0bac0f90a6d191910",
   "full_initial_parameter_count": 200150806,
   "full_initial_parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
   "gpu_checks": {
@@ -43,5 +44,6 @@
   "production_gate": "shared acceptance requires GPU checks plus full-shape20-update pilot and fresh-process resume",
   "schema_version": 1,
   "scope": "direct and sum-of-squares diagonal tanh query polynomials; native attention kernels unchanged",
+  "source_commit": "9a581be5046dd010e7f532b4c51f1f982cc8d896",
   "status": "cpu_passed_gpu_pending"
 }
