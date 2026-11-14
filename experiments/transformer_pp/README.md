@@ -1644,9 +1644,10 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
 | `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
 | `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
 | `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 | 14.262 (7,500) | 14.265 | −0.42% | +0.04% |
+| `r9eb845aae5bb` | query-m12-dk64-w-decay-softplus-input (reference shape, `m = 12`) | `log(1 + exp(s))` | 0 | 200,905,126 | 14.222 (7,500) | 14.226 | −0.02% | −0.24% |
 
-The reference-shape row compares validation-best perplexity with that shape's control `r25fffc16c2f3`
-(14.323) and exp `r6a76e7fbde45` (14.257).
+The reference-shape rows compare validation-best perplexity with that shape's controls `r25fffc16c2f3`
+(14.323) and, at degree twelve, `r0fceea0627c8` (14.226), and with exp `r6a76e7fbde45` (14.257).
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1786,7 +1787,9 @@ sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-t
 
 Added 2026-11-12 at the user's request: `r9eb845aae5bb` (`query-m12-dk64-w-decay-softplus-input`), the softplus
 run at degree twelve, against the RoPE query control at that degree, `r0fceea0627c8` (validation-best 14.226;
-exp 14.257, fixed Taylor at degree twelve 14.309, sum of squares at degree twelve 14.165).
+exp 14.257, fixed Taylor at degree twelve 14.309, sum of squares at degree twelve 14.165). It reached
+validation-best 14.222 at update 7,500 (terminal 14.226), 0.02% below its control, short of the 0.5% bar
+(14.155); results in the [score_transforms topic](results/exploratory/score_transforms/README.md#reference-shape).
 
 - Recipe: `ra3b54e2489f8`'s with `attention_degree: 12`, so the control's with the transform, the zero
   constant start and gradient-event capture. 200,905,126 parameters; every initial array is the control's but
@@ -1807,6 +1810,9 @@ sbatch --parsable --partition=standard --time=13:00:00 --gres=gpu:1 --cpus-per-t
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
+
+Home cluster: **Kennel**. The run is complete, trained on one H100 PCIe; its record holds its launch commit,
+attempt, and the artifact-root locations of its validation-best checkpoint, kept gradient-event states and log.
 
 ## Coefficient forms and the degree-twelve Taylor control
 
@@ -1872,8 +1878,11 @@ submit r6adefb42f443 coefficient_forms_acceptance
 ## The 12-layer width-640 shape at the reference token count
 
 Added 2026-11-12 at the user's request. Fifteen runs train the 12-layer width-640 shape on the reference
-shape's token count, twice the shape's 1x budget, at degrees eight and twelve. Question, comparisons and
-results: the [matched_tokens topic](results/exploratory/matched_tokens/README.md).
+shape's token count, twice the shape's 1x budget, at degrees eight and twelve. All fifteen are complete: FoX
+query at degree eight (validation-best 15.314) and FoX exp (15.320) lead, 2.90% and 2.87% below exp (15.772);
+the ten RoPE polynomials lie within −0.36% to +0.07% of exp and softmax is 2.66% above it; the thirteen with a
+reference-shape counterpart stay 10.1–12.4% above it at the same tokens. Question, comparisons, results and
+limits: the [matched_tokens topic](results/exploratory/matched_tokens/README.md).
 
 - Recipes: each 1x run at the shape derived with `derive_recipe.py --budget 2` and allocated with
   `scaffolds.records create`: 15,103 updates, warmup 908, validation every 200 updates through 3,000 and every
@@ -1895,15 +1904,18 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   count). [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares runs,
   with the same 2x query runs as partners.
 - Kernels and GPUs: Mosaic for the polynomials (the softplus runs' transformed kernels on H100 alone), fused
-  Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs. Each run uses one B300 or
-  H100 and depends on no other run.
+  Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs. Each run requests one B300 or
+  H100 (the softplus runs H100 alone) and depends on no other run; all fifteen trained on H100s, listed with
+  their resumptions in the topic's Limits.
 - Time limits: 12 hours for the Mosaic, exp and softmax runs, 24 for FoX exp and 36 for FoX query. These are
   the 1x runs' speeds doubled, with room for an H100 PCIe and degree twelve. Acceptance projects again on the
   granted GPU and refuses an allocation whose projection exceeds the limit less two hours.
 
-Home cluster: **Kennel**. Branch `claude/l12-d640-reference-tokens`: `claude/score-transforms-mosaic`
-(the transformed kernels) with `main` and `claude/poly-two-lines-sos` (the sum-of-squares form) merged. The
-runs were submitted on `long` from the worktree root after the frozen execution set was committed:
+Home cluster: **Kennel**. All fifteen runs are complete; each record holds its launch commit, attempts, and the
+artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus runs) and
+log. Branch `claude/l12-d640-reference-tokens`: `claude/score-transforms-mosaic` (the transformed kernels) with
+`main` and `claude/poly-two-lines-sos` (the sum-of-squares form) merged. The runs were submitted on `long` from
+the worktree root after the frozen execution set was committed:
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
