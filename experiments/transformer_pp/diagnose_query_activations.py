@@ -107,7 +107,7 @@ def capture_forward(graphdef, *, layer, head, layers):
     return jax.jit(forward)
 
 
-def reference_report(spec, *, layer, head, arrays, factorials):
+def reference_report(spec, *, layer, head, arrays, factorials, parameterization="direct"):
     """Audit checkpoint parameters strictly and historical sample moments descriptively."""
     path = Path(spec["reference_metrics_path"])
     if sha256(path) != spec["reference_metrics_sha256"]:
@@ -131,6 +131,11 @@ def reference_report(spec, *, layer, head, arrays, factorials):
         parameter_errors[field] = error
         if not np.allclose(actual, expected, rtol=1e-6, atol=1e-7):
             raise ValueError(f"Restored {field} does not match checkpoint-step measurements: {error}")
+    if parameterization == "sum_of_squares":
+        return {"checkpoint_parameters_match": True, "parameter_max_abs_errors": parameter_errors,
+                "sample_sha256": sample["record_sha256"], "reference_checkpoint_step": spec["step"],
+                "all_moments_within_tolerance": None,
+                "moment_comparison_note": "Not compared: historical moments are expanded polynomial coefficients; the probe captures the pre-expansion factor generators g = b + a*tanh(z)."}
     raw = arrays["coefficients"].astype(np.float64) * factorials
     scale = np.maximum(np.abs(arrays["bias_raw"]) + np.abs(arrays["amplitude"]), 1.0)
     moments = {}
@@ -154,7 +159,7 @@ def reference_report(spec, *, layer, head, arrays, factorials):
             "moments": moments}
 
 
-def summarize_capture(arrays, *, epsilon):
+def summarize_capture(arrays, *, epsilon, parameterization="direct"):
     x = arrays["x_after"].astype(np.float64)
     before = arrays["x_before"].astype(np.float64)
     gain = arrays["gain"].astype(np.float64)
@@ -163,6 +168,10 @@ def summarize_capture(arrays, *, epsilon):
     coefficients = arrays["coefficients"].astype(np.float64)
     degree = kernel.shape[-1] - 1
     factorials = np.asarray([math.factorial(r) for r in range(degree + 1)], np.float64)
+    if parameterization == "sum_of_squares":
+        factorials = np.ones(degree + 1, np.float64)
+    elif parameterization != "direct":
+        raise ValueError(f"Unsupported coefficient parameterization: {parameterization}")
     if not np.array_equal(arrays["x_after"], arrays["x_projection"]):
         raise ValueError("Captured RMSNorm output differs from the actual coefficient input")
     if any(not np.isfinite(value).all() for value in arrays.values()):
@@ -227,9 +236,13 @@ def require_supported(config, *, layer, head):
     model = config.model
     if not (0 <= layer < model.num_layers and 0 <= head < model.num_heads):
         raise ValueError("Selected layer/head is out of range")
+    parameterization = model.attention_coefficient_parameterization
+    if parameterization not in {"direct", "sum_of_squares"}:
+        raise ValueError(f"Unsupported parameterization: {parameterization}")
+    scale = "none" if parameterization == "sum_of_squares" else "factorial"
     required = {"attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh",
-                "attention_coefficient_parameterization": "direct", "attention_coefficient_scale": "factorial",
-                "attention_coefficient_amplitude_scale": "factorial", "attention_coefficient_gate": "none",
+                "attention_coefficient_scale": scale,
+                "attention_coefficient_amplitude_scale": scale, "attention_coefficient_gate": "none",
                 "attention_coefficient_readout": "diagonal", "attention_score_transform": "identity",
                 "attention_score_bias": "none", "remat": False, "rms_norm_fp32": True,
                 "attention_backend": "mosaic"}
@@ -299,10 +312,22 @@ def main():
         if after_hash != before_hash:
             raise ValueError("Forward probe changed parent parameters")
         arrays = {key: np.asarray(value) for key, value in captured.items()}
-        results = summarize_capture(arrays, epsilon=config.model.rms_norm_eps)
+        parameterization = config.model.attention_coefficient_parameterization
+        results = summarize_capture(arrays, epsilon=config.model.rms_norm_eps, parameterization=parameterization)
         factorials = np.asarray([math.factorial(r) for r in range(config.model.attention_degree + 1)], np.float64)
-        reference = reference_report(spec, layer=layer, head=head, arrays=arrays, factorials=factorials)
+        reference = reference_report(spec, layer=layer, head=head, arrays=arrays, factorials=factorials,
+                                     parameterization=parameterization)
+        if parameterization == "sum_of_squares":
+            half = config.model.attention_degree // 2
+            labels = [f"U{r}" for r in range(half + 1)] + [f"V{r}" for r in range(half)]
+        else:
+            labels = [f"r{r}" for r in range(config.model.attention_degree + 1)]
+        for entry, label in zip(results["degrees"], labels, strict=True):
+            entry["coordinate_label"] = label
         row = {"format": "query_activation_probe", "version": 1, "role": spec["role"],
+               "coefficient_parameterization": parameterization,
+               "coordinate_definition": "SoS factor generator" if parameterization == "sum_of_squares" else "polynomial order",
+               "captured_coefficient_definition": "g_j = b_j + a_j*tanh(z_j), before SoS expansion" if parameterization == "sum_of_squares" else "c_r = (b_r + a_r*tanh(z_r))/r!",
                "source_run_id": spec["run_id"], "checkpoint_step": spec["step"],
                "parent_source_commit": spec["source_commit"], "checkpoint_sha256": spec.get("checkpoint_sha256"),
                "layer": layer, "head": head, "indexing": "zero_based", "sequences": 1,

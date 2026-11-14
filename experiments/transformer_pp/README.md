@@ -1869,3 +1869,31 @@ The launcher selects the worktree's locked CUDA 13 environment on B200 and gates
 inference on six native query-kernel parity checks, including degrees 8 and 12
 at key width 64 and degree 12 at the 2,048-token context. This qualifies the
 forward diagnostic's allocation; it does not establish full training qualification.
+
+## SoS coefficient activation diagnostic
+
+`rc3dfb9569345` replays the SoS degree-eight (`reeefbcc19abf`) and degree-twelve
+(`r3d52b7ab43d1`) retained checkpoints at update 7,500 on Kennel. It uses the same
+first held-out sequence and layer 8, head 1 as regular-query probe `r1ac137c4f1ce`.
+The native Mosaic forward is preserved. The capture measures the factor generators
+`g_j = b_j + a_j tanh(W_j^T x)` before expansion into polynomial coefficients;
+raw parameters are checked against the saved training diagnostics. Historical
+expanded-coefficient moments are not compared with factor-generator moments.
+The [SoS exploration](results/exploratory/sum_of_squares/README.md) owns this comparison.
+
+From its isolated worktree after committing the execution inputs:
+
+```bash
+run=rc3dfb9569345
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launch uses the worktree's locked CUDA 13 environment, first verifies six
+native query-kernel parity cases, and then restores parameters without optimizer
+state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSNorm
+gains produces exactly the unchanged forward loss for direct and SoS coefficients.
+The run recipe pins the two parents, checkpoints, data, and reference measurements.

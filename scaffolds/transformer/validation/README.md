@@ -22,6 +22,13 @@ forward diagnostic; they do not qualify a full training run or optimizer continu
 [query_activation_probe_b200.json](query_activation_probe_b200.json) records the exact tests,
 bounds, source and lock, allocation, runtime, and retained-log checksum.
 
+The same six checks passed again in **108.63 seconds** for job `291` on B200 before
+replaying the retained SoS degree-eight and degree-twelve checkpoints. A two-layer
+CPU check with nonzero amplitudes and nonuniform RMSNorm gains confirmed that the
+capture leaves both direct and SoS forward losses exactly unchanged; generator
+reconstruction errors were below `6e-8`. The [SoS probe qualification](sos_activation_probe_b200.json)
+records this allocation and its retained log. This remains forward-diagnostic qualification.
+
 ### Score transforms on the Mosaic query-polynomial kernels (2026-11-12)
 
 Two Mosaic kernel families, `query_softplus` and `query_abs` (`backends/mosaic/common.py`), evaluate the
