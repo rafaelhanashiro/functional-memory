@@ -8,7 +8,9 @@ import sys
 
 import pytest
 
-from scaffolds.launch.finalize import STALL_REQUEUES, STALLED_EXIT_CODE, finalize_attempt, main as finalize_main
+from scaffolds.launch.finalize import (
+    STALL_REQUEUES, STALLED_EXIT_CODE, TERMINATED_EXIT_CODE, finalize_attempt, main as finalize_main,
+)
 from scaffolds.records import create_run, load_run, update_record
 
 
@@ -227,6 +229,51 @@ def test_an_ordinary_failure_is_never_requeued(tmp_path, monkeypatch):
     update_record(run, {"status": "running", "attempts": [{"slurm_job_id": "123"}]})
     assert not finalize_attempt(run, 1)
     assert load_run(run)["status"] == "failed"
+
+
+@pytest.mark.parametrize("status", ["acceptance", "running"])
+def test_a_slurm_termination_is_recorded_without_failing_the_run(tmp_path, monkeypatch, status):
+    run = create_run(tmp_path / "study", {"seed": 0})
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    update_record(run, {"status": status, "attempts": [{"slurm_job_id": "123"}]})
+    # Slurm requeues a preempted job itself; the finalizer neither requeues nor fails it.
+    assert not finalize_attempt(run, TERMINATED_EXIT_CODE)
+    record = load_run(run)
+    assert record["attempts"][-1]["exit_code"] == TERMINATED_EXIT_CODE
+    assert record["status"] == status and "error" not in record
+
+
+def test_the_kennel_launcher_records_slurms_termination_of_a_running_step(tmp_path):
+    launcher = (ROOT / "scaffolds/transformer/launchers/kennel.sbatch").read_text()
+    traps = re.search(r"^finish_record\(\) \{\n.*?^trap finish_record EXIT\n(?:#.*\n)*trap 'exit (\d+)' TERM$",
+                      launcher, re.M | re.S)
+    assert traps is not None, "Missing the TERM trap after the EXIT trap"
+    assert int(traps.group(1)) == TERMINATED_EXIT_CODE
+    run = create_run(tmp_path / "study", {"seed": 0})
+    update_record(run, {"status": "acceptance", "attempts": [{"slurm_job_id": "123"}]})
+    worker = tmp_path / "worker.pid"
+    # Slurm signals the whole job; here only the launcher, which must not wait for the step to finish.
+    script = (f"set -euo pipefail\nsource {WATCHDOG}\n" + traps.group()
+              + '\n(sleep 1; kill -TERM $$) &\n'
+              + 'run_step bash -c \'echo $$ > "$WORKER_PID"; exec sleep 60\'\n'
+              + 'printf "worker finished\\n"\n')
+    env = {**os.environ, "PYTHON": sys.executable, "PYTHONPATH": str(ROOT), "RUN_ROOT": str(run),
+           "SLURM_JOB_ID": "123", "WORKER_PID": str(worker)}
+    log = run / "training.log"
+    try:
+        with log.open("w") as stream:
+            result = subprocess.run(["bash", "-c", script], cwd=ROOT, env=env, stdout=stream,
+                                    stderr=subprocess.STDOUT, timeout=30)
+    finally:
+        if worker.exists():
+            subprocess.run(["kill", worker.read_text().strip()], capture_output=True)
+    assert result.returncode == TERMINATED_EXIT_CODE
+    record = load_run(run)
+    assert record["attempts"][-1]["exit_code"] == TERMINATED_EXIT_CODE
+    assert "finished_utc" in record["attempts"][-1]
+    assert record["status"] == "acceptance" and "error" not in record
+    assert "worker finished" not in log.read_text()
+    assert record["log"]["sha256"] == hashlib.sha256(log.read_bytes()).hexdigest()
 
 
 @pytest.mark.parametrize("refused", [False, True])
