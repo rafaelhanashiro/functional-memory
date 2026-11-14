@@ -53,10 +53,10 @@ Each 2x run is compared with:
   14.222, sum of squares 14.196 and 14.165, exp 14.257, softmax 14.543, and FoX query 13.907 (`m = 8`) and FoX
   exp 13.628.
 
-Validation-best perplexity is reported, with terminal values beside it. Every 2x run is validation-best at update
-15,000 (3,932,160,000 tokens), every reference-shape run at update 7,500 (the same tokens), and every 1x run at
-this shape at its last update, 7,551 (1,979,449,344 tokens). The [selection](selection.yaml) names each run's
-role and pins its scientific files.
+Perplexities are validation-best; the results tables give terminal values beside them. Every 2x run is
+validation-best at update 15,000 (3,932,160,000 tokens), every reference-shape run at update 7,500 (the same
+tokens), and every 1x run at this shape at its last update, 7,551 (1,979,449,344 tokens), so its terminal value
+is the same. The [selection](selection.yaml) names each run's role and pins its scientific files.
 
 ## Results
 
@@ -81,29 +81,30 @@ At 2x, against exp at 2x, in order of validation-best perplexity (`metrics.jsonl
 | `rd77db79142e6` | fixed Taylor | 8 | 15.783 (15,000) | +0.07% | 15.788 | +0.07% |
 | `r3bb5b8bd5c6a` | softmax | – | 16.192 (15,000) | +2.66% | 16.203 | +2.70% |
 
-Against the 1x runs, by validation-best perplexity:
+Against the 1x runs, validation-best perplexity with terminal in parentheses (the 1x runs at this shape end at
+their validation best); percentages compare validation-best values:
 
 | Run | Variant | `m` | 2x | 1x at 12-layer width-640 | 2x vs 1x | Reference shape, 1x | 2x vs reference shape |
 | --- | --- | ---: | ---: | --- | ---: | --- | ---: |
-| `r3759b2a57a54` | query | 8 | 15.780 | `r95a5691d293f` 17.592 | −10.30% | `r25fffc16c2f3` 14.323 | +10.17% |
-| `r0f6d929e5992` | query | 12 | 15.742 | – | – | `r0fceea0627c8` 14.226 | +10.66% |
-| `r3cca4c13edab` | static | 8 | 15.778 | – | – | `r9c69dd7cfc8d` 14.294 | +10.38% |
-| `r84f325593209` | static | 12 | 15.778 | – | – | – | – |
-| `rd77db79142e6` | fixed Taylor | 8 | 15.783 | – | – | `ra7ee8a4b2544` 14.218 | +11.00% |
-| `rffab7c4eeac5` | fixed Taylor | 12 | 15.763 | – | – | `rb2b70dae4d21` 14.309 | +10.16% |
-| `rc6a7e50d27e1` | softplus input | 8 | 15.740 | `r1d342ca6e58c` 17.488, causal strips | −9.99% | `ra3b54e2489f8` 14.262 | +10.36% |
-| `r53d5bbcac16f` | softplus input | 12 | 15.724 | – | – | `r9eb845aae5bb` 14.222 | +10.56% |
-| `rccd2cb5e8bab` | sum of squares | 8 | 15.740 | – | – | `reeefbcc19abf` 14.196 | +10.88% |
-| `r08be7093202a` | sum of squares | 12 | 15.715 | – | – | `r3d52b7ab43d1` 14.165 | +10.95% |
-| `r656e8e652b72` | FoX query | 8 | 15.314 | – | – | `r9353f554b917` 13.907 | +10.12% |
-| `rbf05f7baab5e` | FoX query | 12 | 15.335 | – | – | – | – |
-| `rd920368a922e` | exp | – | 15.772 | `r3e2fa2532c23` 17.550 | −10.14% | `r6a76e7fbde45` 14.257 | +10.62% |
-| `r3bb5b8bd5c6a` | softmax | – | 16.192 | `rf81c96f76a1d` 17.964 | −9.86% | `r9040f12f3d80` 14.543 | +11.34% |
-| `re634d82ee479` | FoX exp | – | 15.320 | `ra5dfd978d3bd` 16.753 | −8.56% | `r183f08346ddc` 13.628 | +12.41% |
+| `r3759b2a57a54` | query | 8 | 15.780 (15.787) | `r95a5691d293f` 17.592 | −10.30% | `r25fffc16c2f3` 14.323 (14.328) | +10.17% |
+| `r0f6d929e5992` | query | 12 | 15.742 (15.750) | – | – | `r0fceea0627c8` 14.226 (14.230) | +10.66% |
+| `r3cca4c13edab` | static | 8 | 15.778 (15.787) | – | – | `r9c69dd7cfc8d` 14.294 (14.299) | +10.38% |
+| `r84f325593209` | static | 12 | 15.778 (15.783) | – | – | – | – |
+| `rd77db79142e6` | fixed Taylor | 8 | 15.783 (15.788) | – | – | `ra7ee8a4b2544` 14.218 (14.223) | +11.00% |
+| `rffab7c4eeac5` | fixed Taylor | 12 | 15.763 (15.769) | – | – | `rb2b70dae4d21` 14.309 (14.311) | +10.16% |
+| `rc6a7e50d27e1` | softplus input | 8 | 15.740 (15.748) | `r1d342ca6e58c` 17.488, causal strips | −9.99% | `ra3b54e2489f8` 14.262 (14.265) | +10.36% |
+| `r53d5bbcac16f` | softplus input | 12 | 15.724 (15.731) | – | – | `r9eb845aae5bb` 14.222 (14.226) | +10.56% |
+| `rccd2cb5e8bab` | sum of squares | 8 | 15.740 (15.748) | – | – | `reeefbcc19abf` 14.196 (14.200) | +10.88% |
+| `r08be7093202a` | sum of squares | 12 | 15.715 (15.721) | – | – | `r3d52b7ab43d1` 14.165 (14.168) | +10.95% |
+| `r656e8e652b72` | FoX query | 8 | 15.314 (15.325) | – | – | `r9353f554b917` 13.907 (13.910) | +10.12% |
+| `rbf05f7baab5e` | FoX query | 12 | 15.335 (15.341) | – | – | – | – |
+| `rd920368a922e` | exp | – | 15.772 (15.777) | `r3e2fa2532c23` 17.550 | −10.14% | `r6a76e7fbde45` 14.257 (14.262) | +10.62% |
+| `r3bb5b8bd5c6a` | softmax | – | 16.192 (16.203) | `rf81c96f76a1d` 17.964 | −9.86% | `r9040f12f3d80` 14.543 (14.546) | +11.34% |
+| `re634d82ee479` | FoX exp | – | 15.320 (15.330) | `ra5dfd978d3bd` 16.753 | −8.56% | `r183f08346ddc` 13.628 (13.630) | +12.41% |
 
 –: no run at that shape and degree. At the 12-layer width-640 shape static, fixed Taylor and FoX query have 1x
-runs only at `m = 4`, query and softplus only at `m = 8`, sum of squares none; the reference shape has no static
-run at `m = 12` and no FoX query run with the shared cumulative gate at `m = 12`.
+runs only at `m = 4`, query at `m = 4` and `m = 8`, softplus only at `m = 8`, sum of squares none; the reference
+shape has no static run at `m = 12` and no FoX query run with the shared cumulative gate at `m = 12`.
 
 ## Findings
 
@@ -113,9 +114,9 @@ run at `m = 12` and no FoX query run with the shared cumulative gate at `m = 12`
 - **The ten RoPE polynomials lie within 0.43% of one another, around exp**: from 15.715 (sum of squares,
   `m = 12`) to 15.783 (fixed Taylor, `m = 8`), −0.36% to +0.07% against exp. The nine of them with
   reference-shape runs span 1.11% there (−0.65% to +0.46% against exp).
-- **Softplus input and sum of squares lead query by 0.25% at `m = 8`, and by 0.11% and 0.17% at `m = 12`**, short
-  of the score_transforms topic's 0.5% bar. At the reference shape softplus leads it by 0.42% and 0.02%, sum of
-  squares by 0.89% and 0.43%.
+- **Softplus input and sum of squares lead query by 0.11–0.25%.** Softplus input leads it by 0.25% at `m = 8` and
+  0.11% at `m = 12`, short of the score_transforms topic's 0.5% bar; sum of squares by 0.25% and 0.17%. At the
+  reference shape softplus leads it by 0.42% and 0.02%, sum of squares by 0.89% and 0.43%.
 - **Degree twelve moves the RoPE polynomials by at most 0.24%**: query −0.24%, sum of squares −0.15%, fixed
   Taylor −0.13%, softplus −0.10%, static 0.00%; FoX query +0.14%. At the reference shape query gains 0.68% and
   fixed Taylor loses 0.63%.
@@ -126,8 +127,8 @@ run at `m = 12` and no FoX query run with the shared cumulative gate at `m = 12`
   +2.35% to +2.66%.
 - **At the same tokens the 12-layer width-640 shape stays 10.1–12.4% above the reference shape.** FoX query at
   `m = 8` (+10.12%) and fixed Taylor at `m = 12` (+10.16%) come closest, softmax (+11.34%) and FoX exp
-  (+12.41%) least close. For the five variants with 1x runs at this shape, the gap at 1x, with half the tokens,
-  is 22.6–23.5%.
+  (+12.41%) least close. For the five with a 1x run at their degree at this shape, the gap at 1x, with half the
+  tokens, is 22.6–23.5%.
 
 ## Limits
 
