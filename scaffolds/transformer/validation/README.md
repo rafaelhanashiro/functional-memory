@@ -11,6 +11,24 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
+
+Job `244590` on one B200 in `shiba` ran six existing query-kernel checks under the locked CUDA 13
+environment at `2d7338c0`: **6 passed in 145.01 seconds**. Degrees 8 and 12 at Q/K width 64,
+512 tokens and two heads matched independent NumPy FP64 and Pallas-Triton forward outputs and
+Q/K/V/coefficient VJPs; degree 12 also matched Triton at 2,048 tokens and four heads. Every case
+ran with both BF16 and BF16X3 weight products. The checks preceded the bounded checkpoint
+forward diagnostic; they do not qualify a full training run or optimizer continuation.
+[query_activation_probe_b200.json](query_activation_probe_b200.json) records the exact tests,
+bounds, source and lock, allocation, runtime, and retained-log checksum.
+
+The same six checks passed again in **108.63 seconds** for job `291` on B200 before
+replaying the retained SoS degree-eight and degree-twelve checkpoints. A two-layer
+CPU check with nonzero amplitudes and nonuniform RMSNorm gains confirmed that the
+capture leaves both direct and SoS forward losses exactly unchanged; generator
+reconstruction errors were below `6e-8`. The [SoS probe qualification](sos_activation_probe_b200.json)
+records this allocation and its retained log. This remains forward-diagnostic qualification.
+
 ### Score transforms on the Mosaic query-polynomial kernels (2026-11-12)
 
 Two Mosaic kernel families, `query_softplus` and `query_abs` (`backends/mosaic/common.py`), evaluate the
@@ -80,9 +98,10 @@ record is [runs/score-transform-kernels/record.json](runs/score-transform-kernel
 of each JUnit, log and report in the ignored `logs/score-transform-kernels/<job>/`. The current frozen execution
 set, `c90aa961` at `e185c0c5`, differs from `f09ea1f1` in softplus's input (the same for every finite score, NaN
 at `-inf`), the H100-only admission (backend selection and the entry point), the tests and the scaffold README,
-and no GPU has run it: acceptance's GPU stage at launch runs the transform module (50 BF16 cases, among them an
-overflowing score in three rows) and the query kernels' modules on the granted H100 before training, and its
-pilot projects again.
+and job 244414's acceptance ran it on one H100 PCIe of `mastiff` before training `ra3b54e2489f8` (launch commit
+`a54846c5`): its GPU stage passed 118 cases, none skipped or failed, in 485 s (`mosaic_score_transform` 50, among
+them an overflowing score in three rows; `mosaic_query` 44; `mosaic_repeatability` 3;
+`input_dependent_coefficients` 5; `query_tanh_polynomial` 16).
 
 - Acceptance's GPU stage for `ra3b54e2489f8` (`-m gpu --mosaic-precision bf16` over its modules in acceptance's
   order): 116 passed, none skipped or failed, in 431 s: `mosaic_query` 44, `mosaic_repeatability` 3,
@@ -1314,12 +1333,8 @@ activation. Checks cover JIT replay, independent query/example updates, gradient
 through frozen later layers, an improving coefficient update, and unchanged
 pretrained parameters. Run `JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python
 -m pytest -q scaffolds/transformer/tests/test_coefficient_override.py` to repeat.
-[B300 qualification](runs/static-coefficient-override/gpu-b300.json) passed for the
-15-layer, 14-head source: exact capture/external replay and repeatability, finite
-improving coefficient updates, and exact checkpoint continuation. The separate
-fitting graph differed from the original by 0.00089169 nats/token, within the
-recorded BF16 bound of 0.002. The run's `oracle_acceptance.json` retains the full
-qualification measurements; fitting outcomes remain with the scientific run.
+Each fit qualifies itself on its own GPU before production; its `oracle_acceptance.json`
+holds the measurements.
 
 ### Direct query-coefficient capture and override
 
@@ -3279,12 +3294,8 @@ parameter updates as well as free coefficient tables. Its
 identity, selective generator updates, native Adam coordinates without duplicate
 factorial scaling, downstream activation recomputation, group-gradient accounting,
 and exact checkpoint resume. Six generator checks and four existing free-table
-checks pass. [B300 qualification](runs/query-generator-fit/gpu-b300.json)
-passed original-forward replay, all three parameter-group gradients, an improving
-update, frozen-backbone checksums, and exact resumed updates for the full degree-eight
-15-layer model at 2,048 prediction tokens. Separately compiled BF16 training and
-capture forwards differ by 0.00172043 nats, within the explicit 0.002 tolerance;
-the standalone original and restored forward logits match exactly.
+checks pass. Each fit qualifies itself on its own GPU before production; its `oracle_acceptance.json`
+holds the measurements.
 
 ## Coefficients shared across fitting sequences
 

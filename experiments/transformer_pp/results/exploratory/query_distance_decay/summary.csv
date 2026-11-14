@@ -11,3 +11,5 @@ query_distance_m12,"Query-dependent distance decay + W decay, m = 12",r47bfe39ce
 per_order_query_m12,"Per-order query distance + W decay, m = 12",rfe140c073b2f,complete,7500,2.621028212,13.749854,7570,2.621060069,13.750292,-0.101364,-0.731802,-0.106172,-0.766228
 per_order_query_key_m8,"Per-order query-key distance + W decay, m = 8",r227b0ed7c605,complete,7500,2.618280012,13.712119,7570,2.618586598,13.716323,-0.067447,-0.489474,-0.068966,-0.500285
 per_order_query_key_m12,"Per-order query-key distance + W decay, m = 12",rc2f9273c49cc,complete,7500,2.616037708,13.681406,7570,2.616257609,13.684415,-0.068448,-0.497807,-0.065877,-0.479095
+static_per_order_query_key,"learned static coefficients, per-order query-key gates, m = 4",ra0f402ff6758,complete,7500,2.606386335,13.549997,7570,2.606478831,13.551250,-0.158440,-1.155788,-0.161196,-1.175547
+static_per_order_query_key_m8,"learned static coefficients, per-order query-key gates, m = 8",r2e25140c75db,complete,7500,2.615475404,13.673715,7570,2.615762533,13.677642,-0.038403,-0.280068,-0.038681,-0.282008

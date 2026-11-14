@@ -45,6 +45,8 @@ FAMILIES = {"taylor": ("Fixed Taylor", "#2a78d6", "o"), "hermite": ("Fixed Hermi
 REFERENCES = {"softmax": ("Softmax", "-"), "exp": ("Exp", (0, (4, 2)))}
 # Families sit side by side at each degree so that no marker hides another.
 DODGE = {"taylor": -0.09, "hermite": -0.03, "static": 0.03, "query_w_decay": 0.09}
+# Axis units between two selected degrees with unrun degrees between them.
+GAP = 2.0
 CANONICAL_QK = {"qk_norm": True, "qk_norm_type": "rms_norm", "qk_norm_sharing": "per_layer",
                 "qk_norm_initial_scale": None, "qk_norm_head_scale": True}
 # Recipes are compared key by key. Run names and locations differ by design (the data
@@ -65,6 +67,10 @@ ABSENT = {
     "continuation.preserve_all_parameters": False, "model.attention_coefficient_orders": None,
     "model.attention_forget_gate_form": "input", "model.attention_forget_gate_mode": "cumulative",
     "model.attention_forget_gate_conditioning": "query", "model.attention_forget_gate_rate_activation": "softplus",
+    "model.attention_coefficient_gate": "none", "model.attention_forget_gate_constant_rate": "learned",
+    "model.attention_forget_gate_per_order": False, "model.attention_kernel_basis": "polynomial",
+    "model.attention_spline_knots": None, "optim.coefficient_release_step": None,
+    "optim.coefficient_release_schedule": None, "optim.coefficient_release_end_step": None,
 }
 # Within a family only the degree changes, with the Hermite coefficients it determines;
 # between families the coefficient parameterization changes too, and the references also
@@ -215,13 +221,19 @@ def load_runs(selection: dict | None = None) -> list[dict]:
     if any(len(found) != 1 for found in references.values()):
         raise ValueError("The selection needs exactly one softmax and one exp reference")
     cells = {(row["family"], row["degree"]): row for row in rows if row["role"] == "primary"}
-    expected = {(family, degree) for family in FAMILIES for degree in settings["degrees"]}
+    # Cells the selection declares not run stay visible as such in the tables.
+    not_run = {(cell["family"], cell["degree"]) for cell in settings.get("not_run", [])}
+    expected = {(family, degree) for family in FAMILIES for degree in settings["degrees"]} - not_run
     if len(cells) != len(rows) - len(REFERENCES) or set(cells) != expected:
-        raise ValueError("The selection needs exactly one run for every family and degree")
+        raise ValueError("The selection needs exactly one run for every family and degree it does not declare not run")
     softmax = references["softmax"][0]["terminal_validation_perplexity"]
     exp = references["exp"][0]["terminal_validation_perplexity"]
+    degrees = sorted(settings["degrees"])
     for row in rows:
-        previous = cells.get((row["family"], row["degree"] - 1)) if row["role"] == "primary" else None
+        # The family's run at the next lower selected degree (m = 8 for m = 12).
+        earlier = ([degree for degree in degrees if degree < row["degree"] and (row["family"], degree) in cells]
+                   if row["role"] == "primary" else [])
+        previous = cells[row["family"], earlier[-1]] if earlier else None
         ppl = row["terminal_validation_perplexity"]
         row["change_from_previous_degree_percent"] = (
             100 * (ppl / previous["terminal_validation_perplexity"] - 1) if previous else "")
@@ -256,6 +268,10 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
     primary = [row for row in rows if row["role"] == "primary"]
     levels = {row["family"]: row["terminal_validation_perplexity"] for row in rows if row["role"] == "reference"}
     degrees = sorted({row["degree"] for row in primary})
+    # Consecutive degrees sit one unit apart; a skip over degrees not run takes GAP units and a dotted line.
+    position = {degrees[0]: float(degrees[0])}
+    for before, degree in zip(degrees, degrees[1:]):
+        position[degree] = position[before] + (1.0 if degree == before + 1 else GAP)
     with plt.rc_context({"font.family": "DejaVu Sans", "pdf.fonttype": 42, "svg.hashsalt": "degree-scaling",
                          "figure.facecolor": SURFACE, "savefig.facecolor": SURFACE}):
         figure, axis = plt.subplots(figsize=(8.0, 5.6))
@@ -267,9 +283,12 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         for family, (name, color, marker) in FAMILIES.items():
             points = sorted((row["degree"], row["terminal_validation_perplexity"])
                             for row in primary if row["family"] == family)
-            xs = [degree + DODGE[family] for degree, _ in points]
+            xs = [position[degree] + DODGE[family] for degree, _ in points]
             ys = [value for _, value in points]
-            axis.plot(xs, ys, color=color, linewidth=1.8, zorder=2, solid_capstyle="round")
+            for index in range(len(points) - 1):
+                consecutive = points[index + 1][0] == points[index][0] + 1
+                axis.plot(xs[index:index + 2], ys[index:index + 2], color=color, linewidth=1.8, zorder=2,
+                          linestyle="-" if consecutive else (0, (1, 1.6)), solid_capstyle="round")
             axis.plot(xs, ys, linestyle="none", marker=marker, markersize=6.5, color=color,
                       markeredgecolor=SURFACE, markeredgewidth=0.9, zorder=3)
             handles.append(plt.Line2D([], [], color=color, marker=marker, markersize=6.5, linewidth=1.8,
@@ -281,9 +300,10 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         pad = 0.05 * (upper - lower)
         # The value chips at the last degree need about 62 points to the right of its markers;
         # size the right edge in points so they stay inside the axes at any number of degrees.
-        left, chip = min(degrees) - 0.35, 62.0 / (axis.get_window_extent().width * 72 / figure.dpi)
-        right = (max(DODGE.values()) + chip * (max(degrees) - left)) / (1 - chip)
-        axis.set_xlim(left, max(degrees) + right)
+        first, last = position[degrees[0]], position[degrees[-1]]
+        left, chip = first - 0.35, 62.0 / (axis.get_window_extent().width * 72 / figure.dpi)
+        right = (max(DODGE.values()) + chip * (last - left)) / (1 - chip)
+        axis.set_xlim(left, last + right)
         axis.set_ylim(lower - 1.5 * pad, upper + 1.5 * pad)
         height_points = axis.get_window_extent().height * 72 / figure.dpi
         gap = 10.0 * (axis.get_ylim()[1] - axis.get_ylim()[0]) / height_points
@@ -291,7 +311,8 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
         # color and shape, then the number, on an opaque background so it reads as a label.
         swatch = offset_copy(axis.transData, fig=figure, x=14, y=0, units="points")
         right = max(DODGE.values())
-        for x, labels in sorted(by_degree.items()):
+        for degree, labels in sorted(by_degree.items()):
+            x = position[degree]
             positions = _spread([value for value, _ in labels], 0.95 * gap)
             # Labels that would sit on a reference level move up together to clear it.
             for level in sorted(levels.values()):
@@ -311,7 +332,8 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                           color=MUTED, annotation_clip=False)
         axis.legend(handles=handles, loc="upper right", frameon=False, fontsize=8.5, labelcolor=INK,
                     handlelength=2.4, borderaxespad=0.6)
-        axis.set_xticks(degrees, [f"m = {degree}" for degree in degrees], fontsize=9, color=INK)
+        axis.set_xticks([position[degree] for degree in degrees], [f"m = {degree}" for degree in degrees],
+                        fontsize=9, color=INK)
         axis.set_xlabel("Polynomial degree", fontsize=9.5, color=INK)
         axis.set_ylabel("Terminal validation perplexity (lower is better)", fontsize=9.5, color=INK)
         axis.tick_params(colors=MUTED, labelcolor=INK, labelsize=8.5, length=0)
@@ -326,7 +348,7 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                     weight="bold", color=INK, va="top")
         figure.text(0.1, 0.905, f"Transformer++ at 1× Chinchilla, validation perplexity at update {step:,}, "
                     "one run (seed 42) per point.\nEvery polynomial run has per-head output RMSNorm and "
-                    "canonical QK RMSNorm; softmax (normalized, solid) and exp\n(unnormalized, per-head output RMSNorm, dashed) are references.", fontsize=8.5, color=MUTED,
+                    "canonical QK RMSNorm; softmax (normalized, solid) and exp\n(unnormalized, per-head output RMSNorm, dashed) are references; dotted lines skip degrees not run.", fontsize=8.5, color=MUTED,
                     va="top", linespacing=1.35)
         figure.savefig(output / "degree_scaling.png", dpi=180, metadata={"Software": "Matplotlib"})
         figure.savefig(output / "degree_scaling.pdf", metadata={"CreationDate": None, "ModDate": None,
@@ -347,10 +369,11 @@ def _tables(rows: list[dict]) -> str:
     def table(title: str, cell) -> list[str]:
         lines = [f"**{title}**", "", header, rule]
         for family, (name, _, _) in FAMILIES.items():
-            lines.append(f"| {name} | " + " | ".join(cell(cells[family, degree]) for degree in degrees) + " |")
+            lines.append(f"| {name} | " + " | ".join(cell(cells[family, degree]) if (family, degree) in cells
+                                                     else "not run" for degree in degrees) + " |")
         return lines + [""]
 
-    lowest = {degree: min(cells[family, degree]["terminal_validation_perplexity"] for family in FAMILIES)
+    lowest = {degree: min(row["terminal_validation_perplexity"] for (_, at), row in cells.items() if at == degree)
               for degree in degrees}
 
     def terminal(row):
@@ -370,7 +393,7 @@ def _tables(rows: list[dict]) -> str:
                   else "Validation-best perplexity (update shown)")
     lines = table(f"Terminal validation perplexity (update {step:,}); lowest per degree in bold", terminal)
     lines += table(best_title, best)
-    lines += table("Change in terminal perplexity from the previous degree", change)
+    lines += table("Change in terminal perplexity from the family's previous degree (m = 8 for m = 12)", change)
     lines.append("\n\n".join(
         f"{name} reference (`{references[family]['run_id']}`): terminal "
         f"{references[family]['terminal_validation_perplexity']:.3f}, validation-best "

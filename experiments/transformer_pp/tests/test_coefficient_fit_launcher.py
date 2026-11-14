@@ -66,7 +66,8 @@ def test_degree_roles_preserve_existing_selection_names():
 
 
 def original_query_fit():
-    return yaml.safe_load((Path(__file__).parents[1] / 'runs/rd7bf9bc37cb6/config.yaml').read_text())
+    # A complete query-generator fit recipe (degree 8, earlier QK setup) used as the test's starting point.
+    return yaml.safe_load((Path(__file__).parent / 'query_fit_recipe.yaml').read_text())
 
 
 def test_parent_degree_uses_shared_backend_validation():
@@ -143,10 +144,7 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
     old_entry = {'run_id': 'rd7bf9bc37cb6', 'role': 'query_generator_single_sequence',
                  'parent_run_id': 'r98d5895c02d0', 'sources': {'config.yaml': {'sha256': 'a' * 64}}}
     (topic / 'selection.yaml').write_text(yaml.safe_dump({'settings': {}, 'runs': [old_entry]}))
-    reference = study / 'runs/r3c0f21ab7dce'
-    reference.mkdir(parents=True)
-    sequence_identity = {'manifest_sha256': launcher.sha256(manifest), 'batch_sha256': 'b' * 64}
-    (reference / 'data_identity.json').write_text(json.dumps(sequence_identity))
+    (study / 'sweep.yaml').write_text(yaml.safe_dump({'data_manifests': {'eval': {'sha256': launcher.sha256(manifest)}}}))
     monkeypatch.setattr(launcher, 'STUDY', study)
     monkeypatch.setattr(launcher, 'TOPIC', topic)
     captured = {}
@@ -187,7 +185,7 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
         expected_role = launcher.fitting_role(f'{prefix}_{suffix}', degree)
         label_prefix = 'query-generator-dense' if readout == 'dense' else 'query-generator'
         expected_label = f'{label_prefix}-m{degree}-' + suffix.replace('_', '-')
-        expected_hash = sequence_identity['batch_sha256'] if count == 1 else hashlib.sha256(batch.tobytes()).hexdigest()
+        expected_hash = hashlib.sha256(batch.tobytes()).hexdigest()
         assert recipe['oracle']['batch_sha256'] == expected_hash
         assert recipe['oracle']['microbatch_size'] == min(count, 8)
         assert recipe['oracle']['learning_rate'] == prior['oracle']['learning_rate']
@@ -327,9 +325,7 @@ def test_prepare_keeps_a_native_query_key_parent_and_trains_both_generators(tmp_
     topic = study / 'results/exploratory/coefficient_oracle'
     topic.mkdir(parents=True)
     (topic / 'selection.yaml').write_text(yaml.safe_dump({'settings': {}, 'runs': []}))
-    (study / 'runs/r3c0f21ab7dce').mkdir(parents=True)
-    (study / 'runs/r3c0f21ab7dce/data_identity.json').write_text(json.dumps(
-        {'manifest_sha256': launcher.sha256(manifest), 'batch_sha256': 'b' * 64}))
+    (study / 'sweep.yaml').write_text(yaml.safe_dump({'data_manifests': {'eval': {'sha256': launcher.sha256(manifest)}}}))
     monkeypatch.setattr(launcher, 'STUDY', study)
     monkeypatch.setattr(launcher, 'TOPIC', topic)
     captured = {}

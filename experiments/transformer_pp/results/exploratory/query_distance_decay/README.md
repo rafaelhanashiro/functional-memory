@@ -223,6 +223,8 @@ over all evaluations; terminal PPL is the completion record at update 7,570.
 | Per-order query distance + W decay, m = 12 | `rfe140c073b2f` | complete | 13.7499 | 7500 | 13.7503 |
 | Per-order query-key distance + W decay, m = 8 | `r227b0ed7c605` | complete | 13.7121 | 7500 | 13.7163 |
 | Per-order query-key distance + W decay, m = 12 | `rc2f9273c49cc` | complete | 13.6814 | 7500 | 13.6844 |
+| learned static coefficients, per-order query-key gates, m = 4 | `ra0f402ff6758` | complete | 13.5500 | 7500 | 13.5513 |
+| learned static coefficients, per-order query-key gates, m = 8 | `r2e25140c75db` | complete | 13.6737 | 7500 | 13.6776 |
 
 Query-dependent minus cumulative FoX PPL (negative favors query-dependent decay):
 validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
@@ -230,7 +232,8 @@ validation-best **+0.3243** (**+2.337%**); terminal **+0.3271** (**+2.357%**).
 Endpoint query–key and bounded-rate variants compare against the query-dependent control.
 Each per-order query gate and the degree-four per-order query–key gate compare against
 their shared-gate controls; the degree-eight and degree-twelve per-order query–key gates
-against their per-order query twins.
+against their per-order query twins, and the static-coefficient runs against their
+per-order query–key twins with tanh query coefficients.
 The degree-eight shared gate compares against the degree-four query-dependent run,
 and the degree-twelve shared gate against the degree-eight one.
 Incomplete runs have no terminal PPL; their best-so-far metrics do not establish a final comparison.
@@ -476,6 +479,30 @@ comparison covers all 28 evaluations.
   and reach median norms of 0.73 (m = 8) and 0.83 (m = 12), against 0.93 and 1.01 for the query
   projections.
 
+### Static coefficients under per-order query–key gates
+
+Added 2026-11-11. Do the gates need query-dependent coefficients? `ra0f402ff6758` (m = 4) and
+`r2e25140c75db` (m = 8) are the per-order query–key runs with learned static coefficients
+`c_r = b_r / r!` per layer and head in place of the tanh query coefficients (no projection W, so
+no W decay); the gates are unchanged. They run on the same Mosaic per-order endpoint kernels with
+each query's coefficients equal. Both trained on H100s, moving between `dogo` (SXM) and `mastiff`
+(PCIe) after preemptions and a reservation: m = 4 resumed from update 500 and m = 8 from update
+5,000.
+
+| Degree | Static coefficients | Best (terminal) PPL | vs query-coefficient twin | vs exp query–key gate (13.604) | Clipped updates after 1,500 (twin) | Max gradient norm after 1,500 (twin) |
+| ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 4 | `ra0f402ff6758` | 13.550 (13.551) | −1.16% (13.708) | −0.39% | 8 (44) | 26 (103) |
+| 8 | `r2e25140c75db` | 13.674 (13.678) | −0.28% (13.712) | +0.52% | 20 (39) | 16 (505) |
+
+- **Static coefficients beat query coefficients under these gates.** Lower than the twin at 25 of 28
+  evaluations at m = 4 (by 1.16–1.96% from update 3,000 on) and at 27 of 28 at m = 8 (by
+  0.24–0.63%), with about a fifth (m = 4) and half (m = 8) of the late clipped updates.
+- **At m = 4 the static run is the first gated polynomial below its matched exp baseline.** It is
+  0.39% below exp with the query–key gate (terminal −0.42%), lower at 27 of 28 evaluations and by
+  0.39–0.59% from update 3,000 on.
+- **Degree eight is worse than degree four** (+0.91%, lower at 3 of 28 evaluations) and 0.52%
+  above exp.
+
 ## Open decision
 
 Endpoint key dependence closes about half of the query-only gap to cumulative
@@ -485,8 +512,10 @@ twelve, where it reaches 13.750, 0.9% above exp with the forget gate. Per-order 
 gates improve on per-order query gates by 1.3% at degree four and 0.5% at degrees eight and
 twelve. The degree-twelve per-order query–key gate is the best run (13.681), 1.4% below
 cumulative FoX but 0.57% above its matched exp baseline, exp with the query–key gate (13.604);
-degree eight ties degree four, and no degree reaches that baseline. Decide whether to confirm
-with additional seeds and promote the topic as its own collection, or discard it.
+degree eight ties degree four, and no degree reaches that baseline with query coefficients.
+Learned static coefficients under the same gates do: 13.550 at degree four, 0.39% below it, though
+degree eight (13.674) is worse. Decide whether to confirm with additional seeds and promote the
+topic as its own collection, or discard it.
 
 ## Regeneration
 

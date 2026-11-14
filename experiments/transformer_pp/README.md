@@ -204,7 +204,7 @@ node of every allocation.
 ## Degree scaling
 
 The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
-perplexity against polynomial degree `m = 1, 2, 3, 4, 5, 6, 7, 8` for four coefficient families of
+perplexity against polynomial degree `m = 1-8` and 12 (Taylor and query only) for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
 monomial form, the attention_scaling study's coefficients), learned static coefficients,
@@ -498,85 +498,26 @@ done
 ### Coefficient fitting
 
 The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)
-compares the fitting capacity of free query coefficients and the trained tanh
-query generator on one sequence, and coefficients shared across a full batch,
-each with its pretrained backbone frozen.
-Run `r3c0f21ab7dce` is the completed free-coefficient fit from the static checkpoint;
-`rd7bf9bc37cb6` is the completed fit of the original query generator from the query-only checkpoint.
-`r0963b3e6610b` fits one position-dependent coefficient table shared across the
-parent recipe's entire 256-sequence batch. Static fits `r22854de31b96` (one
-sequence) and `r5b28697413fa` (full batch) additionally share coefficients across
-query positions. Their fitting metrics enter no canonical pretraining comparison.
+measures how far coefficients alone can fit a fixed batch of 256 or 1,024 sequences
+with the pretrained backbone frozen: free coefficients, the trained query and
+query-key generators, and static coefficients, all on degree-four backbones with
+per-head QK scaling. Fitting metrics enter no canonical pretraining comparison.
 
-Allocate the query-generator fit in its own worktree (once), commit the frozen
-inputs, then submit one B300 or H100 job:
+Allocate a fit in its own worktree, commit the frozen inputs, then submit one B300 or
+H100 job. For example, the query-generator fit on 256 sequences:
 
 ```bash
 JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0
-# Commit the allocated recipe and implementation before submitting.
+  --parent /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2b22f2ff6461 \
+  --sequence-count 256
+# Commit the allocated recipe before submitting; resumptions keep its run ID.
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  rd7bf9bc37cb6 --partition debug,standard,long --time-limit 02:00:00
-```
-
-Allocate the shared-coefficient batch fit with the same parent in its own worktree:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization shared_batch_query_coefficients
-# Commit frozen inputs before submitting; resumptions retain this run ID.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r0963b3e6610b --partition debug,standard,long --time-limit 02:00:00
-```
-
-Allocate the independent per-sequence batch fit in its own worktree. Run
-`r7505c6d49711` uses the same query-only parent and 256 fitting sequences, with
-separate coefficient tables for every sequence. Its completed fit automatically
-produces the CPU coefficient-shape analysis in the existing exploratory topic.
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization free_per_example_query_coefficients --sequence-count 256
-# Commit frozen inputs before submitting; resumptions retain this run ID.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r7505c6d49711 --partition long --gpu-type B300 --time-limit 06:00:00
-```
-
-Allocate both static fits in one isolated worktree before committing or launching:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization static_coefficients --sequence-count 1
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer-200m-4b/experiments/transformer_pp/runs/r98d5895c02d0 \
-  --parameterization static_coefficients --sequence-count 256
-# Commit both recipes and implementation before either independent submission.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r22854de31b96 --partition debug,standard,long --time-limit 02:00:00
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r5b28697413fa --partition debug,long --time-limit 02:00:00
+  <run_id> --partition standard --time-limit 24:00:00
 ```
 
 The shared fitting runtime qualifies the frozen-backbone update and checkpoint
 resume before production. The launcher checks frozen inputs at each start and
 requeue and selects the locked CUDA environment for its GPU.
-
-Degree-four query-generator fit `r1f2f749ff099` repeats the same single-sequence
-diagnostic from its trained degree-four parent. It trains only the coefficient
-generator, keeping the backbone frozen. Its settings and findings belong to the
-same [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md).
-In its isolated worktree:
-
-```bash
-JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit prepare \
-  --parent /data/cl/u/rafah/home/projects/functional-memory/worktrees/transformer_200m_4b_m4/experiments/transformer_pp/runs/r49b7943aee1b
-# Already allocated; use this ID for resumptions and commit frozen inputs before launch.
-scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_coefficient_fit submit \
-  r1f2f749ff099 --partition standard --time-limit 02:00:00
-```
 
 ## Matched Taylor continuations
 
@@ -1187,7 +1128,7 @@ From the repository/worktree root:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/transformer_pp
-scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp r3c0f21ab7dce
+scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp rc95f2055e96d
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/coefficient_oracle
 ```
 
@@ -1685,8 +1626,9 @@ Added 2026-11-12. With a very negative score the degree-eight query polynomial g
 orders a large negative one, even orders a large positive one) where `exp` gives about zero and removes the
 key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
 the 12-layer width-640 shape, and with softplus at the reference shape ([below](#reference-shape-softplus-run))?
-Softplus cleared the topic's 0.5% bar at the 12-layer width-640 shape; abs did not. Question, roles,
-decision rule, findings and diagnostics: the
+Softplus cleared the topic's 0.5% bar at the 12-layer width-640 shape; abs did not. At the reference shape
+softplus fell short of it at degree eight (0.42% below its control, level with exp) and at degree twelve
+(0.02% below its control). Question, roles, decision rule, findings and diagnostics: the
 [score_transforms topic](results/exploratory/score_transforms/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
@@ -1701,7 +1643,10 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
 | `r17a1290cb4ac` | query-m8-w-decay-l12-d640-abs-input | `abs(s)` | 1 (Taylor) | 99,678,056 | 17.941 (7,551) | 17.941 | +1.98% | +2.22% |
 | `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
 | `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
-| `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 | | | | |
+| `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 | 14.262 (7,500) | 14.265 | −0.42% | +0.04% |
+
+The reference-shape row compares validation-best perplexity with that shape's control `r25fffc16c2f3`
+(14.323) and exp `r6a76e7fbde45` (14.257).
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1794,6 +1739,9 @@ control `r25fffc16c2f3` (validation-best 14.323; exp `r6a76e7fbde45` 14.257, fix
   beside the query kernels' own Mosaic cases (`tests/test_mosaic_query.py`, `tests/test_mosaic_repeatability.py`
   and the tanh query modules the control's acceptance ran), at BF16. A skipped test fails acceptance.
 
+Home cluster: **Kennel**. The run is complete, trained on one H100 PCIe; its record holds its launch commit,
+attempt, and the artifact-root locations of its validation-best checkpoint, kept gradient-event state and log.
+
 **GPU qualification and time limit.** Two jobs on one H100 PCIe of `mastiff` qualified the kernels and timed
 the run (jobs 244010 and 244157, commits `fe0c2a97` and `261dfa47`, one frozen execution set;
 [validation record](../../scaffolds/transformer/validation/README.md#score-transforms-on-the-mosaic-query-polynomial-kernels-2026-11-12)):
@@ -1816,10 +1764,10 @@ that ratio. The default allocator share (59.4 GiB on an H100) holds the run. The
 the run may receive, so the limit is its projection plus two hours, rounded up: 11 hours, within `standard`'s 24
 (an SXM alone would need 8); acceptance projects again on the granted GPU and refuses the allocation if that
 projection exceeds 9 hours. No Blackwell GPU has run the transformed kernels, so the run trains on H100 alone.
-The current frozen execution set (`e185c0c5`) differs from the jobs' in softplus's input at `-inf` (the same for
+The run's frozen execution set (`e185c0c5`) differs from the jobs' in softplus's input at `-inf` (the same for
 every finite score), the H100-only admission (backend selection and the kernels' entry point), tests and
-documentation. No GPU has run it, so acceptance's GPU stage at launch, which runs the transform module's 50 BF16
-cases (among them an overflowing score) with the query kernels' modules, is its first GPU check.
+documentation; acceptance's GPU stage at launch, which ran the transform module's 50 BF16 cases (among them an
+overflowing score) with the query kernels' modules, passed on the run's H100 PCIe.
 Submit it from the isolated `claude/score-transforms-mosaic` worktree after committing the frozen execution set:
 
 ```bash
@@ -1873,6 +1821,7 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 | `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
 | `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
 | `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | B300 or H100 |
+| `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | B300 or H100 |
 | `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
@@ -1915,6 +1864,8 @@ submit rb2b70dae4d21 acceptance
 submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-sos
 # Degree twelve, from claude/poly-two-lines-sos, on long with --gres=gpu:1 and GPU types B300,H100:
 # submit r3d52b7ab43d1 coefficient_forms_acceptance
+# Degree sixteen, from claude/poly-sos-m16, the same way with --time=48:00:00:
+# submit rdfc61c988309 coefficient_forms_acceptance
 submit r6adefb42f443 coefficient_forms_acceptance
 ```
 
@@ -1974,3 +1925,59 @@ for run in rccd2cb5e8bab r08be7093202a; do
   submit long 12:00:00 coefficient_forms_acceptance B300,H100 $ANY $run
 done
 ```
+
+## Regular-query coefficient activation diagnostic
+
+`r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
+(`r25fffc16c2f3`) and degree-twelve (`r0fceea0627c8`) validation-best checkpoints at
+step 7,500. It uses the first held-out 2,048-token input and layer 8, head 1 to
+measure pre-attention RMSNorm activations, coefficient projection-vector norms,
+their dot products, and tanh saturation. It preserves each parent's native Mosaic
+forward pass and restores parameters only. The frozen config pins the parent
+recipes, checkpoints, data identity, and saved coefficient measurements.
+
+The [diagnostic record](results/diagnostics/query_parameter_dynamics/README.md)
+contains the findings and regeneration commands. From the isolated diagnostic
+worktree, after committing its execution inputs:
+
+```bash
+run=r1ac137c4f1ce
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launcher selects the worktree's locked CUDA 13 environment on B200 and gates
+inference on six native query-kernel parity checks, including degrees 8 and 12
+at key width 64 and degree 12 at the 2,048-token context. This qualifies the
+forward diagnostic's allocation; it does not establish full training qualification.
+
+## SoS coefficient activation diagnostic
+
+`rc3dfb9569345` replays the SoS degree-eight (`reeefbcc19abf`) and degree-twelve
+(`r3d52b7ab43d1`) retained checkpoints at update 7,500 on Kennel. It uses the same
+first held-out sequence and layer 8, head 1 as regular-query probe `r1ac137c4f1ce`.
+The native Mosaic forward is preserved. The capture measures the factor generators
+`g_j = b_j + a_j tanh(W_j^T x)` before expansion into polynomial coefficients;
+raw parameters are checked against the saved training diagnostics. Historical
+expanded-coefficient moments are not compared with factor-generator moments.
+The [SoS exploration](results/exploratory/sum_of_squares/README.md) owns this comparison.
+
+From its isolated worktree after committing the execution inputs:
+
+```bash
+run=rc3dfb9569345
+sbatch --parsable --partition=debug --qos=debug --nodelist=shiba --gres=gpu:b200:1 \
+  --cpus-per-task=8 --mem=64G --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_query_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launch uses the worktree's locked CUDA 13 environment, first verifies six
+native query-kernel parity cases, and then restores parameters without optimizer
+state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSNorm
+gains produces exactly the unchanged forward loss for direct and SoS coefficients.
+The run recipe pins the two parents, checkpoints, data, and reference measurements.

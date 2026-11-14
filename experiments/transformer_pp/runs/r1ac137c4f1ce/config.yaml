@@ -1,0 +1,152 @@
+schema_version: 1
+experiment_kind: query_activation_diagnostic
+condition: diagnostics/query_parameter_dynamics
+output_directory: experiments/transformer_pp/runs/r1ac137c4f1ce
+diagnostic:
+  kind: query_activation_probe
+  layer: 7
+  head: 0
+  data:
+    manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+    sequence_length: 2049
+    start_sequence: 0
+    sequences: 1
+    selection: first_heldout_sequence
+    record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+  models:
+  - role: query_m8
+    run_id: r25fffc16c2f3
+    home_cluster: kennel
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+    config_sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    source_commit: 6ab34ab18bfdf208032a9d448e0324ec13764f1e
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r25fffc16c2f3/checkpoints/7500
+    checkpoint_sha256: 67bcf58402898297744f32fb34e5aaa853d86a26136c5a44324bc61a7b3c7c28
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 393e518caeb6ac4eb4a7dfa3d4a079c44f5c026e81fe0de88eb7d26ab89de765
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: da58a2c0504f0867c781f4cc1142882b08cc4d86645820f396d4b022b1c4fbc6
+      size_bytes: 218972
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: 88d50fff15d39110ade923cf4dedfa1da6db118f38fdc9b1f47f6a60ab46bad4
+      size_bytes: 75263
+    - path: default/d/da67347f8de6a828a10ec7450605b23a
+      sha256: ab3e5ef812446f89c0e9bf1a913c87abe70811c37a74754f8b69a6a15e649ee5
+      size_bytes: 7407
+    - path: default/manifest.ocdbt
+      sha256: 12dd610bf8e4fa97afd45523aaed8c91e58284a5fef5b1f8213ac0f846103742
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/320734a84228266d89418fac855a0055
+      sha256: ed05c2ba1a4fd5577ab17c249549c58221959841028651d113438590836dccab
+      size_bytes: 7177
+    - path: default/ocdbt.process_0/d/43cbdc2050f75fb2b8ba5cd6ece7cbc6
+      sha256: 23c79d35832502f757894c60544e7a0dc8f24c7730cf240b5062fe27b443c476
+      size_bytes: 805
+    - path: default/ocdbt.process_0/d/5cbafc0d5e2aa566ea1df193f554b00c
+      sha256: b276719ff83c8feb50e42d857dd2709fd778ed88817cf600bfe911f799787318
+      size_bytes: 647831552
+    - path: default/ocdbt.process_0/d/7756b4437cbddf6ce4e51da8c8eeeb4d
+      sha256: 3828acef4b220d8c0758049c2e9de4775dee8b943170d6518981cef47ec85b02
+      size_bytes: 1554403328
+    - path: default/ocdbt.process_0/d/c459d34a8f3f3c97b1fd917794d6416f
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 17599f7614790786368e3fcc63f2c5c017f7ae223ebf9db3454a3fc0bb57013f
+      size_bytes: 321
+    - path: metrics/metrics
+      sha256: 9f114a8ac5075ddf90c4d39fbc0fc793281786d0ae5dde620c5a85e4c81cfd6b
+      size_bytes: 138
+    step: 7500
+    recorded_validation_nll: 2.6618529887575852
+    training_sequence_length: 2049
+    reference_metrics_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+    reference_metrics_sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    reference_sample_record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+    data_identity_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r25fffc16c2f3/data_identity.json
+    data_identity_sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    data_identity:
+      batch_size: 256
+      eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+      format: ofm-packed-run-data
+      sequence_length: 2049
+      train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+      version: 2
+    ignored_config_keys: {}
+    kernel: query
+  - role: query_m12
+    run_id: r0fceea0627c8
+    home_cluster: kennel
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+    config_sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0
+    source_commit: c656015584b2ad5802a41cb25f5eb25c18fe3ba6
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r0fceea0627c8/checkpoints/7500
+    checkpoint_sha256: 8ce65aea6aafc67218fe4e85f7698958234ad1ffac009ee5ec35569091f6b673
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 86e09901fe4287e34560f815d51462f9d3e298eebf2b664e49edc6d7078c706d
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: f25c600ef7163d443e40865bbfa066678ba8197505d2032c47b08547321ecc72
+      size_bytes: 218981
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: 897b2d744f7c0bcbe073c31e370bda685bb0d604c910d44098b4b19aaec68b76
+      size_bytes: 75281
+    - path: default/d/ba4d0d1c50ba30782f5157918f2b13a4
+      sha256: f5b06a474de99668e30c03dfd139259cc5be2e556943fada561dc4fc8ec8c128
+      size_bytes: 7407
+    - path: default/manifest.ocdbt
+      sha256: db00d62caf928c6a71038e9968a0c5b6558e78ad4dca6f33bd1cf9608f956978
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/0221f9dbeda91c575a39439fb2ff07ef
+      sha256: f59afe6d5859dee602bce65609d27c1fdc55dccd1fdd99ea6999dfda9ff9545b
+      size_bytes: 7573
+    - path: default/ocdbt.process_0/d/2409e6a2fa96bb48b53c08edabddf45c
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/d/55d1048fd9b93851acc17d94f7c719f8
+      sha256: 591e1f46a9d07de9a305e31926c97ca8ceaebb2852b76c90db12f89c8a338637
+      size_bytes: 1070137344
+    - path: default/ocdbt.process_0/d/b493712c87b2ccfc0a276098426f660d
+      sha256: 9730c00eac4cc269c917b27ca97d2b88fb0a18a4add637f12339b95a1b2d92b4
+      size_bytes: 3873
+    - path: default/ocdbt.process_0/d/fd1a66ba1c10a9235cf923d91392df42
+      sha256: d1e987f3291d23887c307317e7a411decda3b001faf504e2be66301faa8eb1f1
+      size_bytes: 1140146176
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: ee09ce44b91b2263f85cd5b3d4ea64c0d5c9812e9186e0aca5efc21fd15d0623
+      size_bytes: 320
+    - path: metrics/metrics
+      sha256: a0cf74fb113412594b9310f1495abe0e31e299c997624fb28fd7ee0b5ad2881d
+      size_bytes: 137
+    step: 7500
+    recorded_validation_nll: 2.6550460497015402
+    training_sequence_length: 2049
+    reference_metrics_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r0fceea0627c8/metrics.jsonl
+    reference_metrics_sha256: 000479e88edd12adbf5180b319433a379c3b5648933414a282aa7b501932e43f
+    reference_sample_record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+    data_identity_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r0fceea0627c8/data_identity.json
+    data_identity_sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    data_identity:
+      batch_size: 256
+      eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+      format: ofm-packed-run-data
+      sequence_length: 2049
+      train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+      version: 2
+    ignored_config_keys: {}
+    kernel: query
+  interpretation: One frozen validation-best checkpoint per regular query polynomial
+    degree, using the first held-out sequence at layer 8 / head 1 (zero-based indices
+    7 / 0). Measure pre-attention RMSNorm input norms, coefficient-vector norms, projections,
+    alignment, and tanh saturation through the native Mosaic forward pass. No optimizer
+    state is restored, no gradient is computed, and no parameter is updated.
