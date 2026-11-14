@@ -13,15 +13,25 @@ for these synthetic checks. The authoritative record is
 
 ### Unit-L2 coefficient inputs (2026-11-14)
 
-The coefficient-only normalizer passed 20 new CPU checks, 39 pinned-recipe
-acceptance checks, 224 existing configuration/query regression checks, and four
-parameter-policy checks. Independent analytic/FP64 references cover values and
-VJPs, while full-model captures check unchanged Q/K/V and parameter identity.
+The coefficient-only normalizer passed **21 CPU checks in 64.58 seconds**, alongside
+39 pinned-recipe acceptance checks, 224 existing configuration/query regression
+checks, and four parameter-policy checks. Independent analytic/FP64 references
+cover values and VJPs, while full-model captures check unchanged Q/K/V and parameter
+identity. The gradient comparison checks each W/b/a head and generator coordinate
+separately, preserves exact zero references, and detects missing tiny gradients.
 The full reference-shape initial parameter hash matches the controls exactly.
-[coefficient_input_l2.json](coefficient_input_l2.json) records the checks and scope.
-Four composed native Mosaic GPU checks and each allocation's full-shape pilot
-and fresh-process resume are required before production; CPU passage alone does
-not qualify GPU training.
+
+Focused job `760` on one B300 in `akita` passed **all four composed native Mosaic
+GPU cases in 86.59 seconds** at `9e9580d2`, using the worktree's own locked CUDA 13
+environment. Direct and SoS degree-eight generators at key width 64 were checked
+at both BF16 and BF16X3 precision: forward outputs and all q/k/v/x/W/b/a gradients
+matched independent FP64 references under the unchanged error bounds.
+[coefficient_input_l2.json](coefficient_input_l2.json) records the source, frozen
+execution hash, allocation, runtime, bounds, and retained log/XML checksums.
+
+Each production run's full-shape 20-update pilot and fresh-process optimizer/data
+resume remain pending. Focused CPU/GPU parity alone does not establish complete
+training qualification; those checks still gate each run's production training.
 
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 
