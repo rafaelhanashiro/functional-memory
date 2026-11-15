@@ -1,5 +1,23 @@
 {
   "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/experiments/transformer_pp/runs/r7e34dec9dbd5/.runtime/acceptance/B300-1",
+      "allocation": "JobId=1512 JobName=r7e34dec9dbd5 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20132 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:08 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-15T00:00:19 EligibleTime=2026-11-15T00:00:19 AccrueTime=2026-11-15T00:00:19 StartTime=2026-11-15T00:00:19 EndTime=2026-11-16T00:00:19 Deadline=N/A PreemptEligibleTime=2026-11-15T00:00:19 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-15T00:00:19 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1875647 ReqNodeList=akita ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12 StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/experiments/transformer_pp/runs/r7e34dec9dbd5/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/experiments/transformer_pp/runs/r7e34dec9dbd5/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml",
+      "config_sha256": "7ed059fbcbbb6e87795eb37594591b8d1a8985ea9040ccfe85a64e363981041a",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "e29b20a8c1da59b2969a4854892c531d3b494229",
+      "slurm_job_id": "1512",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-15T05:00:27.326661+00:00",
+      "stop_after_step": null
+    }
+  ],
   "comparison": {
     "changed_model_fields": {
       "attention_coefficient_input_normalization": "l2"
@@ -12,11 +30,44 @@
     "path": "experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml",
     "sha256": "7ed059fbcbbb6e87795eb37594591b8d1a8985ea9040ccfe85a64e363981041a"
   },
+  "frozen_execution_sha256": "a1bd884dcad8eec5cfb56ab0b4e80f1d49e97a36150309f6e1eacc3ee2bc1200",
   "home_cluster": "kennel",
   "label": "query-m12-coefficient-input-l2",
+  "log_path": "experiments/transformer_pp/runs/r7e34dec9dbd5/training.log",
   "name": "query-m12-coefficient-input-l2",
   "purpose": "Test unit-L2 normalization after pre-attention RMSNorm only at the degree-12 tanh coefficient-generator input; keep W trainable and matched recipe fixed.",
   "record_schema_version": 1,
   "run_id": "r7e34dec9dbd5",
-  "status": "planned"
+  "slurm_job_id": "1512",
+  "source_commit": "e29b20a8c1da59b2969a4854892c531d3b494229",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--nodelist=akita",
+      "--gres=gpu:b300:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r7e34dec9dbd5",
+      "--output=experiments/transformer_pp/runs/r7e34dec9dbd5/training.log",
+      "--error=experiments/transformer_pp/runs/r7e34dec9dbd5/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.coefficient_l2_acceptance",
+      "experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml",
+      "e29b20a8c1da59b2969a4854892c531d3b494229",
+      "1",
+      "B300"
+    ],
+    "cpus": 16,
+    "gpu_count": 1,
+    "gpu_type": "B300",
+    "memory_gib": 128,
+    "node": "akita",
+    "partition": "standard",
+    "submitted_utc": "2026-11-15T05:00:19.777457+00:00",
+    "time_limit_hours": 24
+  }
 }
