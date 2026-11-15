@@ -11,6 +11,32 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Unit-L2 coefficient inputs (2026-11-14)
+
+The coefficient-only normalizer passed **21 CPU checks in 64.58 seconds**, alongside
+39 pinned-recipe acceptance checks, 224 existing configuration/query regression
+checks, and four parameter-policy checks. Independent analytic/FP64 references
+cover values and VJPs, while full-model captures check unchanged Q/K/V and parameter
+identity. The gradient comparison checks each W/b/a head and generator coordinate
+separately, preserves exact zero references, and detects missing tiny gradients.
+The full reference-shape initial parameter hash matches the controls exactly.
+
+Focused job `760` on one B300 in `akita` passed **all four composed native Mosaic
+GPU cases in 86.59 seconds** at `9e9580d2`, using the worktree's own locked CUDA 13
+environment. Direct and SoS degree-eight generators at key width 64 were checked
+at both BF16 and BF16X3 precision: forward outputs and all q/k/v/x/W/b/a gradients
+matched independent FP64 references under the unchanged error bounds.
+[coefficient_input_l2.json](coefficient_input_l2.json) records the source, frozen
+execution hash, allocation, runtime, bounds, and retained log/XML checksums.
+
+Jobs `762` and `763` each passed 537 CPU tests, 10 distributed CPU tests,
+70 GPU tests, exact initial-parameter matching, a full-shape 20-update pilot,
+and a fresh-process resume from update 20 to 21 before production. Checkpoint
+state, next-batch identity, RNG state, and data position matched across resume.
+Both selected degree-eight recipes subsequently completed all 7,570 updates on
+one B300 each. Their run records retain the acceptance summaries and audits;
+this qualification covers these recipes and runtime, not other degrees.
+
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 
 Job `244590` on one B200 in `shiba` ran six existing query-kernel checks under the locked CUDA 13

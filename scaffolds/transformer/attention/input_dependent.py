@@ -20,6 +20,48 @@ PURE_FEATURES = {"sigmoid": jax.nn.sigmoid, "pure_tanh": jnp.tanh}
 COEFFICIENT_GATES = ("none", "sigmoid", "gdn")
 GDN_GATE_PARAMETERS = ("query_polynomial_gate_kernel", "query_polynomial_gate_log_rate",
                        "query_polynomial_gate_dt_bias")
+COEFFICIENT_INPUT_L2_EPS = 1e-6
+
+
+def normalize_coefficient_input(x, normalization="none"):
+    """Normalize only the generator's activation, without a learned scale or a W rescaling.
+
+    The input already includes the block RMSNorm's learned channel gain. The L2
+    branch computes x / max(||x||_2, 1e-6) in FP32. Clamping the squared norm before
+    rsqrt keeps both outputs and derivatives finite at zero. The default returns
+    the original operand unchanged, including its dtype and historical arithmetic.
+    """
+    if normalization == "none":
+        return x
+    if normalization != "l2":
+        raise ValueError(f"Unknown coefficient input normalization: {normalization}")
+    x = x.astype(jnp.float32)
+    squared_norm = jnp.sum(jnp.square(x), axis=-1, keepdims=True)
+    return x * jax.lax.rsqrt(jnp.maximum(squared_norm, COEFFICIENT_INPUT_L2_EPS ** 2))
+
+
+def coefficient_input_statistics(raw_x, normalized_x, kernel):
+    """Stopped diagnostic summaries of actual input and tanh projection coordinates.
+
+    Input norms have scalar summaries; projection and tanh summaries have [H,R]
+    shape and average over batch/query tokens. R identifies generator coordinates
+    (square-factor coefficients for SoS), not necessarily expanded polynomial orders.
+    This helper is called only by the optional diagnostic forward.
+    """
+    result = {}
+    for prefix, values in (("coefficient_input_raw_l2", raw_x),
+                           ("coefficient_input_l2", normalized_x)):
+        norms = jnp.sqrt(jnp.sum(jnp.square(values.astype(jnp.float32)), axis=-1))
+        for name, reduce in (("mean", jnp.mean), ("std", jnp.std), ("min", jnp.min), ("max", jnp.max)):
+            result[f"{prefix}_{name}"] = reduce(norms)
+    z = jnp.einsum("btd,hdr->bthr", normalized_x.astype(jnp.float32), kernel.astype(jnp.float32),
+                   precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
+    features = jax.lax.optimization_barrier(jnp.tanh(z))
+    for name, reduce in (("mean", jnp.mean), ("std", jnp.std), ("min", jnp.min), ("max", jnp.max)):
+        result[f"coefficient_projection_{name}"] = reduce(z, axis=(0, 1))
+    result["coefficient_tanh_saturation_fraction"] = jnp.mean(jnp.abs(features) >= .99, axis=(0, 1))
+    result["coefficient_tanh_derivative_mean"] = jnp.mean(1.0 - features ** 2, axis=(0, 1))
+    return jax.lax.stop_gradient(result)
 
 
 def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "identity",

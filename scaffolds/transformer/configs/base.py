@@ -104,6 +104,10 @@ class ModelConfig:
     # c_r = sigmoid(x w_r) and pure_tanh is c_r = tanh(x w_r) (dense: c_r = sum_j V_rj f(x w_j),
     # V starting at I). pure_tanh needs a random W start, since tanh(0) = 0 zeroes every coefficient.
     attention_coefficient_activation: Literal["identity", "tanh", "sigmoid", "pure_tanh", "affine_sigmoid"] = "identity"
+    # Normalize only the coefficient-generator input, after the shared pre-attention
+    # RMSNorm and its channel gain. Q/K/V, scores, and W's parameterization are unchanged.
+    # "l2" uses x / max(||x||_2, 1e-6) in FP32; "none" preserves historical arithmetic.
+    attention_coefficient_input_normalization: Literal["none", "l2"] = "none"
     # Forgetting Transformer decay: each query-conditioned polynomial weight is multiplied by
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
@@ -568,6 +572,25 @@ class ModelConfig:
         activation = self.attention_coefficient_activation
         if activation not in ("identity", *AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS):
             raise ValueError(f"Unknown attention coefficient activation: {activation}")
+        if self.attention_coefficient_input_normalization not in ("none", "l2"):
+            raise ValueError("Unknown attention coefficient input normalization: "
+                             f"{self.attention_coefficient_input_normalization}")
+        if self.attention_coefficient_input_normalization == "l2" and (
+                self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
+                or self.attention_coefficient_sharing != "per_head"
+                or self.attention_coefficient_conditioning != "query" or activation != "tanh"
+                or self.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+                or self.attention_coefficient_readout != "diagonal"
+                or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
+                or self.attention_coefficient_gate != "none" or self.attention_forget_gate
+                or self.attention_kernel_basis != "polynomial" or self.attention_score_bias != "none"
+                or self.attention_score_transform != "identity" or self.attention_normalization
+                or self.positional_encoding not in ("rope", "none")
+                or self.attention_degree is None or self.attention_degree < 1 or self.quadratic_mode != "fixed"):
+            raise ValueError("L2 coefficient input normalization requires unnormalized learned per-head "
+                             "diagonal tanh query polynomial coefficients, direct or sum-of-squares, "
+                             "with RoPE or no positional encoding, without selected orders, inner biases, gates, "
+                             "score biases or score transforms")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError(f"Unknown attention coefficient readout: {self.attention_coefficient_readout}")
         if self.attention_coefficient_readout == "dense" and (

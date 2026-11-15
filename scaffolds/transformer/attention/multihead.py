@@ -58,6 +58,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_parameterization=config.attention_coefficient_parameterization,
         attention_coefficient_activation=config.attention_coefficient_activation,
+        attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
         attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
@@ -108,6 +109,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_parameterization: str = "direct",
         attention_coefficient_activation: str = "identity",
+        attention_coefficient_input_normalization: str = "none",
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
         positional_encoding: str = "rope",
@@ -210,6 +212,21 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unknown attention coefficient activation")
         if attention_coefficient_activation != "identity" and attention_coefficient_conditioning == "static":
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
+        if attention_coefficient_input_normalization not in ("none", "l2"):
+            raise ValueError(f"Unknown coefficient input normalization: {attention_coefficient_input_normalization}")
+        if attention_coefficient_input_normalization == "l2" and (
+                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+                or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
+                or attention_coefficient_gate != "none" or attention_forget_gate
+                or attention_kernel_basis != "polynomial" or attention_score_bias != "none"
+                or attention_score_transform != "identity" or attention_normalization
+                or positional_encoding not in ("rope", "none")
+                or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"):
+            raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh query "
+                             "polynomial coefficients with RoPE or no positional encoding, without selected "
+                             "orders, gates, score biases or transforms")
+        self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
         if attention_forget_gate_mode not in ("cumulative", "query_distance"):
@@ -556,7 +573,9 @@ class MultiHeadAttention(nnx.Module):
             else:
                 parameters["spline_coefficients"] = spline_parameters["spline_coefficients"]
         elif self.attention_coefficient_conditioning in ("query", "query_key"):
-            from scaffolds.transformer.attention.input_dependent import project_coefficients, project_key_factors
+            from scaffolds.transformer.attention.input_dependent import (
+                normalize_coefficient_input, project_coefficients, project_key_factors,
+            )
 
             if query_kernel is None or (query_bias is None) != (
                     self.attention_coefficient_activation in ("sigmoid", "pure_tanh")):
@@ -568,8 +587,11 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Dense readout replaces the diagonal amplitude parameter")
             effective_coefficients = query_coefficients
             if effective_coefficients is None:
+                if self.attention_coefficient_input_normalization == "l2" and query_tanh_bias is not None:
+                    raise ValueError("L2 coefficient input normalization does not support an inner tanh bias")
+                coefficient_input = normalize_coefficient_input(x, self.attention_coefficient_input_normalization)
                 effective_coefficients = project_coefficients(
-                    x, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
+                    coefficient_input, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
                     amplitude_scale=self.attention_coefficient_amplitude_scale,
                     readout_scale=self.attention_coefficient_readout_scale,
@@ -762,6 +784,11 @@ class MultiHeadAttention(nnx.Module):
             blocked_implementation=self.attention_blocked_implementation,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        if (return_diagnostics and self.attention_coefficient_input_normalization == "l2"
+                and query_coefficients is None):
+            from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
+
+            diagnostics.update(coefficient_input_statistics(x, coefficient_input, query_kernel))
         if gate_statistics is not None:
             diagnostics.update(gate_statistics)
         if return_diagnostics and log_alpha is not None:

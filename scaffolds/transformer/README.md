@@ -1737,3 +1737,28 @@ Each command runs its tests in one process. `tests/conftest.py` clears JAX's cac
 any test that leaves the process holding more than half of `vm.max_map_count` memory
 mappings, and stops the run with an explicit error if clearing cannot keep it below nine
 tenths.
+
+### Unit-L2 coefficient inputs
+
+`model.attention_coefficient_input_normalization: l2` applies
+`x_hat = x / max(||x||_2, 1e-6)` in FP32 only to the diagonal tanh coefficient
+projection. Here `x` already includes the pre-attention RMSNorm's learned
+channel gain. The normalizer has no parameters. Q/K/V and all other attention
+paths receive the original input, and the projection matrix W retains its
+initialization, trainability, and optimizer group. The default `none` retains
+the previous operand and arithmetic exactly, including historical recipe/resume
+semantics.
+
+Supported forms are unnormalized learned per-head query polynomials with direct
+or sum-of-squares coefficients, RoPE or no positional encoding, and no gates,
+selected orders, inner biases, shifted/transformed scores, or dense readout.
+The normalization is outside the native attention kernel, so native Mosaic
+query kernels are unchanged. Degree and backend limits remain their existing
+limits.
+
+The optional diagnostic forward additionally returns input norm summaries,
+per-head/generator-coordinate projection moments, the fraction
+`abs(tanh(z)) >= 0.99`, and mean tanh derivative. Training records these under
+`attention_diagnostics.coefficients.generator_input`; SoS coordinates are factor
+coefficients, not expanded polynomial orders. These stopped summaries do not
+participate in the training forward or gradients.
