@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rb74e8b994b74/config.yaml",
+    "sha256": "3b1e575800eafe9c08c39a9ed9b192afafd7437ec4c6185966f3889864b5cf89"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-w-decay-l12-d640-softplus-input-4x",
+  "name": "query-m12-w-decay-l12-d640-softplus-input-4x",
+  "record_schema_version": 1,
+  "run_id": "rb74e8b994b74",
+  "status": "planned"
+}

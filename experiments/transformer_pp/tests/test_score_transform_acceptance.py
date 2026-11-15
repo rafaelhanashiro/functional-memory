@@ -21,12 +21,14 @@ RUNS = {"r1d342ca6e58c": ("softplus", 0.0, "query-m8-w-decay-l12-d640-softplus-i
         "ra3b54e2489f8": ("softplus", 0.0, "query-m8-dk64-w-decay-softplus-input", "reference"),
         "r9eb845aae5bb": ("softplus", 0.0, "query-m12-dk64-w-decay-softplus-input", "reference_m12"),
         "rc6a7e50d27e1": ("softplus", 0.0, "query-m8-w-decay-l12-d640-softplus-input-2x", "l12_d640_2x"),
-        "r53d5bbcac16f": ("softplus", 0.0, "query-m12-w-decay-l12-d640-softplus-input-2x", "l12_d640_2x_m12")}
+        "r53d5bbcac16f": ("softplus", 0.0, "query-m12-w-decay-l12-d640-softplus-input-2x", "l12_d640_2x_m12"),
+        "rb74e8b994b74": ("softplus", 0.0, "query-m12-w-decay-l12-d640-softplus-input-4x", "l12_d640_4x_m12")}
 # Each control's shape and schedule: layers, heads, width, updates, warmup, batch; and its degree.
 SHAPES = {"l12_d640": (12, 10, 640, 7551, 454, 128), "reference": (15, 14, 896, 7570, 455, 256),
           "reference_m12": (15, 14, 896, 7570, 455, 256), "l12_d640_2x": (12, 10, 640, 15103, 908, 128),
-          "l12_d640_2x_m12": (12, 10, 640, 15103, 908, 128)}
-DEGREES = {"l12_d640": 8, "reference": 8, "reference_m12": 12, "l12_d640_2x": 8, "l12_d640_2x_m12": 12}
+          "l12_d640_2x_m12": (12, 10, 640, 15103, 908, 128), "l12_d640_4x_m12": (12, 10, 640, 30205, 1815, 128)}
+DEGREES = {"l12_d640": 8, "reference": 8, "reference_m12": 12, "l12_d640_2x": 8, "l12_d640_2x_m12": 12,
+           "l12_d640_4x_m12": 12}
 CONTROLS = tuple(adapter.CONTROLS)
 CAPTURE_FIELDS = tuple(adapter.CAPTURE_POLICY)
 
@@ -476,7 +478,8 @@ def test_qualified_allocations_reach_acceptance(monkeypatch, run_id):
 def test_the_gpu_types_are_each_controls_qualified_hardware():
     """The strips' GPU tests ran on B200, B300 and H100; the transformed Mosaic kernels' on H100."""
     assert adapter.GPU_TYPES == {"l12_d640": ("B200", "B300", "H100"), "reference": ("H100",),
-                                 "reference_m12": ("H100",), "l12_d640_2x": ("H100",), "l12_d640_2x_m12": ("H100",)}
+                                 "reference_m12": ("H100",), "l12_d640_2x": ("H100",), "l12_d640_2x_m12": ("H100",),
+                                 "l12_d640_4x_m12": ("H100",)}
     assert set(adapter.GPU_TYPES) == set(adapter.GPU_REASONS) == set(adapter.CONTROLS) == set(adapter.BACKENDS)
 
 

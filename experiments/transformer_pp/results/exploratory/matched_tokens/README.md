@@ -1,7 +1,8 @@
 # Matched tokens
 
-Opened: 2026-11-12. Status: **open**. All fifteen runs are complete; promoting or discarding the topic is the
-user's decision ([below](#open-decision)). Each run's status is in its record and the study's `runs.csv`.
+Opened: 2026-11-12. Status: **open**. The fifteen runs at twice the 1x budget are complete; nine at four times it
+are planned ([below](#four-times-the-budget)). Promoting or discarding the topic is the user's decision
+([below](#open-decision)). Each run's status is in its record and the study's `runs.csv`.
 
 Trained on the reference shape's token count, twice its own 1x budget, how do the attention variants compare
 at the 12-layer width-640 shape at degrees eight and twelve? How close does each come to its reference-shape
@@ -40,6 +41,30 @@ every 200 updates through 3,000 and every 1,000 after, seed 42. Where the 1x par
 
 Recipes, acceptance and launch commands:
 [study README](../../../README.md#the-12-layer-width-640-shape-at-the-reference-token-count).
+
+### Four times the budget
+
+Planned 2026-11-15 at the user's request: the degree-twelve runs above and the three baselines at four times the
+shape's 1x budget, each its 2x run derived with `derive_recipe.py --budget 4`: 30,205 updates of 128 × 2,048 tokens
+(7.92B prediction tokens, twice the 2x runs' 3.96B), warmup 1,815, validation every 400 updates through 6,000 and
+every 2,000 after, seed 42. One GPU each; home cluster Kennel. Each will be compared with exp at 4x and with its
+2x run.
+
+| Run | Label | Variant | `m` | 2x run | Attention |
+| --- | --- | --- | ---: | --- | --- |
+| `r2f41d054e944` | `query-m12-w-decay-l12-d640-4x` | tanh query, RoPE, W decay | 12 | `r0f6d929e5992` | Mosaic |
+| `r0f8122dd8439` | `static-m12-l12-d640-4x` | learned static | 12 | `r84f325593209` | Mosaic |
+| `rcace22b32f93` | `fixed-m12-l12-d640-4x` | fixed Taylor | 12 | `rffab7c4eeac5` | Mosaic |
+| `rb74e8b994b74` | `query-m12-w-decay-l12-d640-softplus-input-4x` | softplus input, `c_0` from 0 | 12 | `r53d5bbcac16f` | Mosaic transformed, H100 |
+| `r1f935f18fe21` | `query-m12-sum-of-squares-w-decay-l12-d640-4x` | sum-of-squares query | 12 | `r08be7093202a` | Mosaic |
+| `re3847010843f` | `query-m12-forget-gate-no-rope-w-decay-l12-d640-4x` | FoX query | 12 | `rbf05f7baab5e` | causal strips |
+| `r333444bd4304` | `exp-l12-d640-4x` | exp | – | `rd920368a922e` | fused Triton |
+| `r93df1e48c8fd` | `softmax-l12-d640-4x` | softmax | – | `r3bb5b8bd5c6a` | cuDNN |
+| `rd486e3337de7` | `exp-forget-gate-no-rope-l12-d640-4x` | FoX exp | – | `re634d82ee479` | causal strips |
+
+The softplus run's control and the sum-of-squares run's partner is the 4x query run `r2f41d054e944`. Recipes,
+acceptance and launch commands:
+[study README](../../../README.md#the-12-layer-width-640-shape-at-four-times-its-1x-budget).
 
 ## Comparisons
 
@@ -150,8 +175,8 @@ shape has no static run at `m = 12` and no FoX query run with the shared cumulat
 
 ## Open decision
 
-All fifteen runs are complete. Whether to promote the topic to its own canonical collection or discard it with
-its runs and their artifacts is the user's decision.
+The fifteen 2x runs are complete and the nine 4x runs planned. Whether to promote the topic to its own canonical
+collection or discard it with its runs and their artifacts is the user's decision.
 
 Refresh the selection after the runs' scientific files change:
 

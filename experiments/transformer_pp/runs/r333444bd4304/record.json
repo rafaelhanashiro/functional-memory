@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r333444bd4304/config.yaml",
+    "sha256": "b230891e797171ece445802290a1eb189dde23fb8299e1a226623598f122b7c4"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-l12-d640-4x",
+  "name": "exp-l12-d640-4x",
+  "record_schema_version": 1,
+  "run_id": "r333444bd4304",
+  "status": "planned"
+}

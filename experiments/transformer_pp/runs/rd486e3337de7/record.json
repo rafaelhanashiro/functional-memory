@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd486e3337de7/config.yaml",
+    "sha256": "319466f93cd60aff9af792dc65c2db9afe5065be7beda7b54594a8682c6ffc9f"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-forget-gate-no-rope-l12-d640-4x",
+  "name": "exp-forget-gate-no-rope-l12-d640-4x",
+  "record_schema_version": 1,
+  "run_id": "rd486e3337de7",
+  "status": "planned"
+}

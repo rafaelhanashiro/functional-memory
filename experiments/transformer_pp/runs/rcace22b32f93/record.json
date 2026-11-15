@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rcace22b32f93/config.yaml",
+    "sha256": "7aa93a788faca5d3ba4c0d149868e404fa1c1b3dd4cda2b177c904c173af8611"
+  },
+  "home_cluster": "kennel",
+  "label": "fixed-m12-l12-d640-4x",
+  "name": "fixed-m12-l12-d640-4x",
+  "record_schema_version": 1,
+  "run_id": "rcace22b32f93",
+  "status": "planned"
+}

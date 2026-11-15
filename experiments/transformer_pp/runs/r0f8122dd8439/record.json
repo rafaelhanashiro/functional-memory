@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0f8122dd8439/config.yaml",
+    "sha256": "d9f38cd5acb834a4e4c503de9c1f700bfe094fc46516552c52c70b5c4a9e623c"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m12-l12-d640-4x",
+  "name": "static-m12-l12-d640-4x",
+  "record_schema_version": 1,
+  "run_id": "r0f8122dd8439",
+  "status": "planned"
+}

@@ -1957,6 +1957,67 @@ for run in rccd2cb5e8bab r08be7093202a; do
 done
 ```
 
+## The 12-layer width-640 shape at four times its 1x budget
+
+Added 2026-11-15 at the user's request. Nine runs train the 12-layer width-640 shape at four times its 1x budget:
+the degree-twelve query, static, fixed Taylor, softplus input, sum-of-squares and FoX query runs of the
+[2x set](#the-12-layer-width-640-shape-at-the-reference-token-count), and exp, softmax and FoX exp. All nine are
+planned. Runs and comparisons: the
+[matched_tokens topic](results/exploratory/matched_tokens/README.md#four-times-the-budget).
+
+- Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
+  30,205 updates of 128 × 2,048 tokens (7.92B prediction tokens), warmup 1,815, validation every 400 updates
+  through 6,000 and every 2,000 after; batch, learning rate, seed and data order unchanged. Beyond these,
+  execution paths and labels, each recipe writes `attention_coefficient_input_normalization: none`, the scaffold
+  default its 2x run loads with.
+- Sources: query `r0f6d929e5992`, static `r84f325593209`, fixed Taylor `rffab7c4eeac5`, softplus input
+  `r53d5bbcac16f`, sum of squares `r08be7093202a`, FoX query `rbf05f7baab5e`, exp `rd920368a922e`, softmax
+  `r3bb5b8bd5c6a`, FoX exp `re634d82ee479`:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <2x run> --budget 4 --output /tmp/<label>.yaml
+```
+
+- Acceptance: the shared adapter for query, static, fixed Taylor, exp, softmax and the forget-gate runs.
+  [`score_transform_acceptance`](score_transform_acceptance.py) covers the softplus run and pins the 4x query run
+  `r2f41d054e944` as its control (recipe SHA256 `b6005163`, seed-42 fingerprint `c8a7ed88`, 99,986,216
+  parameters; initialization does not depend on the budget, so fingerprint and count are the 2x control's).
+  [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares run, with the same
+  4x query run as partner.
+- Kernels and GPUs: as at 2x. Mosaic for the polynomials (the softplus run's transformed kernels on H100 alone),
+  fused Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs. Each run requests one
+  B300 or H100 (the softplus run H100 alone) and depends on no other run.
+- Time limits: 16 hours for the Mosaic polynomials, 12 for exp and softmax, 30 for FoX exp and 40 for FoX query:
+  the slowest projection, on an H100 PCIe, plus acceptance's two-hour reserve, rounded up with room. The
+  projections are the 2x runs' wall time per update there, validation included, over 30,205 updates: query 9.9
+  hours, sum of squares 12.3, softplus input 12.4, exp 8.8, softmax 6.9, FoX exp 22.9, FoX query 32.7. Static and
+  fixed Taylor trained on an H100 SXM at 2x (6.3 hours at 4x) and project 11.1 hours on PCIe at sum of squares'
+  PCIe-to-SXM ratio. Acceptance projects again on the granted GPU and refuses an allocation whose projection
+  exceeds the limit less two hours.
+
+Home cluster: **Kennel**. Branch `claude/l12-d640-4x`. Submit on `long` from the worktree root after the frozen
+execution set is committed:
+
+```bash
+submit() {  # partition, time, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$5" \
+    --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+# Slurm grants mastiff's failing H100 to one-GPU jobs first (CLUSTERS.md): add mastiff to the exclusions
+# unless another job holds that GPU.
+ANY=collie,samoyed,doodle,terrier,shiba
+submit long 40:00:00 acceptance B300,H100 $ANY re3847010843f
+submit long 30:00:00 acceptance B300,H100 $ANY rd486e3337de7
+for run in r2f41d054e944 r0f8122dd8439 rcace22b32f93; do submit long 16:00:00 acceptance B300,H100 $ANY $run; done
+for run in r333444bd4304 r93df1e48c8fd; do submit long 12:00:00 acceptance B300,H100 $ANY $run; done
+submit long 16:00:00 score_transform_acceptance H100 akita,$ANY rb74e8b994b74
+submit long 16:00:00 coefficient_forms_acceptance B300,H100 $ANY r1f935f18fe21
+```
+
 ## Regular-query coefficient activation diagnostic
 
 `r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
