@@ -4,6 +4,7 @@
   "cpu_affinity_count": 4,
   "degree": 12,
   "duration_seconds": 25.462,
+  "frozen_execution_sha256": "8afe7385d3402e5200f888fe0fbcb529621c5c5ebcf9ce46d0c8dd059f4faaac",
   "method": "experiments.transformer_pp.coefficient_l2_acceptance.check_initialization; actual full-shape models, no mocking",
   "platform": "cpu",
   "runs": {
@@ -218,6 +219,7 @@
       "softmax_counterpart_parameter_sha256": "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b"
     }
   },
+  "source_commit": "81d57ee80fc5297a7d4dd4fe0a4f9e58debfd9c0",
   "status": "passed",
   "thread_limits": {
     "MKL_NUM_THREADS": 1,
