@@ -2,13 +2,16 @@
 
 Opened **2026-11-14**. This Transformer++ exploration asks whether limiting the
 input to the tanh coefficient generator reduces saturation and improves perplexity.
-It contains two completed degree-eight runs at the 15-layer width-896 shape,
-matched to their own existing controls; neither enters a canonical comparison.
+It contains two completed degree-eight runs and two degree-twelve runs at the
+15-layer width-896 shape, each matched to its own existing control. These runs
+remain exploratory and enter no canonical comparison.
 
 | Coefficient form | Unit-L2 input run | Original-input control |
 | --- | --- | --- |
 | Query, degree 8 | `r25a5f78841b2` | `r25fffc16c2f3` |
 | SoS query, degree 8 | `r717267afcb78` | `reeefbcc19abf` |
+| Query, degree 12 | `r7e34dec9dbd5` | `r0fceea0627c8` |
+| SoS query, degree 12 | `r6b17c3463a60` | `r3d52b7ab43d1` |
 
 For the current gain-applied pre-attention RMSNorm activation `x`, only the
 coefficient generator uses `x_hat = x / max(||x||_2, 1e-6)` in FP32. Direct query
@@ -18,9 +21,9 @@ The Q/K/V inputs and normalization, RoPE, scores, output scaling, and residual
 path retain the control recipe. W is unnormalized and trainable with weight
 decay 0.1; a and b have no weight decay. W initialization, all learning rates,
 seed 42, global batch 256, 2,048 prediction tokens per sequence, 7,570 updates,
-and the controls' reference initialization are retained. Both use native Mosaic.
+and the controls' reference initialization are retained. All use native Mosaic.
 
-The [explicit selection](selection.yaml) pins the two controls and two new runs.
+The [explicit selection](selection.yaml) pins all four matched run/control pairs.
 The [study README](../../../README.md#coefficient-input-l2-experiment) gives
 execution commands and acceptance requirements. Configurations and compact
 measurements live only in the selected runs.
@@ -48,6 +51,16 @@ run, at update 6,376: norms 1.3333 (query) and 1.4469 (SoS), against threshold 1
 Neither run encountered a numerical failure. Low coefficient-input saturation
 therefore accompanies a small query improvement but a small SoS regression in
 these single-seed runs; removing saturation is not sufficient to improve both.
+
+## Degree-twelve extension
+
+The two degree-twelve runs each have 200,905,126 parameters and retain their
+respective controls' initialization, optimizer, data, and reporting recipe.
+Only `attention_coefficient_input_normalization: l2` changes scientifically.
+Normalization remains after the learned pre-attention RMSNorm channel gains;
+W stays unnormalized and trainable. Degree twelve has 13 query coefficient
+coordinates, or seven U and six V factor coordinates for SoS. No degree-twelve
+outcome is available at launch.
 
 ## Measurements and limits
 

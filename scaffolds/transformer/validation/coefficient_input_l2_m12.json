@@ -1,0 +1,128 @@
+{
+  "cpu_checks": [
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 scaffolds/transformer/.venv/bin/python -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q -m \"not gpu\" scaffolds/transformer/tests/test_coefficient_input_normalization.py",
+      "coverage": [
+        "Analytic L2 values and VJP including zero/tiny inputs",
+        "Independent FP64 generator outputs and x/W/b/a gradients for direct/SoS m8/m12",
+        "Identical initial parameters and unchanged Q/K/V; normalization preserves gain-applied input direction",
+        "Legacy configuration compatibility and native Mosaic support at m8/m12",
+        "Actual diagnostic input/projection statistics and polynomial/factor coordinate labels",
+        "Per-head/per-coordinate gradient comparison detects missing gradients including tiny and exact-zero references"
+      ],
+      "gpu_deselected": 8,
+      "passed": 30,
+      "seconds": 57.15,
+      "source_commit": "b511085023479f44f82b8b9bdce93d7f56a98eab"
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q experiments/transformer_pp/tests/test_coefficient_l2_acceptance.py",
+      "coverage": [
+        "Pinned m8/m12 control recipes with coefficient-input normalization as the only scientific change",
+        "Initialization identity, rejection of unsupported degrees and recipe changes",
+        "Required native Mosaic, feature parity tests, full-shape pilot and optimizer/data resume"
+      ],
+      "passed": 80,
+      "seconds": 19.95,
+      "source_commit": "b511085023479f44f82b8b9bdce93d7f56a98eab"
+    }
+  ],
+  "date": "2026-11-14",
+  "feature": "coefficient-only unit-L2 input normalization at polynomial degree twelve",
+  "formula": "x / max(norm(x,2),1e-6), FP32 after pre-attention RMSNorm channel gains",
+  "frozen_execution_sha256": "0a7cbe72f3abbea980ee3d442dee7770b41ac54a592d2dbb51ccb5d52fcf6bc8",
+  "full_initialization": {
+    "controls": {
+      "direct": "r0fceea0627c8",
+      "sum_of_squares": "r3d52b7ab43d1"
+    },
+    "degree": 12,
+    "parameter_count": 200905126,
+    "parameter_sha256": "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16",
+    "parameterizations": [
+      "direct",
+      "sum_of_squares"
+    ],
+    "status": "Both actual degree-twelve L2 recipes passed exact initialized parameter count/hash checks against their matched controls."
+  },
+  "gpu_checks": {
+    "allocation": {
+      "cpus": 8,
+      "elapsed_seconds": 107,
+      "exit_code": "0:0",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300",
+      "home_cluster": "kennel",
+      "memory_gib": 64,
+      "node": "akita.csail.mit.edu",
+      "partition": "debug",
+      "qos": "debug",
+      "slurm_job_id": "1493",
+      "slurm_state": "COMPLETED",
+      "time_limit_seconds": 1200
+    },
+    "cases": 8,
+    "command": "scaffolds/transformer/.venv-cuda13/bin/python -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q -m gpu scaffolds/transformer/tests/test_coefficient_input_normalization.py --junitxml=scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.xml",
+    "coverage": "Native Mosaic composition at degrees 8/12, key width 64, 512 tokens, 2 heads, BF16/BF16X3, direct/SoS: forward and q/k/v/x/W/b/a gradients against independent FP64 references.",
+    "deselected": 30,
+    "error_bounds": {
+      "dq_dk_relative_l2_per_batch_head": 0.025,
+      "dv_relative_l2_per_batch_head": 0.015,
+      "generator_gradient_relative_l2": 0.025,
+      "generator_grouping": "dx per batch across tokens/channels; dW/db/da separately for every head and generator coordinate",
+      "max_absolute_error": "3 * relative-L2 bound * max(abs(reference)) in each comparison group",
+      "output_relative_l2_per_batch_head": 0.006,
+      "tolerance_changes": "None",
+      "zero_reference": "Exact equality, no absolute tolerance floor"
+    },
+    "evidence": [
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.log",
+        "sha256": "ce82a9f0d63ef2074606aebd45b6c32bc09789fd55b61e522333dd23504b3ee1",
+        "size_bytes": 192
+      },
+      {
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.xml",
+        "sha256": "6aeed445b7e347c2ec0f5d43419f7f498d1626c5b9a5f25f70a140e609d96a5f",
+        "size_bytes": 1575
+      }
+    ],
+    "failed": 0,
+    "frozen_execution_sha256": "0a7cbe72f3abbea980ee3d442dee7770b41ac54a592d2dbb51ccb5d52fcf6bc8",
+    "launcher": "scaffolds/transformer/validation/qualify_coefficient_input_l2.sbatch",
+    "launcher_arguments": [
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12",
+      "b511085023479f44f82b8b9bdce93d7f56a98eab"
+    ],
+    "observed_errors": "All assertions passed; individual error magnitudes are not emitted by the test runner.",
+    "passed": 8,
+    "runtime": {
+      "cuda_environment": "cuda13",
+      "dependency_lock_path": "scaffolds/transformer/uv.lock",
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment_ownership": "Worktree-local environment synced from its own lock with hardlinks",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/.venv-cuda13/bin/python",
+      "temporary_files": "Unique disposable job directory under SLURM_TMPDIR or /tmp"
+    },
+    "seconds": 92.82,
+    "skipped": 0,
+    "source_commit": "b511085023479f44f82b8b9bdce93d7f56a98eab",
+    "started_utc": "2026-11-15T04:55:27.951434+00:00",
+    "status": "passed",
+    "test_cases": [
+      "test_mosaic_composition_matches_fp64_with_all_gradients[direct-bf16-m8]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[direct-bf16-m12]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16-m8]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16-m12]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[direct-bf16x3-m8]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[direct-bf16x3-m12]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16x3-m8]",
+      "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16x3-m12]"
+    ]
+  },
+  "production_gate": "Each run must still pass full acceptance, including the full-shape 20-update training pilot and fresh-process optimizer/data resume. These remain pending; focused parity checks alone do not qualify production training.",
+  "schema_version": 1,
+  "scope": "Direct and sum-of-squares diagonal tanh query polynomials at degrees 8 and 12; native attention kernels unchanged.",
+  "source_commit": "b511085023479f44f82b8b9bdce93d7f56a98eab",
+  "status": "cpu_and_gpu_checks_passed_pilot_pending"
+}

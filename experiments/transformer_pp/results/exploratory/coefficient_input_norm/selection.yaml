@@ -1,5 +1,6 @@
 question: Does unit-L2 normalization of the coefficient input reduce tanh saturation
-  and improve validation perplexity for direct and SoS query polynomials at m=8?
+  and improve validation perplexity for direct and SoS query polynomials at m=8 and
+  m=12?
 opened: '2026-11-14'
 settings:
   metric: held-out validation perplexity
@@ -7,7 +8,6 @@ settings:
   - validation-best
   - terminal
   seed: 42
-  degree: 8
   training_steps: 7570
   comparison: each L2 run against its own explicitly selected none-normalization control
   diagnostics: fixed first held-out sequence at scheduled evaluations; all layer/head/generator
@@ -17,6 +17,9 @@ settings:
     before coefficient projection
   open_decision: Degree-eight outcomes are mixed; extend the matched coefficient-only
     L2 experiment to degree twelve before deciding whether to pursue the normalization.
+  degrees:
+  - 8
+  - 12
 runs:
 - study: transformer_pp
   run_id: r25a5f78841b2
@@ -98,3 +101,59 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
       sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2
+- study: transformer_pp
+  run_id: r7e34dec9dbd5
+  role: direct_m12_l2
+  label: direct query m=12, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml
+      sha256: 7ed059fbcbbb6e87795eb37594591b8d1a8985ea9040ccfe85a64e363981041a
+- study: transformer_pp
+  run_id: r0fceea0627c8
+  role: direct_m12_control
+  label: direct query m=12, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+      sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metrics.jsonl
+      sha256: 000479e88edd12adbf5180b319433a379c3b5648933414a282aa7b501932e43f
+    completion.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/completion.json
+      sha256: 9b54532be8044ed3fd4e34fe221ce19d2f953edc6b69d3175fbab6aa82e16bcd
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metadata.json
+      sha256: 1e93f2b73f698eb0c7819a627f73355d4474afa20267d213442e3ff9d7790af8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/best_validation.json
+      sha256: 953518103a4f9996ba6baf19ab47ef22d3296c29b9a286d8aed04af444e783ce
+- study: transformer_pp
+  run_id: r6b17c3463a60
+  role: sum_of_squares_m12_l2
+  label: sum_of_squares query m=12, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/config.yaml
+      sha256: b75719f3622ac70fded0b5dcac1a283009a217b42a1a712432cf7820b7dea25c
+- study: transformer_pp
+  run_id: r3d52b7ab43d1
+  role: sum_of_squares_m12_control
+  label: sum_of_squares query m=12, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/config.yaml
+      sha256: 9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metrics.jsonl
+      sha256: 894f20027b79ef78b636a615fbdf19db223e12bb91c027a9c055fe0e7587088a
+    completion.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/completion.json
+      sha256: 68f9ccb5f5fde1a03a2bc47172122866eacdce1aa0f17a253db685f10ca4ee51
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metadata.json
+      sha256: 427c3d0111ef74fb313369aae5dd6bca63cb96ec131c6c104f45a1b5cdf60bac
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/best_validation.json
+      sha256: 3b7db607a97f8d8ff8f3447e2a6aed04f54477288fac17b15da4d1ded34bb839
