@@ -1,0 +1,22 @@
+{
+  "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "comparison": {
+    "changed_model_fields": {
+      "attention_coefficient_input_normalization": "l2"
+    },
+    "coefficient_parameterization": "direct",
+    "control_config_sha256": "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0",
+    "control_run_id": "r0fceea0627c8"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml",
+    "sha256": "7ed059fbcbbb6e87795eb37594591b8d1a8985ea9040ccfe85a64e363981041a"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-coefficient-input-l2",
+  "name": "query-m12-coefficient-input-l2",
+  "purpose": "Test unit-L2 normalization after pre-attention RMSNorm only at the degree-12 tanh coefficient-generator input; keep W trainable and matched recipe fixed.",
+  "record_schema_version": 1,
+  "run_id": "r7e34dec9dbd5",
+  "status": "planned"
+}
