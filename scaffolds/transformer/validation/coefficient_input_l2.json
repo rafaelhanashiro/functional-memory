@@ -40,6 +40,24 @@
   "frozen_execution_sha256": "779b440f1093ed19fd6df178675449d521dc76547af8152c12b8e8535b6e9fa6",
   "full_initial_parameter_count": 200150806,
   "full_initial_parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
+  "full_shape_checks": [
+    {
+      "pilot_steps": 20,
+      "record_path": "experiments/transformer_pp/runs/r25a5f78841b2/record.json",
+      "resume_final_step": 21,
+      "resume_restored_step": 20,
+      "run_id": "r25a5f78841b2",
+      "status": "passed"
+    },
+    {
+      "pilot_steps": 20,
+      "record_path": "experiments/transformer_pp/runs/r717267afcb78/record.json",
+      "resume_final_step": 21,
+      "resume_restored_step": 20,
+      "run_id": "r717267afcb78",
+      "status": "passed"
+    }
+  ],
   "gpu_checks": {
     "allocation": {
       "elapsed_seconds": 106,
@@ -66,12 +84,12 @@
     },
     "evidence": [
       {
-        "path": "scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.log",
         "sha256": "586bd8ec29fb08cca0f5fe37f86c739256b06a64ab7f3395041c9b9e33bc17f4",
         "size_bytes": 192
       },
       {
-        "path": "scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.xml",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.xml",
         "sha256": "64ad9cdd772540b68d86e97c80f9ed01b72c57917d3a3728af1ac0f54309f3b5",
         "size_bytes": 903
       }
@@ -98,9 +116,9 @@
       "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16x3]"
     ]
   },
-  "production_gate": "Per-run acceptance still requires the full-shape20-update pilot and fresh-process resume; focused CPU/GPU parity passage alone does not establish complete training qualification.",
+  "production_gate": "Both selected degree-eight runs passed shared acceptance, full-shape20-update pilots, and fresh-process optimizer/data resume before completing production training.",
   "schema_version": 1,
   "scope": "direct and sum-of-squares diagonal tanh query polynomials; native attention kernels unchanged",
   "source_commit": "9e9580d23d3905fd1a16bdba2f6faa78d1e27ad9",
-  "status": "cpu_and_gpu_checks_passed_pilot_pending"
+  "status": "cpu_gpu_pilot_and_resume_passed"
 }
