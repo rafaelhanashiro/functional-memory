@@ -2015,14 +2015,14 @@ The run recipe pins the two parents, checkpoints, data, and reference measuremen
 
 ## Coefficient-input L2 experiment
 
-Four Kennel runs test unit-L2 normalization only between the gain-applied
+Four completed Kennel runs test unit-L2 normalization only between the gain-applied
 pre-attention RMSNorm activation and the coefficient projection. The completed
-m=8 runs and the m=12 extension use the 15-layer width-896 shape with RoPE,
+m=8 and m=12 runs use the 15-layer width-896 shape with RoPE,
 canonical QK RMSNorm/head scales, native Mosaic, per-head output RMSNorm,
 seed 42, W decay 0.1, and each control's complete initialization/optimizer/data
 recipe. W remains trainable without normalization; a and b retain no decay.
 The [exploration](results/exploratory/coefficient_input_norm/README.md) owns the
-explicit run/control selection, completed m=8 findings, and open decision.
+explicit run/control selection, completed m=8/m=12 findings, and open decision.
 
 The m=12 query run `r7e34dec9dbd5` is paired with `r0fceea0627c8`; the m=12 SoS
 run `r6b17c3463a60` is paired with `r3d52b7ab43d1`. Each has 200,905,126 parameters,
@@ -2035,8 +2035,10 @@ normalization and branch-isolation checks, composed Mosaic forward/gradient pari
 the full-shape 20-update pilot, and fresh-process optimizer/data resume. Only then
 does the standard launcher start production.
 
-From the isolated `codex/coefficient-l2-m12` worktree, after syncing both locked
-CUDA environments and committing execution inputs:
+The completed m=12 executions used source commit
+`e29b20a8c1da59b2969a4854892c531d3b494229` in their isolated worktree. The exact
+launch commands are below. For a fresh replication, allocate new run IDs and
+freeze their recipes in a new worktree; do not retrain a completed run ID.
 
 ```bash
 for run in r7e34dec9dbd5 r6b17c3463a60; do
