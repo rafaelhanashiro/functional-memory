@@ -37,6 +37,25 @@ Both selected degree-eight recipes subsequently completed all 7,570 updates on
 one B300 each. Their run records retain the acceptance summaries and audits;
 this qualification covers these recipes and runtime, not other degrees.
 
+### Degree-twelve unit-L2 coefficient inputs (2026-11-14)
+
+The degree-twelve extension passed 30 coefficient-input CPU checks and 80 pinned
+recipe checks. Both complete initial parameter fingerprints match their respective
+controls: 200,905,126 parameters, including unchanged softmax-backbone arrays.
+Focused job `1493` on one B300 in `akita`, using the locked CUDA 13 environment,
+passed all eight native Mosaic composition checks in 92.82 seconds. These cover
+degrees eight and twelve, direct and SoS generators, and BF16/BF16X3, comparing
+outputs and all q/k/v/x/W/b/a gradients with independent FP64 references under the
+existing bounds. [coefficient_input_l2_m12.json](coefficient_input_l2_m12.json)
+records the source and evidence. Jobs `1512` and `1513` passed their full
+acceptance suites: 587 CPU checks for direct query and 564 for SoS, plus 10
+distributed CPU checks and 72 GPU checks each. Both passed exact control
+initialization matching, the full-shape 20-update pilot, and fresh-process
+optimizer/data resume from update 20 to 21. The state, next-batch identity, RNG,
+and data-position audits matched. Both selected degree-twelve recipes completed
+all 7,570 production updates on one B300 each; their run records retain the
+acceptance summaries and audits.
+
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 
 Job `244590` on one B200 in `shiba` ran six existing query-kernel checks under the locked CUDA 13

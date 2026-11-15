@@ -2015,28 +2015,33 @@ The run recipe pins the two parents, checkpoints, data, and reference measuremen
 
 ## Coefficient-input L2 experiment
 
-Two fresh Kennel runs test unit-L2 normalization only between the gain-applied
-pre-attention RMSNorm activation and the coefficient projection. Direct query
-`r25a5f78841b2` is paired with `r25fffc16c2f3`; SoS query `r717267afcb78` is paired
-with `reeefbcc19abf`. Both are degree eight at the 15-layer width-896 shape with
-RoPE, canonical QK RMSNorm/head scales, native Mosaic, per-head output RMSNorm,
-seed 42, W decay 0.1, and the controls' complete initialization/optimizer/data
+Four completed Kennel runs test unit-L2 normalization only between the gain-applied
+pre-attention RMSNorm activation and the coefficient projection. The completed
+m=8 and m=12 runs use the 15-layer width-896 shape with RoPE,
+canonical QK RMSNorm/head scales, native Mosaic, per-head output RMSNorm,
+seed 42, W decay 0.1, and each control's complete initialization/optimizer/data
 recipe. W remains trainable without normalization; a and b retain no decay.
 The [exploration](results/exploratory/coefficient_input_norm/README.md) owns the
-selection, observations and open decision.
+explicit run/control selection, completed m=8/m=12 findings, and open decision.
 
-`coefficient_l2_acceptance` pins each partner recipe and rejects any scientific
-change beyond `attention_coefficient_input_normalization: l2`. It checks the
-complete initial parameter count/hash, softmax-backbone initialization, CPU
-normalization and branch-isolation checks, composed Mosaic forward/gradient
-parity, the full-shape 20-update pilot, and fresh-process optimizer/data resume.
-Only then does the standard launcher start production.
+The m=12 query run `r7e34dec9dbd5` is paired with `r0fceea0627c8`; the m=12 SoS
+run `r6b17c3463a60` is paired with `r3d52b7ab43d1`. Each has 200,905,126 parameters,
+7,570 updates, global batch 256, and 2,048 prediction tokens per sequence.
 
-From the isolated `codex/coefficient-l2` worktree, after syncing both locked
-CUDA environments and committing execution inputs:
+`coefficient_l2_acceptance` pins each degree/form's partner recipe and rejects any
+scientific change beyond `attention_coefficient_input_normalization: l2`. It checks
+the complete initial parameter count/hash, softmax-backbone initialization, CPU
+normalization and branch-isolation checks, composed Mosaic forward/gradient parity,
+the full-shape 20-update pilot, and fresh-process optimizer/data resume. Only then
+does the standard launcher start production.
+
+The completed m=12 executions used source commit
+`e29b20a8c1da59b2969a4854892c531d3b494229` in their isolated worktree. The exact
+launch commands are below. For a fresh replication, allocate new run IDs and
+freeze their recipes in a new worktree; do not retrain a completed run ID.
 
 ```bash
-for run in r25a5f78841b2 r717267afcb78; do
+for run in r7e34dec9dbd5 r6b17c3463a60; do
   sbatch --parsable --partition=standard --nodelist=akita --gres=gpu:b300:1 \
     --cpus-per-task=16 --mem=128G --time=24:00:00 --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
@@ -2048,5 +2053,5 @@ done
 ```
 
 Each run has one GPU and no dependency on the other. Allocation/runtime choices
-are recorded separately from the frozen recipes. The jobs retain this worktree
-until neither can run or requeue.
+are recorded separately from the frozen recipes. Keep the worktree while either
+job can run or requeue.

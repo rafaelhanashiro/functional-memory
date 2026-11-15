@@ -17,16 +17,19 @@ from scaffolds.transformer.configs.loader import config_dicts_equal
 from scaffolds.transformer.models import build_model
 
 EPS = 1e-6
-DEGREE = 8
-FACTORIALS = np.asarray([math.factorial(r) for r in range(DEGREE + 1)], np.float64)
+DEGREES = (8, 12)
 
 
-def _config(parameterization="direct", normalization="l2", **changes):
+def _factorials(degree):
+    return np.asarray([math.factorial(r) for r in range(degree + 1)], np.float64)
+
+
+def _config(parameterization="direct", normalization="l2", *, degree=8, **changes):
     scale = "none" if parameterization == "sum_of_squares" else "factorial"
     settings = dict(vocab_size=32, max_seq_len=8, num_layers=1, hidden_size=16,
                     num_heads=2, num_kv_heads=2, qk_head_dim=8, value_head_dim=8,
                     intermediate_size=32, positional_encoding="rope", attention_backend="blocked",
-                    attention_degree=DEGREE, attention_normalization=False, attention_coefficients="learned",
+                    attention_degree=degree, attention_normalization=False, attention_coefficients="learned",
                     attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
                     attention_coefficient_activation="tanh", attention_coefficient_amplitude_initial=0.,
                     attention_coefficient_projection_initial_std=.25, attention_coefficient_amplitude_scale=scale,
@@ -81,34 +84,40 @@ def test_none_is_exact_legacy_identity_and_l2_uses_float32(dtype):
 
 def _oracle(x, w, b, a, *, parameterization):
     # Independent FP64 unit-vector projection and tanh; no production normalization/projector.
+    degree = w.shape[-1] - 1
     x = x / jnp.maximum(jnp.linalg.norm(x, axis=-1, keepdims=True), EPS)
     g = b + a * jnp.tanh(jnp.einsum("btd,hdr->bthr", x, w))
     if parameterization == "direct":
-        return g / jnp.asarray(FACTORIALS)
-    factors = jnp.asarray(taylor_square_factors(DEGREE)) * (1. + g) / 2.
+        return g / jnp.asarray(_factorials(degree))
+    factors = jnp.asarray(taylor_square_factors(degree)) * (1. + g) / 2.
+    split = degree // 2 + 1
     def convolve(f):
-        u, v = f[:5], f[5:]
+        u, v = f[:split], f[split:]
         return jnp.convolve(u, u) + jnp.pad(jnp.convolve(v, v), (0, 2))
-    return jax.vmap(convolve)(factors.reshape(-1, DEGREE + 1)).reshape(g.shape)
+    return jax.vmap(convolve)(factors.reshape(-1, degree + 1)).reshape(g.shape)
 
 
 def _production(x, w, b, a, *, parameterization):
+    degree = w.shape[-1] - 1
     x = input_dependent.normalize_coefficient_input(x, "l2")
     if parameterization == "direct":
         return input_dependent.project_coefficients(
-            x, w, b / jnp.asarray(FACTORIALS, jnp.float32), amplitude=a,
+            x, w, b / jnp.asarray(_factorials(degree), jnp.float32), amplitude=a,
             activation="tanh", amplitude_scale="factorial")
     g = input_dependent.project_coefficients(x, w, b, amplitude=a, activation="tanh")
-    return query_square_coefficients(g, DEGREE)
+    return query_square_coefficients(g, degree)
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
-def test_generator_and_all_operand_gradients_match_independent_float64(parameterization):
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
+def test_generator_and_all_operand_gradients_match_independent_float64(parameterization, degree):
     rng = np.random.default_rng(31)
-    arrays = (rng.normal(size=(2, 3, 16)) * 4., rng.normal(size=(2, 16, 9)) * .5,
-              rng.uniform(.6, 1.2, size=(2, 9)), rng.uniform(-.8, .9, size=(2, 9)))
+    coordinates = degree + 1
+    factorials = _factorials(degree)
+    arrays = (rng.normal(size=(2, 3, 16)) * 4., rng.normal(size=(2, 16, coordinates)) * .5,
+              rng.uniform(.6, 1.2, size=(2, coordinates)), rng.uniform(-.8, .9, size=(2, coordinates)))
     # Equalize the effective coefficient orders in the objective; high-order errors must not hide.
-    cotangent = rng.normal(size=(2, 3, 2, 9)) * FACTORIALS
+    cotangent = rng.normal(size=(2, 3, 2, coordinates)) * factorials
     with jax.enable_x64():
         wide = tuple(jnp.asarray(x, jnp.float64) for x in arrays)
         reference = lambda *args: _oracle(*args, parameterization=parameterization)
@@ -118,7 +127,7 @@ def test_generator_and_all_operand_gradients_match_independent_float64(parameter
     operation = jax.jit(lambda *args: _production(*args, parameterization=parameterization))
     actual, backward = jax.vjp(operation, *(jnp.asarray(x, jnp.float32) for x in arrays))
     gradients = backward(jnp.asarray(cotangent, jnp.float32))
-    np.testing.assert_allclose(np.asarray(actual) * FACTORIALS, expected * FACTORIALS,
+    np.testing.assert_allclose(np.asarray(actual) * factorials, expected * factorials,
                                rtol=5e-6, atol=2e-6)
     for name, actual, wanted in zip(("x", "W", "b", "a"), gradients, expected_gradients, strict=True):
         assert np.linalg.norm(wanted) > 0, name
@@ -126,9 +135,10 @@ def test_generator_and_all_operand_gradients_match_independent_float64(parameter
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
-def test_model_changes_only_coefficient_branch_preserving_gain_direction_and_qkv(monkeypatch, parameterization):
-    base = _config(parameterization, "none")
-    changed = _config(parameterization, "l2")
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
+def test_model_changes_only_coefficient_branch_preserving_gain_direction_and_qkv(monkeypatch, parameterization, degree):
+    base = _config(parameterization, "none", degree=degree)
+    changed = _config(parameterization, "l2", degree=degree)
     assert attention_parameter_specs(base.model) == attention_parameter_specs(changed.model)
     models = [build_model(config.model, 19) for config in (base, changed)]
     first = dict(nnx.to_flat_state(nnx.state(models[0], nnx.Param)))
@@ -140,8 +150,8 @@ def test_model_changes_only_coefficient_branch_preserving_gain_direction_and_qkv
     # The standard a=0 start must remain identical, not merely statistically equivalent.
     np.testing.assert_array_equal(models[0](tokens), models[1](tokens))
     for model in models:
-        model.query_polynomial_amplitude[...] = jnp.linspace(-.7, .9, 18).reshape(1, 2, 9)
-        model.query_polynomial_bias[...] = jnp.linspace(.6, 1.3, 18).reshape(1, 2, 9)
+        model.query_polynomial_amplitude[...] = jnp.linspace(-.7, .9, 2 * (degree + 1)).reshape(1, 2, degree + 1)
+        model.query_polynomial_bias[...] = jnp.linspace(.6, 1.3, 2 * (degree + 1)).reshape(1, 2, degree + 1)
         model.layers_0.attention_norm.scale[...] = jnp.linspace(.4, 1.8, 16)
     projection_inputs, operands, generated = [], [], []
     original_projection = input_dependent.project_coefficients
@@ -171,18 +181,19 @@ def test_model_changes_only_coefficient_branch_preserving_gain_direction_and_qkv
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
-def test_config_roundtrip_and_legacy_resume_semantics(tmp_path, parameterization):
-    current = config_to_dict(_config(parameterization, "none"))
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
+def test_config_roundtrip_and_legacy_resume_semantics(tmp_path, parameterization, degree):
+    current = config_to_dict(_config(parameterization, "none", degree=degree))
     legacy = {**current, "model": dict(current["model"])}
     del legacy["model"]["attention_coefficient_input_normalization"]
     assert config_dicts_equal(current, legacy)
-    normalized = config_to_dict(_config(parameterization, "l2"))
+    normalized = config_to_dict(_config(parameterization, "l2", degree=degree))
     assert not config_dicts_equal(normalized, legacy)
     for label, recipe, expected in (("legacy", legacy, "none"), ("l2", normalized, "l2")):
         path = tmp_path / (label + ".yaml")
         path.write_text(yaml.safe_dump(recipe))
         assert load_config(path).model.attention_coefficient_input_normalization == expected
-    mosaic = replace(_config(parameterization).model, attention_backend="mosaic", max_seq_len=2048,
+    mosaic = replace(_config(parameterization, degree=degree).model, attention_backend="mosaic", max_seq_len=2048,
                      qk_head_dim=64, value_head_dim=64)
     assert mosaic.mosaic_supported()
 
@@ -202,11 +213,12 @@ def test_unsupported_combinations_are_rejected(changes):
         _config(**changes)
 
 
-def test_diagnostics_measure_actual_normalized_inputs_and_projection_distribution():
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
+def test_diagnostics_measure_actual_normalized_inputs_and_projection_distribution(degree):
     rng = np.random.default_rng(41)
     raw = jnp.asarray(rng.normal(size=(2, 5, 16)) * 7, jnp.float32)
     normalized = input_dependent.normalize_coefficient_input(raw, "l2")
-    kernel = jnp.asarray(rng.normal(size=(2, 16, 9)) * 3, jnp.float32)
+    kernel = jnp.asarray(rng.normal(size=(2, 16, degree + 1)) * 3, jnp.float32)
     report = input_dependent.coefficient_input_statistics(raw, normalized, kernel)
     reference_z = np.einsum("btd,hdr->bthr", _unit_numpy(raw), np.asarray(kernel, np.float64))
     features = np.tanh(reference_z)
@@ -224,12 +236,13 @@ def test_diagnostics_measure_actual_normalized_inputs_and_projection_distributio
 
 
 @pytest.mark.parametrize("parameterization", ("direct", "sum_of_squares"))
-def test_training_diagnostics_collect_generator_coordinates_and_baseline_omits_them(parameterization):
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
+def test_training_diagnostics_collect_generator_coordinates_and_baseline_omits_them(parameterization, degree):
     from scaffolds.transformer.training.diagnostics import attention_diagnostics, fixed_diagnostic_sample
     from scaffolds.transformer.training.state import create_state
 
     for normalization in ("none", "l2"):
-        config = _config(parameterization, normalization)
+        config = _config(parameterization, normalization, degree=degree)
         config.data.batch_size = config.train.micro_batch_size = 1
         state = create_state(config, jax.random.PRNGKey(23))
         sample, provenance = fixed_diagnostic_sample(config)
@@ -241,8 +254,8 @@ def test_training_diagnostics_collect_generator_coordinates_and_baseline_omits_t
         assert generator["finite"] and generator["normalization"] == "l2"
         assert generator["epsilon"] == EPS
         assert generator["projection_axes"] == ["layer", "head", "generator_coordinate"]
-        expected_labels = ([f"r{i}" for i in range(9)] if parameterization == "direct" else
-                           [f"U{i}" for i in range(5)] + [f"V{i}" for i in range(4)])
+        expected_labels = ([f"r{i}" for i in range(degree + 1)] if parameterization == "direct" else
+                           [f"U{i}" for i in range(degree // 2 + 1)] + [f"V{i}" for i in range(degree // 2)])
         assert generator["coordinate_labels"] == expected_labels
         model = nnx.merge(state.graphdef, state.params)
         _, layers = model(jnp.asarray(sample[:, :-1]), return_diagnostics=True)
@@ -289,7 +302,7 @@ def _assert_generator_gradients(actual, expected, *, rtol):
 def test_generator_gradient_comparison_handles_all_shapes_and_detects_missing_gradients():
     rng = np.random.default_rng(95)
     expected = tuple(rng.uniform(.5, 1.5, size=shape) for shape in
-                     ((1, 5, 7), (2, 7, DEGREE + 1), (2, DEGREE + 1), (2, DEGREE + 1)))
+                     ((1, 5, 7), (2, 7, 13), (2, 13), (2, 13)))
     _assert_generator_gradients(expected, expected, rtol=.025)
     _assert_generator_gradients(tuple(value * 1.001 for value in expected), expected, rtol=.025)
     # An entire missing head at one coefficient coordinate must fail independently
@@ -313,12 +326,13 @@ def test_generator_gradient_comparison_handles_all_shapes_and_detects_missing_gr
 
 
 @pytest.mark.gpu
+@pytest.mark.parametrize("degree", DEGREES, ids=lambda degree: f"m{degree}")
 @pytest.mark.parametrize("parameterization,precision", (
     ("direct", "bf16"), ("sum_of_squares", "bf16"),
     ("direct", "bf16x3"), ("sum_of_squares", "bf16x3"),
 ), ids=("direct-bf16", "sum_of_squares-bf16", "direct-bf16x3", "sum_of_squares-bf16x3"))
-def test_mosaic_composition_matches_fp64_with_all_gradients(parameterization, precision):
-    """Native Mosaic VJPs through unit normalization and both m8 generator parameterizations."""
+def test_mosaic_composition_matches_fp64_with_all_gradients(parameterization, precision, degree):
+    """Native Mosaic VJPs through unit normalization and both generator parameterizations."""
     if jax.default_backend() != "gpu" or jax.devices()[0].compute_capability not in ("9.0", "10.0", "10.3"):
         pytest.skip("Requires H100/B200/B300")
     from scaffolds.transformer.attention.backends.mosaic.api import query_polynomial_attention
@@ -329,9 +343,9 @@ def test_mosaic_composition_matches_fp64_with_all_gradients(parameterization, pr
     q, k = (jnp.asarray(.7 * rng.normal(size=(1, 512, 2, 64)), jnp.bfloat16) for _ in range(2))
     v = jnp.asarray(rng.normal(size=(1, 512, 2, 64)), jnp.bfloat16)
     generator = (rng.normal(size=(1, 512, 16)).astype(np.float32) * 4.,
-                 rng.normal(size=(2, 16, 9)).astype(np.float32) * .5,
-                 rng.uniform(.7, 1.2, size=(2, 9)).astype(np.float32),
-                 rng.uniform(-.6, .8, size=(2, 9)).astype(np.float32))
+                 rng.normal(size=(2, 16, degree + 1)).astype(np.float32) * .5,
+                 rng.uniform(.7, 1.2, size=(2, degree + 1)).astype(np.float32),
+                 rng.uniform(-.6, .8, size=(2, degree + 1)).astype(np.float32))
     cotangent = jnp.asarray(rng.normal(size=v.shape), jnp.bfloat16)
     operands = (q, k, v, *(jnp.asarray(value) for value in generator))
     def composed(q, k, v, x, w, b, a):

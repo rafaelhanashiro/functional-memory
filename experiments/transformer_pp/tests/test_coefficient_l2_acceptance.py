@@ -12,42 +12,42 @@ from scaffolds.transformer import acceptance
 from scaffolds.transformer.configs import config_to_dict
 
 
-FORMS = tuple(adapter.CONTROLS)
+CASES = tuple((degree, form) for degree, forms in adapter.CONTROLS.items() for form in forms)
 
 
-def variant(form):
-    config = adapter.control_config(form)
+def variant(form, degree):
+    config = adapter.control_config(form, degree)
     config.model.attention_coefficient_input_normalization = "l2"
     return config
 
 
-@pytest.mark.parametrize("form", FORMS)
-def test_pinned_controls_and_single_scientific_change(form):
-    run_id, digest = adapter.CONTROLS[form]
+@pytest.mark.parametrize("degree,form", CASES)
+def test_pinned_controls_and_single_scientific_change(degree, form):
+    run_id, digest = adapter.CONTROLS[degree][form]
     path = adapter.RUNS / run_id
     assert hashlib.sha256((path / "config.yaml").read_bytes()).hexdigest() == digest
     assert json.loads((path / "record.json").read_text())["config"]["sha256"] == digest
-    assert json.loads((path / "completion.json").read_text())["parameter_count"] == adapter.PARAMETER_COUNT
-    before, config = adapter.control_config(form), variant(form)
+    assert json.loads((path / "completion.json").read_text())["parameter_count"] == adapter.INITIAL_PARAMETERS[degree]["parameter_count"]
+    before, config = adapter.control_config(form, degree), variant(form, degree)
     adapter.check_recipe(config)
     first, second = config_to_dict(before), config_to_dict(config)
     differences = {f"{section}.{key}" for section in first for key in first[section]
                    if first[section][key] != second[section][key]}
     assert differences == {"model.attention_coefficient_input_normalization"}
     model = config.model
-    assert (model.attention_degree, model.positional_encoding, model.attention_backend) == (8, "rope", "mosaic")
+    assert (model.attention_degree, model.positional_encoding, model.attention_backend) == (degree, "rope", "mosaic")
     assert model.attention_coefficient_kernel_weight_decay and config.optim.weight_decay == .1
     assert (model.num_layers, model.hidden_size, model.num_heads) == (15, 896, 14)
     assert (config.train.seed, config.optim.total_steps, config.data.batch_size) == (42, 7570, 256)
 
 
-@pytest.mark.parametrize("form", FORMS)
+@pytest.mark.parametrize("degree,form", CASES)
 @pytest.mark.parametrize(("section", "field", "value"), (
     ("model", "attention_coefficient_input_normalization", "none"),
     ("model", "attention_coefficient_kernel_weight_decay", False),
     ("model", "attention_coefficient_amplitude_initial", 1.0),
     ("model", "attention_coefficient_projection_initial_std", .1),
-    ("model", "attention_degree", 12),
+    ("model", "attention_degree", 10),
     ("model", "positional_encoding", "none"),
     ("model", "attention_backend", "blocked"),
     ("model", "qk_norm_head_scale", False),
@@ -58,16 +58,16 @@ def test_pinned_controls_and_single_scientific_change(form):
     ("train", "eval_every", 1000),
     ("data", "batch_size", 128),
 ))
-def test_other_changes_are_rejected(form, section, field, value):
-    config = variant(form)
+def test_other_changes_are_rejected(degree, form, section, field, value):
+    config = variant(form, degree)
     setattr(getattr(config, section), field, value)
     with pytest.raises(ValueError):
         adapter.check_recipe(config)
 
 
-@pytest.mark.parametrize("form", FORMS)
-def test_execution_paths_and_monitoring_labels_may_change(form):
-    config = variant(form)
+@pytest.mark.parametrize("degree,form", CASES)
+def test_execution_paths_and_monitoring_labels_may_change(degree, form):
+    config = variant(form, degree)
     config.train.workdir = Path("/new/workdir")
     config.train.checkpoint_dir = Path("/new/checkpoints")
     config.train.source_commit = "another-source"
@@ -78,21 +78,22 @@ def test_execution_paths_and_monitoring_labels_may_change(form):
     adapter.check_recipe(config)
 
 
-def test_changed_control_source_is_rejected(tmp_path, monkeypatch):
-    run_id, _ = adapter.CONTROLS["direct"]
+@pytest.mark.parametrize("degree,form", CASES)
+def test_changed_control_source_is_rejected(degree, form, tmp_path, monkeypatch):
+    run_id, _ = adapter.CONTROLS[degree][form]
     target = tmp_path / run_id
     target.mkdir()
     (target / "config.yaml").write_text("changed: true\n")
     monkeypatch.setattr(adapter, "RUNS", tmp_path)
     with pytest.raises(ValueError, match="Pinned.*changed"):
-        adapter.control_config("direct")
+        adapter.control_config(form, degree)
     with pytest.raises(ValueError, match="No coefficient-input L2 control"):
         adapter.control_config("other")
 
 
-@pytest.mark.parametrize("form", FORMS)
-def test_acceptance_requires_new_feature_checks_and_native_mosaic(form):
-    config = variant(form)
+@pytest.mark.parametrize("degree,form", CASES)
+def test_acceptance_requires_new_feature_checks_and_native_mosaic(degree, form):
+    config = variant(form, degree)
     spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
     cpu = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=True)
     gpu = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=False)
@@ -104,23 +105,23 @@ def test_acceptance_requires_new_feature_checks_and_native_mosaic(form):
     assert spec.check_initialization is adapter.check_initialization
 
 
-@pytest.mark.parametrize("form", FORMS)
-def test_initialization_check_requires_exact_pinned_fingerprint(form, monkeypatch):
-    config = variant(form)
-    facts = {"parameter_count": adapter.PARAMETER_COUNT, "parameter_sha256": adapter.PARAMETER_SHA}
+@pytest.mark.parametrize("degree,form", CASES)
+def test_initialization_check_requires_exact_pinned_fingerprint(degree, form, monkeypatch):
+    config = variant(form, degree)
+    facts = adapter.INITIAL_PARAMETERS[degree].copy()
     monkeypatch.setattr(adapter, "initialization_facts", lambda config: facts.copy())
     monkeypatch.setattr(adapter, "matches_softmax_backbone_initialization", lambda config: {"backbone_passed": True})
     result = adapter.check_initialization(config)
     assert result["all_initial_parameters_match_control"] and result["backbone_passed"]
-    assert result["control_run_id"] == adapter.CONTROLS[form][0]
+    assert result["control_run_id"] == adapter.CONTROLS[degree][form][0]
     facts["parameter_sha256"] = "different"
     with pytest.raises(RuntimeError, match="Initial parameters differ"):
         adapter.check_initialization(config)
 
 
-@pytest.mark.parametrize("form", FORMS)
-def test_l2_feature_preserves_every_initial_parameter_on_small_model(form):
-    config = adapter.control_config(form)
+@pytest.mark.parametrize("degree,form", CASES)
+def test_l2_feature_preserves_every_initial_parameter_on_small_model(degree, form):
+    config = adapter.control_config(form, degree)
     config.model = replace(config.model, hidden_size=32, num_layers=2, num_heads=2, num_kv_heads=2,
                            qk_head_dim=16, value_head_dim=16, intermediate_size=64,
                            vocab_size=64, max_seq_len=16, attention_backend="blocked")
