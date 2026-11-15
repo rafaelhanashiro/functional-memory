@@ -1665,8 +1665,11 @@ Studies configure these shared modules with execution modules at their root
   GPU type, checks the frozen execution set against the launch commit
   (`scaffolds/launch/frozen.py`), uses the worktree's environment, pins `CUDA_HOME`
   to the locked CUDA toolkit, runs acceptance, then trains; `training.log` appends
-  across requeues. An optional sixth positional argument, `STOP_AFTER_STEP`, ends
-  a pilot at that global update while keeping the recipe's full LR horizon. It is
+  across requeues. Slurm's TERM (on preemption, after which Slurm requeues the job, at
+  the time limit, or on `scancel`) ends the job with code 143: the attempt records it,
+  and the finalizer leaves the run's status unchanged. An optional sixth positional
+  argument, `STOP_AFTER_STEP`, ends a pilot at that global update while keeping the
+  recipe's full LR horizon. It is
   recorded in the attempt, and final checkpoint retention is skipped for pilots;
   continuation without that argument performs final retention. The frozen set includes study `sweep.yaml`, every run's
   `config.yaml`, root execution modules, and shared record/launch helpers. Metrics,

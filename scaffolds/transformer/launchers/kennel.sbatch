@@ -102,6 +102,9 @@ finish_record() {
   exit "$result"
 }
 trap finish_record EXIT
+# Slurm sends TERM on preemption, after which it requeues the job, at the time limit and on scancel.
+# Ending with 128 + TERM gives the attempt that exit code; untrapped, finish_record would see the last command's 0.
+trap 'exit 143' TERM
 start_watchdog "$RUN_ROOT/training.log"
 export JAX_PLATFORMS=cuda
 export TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"

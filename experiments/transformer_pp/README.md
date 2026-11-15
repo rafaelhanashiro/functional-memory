@@ -1627,8 +1627,8 @@ orders a large negative one, even orders a large positive one) where `exp` gives
 key. Does evaluating the polynomial at a transformed score fix this and improve the RoPE query polynomial at
 the 12-layer width-640 shape, and with softplus at the reference shape ([below](#reference-shape-softplus-run))?
 Softplus cleared the topic's 0.5% bar at the 12-layer width-640 shape; abs did not. At the reference shape
-softplus at degree eight fell short of it (0.42% below its control, level with exp); a degree-twelve softplus
-run follows. Question, roles, decision rule, findings and diagnostics: the
+softplus fell short of it at degree eight (0.42% below its control, level with exp) and at degree twelve
+(0.02% below its control). Question, roles, decision rule, findings and diagnostics: the
 [score_transforms topic](results/exploratory/score_transforms/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
@@ -1644,9 +1644,10 @@ coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads
 | `r95a5691d293f` | query-m8-w-decay-l12-d640 (control) | `s` | 1 (Taylor) | 99,678,056 | 17.592 (7,551) | 17.592 | – | +0.24% |
 | `r3e2fa2532c23` | exp-l12-d640 (exp) | – | – | 98,984,696 | 17.550 (7,551) | 17.550 | −0.24% | – |
 | `ra3b54e2489f8` | query-m8-dk64-w-decay-softplus-input (reference shape) | `log(1 + exp(s))` | 0 | 200,150,806 | 14.262 (7,500) | 14.265 | −0.42% | +0.04% |
+| `r9eb845aae5bb` | query-m12-dk64-w-decay-softplus-input (reference shape, `m = 12`) | `log(1 + exp(s))` | 0 | 200,905,126 | 14.222 (7,500) | 14.226 | −0.02% | −0.24% |
 
-The reference-shape row compares validation-best perplexity with that shape's control `r25fffc16c2f3`
-(14.323) and exp `r6a76e7fbde45` (14.257).
+The reference-shape rows compare validation-best perplexity with that shape's controls `r25fffc16c2f3`
+(14.323) and, at degree twelve, `r0fceea0627c8` (14.226), and with exp `r6a76e7fbde45` (14.257).
 
 - Softplus goes to 0 as the score falls, so a very negative score gives the weight `c_0(x_t)`. Its run starts
   `c_0` at 0 (`model.attention_coefficient_constant_initial: 0`) and every other `c_r` at `1/r!`, so its
@@ -1780,22 +1781,56 @@ sbatch --parsable --partition=standard --time=11:00:00 --gres=gpu:1 --cpus-per-t
   --error="experiments/transformer_pp/runs/$run/training.log" \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+```
+
+### Reference shape: softplus at degree twelve
+
+Added 2026-11-12 at the user's request: `r9eb845aae5bb` (`query-m12-dk64-w-decay-softplus-input`), the softplus
+run at degree twelve, against the RoPE query control at that degree, `r0fceea0627c8` (validation-best 14.226;
+exp 14.257, fixed Taylor at degree twelve 14.309, sum of squares at degree twelve 14.165). It reached
+validation-best 14.222 at update 7,500 (terminal 14.226), 0.02% below its control, short of the 0.5% bar
+(14.155); results in the [score_transforms topic](results/exploratory/score_transforms/README.md#reference-shape).
+
+- Recipe: `ra3b54e2489f8`'s with `attention_degree: 12`, so the control's with the transform, the zero
+  constant start and gradient-event capture. 200,905,126 parameters; every initial array is the control's but
+  `b_0 = 0`.
+- Acceptance: [`score_transform_acceptance`](score_transform_acceptance.py) selects the control by depth,
+  width, degree and update count and pins `r0fceea0627c8` (recipe SHA256 `785e3530`, seed-42 fingerprint
+  `9ece0056`, 200,905,126 parameters); otherwise as for the degree-eight run. The transformed kernels' GPU
+  module covers degree twelve, and the kernels run on H100 alone.
+- Time limit: 13 hours, the degree-eight run's 8.3 hours on an H100 PCIe with room for the larger degree, plus
+  acceptance's two-hour reserve. It was submitted to take the degree-eight run's H100 when that job ends:
+
+```bash
+run=r9eb845aae5bb
+sbatch --parsable --partition=standard --time=13:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,shiba,dogo,collie,samoyed,doodle,terrier --dependency=afterany:<the degree-eight job> \
+  --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.score_transform_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+```
+
+Home cluster: **Kennel**. The run is complete, trained on one H100 PCIe; its record holds its launch commit,
+attempt, and the artifact-root locations of its validation-best checkpoint, kept gradient-event states and log.
 
 ## Coefficient forms and the degree-twelve Taylor control
 
-Five runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
+Eight runs on the two lines closest to beating their matched exp baselines: RoPE query coefficients
 and the per-order query–key gate. Each is its partner's recipe with the named change, one seed, at
-the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/poly-two-lines`.
+the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/poly-two-lines` unless a
+launch command below names another.
 
 | Run | Label | Partner | Change | GPU |
 | --- | --- | --- | --- | --- |
-| `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 |
-| `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 |
-| `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300 |
-| `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | B300 |
-| `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | B300 or H100 |
-| `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | B300 or H100 |
-| `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300 |
+| `ra0f402ff6758` | `static-m4-per-order-query-key-gate-nope` | `r03be769d2069` | learned static coefficients | H100 SXM, then H100 PCIe from update 800 |
+| `r2e25140c75db` | `static-m8-per-order-query-key-gate-nope` | `r227b0ed7c605` | learned static coefficients | H100 SXM, then H100 PCIe from update 5,000 |
+| `rb2b70dae4d21` | `fixed-m12-head-scale` | `ra7ee8a4b2544` | degree 12 | B300, then H100 PCIe from update 1,500 |
+| `reeefbcc19abf` | `query-m8-sum-of-squares-w-decay` | `r25fffc16c2f3` | sum-of-squares coefficients | H100 PCIe |
+| `r3d52b7ab43d1` | `query-m12-sum-of-squares-w-decay` | `r0fceea0627c8` | sum-of-squares coefficients | H100 PCIe |
+| `rdfc61c988309` | `query-m16-sum-of-squares-w-decay-blocked` | `r3d52b7ab43d1` | degree 16 on the blocked backend's strips (Mosaic stops at 12) | H100 PCIe |
+| `r016b914d927a` | `query-m4-sum-of-squares-w-decay` | `rca97cc9db8f2` | sum-of-squares coefficients | H100 SXM |
+| `r6adefb42f443` | `query-m8-hermite-start-w-decay` | `r25fffc16c2f3` | Hermite start | B300, then H100 PCIe from update 1,500 |
 
 - **Static under the query–key gate:** $c_r = b_r / r!$ per layer and head, with the partner's
   per-order gates $D_r$. Only the gate reads the tokens; the coefficients are broadcast to the
@@ -1811,8 +1846,9 @@ the reference shape and 1× budget. Home cluster: **Kennel**; branch `claude/pol
 `coefficient_forms_acceptance` pins each partner recipe and rejects unrelated changes; the fixed Taylor
 run uses the shared adapter. The sum-of-squares run launches from `claude/poly-two-lines-sos`, whose
 diagnostics treat the expanded sum-of-squares kernels as signed: values near a double root of
-$q_1^2 + q_2^2$ round to either sign. Each query-coefficient control ran on B300, so these request B300; the
-per-order query–key kernels above degree six fit only H100.
+$q_1^2 + q_2^2$ round to either sign. The degree-eight and degree-twelve query-coefficient controls ran on
+B300, so these request B300 (the degree-four control ran on H100 SXM); the per-order query–key kernels
+above degree six fit only H100.
 
 From the worktree root, after committing the frozen inputs:
 
@@ -1840,6 +1876,85 @@ submit reeefbcc19abf coefficient_forms_acceptance  # from claude/poly-two-lines-
 # Degree sixteen, from claude/poly-sos-m16, the same way with --time=48:00:00:
 # submit rdfc61c988309 coefficient_forms_acceptance
 submit r6adefb42f443 coefficient_forms_acceptance
+```
+
+The degree-four run is complete, trained on one H100 SXM; its record holds its launch commit, attempt, and the
+artifact-root locations of its validation-best checkpoint and log. Its results are in the
+[sum_of_squares topic](results/exploratory/sum_of_squares/README.md). Its launch command, from `claude/sos-m4`
+on `long` with a 16-hour limit (degree-four query runs on an H100 PCIe have taken 7.6–10.3 hours, up to 26%
+above their pilots' projections):
+
+```bash
+run=r016b914d927a
+sbatch --parsable --partition=long --time=16:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.coefficient_forms_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" 4b91a7a722f82218d462ff9e03f8223a22b32f1e 1 B300,H100
+```
+
+## The 12-layer width-640 shape at the reference token count
+
+Added 2026-11-12 at the user's request. Fifteen runs train the 12-layer width-640 shape on the reference
+shape's token count, twice the shape's 1x budget, at degrees eight and twelve. All fifteen are complete: FoX
+query at degree eight (validation-best 15.314) and FoX exp (15.320) lead, 2.90% and 2.87% below exp (15.772);
+the ten RoPE polynomials lie within −0.36% to +0.07% of exp and softmax is 2.66% above it; the thirteen with a
+reference-shape counterpart stay 10.1–12.4% above it at the same tokens. Question, comparisons, results and
+limits: the [matched_tokens topic](results/exploratory/matched_tokens/README.md).
+
+- Recipes: each 1x run at the shape derived with `derive_recipe.py --budget 2` and allocated with
+  `scaffolds.records create`: 15,103 updates, warmup 908, validation every 200 updates through 3,000 and every
+  1,000 after; batch, learning rate, seed and data order unchanged. Where the 1x run has another degree, only
+  `attention_degree` changes. The softplus and sum-of-squares runs are the 2x query runs with their
+  reference-shape counterparts' changes. The forget-gate runs use the causal strips, the blocked
+  implementation for new runs.
+- Sources: query `r95a5691d293f`, static `r94e0f2b8cff9`, fixed Taylor `r2c432bd3a2a4`, FoX query
+  `r3d14b598d88f`, exp `r3e2fa2532c23`, softmax `rf81c96f76a1d`, FoX exp `ra5dfd978d3bd`:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <1x run> --budget 2 --output /tmp/<label>.yaml
+```
+
+- Acceptance: the shared adapter for query, static, fixed Taylor, exp, softmax and the forget-gate runs.
+  [`score_transform_acceptance`](score_transform_acceptance.py) covers the softplus runs and pins the 2x query
+  runs `r3759b2a57a54` and `r0f6d929e5992` as their controls (recipe SHA256, seed-42 fingerprint, parameter
+  count). [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares runs,
+  with the same 2x query runs as partners.
+- Kernels and GPUs: Mosaic for the polynomials (the softplus runs' transformed kernels on H100 alone), fused
+  Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs. Each run requests one B300 or
+  H100 (the softplus runs H100 alone) and depends on no other run; all fifteen trained on H100s, listed with
+  their resumptions in the topic's Limits.
+- Time limits: 12 hours for the Mosaic, exp and softmax runs, 24 for FoX exp and 36 for FoX query. These are
+  the 1x runs' speeds doubled, with room for an H100 PCIe and degree twelve. Acceptance projects again on the
+  granted GPU and refuses an allocation whose projection exceeds the limit less two hours.
+
+Home cluster: **Kennel**. All fifteen runs are complete; each record holds its launch commit, attempts, and the
+artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus runs) and
+log. Branch `claude/l12-d640-reference-tokens`: `claude/score-transforms-mosaic` (the transformed kernels) with
+`main` and `claude/poly-two-lines-sos` (the sum-of-squares form) merged. The runs were submitted on `long` from
+the worktree root after the frozen execution set was committed:
+
+```bash
+submit() {  # partition, time, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$5" \
+    --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+ANY=collie,samoyed,doodle,terrier,shiba
+for run in rbf05f7baab5e r656e8e652b72; do submit long 36:00:00 acceptance B300,H100 $ANY $run; done
+submit long 24:00:00 acceptance B300,H100 $ANY re634d82ee479
+for run in r3759b2a57a54 r0f6d929e5992 rd920368a922e r3bb5b8bd5c6a rd77db79142e6 rffab7c4eeac5 \
+           r3cca4c13edab r84f325593209; do
+  submit long 12:00:00 acceptance B300,H100 $ANY $run
+done
+for run in rc6a7e50d27e1 r53d5bbcac16f; do submit long 12:00:00 score_transform_acceptance H100 akita,$ANY $run; done
+for run in rccd2cb5e8bab r08be7093202a; do
+  submit long 12:00:00 coefficient_forms_acceptance B300,H100 $ANY $run
+done
 ```
 
 ## Regular-query coefficient activation diagnostic

@@ -22,12 +22,17 @@ CHANGES = {
                            attention_coefficient_amplitude_scale="none"),
     "hermite": dict(attention_coefficient_initialization="hermite"),
 }
-# A sum-of-squares run at degree twelve copies the query run of that degree. Degree sixteen, beyond
-# the Mosaic kernels, copies the degree-twelve sum-of-squares run on the blocked backend's strips.
-DEGREE_PARTNERS = {("sum_of_squares", 16): ("r3d52b7ab43d1", "9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa"),
+# A sum-of-squares run at degree four or twelve copies the query run of that degree. Degree sixteen,
+# beyond the Mosaic kernels, copies the degree-twelve sum-of-squares run on the blocked backend's strips.
+DEGREE_PARTNERS = {("sum_of_squares", 4): ("rca97cc9db8f2", "75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58"),
+                   ("sum_of_squares", 16): ("r3d52b7ab43d1", "9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa"),
                    ("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
 DEGREE_CHANGES = {("sum_of_squares", 16): dict(attention_degree=16, attention_backend="blocked",
                                               attention_blocked_implementation="strips")}
+# At the 12-layer width-640 shape with twice its 1x budget (depth, width, updates), a sum-of-squares run copies the
+# query run of its degree at that shape and budget.
+SHAPE_PARTNERS = {("sum_of_squares", 8, 12, 640, 15103): ("r3759b2a57a54", "aa7585f1a530ab4508cdd033d2243af900ae0316950c4b0ab8b46f21371534fb"),
+                  ("sum_of_squares", 12, 12, 640, 15103): ("r0f6d929e5992", "c4f33f9ad753a7586bf1e1746590ee97d4c2fdf4fc5f5d96bf88e1ee2b89ef1c")}
 PATH_FIELDS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode")
 
 
@@ -42,8 +47,10 @@ def form(config):
     raise ValueError("This adapter covers static query-key gates, sum-of-squares, and Hermite starts only")
 
 
-def partner_config(name, degree=None):
-    run, sha = DEGREE_PARTNERS.get((name, degree), PARTNERS[name])
+def partner_config(name, degree=None, shape=None):
+    """The pinned partner of a form at a degree and, at another shape and budget, (depth, width, updates)."""
+    key = (name, degree, *shape) if shape else None
+    run, sha = SHAPE_PARTNERS[key] if key in SHAPE_PARTNERS else DEGREE_PARTNERS.get((name, degree), PARTNERS[name])
     path = RUNS / run / "config.yaml"
     if hashlib.sha256(path.read_bytes()).hexdigest() != sha:
         raise ValueError(f"The pinned partner recipe {run} changed")
@@ -53,7 +60,8 @@ def partner_config(name, degree=None):
 def check_recipe(config):
     validate_config(config)
     name = form(config)
-    expected = config_to_dict(replace(partner_config(name, config.model.attention_degree)))
+    shape = (config.model.num_layers, config.model.hidden_size, config.optim.total_steps)
+    expected = config_to_dict(replace(partner_config(name, config.model.attention_degree, shape)))
     expected["model"].update(CHANGES[name])
     expected["model"].update(DEGREE_CHANGES.get((name, config.model.attention_degree), {}))
     actual = config_to_dict(config)

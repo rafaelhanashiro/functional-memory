@@ -29,9 +29,13 @@ matched independent FP64 references under the unchanged error bounds.
 [coefficient_input_l2.json](coefficient_input_l2.json) records the source, frozen
 execution hash, allocation, runtime, bounds, and retained log/XML checksums.
 
-Each production run's full-shape 20-update pilot and fresh-process optimizer/data
-resume remain pending. Focused CPU/GPU parity alone does not establish complete
-training qualification; those checks still gate each run's production training.
+Jobs `762` and `763` each passed 537 CPU tests, 10 distributed CPU tests,
+70 GPU tests, exact initial-parameter matching, a full-shape 20-update pilot,
+and a fresh-process resume from update 20 to 21 before production. Checkpoint
+state, next-batch identity, RNG state, and data position matched across resume.
+Both selected degree-eight recipes subsequently completed all 7,570 updates on
+one B300 each. Their run records retain the acceptance summaries and audits;
+this qualification covers these recipes and runtime, not other degrees.
 
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 

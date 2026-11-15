@@ -15,8 +15,8 @@ settings:
   saturation_absolute_tanh_threshold: 0.99
   normalization_formula: x / max(norm(x,2),1e-6), after learned RMSNorm gain and only
     before coefficient projection
-  open_decision: Keep as exploration until terminal perplexity and saturation trajectories
-    establish whether to pursue coefficient-input normalization.
+  open_decision: Degree-eight outcomes are mixed; extend the matched coefficient-only
+    L2 experiment to degree twelve before deciding whether to pursue the normalization.
 runs:
 - study: transformer_pp
   run_id: r25a5f78841b2
@@ -26,6 +26,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r25a5f78841b2/config.yaml
       sha256: 39944e549f77619ad284c7141ed2582d82c00de8f1c3773fe75882b565c324c8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/metrics.jsonl
+      sha256: cf72697e010bd4090e07af107f1a537ba4daa991a91c3e6a02175167670e6651
+    completion.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/completion.json
+      sha256: 3df0eed50fa97788bb3f735fb73db925791e1be00ba8bb7221865f86ebb4d7eb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/metadata.json
+      sha256: b74ee66e4ea3cc5306f2d30c9e82df25664c4063bdda56a74ba19a043fbe28bf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/best_validation.json
+      sha256: 60e88a68aa4808ae33b7c68e202df9bc56f560cd26f45ca3335ea0a8e3f10d4f
 - study: transformer_pp
   run_id: r25fffc16c2f3
   role: direct_control
@@ -54,6 +66,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r717267afcb78/config.yaml
       sha256: d502cc54014d75e7f0a1f8a20c6c31a1acabaa421cdb5fabaad6d10a76a24183
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r717267afcb78/metrics.jsonl
+      sha256: e423c7d963ba1eb2c5fa5e355c03509837626f0e9c712b032c3869f31bcc39b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/completion.json
+      sha256: 36dbcd7094b321f130fb24199df98a01f6e2a7385ec8348c9a445243dd0fcc47
+    metadata.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/metadata.json
+      sha256: ebf5f43e592e0b85ccbb87f7e1c7f4d5e7b9ad30795f88cf0e98c87e1f4e7be6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/best_validation.json
+      sha256: edbcc7e7131b507b8f0420c0a59fae0f5b816c29c0f234981e741989144ec7c8
 - study: transformer_pp
   run_id: reeefbcc19abf
   role: sum_of_squares_control
