@@ -45,6 +45,24 @@
     ],
     "status": "Both actual degree-twelve L2 recipes passed exact initialized parameter count/hash checks against their matched controls."
   },
+  "full_shape_checks": [
+    {
+      "pilot_steps": 20,
+      "record_path": "experiments/transformer_pp/runs/r7e34dec9dbd5/record.json",
+      "resume_final_step": 21,
+      "resume_restored_step": 20,
+      "run_id": "r7e34dec9dbd5",
+      "status": "passed"
+    },
+    {
+      "pilot_steps": 20,
+      "record_path": "experiments/transformer_pp/runs/r6b17c3463a60/record.json",
+      "resume_final_step": 21,
+      "resume_restored_step": 20,
+      "run_id": "r6b17c3463a60",
+      "status": "passed"
+    }
+  ],
   "gpu_checks": {
     "allocation": {
       "cpus": 8,
@@ -77,12 +95,12 @@
     },
     "evidence": [
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.log",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/coefficient_input_l2_m12_gpu.log",
         "sha256": "ce82a9f0d63ef2074606aebd45b6c32bc09789fd55b61e522333dd23504b3ee1",
         "size_bytes": 192
       },
       {
-        "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-l2-m12/scaffolds/transformer/validation/logs/coefficient_input_l2_gpu.xml",
+        "path": "/data/cl/u/rafah/home/projects/functional-memory/scaffolds/transformer/validation/logs/coefficient_input_l2_m12_gpu.xml",
         "sha256": "6aeed445b7e347c2ec0f5d43419f7f498d1626c5b9a5f25f70a140e609d96a5f",
         "size_bytes": 1575
       }
@@ -120,9 +138,9 @@
       "test_mosaic_composition_matches_fp64_with_all_gradients[sum_of_squares-bf16x3-m12]"
     ]
   },
-  "production_gate": "Each run must still pass full acceptance, including the full-shape 20-update training pilot and fresh-process optimizer/data resume. These remain pending; focused parity checks alone do not qualify production training.",
+  "production_gate": "Both selected degree-twelve runs passed shared acceptance, full-shape20-update pilots, and fresh-process optimizer/data resume before completing production training.",
   "schema_version": 1,
   "scope": "Direct and sum-of-squares diagonal tanh query polynomials at degrees 8 and 12; native attention kernels unchanged.",
   "source_commit": "b511085023479f44f82b8b9bdce93d7f56a98eab",
-  "status": "cpu_and_gpu_checks_passed_pilot_pending"
+  "status": "cpu_gpu_pilot_and_resume_passed"
 }

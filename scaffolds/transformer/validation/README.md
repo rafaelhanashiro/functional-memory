@@ -47,8 +47,14 @@ passed all eight native Mosaic composition checks in 92.82 seconds. These cover
 degrees eight and twelve, direct and SoS generators, and BF16/BF16X3, comparing
 outputs and all q/k/v/x/W/b/a gradients with independent FP64 references under the
 existing bounds. [coefficient_input_l2_m12.json](coefficient_input_l2_m12.json)
-records the source and evidence. The full-shape pilot and fresh-process resume
-remain mandatory per-run gates before production training.
+records the source and evidence. Jobs `1512` and `1513` passed their full
+acceptance suites: 587 CPU checks for direct query and 564 for SoS, plus 10
+distributed CPU checks and 72 GPU checks each. Both passed exact control
+initialization matching, the full-shape 20-update pilot, and fresh-process
+optimizer/data resume from update 20 to 21. The state, next-batch identity, RNG,
+and data-position audits matched. Both selected degree-twelve recipes completed
+all 7,570 production updates on one B300 each; their run records retain the
+acceptance summaries and audits.
 
 ### Plain Mosaic query kernels for a checkpoint diagnostic on B200 (2026-11-13)
 
