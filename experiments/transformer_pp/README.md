@@ -2029,7 +2029,9 @@ run `r6b17c3463a60` is paired with `r3d52b7ab43d1`. Each has 200,905,126 paramet
 7,570 updates, global batch 256, and 2,048 prediction tokens per sequence.
 
 `coefficient_l2_acceptance` pins each degree/form's partner recipe and rejects any
-scientific change beyond `attention_coefficient_input_normalization: l2`. It checks
+scientific change beyond `attention_coefficient_input_normalization: l2` for the
+original L2 comparison. The raw-input comparison below instead pins the completed
+post-RMSNorm L2 control and permits only the input-source change. It checks
 the complete initial parameter count/hash, softmax-backbone initialization, CPU
 normalization and branch-isolation checks, composed Mosaic forward/gradient parity,
 the full-shape 20-update pilot, and fresh-process optimizer/data resume. Only then
@@ -2055,3 +2057,33 @@ done
 Each run has one GPU and no dependency on the other. Allocation/runtime choices
 are recorded separately from the frozen recipes. Keep the worktree while either
 job can run or requeue.
+
+### Raw-input L2 at degree twelve
+
+The fresh query run `r1f30febd7de5` and SoS query run `r2bf71d7b4831` use
+`attention_coefficient_input_source: pre_rmsnorm`, retaining input normalization
+`l2`. They are paired with completed post-RMSNorm L2 controls `r7e34dec9dbd5`
+and `r6b17c3463a60`, respectively. The coefficient generator reads the raw residual
+before attention RMSNorm, normalized to unit L2; Q/K/V retain the learned RMSNorm
+path. Both use the same 15-layer width-896 shape, degree twelve, RoPE, W decay,
+seed, initial parameters, optimizer, data, and 7,570-update budget as their controls.
+The exploration above owns the findings and open decision.
+
+Run these independent one-B300 allocations from the frozen
+`codex/coefficient-raw-l2-m12` worktree:
+
+```bash
+for run in r1f30febd7de5 r2bf71d7b4831; do
+  sbatch --parsable --partition=standard --nodelist=akita --gres=gpu:b300:1 \
+    --cpus-per-task=16 --mem=128G --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.coefficient_l2_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+Acceptance requires raw-source branch isolation, independent reference gradients
+through both input paths, native Mosaic composition, identical initial parameter
+hashes, and each run's full-shape pilot and fresh-process resume.

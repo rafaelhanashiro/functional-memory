@@ -43,6 +43,7 @@ class Block(nnx.Module):
         cfg = config
         self.attention_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.attention = attention_from_config(cfg, rngs=rngs)
+        self.coefficients_read_pre_norm = cfg.attention_coefficient_input_source == "pre_rmsnorm"
         self.ffn_norm = RMSNorm(cfg.hidden_size, cfg.rms_norm_eps, fp32=cfg.rms_norm_fp32)
         self.feed_forward = SwiGLU(cfg.hidden_size, cfg.intermediate_size, rngs=rngs)
 
@@ -64,6 +65,8 @@ class Block(nnx.Module):
             extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients}
         if key_factors is not None:
             extra["key_factors"] = key_factors
+        if self.coefficients_read_pre_norm:
+            extra["coefficient_source_input"] = x
         with jax.named_scope("attention"):
             h = self.attention_norm(x)
             result = self.attention(h, deterministic=deterministic, rngs=rngs,

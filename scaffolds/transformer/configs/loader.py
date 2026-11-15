@@ -121,6 +121,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_coefficient_conditioning", "static")
         value["model"].setdefault("attention_coefficient_activation", "identity")
         value["model"].setdefault("attention_coefficient_input_normalization", "none")
+        value["model"].setdefault("attention_coefficient_input_source", "post_rmsnorm")
         value["model"].setdefault("attention_coefficient_readout", "diagonal")
         value["model"].setdefault("attention_coefficient_readout_scale", 1.0)
         value["model"].setdefault("attention_coefficient_feature_count", None)

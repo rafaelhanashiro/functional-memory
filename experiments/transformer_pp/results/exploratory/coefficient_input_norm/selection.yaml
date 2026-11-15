@@ -1,6 +1,6 @@
-question: Does unit-L2 normalization of the coefficient input reduce tanh saturation
-  and improve validation perplexity for direct and SoS query polynomials at m=8 and
-  m=12?
+question: Does coefficient-input L2 normalization improve direct and SoS query polynomials
+  at m=8 and m=12, and does bypassing the pre-attention RMSNorm gains change the m=12
+  outcome?
 opened: '2026-11-14'
 settings:
   metric: held-out validation perplexity
@@ -9,15 +9,16 @@ settings:
   - terminal
   seed: 42
   training_steps: 7570
-  comparison: each L2 run against its own explicitly selected none-normalization control
+  comparison: Post-RMSNorm L2 runs against their original-input controls; raw-input
+    L2 m=12 runs against the explicitly selected completed post-RMSNorm L2 controls.
   diagnostics: fixed first held-out sequence at scheduled evaluations; all layer/head/generator
     coordinates
   saturation_absolute_tanh_threshold: 0.99
-  normalization_formula: x / max(norm(x,2),1e-6), after learned RMSNorm gain and only
-    before coefficient projection
-  open_decision: All four runs completed. Decide whether a less aggressive coefficient-input
-    scale or another targeted optimization intervention warrants further study; retain
-    the original input normalization as the default.
+  normalization_formula: u / max(norm(u,2),1e-6), only before coefficient projection;
+    u is the source declared by each recipe (post-RMSNorm by default, pre-RMSNorm
+    for the raw-input pair).
+  open_decision: Evaluate whether bypassing RMSNorm channel gains changes the m=12
+    L2 outcome; retain the original coefficient input as the default.
   degrees:
   - 8
   - 12
@@ -182,3 +183,21 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r3d52b7ab43d1/best_validation.json
       sha256: 3b7db607a97f8d8ff8f3447e2a6aed04f54477288fac17b15da4d1ded34bb839
+- study: transformer_pp
+  run_id: r1f30febd7de5
+  role: direct_raw_l2_m12
+  label: direct query m=12, raw coefficient input L2
+  control_run_id: r7e34dec9dbd5
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/config.yaml
+      sha256: 152fa2a59a6cf05e75fa9624e748a8a7626dee29f5aee5f11ff7de5db72d21e8
+- study: transformer_pp
+  run_id: r2bf71d7b4831
+  role: sum_of_squares_raw_l2_m12
+  label: SoS query m=12, raw coefficient input L2
+  control_run_id: r6b17c3463a60
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/config.yaml
+      sha256: 3fc997263a3d102f7361aadc4d3d68c109514502b2e16723ca2d05c1361dff90

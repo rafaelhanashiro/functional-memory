@@ -33,6 +33,7 @@ INDEX_COLUMNS = (
     "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
     "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "qk_norm_token_scale", "initialization",
     "coefficient_mode", "coefficient_conditioning", "coefficient_activation", "coefficient_input_normalization",
+    "coefficient_input_source",
     "coefficient_readout", "coefficient_feature_count", "coefficient_readout_scale", "coefficient_kernel_weight_decay",
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
@@ -558,6 +559,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "coefficient_conditioning": "sequence_position" if free_coefficients else "none" if static_coefficients else "position" if shared_batch_coefficients else model.get("attention_coefficient_conditioning"),
         "coefficient_activation": "identity" if coefficient_table else model.get("attention_coefficient_activation"),
         "coefficient_input_normalization": None if coefficient_table or not model else model.get("attention_coefficient_input_normalization", "none"),
+        "coefficient_input_source": None if coefficient_table or not model else model.get("attention_coefficient_input_source", "post_rmsnorm"),
         "coefficient_readout": None if coefficient_table else model.get("attention_coefficient_readout"),
         "coefficient_feature_count": None if coefficient_table else model.get("attention_coefficient_feature_count"),
         "coefficient_readout_scale": None if coefficient_table else model.get("attention_coefficient_readout_scale"),
@@ -720,7 +722,8 @@ def regenerate_index(study: str | Path) -> Path:
     Missing legacy settings stay empty. No current model defaults are silently
     applied to historical runs, except in columns of settings that a later option
     added to a mechanism, where a recipe without the field can only mean the
-    behavior that predates the option: the forget-gate mode, form, constant
+    behavior that predates the option: the coefficient-input normalization/source,
+    the forget-gate mode, form, constant
     rate, conditioning, rate activation, and per-order gates of gated recipes,
     and ``attention_score_bias`` (``none``) and ``attention_score_transform`` (``identity``) of every
     model recipe.

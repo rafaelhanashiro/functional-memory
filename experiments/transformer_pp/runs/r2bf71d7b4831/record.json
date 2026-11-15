@@ -1,0 +1,25 @@
+{
+  "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "comparison": {
+    "changed_model_fields": {
+      "attention_coefficient_input_source": "pre_rmsnorm"
+    },
+    "coefficient_parameterization": "sum_of_squares",
+    "control_config_sha256": "b75719f3622ac70fded0b5dcac1a283009a217b42a1a712432cf7820b7dea25c",
+    "control_run_id": "r6b17c3463a60",
+    "original_input_reference_run_id": "r3d52b7ab43d1"
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2bf71d7b4831/config.yaml",
+    "sha256": "3fc997263a3d102f7361aadc4d3d68c109514502b2e16723ca2d05c1361dff90"
+  },
+  "home_cluster": "kennel",
+  "label": "sos-query-m12-raw-coefficient-input-l2",
+  "name": "sos-query-m12-raw-coefficient-input-l2",
+  "purpose": "Test unit-L2 normalization of the raw attention input before RMSNorm only for the degree-12 tanh coefficient generator; preserve the Q/K/V RMSNorm path and the matched post-RMSNorm L2 recipe.",
+  "record_schema_version": 1,
+  "run_id": "r2bf71d7b4831",
+  "seed": 42,
+  "status": "planned",
+  "training_tokens": 3968860160
+}

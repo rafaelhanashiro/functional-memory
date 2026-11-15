@@ -59,6 +59,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_parameterization=config.attention_coefficient_parameterization,
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
+        attention_coefficient_input_source=config.attention_coefficient_input_source,
         attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
@@ -110,6 +111,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_parameterization: str = "direct",
         attention_coefficient_activation: str = "identity",
         attention_coefficient_input_normalization: str = "none",
+        attention_coefficient_input_source: str = "post_rmsnorm",
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
         positional_encoding: str = "rope",
@@ -214,6 +216,11 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
         if attention_coefficient_input_normalization not in ("none", "l2"):
             raise ValueError(f"Unknown coefficient input normalization: {attention_coefficient_input_normalization}")
+        if attention_coefficient_input_source not in ("post_rmsnorm", "pre_rmsnorm"):
+            raise ValueError(f"Unknown coefficient input source: {attention_coefficient_input_source}")
+        if (attention_coefficient_input_source == "pre_rmsnorm"
+                and attention_coefficient_input_normalization != "l2"):
+            raise ValueError("pre_rmsnorm coefficient input source requires L2 coefficient input normalization")
         if attention_coefficient_input_normalization == "l2" and (
                 attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
                 or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
@@ -227,6 +234,7 @@ class MultiHeadAttention(nnx.Module):
                              "polynomial coefficients with RoPE or no positional encoding, without selected "
                              "orders, gates, score biases or transforms")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
+        self.attention_coefficient_input_source = attention_coefficient_input_source
         if not isinstance(attention_forget_gate, bool):
             raise ValueError("attention_forget_gate must be a boolean")
         if attention_forget_gate_mode not in ("cumulative", "query_distance"):
@@ -459,13 +467,26 @@ class MultiHeadAttention(nnx.Module):
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
+        coefficient_source_input: jax.Array | None = None,
     ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array] | jax.Array]:
         """Optionally replace or return effective query coefficients [B, T, H, m+1].
 
         With replaced static coefficients, ``key_factors`` [B, T, H, m+1] multiply each
         key's degree-r term, running the query-key polynomial kernel.
+
+        ``x`` remains the post-RMSNorm Q/K/V input. A pre_rmsnorm coefficient source
+        must be supplied explicitly as ``coefficient_source_input`` with the same shape;
+        it is unnecessary when ``query_coefficients`` bypasses the generator.
         """
         batch, seq_len, _ = x.shape
+        if coefficient_source_input is not None:
+            if self.attention_coefficient_input_source != "pre_rmsnorm":
+                raise ValueError("coefficient_source_input requires the pre_rmsnorm coefficient input source")
+            if coefficient_source_input.shape != x.shape:
+                raise ValueError(f"coefficient_source_input must have shape {x.shape}, "
+                                 f"got {coefficient_source_input.shape}")
+        elif self.attention_coefficient_input_source == "pre_rmsnorm" and query_coefficients is None:
+            raise ValueError("pre_rmsnorm coefficient input source requires coefficient_source_input")
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         spline = self.attention_kernel_basis == "bspline"
@@ -589,7 +610,10 @@ class MultiHeadAttention(nnx.Module):
             if effective_coefficients is None:
                 if self.attention_coefficient_input_normalization == "l2" and query_tanh_bias is not None:
                     raise ValueError("L2 coefficient input normalization does not support an inner tanh bias")
-                coefficient_input = normalize_coefficient_input(x, self.attention_coefficient_input_normalization)
+                coefficient_source = (coefficient_source_input
+                                      if self.attention_coefficient_input_source == "pre_rmsnorm" else x)
+                coefficient_input = normalize_coefficient_input(
+                    coefficient_source, self.attention_coefficient_input_normalization)
                 effective_coefficients = project_coefficients(
                     coefficient_input, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
@@ -788,7 +812,7 @@ class MultiHeadAttention(nnx.Module):
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
 
-            diagnostics.update(coefficient_input_statistics(x, coefficient_input, query_kernel))
+            diagnostics.update(coefficient_input_statistics(coefficient_source, coefficient_input, query_kernel))
         if gate_statistics is not None:
             diagnostics.update(gate_statistics)
         if return_diagnostics and log_alpha is not None:

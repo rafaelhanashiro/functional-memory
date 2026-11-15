@@ -2,8 +2,9 @@
 
 Opened **2026-11-14**. This Transformer++ exploration asks whether limiting the
 input to the tanh coefficient generator reduces saturation and improves perplexity.
-It contains four completed runs, at degrees eight and twelve, at the 15-layer
-width-896 shape, each matched to its own existing control. These runs
+It contains four completed post-RMSNorm L2 runs, at degrees eight and twelve,
+and two degree-twelve raw-input L2 runs at the 15-layer width-896 shape,
+each matched to its own existing control. These runs
 remain exploratory and enter no canonical comparison.
 
 | Coefficient form | Unit-L2 input run | Original-input control |
@@ -23,7 +24,7 @@ decay 0.1; a and b have no weight decay. W initialization, all learning rates,
 seed 42, global batch 256, 2,048 prediction tokens per sequence, 7,570 updates,
 and the controls' reference initialization are retained. All use native Mosaic.
 
-The [explicit selection](selection.yaml) pins all four matched run/control pairs.
+The [explicit selection](selection.yaml) pins the matched runs and controls.
 The [study README](../../../README.md#coefficient-input-l2-experiment) gives
 execution commands and acceptance requirements. Configurations and compact
 measurements live only in the selected runs.
@@ -102,6 +103,25 @@ very low in the full sampled model, but does not improve m=12 perplexity or
 clipping frequency. This does not isolate saturation from changes to coefficient
 variation and optimization caused by changing the input scale.
 
+## Degree-twelve raw-input comparison
+
+The raw-input variants normalize the residual activation `h` directly:
+`h_hat = h / max(||h||_2, 1e-6)`, with FP32 normalization and projection.
+Only the coefficient generator uses `h_hat`; Q/K/V still use `RMSNorm(h)`.
+In contrast, the completed post-RMSNorm L2 controls normalize the learned-gain
+activation. Away from the epsilon floor, their input is
+`(g * h) / ||g * h||_2`. The new comparison removes those channel gains from
+the coefficient branch, including its gradient contribution to the RMSNorm gain.
+W, a, b, and the complete optimizer/data/initialization recipe remain matched.
+
+| Coefficient form | Raw-input L2 run | Post-RMSNorm L2 control | Original-input reference |
+| --- | --- | --- | --- |
+| Query, degree 12 | `r1f30febd7de5` | `r7e34dec9dbd5` | `r0fceea0627c8` |
+| SoS query, degree 12 | `r2bf71d7b4831` | `r6b17c3463a60` | `r3d52b7ab43d1` |
+
+The raw-input runs are fresh executions on Kennel. Their authoritative status
+is in their run records. No final perplexity result is available yet.
+
 ## Measurements and limits
 
 At scheduled evaluations, the existing fixed diagnostic sequence records all
@@ -125,7 +145,8 @@ in this single-seed comparison. Keep coefficient-input L2 as an exploration; the
 results do not establish a general improvement or justify replacing the original
 input normalization by default. The open decision is whether a less aggressive
 input scale or another targeted optimization experiment warrants further study.
-No additional runs are part of this selection.
+The two selected raw-input runs test whether bypassing RMSNorm's learned gains
+changes the outcome at degree twelve; they do not change the default behavior.
 
 Refresh the selected scientific inputs after new measurements:
 
