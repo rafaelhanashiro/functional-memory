@@ -6,7 +6,8 @@ are planned ([below](#four-times-the-budget)). Promoting or discarding the topic
 
 Trained on the reference shape's token count, twice its own 1x budget, how do the attention variants compare
 at the 12-layer width-640 shape at degrees eight and twelve? How close does each come to its reference-shape
-counterpart at the same tokens?
+counterpart at the same tokens? At four times the 1x budget, how do the degree-twelve runs and the three
+baselines compare with exp there and with their 2x runs?
 
 ## Runs
 
@@ -62,9 +63,9 @@ every 2,000 after, seed 42. One GPU each; home cluster Kennel. Each will be comp
 | `r93df1e48c8fd` | `softmax-l12-d640-4x` | softmax | – | `r3bb5b8bd5c6a` | cuDNN |
 | `rd486e3337de7` | `exp-forget-gate-no-rope-l12-d640-4x` | FoX exp | – | `re634d82ee479` | causal strips |
 
-The softplus run's control and the sum-of-squares run's partner is the 4x query run `r2f41d054e944`. Recipes,
-acceptance and launch commands:
-[study README](../../../README.md#the-12-layer-width-640-shape-at-four-times-its-1x-budget).
+The softplus run's control and the sum-of-squares run's partner is the 4x query run `r2f41d054e944`. FoX query,
+about 20 hours on an H100 SXM, is submitted once the user chooses its GPU. Recipes, acceptance, time limits and
+launch commands: [study README](../../../README.md#the-12-layer-width-640-shape-at-four-times-its-1x-budget).
 
 ## Comparisons
 
