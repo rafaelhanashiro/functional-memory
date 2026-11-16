@@ -49,13 +49,25 @@ and terminal 14.3435; the prefactor variant reached 14.0953 and 14.0992. The lat
 is 1.14% below exp in validation-best PPL (14.2572). Best values are at update
 7,500 and terminal values at update 7,570. These are single-seed comparisons.
 
-The degree-twelve pair is allocated for fresh training. Both have 200,905,126
-parameters and start with h = T_12, matching the raw-score degree-twelve SoS
-control's initial arrays. Compare each with its degree-eight partner as well as
-the degree-twelve raw-score SoS (best 14.1649), direct softplus (14.2223), direct
-query (14.2256), and shared exp controls. Current execution status lives in the
-run records and generated study index. Full acceptance gates production training;
-queued jobs are not training results.
+All four runs completed 7,570 updates and selected update 7,500 by validation
+NLL. Their retained artifacts are on Kennel. The degree-twelve pair has
+200,905,126 parameters and starts with h = T_12, matching the raw-score
+degree-twelve SoS control's initial arrays.
+
+| SoS core degree | Weight, z = softplus(s) | Best validation PPL (7,500) | Terminal PPL (7,570) |
+| ---: | --- | ---: | ---: |
+| 8 | h_t(z) | 14.3388 | 14.3435 |
+| 8 | z h_t(z) | 14.0953 | 14.0992 |
+| 12 | h_t(z) | 14.3270 | 14.3315 |
+| 12 | z h_t(z) | 14.0934 | 14.0972 |
+
+The prefactor variant improves on the learned-baseline composition at both core
+degrees. Its degree-twelve best PPL is 0.014% below its degree-eight partner,
+a small difference in this single-seed comparison. It is below the raw-score
+SoS degree-twelve control (14.1649), direct softplus (14.2223), direct query
+(14.2256), and shared exp control (14.2572). These comparisons do not identify
+which mechanism caused the improvement. The open decision remains the value
+of the composition and its vanishing negative tail across seeds and recipes.
 
 Refresh input pins after collecting run measurements:
 

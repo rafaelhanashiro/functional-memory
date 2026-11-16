@@ -37,52 +37,52 @@
   },
   "artifacts": [
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/best_validation.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/best_validation.json",
       "sha256": "bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495",
       "size_bytes": 183
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/completion.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/completion.json",
       "sha256": "11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37",
       "size_bytes": 804310
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/config.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/config.json",
       "sha256": "e992fa1aa4aa910664d58791aece4aaaa8f621b83f5e098b4c0875ede0e629c2",
       "size_bytes": 5494
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/data_identity.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/data_identity.json",
       "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
       "size_bytes": 291
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/gradient_events.jsonl",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/gradient_events.jsonl",
       "sha256": "3bf54ec89b2a54133cf292fed1a4ba34163db03db9b10caf425d4b04f9e678db",
       "size_bytes": 13414
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/metadata.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/metadata.json",
       "sha256": "db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a",
       "size_bytes": 805934
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl",
       "sha256": "556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e",
       "size_bytes": 11559143
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/retention.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/retention.json",
       "sha256": "701776a17185e64f88fb2bbedaa750171965e9cc133adabbd8cb8f487d7135e5",
       "size_bytes": 489
     },
     {
-      "path": "experiments/transformer_pp/runs/r841f35a24241/wandb_run.json",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/wandb_run.json",
       "sha256": "1f0ac7255223c0177ca78c10183749e8e48747fdf9c9f477132e508d0e8dfad6",
       "size_bytes": 222
     },
     {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r841f35a24241/training.log",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/training.log",
       "sha256": "d6e1457d2496ac2ea8b7235ad8330b3c1e756fc00e83573f5f6cda9a811e6e2e",
       "size_bytes": 711039
     }
@@ -126,7 +126,7 @@
     }
   ],
   "best_validation": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/best_validation.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/best_validation.json",
     "sha256": "bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495",
     "size_bytes": 183
   },
@@ -146,7 +146,7 @@
     "version": 1
   },
   "completion": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/completion.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/completion.json",
     "sha256": "11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37",
     "size_bytes": 804310
   },
@@ -158,7 +158,7 @@
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "format": "ofm-packed-run-data",
-    "path": "experiments/transformer_pp/runs/r841f35a24241/data_identity.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/data_identity.json",
     "sequence_length": 2049,
     "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
     "size_bytes": 291,
@@ -240,7 +240,7 @@
       "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
       "justification": "pre-update state of gradient event at update 6376, norm 1.21206",
       "kind": "directory",
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r841f35a24241/checkpoints/gradient_events/6376",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/checkpoints/gradient_events/6376",
       "pre_update_state_sha256": "78b0a99fe5d0fbe81f457140c979f2888e438ac93ea4f3255e1d7a37f1335852",
       "pre_update_step": 6375,
       "sha256": "f983656831a82d74c6822ff154dcc34f5f0a889632c0d5d78586004c85fbb6ab",
@@ -458,18 +458,18 @@
   "home_cluster": "kennel",
   "label": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay",
   "log": {
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r841f35a24241/training.log",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/training.log",
     "sha256": "d6e1457d2496ac2ea8b7235ad8330b3c1e756fc00e83573f5f6cda9a811e6e2e",
     "size_bytes": 711039
   },
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r841f35a24241/training.log",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/training.log",
   "metadata": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/metadata.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/metadata.json",
     "sha256": "db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a",
     "size_bytes": 805934
   },
   "metrics": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl",
     "sha256": "556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e",
     "size_bytes": 11559143
   },
@@ -480,7 +480,7 @@
   "retained_best_checkpoint_step": 7500,
   "retained_terminal_checkpoint_step": null,
   "retention": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/retention.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/retention.json",
     "sha256": "701776a17185e64f88fb2bbedaa750171965e9cc133adabbd8cb8f487d7135e5",
     "size_bytes": 489
   },
@@ -552,7 +552,7 @@
     ],
     "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
     "kind": "directory",
-    "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos/experiments/transformer_pp/runs/r841f35a24241/checkpoints/7500",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/checkpoints/7500",
     "sha256": "18bddb7924feaac08d8e985821b2d30bc149195590883942a2b5864504b926f4",
     "size_bytes": 2201508431,
     "step": 7500,
@@ -596,7 +596,7 @@
   "training_tokens": 3968860160,
   "updated_utc": "2026-11-14T04:50:24.314395+00:00",
   "wandb_run": {
-    "path": "experiments/transformer_pp/runs/r841f35a24241/wandb_run.json",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/wandb_run.json",
     "sha256": "1f0ac7255223c0177ca78c10183749e8e48747fdf9c9f477132e508d0e8dfad6",
     "size_bytes": 222
   }
