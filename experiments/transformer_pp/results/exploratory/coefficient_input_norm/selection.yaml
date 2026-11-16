@@ -21,7 +21,7 @@ settings:
     for raw-input L2).
   open_decision: Six earlier L2 runs completed. Raw-input L2 improves on post-RMSNorm
     L2 at m=12 but remains behind the original-input controls. Two raw-input L2 softplus-times-SoS
-    prefactor runs are prepared for submission at core degrees 8/12; determine whether
+    prefactor runs are submitted for acceptance and training at core degrees 8/12; determine whether
     they improve their original-input parents. Keep the original input as default
     pending those results.
   degrees:

@@ -4029,3 +4029,17 @@ sequence shapes. A two-layer CPU capture check at both degrees preserved the
 forward loss exactly with nonzero amplitudes and nonuniform RMSNorm gains;
 70 related CPU tests passed and four hardware-only cases were skipped. This
 qualifies the forward diagnostic, not training or optimizer continuation.
+
+## Raw-L2 softplus-times-SoS composition (2026-11-16)
+
+The [qualification record](softplus_sos_raw_l2.json) pins source and lock for
+core degrees 8 and 12 (total degrees 9 and 13). Six CPU composition checks pass:
+raw coefficient input routing, unchanged initialization, independent direct-square
+attention outputs and gradients, shared residual gradients, Q/K/V-only RMSNorm
+gain gradients, and core-coordinate diagnostics. Seventeen existing rejection
+cases and all 119 matched-recipe acceptance checks also pass.
+
+Native B200 qualification is pending. Each allocation requires the new composed
+BF16 kernel cases, existing 2,048-token transformed-kernel checks, exact initial
+parameter fingerprints, a full-shape pilot, and fresh-process resume before
+production. The composition changes no Mosaic arithmetic.

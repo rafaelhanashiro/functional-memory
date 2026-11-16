@@ -1,5 +1,23 @@
 {
   "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-raw-l2/experiments/transformer_pp/runs/r35805940a380/.runtime/acceptance/B200-1",
+      "allocation": "JobId=3796 JobName=r35805940a380 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20115 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:30 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-16T15:03:58 EligibleTime=2026-11-16T15:03:58 AccrueTime=2026-11-16T15:03:58 StartTime=2026-11-16T15:03:58 EndTime=2026-11-17T15:03:58 Deadline=N/A PreemptEligibleTime=2026-11-16T15:03:58 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-16T15:03:58 Scheduler=Main Partition=standard AllocNode:Sid=kennel:367758 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-raw-l2/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-raw-l2 StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-raw-l2/experiments/transformer_pp/runs/r35805940a380/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-raw-l2/experiments/transformer_pp/runs/r35805940a380/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r35805940a380/config.yaml",
+      "config_sha256": "7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "c1512b0abaf528035e0443b016d8471cc2867621",
+      "slurm_job_id": "3796",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-16T20:04:28.703257+00:00",
+      "stop_after_step": null
+    }
+  ],
   "comparison": {
     "changed_model_fields": {
       "attention_coefficient_input_normalization": "l2",
@@ -15,12 +33,44 @@
     "path": "experiments/transformer_pp/runs/r35805940a380/config.yaml",
     "sha256": "7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484"
   },
+  "frozen_execution_sha256": "c8cca1b3f31e98dbeb9edfefd56eaf27cc01a595b1cb369a8ee28efe3c644bf2",
   "home_cluster": "kennel",
   "label": "query-sos-core-m8-softplus-prefactor-raw-l2-rope-w-decay",
+  "log_path": "experiments/transformer_pp/runs/r35805940a380/training.log",
   "name": "query-sos-core-m8-softplus-prefactor-raw-l2-rope-w-decay",
   "purpose": "Test unit-L2 normalization of the raw attention input only for the query-conditioned SoS factor generator, retaining the matched softplus score transform and input prefactor.",
   "record_schema_version": 1,
   "run_id": "r35805940a380",
   "seed": 42,
-  "status": "planned"
+  "slurm_job_id": "3796",
+  "source_commit": "c1512b0abaf528035e0443b016d8471cc2867621",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--time=24:00:00",
+      "--gres=gpu:1",
+      "--exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--job-name=r35805940a380",
+      "--output=experiments/transformer_pp/runs/r35805940a380/training.log",
+      "--error=experiments/transformer_pp/runs/r35805940a380/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.coefficient_l2_acceptance",
+      "experiments/transformer_pp/runs/r35805940a380/config.yaml",
+      "c1512b0abaf528035e0443b016d8471cc2867621",
+      "1",
+      "B200"
+    ],
+    "cpus": 16,
+    "gpu_count": 1,
+    "gpu_type": "B200",
+    "memory_gib": 128,
+    "partition": "standard",
+    "submitted_utc": "2026-11-16T20:03:58.459910+00:00",
+    "time_limit_hours": 24
+  }
 }

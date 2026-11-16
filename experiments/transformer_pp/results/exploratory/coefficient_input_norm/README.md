@@ -5,7 +5,7 @@ input to the tanh coefficient generator reduces saturation and improves perplexi
 It contains four completed post-RMSNorm L2 runs, at degrees eight and twelve,
 and two completed degree-twelve raw-input L2 runs at the 15-layer width-896 shape.
 Two further raw-input L2 runs for softplus-times-SoS cores of degree eight and
-twelve are prepared for submission, each matched to its original-input parent.
+twelve are submitted for acceptance and training, each matched to its original-input parent.
 These runs remain exploratory and enter no canonical comparison.
 
 | Coefficient form | Unit-L2 input run | Original-input control |
@@ -163,7 +163,7 @@ across generator coordinates, not model-contribution-weighted sensitivities.
 
 ## Raw-input L2 for softplus-times-SoS
 
-The two new runs are prepared for independent Kennel submissions; neither has
+The two new runs are submitted as independent Kennel jobs 3796 and 3797; neither has
 trained yet. They retain `w(s) = u h(u)`, with `u = softplus(s)` and a
 query-conditioned SoS core `h = U² + V²`. Core degrees eight and twelve give
 total degrees nine and thirteen after the prefactor.
@@ -191,7 +191,7 @@ degrees eight and twelve. They also include the softplus-times-SoS runs
 `w(s) = u h(u)`, where `u = softplus(s)` and `h = U² + V²`. The prefactor makes
 the total degrees nine and thirteen. This figure is a completed snapshot from
 before the new raw-input L2 runs: all four softplus-times-SoS L2 cells still say
-**Not run**. It contains no measurements from the prepared runs above.
+**Not run**. It contains no measurements from the new runs above.
 Their matched-head mean saturation is **26.22%** at m=8 and **18.57%** at m=12,
 with best validation PPL **14.0953** and **14.0934**. The new native probe
 `rfadcac37b6d0` checks parameter identity and captures the factor generators
@@ -259,7 +259,7 @@ input in this single-seed comparison. Keep coefficient-input L2 as an exploratio
 the results do not justify replacing the original input normalization by default.
 The immediate open decision is whether raw-input L2 improves the softplus-times-SoS
 prefactor models at core degrees eight and twelve. Six earlier L2 runs are
-complete; the two selected additions are prepared for submission. An intermediate
+complete; the two selected additions are submitted for acceptance and training. An intermediate
 input scale remains a possible later experiment.
 
 Refresh the selected scientific inputs after new measurements:

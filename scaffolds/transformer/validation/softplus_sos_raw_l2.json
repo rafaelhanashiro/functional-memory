@@ -1,0 +1,39 @@
+{
+  "source_commit": "c1512b0abaf528035e0443b016d8471cc2867621",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "capability": "Raw-input unit-L2 coefficient projection with softplus-times-SoS prefactor, core degrees 8 and 12",
+  "cpu_checks": [
+    {
+      "test_file": "scaffolds/transformer/tests/test_softplus_sos_raw_input.py",
+      "selection": "not gpu",
+      "passed": 6,
+      "gpu_deselected": 4
+    },
+    {
+      "test_files": [
+        "scaffolds/transformer/tests/test_coefficient_input_normalization.py",
+        "scaffolds/transformer/tests/test_coefficient_raw_input.py"
+      ],
+      "selection": "unsupported-combination cases",
+      "passed": 17
+    },
+    {
+      "test_file": "experiments/transformer_pp/tests/test_coefficient_l2_acceptance.py",
+      "passed": 119
+    }
+  ],
+  "gpu_checks": {
+    "status": "pending",
+    "test_file": "scaffolds/transformer/tests/test_softplus_sos_raw_input.py",
+    "required_before_production": true,
+    "device_type": "B200",
+    "production_precision": "bf16",
+    "additional_requirements": [
+      "existing transformed Mosaic output and VJP checks at 2048 tokens",
+      "full-shape initialization fingerprint",
+      "full-shape training pilot",
+      "fresh-process optimizer and data resume"
+    ]
+  },
+  "limits": "CPU results establish composition and gradient routing; GPU qualification has not yet passed."
+}

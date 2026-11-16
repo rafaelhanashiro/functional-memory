@@ -2206,8 +2206,8 @@ hashes, and each run's full-shape pilot and fresh-process resume.
 
 ### Raw-input L2 for softplus-times-SoS
 
-Two runs are prepared for submission on Kennel: `r35805940a380` uses the
-degree-eight SoS core of `r841f35a24241`, and `r5198d688e9d4` uses the
+Two runs are submitted on Kennel: `r35805940a380` (job 3796) uses the
+degree-eight SoS core of `r841f35a24241`, and `r5198d688e9d4` (job 3797) uses the
 degree-twelve core of `rf637de9b65b1`. Both retain `w(s) = u h(u)`, where
 `u = softplus(s)` and `h` is the SoS core; total degrees are nine and thirteen.
 Their only scientific changes are coefficient-input normalization `l2` and
