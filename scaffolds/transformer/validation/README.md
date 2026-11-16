@@ -73,6 +73,84 @@ CPU check with nonzero amplitudes and nonuniform RMSNorm gains confirmed that th
 capture leaves both direct and SoS forward losses exactly unchanged; generator
 reconstruction errors were below `6e-8`. The [SoS probe qualification](sos_activation_probe_b200.json)
 records this allocation and its retained log. This remains forward-diagnostic qualification.
+### Degree-twelve softplus–SoS and degree-thirteen prefactor (2026-11-15)
+
+The shared Mosaic API admits total degree thirteen only for softplus, d_K=d_V=64,
+and contexts 512 and 2,048. Ordinary, absolute-score and gated polynomial admission
+retains the existing degree limit. The tiled forward and backward arithmetic is
+unchanged. The existing shared-memory layouts lower for Hopper and Blackwell.
+
+CPU qualification passed 126 algebra, differentiation, parameter-policy, miniature
+training, admission and lowering checks in `test_softplus_sos.py` and
+`test_score_transform_lowering.py`. The composed GPU suite now covers cores eight
+and twelve, both input powers, both weight precisions, all Q/K/V and generator
+x/W/a/b gradients against an independent FP64 direct-factor reference, full
+2,048-token dispatch, causal prefixes, negative tails and numerical failures.
+GPU numerical qualification is pending; each new run's full acceptance must pass
+those checks, initialization fingerprints, full-shape throughput and fresh-process
+resume before production. B300 remains unqualified for these transformed kernels.
+
+### Softplus + query SoS on Mosaic B200 kernels (2026-11-13)
+
+The transformed Mosaic kernels and their query sum-of-squares composition passed
+GPU qualification on one **NVIDIA B200** (`shiba`, Slurm job **244553**, driver
+580.196.07, GPU UUID `GPU-33b41ad0-1a5a-d04a-6f63-cc26a25f6374`) at frozen source
+`52af77095aa516a0e150b16c4c902e3cc7ca82e9`. The compact
+[qualification record](runs/softplus-sos-mosaic-b200/record.json) pins the source,
+dependency lock, test modules, JUnit XML and retained log. The job used the locked
+CUDA 13 environment: JAX/JAXlib 0.10.0, CUDA toolkit 13.2.86, cuBLAS 13.2.2.2 and
+cuDNN 9.22.0.52, with the Kennel runtime's compute-stream collectives and
+preallocation disabled.
+
+**102 tests passed**, with no failures, errors or skips, in 835.426 seconds of
+JUnit runtime; Slurm completed with exit `0:0`. The selection includes all 88
+cases of `tests/test_mosaic_score_transform.py` and all 14 cases of
+`tests/test_mosaic_softplus_sos.py`, at both `bf16` and `bf16x3` weight precision.
+The separate 23-module CPU preflight passed 670 tests (45 deselected, no failures
+or skips). Host initialization checks for both full-size recipes reproduced the
+control's exact 200,150,806 parameter arrays; the prefactor changes no learned
+parameter. Their compact results and retained-log hashes are in the same record.
+The general transformed-kernel cases cover softplus and absolute-value inputs,
+supported degrees and widths, production context, causal masking and explicit
+numerical failures. The SoS cases cover
+
+\[
+z=\operatorname{softplus}(s),\qquad
+w=A(z)^2+B(z)^2\quad\text{or}\quad w=z\bigl(A(z)^2+B(z)^2\bigr),
+\]
+
+with a degree-eight SoS core and total degrees eight and nine. Production
+`attention_core` dispatch reaches Mosaic at 2,048 tokens and `d_K=d_V=64`.
+An independent NumPy FP64 reference evaluates the two squares directly, without
+expanded coefficients, and differentiates Q/K/V plus the query generator's input,
+projection, amplitude and bias. This tests the prefactor's score-gradient product
+rule as well as the coefficient path. Additional cases check the finite
+negative-score baseline versus the vanishing tail, exact zero factors, causal
+prefix outputs and generator gradients, and failure on an overflowing negative
+causal score even when the constant coefficient is structurally zero.
+
+The asserted relative-L2 bounds are 0.006 for output, 0.025 for dQ/dK, 0.015 for
+dV, 0.01 for every expanded coefficient order in the general kernel tests, and
+0.02 for the SoS generator gradients (every factor coordinate of W/a/b checked
+separately). Each also bounds the largest element error by three times its
+relative tolerance times the largest reference element; exact reference zeros
+must remain exact. These are acceptance bounds, not reported maximum errors.
+
+This records **B200 kernel correctness**, not a full-model training pilot or
+untested B300 execution. The tests admit the Blackwell kernels in-process for
+qualification. Each production run must still pass its own initialization,
+optimizer pilot, checkpoint save and fresh-process resume checks on its granted
+allocation.
+
+Reproduce from a checkout with the matching frozen source and its locked CUDA 13
+environment; validation logs stay ignored:
+
+```bash
+sbatch --partition=debug --nodelist=shiba --gres=gpu:1 \
+  --output=scaffolds/transformer/validation/logs/softplus-sos-%j.log \
+  scaffolds/transformer/validation/qualify_softplus_sos.sbatch \
+  52af77095aa516a0e150b16c4c902e3cc7ca82e9
+```
 
 ### Score transforms on the Mosaic query-polynomial kernels (2026-11-12)
 
@@ -89,8 +167,8 @@ weight `c_0`. Then `W = p(z)` (forward and dV), `dS = p'(z) (dP phi'(s))` (dQ an
 `dc_r = sum_i dP z^r`. Vectors, shared memory, rings, BF16 weight products, masking (masked entries enter at
 `s = 0` and leave as zero) and failure rows are the query family's: a causal score that overflows to `-inf`
 makes its row NaN, as in the query kernels and the blocked reference. Backend selection admits these kernels on
-H100 (sm90) alone, as it admits the score biases, and the entry point refuses B300's before tracing them
-(`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint without backend selection. The
+H100 (sm90) and the separately qualified B200 path (sm100, above), while the entry point refuses B300 (sm103)
+before tracing its kernels, which also covers a model restored without backend selection. The
 12-layer width-640 transform runs keep the strips (next section); the reference-shape softplus run
 `ra3b54e2489f8` trains on these kernels.
 

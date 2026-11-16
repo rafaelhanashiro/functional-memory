@@ -1,0 +1,161 @@
+{
+  "allocation": {
+    "compute_capability": "10.0",
+    "cpus": 16,
+    "driver_version": "580.196.07",
+    "elapsed_seconds": 863,
+    "exit_code": "0:0",
+    "finished_at": "2026-11-13T09:38:15-05:00",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "gpu_uuid": "GPU-33b41ad0-1a5a-d04a-6f63-cc26a25f6374",
+    "home_cluster": "kennel",
+    "memory_gib": 128,
+    "node": "shiba.csail.mit.edu",
+    "partition": "debug",
+    "slurm_job_id": "244553",
+    "slurm_state": "COMPLETED",
+    "started_at": "2026-11-13T09:23:52-05:00"
+  },
+  "artifacts": {
+    "junit": {
+      "path": "logs/softplus-sos-244553/gpu-tests.xml",
+      "sha256": "1dc58ce75e10addde27a729e06233c467945d72ed4936bf6398b9ff62bfacfcf",
+      "size_bytes": 14013
+    },
+    "log": {
+      "path": "logs/softplus-sos-244553.log",
+      "sha256": "c66c82ad0dd917857eba200494983ee064746b7ec7d4f0fc3d4c293ba2d54995",
+      "size_bytes": 361
+    }
+  },
+  "cpu_preflight": {
+    "deselected": 45,
+    "environment": "scaffolds/transformer/.venv",
+    "failed": 0,
+    "log": {
+      "path": "logs/softplus_sos_cpu_52af7709.log",
+      "sha256": "256abc6bb05da8c55a40fe3112467a4badff5dfd1a94170d896159541e300d8a"
+    },
+    "note": "Shared 23-module CPU test selection; production acceptance separately repeats required stages in its allocated runtime.",
+    "passed": 670,
+    "seconds": 761.43,
+    "selection": [
+      "-m",
+      "not gpu",
+      "-k",
+      "not distributed"
+    ],
+    "skipped": 0
+  },
+  "date": "2026-11-13",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "format": "mosaic-softplus-sos-b200-qualification",
+  "frozen_execution_sha256": "d068a0428b4825e4618158b48a99e532e7d01d0da49c1ff255bdaf2b34304f65",
+  "full_model_pilot": {
+    "included": false,
+    "note": "Per-run acceptance must separately qualify initialization, optimizer pilot, checkpoint save and fresh-process resume on the production allocation."
+  },
+  "full_shape_initialization": {
+    "checks": [
+      {
+        "all_initial_parameters_match_control": true,
+        "control_parameter_count": 200150806,
+        "control_parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
+        "control_run_id": "reeefbcc19abf",
+        "input_power": 0,
+        "polynomial_degree": 8,
+        "run_id": "r41a4c74c5f58",
+        "sos_core_degree": 8
+      },
+      {
+        "all_initial_parameters_match_control": true,
+        "control_parameter_count": 200150806,
+        "control_parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
+        "control_run_id": "reeefbcc19abf",
+        "input_power": 1,
+        "polynomial_degree": 9,
+        "run_id": "r841f35a24241",
+        "sos_core_degree": 8
+      }
+    ],
+    "log": {
+      "path": "logs/softplus_sos_initialization_52af7709.log",
+      "sha256": "d72bd6e5be2f4ec20189fb8e047df1a74625c5670a71a3cdf48d095790b9d473"
+    },
+    "passed": true
+  },
+  "gpu_tests": {
+    "asserted_relative_l2_bounds": {
+      "dK": 0.025,
+      "dQ": 0.025,
+      "dV": 0.015,
+      "expanded_coefficient_per_order": 0.01,
+      "output": 0.006,
+      "sos_generator_x_W_a_b": 0.02
+    },
+    "errors": 0,
+    "failed": 0,
+    "junit_seconds": 835.426,
+    "maximum_element_error_bound": "3 times the corresponding relative-L2 bound times the largest absolute reference element; exact reference zeros must remain exact",
+    "module_sha256": {
+      "test_mosaic_score_transform.py": "58d28fc3e1f2f298665fe43f9e940ed0f43700e7a789267be8e8faa6329a0708",
+      "test_mosaic_softplus_sos.py": "e584401fe8fd9c90ea39ad0cb37216303ffaeb3d831b74685073267d685a004e"
+    },
+    "passed": 102,
+    "passed_by_module": {
+      "tests.test_mosaic_score_transform": 88,
+      "tests.test_mosaic_softplus_sos": 14
+    },
+    "paths": [
+      "scaffolds/transformer/tests/test_mosaic_score_transform.py",
+      "scaffolds/transformer/tests/test_mosaic_softplus_sos.py"
+    ],
+    "precisions": [
+      "bf16",
+      "bf16x3"
+    ],
+    "qualification_admission": "Tests admit hopper and blackwell kernel architectures in-process; this record qualifies B200 hardware only, not untested B300 execution.",
+    "reference": "Independent NumPy FP64 all-pairs softplus/abs polynomial reference; SoS reference evaluates the two squares directly and uses an analytic VJP through the query generator.",
+    "scope": [
+      "Transformed Mosaic kernels for softplus and abs, both precisions, unit and wide scores, supported widths and degrees, causal masking and numerical-failure semantics.",
+      "SoS core degree 8 with total degree 8 or 9; degree 9 prepends structural zero for w=z*h(z), including the score derivative product rule.",
+      "Production attention_core Mosaic dispatch at 2048 tokens with dK=dV=64, BF16 Q/K/V and FP32 generator parameters; output and Q/K/V/x/W/a/b VJPs.",
+      "Finite negative-score baseline versus vanishing tail, exact zero factors, causal prefix and generator gradients, and nonfinite causal-score failure."
+    ],
+    "selection": [
+      "-m",
+      "gpu"
+    ],
+    "skipped": 0
+  },
+  "runtime": {
+    "environment": "scaffolds/transformer/.venv-cuda13",
+    "launcher": "scaffolds/transformer/validation/qualify_softplus_sos.sbatch",
+    "launcher_settings": {
+      "JAX_PLATFORMS": "cuda,cpu",
+      "OMP_NUM_THREADS": "8",
+      "OPENBLAS_NUM_THREADS": "8",
+      "TRANSFORMER_HOST_STAGING": "0",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false",
+      "cuda_toolkit": "locked CUDA 13.2.86 toolkit; CUDA_HOME and Triton ptxas paths selected by kennel_runtime.sh"
+    },
+    "launcher_sha256": "47254afc098c86a676ce8bde92608b3d84ae968d9a1a84da7de8e4ab1177608e",
+    "versions": {
+      "jax": "0.10.0",
+      "jax-cuda13-pjrt": "0.10.0",
+      "jax-cuda13-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cublas": "13.2.2.2",
+      "nvidia-cuda-nvcc": "13.2.86",
+      "nvidia-cuda-runtime": "13.2.86",
+      "nvidia-cudnn-cu13": "9.22.0.52",
+      "pytest": "9.1.1"
+    }
+  },
+  "schema_version": 1,
+  "source_commit": "52af77095aa516a0e150b16c4c902e3cc7ca82e9",
+  "status": "passed"
+}

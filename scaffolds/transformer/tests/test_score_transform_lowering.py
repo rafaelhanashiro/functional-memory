@@ -11,7 +11,7 @@ kernels call on each tile) on whole causal matrices in FP64, against explicit al
 kernels' masking of a tile crossing the diagonal: very negative and very positive scores, exact zeros, masked
 entries holding huge scores, and special values; a nonfinite causal score (-inf from an overflowed dot product,
 +inf, NaN) makes its row NaN, as the blocked reference does; and backend selection and the entry point admit the
-transformed kernels on H100 alone. The kernels' numerics on GPUs are qualified by
+transformed kernels on H100 and B200, while refusing B300. The kernels' numerics on GPUs are qualified by
 ``tests/test_mosaic_score_transform.py``.
 """
 import math
@@ -51,21 +51,22 @@ def test_families_count_like_the_query_family():
     assert not common.approx_math(common.QUERY)
 
 
-def test_support_is_the_query_family_support():
+def test_support_is_query_family_plus_scoped_softplus_degree13():
     for transform in TRANSFORMS:
         for width in api.WIDTHS:
-            for time in (256, 2048, 4096):
+            for time in (256, 512, 1024, 2048, 4096):
                 for degree in range(0, 15):
+                    extension = transform == "softplus" and degree == 13 and width == 64 and time in (512, 2048)
                     assert api.query_degree_supported(degree, width, time, transform=transform) == (
-                        api.query_degree_supported(degree, width, time))
+                        api.query_degree_supported(degree, width, time) or extension)
         assert not api.query_degree_supported(8, 64, 2048, transform=transform, gate="query")
     assert not api.query_degree_supported(8, 64, 2048, transform="square")
-    assert [m for m in range(1, 13) if api.query_degree_supported(m, 64, 2048, transform="softplus")] == list(
-        range(1, 13))
+    assert api.MAX_QUERY_DEGREE == 12
+    assert [m for m in range(1, 15) if api.query_degree_supported(m, 64, 2048, transform="softplus")] == list(
+        range(1, 14))
 
 
-@pytest.mark.parametrize("degree", (4, 8, 12))
-@pytest.mark.parametrize("transform", TRANSFORMS)
+@pytest.mark.parametrize("transform,degree", [(t, d) for t in TRANSFORMS for d in (4, 8, 12)] + [("softplus", 13)])
 def test_hopper_kernels_lower_in_exactly_their_counted_shared_memory(transform, degree):
     """H100's forward, dQ and dK/dV lower at 2,048 tokens and d_K = 64 in exactly the bytes hopper_smem_bytes
     counts (the query family's), and fail one byte below."""
@@ -92,7 +93,7 @@ def test_blackwell_kernels_lower_with_the_query_rings(transform):
     """B300's forward, dQ, dK and dV kernels lower at 2,048 tokens, d_K = 64 and degree eight with the stages the
     query family's backward uses there (three), and at degree twelve, the largest the query family fits."""
     family = FAMILIES[transform]
-    for degree in (8, 12):
+    for degree in ((8, 12, 13) if transform == "softplus" else (8, 12)):
         q = jax.ShapeDtypeStruct((1, 2048, 2, 64), jnp.bfloat16)
         vectors = jax.ShapeDtypeStruct((degree + 1, 1, 2, 2048), jnp.float32)
         options = dict(family=family, degree=degree, scale=.125, precision="bf16")
@@ -112,11 +113,14 @@ def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, arch):
     module admits it to qualify its kernels)."""
     monkeypatch.setattr(api, "_kernels", lambda: (arch, {"hopper": hopper, "blackwell": blackwell}[arch]))
     monkeypatch.setattr(api, "TRANSFORM_ARCHITECTURES", ("hopper", "blackwell"))
+    monkeypatch.setattr(api, "_device_compute_capability", lambda: "9.0" if arch == "hopper" else "10.3")
+    monkeypatch.setattr(api, "TRANSFORM_COMPUTE_CAPABILITIES", ("9.0", "10.0", "10.3"))
 
     def attend(q, k, v, c):
         return api.transformed_query_polynomial_attention(q, k, v, c, transform=transform)
 
-    for degree, width in ((8, 8), (8, 64), (8, 128), (12, 64)):
+    cases = ((8, 8), (8, 64), (8, 128), (12, 64)) + (((13, 64),) if transform == "softplus" else ())
+    for degree, width in cases:
         assert api.query_degree_supported(degree, width, 2048, transform=transform)
         q = jax.ShapeDtypeStruct((1, 2048, 2, width), jnp.bfloat16)
         v = jax.ShapeDtypeStruct((1, 2048, 2, 64), jnp.bfloat16)
@@ -126,18 +130,45 @@ def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, arch):
 
 
 @pytest.mark.parametrize("transform", TRANSFORMS)
-def test_entry_point_admits_h100_alone(monkeypatch, transform):
-    """No Blackwell GPU has run the transformed kernels, so the entry point refuses B300's before tracing them, which
-    also covers models built without backend selection (restored checkpoints); H100's run."""
+@pytest.mark.parametrize("capability", ("9.0", "10.0", "10.3"))
+def test_entry_point_admits_h100_and_b200_only(monkeypatch, transform, capability):
+    """B200 admission does not admit the B300 sharing its kernels, including restored models without selection."""
     q = k = v = jax.ShapeDtypeStruct((1, 256, 2, 64), jnp.bfloat16)
     c = jax.ShapeDtypeStruct((1, 256, 2, 9), jnp.float32)
     attend = lambda *a: api.transformed_query_polynomial_attention(*a, transform=transform)
-    assert api.TRANSFORM_ARCHITECTURES == ("hopper",)
-    monkeypatch.setattr(api, "_kernels", lambda: ("blackwell", blackwell))
-    with pytest.raises(ValueError, match=r"qualified on H100 \(sm90\) only; no GPU has run its blackwell kernels"):
-        jax.eval_shape(attend, q, k, v, c)
+    assert api.TRANSFORM_ARCHITECTURES == ("hopper", "blackwell")
+    assert api.TRANSFORM_COMPUTE_CAPABILITIES == ("9.0", "10.0")
+    monkeypatch.setattr(api, "_device_compute_capability", lambda: capability)
+    if capability == "9.0":
+        monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
+    else:
+        monkeypatch.setattr(api, "_kernels", lambda: ("blackwell", blackwell))
+    if capability in ("9.0", "10.0"):
+        assert jax.eval_shape(attend, q, k, v, c).shape == v.shape
+    else:
+        with pytest.raises(ValueError, match=r"admits H100 \(sm90\) and B200 \(sm100\) only"):
+            jax.eval_shape(attend, q, k, v, c)
+
+
+@pytest.mark.parametrize("transform,width,time", (
+    ("softplus", 64, 256), ("softplus", 64, 1024), ("softplus", 64, 4096),
+    ("softplus", 32, 2048), ("softplus", 128, 2048), ("abs", 64, 2048),
+))
+def test_degree13_entry_point_rejects_unqualified_shapes(monkeypatch, transform, width, time):
     monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
-    assert jax.eval_shape(attend, q, k, v, c).shape == v.shape
+    q = jax.ShapeDtypeStruct((1, time, 1, width), jnp.bfloat16)
+    v = jax.ShapeDtypeStruct((1, time, 1, 64), jnp.bfloat16)
+    c = jax.ShapeDtypeStruct((1, time, 1, 14), jnp.float32)
+    with pytest.raises(ValueError, match="1 <= m <= 12"):
+        jax.eval_shape(lambda *a: api.transformed_query_polynomial_attention(*a, transform=transform), q, q, v, c)
+
+
+def test_degree13_raw_entry_point_remains_rejected(monkeypatch):
+    monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
+    q = jax.ShapeDtypeStruct((1, 2048, 1, 64), jnp.bfloat16)
+    c = jax.ShapeDtypeStruct((1, 2048, 1, 14), jnp.float32)
+    with pytest.raises(ValueError, match="1 <= m <= 12"):
+        jax.eval_shape(api.query_polynomial_attention, q, q, q, c)
 
 
 @pytest.mark.parametrize("change", ("identity", "unknown", "coefficient dtype", "degree too high", "coefficient shape",
@@ -425,28 +456,26 @@ def _mosaic_model(transform):
         attention_coefficient_constant_initial=0. if transform == "softplus" else None)
 
 
-@pytest.mark.parametrize("capability", (9, 10))
+@pytest.mark.parametrize("capabilities", (("9.0",), ("10.0",), ("10.3",), ("10.0", "10.3"),
+                                         ("9.0", "10.3")))
 @pytest.mark.parametrize("transform", TRANSFORMS)
-def test_backend_selection_admits_the_transformed_kernels_on_h100_alone(transform, capability, monkeypatch):
-    """No Blackwell GPU has run the transformed kernels, so an explicit mosaic backend resolves a transformed recipe
-    on an H100 (sm90) and refuses it with the reason on a B200 or B300 (sm10x), as it refuses the score biases;
-    there the untransformed recipe still resolves to mosaic, and the blocked strips still run the transform."""
+def test_backend_selection_admits_h100_and_b200_only(transform, capabilities, monkeypatch):
+    """Require admitted devices throughout the allocation; generic Blackwell support cannot admit a B300."""
     from dataclasses import replace
 
     from scaffolds.transformer.attention.backends import selection
 
     monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
-    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: capability)
+    monkeypatch.setattr(selection, "_cuda_compute_capabilities", lambda: capabilities)
     model = _mosaic_model(transform)
 
     def resolve(model):
         return selection.resolve_attention_backend(model, dtype="bfloat16", sequence_length=256)
 
-    if capability == 9:
+    if all(item in ("9.0", "10.0") for item in capabilities):
         assert resolve(model) == "mosaic"
     else:
-        with pytest.raises(ValueError, match=r"transformed query-polynomial attention is qualified on H100 \(sm90\) "
-                                             r"only, got sm10x"):
+        with pytest.raises(ValueError, match=r"admits H100 \(sm90\) and B200 \(sm100\) only"):
             resolve(model)
     assert resolve(replace(model, attention_score_transform="identity")) == "mosaic"
     assert resolve(replace(model, attention_backend="blocked", attention_blocked_implementation="strips")) == "blocked"
@@ -465,7 +494,7 @@ def test_model_layers_train_on_the_transformed_kernels(transform, monkeypatch):
 
     monkeypatch.setattr(api, "_kernels", lambda: ("hopper", hopper))
     monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
-    monkeypatch.setattr(selection, "_cuda_compute_capability", lambda: 9)
+    monkeypatch.setattr(selection, "_cuda_compute_capabilities", lambda: ("9.0",))
     calls = []
     transformed = api.transformed_query_polynomial_attention
     monkeypatch.setattr(api, "transformed_query_polynomial_attention",
