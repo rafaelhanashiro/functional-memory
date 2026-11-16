@@ -587,6 +587,10 @@ class ModelConfig:
         if (self.attention_coefficient_input_source == "pre_rmsnorm"
                 and self.attention_coefficient_input_normalization != "l2"):
             raise ValueError("pre_rmsnorm coefficient input source requires L2 coefficient input normalization")
+        l2_score_supported = (self.attention_score_transform == "identity" or (
+            self.attention_score_transform == "softplus"
+            and self.attention_coefficient_parameterization == "sum_of_squares"
+            and self.attention_coefficient_input_power == 1))
         if self.attention_coefficient_input_normalization == "l2" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_sharing != "per_head"
@@ -596,13 +600,13 @@ class ModelConfig:
                 or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
                 or self.attention_coefficient_gate != "none" or self.attention_forget_gate
                 or self.attention_kernel_basis != "polynomial" or self.attention_score_bias != "none"
-                or self.attention_score_transform != "identity" or self.attention_normalization
+                or not l2_score_supported or self.attention_normalization
                 or self.positional_encoding not in ("rope", "none")
                 or self.attention_degree is None or self.attention_degree < 1 or self.quadratic_mode != "fixed"):
             raise ValueError("L2 coefficient input normalization requires unnormalized learned per-head "
                              "diagonal tanh query polynomial coefficients, direct or sum-of-squares, "
                              "with RoPE or no positional encoding, without selected orders, inner biases, gates, "
-                             "score biases or score transforms")
+                             "score biases; score transforms are limited to softplus with a SoS input prefactor")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError(f"Unknown attention coefficient readout: {self.attention_coefficient_readout}")
         if self.attention_coefficient_readout == "dense" and (

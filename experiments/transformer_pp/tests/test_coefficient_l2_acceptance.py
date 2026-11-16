@@ -185,3 +185,112 @@ def test_raw_input_acceptance_rejects_unpinned_degree_and_control_change(tmp_pat
     monkeypatch.setattr(adapter, "RUNS", tmp_path)
     with pytest.raises(ValueError, match="Pinned.*changed"):
         adapter.control_config("direct", 12, "pre_rmsnorm")
+
+
+SOFTPLUS_PREFACTOR_CASES = (
+    (9, 8, "r841f35a24241", "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b"),
+    (13, 12, "rf637de9b65b1", "22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903"),
+)
+
+
+def softplus_prefactor_raw_variant(total_degree):
+    config = adapter.control_config("sum_of_squares", total_degree, "pre_rmsnorm", "softplus", 1)
+    config.model.attention_coefficient_input_normalization = "l2"
+    config.model.attention_coefficient_input_source = "pre_rmsnorm"
+    return config
+
+
+@pytest.mark.parametrize("total_degree,core_degree,run_id,digest", SOFTPLUS_PREFACTOR_CASES)
+def test_softplus_prefactor_raw_recipe_changes_only_normalization_and_source(
+        total_degree, core_degree, run_id, digest):
+    assert adapter.SOFTPLUS_PREFACTOR_CONTROLS[total_degree]["sum_of_squares"] == (run_id, digest)
+    parent = adapter.RUNS / run_id
+    record = json.loads((parent / "record.json").read_text())
+    assert record["status"] == "complete" and record["config"]["sha256"] == digest
+    assert hashlib.sha256((parent / "config.yaml").read_bytes()).hexdigest() == digest
+    before = adapter.control_config("sum_of_squares", total_degree, "pre_rmsnorm", "softplus", 1)
+    changed = softplus_prefactor_raw_variant(total_degree)
+    adapter.check_recipe(changed)
+    first, second = config_to_dict(before), config_to_dict(changed)
+    differences = {f"{section}.{key}" for section in first for key in first[section]
+                   if first[section][key] != second[section][key]}
+    assert differences == {"model.attention_coefficient_input_normalization",
+                           "model.attention_coefficient_input_source"}
+    assert (before.model.attention_coefficient_input_normalization,
+            before.model.attention_coefficient_input_source) == ("none", "post_rmsnorm")
+    model = changed.model
+    assert model.attention_degree - model.attention_coefficient_input_power == core_degree
+    assert (model.attention_score_transform, model.attention_coefficient_input_power) == ("softplus", 1)
+    assert (model.positional_encoding, model.attention_backend) == ("rope", "mosaic")
+    assert model.attention_coefficient_kernel_weight_decay and changed.optim.weight_decay == .1
+    assert (model.num_layers, model.hidden_size, model.num_heads) == (15, 896, 14)
+    assert (changed.train.seed, changed.optim.total_steps, changed.data.batch_size) == (42, 7570, 256)
+
+
+@pytest.mark.parametrize("total_degree", (9, 13))
+@pytest.mark.parametrize("section,field,value", (
+    ("model", "attention_coefficient_input_normalization", "none"),
+    ("model", "attention_coefficient_input_source", "post_rmsnorm"),
+    ("model", "attention_score_transform", "identity"),
+    ("model", "attention_coefficient_input_power", 0),
+    ("model", "attention_coefficient_parameterization", "direct"),
+    ("model", "attention_coefficient_kernel_weight_decay", False),
+    ("model", "attention_degree", 11),
+    ("model", "positional_encoding", "none"),
+    ("model", "attention_backend", "blocked"),
+    ("optim", "weight_decay", 0.),
+    ("optim", "learning_rate", .002),
+    ("optim", "total_steps", 7571),
+    ("train", "seed", 43),
+))
+def test_softplus_prefactor_raw_recipe_rejects_unmatched_changes(total_degree, section, field, value):
+    config = softplus_prefactor_raw_variant(total_degree)
+    setattr(getattr(config, section), field, value)
+    with pytest.raises(ValueError):
+        adapter.check_recipe(config)
+
+
+@pytest.mark.parametrize("total_degree", (9, 13))
+def test_softplus_prefactor_raw_acceptance_includes_composed_cpu_and_gpu_checks(total_degree):
+    config = softplus_prefactor_raw_variant(total_degree)
+    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
+    cpu = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=True)
+    gpu = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=False)
+    assert adapter.OWN_TESTS in cpu
+    for path in (adapter.FEATURE_TESTS, adapter.RAW_FEATURE_TESTS, adapter.SOFTPLUS_FEATURE_TESTS):
+        assert path in cpu and path in gpu
+    assert "scaffolds/transformer/tests/test_softplus_sos.py" in cpu
+    assert "scaffolds/transformer/tests/test_mosaic_softplus_sos.py" in gpu
+    assert spec.required_backend == "mosaic" and spec.pilot_steps == 20
+    assert spec.check_config is adapter.check_recipe
+    assert spec.check_initialization is adapter.check_initialization
+
+
+@pytest.mark.parametrize("total_degree,core_degree,run_id,digest", SOFTPLUS_PREFACTOR_CASES)
+def test_softplus_prefactor_raw_initialization_uses_core_degree_fingerprint(
+        total_degree, core_degree, run_id, digest, monkeypatch):
+    config = softplus_prefactor_raw_variant(total_degree)
+    facts = adapter.INITIAL_PARAMETERS[core_degree].copy()
+    assert total_degree not in adapter.INITIAL_PARAMETERS
+    monkeypatch.setattr(adapter, "initialization_facts", lambda config: facts.copy())
+    monkeypatch.setattr(adapter, "matches_softmax_backbone_initialization", lambda config: {"backbone_passed": True})
+    result = adapter.check_initialization(config)
+    assert result["all_initial_parameters_match_control"] and result["backbone_passed"]
+    assert result["control_run_id"] == run_id
+    assert result["control_parameter_count"] == facts["parameter_count"]
+    assert result["control_parameter_sha256"] == facts["parameter_sha256"]
+    assert result["coefficient_input_source"] == "pre_rmsnorm"
+    facts["parameter_sha256"] = "different"
+    with pytest.raises(RuntimeError, match="Initial parameters differ"):
+        adapter.check_initialization(config)
+
+
+@pytest.mark.parametrize("total_degree,core_degree,run_id,digest", SOFTPLUS_PREFACTOR_CASES)
+def test_softplus_prefactor_raw_control_recipe_hash_is_enforced(
+        total_degree, core_degree, run_id, digest, tmp_path, monkeypatch):
+    parent = tmp_path / run_id
+    parent.mkdir()
+    (parent / "config.yaml").write_text("changed: true\n")
+    monkeypatch.setattr(adapter, "RUNS", tmp_path)
+    with pytest.raises(ValueError, match="Pinned.*changed"):
+        adapter.control_config("sum_of_squares", total_degree, "pre_rmsnorm", "softplus", 1)

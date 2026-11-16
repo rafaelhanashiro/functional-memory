@@ -1,6 +1,6 @@
 question: Does coefficient-input L2 normalization improve direct and SoS query polynomials
-  at m=8 and m=12, and does bypassing the pre-attention RMSNorm gains change the m=12
-  outcome?
+  at m=8 and m=12, including softplus-times-SoS prefactor models, and does bypassing
+  the pre-attention RMSNorm gains change the outcome?
 opened: '2026-11-14'
 settings:
   metric: held-out validation perplexity
@@ -10,16 +10,20 @@ settings:
   seed: 42
   training_steps: 7570
   comparison: Post-RMSNorm L2 runs against their original-input controls; raw-input
-    L2 m=12 runs against the explicitly selected completed post-RMSNorm L2 controls.
+    L2 m=12 runs against completed post-RMSNorm L2 controls; raw-input L2 softplus-times-SoS
+    runs at core degrees 8/12 (total degrees 9/13) against their original-input prefactor
+    parents.
   diagnostics: fixed first held-out sequence at scheduled evaluations; all layer/head/generator
     coordinates
   saturation_absolute_tanh_threshold: 0.99
   normalization_formula: u / max(norm(u,2),1e-6), only before coefficient projection;
     u is the source declared by each recipe (post-RMSNorm by default, pre-RMSNorm
-    for the raw-input pair).
-  open_decision: All six L2 runs completed. Raw-input L2 improves on post-RMSNorm
-    L2 at m=12, but both remain behind the original-input controls. Keep the original
-    input as default; decide whether an intermediate input scale warrants study.
+    for raw-input L2).
+  open_decision: Six earlier L2 runs completed. Raw-input L2 improves on post-RMSNorm
+    L2 at m=12 but remains behind the original-input controls. Two raw-input L2 softplus-times-SoS
+    prefactor runs are prepared for submission at core degrees 8/12; determine whether
+    they improve their original-input parents. Keep the original input as default
+    pending those results.
   degrees:
   - 8
   - 12
@@ -226,3 +230,69 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r2bf71d7b4831/best_validation.json
       sha256: 49aa3dc4c7d1f5b2ffb7660be4abfbfd2524c45814c774b4229448d94fd9a9a8
+- study: transformer_pp
+  run_id: r35805940a380
+  role: softplus_prefactor_raw_l2_m8
+  label: softplus-times-SoS core m=8, raw coefficient input L2
+  control_run_id: r841f35a24241
+  core_degree: 8
+  total_degree: 9
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r35805940a380/config.yaml
+      sha256: 7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484
+- study: transformer_pp
+  run_id: r841f35a24241
+  role: softplus_prefactor_m8_control
+  label: softplus-times-SoS core m=8, original coefficient input
+  core_degree: 8
+  total_degree: 9
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r841f35a24241/config.yaml
+      sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl
+      sha256: 556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e
+    completion.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/completion.json
+      sha256: 11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37
+    metadata.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/metadata.json
+      sha256: db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/best_validation.json
+      sha256: bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495
+- study: transformer_pp
+  run_id: r5198d688e9d4
+  role: softplus_prefactor_raw_l2_m12
+  label: softplus-times-SoS core m=12, raw coefficient input L2
+  control_run_id: rf637de9b65b1
+  core_degree: 12
+  total_degree: 13
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/config.yaml
+      sha256: ba829833e479a9e566c60c89cf55d748b4c64dcc636e787d7140d56fba3ec1f4
+- study: transformer_pp
+  run_id: rf637de9b65b1
+  role: softplus_prefactor_m12_control
+  label: softplus-times-SoS core m=12, original coefficient input
+  core_degree: 12
+  total_degree: 13
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/config.yaml
+      sha256: 22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metrics.jsonl
+      sha256: adc50bbe174a6978c513dea4891a08d31458dc6593c282362b0b877887f43bad
+    completion.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/completion.json
+      sha256: 87dc6b38845536d252820339fb2b030d8e01c0fbbc31dbeaae248f2f66249754
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metadata.json
+      sha256: ea3ca1077248ad8f4338a3663db0b8bc2ca7fa07894c1febcc158a156f1f576b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/best_validation.json
+      sha256: 59b90f08f1824108981c5817467d077ef304629ea6cd9fc83da55885513a6a36

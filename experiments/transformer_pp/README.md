@@ -2203,6 +2203,41 @@ done
 Acceptance requires raw-source branch isolation, independent reference gradients
 through both input paths, native Mosaic composition, identical initial parameter
 hashes, and each run's full-shape pilot and fresh-process resume.
+
+### Raw-input L2 for softplus-times-SoS
+
+Two runs are prepared for submission on Kennel: `r35805940a380` uses the
+degree-eight SoS core of `r841f35a24241`, and `r5198d688e9d4` uses the
+degree-twelve core of `rf637de9b65b1`. Both retain `w(s) = u h(u)`, where
+`u = softplus(s)` and `h` is the SoS core; total degrees are nine and thirteen.
+Their only scientific changes are coefficient-input normalization `l2` and
+source `pre_rmsnorm`. The coefficient projection receives the raw attention input
+divided by `max(||input||_2, 1e-6)` in FP32; Q/K/V retain the RMSNorm path.
+Both retain their parent's complete 15-layer width-896 recipe, including RoPE,
+native Mosaic, initial parameters, W decay 0.1, no a/b decay, seed 42, optimizer,
+data, and 7,570 updates. The [exploration](results/exploratory/coefficient_input_norm/README.md)
+owns the parent PPL comparisons and open decision. Neither new run has trained yet.
+
+From the isolated worktree after committing its frozen execution inputs, submit
+these two independent one-B200 jobs. Each allocation runs
+`coefficient_l2_acceptance` before production, including the composed raw-input
+L2/softplus/SoS forward and gradient checks, its 20-update full-shape pilot, and
+fresh-process optimizer/data resume. Live partition allowances must still satisfy
+[cluster policy](../../CLUSTERS.md).
+
+```bash
+for run in r35805940a380 r5198d688e9d4; do
+  sbatch --parsable --partition=standard --gres=gpu:1 \
+    --exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier \
+    --cpus-per-task=16 --mem=128G --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.coefficient_l2_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200
+done
+```
+
 ## Softplus and sum-of-squares composition
 
 The two runs opened on 2026-11-13 test query-conditioned degree-eight sum-of-squares

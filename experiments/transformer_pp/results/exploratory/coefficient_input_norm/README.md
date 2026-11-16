@@ -3,9 +3,10 @@
 Opened **2026-11-14**. This Transformer++ exploration asks whether limiting the
 input to the tanh coefficient generator reduces saturation and improves perplexity.
 It contains four completed post-RMSNorm L2 runs, at degrees eight and twelve,
-and two completed degree-twelve raw-input L2 runs at the 15-layer width-896 shape,
-each matched to its own existing control. These runs
-remain exploratory and enter no canonical comparison.
+and two completed degree-twelve raw-input L2 runs at the 15-layer width-896 shape.
+Two further raw-input L2 runs for softplus-times-SoS cores of degree eight and
+twelve are prepared for submission, each matched to its original-input parent.
+These runs remain exploratory and enter no canonical comparison.
 
 | Coefficient form | Unit-L2 input run | Original-input control |
 | --- | --- | --- |
@@ -160,6 +161,27 @@ positions is **0% for raw-input query and 0.0421% for raw-input SoS**, versus
 finite. These are descriptive measurements on one sequence, equally weighted
 across generator coordinates, not model-contribution-weighted sensitivities.
 
+## Raw-input L2 for softplus-times-SoS
+
+The two new runs are prepared for independent Kennel submissions; neither has
+trained yet. They retain `w(s) = u h(u)`, with `u = softplus(s)` and a
+query-conditioned SoS core `h = U² + V²`. Core degrees eight and twelve give
+total degrees nine and thirteen after the prefactor.
+
+| Core degree | Raw-input L2 run | Original-input control | Control best PPL |
+| --- | --- | --- | ---: |
+| 8 | `r35805940a380` | `r841f35a24241` | 14.0953 |
+| 12 | `r5198d688e9d4` | `rf637de9b65b1` | 14.0934 |
+
+The only scientific recipe changes are
+`attention_coefficient_input_normalization: l2` and
+`attention_coefficient_input_source: pre_rmsnorm`: the coefficient projection
+receives `h_raw / max(||h_raw||_2, 1e-6)` in FP32, while Q/K/V retain the
+pre-attention RMSNorm path. Both preserve their parent's 15-layer width-896
+shape, RoPE, native Mosaic, initial parameters, W decay 0.1, no a/b decay,
+seed 42, optimizer, data, and 7,570-update budget. The comparison asks whether
+raw-input L2 improves these stronger softplus-times-SoS controls.
+
 ## Saturation by coordinate
 
 The [selected-head bars](saturation_by_coordinate.png) compare the original
@@ -167,8 +189,9 @@ coefficient input, L2 after RMSNorm, and raw-input L2 for query and SoS at
 degrees eight and twelve. They also include the softplus-times-SoS runs
 `r841f35a24241` (core degree eight) and `rf637de9b65b1` (core degree twelve):
 `w(s) = u h(u)`, where `u = softplus(s)` and `h = U² + V²`. The prefactor makes
-the total degrees nine and thirteen. Neither L2 placement has been run for
-these two models, so all four L2 cells say **Not run**.
+the total degrees nine and thirteen. This figure is a completed snapshot from
+before the new raw-input L2 runs: all four softplus-times-SoS L2 cells still say
+**Not run**. It contains no measurements from the prepared runs above.
 Their matched-head mean saturation is **26.22%** at m=8 and **18.57%** at m=12,
 with best validation PPL **14.0953** and **14.0934**. The new native probe
 `rfadcac37b6d0` checks parameter identity and captures the factor generators
@@ -194,7 +217,7 @@ Its largest coordinate mean is U2: 0.1283% for degree-eight post-RMSNorm L2,
 0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for degree-twelve raw L2.
 All query coordinates average zero at this checkpoint. No matched all-model
 probe exists for the original controls, so they are not included in this view.
-Softplus-times-SoS has no L2 runs and is omitted from this L2-only figure.
+Softplus-times-SoS has no completed L2 runs and is omitted from this L2-only figure.
 The percentages here are at checkpoint 7,500, rather than the terminal
 measurements reported above.
 
@@ -234,9 +257,10 @@ The degree-eight result is mixed. At degree twelve, raw-input L2 improves on
 post-RMSNorm L2 for both forms, but both L2 choices remain worse than the original
 input in this single-seed comparison. Keep coefficient-input L2 as an exploration;
 the results do not justify replacing the original input normalization by default.
-The open decision is whether a less aggressive input scale or another targeted
-optimization experiment warrants further study. All six selected L2 runs are
-complete; no further runs are currently part of this selection.
+The immediate open decision is whether raw-input L2 improves the softplus-times-SoS
+prefactor models at core degrees eight and twelve. Six earlier L2 runs are
+complete; the two selected additions are prepared for submission. An intermediate
+input scale remains a possible later experiment.
 
 Refresh the selected scientific inputs after new measurements:
 

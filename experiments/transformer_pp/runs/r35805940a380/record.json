@@ -1,0 +1,26 @@
+{
+  "acceptance_module": "experiments.transformer_pp.coefficient_l2_acceptance",
+  "comparison": {
+    "changed_model_fields": {
+      "attention_coefficient_input_normalization": "l2",
+      "attention_coefficient_input_source": "pre_rmsnorm"
+    },
+    "coefficient_parameterization": "sum_of_squares",
+    "control_config_sha256": "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
+    "control_run_id": "r841f35a24241",
+    "core_degree": 8,
+    "total_degree": 9
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r35805940a380/config.yaml",
+    "sha256": "7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484"
+  },
+  "home_cluster": "kennel",
+  "label": "query-sos-core-m8-softplus-prefactor-raw-l2-rope-w-decay",
+  "name": "query-sos-core-m8-softplus-prefactor-raw-l2-rope-w-decay",
+  "purpose": "Test unit-L2 normalization of the raw attention input only for the query-conditioned SoS factor generator, retaining the matched softplus score transform and input prefactor.",
+  "record_schema_version": 1,
+  "run_id": "r35805940a380",
+  "seed": 42,
+  "status": "planned"
+}
