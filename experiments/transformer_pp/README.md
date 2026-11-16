@@ -2060,17 +2060,21 @@ job can run or requeue.
 
 ### Raw-input L2 at degree twelve
 
-The fresh query run `r1f30febd7de5` and SoS query run `r2bf71d7b4831` use
+The completed query run `r1f30febd7de5` and SoS query run `r2bf71d7b4831` use
 `attention_coefficient_input_source: pre_rmsnorm`, retaining input normalization
 `l2`. They are paired with completed post-RMSNorm L2 controls `r7e34dec9dbd5`
 and `r6b17c3463a60`, respectively. The coefficient generator reads the raw residual
 before attention RMSNorm, normalized to unit L2; Q/K/V retain the learned RMSNorm
 path. Both use the same 15-layer width-896 shape, degree twelve, RoPE, W decay,
 seed, initial parameters, optimizer, data, and 7,570-update budget as their controls.
-The exploration above owns the findings and open decision.
+Both completed all 7,570 updates and selected their best checkpoint at update
+7,500. The exploration above owns the best/terminal comparisons, saturation and
+gradient findings, and open decision.
 
-Run these independent one-B300 allocations from the frozen
-`codex/coefficient-raw-l2-m12` worktree:
+The completed independent one-B300 allocations used source commit
+`b75d546a07aa8aedb21c0efe970d8dcedffb5eed` and the commands below. For a fresh
+replication, allocate new run IDs and freeze their recipes in a new worktree;
+do not retrain these completed run IDs.
 
 ```bash
 for run in r1f30febd7de5 r2bf71d7b4831; do
