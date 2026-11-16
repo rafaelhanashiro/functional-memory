@@ -64,6 +64,11 @@ when JAX opened the device (UUID `GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5`); Sl
 granting the idle GPU, so a job that lands on it fails at start-up until the admins reset it. On
 2026-11-11 a one-GPU probe on `mastiff` was granted it as index 1 (bus `41:00.0`), the lowest free
 index, so single-GPU jobs there land on it first; exclude `mastiff` for one-GPU jobs until it is reset.
+On 2026-11-15 `dogo`'s H100 at bus `A3:00.0` (UUID `GPU-355f34a2-be0c-ba44-022b-1a056f643b80`, Slurm
+GPU index 4) failed CUDA initialization under JAX with `CUDA_ERROR_UNKNOWN`, although `nvidia-smi` showed
+no uncorrected ECC errors or pending remaps; one-GPU jobs granted it fail at acceptance within seconds,
+before any update (six did that day). Until the admins reset it, hold it with a one-GPU placeholder job on
+`dogo` that keeps its GPU only when JAX fails to initialize it, or exclude `dogo` for one-GPU jobs.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity

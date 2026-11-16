@@ -222,7 +222,7 @@ same 38 validation batches (`metrics.jsonl`):
 - **Every 4x run is validation-best at its last evaluation, update 30,205**, 0.19–0.23% below update 30,000 on the
   same validation batches; every 2x run is validation-best at 15,000 and 0.03–0.07% higher at 15,103. The shift is
   common to all runs, which train on the same batches in the same order, and moves each gap to exp by at most
-  0.03 points, so comparisons within a budget stand.
+  0.03 points, so it does not change comparisons within a budget.
 
 ### 4x limits
 
@@ -240,6 +240,9 @@ same 38 validation batches (`metrics.jsonl`):
   resumptions that reached a later checkpoint. The other attempts were preempted before reaching a new
   checkpoint, or ended before any update: preempted during acceptance, or failed at JAX initialization on `dogo`
   (`CUDA_ERROR_UNKNOWN`) and were resubmitted under a new job ID.
+- Within 4x the comparisons also cross GPUs: sum of squares, query, static and fixed Taylor trained their first
+  1,000–17,500 updates on a B300 (CUDA 13 environment), exp, softmax and softplus input only on the H100 SXM
+  (CUDA 12).
 - The 2x runs trained on H100 PCIe and H100 SXM GPUs ([Limits](#limits)), so the 2x-to-4x comparisons cross GPUs
   as well as budgets.
 

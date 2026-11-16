@@ -2014,8 +2014,11 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
 Home cluster: **Kennel**. All seven runs are complete; each record holds its launch commit, attempts, and the
 artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus run) and
 log. Branch `claude/l12-d640-4x`. The runs were submitted on `long` from the worktree root after the frozen
-execution set was committed. Jobs that ended before any update were resubmitted under new job IDs, and after the
-preemptions on `akita`, `akita` was added to the jobs' excluded nodes; each record lists its jobs and attempts.
+execution set was committed. Six jobs whose start or restart failed at JAX initialization on a `dogo` H100
+(`CUDA_ERROR_UNKNOWN`; CLUSTERS.md) were resubmitted under new job IDs: query 2424, sum of squares 2425, exp 2426
+and softmax 2427 with their commands below, static 2883 and fixed Taylor 2884 with `akita` also excluded (the last
+two lines). After the preemptions on `akita`, `akita` was added to the queued jobs' excluded nodes. Each record
+lists its jobs and attempts.
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
@@ -2033,6 +2036,8 @@ submit long 10:00:00 acceptance B300,H100 $EXCL r0f8122dd8439                   
 submit long 10:00:00 acceptance B300,H100 $EXCL rcace22b32f93                    # fixed Taylor
 submit long 10:00:00 acceptance B300,H100 $EXCL r333444bd4304                    # exp
 submit long 8:00:00 acceptance B300,H100 $EXCL r93df1e48c8fd                     # softmax
+submit long 10:00:00 acceptance B300,H100 akita,$EXCL r0f8122dd8439              # static, job 2883
+submit long 10:00:00 acceptance B300,H100 akita,$EXCL rcace22b32f93              # fixed Taylor, job 2884
 ```
 
 ## Regular-query coefficient activation diagnostic
