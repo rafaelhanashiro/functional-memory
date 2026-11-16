@@ -1,0 +1,316 @@
+question: Where do original and L2-normalized query and SoS coefficient generators
+  saturate at m=8 and m=12?
+settings:
+  layer_index: 7
+  head_index: 0
+  checkpoint_step: 7500
+  sequences: 1
+  prediction_tokens: 2048
+  input_dimension: 896
+  sample_selection: first_heldout_sequence
+  sample_record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+  saturation_absolute_tanh_threshold: 0.99
+  head_y_limits_percent:
+  - 0
+  - 100
+  all_heads_y_limits_percent:
+  - 0
+  - 0.25
+  bar_color: '#28699b'
+  head_aggregation: fraction of sampled tokens per generator coordinate in layer 8,
+    head 1
+  all_heads_aggregation: mean token saturation per generator coordinate over all layers
+    and heads; equal weight, not contribution weighted
+  coordinate_convention: 'direct: r=0..m; SoS: U0..U(m/2), V0..V(m/2-1), before square
+    expansion'
+  missing_convention: Not run; never interpreted as zero
+  limits: One held-out sequence. Original controls have only the selected-head probe;
+    all-head panels contain L2 runs only. Raw L2 m=8 runs do not exist.
+runs:
+- study: transformer_pp
+  run_id: r25a5f78841b2
+  role: direct_l2
+  label: direct query m=8, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/config.yaml
+      sha256: 39944e549f77619ad284c7141ed2582d82c00de8f1c3773fe75882b565c324c8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/metrics.jsonl
+      sha256: cf72697e010bd4090e07af107f1a537ba4daa991a91c3e6a02175167670e6651
+    completion.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/completion.json
+      sha256: 3df0eed50fa97788bb3f735fb73db925791e1be00ba8bb7221865f86ebb4d7eb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/metadata.json
+      sha256: b74ee66e4ea3cc5306f2d30c9e82df25664c4063bdda56a74ba19a043fbe28bf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25a5f78841b2/best_validation.json
+      sha256: 60e88a68aa4808ae33b7c68e202df9bc56f560cd26f45ca3335ea0a8e3f10d4f
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: direct_control
+  label: direct query m=8, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: r717267afcb78
+  role: sum_of_squares_l2
+  label: sum_of_squares query m=8, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r717267afcb78/config.yaml
+      sha256: d502cc54014d75e7f0a1f8a20c6c31a1acabaa421cdb5fabaad6d10a76a24183
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r717267afcb78/metrics.jsonl
+      sha256: e423c7d963ba1eb2c5fa5e355c03509837626f0e9c712b032c3869f31bcc39b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/completion.json
+      sha256: 36dbcd7094b321f130fb24199df98a01f6e2a7385ec8348c9a445243dd0fcc47
+    metadata.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/metadata.json
+      sha256: ebf5f43e592e0b85ccbb87f7e1c7f4d5e7b9ad30795f88cf0e98c87e1f4e7be6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r717267afcb78/best_validation.json
+      sha256: edbcc7e7131b507b8f0420c0a59fae0f5b816c29c0f234981e741989144ec7c8
+- study: transformer_pp
+  run_id: reeefbcc19abf
+  role: sum_of_squares_control
+  label: sum_of_squares query m=8, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/config.yaml
+      sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metrics.jsonl
+      sha256: d647b2f1e82f45fbd72d0e68be0d03897f7427477fcbb68ab78d7524b0085ffb
+    completion.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/completion.json
+      sha256: e3fae2b3368b9bf83a8ecaf40eba19c127dc51556d4d0802f2bc11600923c0c0
+    metadata.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metadata.json
+      sha256: 622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
+      sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2
+- study: transformer_pp
+  run_id: r7e34dec9dbd5
+  role: direct_m12_l2
+  label: direct query m=12, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/config.yaml
+      sha256: 7ed059fbcbbb6e87795eb37594591b8d1a8985ea9040ccfe85a64e363981041a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/metrics.jsonl
+      sha256: 4ec70b03559cb0ee10a9d6530ca0f27323158a2e9611180ad648f2a69168992e
+    completion.json:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/completion.json
+      sha256: 35886375871fe45b05472c726bf3b18405faac799031a15c57abdc09ac4655fb
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/metadata.json
+      sha256: c1ddef6a9ddf66c7e0340490a8fb12621cba591855ce4cf8aaeed6bcb6ebd379
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7e34dec9dbd5/best_validation.json
+      sha256: 1762d0c69154e11699f85edf55f1900bf5362a52d0e1376eb2ec6e14c4346f11
+- study: transformer_pp
+  run_id: r0fceea0627c8
+  role: direct_m12_control
+  label: direct query m=12, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/config.yaml
+      sha256: 785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metrics.jsonl
+      sha256: 000479e88edd12adbf5180b319433a379c3b5648933414a282aa7b501932e43f
+    completion.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/completion.json
+      sha256: 9b54532be8044ed3fd4e34fe221ce19d2f953edc6b69d3175fbab6aa82e16bcd
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/metadata.json
+      sha256: 1e93f2b73f698eb0c7819a627f73355d4474afa20267d213442e3ff9d7790af8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0fceea0627c8/best_validation.json
+      sha256: 953518103a4f9996ba6baf19ab47ef22d3296c29b9a286d8aed04af444e783ce
+- study: transformer_pp
+  run_id: r6b17c3463a60
+  role: sum_of_squares_m12_l2
+  label: sum_of_squares query m=12, coefficient input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/config.yaml
+      sha256: b75719f3622ac70fded0b5dcac1a283009a217b42a1a712432cf7820b7dea25c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/metrics.jsonl
+      sha256: 73d1360e0d7e2ade9b9ead35aaf27c99fa2eb733763f6893bde93bc419015cca
+    completion.json:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/completion.json
+      sha256: cef0e9b3d0047240f534d14a6aa604078ae3c551cca2a782f4d24c6895742727
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/metadata.json
+      sha256: d81073fc2929a88eb9d1a18a499fc5517dce4f8636d12fea176ed78f056f6a05
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6b17c3463a60/best_validation.json
+      sha256: 5072e9cf25504aecbeda17d4cbd34a830e323d9907efcea531c25859c030c0ea
+- study: transformer_pp
+  run_id: r3d52b7ab43d1
+  role: sum_of_squares_m12_control
+  label: sum_of_squares query m=12, original coefficient input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/config.yaml
+      sha256: 9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metrics.jsonl
+      sha256: 894f20027b79ef78b636a615fbdf19db223e12bb91c027a9c055fe0e7587088a
+    completion.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/completion.json
+      sha256: 68f9ccb5f5fde1a03a2bc47172122866eacdce1aa0f17a253db685f10ca4ee51
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metadata.json
+      sha256: 427c3d0111ef74fb313369aae5dd6bca63cb96ec131c6c104f45a1b5cdf60bac
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/best_validation.json
+      sha256: 3b7db607a97f8d8ff8f3447e2a6aed04f54477288fac17b15da4d1ded34bb839
+- study: transformer_pp
+  run_id: r1f30febd7de5
+  role: direct_raw_l2_m12
+  label: direct query m=12, raw coefficient input L2
+  control_run_id: r7e34dec9dbd5
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/config.yaml
+      sha256: 152fa2a59a6cf05e75fa9624e748a8a7626dee29f5aee5f11ff7de5db72d21e8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/metrics.jsonl
+      sha256: 27ebc05b1ffb3f5155adf1fbe89300fe29690ab001b24d1ac004991f97049f72
+    completion.json:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/completion.json
+      sha256: 47b2bd978b75910ca1e121fb803c6567b6fb14040261fb98c509075a7dcb4b0c
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/metadata.json
+      sha256: cb3df9066e8ed79cbf72b779d0d5f44426bd2571be212eb35ce1f2c3ae6cb814
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1f30febd7de5/best_validation.json
+      sha256: c3fd5b4687c257e4662ddda7bf0a0b4de962ad05008e5fad448d3f293b5d9db2
+- study: transformer_pp
+  run_id: r2bf71d7b4831
+  role: sum_of_squares_raw_l2_m12
+  label: SoS query m=12, raw coefficient input L2
+  control_run_id: r6b17c3463a60
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/config.yaml
+      sha256: 3fc997263a3d102f7361aadc4d3d68c109514502b2e16723ca2d05c1361dff90
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/metrics.jsonl
+      sha256: 36d2127c555bd45ac2aec3f1ad86151b2a5dff31c2022fe0cb450cce227f4a9c
+    completion.json:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/completion.json
+      sha256: 9205be21ea562f1bb86b57ee022756029a7f2f8c633c3ce612823c7f05ba4bee
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/metadata.json
+      sha256: 87ece701668436d9435841b39d0907d84eb76ebfc1b1e57842c64971a6880e53
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2bf71d7b4831/best_validation.json
+      sha256: 49aa3dc4c7d1f5b2ffb7660be4abfbfd2524c45814c774b4229448d94fd9a9a8
+- study: transformer_pp
+  run_id: r1ac137c4f1ce
+  role: regular_probe
+  kind: probe
+  label: Regular-query native activation probe
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1ac137c4f1ce/config.yaml
+      sha256: ac1e61d6e01a7832450659294b58a35197f705669a04640eb4bbf0233b1b766e
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1ac137c4f1ce/metrics.jsonl
+      sha256: 388a3bd9d62b1369a74ea195f4c788c3d2123489b0e8284290070f819d5c6ed2
+    completion.json:
+      path: experiments/transformer_pp/runs/r1ac137c4f1ce/completion.json
+      sha256: b6c80f4b75f8581a9ec191593415eed641d712771eee4c0cd93d2d76c3c92272
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1ac137c4f1ce/metadata.json
+      sha256: 5fff6bd1fdcfde78a3c8256223f540d983a297f04327633abcccef6b0cd3b383
+- study: transformer_pp
+  run_id: rc3dfb9569345
+  role: sos_probe
+  kind: probe
+  label: SoS native activation probe
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc3dfb9569345/config.yaml
+      sha256: 09ed34df2dd441e7f9b576052c1e84049c91ad048de6b4349759dc726f0ad77f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rc3dfb9569345/metrics.jsonl
+      sha256: cc2170d1513f735b146578eb38fbbe0d6d744fba78d384b321a580e13e8ed9ad
+    completion.json:
+      path: experiments/transformer_pp/runs/rc3dfb9569345/completion.json
+      sha256: e90fe96a400a520d8d2b4f50ad9a3099c67ef9f8d160694b60772b0e07fff4ec
+    metadata.json:
+      path: experiments/transformer_pp/runs/rc3dfb9569345/metadata.json
+      sha256: ff7a468486b1f12abcfb07fa12e95b98edbdb2b7508bde3d9f8de6615f677130
+panels:
+- family: direct
+  degree: 8
+  label: Query
+  variants:
+    none:
+      run_role: direct_control
+      probe_role: regular_probe
+      measurement_role: query_m8
+    post_rmsnorm:
+      run_role: direct_l2
+    pre_rmsnorm:
+      status: not_run
+- family: sum_of_squares
+  degree: 8
+  label: SoS
+  variants:
+    none:
+      run_role: sum_of_squares_control
+      probe_role: sos_probe
+      measurement_role: sos_m8
+    post_rmsnorm:
+      run_role: sum_of_squares_l2
+    pre_rmsnorm:
+      status: not_run
+- family: direct
+  degree: 12
+  label: Query
+  variants:
+    none:
+      run_role: direct_m12_control
+      probe_role: regular_probe
+      measurement_role: query_m12
+    post_rmsnorm:
+      run_role: direct_m12_l2
+    pre_rmsnorm:
+      run_role: direct_raw_l2_m12
+- family: sum_of_squares
+  degree: 12
+  label: SoS
+  variants:
+    none:
+      run_role: sum_of_squares_m12_control
+      probe_role: sos_probe
+      measurement_role: sos_m12
+    post_rmsnorm:
+      run_role: sum_of_squares_m12_l2
+    pre_rmsnorm:
+      run_role: sum_of_squares_raw_l2_m12

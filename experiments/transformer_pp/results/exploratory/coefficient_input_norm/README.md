@@ -160,6 +160,41 @@ positions is **0% for raw-input query and 0.0421% for raw-input SoS**, versus
 finite. These are descriptive measurements on one sequence, equally weighted
 across generator coordinates, not model-contribution-weighted sensitivities.
 
+## Saturation by coordinate
+
+The [selected-head bars](saturation_by_coordinate.png) compare the original
+coefficient input, L2 after RMSNorm, and raw-input L2 for query and SoS at
+degrees eight and twelve. Each blue bar is the fraction of tokens with
+`abs(tanh(z)) >= 0.99`, combining both signs. All panels use layer 8, head 1,
+checkpoint 7,500, the same first held-out 2,048-token sequence, and a linear
+0–100% axis. Every coordinate in this head has exactly zero measured saturation
+in all six completed L2 runs. Raw-input L2 has not been run at degree eight;
+those cells say **Not run**, not zero.
+
+The separate [all-layer/head bars](saturation_all_heads.png) average each
+coordinate's token saturation over all 15 layers and 14 heads. This L2-only
+view uses a shared **0–0.25%** axis to show the small remaining SoS saturation.
+Its largest coordinate mean is U2: 0.1283% for degree-eight post-RMSNorm L2,
+0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for degree-twelve raw L2.
+All query coordinates average zero at this checkpoint. No matched all-model
+probe exists for the original controls, so they are not included in this view.
+The percentages here are at checkpoint 7,500, rather than the terminal
+measurements reported above.
+
+SoS bars describe the U/V factor generators before square expansion; they are
+not individual expanded polynomial orders. Both views weight tokens and selected
+coordinates equally, without amplitude or contribution weighting, and describe
+one sequence. The [explicit plot selection](saturation_selection.yaml) pins the
+training measurements and the original-input probes. The original probes also
+remain selected by the [SoS saturation comparison](../sum_of_squares/README.md#matched-head-tanh-saturation).
+
+The PNGs, matching PDFs, and [coordinate table](saturation_by_coordinate.csv)
+regenerate from committed measurements without checkpoints, data, or a GPU:
+
+```bash
+python experiments/transformer_pp/results/exploratory/coefficient_input_norm/saturation_plot.py
+```
+
 ## Measurements and limits
 
 At scheduled evaluations, the existing fixed diagnostic sequence records all
