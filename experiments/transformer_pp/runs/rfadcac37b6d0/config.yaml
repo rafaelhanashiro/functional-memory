@@ -1,0 +1,155 @@
+schema_version: 1
+experiment_kind: query_activation_diagnostic
+condition: exploratory/coefficient_input_norm/softplus_sos_saturation
+output_directory: experiments/transformer_pp/runs/rfadcac37b6d0
+diagnostic:
+  kind: query_activation_probe
+  layer: 7
+  head: 0
+  data:
+    manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+    sequence_length: 2049
+    start_sequence: 0
+    sequences: 1
+    selection: first_heldout_sequence
+    record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+  models:
+  - role: softplus_times_sos_m8
+    run_id: r841f35a24241
+    home_cluster: kennel
+    source_commit: 52af77095aa516a0e150b16c4c902e3cc7ca82e9
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/checkpoints/7500
+    checkpoint_sha256: 18bddb7924feaac08d8e985821b2d30bc149195590883942a2b5864504b926f4
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 0529d59887ca21a6ea43f376e2d2f0acbd3a119a4160757137a47d9b039a8435
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: da58a2c0504f0867c781f4cc1142882b08cc4d86645820f396d4b022b1c4fbc6
+      size_bytes: 218972
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: 88d50fff15d39110ade923cf4dedfa1da6db118f38fdc9b1f47f6a60ab46bad4
+      size_bytes: 75263
+    - path: default/d/f62f0790d3304ed4150665c3e34bb00d
+      sha256: 044d99acf71aa30247ce3fac4a4a8ce922ca3be8bb5587fbc044742a5cb7fe00
+      size_bytes: 7426
+    - path: default/manifest.ocdbt
+      sha256: 62c74ac77c6d123f801ac9a780e48e87cc8ce070c369152cab02015829f640b5
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/13707aafbfe85977b29f072f9f3ec9d6
+      sha256: 5d4bb1c786cca9deca5f252781dcaa041decb53bc930464a739931c632517c25
+      size_bytes: 3846
+    - path: default/ocdbt.process_0/d/54c39aa6017f440ca76ffac963143607
+      sha256: bf75496cad777c0c1c2f293993b481bf2589519dfabbf5fd3f090dd43cdfb0c1
+      size_bytes: 185950208
+    - path: default/ocdbt.process_0/d/7a17cb9dbb2b5429b368dd081a0317be
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/d/f7d305b1d3db37f7b3da78cffab20173
+      sha256: 7676fbdbdae6d53775e2b890436de21a374d5644c5445668c0197aa27290dad7
+      size_bytes: 2015182848
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 527271cb01591871408301021314236485a991b2d69a53a513841ca9f9dba6cd
+      size_bytes: 264
+    - path: metrics/metrics
+      sha256: f7a3c313a05cc3913286f2f754b274e2ffade19b56aadde5f61dd144826cdab2
+      size_bytes: 137
+    step: 7500
+    recorded_validation_nll: 2.6458419396689066
+    training_sequence_length: 2049
+    reference_sample_record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+    ignored_config_keys: {}
+    kernel: query
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/config.yaml
+    config_sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+    reference_metrics_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl
+    reference_metrics_sha256: 556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e
+    data_identity_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r841f35a24241/data_identity.json
+    data_identity_sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    data_identity:
+      batch_size: 256
+      eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+      format: ofm-packed-run-data
+      sequence_length: 2049
+      train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+      version: 2
+  - role: softplus_times_sos_m12
+    run_id: rf637de9b65b1
+    home_cluster: kennel
+    source_commit: f3047ac637cff83d966f7cbb9a1308a5e77770ee
+    checkpoint_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf637de9b65b1/checkpoints/7500
+    checkpoint_sha256: a7693eaca4ea6a9aa2c44860503d4687484c1a3d9f2c07d1b11a36f62b51ef55
+    checkpoint_files:
+    - path: _CHECKPOINT_METADATA
+      sha256: 5c459c7ac6a97de968ff7a2f29e32af849c570f1cb8bca23f97840fca46b34f4
+      size_bytes: 366
+    - path: default/_METADATA
+      sha256: f25c600ef7163d443e40865bbfa066678ba8197505d2032c47b08547321ecc72
+      size_bytes: 218981
+    - path: default/_sharding
+      sha256: 685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c
+      size_bytes: 68787
+    - path: default/array_metadatas/process_0
+      sha256: 897b2d744f7c0bcbe073c31e370bda685bb0d604c910d44098b4b19aaec68b76
+      size_bytes: 75281
+    - path: default/d/064e36295aab106dd5ed09e2c63f065e
+      sha256: 5586711fe9503fb4294eed8df175439ec7fa0fde33741fcee537bfe0f4653b7c
+      size_bytes: 7318
+    - path: default/manifest.ocdbt
+      sha256: 765dbcfd2892db4f3f208acf5dadfecb4dfd518304429a5d4d0860aef3269149
+      size_bytes: 118
+    - path: default/ocdbt.process_0/d/2791cc1c4b7a751decf3cc064960674f
+      sha256: d8ac3036dfde4d4efe87c0c61361d03b56d8a496d25fc6bea0eabfe8ae27dad1
+      size_bytes: 107257856
+    - path: default/ocdbt.process_0/d/56d583c741525f5cee9248a18548259e
+      sha256: fad15d49f663d5d66c14acc810cbc64d52879d513d5a2199675b874d2cf7c4fc
+      size_bytes: 1997668352
+    - path: default/ocdbt.process_0/d/6ae45b927b9dc1bc5f71a23ecffed379
+      sha256: 4d2ce2639f27f358264e00aa60c0f39edbe907f09a9656be88f7668a055b98df
+      size_bytes: 803
+    - path: default/ocdbt.process_0/d/b0484e820a168bd8835b6d64eb924c98
+      sha256: 2b702101001f2e247ffdc5aa21eb9d709ea719b1f6287a836809a220b6d19c66
+      size_bytes: 104689664
+    - path: default/ocdbt.process_0/d/cf4e2b5de4c08319bba510a678a40ee5
+      sha256: 26fd17b36a54f570a37e3111df226cec4af648b535bb849ef427e37d916d93d2
+      size_bytes: 903
+    - path: default/ocdbt.process_0/d/dc4402b5f5d2c744f018102744fca394
+      sha256: a61f7ec9bcb9ed1cc579bba23e7662472daf8569b59ac98d879ee32afc9df857
+      size_bytes: 440
+    - path: default/ocdbt.process_0/d/ed65955da6d38fc76e27c97c46b645ac
+      sha256: d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e
+      size_bytes: 196
+    - path: default/ocdbt.process_0/manifest.ocdbt
+      sha256: 2d73dfe6dfde9599a25a38d0edc56d198b0ec1342e4ab66eb12926dd1fba7243
+      size_bytes: 390
+    - path: metrics/metrics
+      sha256: 996ec8a0b602a4de205a794c545dc92f527d392c359140460ac0bd6bdc104114
+      size_bytes: 138
+    step: 7500
+    recorded_validation_nll: 2.6457065641880035
+    training_sequence_length: 2049
+    reference_sample_record_sha256: 26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6
+    ignored_config_keys: {}
+    kernel: query
+    config_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf637de9b65b1/config.yaml
+    config_sha256: 22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903
+    reference_metrics_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf637de9b65b1/metrics.jsonl
+    reference_metrics_sha256: adc50bbe174a6978c513dea4891a08d31458dc6593c282362b0b877887f43bad
+    data_identity_path: /data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rf637de9b65b1/data_identity.json
+    data_identity_sha256: 6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba
+    data_identity:
+      batch_size: 256
+      eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+      format: ofm-packed-run-data
+      sequence_length: 2049
+      train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+      version: 2
+  interpretation: Forward-only native Mosaic replay of softplus times query SoS, cores
+    m=8/12 and total degrees9/13, at layer8/head1 checkpoint7500 on the same first
+    held-out sequence as the existing saturation figures. Captures pre-expansion factor
+    generators. No optimizer state, gradients, or parameter updates. One head/sequence
+    cannot establish whole-model saturation or explain performance causally.
