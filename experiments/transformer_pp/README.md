@@ -1959,10 +1959,12 @@ done
 
 ## The 12-layer width-640 shape at four times its 1x budget
 
-Added 2026-11-15 at the user's request. Nine runs train the 12-layer width-640 shape at four times its 1x budget:
-the degree-twelve query, static, fixed Taylor, softplus input, sum-of-squares and FoX query runs of the
-[2x set](#the-12-layer-width-640-shape-at-the-reference-token-count), and exp, softmax and FoX exp. All nine are
-planned; FoX query waits for the user's choice of GPU (below). Runs and comparisons: the
+Added 2026-11-15 at the user's request. Seven runs train the 12-layer width-640 shape at four times its 1x budget:
+the degree-twelve query, static, fixed Taylor, softplus input and sum-of-squares runs of the
+[2x set](#the-12-layer-width-640-shape-at-the-reference-token-count), and exp and softmax. All seven are complete:
+sum of squares (validation-best 14.565) and softplus input (14.581) are 0.28% and 0.16% below exp (14.605), query
+ties it (+0.01%), fixed Taylor and static are 0.07% and 0.13% above it, and softmax 3.34%; against exp each
+polynomial is 0.08–0.19 percentage points worse than at 2x. Runs, results and limits: the
 [matched_tokens topic](results/exploratory/matched_tokens/README.md#four-times-the-budget).
 
 - Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
@@ -1971,31 +1973,29 @@ planned; FoX query waits for the user's choice of GPU (below). Runs and comparis
   execution paths and labels, each recipe writes `attention_coefficient_input_normalization: none`, the scaffold
   default its 2x run loads with.
 - Sources: query `r0f6d929e5992`, static `r84f325593209`, fixed Taylor `rffab7c4eeac5`, softplus input
-  `r53d5bbcac16f`, sum of squares `r08be7093202a`, FoX query `rbf05f7baab5e`, exp `rd920368a922e`, softmax
-  `r3bb5b8bd5c6a`, FoX exp `re634d82ee479`:
+  `r53d5bbcac16f`, sum of squares `r08be7093202a`, exp `rd920368a922e`, softmax `r3bb5b8bd5c6a`:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
   --partner <2x run> --budget 4 --output /tmp/<label>.yaml
 ```
 
-- Acceptance: the shared adapter for query, static, fixed Taylor, exp, softmax and the forget-gate runs.
+- Acceptance: the shared adapter for query, static, fixed Taylor, exp and softmax.
   [`score_transform_acceptance`](score_transform_acceptance.py) covers the softplus run and pins the 4x query run
   `r2f41d054e944` as its control (recipe SHA256 `b6005163`, seed-42 fingerprint `c8a7ed88`, 99,986,216
   parameters; initialization does not depend on the budget, so fingerprint and count are the 2x control's).
   [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares run, with the same
   4x query run as partner.
 - Kernels and GPUs: as at 2x. Mosaic for the polynomials (the softplus run's transformed kernels on H100 alone),
-  fused Triton for exp, cuDNN for softmax, the causal strips for the forget-gate runs; Mosaic's cumulative-gate
-  kernels cover per-order gates only, not the shared one. Each run requests one B300 or H100 (the softplus run
-  an H100 alone) and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not
-  verified reset (CLUSTERS.md), and FoX exp would take 22.9 hours there and FoX query 32.7. The H100s are thus
-  `dogo`'s H100 SXM.
+  fused Triton for exp, cuDNN for softmax. Each run requests one B300 or H100 (the softplus run an H100 alone)
+  and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not verified reset
+  (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. All seven finished on `dogo`, four of them after starting
+  on `akita`'s B300; the topic's [4x limits](results/exploratory/matched_tokens/README.md#4x-limits) list each
+  run's GPUs and resumptions.
 - Time limits: the projection on the slowest eligible GPU, the H100 SXM, plus acceptance's two-hour reserve,
   rounded up with room. A projection is a 2x run's wall time per update, validation included, over 30,205
   updates: measured where the 2x run trained on `dogo`, otherwise its time on `mastiff` divided by the
-  PCIe-to-SXM ratios of training time per update in the 2x runs that trained on both (1.43–1.77 on Mosaic,
-  1.56–1.63 on the strips).
+  PCIe-to-SXM ratios of training time per update in the 2x runs that trained on both (1.43–1.77, on Mosaic).
 
   | Run | H100 SXM projection, hours | Limit, hours |
   | --- | ---: | ---: |
@@ -2005,22 +2005,17 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   | softplus input | 8.6 | 13 |
   | exp | 5.0–6.2, estimated | 10 |
   | softmax | 3.9–4.8, estimated | 8 |
-  | FoX exp | 14.1–14.7, estimated | 18 |
-  | FoX query | 20.0 | 24, once the user has chosen |
 
   No 2x run trained on a B300 (the `akita` attempts were preempted during acceptance). Over 30,205 updates the
   1x runs' wall time per update on `akita` gives 4.0–6.7 hours (query at `m = 8`, static at `m = 4`, exp,
-  softmax) and 13.4 for FoX exp on the blocked scan, which the strips beat by 1.35–1.58× there
-  ([validation record](../../scaffolds/transformer/validation/README.md#blocked-causal-strips)). Acceptance
-  projects again on the granted GPU and refuses an allocation whose projection exceeds the limit less two hours.
-- FoX query projects 20.0 hours on the H100 SXM (measured at 2x) and an estimated 11–14 on a B300, where nothing
-  has been timed at this shape. It is submitted once the user chooses: a B300 alone, a B300 or the H100 SXM, or
-  waiting for a faster implementation of the shared cumulative gate.
+  softmax). Acceptance projects again on the granted GPU and refuses an allocation whose projection exceeds the
+  limit less two hours.
 
-Home cluster: **Kennel**. Branch `claude/l12-d640-4x`. Submit from the worktree root after the frozen execution
-set is committed. Choose each run's partition `P` at submission (CLUSTERS.md): every limit fits `standard`'s 24
-hours, so up to four runs go there, each while a GPU it may use is free (a `standard` job that finds none may
-preempt a `long` one), and the rest on `long`:
+Home cluster: **Kennel**. All seven runs are complete; each record holds its launch commit, attempts, and the
+artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus run) and
+log. Branch `claude/l12-d640-4x`. The runs were submitted on `long` from the worktree root after the frozen
+execution set was committed. Jobs that ended before any update were resubmitted under new job IDs, and after the
+preemptions on `akita`, `akita` was added to the jobs' excluded nodes; each record lists its jobs and attempts.
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
@@ -2031,18 +2026,13 @@ submit() {  # partition, time, adapter, GPU types, excluded nodes, run
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
 EXCL=collie,samoyed,doodle,terrier,shiba,mastiff
-submit "$P" 18:00:00 acceptance B300,H100 $EXCL rd486e3337de7                    # FoX exp
-submit "$P" 13:00:00 score_transform_acceptance H100 akita,$EXCL rb74e8b994b74   # softplus input
-submit "$P" 10:00:00 coefficient_forms_acceptance B300,H100 $EXCL r1f935f18fe21  # sum of squares
-submit "$P" 10:00:00 acceptance B300,H100 $EXCL r2f41d054e944                    # query
-submit "$P" 10:00:00 acceptance B300,H100 $EXCL r0f8122dd8439                    # static
-submit "$P" 10:00:00 acceptance B300,H100 $EXCL rcace22b32f93                    # fixed Taylor
-submit "$P" 10:00:00 acceptance B300,H100 $EXCL r333444bd4304                    # exp
-submit "$P" 8:00:00 acceptance B300,H100 $EXCL r93df1e48c8fd                     # softmax
-# FoX query, once the user has chosen. On a B300 alone:
-#   submit "$P" 24:00:00 acceptance B300 dogo,$EXCL re3847010843f
-# On a B300 or the H100 SXM:
-#   submit "$P" 24:00:00 acceptance B300,H100 $EXCL re3847010843f
+submit long 13:00:00 score_transform_acceptance H100 akita,$EXCL rb74e8b994b74   # softplus input
+submit long 10:00:00 coefficient_forms_acceptance B300,H100 $EXCL r1f935f18fe21  # sum of squares
+submit long 10:00:00 acceptance B300,H100 $EXCL r2f41d054e944                    # query
+submit long 10:00:00 acceptance B300,H100 $EXCL r0f8122dd8439                    # static
+submit long 10:00:00 acceptance B300,H100 $EXCL rcace22b32f93                    # fixed Taylor
+submit long 10:00:00 acceptance B300,H100 $EXCL r333444bd4304                    # exp
+submit long 8:00:00 acceptance B300,H100 $EXCL r93df1e48c8fd                     # softmax
 ```
 
 ## Regular-query coefficient activation diagnostic
