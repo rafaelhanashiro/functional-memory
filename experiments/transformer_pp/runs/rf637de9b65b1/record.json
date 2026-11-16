@@ -3,10 +3,51 @@
     "path": "experiments/transformer_pp/runs/rf637de9b65b1/config.yaml",
     "sha256": "22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903"
   },
+  "frozen_execution_sha256": "c5bb9d9f7b205957ccd0c88067bb47f03fd254d9cfbe7844b861ebfa78c86663",
   "home_cluster": "kennel",
   "label": "query-m12-sos-softplus-prefactor-w-decay",
+  "monitoring": {
+    "config_path": "/data/cl/u/rafah/home/.local/state/functional-memory/run-monitors/softplus-sos-m12/config.json",
+    "end_utc": "2026-11-23T04:57:00.582597+00:00",
+    "poll_seconds": 300,
+    "read_only": true,
+    "source_sha256": "5317331b901bf819edbe45c6d0802649d309af9b93e6915c79e2465b1da30096"
+  },
   "name": "query-m12-sos-softplus-prefactor-w-decay",
   "record_schema_version": 1,
   "run_id": "rf637de9b65b1",
-  "status": "planned"
+  "source_commit": "f3047ac637cff83d966f7cbb9a1308a5e77770ee",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=long",
+      "--exclude=akita,mastiff,collie,samoyed,doodle,terrier",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=rf637de9b65b1",
+      "--output=experiments/transformer_pp/runs/rf637de9b65b1/training.log",
+      "--error=experiments/transformer_pp/runs/rf637de9b65b1/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.softplus_sos_acceptance",
+      "experiments/transformer_pp/runs/rf637de9b65b1/config.yaml",
+      "f3047ac637cff83d966f7cbb9a1308a5e77770ee",
+      "1",
+      "H100,B200"
+    ],
+    "gpu_count": 1,
+    "gpu_types": [
+      "H100",
+      "B200"
+    ],
+    "held": false,
+    "partition": "long",
+    "released_utc": "2026-11-16T04:55:44.129584+00:00",
+    "slurm_job_id": "2982",
+    "submitted_utc": "2026-11-16T04:55:44.121264+00:00"
+  }
 }
