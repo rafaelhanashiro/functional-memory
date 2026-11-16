@@ -1,6 +1,6 @@
 """Unnormalized polynomials with query-dependent coefficients.
 
-The incoming attention activation (after the block's pre-attention RMSNorm)
+The selected attention activation (by default after the block's pre-attention RMSNorm)
 produces coefficients per query and head. The score operands, including QK normalization
 and RoPE, retain the ordinary dot-product path. Coefficient projection and basis
 combination use FP32; the final attention output has V's dtype.
@@ -26,8 +26,9 @@ COEFFICIENT_INPUT_L2_EPS = 1e-6
 def normalize_coefficient_input(x, normalization="none"):
     """Normalize only the generator's activation, without a learned scale or a W rescaling.
 
-    The input already includes the block RMSNorm's learned channel gain. The L2
-    branch computes x / max(||x||_2, 1e-6) in FP32. Clamping the squared norm before
+    The caller selects either the raw block input or its RMSNorm output, including
+    the learned channel gain. The L2 branch computes x / max(||x||_2, 1e-6) in FP32.
+    Clamping the squared norm before
     rsqrt keeps both outputs and derivatives finite at zero. The default returns
     the original operand unchanged, including its dtype and historical arithmetic.
     """

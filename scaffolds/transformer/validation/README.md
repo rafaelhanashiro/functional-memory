@@ -3911,3 +3911,32 @@ XLA_FLAGS=--xla_disable_hlo_passes=priority-fusion JAX_PLATFORMS=cuda PYTHONPATH
 
 Raw logs, sanitizer output and HLO dumps are retained under the ignored
 `validation/logs/per-order-debug/H100-<job>/` directories.
+
+## Raw-input L2 coefficient source (2026-11-15)
+
+The coefficient generator can read the raw residual before pre-attention RMSNorm,
+normalized to unit L2. Q/K/V retain the existing RMSNorm path. The source is an
+explicit operand; no inversion of learned channel gains is used.
+[Qualification](coefficient_raw_input_l2.json) records the frozen source, commands,
+lock, and evidence. Twenty-three CPU checks cover source/gradient isolation,
+independent FP64 outputs and gradients, historical defaults, initialization, and
+source-correct diagnostics. The pinned experiment adapter passed 85 checks.
+[Full-shape initialization](coefficient_raw_input_initialization.json) confirms
+200,905,126 parameters and the exact completed-control fingerprints for both
+m12 forms, including every shared backbone array.
+
+Debug job 2420 passed all four native Mosaic B300 cases (m12 direct and SoS,
+BF16 and BF16X3), checking gradients through the raw coefficient and RMSNorm QKV
+branches against independent FP64 references. The locked CUDA 13 environment was
+used. The focused kernel cases use 512 tokens; each production allocation still
+requires its own full-shape 2,048-token pilot and fresh-process resume. This
+qualifies implementation behavior, not a validation-perplexity improvement.
+
+```bash
+sbatch --partition=debug --nodelist=akita --gres=gpu:b300:1 \
+  --cpus-per-task=8 --mem=64G --time=00:20:00 \
+  --output=scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.log \
+  --error=scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.log \
+  scaffolds/transformer/validation/qualify_coefficient_raw_input.sbatch \
+  "$PWD" "$(git rev-parse HEAD)"
+```

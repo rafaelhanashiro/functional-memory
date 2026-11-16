@@ -1,0 +1,89 @@
+{
+  "cpu_checks": [
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_raw_input.py -m 'not gpu'",
+      "coverage": [
+        "Real Block/MHA source routing with nonuniform learned gain, unchanged QKV and initialization",
+        "Independent FP64 coefficient-only and complete attention gradients; coefficient-only RMS gain gradient exactly zero",
+        "Historical config compatibility and explicit override/source guards",
+        "Diagnostics report the actual raw source, norms, and factor coordinates"
+      ],
+      "deselected": 4,
+      "passed": 23,
+      "seconds": 24.89
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_coefficient_raw_input.py -k unambiguous",
+      "coverage": [
+        "Final direct and SoS override bypass check"
+      ],
+      "deselected": 25,
+      "passed": 2,
+      "seconds": 7.81
+    },
+    {
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 scaffolds/transformer/.venv/bin/python -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -q experiments/transformer_pp/tests/test_coefficient_l2_acceptance.py",
+      "coverage": [
+        "Pinned controls and one scientific change",
+        "Exact initial fingerprint required",
+        "Native Mosaic checks and full-shape pilot/resume required"
+      ],
+      "passed": 85,
+      "seconds": 18.59
+    }
+  ],
+  "date": "2026-11-15",
+  "feature": "Unit-L2 normalization of raw residual input for query coefficient generator",
+  "formula": "coefficient input h / max(||h||_2, 1e-6), before attention RMSNorm; Q/K/V retain RMSNorm(h)",
+  "frozen_execution_sha256": "8afe7385d3402e5200f888fe0fbcb529621c5c5ebcf9ce46d0c8dd059f4faaac",
+  "full_initialization": {
+    "path": "scaffolds/transformer/validation/coefficient_raw_input_initialization.json",
+    "sha256": "7b9252daf3136fbff3893361aa62f0c379f71ef388618a1ac8672280b8f6ddcf",
+    "size_bytes": 5960
+  },
+  "gpu_qualification": {
+    "cases": [
+      "test_mosaic_raw_coefficient_and_rms_qkv_branches_match_independent_fp64[direct-bf16]",
+      "test_mosaic_raw_coefficient_and_rms_qkv_branches_match_independent_fp64[sum_of_squares-bf16]",
+      "test_mosaic_raw_coefficient_and_rms_qkv_branches_match_independent_fp64[direct-bf16x3]",
+      "test_mosaic_raw_coefficient_and_rms_qkv_branches_match_independent_fp64[sum_of_squares-bf16x3]"
+    ],
+    "command": "sbatch --parsable --partition=debug --nodelist=akita --gres=gpu:b300:1 --cpus-per-task=8 --mem=64G --time=00:20:00 --job-name=raw-l2-qualify --output=scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.log --error=scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.log scaffolds/transformer/validation/qualify_coefficient_raw_input.sbatch /data/cl/u/rafah/home/projects/functional-memory/worktrees/coefficient-raw-l2-m12 81d57ee80fc5297a7d4dd4fe0a4f9e58debfd9c0",
+    "coverage": [
+      "m12 direct/SoS at BF16 and BF16X3",
+      "Independent FP64 native attention composition at BF16 boundary operands",
+      "Shared raw-input gradient from both branches, RMS gain and QKV matrix gradients, all W/a/b coordinate gradients"
+    ],
+    "deselected": 23,
+    "environment": "scaffolds/transformer/.venv-cuda13",
+    "gpu_count": 1,
+    "gpu_type": "B300",
+    "junit": {
+      "path": "scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.xml",
+      "sha256": "e9f33146a9e2b3cc0e952e29b6945810b82060d15c60dd524aabca9bf3014ae2",
+      "size_bytes": 927
+    },
+    "log": {
+      "path": "scaffolds/transformer/validation/logs/coefficient_raw_input_gpu.log",
+      "sha256": "8655d199910d8afa2e246aa821b723e7978fab13ffdd8a7e15a6bf7b4407c6c2",
+      "size_bytes": 160
+    },
+    "node": "akita",
+    "partition": "debug",
+    "passed": 4,
+    "script": "scaffolds/transformer/validation/qualify_coefficient_raw_input.sbatch",
+    "seconds": 99.5,
+    "slurm_job_id": "2420",
+    "status": "passed"
+  },
+  "limits": [
+    "Focused native tests use sequence length 512; each production allocation separately requires its own full-shape 2048-token pilot and resume",
+    "No scientific performance result is inferred from software qualification"
+  ],
+  "lock": {
+    "path": "scaffolds/transformer/uv.lock",
+    "sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "size_bytes": 211541
+  },
+  "source_commit": "81d57ee80fc5297a7d4dd4fe0a4f9e58debfd9c0"
+}

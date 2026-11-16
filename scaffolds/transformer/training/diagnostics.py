@@ -636,14 +636,26 @@ def attention_identity(config) -> dict:
         identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
     if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":
         from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
-        identity.update(
-            attention_coefficient_input="unit_l2_of_pre_attention_rmsnorm_activation",
-            attention_coefficient_input_normalization="l2",
-            attention_coefficient_input_l2_epsilon=COEFFICIENT_INPUT_L2_EPS,
-            attention_formula=identity["attention_formula"] + (
+        source = getattr(config.model, "attention_coefficient_input_source", "post_rmsnorm")
+        if source == "pre_rmsnorm":
+            input_name = "unit_l2_of_pre_attention_residual_activation"
+            formula_suffix = (
+                "; only the coefficient generator replaces x_t by h_t / max(||h_t||_2, 1e-6), "
+                "where h_t is the raw attention input before shared pre-attention RMSNorm; "
+                "no RMSNorm channel gain enters this coefficient input; Q/K/V retain RMSNorm(h_t); "
+                "W remains trainable and unnormalized")
+        else:
+            input_name = "unit_l2_of_pre_attention_rmsnorm_activation"
+            formula_suffix = (
                 "; only the coefficient generator replaces x_t by x_t / max(||x_t||_2, 1e-6), "
                 "after the learned RMSNorm channel gain; Q/K/V receive the original x_t; "
-                "W remains trainable and unnormalized"))
+                "W remains trainable and unnormalized")
+        identity.update(
+            attention_coefficient_input=input_name,
+            attention_coefficient_input_source=source,
+            attention_coefficient_input_normalization="l2",
+            attention_coefficient_input_l2_epsilon=COEFFICIENT_INPUT_L2_EPS,
+            attention_formula=identity["attention_formula"] + formula_suffix)
     return identity
 
 
@@ -1037,10 +1049,21 @@ def coefficient_input_report(raw_layers, model) -> dict:
     labels = ([f"U{r}" for r in range(degree // 2 + 1)]
               + [f"V{r}" for r in range(degree // 2)]) if model.attention_coefficient_parameterization == "sum_of_squares" else [f"r{r}" for r in range(degree + 1)]
     from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
+    source = getattr(model, "attention_coefficient_input_source", "post_rmsnorm")
+    before_definition = ("raw attention input before shared pre-attention RMSNorm"
+                         if source == "pre_rmsnorm" else
+                         "pre-attention RMSNorm activation including learned channel gains")
+    formula = (
+        "x_hat = h / max(||h||_2, epsilon); z_j = W_j^T x_hat; h is the raw attention input "
+        "before shared pre-attention RMSNorm; no RMSNorm channel gain enters the coefficient generator"
+        if source == "pre_rmsnorm" else
+        "x_hat = x / max(||x||_2, epsilon); z_j = W_j^T x_hat; x includes the pre-attention RMSNorm channel gains")
     return {
+        "source": source,
         "normalization": model.attention_coefficient_input_normalization,
         "epsilon": COEFFICIENT_INPUT_L2_EPS,
-        "formula": "x_hat = x / max(||x||_2, epsilon); z_j = W_j^T x_hat; x includes the pre-attention RMSNorm channel gains",
+        "formula": formula,
+        "input_norm_definitions": {"before": before_definition, "after": "unit-L2 coefficient-generator input"},
         "sample": "fixed_diagnostic_sample", "sample_forward_backend": model.attention_backend,
         "projection_dtype": "float32", "projection_precision": "HIGHEST",
         "coordinate_labels": labels,

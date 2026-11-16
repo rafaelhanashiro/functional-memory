@@ -104,10 +104,12 @@ class ModelConfig:
     # c_r = sigmoid(x w_r) and pure_tanh is c_r = tanh(x w_r) (dense: c_r = sum_j V_rj f(x w_j),
     # V starting at I). pure_tanh needs a random W start, since tanh(0) = 0 zeroes every coefficient.
     attention_coefficient_activation: Literal["identity", "tanh", "sigmoid", "pure_tanh", "affine_sigmoid"] = "identity"
-    # Normalize only the coefficient-generator input, after the shared pre-attention
-    # RMSNorm and its channel gain. Q/K/V, scores, and W's parameterization are unchanged.
+    # Normalize only the coefficient-generator input. By default it includes the shared
+    # pre-attention RMSNorm and its channel gain; pre_rmsnorm selects the raw block input.
+    # Q/K/V, scores, and W's parameterization are unchanged by either choice.
     # "l2" uses x / max(||x||_2, 1e-6) in FP32; "none" preserves historical arithmetic.
     attention_coefficient_input_normalization: Literal["none", "l2"] = "none"
+    attention_coefficient_input_source: Literal["post_rmsnorm", "pre_rmsnorm"] = "post_rmsnorm"
     # Forgetting Transformer decay: each query-conditioned polynomial weight is multiplied by
     # prod_(j=i+1..t) alpha_j, with Gated DeltaNet's per-head Mamba-2 gate
     # log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) and its initialization.
@@ -575,6 +577,12 @@ class ModelConfig:
         if self.attention_coefficient_input_normalization not in ("none", "l2"):
             raise ValueError("Unknown attention coefficient input normalization: "
                              f"{self.attention_coefficient_input_normalization}")
+        if self.attention_coefficient_input_source not in ("post_rmsnorm", "pre_rmsnorm"):
+            raise ValueError("Unknown attention coefficient input source: "
+                             f"{self.attention_coefficient_input_source}")
+        if (self.attention_coefficient_input_source == "pre_rmsnorm"
+                and self.attention_coefficient_input_normalization != "l2"):
+            raise ValueError("pre_rmsnorm coefficient input source requires L2 coefficient input normalization")
         if self.attention_coefficient_input_normalization == "l2" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_sharing != "per_head"

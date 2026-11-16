@@ -1,0 +1,229 @@
+{
+  "check": "coefficient_raw_input_full_shape_initialization",
+  "coefficient_input_source": "pre_rmsnorm",
+  "cpu_affinity_count": 4,
+  "degree": 12,
+  "duration_seconds": 25.462,
+  "frozen_execution_sha256": "8afe7385d3402e5200f888fe0fbcb529621c5c5ebcf9ce46d0c8dd059f4faaac",
+  "method": "experiments.transformer_pp.coefficient_l2_acceptance.check_initialization; actual full-shape models, no mocking",
+  "platform": "cpu",
+  "runs": {
+    "direct": {
+      "all_initial_parameters_match_control": true,
+      "coefficient_input_normalization": "l2",
+      "coefficient_input_source": "pre_rmsnorm",
+      "control_parameter_count": 200905126,
+      "control_parameter_sha256": "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16",
+      "control_run_id": "r7e34dec9dbd5",
+      "declared_mechanism_parameters_match": true,
+      "duration_seconds": 12.859,
+      "mechanism_parameters": {
+        "output_norm_scale": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            14,
+            64
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_head_log_scale": {
+          "declared_initial_summary": {
+            "count": 1,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "shape": [
+            15,
+            14,
+            1
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_k_gain": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            64
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_q_gain": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            64
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_amplitude": {
+          "declared_initial_summary": {
+            "count": 13,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "shape": [
+            15,
+            14,
+            13
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_bias": {
+          "declared_initial_summary": {
+            "count": 13,
+            "max": 1.0,
+            "min": 0.9999999999999999
+          },
+          "shape": [
+            15,
+            14,
+            13
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_kernel": {
+          "declared_initial_summary": {
+            "count": 11648,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "initial_std": 0.03340765523905305,
+          "shape": [
+            15,
+            14,
+            896,
+            13
+          ],
+          "weight_decay": true
+        }
+      },
+      "softmax_backbone_arrays_match": true,
+      "softmax_counterpart_parameter_sha256": "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b"
+    },
+    "sum_of_squares": {
+      "all_initial_parameters_match_control": true,
+      "coefficient_input_normalization": "l2",
+      "coefficient_input_source": "pre_rmsnorm",
+      "control_parameter_count": 200905126,
+      "control_parameter_sha256": "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16",
+      "control_run_id": "r6b17c3463a60",
+      "declared_mechanism_parameters_match": true,
+      "duration_seconds": 12.008,
+      "mechanism_parameters": {
+        "output_norm_scale": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            14,
+            64
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_head_log_scale": {
+          "declared_initial_summary": {
+            "count": 1,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "shape": [
+            15,
+            14,
+            1
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_k_gain": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            64
+          ],
+          "weight_decay": false
+        },
+        "qk_norm_q_gain": {
+          "declared_initial_summary": {
+            "count": 64,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            64
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_amplitude": {
+          "declared_initial_summary": {
+            "count": 13,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "shape": [
+            15,
+            14,
+            13
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_bias": {
+          "declared_initial_summary": {
+            "count": 13,
+            "max": 1.0,
+            "min": 1.0
+          },
+          "shape": [
+            15,
+            14,
+            13
+          ],
+          "weight_decay": false
+        },
+        "query_polynomial_kernel": {
+          "declared_initial_summary": {
+            "count": 11648,
+            "max": 0.0,
+            "min": 0.0
+          },
+          "initial_std": 0.03340765523905305,
+          "shape": [
+            15,
+            14,
+            896,
+            13
+          ],
+          "weight_decay": true
+        }
+      },
+      "softmax_backbone_arrays_match": true,
+      "softmax_counterpart_parameter_sha256": "bb6ab6df9c4f8b8f3df92843890b150eee2c34dd7cf8be2ba2cb8c663c67d13b"
+    }
+  },
+  "source_commit": "81d57ee80fc5297a7d4dd4fe0a4f9e58debfd9c0",
+  "status": "passed",
+  "thread_limits": {
+    "MKL_NUM_THREADS": 1,
+    "OMP_NUM_THREADS": 1,
+    "OPENBLAS_NUM_THREADS": 1
+  }
+}

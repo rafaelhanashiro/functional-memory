@@ -72,8 +72,8 @@ Softmax references in this collection use QK-norm; GDN has its own Q/K normaliza
 
 Sources: the selected [shared-scaffold recipe](../../experiments/attention_scaling/runs/rdf74e4289926/config.yaml)
 and [initialization implementation](../../scaffolds/transformer/models/initialization.py),
-and the frozen native [1× recipe](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/runs/r6b38709ed8d3/config.yaml),
-[2.5× recipe](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/runs/r2ebc05346f44/config.yaml),
+and the frozen native [1× recipe](../../experiments/transformer_pp/runs/r6b38709ed8d3/config.yaml),
+[2.5× recipe](../../experiments/transformer_pp/runs/r2ebc05346f44/config.yaml),
 and [native study documentation](https://github.com/rafaelhanashiro/functional-memory/blob/e1f3e9615771119abdef80294dc45dcc1e2bcf1f/experiments/transformer_pp/README.md#native-gated-deltanet-baseline).
 These native recipes are separate from Transformer++'s default dot-product recipe:
 they do not inherit its truncated initialization, QK RMSNorm, tuned LR, or 6% warmup.

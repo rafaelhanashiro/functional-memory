@@ -1742,12 +1742,23 @@ tenths.
 
 `model.attention_coefficient_input_normalization: l2` applies
 `x_hat = x / max(||x||_2, 1e-6)` in FP32 only to the diagonal tanh coefficient
-projection. Here `x` already includes the pre-attention RMSNorm's learned
-channel gain. The normalizer has no parameters. Q/K/V and all other attention
-paths receive the original input, and the projection matrix W retains its
-initialization, trainability, and optimizer group. The default `none` retains
-the previous operand and arithmetic exactly, including historical recipe/resume
-semantics.
+projection. `model.attention_coefficient_input_source` selects `x`: its default
+`post_rmsnorm` uses the pre-attention RMSNorm output, including its learned channel
+gain; `pre_rmsnorm` uses the raw block residual before that RMSNorm and requires
+normalization `l2`. The block passes this raw activation explicitly through
+`MultiHeadAttention(..., coefficient_source_input=raw_x)`; it is never reconstructed
+from the RMSNorm output. Direct attention calls with `pre_rmsnorm` require this
+operand with the same shape as the Q/K/V input, except when an explicit
+`query_coefficients` override bypasses the generator.
+
+The normalizer has no parameters. Q/K/V and all other attention paths continue to
+receive the pre-attention RMSNorm output, and the projection matrix W retains its
+initialization, trainability, and optimizer group. With `pre_rmsnorm`, the
+coefficient branch's gradient reaches the raw residual without passing through
+the RMSNorm gain; that gain still receives gradients through Q/K/V. With
+`post_rmsnorm`, the coefficient branch also differentiates through RMSNorm and
+its gain. The defaults `none` and `post_rmsnorm` retain the previous operand and
+arithmetic exactly, including historical recipe/resume semantics.
 
 Supported forms are unnormalized learned per-head query polynomials with direct
 or sum-of-squares coefficients, RoPE or no positional encoding, and no gates,
@@ -1756,7 +1767,7 @@ The normalization is outside the native attention kernel, so native Mosaic
 query kernels are unchanged. Degree and backend limits remain their existing
 limits.
 
-The optional diagnostic forward additionally returns input norm summaries,
+The optional diagnostic forward additionally returns selected-source input norm summaries,
 per-head/generator-coordinate projection moments, the fraction
 `abs(tanh(z)) >= 0.99`, and mean tanh derivative. Training records these under
 `attention_diagnostics.coefficients.generator_input`; SoS coordinates are factor
