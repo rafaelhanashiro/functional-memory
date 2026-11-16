@@ -87,14 +87,170 @@
         "width": 32
       },
       "status": "passed"
+    },
+    "gpu_kernel_parity": {
+      "failed": 0,
+      "passed": 4,
+      "seconds": 60.707,
+      "test_cases": [
+        "test_composed_forward_and_generator_vjp_match_direct_squares[bf16x3-1-8]",
+        "test_composed_forward_and_generator_vjp_match_direct_squares[bf16x3-1-12]",
+        "test_production_context_dispatch_and_vjp[3.0-1-8]",
+        "test_production_context_dispatch_and_vjp[3.0-1-12]"
+      ]
+    },
+    "validation_record": "scaffolds/transformer/validation/softplus_sos_activation_probe_b200.json"
+  },
+  "allocation_outcome": {
+    "elapsed_seconds": 156,
+    "exit_code": "0:0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "home_cluster": "kennel",
+    "node": "shiba",
+    "partition": "debug",
+    "slurm_job_id": "3627",
+    "slurm_state": "COMPLETED"
+  },
+  "artifact_root": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rfadcac37b6d0",
+  "artifacts": [
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rfadcac37b6d0/activations.npz",
+      "sha256": "3cba9e2de8ef2afe4f31672fd66610c6263b52e6352e6a95e2f17a625faede66",
+      "size_bytes": 33630786
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rfadcac37b6d0/completion.json",
+      "sha256": "3f7b89e45910ed7d6103f127c38e24030f1becb995e8bfa0e78221f0651a639e",
+      "size_bytes": 1013
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rfadcac37b6d0/metadata.json",
+      "sha256": "289dc6795410e7ec1e1d5687c379ce2e109717368496dc4638dfa46e239554a3",
+      "size_bytes": 1697
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rfadcac37b6d0/metrics.jsonl",
+      "sha256": "803bbb956337ad13f3736beae8184771c4c29675b2d1a3c8f34df44454749597",
+      "size_bytes": 67144
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rfadcac37b6d0/training.log",
+      "sha256": "a49b4f09113866e3d0051870ca1205b76776e4d337c6e686931c8a2394d52fb7",
+      "size_bytes": 690
     }
+  ],
+  "attempts": [
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "exit_code": 1,
+      "finished_utc": "2026-11-16T18:40:30.077008+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "node": "akita.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "debug",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/bin/python",
+      "resolved_attention_backends": {},
+      "slurm_job_id": "3623",
+      "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+      "started_utc": "2026-11-16T18:40:16.676348+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "orbax-checkpoint": "0.11.40"
+      }
+    },
+    {
+      "exit_code": 1,
+      "failure_kind": "stale_mutable_artifact_pin_before_forward",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B200",
+      "node": "shiba",
+      "slurm_job_id": "3626"
+    },
+    {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "environment": {
+        "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+        "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "exit_code": 0,
+      "finished_utc": "2026-11-16T18:45:51.903579+00:00",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B200",
+      "node": "shiba.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "debug",
+      "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/bin/python",
+      "resolved_attention_backends": {},
+      "slurm_job_id": "3627",
+      "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+      "started_utc": "2026-11-16T18:44:33.649374+00:00",
+      "versions": {
+        "flax": "0.12.7",
+        "jax": "0.10.0",
+        "orbax-checkpoint": "0.11.40"
+      }
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/rfadcac37b6d0/completion.json",
+    "sha256": "3f7b89e45910ed7d6103f127c38e24030f1becb995e8bfa0e78221f0651a639e",
+    "size_bytes": 1013
   },
   "config": {
     "path": "experiments/transformer_pp/runs/rfadcac37b6d0/config.yaml",
     "sha256": "aa3a49873c9f4e77ba24825350097d31af4ae81cc9cb2fdc55781034cc6a6e9f"
   },
+  "diagnostic_outcome": {
+    "finished_utc": "2026-11-16T18:45:50.436764+00:00",
+    "interpretation": "Forward-only native Mosaic replay of softplus times query SoS, cores m=8/12 and total degrees9/13, at layer8/head1 checkpoint7500 on the same first held-out sequence as the existing saturation figures. Captures pre-expansion factor generators. No optimizer state, gradients, or parameter updates. One head/sequence cannot establish whole-model saturation or explain performance causally.",
+    "models": [
+      {
+        "all_reference_moments_within_tolerance": null,
+        "checkpoint_parameters_match": true,
+        "parent_parameters_unchanged": true,
+        "role": "softplus_times_sos_m8"
+      },
+      {
+        "all_reference_moments_within_tolerance": null,
+        "checkpoint_parameters_match": true,
+        "parent_parameters_unchanged": true,
+        "role": "softplus_times_sos_m12"
+      }
+    ],
+    "optimizer_updates": 0,
+    "sample_record_sha256": "26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6",
+    "status": "complete"
+  },
+  "error": null,
+  "frozen_execution_sha256": "b4e5ad53158968b751a10b47786018197151dea2f344be586764a0f33c96f8bb",
   "home_cluster": "kennel",
   "label": "softplus-sos-prefactor-m8-m12-native-saturation-probe",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/rfadcac37b6d0/training.log",
+    "sha256": "a49b4f09113866e3d0051870ca1205b76776e4d337c6e686931c8a2394d52fb7",
+    "size_bytes": 690
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/rfadcac37b6d0/metadata.json",
+    "sha256": "289dc6795410e7ec1e1d5687c379ce2e109717368496dc4638dfa46e239554a3",
+    "size_bytes": 1697
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rfadcac37b6d0/metrics.jsonl",
+    "sha256": "803bbb956337ad13f3736beae8184771c4c29675b2d1a3c8f34df44454749597",
+    "size_bytes": 67144
+  },
   "name": "softplus-sos-prefactor-m8-m12-native-saturation-probe",
   "parents": [
     "r841f35a24241",
@@ -102,6 +258,57 @@
   ],
   "record_schema_version": 1,
   "run_id": "rfadcac37b6d0",
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "softplus_times_sos_m12": "mosaic",
+      "softplus_times_sos_m8": "mosaic"
+    },
+    "slurm_job_id": "3627",
+    "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+    "started_utc": "2026-11-16T18:44:33.649374+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
   "seed": 0,
-  "status": "planned"
+  "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+  "status": "complete",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=debug",
+      "--qos=debug",
+      "--gres=gpu:1",
+      "--exclude=akita,collie,doodle,mastiff,samoyed,terrier",
+      "--cpus-per-task=8",
+      "--mem=64G",
+      "--time=00:30:00",
+      "--job-name=rfadcac37b6d0",
+      "--output=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/experiments/transformer_pp/runs/rfadcac37b6d0/training.log",
+      "--error=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/experiments/transformer_pp/runs/rfadcac37b6d0/training.log",
+      "experiments/transformer_pp/diagnose_softplus_sos_activations.sbatch",
+      "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation",
+      "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+      "rfadcac37b6d0"
+    ],
+    "gpu_count": 1,
+    "partition": "debug",
+    "slurm_job_id": "3627"
+  }
 }

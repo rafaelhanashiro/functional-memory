@@ -2013,6 +2013,35 @@ state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSN
 gains produces exactly the unchanged forward loss for direct and SoS coefficients.
 The run recipe pins the two parents, checkpoints, data, and reference measurements.
 
+## Softplus-prefactor SoS activation diagnostic
+
+`rfadcac37b6d0` replays the retained update-7,500 checkpoints of
+`r841f35a24241` and `rf637de9b65b1` on Kennel, using the same first held-out
+2,048-token sequence and layer 8, head 1 as the preceding probes. The weight
+is `u h(u)`, where `u = softplus(s)` and `h` is a query-conditioned SoS core
+of degree 8 or 12 (total degree 9 or 13). The probe captures the factor
+generators before expansion and checks the raw parameters against training
+measurements. Parent parameters remain unchanged; there are no optimizer updates.
+The [coefficient-input exploration](results/exploratory/coefficient_input_norm/README.md)
+owns the saturation figure and its explicit selections.
+
+From the isolated worktree after committing its execution inputs:
+
+```bash
+run=rfadcac37b6d0
+sbatch --parsable --partition=debug --qos=debug --gres=gpu:1 \
+  --exclude=akita,collie,doodle,mastiff,samoyed,terrier --cpus-per-task=8 --mem=64G \
+  --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_softplus_sos_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launcher qualifies both transformed SoS kernels, including their 2,048-token
+production shapes, against direct FP64 square evaluation before native checkpoint
+inference. A separate CPU capture check verifies unchanged forward loss at both
+core degrees with nonzero amplitudes and nonuniform RMSNorm gains.
+
 ## Coefficient-input L2 experiment
 
 Four completed Kennel runs test unit-L2 normalization only between the gain-applied

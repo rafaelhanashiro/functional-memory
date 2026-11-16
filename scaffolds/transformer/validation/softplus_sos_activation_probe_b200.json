@@ -1,0 +1,155 @@
+{
+  "allocation": {
+    "elapsed_seconds": 156,
+    "exit_code": "0:0",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "home_cluster": "kennel",
+    "node": "shiba",
+    "partition": "debug",
+    "slurm_job_id": "3627",
+    "slurm_state": "COMPLETED"
+  },
+  "cpu_capture_parity": {
+    "attention_backend": "blocked",
+    "backend": "cpu",
+    "cases": [
+      {
+        "core_degree": 8,
+        "factor_coordinates": 9,
+        "independent_factor_max_abs_error": 2.0356965313439446e-07,
+        "kernel_shape": [
+          32,
+          9
+        ],
+        "loss": 3.521101951599121,
+        "native_capture_loss_bitwise_equal": true,
+        "native_capture_validation": {
+          "manual_coefficient_max_normalized_error": 4.599025272135169e-08,
+          "manual_coefficient_normalized_errors": [
+            4.323765681442891e-08,
+            3.2967290913022326e-08,
+            1.7458883106297963e-08,
+            3.3874849613999875e-08,
+            4.599025272135169e-08,
+            2.5801363039058496e-08,
+            2.8819620613518733e-08,
+            2.697639668948474e-08,
+            3.029336917898539e-08
+          ],
+          "manual_coefficient_tolerance": 5e-06,
+          "mean_centered_decomposition_max_abs_error": 2.165376629115201e-07,
+          "projection_fp64_reconstruction_max_abs_error": 2.165376629115201e-07,
+          "rmsnorm_fp64_reconstruction_max_abs_error": 2.8985499378464397e-07,
+          "rmsnorm_output_equals_generator_input": true
+        },
+        "raw_parameter_capture_exact": true,
+        "state_unchanged": true,
+        "total_degree": 9
+      },
+      {
+        "core_degree": 12,
+        "factor_coordinates": 13,
+        "independent_factor_max_abs_error": 1.8590840467069825e-07,
+        "kernel_shape": [
+          32,
+          13
+        ],
+        "loss": 3.521254301071167,
+        "native_capture_loss_bitwise_equal": true,
+        "native_capture_validation": {
+          "manual_coefficient_max_normalized_error": 6.116029751588849e-08,
+          "manual_coefficient_normalized_errors": [
+            2.7095689053077384e-08,
+            4.09434203311496e-08,
+            3.208419669518937e-08,
+            4.152670277761328e-08,
+            3.384415875286645e-08,
+            4.4551730764632226e-08,
+            3.5712274848424474e-08,
+            6.116029751588849e-08,
+            4.6528145467097855e-08,
+            3.483387308114085e-08,
+            4.967757520153018e-08,
+            3.4131176127721444e-08,
+            3.324581524803949e-08
+          ],
+          "manual_coefficient_tolerance": 5e-06,
+          "mean_centered_decomposition_max_abs_error": 3.0225705893727195e-07,
+          "projection_fp64_reconstruction_max_abs_error": 3.0225705893727195e-07,
+          "rmsnorm_fp64_reconstruction_max_abs_error": 3.5139504550585343e-07,
+          "rmsnorm_output_equals_generator_input": true
+        },
+        "raw_parameter_capture_exact": true,
+        "state_unchanged": true,
+        "total_degree": 13
+      }
+    ],
+    "hardware_qualification": false,
+    "nonuniform_rmsnorm_gains": true,
+    "nonzero_amplitudes": true,
+    "selected_head": 1,
+    "selected_layer": 1,
+    "shape": {
+      "heads": 2,
+      "layers": 2,
+      "sequence_tokens": 8,
+      "width": 32
+    },
+    "status": "passed"
+  },
+  "cpu_integration_tests": {
+    "files": [
+      "test_softplus_sos.py",
+      "test_coefficient_raw_input.py"
+    ],
+    "passed": 70,
+    "skip_reason": "Mosaic hardware cases excluded on CPU",
+    "skipped": 4
+  },
+  "diagnostic_run_id": "rfadcac37b6d0",
+  "format": "softplus-sos-native-activation-probe-qualification",
+  "frozen_execution_sha256": "b4e5ad53158968b751a10b47786018197151dea2f344be586764a0f33c96f8bb",
+  "gpu_tests": {
+    "failed": 0,
+    "passed": 4,
+    "seconds": 60.707,
+    "test_cases": [
+      "test_composed_forward_and_generator_vjp_match_direct_squares[bf16x3-1-8]",
+      "test_composed_forward_and_generator_vjp_match_direct_squares[bf16x3-1-12]",
+      "test_production_context_dispatch_and_vjp[3.0-1-8]",
+      "test_production_context_dispatch_and_vjp[3.0-1-12]"
+    ]
+  },
+  "runtime": {
+    "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+    "environment": {
+      "CUDA_HOME": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/lib/python3.11/site-packages/nvidia/cu13",
+      "TRANSFORMER_CUDA_ENVIRONMENT": "cuda13",
+      "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+      "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+    },
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "debug",
+    "python_executable": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-sos-saturation/scaffolds/transformer/.venv-cuda13/bin/python",
+    "resolved_attention_backends": {
+      "softplus_times_sos_m12": "mosaic",
+      "softplus_times_sos_m8": "mosaic"
+    },
+    "slurm_job_id": "3627",
+    "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+    "started_utc": "2026-11-16T18:44:33.649374+00:00",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "schema_version": 1,
+  "scope": "Forward-only checkpoint probe of softplus times query SoS, core8/12 total9/13, native Mosaic at 2048 tokens and dK64. No training or optimizer continuation qualification.",
+  "source_commit": "9203b6c6c160c0b777ea16fbc627baf3c7e93087",
+  "status": "passed"
+}

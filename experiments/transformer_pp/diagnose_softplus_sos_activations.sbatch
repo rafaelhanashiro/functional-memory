@@ -26,7 +26,7 @@ RESULT=0
   'scaffolds/transformer/tests/test_mosaic_softplus_sos.py::test_composed_forward_and_generator_vjp_match_direct_squares[bf16x3-1-12]' \
   'scaffolds/transformer/tests/test_mosaic_softplus_sos.py::test_production_context_dispatch_and_vjp[3.0-1-8]' \
   'scaffolds/transformer/tests/test_mosaic_softplus_sos.py::test_production_context_dispatch_and_vjp[3.0-1-12]' \
-  --junitxml="$RUN_ROOT/acceptance/probe_gpu.xml" || RESULT=$?
+  --junitxml="$RUN_ROOT/.runtime/acceptance/probe_gpu.xml" || RESULT=$?
 if [[ "$RESULT" == 0 ]]; then
   "$PYTHON" -m experiments.transformer_pp.diagnose_query_activations --run "$RUN_ROOT" || RESULT=$?
 fi

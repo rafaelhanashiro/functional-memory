@@ -4018,3 +4018,14 @@ sbatch --partition=debug --nodelist=akita --gres=gpu:b300:1 \
   scaffolds/transformer/validation/qualify_coefficient_raw_input.sbatch \
   "$PWD" "$(git rev-parse HEAD)"
 ```
+
+## Softplus-prefactor SoS activation probe (2026-11-16)
+
+The [qualification record](softplus_sos_activation_probe_b200.json) covers native
+Mosaic forward probes of retained softplus-times-SoS checkpoints with core degrees
+8 and 12 (total degrees 9 and 13) at d_K=64 and 2,048 tokens on one B200.
+Four independent FP64 forward/generator-VJP checks passed, including production
+sequence shapes. A two-layer CPU capture check at both degrees preserved the
+forward loss exactly with nonzero amplitudes and nonuniform RMSNorm gains;
+70 related CPU tests passed and four hardware-only cases were skipped. This
+qualifies the forward diagnostic, not training or optimizer continuation.
