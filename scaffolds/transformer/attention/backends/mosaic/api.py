@@ -39,8 +39,10 @@ defaults to ``default_precision``.
 Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
 128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
 unchanged; narrower tiles use narrower shared-memory swizzles), value width 64, degree
->= 1 (query coefficients: degree <= 8), and time a multiple of 128 (H100) or 256 (B300).
-Anything else, and any GPU other than compute capability 9.0 or 10.x, raises ValueError.
+>= 1 (ordinary query coefficients: degree <= 12, subject to shared memory), and time a
+multiple of 128 (H100) or 256 (Blackwell). Softplus additionally admits degree 13 at width
+64 and 512/2,048 tokens; transformed kernels admit H100 and B200 only. Unsupported shapes
+or architectures raise ValueError.
 """
 import math
 from functools import partial
@@ -57,7 +59,16 @@ from scaffolds.transformer.attention.backends.mosaic.common import (
 WIDTHS = (8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
-MAX_QUERY_DEGREE = 12  # largest qualified degree; the GPUs must also fit it (query_degree_supported)
+MAX_QUERY_DEGREE = 12  # ordinary query families; the GPUs must also fit them (query_degree_supported)
+MAX_SOFTPLUS_QUERY_DEGREE = 13  # degree-12 SoS with one input prefactor, at the qualified shapes below
+
+
+def _query_degree_limit(width, time, transform):
+    # Degree 13 is qualified specifically for softplus at production context and the
+    # smaller correctness-test context. Keep raw, abs, gated and other shapes unchanged.
+    if transform == "softplus" and width == 64 and time in (512, 2048):
+        return MAX_SOFTPLUS_QUERY_DEGREE
+    return MAX_QUERY_DEGREE
 
 
 # The kernel family of a forget gate, by gate conditioning (query or query_key) and whether every
@@ -81,7 +92,8 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
     decay ``mode`` is "query_distance" or "cumulative"; cumulative gates are supported per order
     with query conditioning alone (``CUMULATIVE_DECAY_FAMILY``), on H100 only. A score
     ``transform`` other than the identity (``TRANSFORM_FAMILY``) takes no gate and holds the
-    coefficients alone, as the untransformed polynomial does."""
+    coefficients alone, as the untransformed polynomial does. Softplus alone additionally
+    supports degree 13 at width 64 and 512/2,048 tokens for a degree-12 SoS prefactor."""
     if mode not in ("query_distance", "cumulative"):
         raise ValueError(f"Unknown decay mode: {mode!r}")
     if gate is None:
@@ -96,7 +108,7 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
         if gate is not None or transform not in TRANSFORM_FAMILY:
             return False
         family = TRANSFORM_FAMILY[transform]
-    if not (1 <= degree <= MAX_QUERY_DEGREE and time > 0):
+    if not (1 <= degree <= _query_degree_limit(width, time, transform) and time > 0):
         return False
     if family in common.PER_ORDER_FAMILIES:
         return hopper_supported(family, degree, width)
@@ -152,8 +164,12 @@ def default_precision(family: str, degree: int) -> str:
     return BF16X3 if family == TAYLOR and degree % 2 else BF16
 
 
+def _device_compute_capability():
+    return str(jax.devices()[0].compute_capability)
+
+
 def _kernels():
-    capability = jax.devices()[0].compute_capability
+    capability = _device_compute_capability()
     major = int(capability.split(".")[0])
     if capability == "9.0":
         from scaffolds.transformer.attention.backends.mosaic import hopper
@@ -321,10 +337,16 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
 # The kernel family of each score transform (attention/score_transform.py) but the identity, which is
 # query_polynomial_attention itself.
 TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS}
-# Architectures on which a GPU has run the transformed kernels' qualification (tests/test_mosaic_score_transform.py,
-# which admits the architecture it runs on). B300's kernels lower, but no Blackwell GPU has run them; backend
-# selection refuses them there too, and this refusal also covers models built without it (restored checkpoints).
-TRANSFORM_ARCHITECTURES = ("hopper",)
+# Device admission is narrower than the shared kernel architecture: B200 (sm100) uses the Blackwell
+# kernels, but admission does not imply qualification of B300 (sm103). Qualification tests can override
+# these allowlists while exercising a new device before its production runs are permitted.
+TRANSFORM_ARCHITECTURES = ("hopper", "blackwell")
+TRANSFORM_COMPUTE_CAPABILITIES = ("9.0", "10.0")
+
+
+def transformed_compute_capability_supported(capability: str) -> bool:
+    """Whether transformed query-polynomial attention admits this exact GPU capability."""
+    return capability in TRANSFORM_COMPUTE_CAPABILITIES
 
 
 def _transformed_forward(q, k, v, coefficients, family, precision):
@@ -358,15 +380,16 @@ def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: 
     score transform ``transform``: "softplus" (ln(1 + e^s)) or "abs" (|s|), evaluated per causal pair inside the
     tiles. Gradients follow the chain rule through phi, phi' = sigmoid(s) or sign(s) (zero at s = 0), and the
     coefficient gradients are dc_r = sum_i dP z^r. Failure behavior, shapes and precisions are those of
-    ``query_polynomial_attention``, on the architectures in ``TRANSFORM_ARCHITECTURES`` (H100); the identity
-    transform is that operation itself, so it is refused here."""
+    ``query_polynomial_attention``, on H100 (sm90) and B200 (sm100). B300 (sm103) remains unqualified despite
+    sharing the Blackwell kernels. The identity transform is that operation itself, so it is refused here."""
     name = "Mosaic transformed query-polynomial attention"
     if transform not in TRANSFORM_FAMILY:
         raise ValueError(f"{name} takes transform in {tuple(TRANSFORM_FAMILY)}, got {transform!r}")
-    _check_query_operands(q, k, v, coefficients, name)
+    _check_query_operands(q, k, v, coefficients, name, transform=transform)
     architecture = _kernels()[0]
-    if architecture not in TRANSFORM_ARCHITECTURES:
-        raise ValueError(f"{name} is qualified on H100 (sm90) only; no GPU has run its {architecture} kernels")
+    if architecture not in TRANSFORM_ARCHITECTURES or (
+            architecture == "blackwell" and not transformed_compute_capability_supported(_device_compute_capability())):
+        raise ValueError(f"{name} admits H100 (sm90) and B200 (sm100) only; this {architecture} device is not admitted")
     family = TRANSFORM_FAMILY[transform]
     precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
@@ -376,12 +399,13 @@ def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: 
 # ----------------------------------------------------------------------------------------
 # Query-distance forget gates: the query polynomial times exp((t-i) l) inside each tile.
 
-def _check_query_operands(q, k, v, coefficients, name):
+def _check_query_operands(q, k, v, coefficients, name, *, transform="identity"):
     _check_operands(q, k, v, name)
+    limit = _query_degree_limit(q.shape[-1], q.shape[1], transform)
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.dtype != jnp.float32
-            or not 2 <= coefficients.shape[-1] <= MAX_QUERY_DEGREE + 1):
+            or not 2 <= coefficients.shape[-1] <= limit + 1):
         raise ValueError(f"{name} requires FP32 coefficients [batch, time, heads, m+1] with 1 <= m <= "
-                         f"{MAX_QUERY_DEGREE}, got {coefficients.dtype} {coefficients.shape}")
+                         f"{limit}, got {coefficients.dtype} {coefficients.shape}")
 
 
 def _token_vector(x):

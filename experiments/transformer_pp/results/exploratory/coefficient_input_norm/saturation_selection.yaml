@@ -1,5 +1,5 @@
-question: Where do original and L2-normalized query and SoS coefficient generators
-  saturate at m=8 and m=12?
+question: Where do query, SoS, and softplus-times-SoS coefficient generators saturate
+  at core degrees 8 and 12, and how do available L2 variants compare?
 settings:
   layer_index: 7
   head_index: 0
@@ -24,9 +24,12 @@ settings:
     and heads; equal weight, not contribution weighted
   coordinate_convention: 'direct: r=0..m; SoS: U0..U(m/2), V0..V(m/2-1), before square
     expansion'
+  degree_convention: m is the SoS core degree; softplus-times-SoS total degree is
+    m+1
   missing_convention: Not run; never interpreted as zero
   limits: One held-out sequence. Original controls have only the selected-head probe;
-    all-head panels contain L2 runs only. Raw L2 m=8 runs do not exist.
+    all-head panels contain L2 runs only. Raw L2 m=8 runs do not exist. Neither L2
+    placement has been run for softplus-times-SoS.
 runs:
 - study: transformer_pp
   run_id: r25a5f78841b2
@@ -266,10 +269,70 @@ runs:
     metadata.json:
       path: experiments/transformer_pp/runs/rc3dfb9569345/metadata.json
       sha256: ff7a468486b1f12abcfb07fa12e95b98edbdb2b7508bde3d9f8de6615f677130
+- study: transformer_pp
+  run_id: r841f35a24241
+  role: softplus_times_sos_m8
+  label: SoS + softplus + prefactor, core degree 8, total degree 9
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r841f35a24241/config.yaml
+      sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl
+      sha256: 556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e
+    completion.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/completion.json
+      sha256: 11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37
+    metadata.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/metadata.json
+      sha256: db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/best_validation.json
+      sha256: bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495
+- study: transformer_pp
+  run_id: rf637de9b65b1
+  role: softplus_times_sos_m12
+  label: SoS + softplus + prefactor, core degree 12, total degree 13
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/config.yaml
+      sha256: 22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metrics.jsonl
+      sha256: adc50bbe174a6978c513dea4891a08d31458dc6593c282362b0b877887f43bad
+    completion.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/completion.json
+      sha256: 87dc6b38845536d252820339fb2b030d8e01c0fbbc31dbeaae248f2f66249754
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metadata.json
+      sha256: ea3ca1077248ad8f4338a3663db0b8bc2ca7fa07894c1febcc158a156f1f576b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/best_validation.json
+      sha256: 59b90f08f1824108981c5817467d077ef304629ea6cd9fc83da55885513a6a36
+- study: transformer_pp
+  run_id: rfadcac37b6d0
+  role: softplus_sos_probe
+  kind: probe
+  label: Softplus-times-SoS native activation probe
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rfadcac37b6d0/config.yaml
+      sha256: aa3a49873c9f4e77ba24825350097d31af4ae81cc9cb2fdc55781034cc6a6e9f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rfadcac37b6d0/metrics.jsonl
+      sha256: 803bbb956337ad13f3736beae8184771c4c29675b2d1a3c8f34df44454749597
+    completion.json:
+      path: experiments/transformer_pp/runs/rfadcac37b6d0/completion.json
+      sha256: 3f7b89e45910ed7d6103f127c38e24030f1becb995e8bfa0e78221f0651a639e
+    metadata.json:
+      path: experiments/transformer_pp/runs/rfadcac37b6d0/metadata.json
+      sha256: 289dc6795410e7ec1e1d5687c379ce2e109717368496dc4638dfa46e239554a3
 panels:
 - family: direct
   degree: 8
   label: Query
+  score_transform: identity
+  input_power: 0
   variants:
     none:
       run_role: direct_control
@@ -282,6 +345,8 @@ panels:
 - family: sum_of_squares
   degree: 8
   label: SoS
+  score_transform: identity
+  input_power: 0
   variants:
     none:
       run_role: sum_of_squares_control
@@ -291,9 +356,25 @@ panels:
       run_role: sum_of_squares_l2
     pre_rmsnorm:
       status: not_run
+- family: sum_of_squares
+  degree: 8
+  label: SoS + softplus + prefactor
+  score_transform: softplus
+  input_power: 1
+  variants:
+    none:
+      run_role: softplus_times_sos_m8
+      probe_role: softplus_sos_probe
+      measurement_role: softplus_times_sos_m8
+    post_rmsnorm:
+      status: not_run
+    pre_rmsnorm:
+      status: not_run
 - family: direct
   degree: 12
   label: Query
+  score_transform: identity
+  input_power: 0
   variants:
     none:
       run_role: direct_m12_control
@@ -306,6 +387,8 @@ panels:
 - family: sum_of_squares
   degree: 12
   label: SoS
+  score_transform: identity
+  input_power: 0
   variants:
     none:
       run_role: sum_of_squares_m12_control
@@ -315,3 +398,17 @@ panels:
       run_role: sum_of_squares_m12_l2
     pre_rmsnorm:
       run_role: sum_of_squares_raw_l2_m12
+- family: sum_of_squares
+  degree: 12
+  label: SoS + softplus + prefactor
+  score_transform: softplus
+  input_power: 1
+  variants:
+    none:
+      run_role: softplus_times_sos_m12
+      probe_role: softplus_sos_probe
+      measurement_role: softplus_times_sos_m12
+    post_rmsnorm:
+      status: not_run
+    pre_rmsnorm:
+      status: not_run

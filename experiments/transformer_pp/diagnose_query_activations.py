@@ -240,10 +240,16 @@ def require_supported(config, *, layer, head):
     if parameterization not in {"direct", "sum_of_squares"}:
         raise ValueError(f"Unsupported parameterization: {parameterization}")
     scale = "none" if parameterization == "sum_of_squares" else "factorial"
+    transform = model.attention_score_transform
+    input_power = model.attention_coefficient_input_power
+    if (transform, input_power) not in {("identity", 0), ("softplus", 1)}:
+        raise ValueError("Probe supports raw scores or softplus scores with a prefactor")
+    if input_power and parameterization != "sum_of_squares":
+        raise ValueError("The prefactor probe requires a sum-of-squares core")
     required = {"attention_coefficient_conditioning": "query", "attention_coefficient_activation": "tanh",
                 "attention_coefficient_scale": scale,
                 "attention_coefficient_amplitude_scale": scale, "attention_coefficient_gate": "none",
-                "attention_coefficient_readout": "diagonal", "attention_score_transform": "identity",
+                "attention_coefficient_readout": "diagonal", "attention_coefficient_input_normalization": "none",
                 "attention_score_bias": "none", "remat": False, "rms_norm_fp32": True,
                 "attention_backend": "mosaic"}
     for field, expected in required.items():
@@ -313,19 +319,23 @@ def main():
             raise ValueError("Forward probe changed parent parameters")
         arrays = {key: np.asarray(value) for key, value in captured.items()}
         parameterization = config.model.attention_coefficient_parameterization
+        input_power = config.model.attention_coefficient_input_power
+        core_degree = config.model.attention_degree - input_power
         results = summarize_capture(arrays, epsilon=config.model.rms_norm_eps, parameterization=parameterization)
-        factorials = np.asarray([math.factorial(r) for r in range(config.model.attention_degree + 1)], np.float64)
+        factorials = np.asarray([math.factorial(r) for r in range(core_degree + 1)], np.float64)
         reference = reference_report(spec, layer=layer, head=head, arrays=arrays, factorials=factorials,
                                      parameterization=parameterization)
         if parameterization == "sum_of_squares":
-            half = config.model.attention_degree // 2
+            half = core_degree // 2
             labels = [f"U{r}" for r in range(half + 1)] + [f"V{r}" for r in range(half)]
         else:
-            labels = [f"r{r}" for r in range(config.model.attention_degree + 1)]
+            labels = [f"r{r}" for r in range(core_degree + 1)]
         for entry, label in zip(results["degrees"], labels, strict=True):
             entry["coordinate_label"] = label
         row = {"format": "query_activation_probe", "version": 1, "role": spec["role"],
                "coefficient_parameterization": parameterization,
+               "score_transform": config.model.attention_score_transform,
+               "input_power": input_power, "total_degree": config.model.attention_degree,
                "coordinate_definition": "SoS factor generator" if parameterization == "sum_of_squares" else "polynomial order",
                "captured_coefficient_definition": "g_j = b_j + a_j*tanh(z_j), before SoS expansion" if parameterization == "sum_of_squares" else "c_r = (b_r + a_r*tanh(z_r))/r!",
                "source_run_id": spec["run_id"], "checkpoint_step": spec["step"],

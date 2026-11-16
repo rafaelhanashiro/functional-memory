@@ -164,7 +164,18 @@ across generator coordinates, not model-contribution-weighted sensitivities.
 
 The [selected-head bars](saturation_by_coordinate.png) compare the original
 coefficient input, L2 after RMSNorm, and raw-input L2 for query and SoS at
-degrees eight and twelve. Each blue bar is the fraction of tokens with
+degrees eight and twelve. They also include the softplus-times-SoS runs
+`r841f35a24241` (core degree eight) and `rf637de9b65b1` (core degree twelve):
+`w(s) = u h(u)`, where `u = softplus(s)` and `h = U² + V²`. The prefactor makes
+the total degrees nine and thirteen. Neither L2 placement has been run for
+these two models, so all four L2 cells say **Not run**.
+Their matched-head mean saturation is **26.22%** at m=8 and **18.57%** at m=12,
+with best validation PPL **14.0953** and **14.0934**. The new native probe
+`rfadcac37b6d0` checks parameter identity and captures the factor generators
+before expansion. This head has less saturation at m=12 for this variant; the
+single-sequence comparison does not establish a causal link to PPL.
+
+Each blue bar is the fraction of tokens with
 `abs(tanh(z)) >= 0.99`, combining both signs. All panels use layer 8, head 1,
 checkpoint 7,500, the same first held-out 2,048-token sequence, and a linear
 0–100% axis. Every coordinate in this head has exactly zero measured saturation
@@ -173,7 +184,8 @@ those cells say **Not run**, not zero.
 Each completed panel also shows its run's **best validation PPL** to four decimal
 places, read from the pinned training `best_validation.json`. This is the run's
 validation evaluation, not the single-sequence diagnostic perplexity. The coordinate
-table retains the PPL and its checkpoint step alongside saturation.
+table retains the PPL and its checkpoint step alongside saturation, with
+explicit score-transform, prefactor-power, core-degree, and total-degree fields.
 
 The separate [all-layer/head bars](saturation_all_heads.png) average each
 coordinate's token saturation over all 15 layers and 14 heads. This L2-only
@@ -182,6 +194,7 @@ Its largest coordinate mean is U2: 0.1283% for degree-eight post-RMSNorm L2,
 0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for degree-twelve raw L2.
 All query coordinates average zero at this checkpoint. No matched all-model
 probe exists for the original controls, so they are not included in this view.
+Softplus-times-SoS has no L2 runs and is omitted from this L2-only figure.
 The percentages here are at checkpoint 7,500, rather than the terminal
 measurements reported above.
 

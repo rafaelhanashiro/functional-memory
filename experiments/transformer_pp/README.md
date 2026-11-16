@@ -2091,6 +2091,35 @@ state. A two-layer CPU capture check with nonzero amplitudes and nonuniform RMSN
 gains produces exactly the unchanged forward loss for direct and SoS coefficients.
 The run recipe pins the two parents, checkpoints, data, and reference measurements.
 
+## Softplus-prefactor SoS activation diagnostic
+
+`rfadcac37b6d0` replays the retained update-7,500 checkpoints of
+`r841f35a24241` and `rf637de9b65b1` on Kennel, using the same first held-out
+2,048-token sequence and layer 8, head 1 as the preceding probes. The weight
+is `u h(u)`, where `u = softplus(s)` and `h` is a query-conditioned SoS core
+of degree 8 or 12 (total degree 9 or 13). The probe captures the factor
+generators before expansion and checks the raw parameters against training
+measurements. Parent parameters remain unchanged; there are no optimizer updates.
+The [coefficient-input exploration](results/exploratory/coefficient_input_norm/README.md)
+owns the saturation figure and its explicit selections.
+
+From the isolated worktree after committing its execution inputs:
+
+```bash
+run=rfadcac37b6d0
+sbatch --parsable --partition=debug --qos=debug --gres=gpu:1 \
+  --exclude=akita,collie,doodle,mastiff,samoyed,terrier --cpus-per-task=8 --mem=64G \
+  --time=00:30:00 --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  experiments/transformer_pp/diagnose_softplus_sos_activations.sbatch "$PWD" "$(git rev-parse HEAD)" "$run"
+```
+
+The launcher qualifies both transformed SoS kernels, including their 2,048-token
+production shapes, against direct FP64 square evaluation before native checkpoint
+inference. A separate CPU capture check verifies unchanged forward loss at both
+core degrees with nonzero amplitudes and nonuniform RMSNorm gains.
+
 ## Coefficient-input L2 experiment
 
 Four completed Kennel runs test unit-L2 normalization only between the gain-applied
@@ -2169,3 +2198,112 @@ done
 Acceptance requires raw-source branch isolation, independent reference gradients
 through both input paths, native Mosaic composition, identical initial parameter
 hashes, and each run's full-shape pilot and fresh-process resume.
+## Softplus and sum-of-squares composition
+
+The two runs opened on 2026-11-13 test query-conditioned degree-eight sum-of-squares
+cores with softplus inputs, on the 15-layer width-896 Transformer++ recipe with
+RoPE and coefficient-projection W decay. Their home cluster is Kennel. The
+[exploratory topic](results/exploratory/softplus_sos/README.md) owns the explicit
+controls, findings, limitations, and open decision.
+
+Write `z = softplus(Q_t K_i^T / sqrt(d_K))`. Both cores use generated factors
+`F_j(x_t) = f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`, with fixed Taylor square
+factors `f`. Split their nine factors into `A_0..A_4` and `B_0..B_3`, giving
+`h_t(z) = (sum_j A_j z^j)^2 + (sum_j B_j z^j)^2`.
+
+| Run | Weight | `attention_degree` | `attention_coefficient_input_power` |
+| --- | --- | ---: | ---: |
+| `r41a4c74c5f58` | h_t(z) | 8 | 0 |
+| `r841f35a24241` | z h_t(z) | 9 | 1 |
+
+`attention_degree` always records the total expanded degree. Both retain a
+SoS core of degree eight and the same 200,150,806 parameters. Both start from
+`reeefbcc19abf`'s exact initial arrays (`b=1`, `a=0`, random W), so h starts as
+T_8. The prefactor prepends a structural zero to the expanded coefficient vector;
+it adds no parameter and makes the negative-score tail vanish. The first run
+retains a learnable baseline. Coefficient W decays at 0.1; a and b do not.
+
+The new runs preserve the control's model, data stream, seed 42, global batch
+256, microbatch 16, 7,570 updates, LR schedule, canonical QK setup, and per-head
+output RMSNorm. Gradient-event capture is enabled under the standard policy.
+Expanded coefficients and all-update gradient-window statistics remain in run
+measurements. The softplus transform is evaluated inside Mosaic's causal tiles;
+production does not use the blocked JAX backend. FP32 expansion can still incur
+cancellation, so algebraic nonnegativity is not a floating-point guarantee.
+
+The [acceptance adapter](softplus_sos_acceptance.py) pins the SoS control recipe,
+checks exact initial parameter fingerprints and counts, and requires CPU tests,
+GPU forward/backward reference checks, the full-shape pilot, and fresh-process
+resume. Hardware admission is H100 or B200. The transformed Mosaic and SoS kernel
+qualification passed all 102 cases on B200
+([validation record](../../scaffolds/transformer/validation/README.md#softplus--query-sos-on-mosaic-b200-kernels-2026-11-13));
+B300 remains unqualified for the transformed kernels. Qualification, from this worktree:
+
+```bash
+mkdir -p scaffolds/transformer/validation/logs
+sbatch --output=scaffolds/transformer/validation/logs/softplus-sos-%j.log \
+  scaffolds/transformer/validation/qualify_softplus_sos.sbatch "$(git rev-parse HEAD)"
+```
+
+After qualification, independently submit each run on an available qualified GPU,
+using the live standard/long limits from `CLUSTERS.md`. On B200 use:
+
+```bash
+run=r41a4c74c5f58  # separately repeat for r841f35a24241
+sbatch --partition=standard --nodelist=shiba --exclude=collie,samoyed,doodle,terrier,akita,mastiff,dogo \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+  --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.softplus_sos_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200
+```
+
+Each job qualifies its own allocation before training. Its source, environment,
+configs and study membership remain frozen while it can run or requeue.
+
+
+### Degree-twelve softplus–SoS pair
+
+Added 2026-11-15 on Kennel at the user's request. These are fresh training runs
+at the same 15-layer width-896 shape, seed 42, 2,048-token context and 7,570-update
+budget as the degree-eight pair. Only the core degree changes. RoPE, canonical
+QK RMSNorm/head scales, attention-output head RMSNorm, the data stream, global
+batch 256, microbatch 16, and AdamW schedule remain matched. The coefficient
+projection W decays at 0.1; a and b remain exempt. No forget or distance gate is added.
+
+| Run | Weight, z = softplus(s) | SoS core degree | Total degree |
+| --- | --- | ---: | ---: |
+| `rc5aac8f37a2e` | h_t(z) | 12 | 12 |
+| `rf637de9b65b1` | z h_t(z) | 12 | 13 |
+
+Both use thirteen generated square-factor coefficients: A has degree six and B
+has degree five, with h = A^2 + B^2. Both start at the degree-twelve SoS control
+`r3d52b7ab43d1`'s exact initial arrays (200,905,126 parameters), giving h = T_12.
+The prefactor adds no learned parameters. Initial factors keep the existing
+Taylor scaling; there is no coefficient-input normalization or LR multiplier.
+
+The shared Mosaic arithmetic is reused. Degree thirteen is admitted only for
+softplus at d_K=d_V=64 and the tested 512/2,048-token lengths. Other transforms
+retain their previous degree limit. The acceptance adapter checks both complete
+recipes and initial parameter hashes, CPU expansion/decay masks, independent
+FP64 direct-factor forward and gradient references, full-shape throughput,
+training and fresh-process checkpoint resume before production. GPU eligibility
+is H100/B200; each granted device must pass its allocation's acceptance.
+
+Submit independently from the isolated worktree, after checking the live
+standard/long allowances. The first submission uses the remaining standard
+slot; the second uses long, with no scheduling dependency:
+
+```bash
+run=rc5aac8f37a2e; partition=standard
+# Separately: run=rf637de9b65b1; partition=long
+sbatch --partition="$partition" --exclude=akita,mastiff,collie,samoyed,doodle,terrier \
+  --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+  --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.softplus_sos_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100,B200
+```
+
+The existing [softplus–SoS topic](results/exploratory/softplus_sos/README.md)
+contains the explicit degree-matched controls and the open comparison.

@@ -1,6 +1,7 @@
 """Single-color saturation bars from explicitly selected, pinned measurements.
 
-The matched-head figure includes original-input controls and both L2 placements.
+The matched-head figure includes original-input controls, softplus times SoS,
+and both L2 placements.
 The supplemental figure averages the L2 measurements over all layers and heads;
 original controls have only a matched-head probe. Missing runs stay explicit.
 No GPU, checkpoint, dataset, or numerical archive is needed to regenerate.
@@ -87,12 +88,16 @@ def load(selection: dict) -> list[dict]:
     panels = []
     for panel in selection["panels"]:
         family, degree = panel["family"], panel["degree"]
+        transform, input_power = panel["score_transform"], panel["input_power"]
+        assert (transform, input_power) in {("identity", 0), ("softplus", 1)}
+        assert input_power == 0 or family == "sum_of_squares"
         names = coordinate_names(degree, family)
         result = {**panel, "coordinates": names, "cells": {}}
         for variant in VARIANTS:
             choice = panel["variants"][variant]
             if choice.get("status") == "not_run":
-                assert variant == "pre_rmsnorm" and degree == 8
+                assert (variant == "pre_rmsnorm" and degree == 8) or (
+                    input_power == 1 and variant in VARIANTS[1:])
                 result["cells"][variant] = {"status": "not_run", "run_id": ""}
                 continue
             role = choice["run_role"]
@@ -101,7 +106,9 @@ def load(selection: dict) -> list[dict]:
             assert record["status"] == "complete"
             config = yaml.safe_load((path / "config.yaml").read_text())
             model = config["model"]
-            assert model["attention_degree"] == degree
+            assert model["attention_degree"] == degree + input_power
+            assert model.get("attention_score_transform", "identity") == transform
+            assert model.get("attention_coefficient_input_power", 0) == input_power
             assert model["attention_coefficient_parameterization"] == family
             assert model["attention_coefficient_conditioning"] == "query"
             assert model["attention_coefficient_activation"] == "tanh"
@@ -122,6 +129,9 @@ def load(selection: dict) -> list[dict]:
                 row = matches[0]
                 assert row["source_run_id"] == cell["run_id"]
                 assert row["degree"] == degree
+                assert row.get("score_transform", "identity") == transform
+                assert row.get("input_power", 0) == input_power
+                assert row.get("total_degree", degree) == degree + input_power
                 assert row["checkpoint_step"] == settings["checkpoint_step"]
                 assert row["checkpoint_sha256"] == record["selected_checkpoint"]["sha256"]
                 assert row["layer"] == settings["layer_index"] and row["head"] == settings["head_index"]
@@ -160,8 +170,9 @@ def load(selection: dict) -> list[dict]:
             check_fractions(cell["selected_head"])
             result["cells"][variant] = cell
         panels.append(result)
-    assert [(panel["family"], panel["degree"]) for panel in panels] == [
-        ("direct", 8), ("sum_of_squares", 8), ("direct", 12), ("sum_of_squares", 12)]
+    assert [(panel["family"], panel["degree"], panel["input_power"]) for panel in panels] == [
+        (family, degree, power) for degree in (8, 12)
+        for family, power in (("direct", 0), ("sum_of_squares", 0), ("sum_of_squares", 1))]
     return panels
 
 
@@ -173,22 +184,26 @@ def _mean_label(percent: np.ndarray) -> str:
 def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
     matched = scope == "selected_head"
     variants = VARIANTS if matched else VARIANTS[1:]
+    if not matched:
+        panels = [panel for panel in panels if any(
+            panel["cells"][variant]["status"] != "not_run" for variant in variants)]
     limits = settings["head_y_limits_percent" if matched else "all_heads_y_limits_percent"]
     assert limits == ([0, 100] if matched else [0, .25])
     ymax = limits[1]
     color = settings["bar_color"]
     assert color == BLUE
-    fig, axes = plt.subplots(4, len(variants), figsize=(17, 14) if matched else (13, 12),
+    fig, axes = plt.subplots(len(panels), len(variants), figsize=(17, 20) if matched else (13, 12),
                              squeeze=False, sharey=True)
-    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.84,
-                        bottom=.09, hspace=.66, wspace=.16)
+    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.89 if matched else .84,
+                        bottom=.085 if matched else .12, hspace=.76 if matched else .66, wspace=.16)
     for index, panel in enumerate(panels):
         for column, variant in enumerate(variants):
             ax = axes[index, column]
             cell = panel["cells"][variant]
             if column == 0:
                 ax.set_title(f"{panel['label']} · $m={panel['degree']}$", loc="left",
-                             fontsize=16, fontweight="bold", color=INK, pad=28)
+                             fontsize=14 if panel["input_power"] else 16,
+                             fontweight="bold", color=INK, pad=28)
             ax.set_ylim(0, ymax)
             ax.set_xlim(-.65, len(panel["coordinates"]) - .35)
             ax.set_yticks([0, 25, 50, 75, 100] if matched else [0, .05, .10, .15, .20, .25])
@@ -223,7 +238,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                           color=MUTED, fontsize=10.5, labelpad=7)
     for column, variant in enumerate(variants):
         bounds = axes[0, column].get_position()
-        fig.text((bounds.x0 + bounds.x1) / 2, .885, TITLES[variant], ha="center",
+        fig.text((bounds.x0 + bounds.x1) / 2, .925 if matched else .885, TITLES[variant], ha="center",
                  fontsize=18, fontweight="bold", color=INK)
     fig.suptitle("Transformer++ · tanh saturation" if matched else "Transformer++ · tanh saturation across all heads",
                  x=.055, y=.975, ha="left", fontsize=25 if matched else 23,
@@ -234,7 +249,8 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                     r"  ·  $|\tanh z|\geq0.99$")
         ylabel = "Saturated tokens (%)"
         footer = ("PPL: best validation evaluation. Bars combine both saturation tails; shared 0–100% scale.\n"
-                  "SoS labels are coefficients of U and V in p(s) = U(s)² + V(s)². One head and one sequence; missing runs are not zeros.")
+                  "SoS bars: U/V factor generators. Softplus + prefactor: w(s) = u h(u), u = softplus(s), h = U² + V².\n"
+                  "m is the SoS core degree; the prefactor gives total degree m + 1. One head and one sequence; missing runs are not zeros.")
     else:
         shapes = {(cell["layers"], cell["heads"]) for panel in panels for cell in panel["cells"].values()
                   if "layers" in cell}
@@ -243,8 +259,9 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                     r"$|\tanh z|\geq0.99$  ·  zoomed 0–0.25% scale in every panel")
         ylabel = "Mean saturated tokens (%)"
         footer = ("PPL: best validation evaluation. Bars weight layers, heads and tokens equally; SoS labels are square-factor coordinates.\n"
-                  "No-L2 controls have only the selected-head probe. Raw-L2 m=8 was not run. These are one-sequence diagnostics.")
-    fig.text(.055, .928 if matched else .915, subtitle, ha="left", fontsize=12, color=MUTED,
+                  "No-L2 controls have only the selected-head probe. Softplus + prefactor has no L2 runs and is omitted.\n"
+                  "Raw-L2 m=8 was not run. These are one-sequence diagnostics.")
+    fig.text(.055, .948 if matched else .915, subtitle, ha="left", fontsize=12, color=MUTED,
              linespacing=1.7)
     fig.supylabel(ylabel, x=.018, fontsize=13, color=INK)
     fig.text(.055, .022, footer, fontsize=10.5 if matched else 10, color=MUTED, linespacing=1.7)
@@ -255,7 +272,8 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
 
 
 def save_summary(panels: list[dict]) -> None:
-    fields = ["run_id", "family", "degree", "input_variant", "scope", "coordinate", "status",
+    fields = ["run_id", "family", "degree", "total_degree", "score_transform", "input_power",
+              "input_variant", "scope", "coordinate", "status",
               "saturation_fraction", "saturation_percent", "best_validation_perplexity", "best_validation_step"]
     with (OUT / "saturation_by_coordinate.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
@@ -270,7 +288,10 @@ def save_summary(panels: list[dict]) -> None:
                     for index, coordinate in enumerate(panel["coordinates"]):
                         value = None if values is None else float(values[index])
                         writer.writerow({"run_id": cell["run_id"], "family": panel["family"],
-                                         "degree": panel["degree"], "input_variant": variant,
+                                         "degree": panel["degree"],
+                                         "total_degree": panel["degree"] + panel["input_power"],
+                                         "score_transform": panel["score_transform"],
+                                         "input_power": panel["input_power"], "input_variant": variant,
                                          "scope": scope, "coordinate": coordinate, "status": status,
                                          "saturation_fraction": "" if value is None else format(value, ".12g"),
                                          "saturation_percent": "" if value is None else format(100 * value, ".12g"),

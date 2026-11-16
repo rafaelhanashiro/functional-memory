@@ -634,6 +634,33 @@ def attention_identity(config) -> dict:
     if (getattr(config.model, "attention_score_transform", "identity") != "identity"
             or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
         identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
+    if query_conditioned and config.model.attention_coefficient_parameterization == "sum_of_squares":
+        power = getattr(config.model, "attention_coefficient_input_power", 0)
+        core_degree = degree - power
+        transform = getattr(config.model, "attention_score_transform", "identity")
+        polynomial = "z * h_t(z)" if power else "h_t(z)"
+        formula = (f"sum_(i<=t) p_t(z_ti) v_i; p_t(z) = {polynomial}; "
+                   f"h_t(z) = A_t(z)^2 + B_t(z)^2, deg A = {core_degree // 2}, "
+                   f"deg B = {core_degree // 2 - 1}; square factors F_j(x_t) = f_j (1 + g_j(x_t))/2, "
+                   "g_j = b_j + a_j tanh(W_j^T x_t); fixed f factorizes T_"
+                   f"{core_degree}, b initially 1, a initially {config.model.attention_coefficient_amplitude_initial:g}; "
+                   f"z = {'softplus(s)' if transform == 'softplus' else 's'}, s = Q_t K_i^T / sqrt(d_k); "
+                   "x_t is the pre-attention RMSNorm activation; factors and expanded coefficients computed in FP32")
+        if scaling != "none":
+            formula += ("; then per-head RMSNorm over value channels with a learned gain"
+                        if scaling == "head_rms_norm" else "; divided by the number of visible keys")
+        identity.update(
+            attention_formula=formula,
+            attention_output_normalization=False if scaling == "none" else scaling,
+            attention_coefficient_input_power=power,
+            attention_coefficient_core_degree=core_degree,
+            attention_coefficient_factor_count=core_degree + 1,
+            attention_coefficient_effective_count=degree + 1,
+            attention_coefficient_count=(core_degree + 1) * (config.model.hidden_size + 2)
+            * config.model.num_layers * config.model.num_heads,
+            attention_coefficient_numerical_note=("The expanded polynomial is algebraically nonnegative on its "
+                                                "input domain but can round negative near roots."),
+        )
     if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":
         from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
         source = getattr(config.model, "attention_coefficient_input_source", "post_rmsnorm")
@@ -956,7 +983,8 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 
 def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
-                             readout_scale=1.0, activation="tanh", orders=None) -> dict:
+                             readout_scale=1.0, activation="tanh", orders=None,
+                             parameterization="direct", input_power=0) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -990,6 +1018,11 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                        and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
+    if parameterization == "sum_of_squares":
+        report.update(parameterization=parameterization, input_power=input_power,
+                      core_degree=kernel.shape[-1] - 1,
+                      generator_axis="square factor index, not expanded polynomial order",
+                      effective_coefficient_formula="p_t(z) = sum_r c_r(x_t) z^r; c_r already include factorial scaling")
     if amplitude is not None:
         report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
@@ -1622,7 +1655,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
             coefficient_scale=config.model.attention_coefficient_scale,
             readout_scale=config.model.attention_coefficient_readout_scale,
             activation=config.model.attention_coefficient_activation,
-            orders=config.model.attention_coefficient_orders)
+            orders=config.model.attention_coefficient_orders,
+            parameterization=config.model.attention_coefficient_parameterization,
+            input_power=getattr(config.model, "attention_coefficient_input_power", 0))
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
         if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":
