@@ -170,6 +170,10 @@ checkpoint 7,500, the same first held-out 2,048-token sequence, and a linear
 0–100% axis. Every coordinate in this head has exactly zero measured saturation
 in all six completed L2 runs. Raw-input L2 has not been run at degree eight;
 those cells say **Not run**, not zero.
+Each completed panel also shows its run's **best validation PPL** to four decimal
+places, read from the pinned training `best_validation.json`. This is the run's
+validation evaluation, not the single-sequence diagnostic perplexity. The coordinate
+table retains the PPL and its checkpoint step alongside saturation.
 
 The separate [all-layer/head bars](saturation_all_heads.png) average each
 coordinate's token saturation over all 15 layers and 14 heads. This L2-only

@@ -4,6 +4,7 @@ settings:
   layer_index: 7
   head_index: 0
   checkpoint_step: 7500
+  ppl_metric: validation-best
   sequences: 1
   prediction_tokens: 2048
   input_dimension: 896

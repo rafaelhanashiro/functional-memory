@@ -67,6 +67,7 @@ def load(selection: dict) -> list[dict]:
     settings = selection["settings"]
     assert settings["saturation_absolute_tanh_threshold"] == .99
     assert settings["checkpoint_step"] == 7500
+    assert settings["ppl_metric"] == "validation-best"
     entries = {entry["role"]: entry for entry in selection["runs"]}
     assert len(entries) == len(selection["runs"])
     records: dict[str, list[dict]] = {}
@@ -109,7 +110,10 @@ def load(selection: dict) -> list[dict]:
             assert model["positional_encoding"] == "rope"
             best = json.loads((path / "best_validation.json").read_text())
             assert best["step"] == record["selected_checkpoint"]["step"] == settings["checkpoint_step"]
-            cell = {"status": "complete", "run_id": entries[role]["run_id"]}
+            ppl = float(best["validation_perplexity"])
+            assert np.isfinite(ppl) and ppl > 0
+            cell = {"status": "complete", "run_id": entries[role]["run_id"],
+                    "best_validation_perplexity": ppl, "best_validation_step": best["step"]}
             if variant == "none":
                 assert model.get("attention_coefficient_input_normalization", "none") == "none"
                 matches = [row for row in measurements(choice["probe_role"])
@@ -207,6 +211,8 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
             ax.grid(axis="y", color=GRID, linewidth=.7)
             ax.text(0, 1.035, _mean_label(percent), transform=ax.transAxes,
                     color=MUTED, fontsize=11)
+            ax.text(1, 1.035, f"Best validation PPL: {cell['best_validation_perplexity']:.4f}",
+                    transform=ax.transAxes, ha="right", color=INK, fontsize=11, fontweight="bold")
             if not percent.any():
                 ax.text(.5, .49, "0% at every coordinate", transform=ax.transAxes,
                         ha="center", va="center", fontsize=12.5, color=MUTED)
@@ -227,7 +233,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                     f"  ·  checkpoint {settings['checkpoint_step']:,}  ·  same 2,048-token sequence"
                     r"  ·  $|\tanh z|\geq0.99$")
         ylabel = "Saturated tokens (%)"
-        footer = ("Single-color bars combine both saturation tails. All panels use the same 0–100% scale.\n"
+        footer = ("PPL: best validation evaluation. Bars combine both saturation tails; shared 0–100% scale.\n"
                   "SoS labels are coefficients of U and V in p(s) = U(s)² + V(s)². One head and one sequence; missing runs are not zeros.")
     else:
         shapes = {(cell["layers"], cell["heads"]) for panel in panels for cell in panel["cells"].values()
@@ -236,7 +242,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
         subtitle = ("Mean across 15 layers × 14 heads  ·  checkpoint 7,500  ·  same 2,048-token sequence\n"
                     r"$|\tanh z|\geq0.99$  ·  zoomed 0–0.25% scale in every panel")
         ylabel = "Mean saturated tokens (%)"
-        footer = ("Equal weight for every layer, head and token. SoS labels are square-factor coordinates.\n"
+        footer = ("PPL: best validation evaluation. Bars weight layers, heads and tokens equally; SoS labels are square-factor coordinates.\n"
                   "No-L2 controls have only the selected-head probe. Raw-L2 m=8 was not run. These are one-sequence diagnostics.")
     fig.text(.055, .928 if matched else .915, subtitle, ha="left", fontsize=12, color=MUTED,
              linespacing=1.7)
@@ -250,7 +256,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
 
 def save_summary(panels: list[dict]) -> None:
     fields = ["run_id", "family", "degree", "input_variant", "scope", "coordinate", "status",
-              "saturation_fraction", "saturation_percent"]
+              "saturation_fraction", "saturation_percent", "best_validation_perplexity", "best_validation_step"]
     with (OUT / "saturation_by_coordinate.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
@@ -267,7 +273,10 @@ def save_summary(panels: list[dict]) -> None:
                                          "degree": panel["degree"], "input_variant": variant,
                                          "scope": scope, "coordinate": coordinate, "status": status,
                                          "saturation_fraction": "" if value is None else format(value, ".12g"),
-                                         "saturation_percent": "" if value is None else format(100 * value, ".12g")})
+                                         "saturation_percent": "" if value is None else format(100 * value, ".12g"),
+                                         "best_validation_perplexity": (format(cell["best_validation_perplexity"], ".12g")
+                                                                        if "best_validation_perplexity" in cell else ""),
+                                         "best_validation_step": cell.get("best_validation_step", "")})
 
 
 def main() -> None:
