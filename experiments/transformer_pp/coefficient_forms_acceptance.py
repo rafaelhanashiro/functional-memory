@@ -29,10 +29,11 @@ DEGREE_PARTNERS = {("sum_of_squares", 4): ("rca97cc9db8f2", "75fa1e3e30eaf98aa49
                    ("sum_of_squares", 12): ("r0fceea0627c8", "785e3530949ee2733addde255b679ecf0d295d188fd19fd9ca29ebd9d5a7d2e0")}
 DEGREE_CHANGES = {("sum_of_squares", 16): dict(attention_degree=16, attention_backend="blocked",
                                               attention_blocked_implementation="strips")}
-# At the 12-layer width-640 shape with twice its 1x budget (depth, width, updates), a sum-of-squares run copies the
-# query run of its degree at that shape and budget.
+# At the 12-layer width-640 shape with twice or four times its 1x budget (depth, width, updates), a sum-of-squares
+# run copies the query run of its degree at that shape and budget.
 SHAPE_PARTNERS = {("sum_of_squares", 8, 12, 640, 15103): ("r3759b2a57a54", "aa7585f1a530ab4508cdd033d2243af900ae0316950c4b0ab8b46f21371534fb"),
-                  ("sum_of_squares", 12, 12, 640, 15103): ("r0f6d929e5992", "c4f33f9ad753a7586bf1e1746590ee97d4c2fdf4fc5f5d96bf88e1ee2b89ef1c")}
+                  ("sum_of_squares", 12, 12, 640, 15103): ("r0f6d929e5992", "c4f33f9ad753a7586bf1e1746590ee97d4c2fdf4fc5f5d96bf88e1ee2b89ef1c"),
+                  ("sum_of_squares", 12, 12, 640, 30205): ("r2f41d054e944", "b600516341a2c3236d8342f8a834ffdc2bfb97fd2c517f7da9c4240cb4dc4c3b")}
 PATH_FIELDS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name", "wandb_group", "wandb_dir", "wandb_mode")
 
 

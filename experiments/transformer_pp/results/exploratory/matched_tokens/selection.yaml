@@ -1,7 +1,8 @@
 question: Trained on the reference shape's token count, twice its own 1x budget, how
   do the attention variants compare at the 12-layer width-640 shape at degrees eight
   and twelve, and how close does each come to its reference-shape counterpart at the
-  same tokens?
+  same tokens? At four times the 1x budget, how do the five degree-twelve RoPE polynomials
+  and softmax compare with exp there and with their 2x runs?
 study: transformer_pp
 settings:
   metric: held-out validation perplexity
@@ -18,6 +19,14 @@ settings:
     global_batch_size: 128
     budget: twice the shape's 1x budget
     validation_best_step: 15000
+  four_x_shape:
+    name: 12-layer width-640
+    training_steps: 30205
+    warmup_steps: 1815
+    global_batch_size: 128
+    budget: four times the shape's 1x budget
+    validation_best_step: 30205
+    tokens_at_validation_best: 7918059520
   one_x_shape:
     name: 12-layer width-640
     training_steps: 7551
@@ -37,11 +46,13 @@ settings:
   seed: 42
   tokens_at_validation_best: 3932160000 at both shapes (2x update 15000, reference
     update 7500)
-  baseline: l12_d640_2x_exp
-  backend: 2x RoPE polynomials on the Mosaic query-polynomial kernels (softplus on
-    their transformed family, H100 only), FoX query and FoX exp on the blocked backend's
-    causal strips, exp on fused Triton, softmax on cuDNN; the 1x softplus partner
-    on the causal strips, the 1x FoX exp partner on the blocked scan
+  baseline:
+    l12_d640_2x: l12_d640_2x_exp
+    l12_d640_4x: l12_d640_4x_exp
+  backend: 2x and 4x RoPE polynomials on the Mosaic query-polynomial kernels (softplus
+    on their transformed family, H100 only), 2x FoX query and FoX exp on the blocked
+    backend's causal strips, exp on fused Triton, softmax on cuDNN; the 1x softplus
+    partner on the causal strips, the 1x FoX exp partner on the blocked scan
   comparison_groups:
     l12_d640_2x:
     - l12_d640_2x_query_m8
@@ -59,6 +70,14 @@ settings:
     - l12_d640_2x_exp
     - l12_d640_2x_softmax
     - l12_d640_2x_fox_exp
+    l12_d640_4x:
+    - l12_d640_4x_query_m12
+    - l12_d640_4x_static_m12
+    - l12_d640_4x_fixed_taylor_m12
+    - l12_d640_4x_softplus_input_m12
+    - l12_d640_4x_sum_of_squares_m12
+    - l12_d640_4x_exp
+    - l12_d640_4x_softmax
   partners:
     l12_d640_2x_query_m8:
       one_x: l12_d640_1x_query_m8
@@ -91,9 +110,41 @@ settings:
     l12_d640_2x_fox_exp:
       one_x: l12_d640_1x_fox_exp
       reference: reference_1x_fox_exp
+    l12_d640_4x_query_m12:
+      two_x: l12_d640_2x_query_m12
+    l12_d640_4x_static_m12:
+      two_x: l12_d640_2x_static_m12
+    l12_d640_4x_fixed_taylor_m12:
+      two_x: l12_d640_2x_fixed_taylor_m12
+    l12_d640_4x_softplus_input_m12:
+      two_x: l12_d640_2x_softplus_input_m12
+    l12_d640_4x_sum_of_squares_m12:
+      two_x: l12_d640_2x_sum_of_squares_m12
+    l12_d640_4x_exp:
+      two_x: l12_d640_2x_exp
+    l12_d640_4x_softmax:
+      two_x: l12_d640_2x_softmax
   unpartnered: l12_d640_2x_static_m12 and l12_d640_2x_fox_query_m12 have neither partner;
     the other 2x runs without a one_x partner have no 1x run at this shape at their
     degree
+  same_fraction:
+    description: gap to exp at the 2x update s against the 4x update 2s, and at the
+      last updates; every evaluation uses the same validation batches
+    validation_batches: 38
+    two_x_steps:
+    - 3000
+    - 6000
+    - 9000
+    - 12000
+    - 15000
+    - 15103
+    four_x_steps:
+    - 6000
+    - 12000
+    - 18000
+    - 24000
+    - 30000
+    - 30205
 runs:
 - study: transformer_pp
   run_id: r3759b2a57a54
@@ -395,6 +446,146 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/re634d82ee479/best_validation.json
       sha256: 7f08c8e328c2fa46f11bf83d0aa466a4195b6e0843a9393dba30d59937e6bb4d
+- study: transformer_pp
+  run_id: r2f41d054e944
+  role: l12_d640_4x_query_m12
+  label: query m = 12 + RoPE + W decay, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2f41d054e944/config.yaml
+      sha256: b600516341a2c3236d8342f8a834ffdc2bfb97fd2c517f7da9c4240cb4dc4c3b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2f41d054e944/metrics.jsonl
+      sha256: 28aa284f042a6aa67b00ceeeb61fb60b0e16ae27a223cca3851a4a981f91a9df
+    completion.json:
+      path: experiments/transformer_pp/runs/r2f41d054e944/completion.json
+      sha256: f3e54bca76c0a9b4207f893b1cc833cae468cd5d17cc794e4496b15dcbba9fb9
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2f41d054e944/metadata.json
+      sha256: a5d8e51f448f9c42dc80b70d93bd379c2b136059c482791b80b96e8b07b1cb96
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2f41d054e944/best_validation.json
+      sha256: 765ffb9e8b409720b64d62ca53de8222ff49d1fae75a1917a12745e15e14af91
+- study: transformer_pp
+  run_id: r0f8122dd8439
+  role: l12_d640_4x_static_m12
+  label: learned static m = 12, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0f8122dd8439/config.yaml
+      sha256: d9f38cd5acb834a4e4c503de9c1f700bfe094fc46516552c52c70b5c4a9e623c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0f8122dd8439/metrics.jsonl
+      sha256: 1d1e3cf7e217947e75525ac1caa532a7adb92eeb42c21d21a4c0aa0df78c008e
+    completion.json:
+      path: experiments/transformer_pp/runs/r0f8122dd8439/completion.json
+      sha256: 2f6859e92fd1944914c30383871e4833c119726379e158fa0e41f22346011057
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0f8122dd8439/metadata.json
+      sha256: 702b82bbdd74348a78a7292ddb6ba571d0f1383e3f7f4e5cbfe71fa9ee819339
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0f8122dd8439/best_validation.json
+      sha256: 0f94a18c1d49f4bc684a6fa1875e21f982ca4ffd336bb1caf0bba63b3835ea80
+- study: transformer_pp
+  run_id: rcace22b32f93
+  role: l12_d640_4x_fixed_taylor_m12
+  label: fixed Taylor m = 12, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rcace22b32f93/config.yaml
+      sha256: 7aa93a788faca5d3ba4c0d149868e404fa1c1b3dd4cda2b177c904c173af8611
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rcace22b32f93/metrics.jsonl
+      sha256: 29ed44032f883600f7ca5b1f8f3dc12ef61d84ea3bd801bc1c60dae734715fcf
+    completion.json:
+      path: experiments/transformer_pp/runs/rcace22b32f93/completion.json
+      sha256: 280623ecdaf2f4c9554fd1b3d5a950656f2e2bd1cc1991e430fe4773abc5b281
+    metadata.json:
+      path: experiments/transformer_pp/runs/rcace22b32f93/metadata.json
+      sha256: df56772ab50aef397156e73ca3a314f5f030fd9014d3470ae3be2177e59b8474
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rcace22b32f93/best_validation.json
+      sha256: 3e5834932cdc3a504dd7955c57dfc0f3f55fe95089d32b8925f2f7e1761addab
+- study: transformer_pp
+  run_id: rb74e8b994b74
+  role: l12_d640_4x_softplus_input_m12
+  label: softplus input, query m = 12 + RoPE + W decay, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb74e8b994b74/config.yaml
+      sha256: 3b1e575800eafe9c08c39a9ed9b192afafd7437ec4c6185966f3889864b5cf89
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb74e8b994b74/metrics.jsonl
+      sha256: ad57548babac8b33e552b67f4b4d731f1ccdb1f4a32a79284a7ef4c097fc6cfe
+    completion.json:
+      path: experiments/transformer_pp/runs/rb74e8b994b74/completion.json
+      sha256: b0c18671e9450466e29ced8d5a59782dd599540595a97da12b4960ed20d25150
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb74e8b994b74/metadata.json
+      sha256: 382bce9dc57ea3831b04d059d2d32b060347a8be201eab0b5cf619c4d5cef8eb
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rb74e8b994b74/best_validation.json
+      sha256: a383607dba97e9b08cb83c5bed03af47354b104db8ae865cd36a6199a651c47b
+- study: transformer_pp
+  run_id: r1f935f18fe21
+  role: l12_d640_4x_sum_of_squares_m12
+  label: sum-of-squares query m = 12 + RoPE + W decay, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1f935f18fe21/config.yaml
+      sha256: 8351d24f33e1c4f6a54983fe7a069c76911d7fdf6db35e537ed122aaf7a51cec
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1f935f18fe21/metrics.jsonl
+      sha256: 7c3dbed98d9fe995de7f1304f700026e4228ef27bcddd5db978d5308fd8dd8cf
+    completion.json:
+      path: experiments/transformer_pp/runs/r1f935f18fe21/completion.json
+      sha256: 5466324b13e7e72de81e8299f375c90c544b82fae73f852bdf10539bf72c1ef1
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1f935f18fe21/metadata.json
+      sha256: e4acb59677f427c477378241b9960ba74e44643bcf1fc8fbf63b330670eb2e7d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1f935f18fe21/best_validation.json
+      sha256: 97a7174f0a829622bd73f109805b7c337e9a69026435e52103d2df433497618f
+- study: transformer_pp
+  run_id: r333444bd4304
+  role: l12_d640_4x_exp
+  label: exp, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r333444bd4304/config.yaml
+      sha256: b230891e797171ece445802290a1eb189dde23fb8299e1a226623598f122b7c4
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r333444bd4304/metrics.jsonl
+      sha256: cb245ee3d738cced656ba5170accf19ddba538471d8952647bb3aab84c901b76
+    completion.json:
+      path: experiments/transformer_pp/runs/r333444bd4304/completion.json
+      sha256: 5b6b103ec7794cc5ea770ee448f043bca5fd7f2b11213a90107e52e35a5d0301
+    metadata.json:
+      path: experiments/transformer_pp/runs/r333444bd4304/metadata.json
+      sha256: c326bc1d7372fa3331b41b2cda282d0d2cc4638296ac2e5e7d3a153433d96d76
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r333444bd4304/best_validation.json
+      sha256: b52f060e015f65656d3b3ba2f8ddb72908de42a0fa99ccd33617b14269e86a8a
+- study: transformer_pp
+  run_id: r93df1e48c8fd
+  role: l12_d640_4x_softmax
+  label: softmax, 12-layer width-640, 4x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r93df1e48c8fd/config.yaml
+      sha256: 572c11be997dcfad2836e1db6d5ff3463c28a0db568d3a35f9f503c952eda166
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r93df1e48c8fd/metrics.jsonl
+      sha256: e75470d0a8759b2da4f4595406ddfaffcea481e89c37b1079d450c696d846a0a
+    completion.json:
+      path: experiments/transformer_pp/runs/r93df1e48c8fd/completion.json
+      sha256: bfbff40565ec07ae49f4ec6232b05936bdfc3968df3c701748bcfe0f16e7d091
+    metadata.json:
+      path: experiments/transformer_pp/runs/r93df1e48c8fd/metadata.json
+      sha256: fc2076f8767d170e488ba698cb5490784ee22c4073bccc84e986ba1b7971a12a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r93df1e48c8fd/best_validation.json
+      sha256: ef5cba839e3ec6288fa1f6f46a0aac3bcd818f09ff038229d60133881024c3ea
 - study: transformer_pp
   run_id: r95a5691d293f
   role: l12_d640_1x_query_m8

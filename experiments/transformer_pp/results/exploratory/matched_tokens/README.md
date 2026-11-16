@@ -1,11 +1,14 @@
 # Matched tokens
 
-Opened: 2026-11-12. Status: **open**. All fifteen runs are complete; promoting or discarding the topic is the
-user's decision ([below](#open-decision)). Each run's status is in its record and the study's `runs.csv`.
+Opened: 2026-11-12. Status: **open**. All runs are complete: the fifteen at twice the 1x budget, covered from
+[Runs](#runs) to [Limits](#limits), and the seven at four times it ([below](#four-times-the-budget)). Promoting or
+discarding the topic is the user's decision ([below](#open-decision)). Each run's status is in its record and the
+study's `runs.csv`.
 
 Trained on the reference shape's token count, twice its own 1x budget, how do the attention variants compare
 at the 12-layer width-640 shape at degrees eight and twelve? How close does each come to its reference-shape
-counterpart at the same tokens?
+counterpart at the same tokens? At four times the 1x budget, how do the five degree-twelve RoPE polynomials and
+softmax compare with exp there and with their 2x runs?
 
 ## Runs
 
@@ -108,6 +111,8 @@ shape has no static run at `m = 12` and no FoX query run with the shared cumulat
 
 ## Findings
 
+At 2x:
+
 - **The forget gate leads, and FoX query catches FoX exp.** FoX query at `m = 8` (15.314) and `m = 12` (15.335)
   and FoX exp (15.320) are 2.77–2.90% below exp. FoX query at `m = 8` is 0.03% below FoX exp, which it trails by
   2.05% at the reference shape; at `m = 12` it is 0.10% above.
@@ -134,7 +139,7 @@ shape has no static run at `m = 12` and no FoX query run with the shared cumulat
 
 - One seed (42) and data order per run. In the study's [noise check](../../../README.md#noise) a second seed and
   data order moved single runs by 0.6–0.7% and a gap between two variants by about 0.1 percentage point.
-- GPUs, from each record's attempts; no update ran on a B300:
+- GPUs of the 2x runs, from each record's attempts; no 2x update ran on a B300:
   - one H100 PCIe (`mastiff`) throughout: query at `m = 8` and `m = 12`, exp, softmax and FoX exp;
   - one H100 SXM (`dogo`) throughout: static and fixed Taylor at `m = 8` and `m = 12`, whose first attempts,
     on `akita`'s B300, were preempted during acceptance, before any update, and requeued;
@@ -148,10 +153,103 @@ shape has no static run at `m = 12` and no FoX query run with the shared cumulat
   use the Mosaic transformed kernels), and the reference-shape runs on B300, H100 PCIe or H100 SXM (FoX query on
   ORCD).
 
+## Four times the budget
+
+Added 2026-11-15 at the user's request: the five degree-twelve RoPE polynomials above, exp and softmax at four
+times the shape's 1x budget, each its 2x run derived with `derive_recipe.py --budget 4`: 30,205 updates of
+128 × 2,048 tokens (7.92B prediction tokens, twice the 2x runs' 3.96B), warmup 1,815, validation every 400 updates
+through 6,000 and every 2,000 after, seed 42. One GPU each; home cluster Kennel.
+
+| Run | Label | Variant | `m` | 2x run | Attention |
+| --- | --- | --- | ---: | --- | --- |
+| `r2f41d054e944` | `query-m12-w-decay-l12-d640-4x` | tanh query, RoPE, W decay | 12 | `r0f6d929e5992` | Mosaic |
+| `r0f8122dd8439` | `static-m12-l12-d640-4x` | learned static | 12 | `r84f325593209` | Mosaic |
+| `rcace22b32f93` | `fixed-m12-l12-d640-4x` | fixed Taylor | 12 | `rffab7c4eeac5` | Mosaic |
+| `rb74e8b994b74` | `query-m12-w-decay-l12-d640-softplus-input-4x` | softplus input, `c_0` from 0 | 12 | `r53d5bbcac16f` | Mosaic transformed, H100 |
+| `r1f935f18fe21` | `query-m12-sum-of-squares-w-decay-l12-d640-4x` | sum-of-squares query | 12 | `r08be7093202a` | Mosaic |
+| `r333444bd4304` | `exp-l12-d640-4x` | exp | – | `rd920368a922e` | fused Triton |
+| `r93df1e48c8fd` | `softmax-l12-d640-4x` | softmax | – | `r3bb5b8bd5c6a` | cuDNN |
+
+The softplus run's control and the sum-of-squares run's partner is the 4x query run `r2f41d054e944`. Each run is
+compared with exp at 4x, `r333444bd4304`, and with its 2x run; the [selection](selection.yaml) names the roles.
+Recipes, acceptance, time limits and launch commands:
+[study README](../../../README.md#the-12-layer-width-640-shape-at-four-times-its-1x-budget).
+
+### 4x results
+
+Against exp at 4x, in order of validation-best perplexity (`metrics.jsonl`; `best_validation.json` and
+`completion.json` agree). Every 4x run is validation-best at its last update, 30,205 (7,918,059,520 tokens), so
+its terminal value is the same; every 2x run is validation-best at update 15,000. The last column compares
+validation-best values, 4x against 2x:
+
+| Run | Variant | `m` | Validation-best PPL (update) | Terminal PPL (update 30,205) | vs exp | 2x validation-best | 2x vs exp | 2x to 4x |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `r1f935f18fe21` | sum of squares | 12 | 14.565 (30,205) | 14.565 | −0.28% | 15.715 | −0.36% | −7.32% |
+| `rb74e8b994b74` | softplus input | 12 | 14.581 (30,205) | 14.581 | −0.16% | 15.724 | −0.30% | −7.27% |
+| `r333444bd4304` | exp | – | 14.605 (30,205) | 14.605 | – | 15.772 | – | −7.40% |
+| `r2f41d054e944` | query | 12 | 14.606 (30,205) | 14.606 | +0.01% | 15.742 | −0.19% | −7.22% |
+| `rcace22b32f93` | fixed Taylor | 12 | 14.615 (30,205) | 14.615 | +0.07% | 15.763 | −0.06% | −7.28% |
+| `r0f8122dd8439` | static | 12 | 14.624 (30,205) | 14.624 | +0.13% | 15.778 | +0.04% | −7.31% |
+| `r93df1e48c8fd` | softmax | – | 15.092 (30,205) | 15.092 | +3.34% | 16.192 | +2.66% | −6.79% |
+
+Gap to exp in percent at the same fraction of training, as 2x / 4x: the 2x run at update `s` against exp at 2x,
+the 4x run at update `2s` against exp at 4x, and in the last column the last updates. Every evaluation uses the
+same 38 validation batches (`metrics.jsonl`):
+
+| Variant | `m` | 3,000 / 6,000 | 6,000 / 12,000 | 9,000 / 18,000 | 12,000 / 24,000 | 15,000 / 30,000 | 15,103 / 30,205 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| sum of squares | 12 | −0.23 / −0.25 | −0.32 / −0.18 | −0.37 / −0.29 | −0.35 / −0.28 | −0.36 / −0.29 | −0.36 / −0.28 |
+| softplus input | 12 | −0.32 / 0.00 | −0.30 / −0.10 | −0.36 / −0.13 | −0.31 / −0.16 | −0.30 / −0.19 | −0.29 / −0.16 |
+| query | 12 | −0.18 / +0.05 | −0.26 / +0.02 | −0.29 / −0.02 | −0.18 / −0.01 | −0.19 / −0.01 | −0.17 / +0.01 |
+| fixed Taylor | 12 | −0.06 / +0.07 | −0.10 / +0.12 | −0.06 / +0.11 | −0.07 / +0.08 | −0.06 / +0.05 | −0.05 / +0.07 |
+| static | 12 | +0.13 / +0.12 | −0.01 / +0.16 | 0.00 / +0.14 | +0.09 / +0.10 | +0.04 / +0.11 | +0.04 / +0.13 |
+| softmax | – | +1.26 / +2.90 | +2.04 / +3.25 | +2.47 / +3.32 | +2.57 / +3.30 | +2.66 / +3.34 | +2.70 / +3.34 |
+
+### 4x findings
+
+- **Exp gains the most from 2x to 4x.** Twice the tokens lowers its validation-best perplexity by 7.40%, the five
+  polynomials' by 7.22–7.32% and softmax's by 6.79%. From 1x to 2x exp gained 10.14% and softmax 9.86%.
+- **Every degree-twelve polynomial loses ground against exp**, by 0.08 (sum of squares) to 0.19 percentage points
+  (query). Sum of squares (−0.28%) and softplus input (−0.16%) stay below it; query (+0.01%), fixed Taylor
+  (+0.07%) and static (+0.13%) lie within 0.13% above it. The shift is not confined to the end: at every matched
+  point from 6,000 / 12,000 updates on, each polynomial's gap is 0.01–0.28 points higher at 4x than at 2x (at
+  3,000 / 6,000 sum of squares and static are not).
+- **Softmax falls further behind**: 3.34% above exp, against 2.66% at 2x and 2.35% at 1x; its gap is 0.64–1.63
+  points larger at 4x at every matched point.
+- **The five polynomials keep their 2x order**: sum of squares, softplus input, query, fixed Taylor, static,
+  spanning 0.41% (0.40% at 2x). Exp moves from between fixed Taylor and static to between softplus input and
+  query, which ties it (+0.01%; −0.01% at update 30,000).
+- **Every 4x run is validation-best at its last evaluation, update 30,205**, 0.19–0.23% below update 30,000 on the
+  same validation batches; every 2x run is validation-best at 15,000 and 0.03–0.07% higher at 15,103. The shift is
+  common to all runs, which train on the same batches in the same order, and moves each gap to exp by at most
+  0.03 points, so it does not change comparisons within a budget.
+
+### 4x limits
+
+- One seed (42) and data order, shared with the 2x runs. The 2x-to-4x shifts against exp, 0.08–0.19 points, are
+  of the order of the 0.1-point change in one gap that a second seed and data order made in the study's
+  [noise check](../../../README.md#noise).
+- GPUs, from each record's attempts:
+  - `dogo`'s H100 SXM throughout: softplus input, exp and softmax; exp's two attempts on `akita`'s B300 were
+    preempted during acceptance, before any update;
+  - `akita`'s B300 from the start, then `dogo`'s H100 SXM from the last checkpoint, after acceptance there: sum
+    of squares from update 1,000, query from 4,000, static from 17,000 and fixed Taylor from 17,500.
+  - Every validation-best checkpoint, at update 30,205, was trained on `dogo`.
+- Preemptions: each run resumed from its latest checkpoint, at the matching position in the data, three times
+  (query, sum of squares), twice (fixed Taylor) or once (static, softplus input, exp, softmax), counting
+  resumptions that reached a later checkpoint. The other attempts were preempted before reaching a new
+  checkpoint, or ended before any update: preempted during acceptance, or failed at JAX initialization on `dogo`
+  (`CUDA_ERROR_UNKNOWN`) and were resubmitted under a new job ID.
+- Within 4x the comparisons also cross GPUs: sum of squares, query, static and fixed Taylor trained their first
+  1,000–17,500 updates on a B300 (CUDA 13 environment), exp, softmax and softplus input only on the H100 SXM
+  (CUDA 12).
+- The 2x runs trained on H100 PCIe and H100 SXM GPUs ([Limits](#limits)), so the 2x-to-4x comparisons cross GPUs
+  as well as budgets.
+
 ## Open decision
 
-All fifteen runs are complete. Whether to promote the topic to its own canonical collection or discard it with
-its runs and their artifacts is the user's decision.
+The fifteen 2x runs and the seven 4x runs are complete. Whether to promote the topic to its own canonical
+collection or discard it with its runs and their artifacts is the user's decision.
 
 Refresh the selection after the runs' scientific files change:
 

@@ -1957,6 +1957,89 @@ for run in rccd2cb5e8bab r08be7093202a; do
 done
 ```
 
+## The 12-layer width-640 shape at four times its 1x budget
+
+Added 2026-11-15 at the user's request. Seven runs train the 12-layer width-640 shape at four times its 1x budget:
+the degree-twelve query, static, fixed Taylor, softplus input and sum-of-squares runs of the
+[2x set](#the-12-layer-width-640-shape-at-the-reference-token-count), and exp and softmax. All seven are complete:
+sum of squares (validation-best 14.565) and softplus input (14.581) are 0.28% and 0.16% below exp (14.605), query
+ties it (+0.01%), fixed Taylor and static are 0.07% and 0.13% above it, and softmax 3.34%; against exp each
+polynomial is 0.08–0.19 percentage points worse than at 2x. Runs, results and limits: the
+[matched_tokens topic](results/exploratory/matched_tokens/README.md#four-times-the-budget).
+
+- Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
+  30,205 updates of 128 × 2,048 tokens (7.92B prediction tokens), warmup 1,815, validation every 400 updates
+  through 6,000 and every 2,000 after; batch, learning rate, seed and data order unchanged. Beyond these,
+  execution paths and labels, each recipe writes `attention_coefficient_input_normalization: none`, the scaffold
+  default its 2x run loads with.
+- Sources: query `r0f6d929e5992`, static `r84f325593209`, fixed Taylor `rffab7c4eeac5`, softplus input
+  `r53d5bbcac16f`, sum of squares `r08be7093202a`, exp `rd920368a922e`, softmax `r3bb5b8bd5c6a`:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_recipe \
+  --partner <2x run> --budget 4 --output /tmp/<label>.yaml
+```
+
+- Acceptance: the shared adapter for query, static, fixed Taylor, exp and softmax.
+  [`score_transform_acceptance`](score_transform_acceptance.py) covers the softplus run and pins the 4x query run
+  `r2f41d054e944` as its control (recipe SHA256 `b6005163`, seed-42 fingerprint `c8a7ed88`, 99,986,216
+  parameters; initialization does not depend on the budget, so fingerprint and count are the 2x control's).
+  [`coefficient_forms_acceptance`](coefficient_forms_acceptance.py) covers the sum-of-squares run, with the same
+  4x query run as partner.
+- Kernels and GPUs: as at 2x. Mosaic for the polynomials (the softplus run's transformed kernels on H100 alone),
+  fused Triton for exp, cuDNN for softmax. Each run requests one B300 or H100 (the softplus run an H100 alone)
+  and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not verified reset
+  (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. All seven finished on `dogo`, four of them after starting
+  on `akita`'s B300; the topic's [4x limits](results/exploratory/matched_tokens/README.md#4x-limits) list each
+  run's GPUs and resumptions.
+- Time limits: the projection on the slowest eligible GPU, the H100 SXM, plus acceptance's two-hour reserve,
+  rounded up with room. A projection is a 2x run's wall time per update, validation included, over 30,205
+  updates: measured where the 2x run trained on `dogo`, otherwise its time on `mastiff` divided by the
+  PCIe-to-SXM ratios of training time per update in the 2x runs that trained on both (1.43–1.77, on Mosaic).
+
+  | Run | H100 SXM projection, hours | Limit, hours |
+  | --- | ---: | ---: |
+  | query | 5.6–7.0, estimated | 10 |
+  | static, fixed Taylor | 6.3 | 10 |
+  | sum of squares | 7.0 | 10 |
+  | softplus input | 8.6 | 13 |
+  | exp | 5.0–6.2, estimated | 10 |
+  | softmax | 3.9–4.8, estimated | 8 |
+
+  No 2x run trained on a B300 (the `akita` attempts were preempted during acceptance). Over 30,205 updates the
+  1x runs' wall time per update on `akita` gives 4.0–6.7 hours (query at `m = 8`, static at `m = 4`, exp,
+  softmax). Acceptance projects again on the granted GPU and refuses an allocation whose projection exceeds the
+  limit less two hours.
+
+Home cluster: **Kennel**. All seven runs are complete; each record holds its launch commit, attempts, and the
+artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus run) and
+log. Branch `claude/l12-d640-4x`. The runs were submitted on `long` from the worktree root after the frozen
+execution set was committed. Six jobs whose start or restart failed at JAX initialization on a `dogo` H100
+(`CUDA_ERROR_UNKNOWN`; CLUSTERS.md) were resubmitted under new job IDs: query 2424, sum of squares 2425, exp 2426
+and softmax 2427 with their commands below, static 2883 and fixed Taylor 2884 with `akita` also excluded (the last
+two lines). After the preemptions on `akita`, `akita` was added to the queued jobs' excluded nodes. Each record
+lists its jobs and attempts.
+
+```bash
+submit() {  # partition, time, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude="$5" --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+EXCL=collie,samoyed,doodle,terrier,shiba,mastiff
+submit long 13:00:00 score_transform_acceptance H100 akita,$EXCL rb74e8b994b74   # softplus input
+submit long 10:00:00 coefficient_forms_acceptance B300,H100 $EXCL r1f935f18fe21  # sum of squares
+submit long 10:00:00 acceptance B300,H100 $EXCL r2f41d054e944                    # query
+submit long 10:00:00 acceptance B300,H100 $EXCL r0f8122dd8439                    # static
+submit long 10:00:00 acceptance B300,H100 $EXCL rcace22b32f93                    # fixed Taylor
+submit long 10:00:00 acceptance B300,H100 $EXCL r333444bd4304                    # exp
+submit long 8:00:00 acceptance B300,H100 $EXCL r93df1e48c8fd                     # softmax
+submit long 10:00:00 acceptance B300,H100 akita,$EXCL r0f8122dd8439              # static, job 2883
+submit long 10:00:00 acceptance B300,H100 akita,$EXCL rcace22b32f93              # fixed Taylor, job 2884
+```
+
 ## Regular-query coefficient activation diagnostic
 
 `r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
