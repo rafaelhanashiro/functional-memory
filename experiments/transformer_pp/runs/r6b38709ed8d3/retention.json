@@ -1,0 +1,4 @@
+{
+  "best_step": 7500,
+  "policy": "validation_best_only"
+}
