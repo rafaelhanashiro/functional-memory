@@ -18,10 +18,10 @@ drawn from N(0, 1/896). Parameters are separate per layer and head. The complete
 coefficient retains its factorial scaling in every condition. QK RMSNorm uses
 per-layer channel gains and separate learned positive per-head score scales.
 
-The existing control and the two fresh training runs share seed 42, initialization,
+The existing control and the three fresh training runs share seed 42, initialization,
 data order, global batch 256, 2,048 prediction tokens per sequence, and 7,570 updates
 (3,968,860,160 prediction tokens). The base LR peaks at 0.001, warms up for 455
-updates, and follows cosine decay to 0.0001. Both new runs use one GPU on Kennel.
+updates, and follows cosine decay to 0.0001. Each new run uses one GPU on Kennel.
 Execution and launch instructions are in the [study README](../../../README.md).
 
 | Role | Run | W decay | a,b LR multiplier | W LR multiplier |
@@ -29,16 +29,19 @@ Execution and launch instructions are in the [study README](../../../README.md).
 | Control | `r2b22f2ff6461` | 0 | 1 | 1 |
 | Projection decay | `rca97cc9db8f2` | 0.1 | 1 | 1 |
 | Faster a,b | `rb74fa2ebede6` | 0 | 3 | 1 |
+| W, a, b decay | `r68cac6f03d77` | 0.1, also on a and b | 1 | 1 |
 
 The faster-a,b run uses peak LR 0.003 and minimum LR 0.0003 for only
 `query_polynomial_bias` and `query_polynomial_amplitude`, across all orders,
 layers, and heads. The multiplier acts on Adam updates after global gradient
 clipping and moment normalization. W and every backbone parameter keep the base
-schedule. Neither run decays a or b. The backbone decay policy is unchanged.
+schedule. The W, a, b decay run adds the same decay 0.1 on a and b to the W-decay run
+(`attention_coefficient_amplitude_weight_decay` and `attention_coefficient_bias_weight_decay`,
+switches defined only at its source commit). The backbone decay policy is unchanged.
 
 ## Findings and limits
 
-Both optimizer ablations completed all 7,570 updates successfully. Lower validation
+All three optimizer ablations completed all 7,570 updates successfully. Lower validation
 PPL is better; every validation-best checkpoint below is at update 7,500.
 
 | Condition | Terminal PPL | Validation-best PPL | Terminal change from control |
@@ -46,8 +49,10 @@ PPL is better; every validation-best checkpoint below is at update 7,500.
 | Control | 14.779161 | 14.773754 | 0 |
 | W decay 0.1 | 14.713560 | 14.708539 | -0.065600 (-0.44%) |
 | 3x LR on a,b | 14.924409 | 14.919761 | +0.145249 (+0.98%) |
+| W, a, b decay 0.1 | 14.757708 | 14.750170 | -0.021453 (-0.15%) |
 
-Projection decay gives a small improvement in this comparison. Tripling the a,b
+Projection decay gives a small improvement in this comparison. Decaying a and b as well
+gives back most of it, ending between W-only decay and the control. Tripling the a,b
 learning rate worsens held-out PPL; this run does not support adopting that multiplier.
 The same ordering holds for terminal and validation-best metrics. Coefficient
 diagnostics remain with the run measurements; these PPL differences alone do not

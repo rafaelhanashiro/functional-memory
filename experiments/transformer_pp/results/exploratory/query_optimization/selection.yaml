@@ -387,3 +387,23 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r79d829a16029/best_validation.json
       sha256: f8e08f2dae056f58ce8d3569e045858fbc5bebcb14ac53a757ff9b22ebf09512
+- study: transformer_pp
+  run_id: r68cac6f03d77
+  role: w_ab_decay
+  label: query-m4-abw-decay-1x
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/config.yaml
+      sha256: 8f01eb81b3297cf66e80d153ea6bc70aee9f3b5723989edf55e7a53804015015
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/metrics.jsonl
+      sha256: b85accc41e334166e648649ea2e2d2c929afa8766cb6dc6e9e5cad0b875984b4
+    completion.json:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/completion.json
+      sha256: 4fe5380977199e47157b56228dd6d7c7cdf8742719cdc93d608f7f912d4b4ff5
+    metadata.json:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/metadata.json
+      sha256: ded753b3f1c1d5c6d07ddd1662461a17a5f2a4aa08d3531c8db6d9c23f38c5f3
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r68cac6f03d77/best_validation.json
+      sha256: 4cb1e6955dbbdd5abf64472254e43cd689fffb492ead5d336dd852c029bd84cc
