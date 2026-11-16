@@ -220,12 +220,16 @@ class ModelConfig:
     attention_kernel_basis: Literal["polynomial", "bspline"] = "polynomial"
     attention_spline_knots: tuple[float, ...] | None = None
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
-    # (even m; normalized static coefficients, or unnormalized tanh query coefficients, whose
-    # factors are generated per query and expanded to c_r(x_t)), so the kernel is nonnegative
-    # by construction;
+    # (even core degree; normalized static or unnormalized diagonal tanh query coefficients).
+    # Query factors are generated relative to fixed Taylor square factors and expanded in FP32;
+    # algebraic nonnegativity does not exclude small negative values from cancellation near roots.
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
     # 1 + b_1 s + ... + b_m s^m, so the weights are p_a(s) / sum_j p_b(s_j).
     attention_coefficient_parameterization: Literal["direct", "sum_of_squares", "rational"] = "direct"
+    # Query SoS only: p(z) = z^power h(z), h a sum of two squares, z=softplus(s) for power 1.
+    # attention_degree ALWAYS denotes p's total degree. The generator and Taylor square factors
+    # have core degree attention_degree - power, which must be even. Power 1 fixes c_0 exactly at zero.
+    attention_coefficient_input_power: Literal[0, 1] = 0
     # Initial learned coefficients: "taylor" starts every learned polynomial at
     # sum_r s^r / r! (a rational kernel then equals normalized Taylor attention);
     # "linear" starts the numerator at s and the denominator at 1 (a_1 = 1, b_0 = 1,
@@ -634,10 +638,16 @@ class ModelConfig:
                     or self.attention_coefficient_gate != "none" or self.attention_coefficient_tanh_bias):
                 raise ValueError("Sum-of-squares factors and the Hermite start apply to diagonal tanh query coefficients "
                                  "without selected orders, a coefficient gate, or an inner tanh bias")
-            if square_factors and (hermite_start or self.attention_degree % 2 or self.attention_coefficient_scale != "none"
-                                   or self.attention_coefficient_amplitude_scale != "none"):
-                raise ValueError("Sum-of-squares query coefficients require an even degree, a Taylor start, and no "
-                                 "factorial scale (b and a are relative to the Taylor factors)")
+            if square_factors and (
+                    hermite_start or self.attention_coefficient_scale != "none"
+                    or self.attention_coefficient_amplitude_scale != "none"
+                    or self.attention_score_transform not in ("identity", "softplus")):
+                raise ValueError("Sum-of-squares query coefficients require a Taylor start, no factorial scales, "
+                                 "and identity or softplus scores")
+            if square_factors and (self.attention_score_transform == "softplus"
+                                   or self.attention_coefficient_input_power) and (
+                    self.attention_forget_gate or self.attention_score_bias != "none"):
+                raise ValueError("Softplus sum-of-squares takes no forget gate or score biases")
             if self.attention_coefficient_activation == "identity" and self.attention_degree != 1:
                 raise ValueError("Query-conditioned identity coefficients require degree-one attention")
         amplitude, spread = self.attention_coefficient_amplitude_initial, self.attention_coefficient_projection_initial_std
@@ -821,6 +831,13 @@ class ModelConfig:
             self.attention_coefficient_orders = tuple(orders)
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
+        power = self.attention_coefficient_input_power
+        if type(power) is not int or power not in (0, 1):
+            raise ValueError("model.attention_coefficient_input_power must be the integer 0 or 1")
+        if power and (self.attention_coefficient_parameterization != "sum_of_squares"
+                      or self.attention_coefficient_conditioning != "query"
+                      or self.attention_score_transform != "softplus"):
+            raise ValueError("An input power requires query sum-of-squares coefficients with softplus scores")
         if self.attention_coefficient_initialization not in ("taylor", "linear", "hermite"):
             raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
         if self.attention_coefficient_initialization != "taylor":
@@ -887,10 +904,12 @@ class ModelConfig:
         if self.attention_coefficient_parameterization == "sum_of_squares":
             if self.attention_coefficients != "learned" and self.attention_fixed_square_factors is None:
                 raise ValueError("A sum-of-squares kernel requires learned polynomial coefficients or fixed square factors")
-            if self.attention_degree is None or self.attention_degree < 2 or self.attention_degree % 2:
-                raise ValueError("A sum-of-squares kernel requires an even attention_degree >= 2")
+            core_degree = None if self.attention_degree is None else self.attention_degree - power
+            if core_degree is None or core_degree < 2 or core_degree % 2:
+                raise ValueError("A sum-of-squares kernel requires even core degree attention_degree - "
+                                 "attention_coefficient_input_power >= 2")
             if not self.attention_normalization and self.attention_coefficient_conditioning != "query":
-                raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
+                raise ValueError("A sum-of-squares kernel requires normalized static or unnormalized query attention")
         _validate_score_bias(self)
         _validate_score_transform(self)
         if self.qk_norm is None:
@@ -1054,7 +1073,7 @@ def _query_coefficient_problem(model) -> str | None:
     """Why this recipe's attention is not the diagonal tanh query-coefficient polynomial, or None."""
     if (model.attention_mechanism != "dot_product" or model.attention_normalization
             or model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
-            or model.attention_coefficient_parameterization != "direct"
+            or model.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
             or model.attention_coefficient_sharing != "per_head"
             or model.attention_coefficient_initialization != "taylor"
             or model.attention_coefficient_conditioning != "query"
@@ -1063,7 +1082,7 @@ def _query_coefficient_problem(model) -> str | None:
             or model.attention_coefficient_orders is not None
             or model.attention_coefficient_gate != "none"
             or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
-        return ("it applies to unnormalized dot-product attention with learned direct per_head Taylor-initialized "
+        return ("it applies to unnormalized dot-product attention with learned direct or sum-of-squares per_head Taylor-initialized "
                 "diagonal tanh query coefficients, without selected orders, a coefficient gate, or a B-spline basis")
     degree = model.attention_degree
     if isinstance(degree, bool) or not isinstance(degree, int) or degree < 1:
@@ -1086,6 +1105,8 @@ def _validate_score_transform(model: ModelConfig) -> None:
     if start is not None:
         if isinstance(start, bool) or not isinstance(start, (int, float)) or not math.isfinite(start):
             raise ValueError("model.attention_coefficient_constant_initial must be null or a finite number")
+        if model.attention_coefficient_parameterization != "direct":
+            raise ValueError("A constant-coefficient start applies only to direct coefficients, not square factors")
         problem = _query_coefficient_problem(model)
         if problem is not None:
             raise ValueError(f"A constant-coefficient start (attention_coefficient_constant_initial) does not fit "
@@ -1456,6 +1477,7 @@ def _validate_coefficient_release(config: Config) -> None:
     static = (model.attention_coefficient_conditioning == "static"
               and model.attention_coefficient_parameterization == "direct")
     query = (model.attention_coefficient_conditioning == "query"
+             and model.attention_coefficient_parameterization == "direct"
              and model.attention_coefficient_activation == "tanh"
              and model.attention_coefficient_readout == "diagonal"
              and not model.attention_coefficient_tanh_bias)

@@ -57,6 +57,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_fixed_coefficients=config.attention_fixed_coefficients,
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_parameterization=config.attention_coefficient_parameterization,
+        attention_coefficient_input_power=getattr(config, "attention_coefficient_input_power", 0),
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
         attention_coefficient_readout=config.attention_coefficient_readout,
@@ -108,6 +109,7 @@ class MultiHeadAttention(nnx.Module):
         attention_output_scaling: str = "none", rms_norm_eps: float = 1e-6,
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_parameterization: str = "direct",
+        attention_coefficient_input_power: int = 0,
         attention_coefficient_activation: str = "identity",
         attention_coefficient_input_normalization: str = "none",
         attention_coefficient_readout: str = "diagonal",
@@ -325,6 +327,25 @@ class MultiHeadAttention(nnx.Module):
         if (attention_coefficient_conditioning == "query" and attention_coefficient_activation == "identity"
                 and attention_degree != 1):
             raise ValueError("Identity query coefficients require degree-one attention")
+        if type(attention_coefficient_input_power) is not int or attention_coefficient_input_power not in (0, 1):
+            raise ValueError("Coefficient input power must be the integer 0 or 1")
+        if attention_coefficient_input_power and (
+                attention_coefficient_parameterization != "sum_of_squares"
+                or attention_coefficient_conditioning != "query" or attention_score_transform != "softplus"):
+            raise ValueError("An input power requires query sum-of-squares coefficients with softplus scores")
+        if attention_coefficient_parameterization == "sum_of_squares" and attention_coefficient_conditioning in (
+                "query", "query_key"):
+            core_degree = attention_degree - attention_coefficient_input_power
+            if (core_degree < 2 or core_degree % 2 or attention_coefficient_conditioning != "query"
+                    or attention_coefficient_activation != "tanh" or attention_coefficient_readout != "diagonal"
+                    or attention_coefficient_orders is not None or attention_coefficient_gate != "none"
+                    or attention_coefficient_amplitude_scale != "none"
+                    or attention_score_transform not in ("identity", "softplus")):
+                raise ValueError("Query sum-of-squares requires an even core degree and diagonal tanh query "
+                                 "coefficients without selected orders, coefficient gates, or amplitude scaling")
+            if (attention_score_transform == "softplus" or attention_coefficient_input_power) and (
+                    attention_forget_gate or attention_score_bias != "none"):
+                raise ValueError("Softplus sum-of-squares takes no forget gate or score biases")
         if attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError("Unknown attention coefficient readout")
         if attention_coefficient_readout == "dense" and (
@@ -343,6 +364,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_orders = attention_coefficient_orders
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         self.attention_coefficient_parameterization = attention_coefficient_parameterization
+        self.attention_coefficient_input_power = attention_coefficient_input_power
         if attention_coefficient_amplitude_scale not in ("none", "factorial"):
             raise ValueError(f"Unknown attention coefficient amplitude scale: {attention_coefficient_amplitude_scale}")
         if (attention_coefficient_amplitude_scale != "none"
@@ -600,7 +622,9 @@ class MultiHeadAttention(nnx.Module):
                 if self.attention_coefficient_parameterization == "sum_of_squares":
                     from scaffolds.transformer.attention.nonnegative_polynomial import query_square_coefficients
 
-                    effective_coefficients = query_square_coefficients(effective_coefficients, self.attention_degree)
+                    effective_coefficients = query_square_coefficients(
+                        effective_coefficients, self.attention_degree,
+                        input_power=self.attention_coefficient_input_power)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
