@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r4589172dcd8b/config.yaml",
+    "sha256": "a4b93da3ac069e96e9119aa43ccf9b3d989b96ee85c6c67980a53a4681f67677"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x",
+  "name": "query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x",
+  "record_schema_version": 1,
+  "run_id": "r4589172dcd8b",
+  "status": "planned"
+}
