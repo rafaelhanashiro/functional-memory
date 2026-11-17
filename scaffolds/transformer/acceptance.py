@@ -329,6 +329,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             elif resolved_backend == "fused":
                 paths.append(CUBIC_GDN_KERNEL_TESTS)
     conditioning = model.get("attention_coefficient_conditioning", "static")
+    if (conditioning == "static" and model.get("attention_coefficients", "fixed") == "learned"
+            and model.get("attention_coefficient_parameterization", "direct") == "sum_of_squares"
+            and not model.get("attention_normalization", True)):
+        if cpu:
+            paths.append("scaffolds/transformer/tests/test_static_sos.py")
+        elif resolved_backend == "mosaic":
+            paths.append("scaffolds/transformer/tests/test_mosaic_static_sos.py")
     if conditioning in ("query", "query_key"):
         paths.append(INPUT_DEPENDENT_COEFFICIENT_TESTS)
         activation = model.get("attention_coefficient_activation", "identity")
@@ -807,6 +814,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_output_scaling="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
+                                           attention_static_sos_parameterization="direct",
                                            attention_coefficient_input_power=0,
                                            attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
                                            attention_coefficient_feature_count=None,
@@ -874,6 +882,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
+        attention_static_sos_parameterization="direct",
         attention_coefficient_input_power=0,
         attention_coefficient_conditioning="static", attention_coefficient_readout="diagonal",
         attention_coefficient_feature_count=None, attention_coefficient_readout_scale=1.0,

@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/ra3bffee9a528/config.yaml",
+    "sha256": "31bbe5c6395ed452617c8524c8b6bfe1f883f673b4fbdfe65fd9dd4af2f845eb"
+  },
+  "home_cluster": "kennel",
+  "label": "static-sos-core-m8-prefactor-rope",
+  "name": "static-sos-core-m8-prefactor-rope",
+  "record_schema_version": 1,
+  "run_id": "ra3bffee9a528",
+  "status": "planned"
+}

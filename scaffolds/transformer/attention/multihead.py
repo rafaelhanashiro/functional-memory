@@ -58,6 +58,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_conditioning=config.attention_coefficient_conditioning,
         attention_coefficient_parameterization=config.attention_coefficient_parameterization,
         attention_coefficient_input_power=getattr(config, "attention_coefficient_input_power", 0),
+        attention_static_sos_parameterization=getattr(config, "attention_static_sos_parameterization", "direct"),
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
         attention_coefficient_input_source=config.attention_coefficient_input_source,
@@ -111,6 +112,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_conditioning: str = "static",
         attention_coefficient_parameterization: str = "direct",
         attention_coefficient_input_power: int = 0,
+        attention_static_sos_parameterization: str = "direct",
         attention_coefficient_activation: str = "identity",
         attention_coefficient_input_normalization: str = "none",
         attention_coefficient_input_source: str = "post_rmsnorm",
@@ -343,8 +345,32 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Coefficient input power must be the integer 0 or 1")
         if attention_coefficient_input_power and (
                 attention_coefficient_parameterization != "sum_of_squares"
-                or attention_coefficient_conditioning != "query" or attention_score_transform != "softplus"):
-            raise ValueError("An input power requires query sum-of-squares coefficients with softplus scores")
+                or attention_coefficient_conditioning not in ("static", "query")
+                or attention_normalization or attention_score_transform != "softplus"):
+            raise ValueError("An input power requires unnormalized static or query sum-of-squares coefficients "
+                             "with softplus scores")
+        if attention_static_sos_parameterization not in ("direct", "relative_taylor"):
+            raise ValueError("Unknown static SoS parameterization")
+        if attention_static_sos_parameterization != "direct" and (
+                attention_coefficient_parameterization != "sum_of_squares"
+                or attention_coefficient_conditioning != "static" or attention_fixed_square_factors is not None
+                or attention_normalization):
+            raise ValueError("The relative Taylor factor map applies only to unnormalized learned static SoS coefficients")
+        self.attention_static_sos_parameterization = attention_static_sos_parameterization
+        static_sos = (attention_coefficient_parameterization == "sum_of_squares"
+                      and attention_coefficient_conditioning == "static" and not attention_normalization)
+        if static_sos and (
+                attention_degree is None or attention_degree - attention_coefficient_input_power < 2
+                or (attention_degree - attention_coefficient_input_power) % 2
+                or attention_coefficient_activation != "identity" or attention_coefficient_readout != "diagonal"
+                or attention_coefficient_orders is not None or attention_coefficient_gate != "none"
+                or attention_coefficient_scale != "none" or attention_coefficient_amplitude_scale != "none"
+                or attention_forget_gate or attention_score_bias != "none"
+                or attention_score_transform not in ("identity", "softplus")
+                or attention_kernel_basis != "polynomial" or positional_encoding not in ("rope", "none")
+                or backend not in ("blocked", "mosaic")):
+            raise ValueError("Unnormalized static SoS requires an even core degree, identity coefficient activation, "
+                             "identity or softplus scores, no extra scales/gates/biases, and blocked or mosaic attention")
         if attention_coefficient_parameterization == "sum_of_squares" and attention_coefficient_conditioning in (
                 "query", "query_key"):
             core_degree = attention_degree - attention_coefficient_input_power
@@ -445,7 +471,8 @@ class MultiHeadAttention(nnx.Module):
         from scaffolds.transformer.attention.score_transform import validate as validate_transform
 
         if validate_transform(attention_score_transform) != "identity" and (
-                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                (not static_sos and (attention_coefficient_conditioning != "query"
+                                     or attention_coefficient_activation != "tanh"))
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
                 or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
@@ -809,6 +836,15 @@ class MultiHeadAttention(nnx.Module):
                                                 *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed square factors cannot be combined with supplied attention coefficients")
             parameters["polynomial_square_factors"] = jnp.asarray(self.attention_fixed_square_factors, dtype=jnp.float32)
+        if "polynomial_square_factors" in parameters and self.attention_fixed_square_factors is None:
+            from scaffolds.transformer.attention.nonnegative_polynomial import static_square_factors
+
+            parameters["polynomial_square_factors"] = static_square_factors(
+                parameters["polynomial_square_factors"],
+                self.attention_degree - self.attention_coefficient_input_power,
+                parameterization=self.attention_static_sos_parameterization)
+            if self.attention_coefficient_input_power:
+                parameters["square_factor_input_power"] = self.attention_coefficient_input_power
         gate_statistics = None
         if return_diagnostics and gate_kernel is not None:
             from scaffolds.transformer.attention.input_dependent import (

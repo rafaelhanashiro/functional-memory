@@ -21,6 +21,7 @@ def attention_core(
     coefficients: jax.Array | None = None,
     polynomial_coefficients: jax.Array | None = None,
     polynomial_square_factors: jax.Array | None = None,
+    square_factor_input_power: int = 0,
     query_polynomial_coefficients: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
@@ -55,10 +56,10 @@ def attention_core(
     the B-spline score function (``spline``), which defines the kernel alone. The ``score_bias_*``
     operands (attention/score_bias.py: a row shift, or the query-key pair inputs with their offset
     and amplitude) shift each order r >= 1 of tanh query coefficients; every other kernel rejects them.
-    ``score_transform`` (attention/score_transform.py) evaluates tanh query coefficients' polynomial at
-    z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or the Mosaic
-    transformed query-polynomial kernels; every other mechanism and backend rejects a transform other than
-    "identity".
+    ``score_transform`` (attention/score_transform.py) evaluates the tanh query polynomial or unnormalized
+    static SoS at z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or
+    the Mosaic transformed query-polynomial kernels. ``square_factor_input_power=1`` supplies the static
+    SoS prefactor z on softplus inputs; its factors retain even core degree attention_degree - 1.
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
@@ -79,12 +80,18 @@ def attention_core(
         raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
     # The historical calls are unchanged without a transform.
     transform = {} if validate_transform(score_transform) == "identity" else {"score_transform": score_transform}
-    if transform and (query_polynomial_coefficients is None or key_polynomial_factors is not None
-                      or attention_coefficient_activation != "tanh" or score_bias or query_log_decay is not None
+    static_sos = polynomial_square_factors is not None and not attention_normalization
+    if type(square_factor_input_power) is not int or square_factor_input_power not in (0, 1):
+        raise ValueError("Square-factor input power must be the integer 0 or 1")
+    if square_factor_input_power and (not static_sos or score_transform != "softplus"):
+        raise ValueError("Square-factor input power requires unnormalized static SoS on softplus scores")
+    if transform and ((not static_sos and (query_polynomial_coefficients is None
+                                          or attention_coefficient_activation != "tanh"))
+                      or key_polynomial_factors is not None or score_bias or query_log_decay is not None
                       or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))):
         # No other kernel may ignore it: it would silently train the untransformed polynomial.
-        raise ValueError("A score transform applies only to tanh query-coefficient polynomial attention without a "
-                         "forget gate, key factors, or score biases")
+        raise ValueError("A score transform applies only to tanh query-coefficient or unnormalized static SoS "
+                         "attention without a forget gate, key factors, or score biases")
     # The historical scan keeps every mechanism's established call; strips add the selection.
     strips = {} if blocked_implementation == "scan" else {"blocked_implementation": blocked_implementation}
     denominators = {name: array for name, array in denominators.items() if array is not None}
@@ -169,10 +176,17 @@ def attention_core(
 
         if quadratic_mode != "fixed" or coefficients is not None:
             raise ValueError("Unnormalized attention requires the exponential or a fixed Taylor kernel")
-        if polynomial_square_factors is not None:
-            raise ValueError("A sum-of-squares kernel is implemented for row-normalized attention only")
         if denominators:
             raise ValueError("A rational kernel's denominator is its row sum; it requires normalized attention")
+        if polynomial_square_factors is not None:
+            from scaffolds.transformer.attention.nonnegative_polynomial import unnormalized_square_attention
+
+            if polynomial_coefficients is not None:
+                raise ValueError("Static SoS factors define the polynomial without direct coefficients")
+            return unnormalized_square_attention(
+                q, k, v, polynomial_square_factors, attention_degree=attention_degree,
+                input_power=square_factor_input_power, score_transform=score_transform, backend=backend,
+                return_diagnostics=return_diagnostics, blocked_implementation=blocked_implementation)
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients, **strips,

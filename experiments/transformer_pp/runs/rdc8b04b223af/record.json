@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdc8b04b223af/config.yaml",
+    "sha256": "299c9582132c25b29cf45efe353e142f3a7064fed99bf88875f30ba73d511d95"
+  },
+  "home_cluster": "kennel",
+  "label": "static-sos-core-m12-raw-rope",
+  "name": "static-sos-core-m12-raw-rope",
+  "record_schema_version": 1,
+  "run_id": "rdc8b04b223af",
+  "status": "planned"
+}

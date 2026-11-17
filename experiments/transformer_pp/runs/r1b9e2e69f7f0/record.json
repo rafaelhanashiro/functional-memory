@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1b9e2e69f7f0/config.yaml",
+    "sha256": "a610a21be997808f3369c6c4a8f7f1a5a18c150c2d9fce939dc1f8138a93f9c4"
+  },
+  "home_cluster": "kennel",
+  "label": "static-sos-core-m12-softplus-rope",
+  "name": "static-sos-core-m12-softplus-rope",
+  "record_schema_version": 1,
+  "run_id": "r1b9e2e69f7f0",
+  "status": "planned"
+}

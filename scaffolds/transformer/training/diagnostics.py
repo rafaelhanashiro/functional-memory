@@ -631,8 +631,9 @@ def attention_identity(config) -> dict:
     if getattr(config.model, "attention_score_bias", "none") != "none":
         # A final pass over the complete formula: every other clause is already in place.
         identity.update(_score_bias_identity(config.model, identity["attention_formula"]))
-    if (getattr(config.model, "attention_score_transform", "identity") != "identity"
-            or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
+    static_sos = (has_sum_of_squares_kernel(config.model) and not normalized and not query_conditioned)
+    if not static_sos and (getattr(config.model, "attention_score_transform", "identity") != "identity"
+                          or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
         identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
     if query_conditioned and config.model.attention_coefficient_parameterization == "sum_of_squares":
         power = getattr(config.model, "attention_coefficient_input_power", 0)
@@ -658,6 +659,37 @@ def attention_identity(config) -> dict:
             attention_coefficient_effective_count=degree + 1,
             attention_coefficient_count=(core_degree + 1) * (config.model.hidden_size + 2)
             * config.model.num_layers * config.model.num_heads,
+            attention_coefficient_numerical_note=("The expanded polynomial is algebraically nonnegative on its "
+                                                "input domain but can round negative near roots."),
+        )
+    if static_sos:
+        power = getattr(config.model, "attention_coefficient_input_power", 0)
+        core_degree = degree - power
+        transform = getattr(config.model, "attention_score_transform", "identity")
+        stored_form = getattr(config.model, "attention_static_sos_parameterization", "direct")
+        factor_map = (f"F_j = f_j (1+b_j)/2, b initially 1, fixed f factorizes T_{core_degree}"
+                      if stored_form == "relative_taylor" else
+                      f"F_j learned directly, initially the square factors of T_{core_degree}")
+        formula = (f"sum_(i<=t) p(z_ti) v_i; p(z) = {'z h(z)' if power else 'h(z)'}; "
+                   f"h(z) = A(z)^2 + B(z)^2, deg A = {core_degree // 2}, deg B = {core_degree // 2 - 1}; "
+                   f"static factors {factor_map}, sharing {sharing}; "
+                   f"z = {'softplus(s)' if transform == 'softplus' else 's'}, s = Q_t K_i^T / sqrt(d_k); "
+                   "factors and expanded coefficients computed in FP32")
+        if scaling != "none":
+            formula += ("; then per-head RMSNorm over value channels with a learned gain"
+                        if scaling == "head_rms_norm" else "; divided by the number of visible keys")
+        multiplier = {"global": 1, "per_layer": config.model.num_layers,
+                      "per_head": config.model.num_layers * config.model.num_heads}[sharing]
+        identity.update(
+            attention_kernel="static_polynomial_sum_of_squares_unnormalized",
+            attention_formula=formula,
+            attention_score_transform=transform,
+            attention_static_sos_parameterization=stored_form,
+            attention_coefficient_input_power=power,
+            attention_coefficient_core_degree=core_degree,
+            attention_coefficient_factor_count=core_degree + 1,
+            attention_coefficient_effective_count=degree + 1,
+            attention_coefficient_count=(core_degree + 1) * multiplier,
             attention_coefficient_numerical_note=("The expanded polynomial is algebraically nonnegative on its "
                                                 "input domain but can round negative near roots."),
         )
@@ -931,11 +963,23 @@ def polynomial_coefficient_report(params, config) -> dict:
     coefficients of q1^2 + q2^2 as the effective ones.
     """
     if has_sum_of_squares_kernel(config.model):
-        from scaffolds.transformer.attention.nonnegative_polynomial import effective_coefficients_numpy, factor_names
+        from scaffolds.transformer.attention.nonnegative_polynomial import (
+            effective_coefficients_numpy, factor_names, static_square_factors,
+        )
 
-        raw = np.asarray(jax.device_get(params["polynomial_square_factors"][...]), dtype=np.float64)
-        raw_names = factor_names(config.model.attention_degree)
-        effective = effective_coefficients_numpy(raw, config.model.attention_degree)
+        stored = params["polynomial_square_factors"][...]
+        raw = np.asarray(jax.device_get(stored), dtype=np.float64)
+        power = getattr(config.model, "attention_coefficient_input_power", 0)
+        core_degree = config.model.attention_degree - power
+        parameterization = getattr(config.model, "attention_static_sos_parameterization", "direct")
+        raw_names = factor_names(core_degree)
+        factors = np.asarray(jax.device_get(static_square_factors(
+            stored, core_degree, parameterization=parameterization)), dtype=np.float64)
+        if parameterization == "relative_taylor":
+            raw_names = [f"relative_{name}" for name in raw_names]
+        effective = effective_coefficients_numpy(factors, core_degree)
+        if power:
+            effective = np.concatenate((np.zeros((*effective.shape[:-1], 1)), effective), axis=-1)
     elif has_rational_kernel(config.model):
         from scaffolds.transformer.attention.rational_polynomial import (
             denominator_argument, denominator_constant, denominator_degree, denominator_names,

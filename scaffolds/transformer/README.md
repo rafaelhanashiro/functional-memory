@@ -231,11 +231,30 @@ With `attention_coefficient_parameterization: sum_of_squares` the learned array 
 `polynomial_square_factors` instead (`attention/nonnegative_polynomial.py`): the same
 `m + 1` values per layer and head, holding the ascending coefficients of `q1` then
 `q2`. Every polynomial of even degree that is nonnegative on the real line has this
-form, so the parameterization is complete and adds no parameters. The kernel is
+form, so the parameterization is complete and adds no parameters. The normalized kernel is
 evaluated as `q1(s)^2 + q2(s)^2` rather than through expanded coefficients, whose
 cancellation near a zero minimum could round below zero. Kernel values may be
 exactly zero; a zero row sum is invalid. Diagnostics report the factors as raw
 parameters and the coefficients of `q1^2 + q2^2` as the effective ones.
+
+Unnormalized learned static SoS also supports `attention_score_transform: identity`
+or `softplus`, with `attention_coefficient_input_power: 1` optionally multiplying
+the softplus version by its input `z`. Set `attention_degree` to the total degree:
+the core degree is `attention_degree - attention_coefficient_input_power`. The
+static factors expand into FP32 coefficients, broadcast across query tokens, and
+use the existing Mosaic polynomial kernels or blocked reference. Autodiff sums
+coefficient gradients over all queries into the shared factors. As with query
+SoS, expansion can round slightly negative near roots.
+
+For a static counterpart with the query generator's optimizer scaling, set
+`attention_static_sos_parameterization: relative_taylor`. The stored
+`polynomial_square_factors` array then contains dimensionless `b`, initialized to
+one, and the effective factors are `F_j = f_j (1 + b_j) / 2`, where fixed `f`
+factorizes the core Taylor polynomial. This removes the input-dependent branch
+from the query factor map without changing the bias's effective step scale.
+There is no generator projection or amplitude; static factors are exempt from
+weight decay. The default `direct` preserves historical raw-factor storage.
+Diagnostics distinguish stored coordinates from effective polynomial coefficients.
 
 With `attention_coefficient_parameterization: rational` the weights are
 `p_a(s_ij) / sum_(j<=i) p_b(s_ij)` (`attention/rational_polynomial.py`). The numerator
