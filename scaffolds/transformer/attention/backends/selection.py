@@ -107,6 +107,24 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
             if not supports_gla:
                 raise ValueError("Fused GLA requires an Ampere-or-newer NVIDIA GPU")
         return request
+    if getattr(model_config, "attention_score_mlp_width", None) is not None:
+        if request not in ("auto", "blocked", "fused"):
+            raise ValueError("A score MLP requires backend='auto', 'blocked' or 'fused'")
+        # The fused Triton kernel has no forget gate: a gated score MLP always stays blocked.
+        gated = getattr(model_config, "attention_forget_gate", False)
+        fits = max(model_config.qk_head_dim, model_config.value_head_dim) <= 128
+        capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
+        supports = capability is not None and capability >= 8
+        if request == "auto":
+            return "fused" if supports and fits and not gated else "blocked"
+        if request == "fused":
+            if gated:
+                raise ValueError("A gated score MLP runs on the blocked backend: the fused kernel has no forget gate")
+            if not fits:
+                raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")
+            if not supports:
+                raise ValueError("Fused score-MLP attention requires an Ampere-or-newer NVIDIA GPU")
+        return request
     if request == "mosaic" or (request == "auto" and gpu and model_config.mosaic_supported()):
         # Mosaic GPU kernels exist for Hopper (sm90) and Blackwell (sm10x); the recipe-level
         # mechanism, width, and degree checks live in ModelConfig.mosaic_supported. Automatic

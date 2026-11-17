@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml",
+    "sha256": "732c516977b0605c3df6397f27ec229873ded32db35543b76f88d31f0393eaa1"
+  },
+  "home_cluster": "kennel",
+  "label": "score-mlp-conventional-j8",
+  "name": "score-mlp-conventional-j8",
+  "record_schema_version": 1,
+  "run_id": "rfc68c6d26f40",
+  "status": "planned"
+}

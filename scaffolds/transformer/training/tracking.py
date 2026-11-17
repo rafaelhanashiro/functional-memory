@@ -78,6 +78,12 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append("forget_gate")
     if identity.get("coefficient_release_schedule"):
         tags.append(f"coefficient_release_{identity['coefficient_release_schedule']}")
+    if identity.get("attention_score_mlp_width") is not None:
+        tags.extend((f"score_mlp_{identity['attention_score_mlp_form']}",
+                     f"score_mlp_width{identity['attention_score_mlp_width']}",
+                     f"score_mlp_{identity['attention_score_mlp_architecture']}"))
+        if identity.get("attention_score_mlp_kernel_weight_decay"):
+            tags.append("score_mlp_kernel_weight_decay")
     if identity.get("attention_output_scaling"):
         tags.append(f"output_{identity['attention_output_scaling']}")
     if config.model.initialization != "flax_default":

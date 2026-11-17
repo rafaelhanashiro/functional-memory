@@ -181,6 +181,7 @@ _GROUP_RULES = (
     ("attention_output_norm", re.compile(r"output_norm_scale|o_norm_scale")),
     ("score_bias", re.compile(r"score_bias")),
     ("attention_coefficients", re.compile(r"coefficient|polynomial|denominator|spline")),
+    ("attention_score_mlp", re.compile(r"score_mlp_")),
     ("norm_scales", re.compile(r"(attention_norm|ffn_norm|final_norm)/")),
 )
 

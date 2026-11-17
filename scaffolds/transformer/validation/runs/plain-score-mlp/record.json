@@ -1,0 +1,30 @@
+{
+  "mechanism": "conventional score MLP",
+  "formula": "b_out + sum_j a_j * SiLU(w_j*s + U_j^T*x + b_j) / sqrt(J)",
+  "widths": [
+    4,
+    8
+  ],
+  "cpu": {
+    "plain_score_mlp": {
+      "passed": 14,
+      "gpu_cases_deselected": 2,
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_plain_score_mlp.py -k \"not gpu\""
+    },
+    "config_regressions": {
+      "passed": 143,
+      "files": [
+        "test_config.py",
+        "test_unnormalized_config.py",
+        "test_fixed_polynomial_config.py"
+      ]
+    },
+    "records_index": {
+      "passed": 27
+    }
+  },
+  "gpu": {
+    "status": "awaiting allocation qualification",
+    "required": "production T2048 BF16 outputs/all gradients, full-model pilot, checkpoint resume"
+  }
+}

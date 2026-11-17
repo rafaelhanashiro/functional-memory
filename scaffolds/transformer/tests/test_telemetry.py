@@ -156,6 +156,7 @@ def test_parameter_groups_cover_the_model_roles():
     assert telemetry.parameter_group(keys("layers_0", "attention", "A_log")) == "attention_decay_gate"
     assert telemetry.parameter_group(keys("layers_0", "attention", "o_norm_scale")) == "attention_output_norm"
     assert telemetry.parameter_group(keys("polynomial_coefficients")) == "attention_coefficients"
+    assert telemetry.parameter_group(keys("score_mlp_offset_kernel")) == "attention_score_mlp"
     assert telemetry.parameter_group(keys("lm_head", "kernel")) == "output_head"
 
 

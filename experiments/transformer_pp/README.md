@@ -2350,3 +2350,88 @@ sbatch --partition="$partition" --exclude=akita,mastiff,collie,samoyed,doodle,te
 
 The existing [softplus–SoS topic](results/exploratory/softplus_sos/README.md)
 contains the explicit degree-matched controls and the open comparison.
+
+## Score MLP
+
+Can a learned, input-dependent score function replace exp? Unnormalized attention
+`o_t = sum_{i<=t} f(x_t, s_ti) v_i` with attention-output RMSNorm, where `J` SiLU units
+have amplitudes `a_tj = alpha_j + x_t A_j` and offsets `b_tj = beta_j + x_t B_j` read from
+the attention input (`A`, `B` start at zero; slopes `w_j` are learned per layer and head).
+The exp-residual form `f = exp(s) (1 + sum_j a_tj SiLU(w_j s + b_tj))` starts exactly at
+exp (`alpha = 0`, `w = 1`, `beta` evenly spaced on [-3, 3]). Each run copies
+`query-m4-head-scale` (`r2b22f2ff6461`) and changes only `f`: `attention_degree: null` with
+the fixed exponential coefficients of `exp-head-scale` (`r6a76e7fbde45`), the fused
+score-MLP kernel (`attention_backend: fused`), and no weight decay on `A` and `B` (the control's projection had none). The
+[score-MLP topic](results/exploratory/score_mlp/README.md) lists the runs and controls.
+
+Home cluster: Kennel. `re65b12334c5e` (`J = 4`) and `r98e7f3e60a59` (`J = 8`) run from
+`worktrees/score-mlp-attention`, branch `claude/score-mlp-attention`, one GPU each. `J = 8`
+excludes the H100 PCIe node `mastiff`, where it projects past 24 hours; a pilot that projects
+past the allocation is resubmitted on `long` with a longer limit:
+
+```bash
+for run in re65b12334c5e r98e7f3e60a59; do
+  exclude=collie,samoyed,doodle,terrier,shiba; [ "$run" = r98e7f3e60a59 ] && exclude=mastiff,$exclude
+  sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=$exclude --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+```
+
+## Execution and records
+
+Home cluster: **Kennel**, except the query–key pretraining runs, the five ORCD 2.5× runs
+above, the eight degree-scaling runs at `m = 2-4`, and the coefficient-oracle fit
+`r043b150cde03` (ORCD). Data manifests live under
+`/data/cl/u/rafah/home/datasets/fineweb_12b/`; common hashes are in `sweep.yaml`.
+Retained checkpoints and logs live under this study in the primary Kennel checkout, or
+for ORCD runs under ORCD's artifact root, at the locations recorded in each run. The frozen recipe and execution record
+identify the source commit, dependency lock, source checkpoint, and submitted
+command. Reproducing a completed execution uses that recorded source; a fresh
+execution receives a new ID and its own frozen recipe.
+
+Develop and execute new runs in an isolated worktree with its own locked
+environments. Consult [CLUSTERS.md](../../CLUSTERS.md) for allocation, storage,
+and CUDA environments, and [AGENTS.md](../../AGENTS.md) for lifecycle rules.
+
+From the repository/worktree root:
+
+```bash
+scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/transformer_pp
+scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp r3c0f21ab7dce
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/coefficient_oracle
+```
+
+Refresh selection pins only after an intentional update to their scientific inputs.
+
+### Conventional score MLP
+
+`rea8b942672f4` (J=4) and `rfc68c6d26f40` (J=8) replace the query-dependent
+polynomial with a conventional SiLU MLP. The score and pre-attention normalized
+query activation enter its hidden units; static learned weights read those units,
+with a learned output bias and explicit `1/sqrt(J)` scaling. There is no exponential
+multiplier. The random groupwise fan-in initialization and ordinary MLP weight decay
+are specified in the [scaffold API](../../scaffolds/transformer/README.md#score-mlp-attention);
+findings and controls stay in the [score-MLP topic](results/exploratory/score_mlp/README.md).
+
+Both use the reference 15-layer width-896 shape, 7,570 updates, warmup 455, global
+batch 256, canonical QK RMSNorm with positive head scales, RoPE and head output
+RMSNorm. Home cluster: Kennel. Worktree `worktrees/plain-score-mlp`, branch
+`codex/plain-score-mlp`. With both worktree environments synced and the inputs committed:
+
+```bash
+for run in rea8b942672f4 rfc68c6d26f40; do
+  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+The launcher qualifies the conventional outputs and gradients, full-model pilot,
+and fresh-process checkpoint resume in each allocation before production.

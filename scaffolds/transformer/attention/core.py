@@ -37,6 +37,11 @@ def attention_core(
     score_bias_offset: jax.Array | None = None,
     score_bias_amplitude: jax.Array | None = None,
     attention_coefficient_activation: str = "identity",
+    score_mlp_amplitude: jax.Array | None = None,
+    score_mlp_offset: jax.Array | None = None,
+    score_mlp_slope: jax.Array | None = None,
+    score_mlp_form: str = "kernel",
+    score_mlp_output_bias: jax.Array | None = None,
     return_diagnostics: bool = False,
     dropout=None,
     deterministic: bool = True,
@@ -59,6 +64,8 @@ def attention_core(
     z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or the Mosaic
     transformed query-polynomial kernels; every other mechanism and backend rejects a transform other than
     "identity".
+    The ``score_mlp_*`` arrays (projected unit
+    amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
@@ -98,12 +105,31 @@ def attention_core(
                 or query_polynomial_coefficients is not None or key_polynomial_factors is not None
                 or query_log_decay is not None or query_decay_mode != "cumulative"
                 or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
-                or denominators):
+                or denominators or any(value is not None for value in (
+                    score_mlp_amplitude, score_mlp_offset, score_mlp_slope, score_mlp_output_bias))):
             raise ValueError("B-spline coefficients define an unnormalized kernel alone, without decay")
         return spline_attention(q, k, v, attention_degree=attention_degree, spline_knots=spline_knots,
                                 spline_coefficients=spline_coefficients,
                                 query_spline_coefficients=query_spline_coefficients, backend=backend,
                                 return_diagnostics=return_diagnostics, blocked_implementation=blocked_implementation)
+    score_mlp_arrays = (score_mlp_amplitude, score_mlp_offset, score_mlp_slope)
+    if score_mlp_output_bias is not None or any(array is not None for array in score_mlp_arrays):
+        from scaffolds.transformer.attention.score_mlp import score_mlp_attention
+
+        if any(array is None for array in score_mlp_arrays):
+            raise ValueError("A score MLP requires its unit amplitudes, offsets, and slopes")
+        if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                or coefficients is not None or polynomial_coefficients is not None
+                or polynomial_square_factors is not None or query_polynomial_coefficients is not None
+                or key_polynomial_factors is not None or denominators
+                or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))):
+            raise ValueError("A score MLP defines an unnormalized kernel alone, without a degree or coefficients")
+        if query_decay_mode != "cumulative":
+            raise ValueError("A score MLP supports only the cumulative forget-gate decay")
+        return score_mlp_attention(q, k, v, score_mlp_amplitude, score_mlp_offset, score_mlp_slope,
+                                   form=score_mlp_form, log_decay=query_log_decay, backend=backend,
+                                   output_bias=score_mlp_output_bias, blocked_implementation=blocked_implementation,
+                                   return_diagnostics=return_diagnostics)
     if key_polynomial_factors is not None and query_polynomial_coefficients is None:
         raise ValueError("Key factors require query coefficients")
     if query_decay_mode not in ("cumulative", "query_distance"):

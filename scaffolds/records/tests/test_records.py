@@ -307,6 +307,34 @@ def test_index_exposes_the_constant_decay_rate_only_for_constant_gates(tmp_path)
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_names_the_score_mlp_family_form_and_projection_decay(tmp_path):
+    study = tmp_path / "study"
+    exp = {"attention_mechanism": "dot_product", "attention_coefficients": "fixed", "attention_degree": None,
+           "attention_normalization": False}
+    runs = {
+        "exp": create_run(study, {"model": exp}),
+        # A width alone implies the default kernel form and undecayed projections.
+        "kernel": create_run(study, {"model": {**exp, "attention_score_mlp_width": 4}}),
+        "conventional": create_run(study, {"model": {**exp, "attention_score_mlp_width": 4,
+                                                     "attention_score_mlp_architecture": "conventional"}}),
+        "residual": create_run(study, {"model": {**exp, "attention_score_mlp_width": 8,
+                                                 "attention_score_mlp_form": "exp_residual",
+                                                 "attention_score_mlp_kernel_weight_decay": True}}),
+    }
+    (runs["residual"] / "metadata.json").write_text(json.dumps({"attention_kernel": "exp_score_mlp_residual_unnormalized"}))
+    regenerate_index(study)
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    fields = ("attention_family", "attention_kernel", "score_mlp_width", "score_mlp_form",
+              "score_mlp_kernel_weight_decay", "score_mlp_architecture")
+    assert {name: tuple(rows[run.name][field] for field in fields) for name, run in runs.items()} == {
+        "exp": ("exponential", "", "", "", "", ""),
+        "kernel": ("score_mlp", "", "4", "kernel", "False", "dynamic_readout"),
+        "conventional": ("score_mlp", "", "4", "kernel", "True", "conventional"),
+        "residual": ("score_mlp", "exp_score_mlp_residual_unnormalized", "8", "exp_residual", "True", "dynamic_readout"),
+    }
+
+
 def test_index_distinguishes_gdn_erase_modes_without_inventing_legacy_settings(tmp_path):
     study = tmp_path / "study"
     runs = {}

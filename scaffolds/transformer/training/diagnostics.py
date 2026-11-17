@@ -17,7 +17,7 @@ from scaffolds.transformer.attention.backends.reference import QUERY_BLOCK_SIZE,
 from scaffolds.transformer.training.coefficient_release import coefficient_release
 from scaffolds.transformer.training.numerics import (
     has_fixed_polynomial, has_fixed_square_factors, has_learned_polynomial, has_rational_kernel,
-    has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
+    has_score_mlp, has_sum_of_squares_kernel, is_odd_taylor, is_signed_kernel,
 )
 
 
@@ -264,6 +264,8 @@ def attention_identity(config) -> dict:
             attention_coefficient_sharing="global",
             attention_coefficient_count=0,
         )
+    if has_score_mlp(config.model):
+        identity.update(score_mlp_identity(config.model))
     if hasattr(config, "_attention_backend_resume_request"):
         identity["attention_backend_resume_requested"] = config._attention_backend_resume_request
     if getattr(config.model, "attention_coefficient_scale", "none") != "none":
@@ -458,7 +460,8 @@ def attention_identity(config) -> dict:
                 "; c_r uses the configured query-only coefficient generator and factorial scales; "
                 "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
                 "by duplicating the shared gate; x is the pre-attention RMSNorm activation"))
-    if forget_gate and not query_conditioned and not input_free_gate and not static_query_key_gate:
+    if (forget_gate and not query_conditioned and not input_free_gate and not static_query_key_gate
+            and not has_score_mlp(config.model)):
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
         # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
@@ -516,8 +519,13 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.backends.fused_taylor import _tile_sizes
         block_q, block_k = ((None, None) if degree is None and normalized else
                            _tile_sizes(config.model.qk_head_dim, config.model.value_head_dim))
+        if has_score_mlp(config.model):
+            from scaffolds.transformer.attention.backends.fused_score_mlp import BLOCK_K, BLOCK_Q
+
+            block_q, block_k = BLOCK_Q, BLOCK_K
         identity.update({
-            "attention_implementation": ("pallas_triton_query_key_polynomial" if key_conditioned else
+            "attention_implementation": ("pallas_triton_score_mlp" if has_score_mlp(config.model) else
+                                         "pallas_triton_query_key_polynomial" if key_conditioned else
                                          "pallas_triton_query_polynomial" if query_tanh or query_sigmoid else
                                          "pallas_triton_linear_plus_fp32_prefix_sum" if query_conditioned else
                                          "cudnn" if degree is None and normalized else "pallas_triton"),
@@ -832,6 +840,67 @@ def spline_identity(model) -> dict:
     return identity
 
 
+def score_mlp_identity(model) -> dict:
+    """The score MLP's formula, frozen settings, and parameter count, beside the mechanism identity."""
+    from scaffolds.transformer.attention.score_mlp import KERNEL_NAMES
+
+    width, form = model.attention_score_mlp_width, model.attention_score_mlp_form
+    architecture = getattr(model, "attention_score_mlp_architecture", "dynamic_readout")
+    conventional = architecture == "conventional"
+    if conventional:
+        kernel = f"b_out + sum_(j=1..{width}) a_j SiLU(w_j s_ti + x_t U_j + b_j) / sqrt({width})"
+        definition = ("a_j, w_j, U_j, b_j, b_out learned per layer/head; "
+                      "a_j and w_j initially independent N(0,1), U_j initially independent N(0,1/hidden_size), "
+                      "b_j and b_out initially zero")
+        parameters_per_head = width * (model.hidden_size + 3) + 1
+        initialization = {
+            "attention_score_mlp_initialization": "grouped_fan_in",
+            "attention_score_mlp_readout_scale": 1 / math.sqrt(width),
+            "attention_score_mlp_readout_initial_std": 1.0,
+            "attention_score_mlp_slope_initial_std": 1.0,
+            "attention_score_mlp_projection_initial_std": 1 / math.sqrt(model.hidden_size),
+            "attention_score_mlp_offset_initial": [0.0] * width,
+            "attention_score_mlp_output_bias_initial": 0.0,
+        }
+    else:
+        units = f"sum_(j=1..{width}) a_j(x_t) SiLU(w_j s_ti + b_j(x_t))"
+        kernel = units if form == "kernel" else f"exp(s_ti) (1 + {units})"
+        definition = ("a_j(x_t) = alpha_j + x_t A_j and b_j(x_t) = beta_j + x_t B_j per layer/head; "
+                      "A, B initially zero, alpha, w, beta initially the recipe constants")
+        parameters_per_head = width * (2 * model.hidden_size + 3)
+        initialization = {f"attention_score_mlp_{name}_initial":
+                          list(getattr(model, f"attention_score_mlp_{name}_initial"))
+                          for name in ("amplitude", "slope", "offset")}
+    gate = getattr(model, "attention_forget_gate", False)
+    formula = (f"sum_(i<=t) f(x_t, s_ti) v_i, f(x_t, s_ti) = {kernel}, "
+               "s_ti = Q_t K_i^T / sqrt(d_k), never divided by a row sum; "
+               f"{definition}; x_t the activation after the block input RMSNorm")
+    if gate:
+        formula += ("; each weight is multiplied by exp(L_t - L_i), L_t = sum_(r<=t) log g_r, log g_t = "
+                    "-exp(A_log) softplus(x_t w_g + dt_bias) per layer/head, with Gated DeltaNet's initialization")
+    identity = {
+        "attention_kernel": KERNEL_NAMES[form],
+        "attention_formula": formula,
+        "attention_score_scale": "1/sqrt(d_k)",
+        "attention_output_normalization": False,
+        "attention_score_mlp_width": width,
+        "attention_score_mlp_form": form,
+        "attention_score_mlp_architecture": architecture,
+        "attention_score_mlp_activation": model.attention_score_mlp_activation,
+        **initialization,
+        "attention_score_mlp_kernel_weight_decay": conventional or model.attention_score_mlp_kernel_weight_decay,
+        "attention_score_mlp_input": "pre_attention_rmsnorm_activation",
+        "attention_score_mlp_dtype": "float32",
+        "attention_score_mlp_parameter_count": model.num_layers * model.num_heads * parameters_per_head,
+        "attention_score_mlp_backward": ("pallas_triton_query_and_key_tiles" if model.attention_backend == "fused"
+                                         else "custom_vjp_over_key_chunks"),
+    }
+    if gate:
+        identity.update(attention_forget_gate=True, attention_forget_gate_mode="cumulative",
+                        forget_gate_parameter_count=(model.hidden_size + 2) * model.num_layers * model.num_heads)
+    return identity
+
+
 def qk_norm_identity(model) -> dict:
     """Normalization and parameter ownership recorded beside the mechanism identity."""
     from scaffolds.transformer.attention.qk_norm import initial_scale
@@ -1069,6 +1138,58 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
         report["finite"] = bool(report["finite"] and np.isfinite(key_amplitude).all() and np.isfinite(key_kernel).all()
                                 and all(np.isfinite(values).all() for values in key_summaries.values()))
     return report
+
+
+def score_mlp_report(params, raw_layers, model) -> dict:
+    """Learned unit constants and their actual amplitudes/offsets on the diagnostic sample.
+
+    For conventional units, the effective amplitude includes the 1/sqrt(J) readout
+    scale and is constant over tokens. The output bias has its own [layer, head, 1]
+    entry. Historical dynamic readouts retain their projection-kernel summary.
+    """
+    from scaffolds.transformer.attention.score_mlp import (
+        AMPLITUDE_BIAS, AMPLITUDE_KERNEL, OFFSET_BIAS, OFFSET_KERNEL, OUTPUT_BIAS, SLOPE,
+    )
+
+    get = lambda name: np.asarray(jax.device_get(params[name][...]), dtype=np.float64)
+    architecture = getattr(model, "attention_score_mlp_architecture", "dynamic_readout")
+    conventional = architecture == "conventional"
+    slope, amplitude_bias, offset_bias = get(SLOPE), get(AMPLITUDE_BIAS), get(OFFSET_BIAS)
+    offset_kernel = get(OFFSET_KERNEL)
+    width = slope.shape[-1]
+    summaries = {statistic: np.concatenate([
+        np.stack([np.asarray(layer[f"score_mlp_{name}_{statistic}"], np.float64) for layer in raw_layers])
+        for name in ("amplitude", "offset")], axis=-1) for statistic in ("mean", "std", "min", "max")}
+    arrays = [slope, amplitude_bias, offset_bias, offset_kernel, *summaries.values()]
+    report = {
+        "kind": "score_mlp",
+        "architecture": architecture,
+        "form": model.attention_score_mlp_form,
+        "activation": model.attention_score_mlp_activation,
+        "width": width,
+        "formula": ("b_out + sum_j a_j SiLU(w_j s + x_t U_j + b_j) / sqrt(J)" if conventional else
+                    "a_j(x_t) = alpha_j + x_t A_j, b_j(x_t) = beta_j + x_t B_j; unit j adds a_j SiLU(w_j s + b_j)"),
+        "sample": "fixed_diagnostic_sample",
+        "axes": ["layer", "head", "unit"],
+        "effective_coefficient_names": [f"a{unit}" for unit in range(width)] + [f"b{unit}" for unit in range(width)],
+        "effective_summary": {name: _serializable(values) for name, values in summaries.items()},
+        "slope": _serializable(slope),
+        "amplitude_bias": _serializable(amplitude_bias),
+        "offset_bias": _serializable(offset_bias),
+        "offset_kernel_l2": _serializable(np.linalg.norm(offset_kernel, axis=-2)),
+    }
+    if conventional:
+        output_bias = get(OUTPUT_BIAS)
+        arrays.append(output_bias)
+        report.update(readout_weight=_serializable(amplitude_bias), readout_scale=1 / math.sqrt(width),
+                      output_bias=_serializable(output_bias))
+    else:
+        amplitude_kernel = get(AMPLITUDE_KERNEL)
+        arrays.append(amplitude_kernel)
+        report["amplitude_kernel_l2"] = _serializable(np.linalg.norm(amplitude_kernel, axis=-2))
+    report["finite"] = bool(all(np.isfinite(values).all() for values in arrays))
+    return report
+
 
 def coefficient_input_report(raw_layers, model) -> dict:
     """Token summaries of actual generator inputs, before any SoS expansion."""
@@ -1610,7 +1731,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         for name, value in raw.items():
             if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
                                 "coefficient_gate_", "coefficient_input_", "coefficient_projection_",
-                                "coefficient_tanh_", "spline_", "score_bias_", "score_transform_")):
+                                "coefficient_tanh_", "spline_", "score_bias_", "score_transform_", "score_mlp_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.
             number = float(value)
             layer[name] = int(number) if name.endswith("_count") and math.isfinite(number) else json_number(number)
@@ -1687,6 +1808,14 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 issues.append("Nonfinite score-bias parameters")
         if getattr(config.model, "attention_score_transform", "identity") != "identity":
             coefficient_report["score_transform"] = score_transform_report(raw_layers, config)
+    elif has_score_mlp(config.model):
+        coefficient_report = score_mlp_report(params, raw_layers, config.model)
+        if not coefficient_report["finite"]:
+            issues.append("Nonfinite score-MLP parameters or unit values")
+        if getattr(config.model, "attention_forget_gate", False):
+            coefficient_report["forget_gate"] = forget_gate_report(params, raw_layers)
+            if not coefficient_report["forget_gate"]["finite"]:
+                issues.append("Nonfinite forget gate parameters or decay")
     elif has_learned_polynomial(config.model):
         coefficient_report = polynomial_coefficient_report(params, config)
         if not coefficient_report["finite"]:
@@ -1796,6 +1925,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"
                                    else "unshifted_spline")
         report["spline_score_coverage"] = spline_coverage_report(raw_layers, config)
+    if has_score_mlp(config.model):
+        report["kernel_values"] = ("unshifted_score_mlp" if config.model.attention_score_mlp_form == "kernel"
+                                   else "unshifted_exp_times_one_plus_score_mlp")
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     if gain_report is not None:

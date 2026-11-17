@@ -85,6 +85,10 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_spline_knots=getattr(config, "attention_spline_knots", None),
         attention_score_bias=getattr(config, "attention_score_bias", "none"),
         attention_score_transform=getattr(config, "attention_score_transform", "identity"),
+        score_mlp_width=getattr(config, "attention_score_mlp_width", None),
+        score_mlp_architecture=getattr(config, "attention_score_mlp_architecture", "dynamic_readout"),
+        score_mlp_form=getattr(config, "attention_score_mlp_form", "kernel"),
+        score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
         rngs=rngs,
     )
 
@@ -135,6 +139,10 @@ class MultiHeadAttention(nnx.Module):
         attention_spline_knots: tuple[float, ...] | None = None,
         attention_score_bias: str = "none",
         attention_score_transform: str = "identity",
+        score_mlp_width: int | None = None,
+        score_mlp_architecture: str = "dynamic_readout",
+        score_mlp_form: str = "kernel",
+        score_mlp_activation: str = "silu",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -145,6 +153,36 @@ class MultiHeadAttention(nnx.Module):
         if attention_blocked_implementation == "strips" and positional_encoding == "path":
             raise ValueError("Causal strips run RoPE or position-free attention; PaTH has its own blocked code")
         self.attention_blocked_implementation = attention_blocked_implementation
+        from scaffolds.transformer.attention import score_mlp
+
+        score_mlp.parameter_names(score_mlp_architecture)
+        if score_mlp_width is None and score_mlp_architecture != "dynamic_readout":
+            raise ValueError("A conventional score MLP requires a hidden width")
+        if score_mlp_architecture == "conventional" and (score_mlp_form != "kernel" or attention_forget_gate):
+            raise ValueError("A conventional score MLP requires the pure ungated kernel")
+        if score_mlp_form not in score_mlp.FORMS or score_mlp_activation not in score_mlp.ACTIVATIONS:
+            raise ValueError(f"Unknown score-MLP form or activation: {score_mlp_form}, {score_mlp_activation}")
+        if score_mlp_width is not None:
+            if isinstance(score_mlp_width, bool) or not isinstance(score_mlp_width, int) or score_mlp_width < 1:
+                raise ValueError("The score-MLP width must be a positive integer")
+            if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                    or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None
+                    or attention_coefficient_conditioning != "static" or attention_kernel_basis != "polynomial"
+                    or attention_score_bias != "none" or attention_score_transform != "identity"):
+                raise ValueError("A score MLP replaces the kernel of unnormalized attention: no degree, "
+                                 "polynomial coefficients, or normalization")
+            if backend not in ("blocked", "fused"):
+                raise ValueError("Score-MLP attention runs on the blocked or fused backend")
+            if backend == "fused" and attention_forget_gate:
+                raise ValueError("A gated score MLP runs on the blocked backend: the fused kernel has no forget gate")
+            if positional_encoding not in ("rope", "none"):
+                raise ValueError("Score-MLP attention supports RoPE or no positional encoding, not PaTH")
+            if attention_forget_gate and (attention_forget_gate_mode != "cumulative"
+                                          or attention_forget_gate_form != "input"):
+                raise ValueError("Score-MLP attention supports only the cumulative input forget gate")
+        self.score_mlp_width = score_mlp_width
+        self.score_mlp_architecture = score_mlp_architecture
+        self.score_mlp_form = score_mlp_form
         if positional_encoding == "path" and backend not in ("auto", "blocked", "fused"):
             raise ValueError("PaTH attention runs on backend 'blocked' (JAX) or 'fused' (FLA's Triton kernels)")
         self.positional_encoding = positional_encoding
@@ -663,6 +701,22 @@ class MultiHeadAttention(nnx.Module):
         elif any(value is not None for value in (query_kernel, query_bias, query_amplitude, query_mixing, query_tanh_bias,
                                                  key_kernel, key_amplitude, gate_kernel, gate_bias, gate_log_rate)):
             raise ValueError("Static coefficients cannot receive query coefficient parameters")
+        from scaffolds.transformer.attention import score_mlp
+
+        unit_parameters = {name: parameters.pop(name, None) for name in score_mlp.ALL_PARAMETERS}
+        unit_names = score_mlp.parameter_names(self.score_mlp_architecture) if self.score_mlp_width is not None else ()
+        if (any(unit_parameters[name] is None for name in unit_names)
+                or any(value is not None for name, value in unit_parameters.items() if name not in unit_names)):
+            raise ValueError("A score MLP requires exactly its model-owned unit parameters")
+        if self.score_mlp_width is not None:
+            amplitude, offset, slope, output_bias = score_mlp.project_parameters(
+                x, unit_parameters, self.score_mlp_architecture)
+            parameters["score_mlp_amplitude"] = amplitude
+            parameters["score_mlp_offset"] = offset
+            parameters["score_mlp_slope"] = slope
+            parameters["score_mlp_form"] = self.score_mlp_form
+            if output_bias is not None:
+                parameters["score_mlp_output_bias"] = output_bias
         from scaffolds.transformer.attention.forget_gate import (
             PARAMETERS as FORGET_GATE_PARAMETERS, ALL_PARAMETERS, alibi_log_rate, constant_log_decay,
             input_free_log_decay, log_decay,
