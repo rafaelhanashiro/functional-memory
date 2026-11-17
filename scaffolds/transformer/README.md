@@ -1762,7 +1762,11 @@ arithmetic exactly, including historical recipe/resume semantics.
 
 Supported forms are unnormalized learned per-head query polynomials with direct
 or sum-of-squares coefficients, RoPE or no positional encoding, and no gates,
-selected orders, inner biases, shifted/transformed scores, or dense readout.
+selected orders, inner biases, shifted scores, or dense readout. Scores are
+untransformed except for the supported composition of `softplus`,
+`sum_of_squares`, and `attention_coefficient_input_power: 1`: its weights are
+`z * h(z)`, where `z = softplus(s)` and `h` is the SoS core. The core degrees
+8 and 12 have total degrees 9 and 13, respectively.
 The normalization is outside the native attention kernel, so native Mosaic
 query kernels are unchanged. Degree and backend limits remain their existing
 limits.
@@ -1771,5 +1775,6 @@ The optional diagnostic forward additionally returns selected-source input norm 
 per-head/generator-coordinate projection moments, the fraction
 `abs(tanh(z)) >= 0.99`, and mean tanh derivative. Training records these under
 `attention_diagnostics.coefficients.generator_input`; SoS coordinates are factor
-coefficients, not expanded polynomial orders. These stopped summaries do not
+coefficients, not expanded polynomial orders. The report distinguishes core
+degree, total degree, and the input prefactor power. These stopped summaries do not
 participate in the training forward or gradients.

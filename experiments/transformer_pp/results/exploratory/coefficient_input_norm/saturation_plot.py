@@ -188,14 +188,14 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
         panels = [panel for panel in panels if any(
             panel["cells"][variant]["status"] != "not_run" for variant in variants)]
     limits = settings["head_y_limits_percent" if matched else "all_heads_y_limits_percent"]
-    assert limits == ([0, 100] if matched else [0, .25])
+    assert limits == ([0, 100] if matched else [0, .5])
     ymax = limits[1]
     color = settings["bar_color"]
     assert color == BLUE
-    fig, axes = plt.subplots(len(panels), len(variants), figsize=(17, 20) if matched else (13, 12),
+    fig, axes = plt.subplots(len(panels), len(variants), figsize=(17, 20) if matched else (13, 18),
                              squeeze=False, sharey=True)
-    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.89 if matched else .84,
-                        bottom=.085 if matched else .12, hspace=.76 if matched else .66, wspace=.16)
+    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.89 if matched else .855,
+                        bottom=.085, hspace=.76 if matched else .66, wspace=.16)
     for index, panel in enumerate(panels):
         for column, variant in enumerate(variants):
             ax = axes[index, column]
@@ -206,7 +206,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                              fontweight="bold", color=INK, pad=28)
             ax.set_ylim(0, ymax)
             ax.set_xlim(-.65, len(panel["coordinates"]) - .35)
-            ax.set_yticks([0, 25, 50, 75, 100] if matched else [0, .05, .10, .15, .20, .25])
+            ax.set_yticks([0, 25, 50, 75, 100] if matched else [0, .1, .2, .3, .4, .5])
             ax.tick_params(axis="both", colors=MUTED, labelsize=10, length=3)
             ax.spines[["top", "right"]].set_visible(False)
             ax.spines[["left", "bottom"]].set_color("#b4bfc8")
@@ -238,7 +238,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                           color=MUTED, fontsize=10.5, labelpad=7)
     for column, variant in enumerate(variants):
         bounds = axes[0, column].get_position()
-        fig.text((bounds.x0 + bounds.x1) / 2, .925 if matched else .885, TITLES[variant], ha="center",
+        fig.text((bounds.x0 + bounds.x1) / 2, .925 if matched else .895, TITLES[variant], ha="center",
                  fontsize=18, fontweight="bold", color=INK)
     fig.suptitle("Transformer++ · tanh saturation" if matched else "Transformer++ · tanh saturation across all heads",
                  x=.055, y=.975, ha="left", fontsize=25 if matched else 23,
@@ -256,12 +256,12 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                   if "layers" in cell}
         assert shapes == {(15, 14)}
         subtitle = ("Mean across 15 layers × 14 heads  ·  checkpoint 7,500  ·  same 2,048-token sequence\n"
-                    r"$|\tanh z|\geq0.99$  ·  zoomed 0–0.25% scale in every panel")
+                    r"$|\tanh z|\geq0.99$  ·  zoomed 0–0.5% scale in every panel")
         ylabel = "Mean saturated tokens (%)"
         footer = ("PPL: best validation evaluation. Bars weight layers, heads and tokens equally; SoS labels are square-factor coordinates.\n"
-                  "No-L2 controls have only the selected-head probe. Softplus + prefactor has no L2 runs and is omitted.\n"
-                  "Raw-L2 m=8 was not run. These are one-sequence diagnostics.")
-    fig.text(.055, .948 if matched else .915, subtitle, ha="left", fontsize=12, color=MUTED,
+                  "No-L2 controls have only the selected-head probe. Softplus + prefactor has raw-L2 runs only.\n"
+                  "Ordinary query/SoS raw-L2 m=8 was not run. These are one-sequence diagnostics.")
+    fig.text(.055, .948 if matched else .94, subtitle, ha="left", va="top", fontsize=12, color=MUTED,
              linespacing=1.7)
     fig.supylabel(ylabel, x=.018, fontsize=13, color=INK)
     fig.text(.055, .022, footer, fontsize=10.5 if matched else 10, color=MUTED, linespacing=1.7)

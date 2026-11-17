@@ -4029,3 +4029,25 @@ sequence shapes. A two-layer CPU capture check at both degrees preserved the
 forward loss exactly with nonzero amplitudes and nonuniform RMSNorm gains;
 70 related CPU tests passed and four hardware-only cases were skipped. This
 qualifies the forward diagnostic, not training or optimizer continuation.
+
+## Raw-L2 softplus-times-SoS composition (2026-11-16)
+
+The [qualification record](softplus_sos_raw_l2.json) pins source and lock for
+core degrees 8 and 12 (total degrees 9 and 13). Six CPU composition checks pass:
+raw coefficient input routing, unchanged initialization, independent direct-square
+attention outputs and gradients, shared residual gradients, Q/K/V-only RMSNorm
+gain gradients, and core-coordinate diagnostics. Seventeen existing rejection
+cases and all 119 matched-recipe acceptance checks also pass.
+
+Both one-B200 allocations (jobs 3796 and 3797) passed **858 CPU, 11 distributed
+CPU, and 150 GPU checks each**, with zero failures, errors, or skips. The GPU
+selection includes both composed raw-L2/softplus/SoS-prefactor BF16 cases at 512
+tokens and existing 2,048-token transformed-kernel checks. Both full-shape initial
+parameter fingerprints match their controls exactly. Each 20-update native
+Mosaic pilot resumed in a fresh process at update 21 with the exact checkpoint
+state, next batch, and RNG; Q/K/V retain the shared RMSNorm path.
+
+This qualifies the composition on B200 with the locked CUDA 13 environment and
+BF16 attention weights. The joint BF16X3 cases were deselected by the production
+acceptance policy, so this record makes no BF16X3 or H100 qualification claim.
+The composition changes no Mosaic arithmetic.

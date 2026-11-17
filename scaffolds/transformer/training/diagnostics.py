@@ -1078,7 +1078,9 @@ def coefficient_input_report(raw_layers, model) -> dict:
     arrays = {key: stack(key) for key in raw_layers[0]
               if key.startswith(("coefficient_input_", "coefficient_projection_", "coefficient_tanh_"))}
     finite = all(np.isfinite(value).all() for value in arrays.values())
-    degree = model.attention_degree
+    total_degree = model.attention_degree
+    input_power = getattr(model, "attention_coefficient_input_power", 0)
+    degree = total_degree - input_power
     labels = ([f"U{r}" for r in range(degree // 2 + 1)]
               + [f"V{r}" for r in range(degree // 2)]) if model.attention_coefficient_parameterization == "sum_of_squares" else [f"r{r}" for r in range(degree + 1)]
     from scaffolds.transformer.attention.input_dependent import COEFFICIENT_INPUT_L2_EPS
@@ -1100,6 +1102,7 @@ def coefficient_input_report(raw_layers, model) -> dict:
         "sample": "fixed_diagnostic_sample", "sample_forward_backend": model.attention_backend,
         "projection_dtype": "float32", "projection_precision": "HIGHEST",
         "coordinate_labels": labels,
+        "core_degree": degree, "total_degree": total_degree, "input_power": input_power,
         "coordinate_definition": "SoS factor generator" if model.attention_coefficient_parameterization == "sum_of_squares" else "polynomial coefficient order",
         "input_norm_axes": ["layer"], "projection_axes": ["layer", "head", "generator_coordinate"],
         "input_norms": {kind: {stat: _float32_serializable(arrays[f"{prefix}_{stat}"])
