@@ -2357,9 +2357,10 @@ Added 2026-11-16 at the user's request. Six runs train the two degree-twelve com
 width-640 shape with 1, 2 and 4 times its 1x budget: `rf637de9b65b1`'s `z h_t(z)` with `z = softplus(s)` and a
 query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_coefficient_input_power: 1`), and
 `rc5aac8f37a2e`'s `h_t(z)` without the prefactor (`attention_degree: 12`, `attention_coefficient_input_power: 0`).
-Home cluster: **Kennel**. All six are planned; the
-[topic](results/exploratory/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x) lists their
-comparisons.
+Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.565 at
+1x, 2x and 4x, 0.88%, 0.63% and 0.27% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
+below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, findings and limits: the
+[topic](results/exploratory/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x).
 
 | Run | Label | Updates | Warmup | Validation |
 | --- | --- | ---: | ---: | --- |
@@ -2389,9 +2390,12 @@ comparisons.
 - Kernels and GPUs: the Mosaic transformed SoS kernels at total degree thirteen (twelve without the prefactor), on one H100 or B200; the
   adapter refuses other GPU types, and B300 remains unqualified for these kernels. Their composed GPU suite
   passed in the acceptance of `rc5aac8f37a2e` on `dogo`'s H100 SXM (job 2981) and of `rf637de9b65b1` on
-  `shiba`'s B200 (job 2982); every allocation runs it again. `mastiff` (H100 PCIe) is excluded: Slurm grants its
-  failing H100 to one-GPU jobs first (CLUSTERS.md), and on 2026-11-16 it was draining. B200 jobs run in the
-  worktree's `.venv-cuda13`.
+  `shiba`'s B200 (job 2982), and again in job 4513 (`r4589172dcd8b`, `dogo`'s H100 SXM); the other five runs
+  reused that pass by matching test identity (each record's `acceptance.summary.reused_tests`, which also lists
+  reused CPU test stages), and each run's acceptance ran its own initialization, pilot and resume checks.
+  `mastiff` (H100 PCIe) is excluded: Slurm grants its failing H100 to one-GPU jobs first (CLUSTERS.md). B200
+  jobs run in the worktree's `.venv-cuda13`. Every update of the six runs trained on `dogo`'s H100 SXM, in the
+  CUDA 12 environment; the attempts granted `shiba`'s B200 were preempted during acceptance, before any update.
 - Time limits: 1.4 times the upper H100 SXM projection, for the estimate's uncertainty and `dogo`'s variation
   between attempts, plus acceptance's two-hour reserve, rounded up to whole hours. A projection is the run's
   training time plus its 28 validations at 25–40 s each, checkpoints included (their time on `dogo` at this
@@ -2421,16 +2425,18 @@ comparisons.
   Acceptance projects again from its pilot on the granted GPU and refuses an allocation whose projection
   exceeds the limit less two hours: 4, 7 and 13 hours, about 1.91, 1.67 and 1.55 s per update.
 
-Branch `claude/l12-d640-softplus-sos`. Submit each run independently from the worktree root after committing the
-frozen execution set and checking the live `standard` and `long` allowances, counting the user's jobs from every
-worktree (CLUSTERS.md). All three limits fit `standard`'s 24 hours: give free `standard` slots to the longest runs
-(the 4x, then the 2x) and put the rest on `long`. Submit a `standard` job first and let it start before the `long`
-ones: on a full node it preempts the youngest lower-tier job, ours included, so also exclude any node hosting one
-of our running `long` jobs (`squeue -u "$USER" -p long -t R -o %N`).
+  On `dogo` the trainer ran 2.45, 4.68 and 9.13 hours at 1x, 2x and 4x with the prefactor and 2.34, 4.39 and
+  8.53 without it (`completion.json`), within the H100 SXM projections.
 
-The placeholder holding `dogo`'s failing H100 (CLUSTERS.md), job 4436 on `standard`, ends on 2026-11-17 at
-23:41 EST. A start or requeue on `dogo` after its placeholder ends can be granted that GPU and stop at JAX
-initialization, so `dogo` stays eligible only while a placeholder outlasts every start and requeue of the run.
+Branch `claude/l12-d640-softplus-sos`. The six runs were submitted on 2026-11-17 from the worktree root at launch
+commit `9251ea11`, after the frozen execution set was committed, each as one job with no dependency: the 4x
+`z h_t(z)` run on `standard` (job 4513), the other five on `long` (jobs 4514–4518), all excluding `akita`,
+`mastiff`, `collie`, `samoyed`, `doodle` and `terrier`. `dogo` stayed eligible: the placeholder holding its
+failing H100 (job 4436, CLUSTERS.md) outlasted every start and requeue. Attempts granted `shiba`'s B200 (1x
+`z h_t(z)`, 2x and 4x `h_t(z)`) or, once, `dogo` (2x `z h_t(z)`) were preempted during acceptance, before any
+update, and requeued in the same job; the 4x `h_t(z)` run was preempted again at update 215, before its first
+checkpoint, and restarted from update 0. Each record lists its job and attempts and the artifact-root locations
+of its validation-best checkpoint, kept gradient-event states and log. The jobs as submitted:
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
@@ -2440,14 +2446,11 @@ submit() {  # partition, time, adapter, GPU types, excluded nodes, run
     scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-# dogo's H100 at Slurm GPU index 4 fails CUDA initialization under JAX: add dogo to EXCL unless the placeholder
-# holding it (end time below) outlasts every start and requeue of the job.
-squeue -u "$USER" -n hold-dogo-badgpu -o '%.8i %.9P %.20e'
 EXCL=akita,mastiff,collie,samoyed,doodle,terrier
-submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x; long if no standard slot is free
-submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x; standard if a slot is free
-submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x; standard if a slot is free
-submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r0623d3020268      # 4x, no prefactor; standard if free
-submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       # 2x, no prefactor; standard if free
-submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor; standard if free
+submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x, job 4513
+submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r0623d3020268      # 4x, no prefactor, job 4514
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x, job 4515
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       # 2x, no prefactor, job 4516
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x, job 4517
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor, job 4518
 ```
