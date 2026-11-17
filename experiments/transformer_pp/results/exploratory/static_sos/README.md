@@ -3,7 +3,7 @@
 Opened 2026-11-17.
 
 **Question.** Do the SoS score function and its softplus prefactor improve Transformer++
-without input-dependent polynomial coefficients? Six static runs compare directly
+without input-dependent polynomial coefficients? Six static core-eight/twelve runs compare directly
 with their completed, degree-matched query counterparts and the shared exp reference.
 The [study methods](../../../README.md#static-sum-of-squares-comparison) define the
 recipe and launch commands. Home cluster: Kennel.
@@ -17,6 +17,18 @@ recipe and launch commands. Home cluster: Kennel.
 | `ra3bffee9a528` | softplus(s) h(softplus(s)) | 8 | 9 | `r841f35a24241` |
 | `r28a991faed4f` | softplus(s) h(softplus(s)) | 12 | 13 | `rf637de9b65b1` |
 
+Two core-degree-four extensions use the same static recipe with only degree and
+run identity changed. No matched query-conditioned softplus SoS run exists at
+degree four.
+
+| Static run | Attention weight | Core degree | Total degree | Degree-eight counterpart |
+| --- | --- | ---: | ---: | --- |
+| `r6d4217061453` | h(softplus(s)) | 4 | 4 | `r54f771e54722` |
+| `r91e0c1bb8458` | softplus(s) h(softplus(s)) | 4 | 5 | `ra3bffee9a528` |
+
+The ordinary static degree-four reference is `r4339a245820e`. This comparison
+changes the score transform and coefficient parameterization, not just degree.
+
 All use the 15-layer width-896 shape, RoPE, canonical QK RMSNorm with head scales,
 attention-output head RMSNorm, seed 42, 2,048-token context, global batch 256,
 7,570 updates, and the query controls' data, initialization and AdamW recipe.
@@ -29,7 +41,7 @@ This is the query generator's bias branch with W and a removed, preserving
 its factor scaling and initial kernel h=T_m. No coefficient input normalization,
 forget gate, score bias or coefficient LR multiplier is introduced. Factors are
 exempt from decay; the backbone retains its usual exemptions and WD=0.1.
-The prefactor adds no parameter. Parameter counts are 198,455,476 (core 8) and
+The prefactor adds no parameter. Parameter counts are 198,454,636 (core 4), 198,455,476 (core 8) and
 198,456,316 (core 12). Removing input dependence also reduces parameter count,
 so the comparison is not parameter-matched.
 
@@ -46,6 +58,8 @@ are 4715/4716 (long), and prefactor core 8/12 are 4717/4718 (long).
 The read-only monitor checks these runs every five minutes and reports failures,
 stalls, phase changes and completion. Current acceptance and training outcomes
 remain authoritative in the run records. No training PPL is available yet.
+The two degree-four recipes are allocated in their own worktree and awaiting
+submission with full per-allocation acceptance.
 
 **Open decision.** Does input dependence improve each of these three score functions,
 and does the prefactor's benefit persist for static factors? Report validation-best

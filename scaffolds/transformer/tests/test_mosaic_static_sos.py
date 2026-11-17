@@ -10,7 +10,7 @@ from scaffolds.transformer.attention.backends.mosaic import api
 from scaffolds.transformer.attention.backends.mosaic.common import PRECISIONS
 from scaffolds.transformer.attention.nonnegative_polynomial import static_square_coefficients, static_square_factors
 from scaffolds.transformer.tests.test_fused_attention import _assert_relative
-from scaffolds.transformer.tests.test_static_sos import VARIANTS, _inputs, _numpy_fp64, _operation
+from scaffolds.transformer.tests.test_static_sos import STATIC_CASES, _inputs, _numpy_fp64, _operation
 
 pytestmark = pytest.mark.gpu
 
@@ -50,8 +50,7 @@ def _assert_all(actual, expected):
                          name=f"static SoS db factor {index}")
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-@pytest.mark.parametrize("transform,power", VARIANTS)
+@pytest.mark.parametrize("core_degree,transform,power", STATIC_CASES)
 @pytest.mark.parametrize("precision", PRECISIONS)
 def test_static_shared_factor_gradients_match_explicit_fp64(core_degree, transform, power, precision):
     operands, cotangent = _inputs(core_degree, time=512, batch=2, heads=2, width=64, dtype=jnp.bfloat16)
@@ -61,8 +60,7 @@ def test_static_shared_factor_gradients_match_explicit_fp64(core_degree, transfo
     _assert_all(actual, _numpy_fp64(core_degree, transform, power, operands, cotangent))
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-@pytest.mark.parametrize("transform,power", VARIANTS)
+@pytest.mark.parametrize("core_degree,transform,power", STATIC_CASES)
 def test_production_static_dispatch_at_2048_tokens(core_degree, transform, power, monkeypatch):
     calls = []
     name = "query_polynomial_attention" if transform == "identity" else "transformed_query_polynomial_attention"
@@ -77,7 +75,7 @@ def test_production_static_dispatch_at_2048_tokens(core_degree, transform, power
     _assert_all(actual, _numpy_fp64(core_degree, transform, power, operands, cotangent))
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
+@pytest.mark.parametrize("core_degree", (4, 8, 12), ids=("m4", "m8", "m12"))
 def test_global_factor_gradient_sums_heads_batches_and_tokens(core_degree):
     operands, cotangent = _inputs(core_degree, time=512, batch=2, heads=2, width=64, dtype=jnp.bfloat16)
     operands = (*operands[:3], operands[3][0])
@@ -85,7 +83,7 @@ def test_global_factor_gradient_sums_heads_batches_and_tokens(core_degree):
     _assert_all(actual, _numpy_fp64(core_degree, "softplus", 1, operands, cotangent))
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
+@pytest.mark.parametrize("core_degree", (4, 8, 12), ids=("m4", "m8", "m12"))
 def test_static_prefactor_causal_prefix_and_gradients_ignore_future_tokens(core_degree):
     operands, cotangent = _inputs(core_degree, time=512, batch=1, heads=2, width=64, dtype=jnp.bfloat16)
     prefix = 300

@@ -6,6 +6,7 @@ settings:
   - validation-best
   - terminal
   sos_core_degrees:
+  - 4
   - 8
   - 12
   shape:
@@ -205,3 +206,39 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
       sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r6d4217061453
+  role: static_softplus_m4
+  label: static-sos-core-m4-softplus-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6d4217061453/config.yaml
+      sha256: 19d1d2779b7132df7b30ec027eaab4c51dfac715a658aa28a76b1058008fd305
+- study: transformer_pp
+  run_id: r91e0c1bb8458
+  role: static_prefactor_m4
+  label: static-sos-core-m4-prefactor-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/config.yaml
+      sha256: f0546b480d708ba6037a89acfeb7b05a4c87d12dfc5633a88ff75cbdb2e09f52
+- study: transformer_pp
+  run_id: r4339a245820e
+  role: reference_static_m4
+  label: Ordinary static m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4339a245820e/config.yaml
+      sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4339a245820e/metrics.jsonl
+      sha256: aac549c56baf062d85bf3a4026d92a81ea0181671127c7cfd89b75fbdd849fd4
+    completion.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/completion.json
+      sha256: afb56b2641f922fef2a15097909d892309d9814cf091d88d9fecc9b88743dc27
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/metadata.json
+      sha256: e365b09aa102c907956d144ffcb066ee4bb78cfc52c554abce53013ffaa152f8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/best_validation.json
+      sha256: d487f8d386c07df16a7e5f8b7d6f6ff756be16fe0abc1b1d57829813167a5514

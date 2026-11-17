@@ -2388,3 +2388,27 @@ done
 
 Keep the execution source, lock, recipes and study membership frozen while any
 job can run or requeue. Records contain the granted partition, GPU and job ID.
+
+The same comparison includes two core-degree-four static runs:
+`r6d4217061453` uses SoS on softplus scores, and `r91e0c1bb8458` adds the
+softplus prefactor. Their recipes differ from the corresponding static core-eight
+runs only in degree and run identity. They use five relative-Taylor factors per
+layer/head, initialized to T4(z), with total degrees four/five respectively.
+The adapter derives a degree-four initialization reference from the pinned
+degree-eight query recipe; this does not imply an existing degree-four query run.
+
+These two execute from the separate `static-sos-m4` worktree. After syncing its
+own locked CUDA 12/13 environments and checking the live allowances, submit only
+these IDs from that worktree:
+
+```bash
+launch_commit=$(git rev-parse HEAD)
+for run in r6d4217061453 r91e0c1bb8458; do
+  sbatch --partition=standard,long --exclude=akita,mastiff,collie,samoyed,doodle,terrier \
+    --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_sos_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$launch_commit" 1 H100,B200
+done
+```

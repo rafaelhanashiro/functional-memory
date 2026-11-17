@@ -21,6 +21,12 @@ from scaffolds.transformer.training.optim import attention_weight_decay_mask
 from scaffolds.transformer.training.state import create_state
 
 VARIANTS = (("identity", 0), ("softplus", 0), ("softplus", 1))
+STATIC_CASES = tuple(
+    pytest.param(core_degree, transform, power,
+                 id=f"m{core_degree}-{'raw' if transform == 'identity' else 'prefactor' if power else 'softplus'}")
+    for core_degree in (4, 8, 12)
+    for transform, power in (VARIANTS[1:] if core_degree == 4 else VARIANTS)
+)
 
 
 def _config(core_degree=8, transform="identity", power=0, **changes):
@@ -85,8 +91,7 @@ def _numpy_fp64(core_degree, transform, power, operands, cotangent):
     return output, (dq, dk, dv, db)
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-@pytest.mark.parametrize("transform,power", VARIANTS)
+@pytest.mark.parametrize("core_degree,transform,power", STATIC_CASES)
 def test_static_forward_and_all_gradients_match_explicit_squares(core_degree, transform, power):
     operands, cotangent = _inputs(core_degree)
     actual, pullback = jax.vjp(_operation(core_degree, transform, power), *operands)
@@ -96,8 +101,7 @@ def test_static_forward_and_all_gradients_match_explicit_squares(core_degree, tr
         np.testing.assert_allclose(got, want, rtol=8e-5, atol=5e-5, err_msg=name)
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-@pytest.mark.parametrize("transform,power", VARIANTS)
+@pytest.mark.parametrize("core_degree,transform,power", STATIC_CASES)
 def test_static_initial_model_backbone_and_bias_gradient_match_query(core_degree, transform, power):
     static = _config(core_degree, transform, power)
     query = query_config(power, core_degree=core_degree, attention_score_transform=transform)
@@ -127,10 +131,10 @@ def test_static_initial_model_backbone_and_bias_gradient_match_query(core_degree
     np.testing.assert_allclose(static_db, query_db, rtol=8e-5, atol=5e-5)
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-def test_all_three_variants_share_initial_parameters_and_no_factor_decay(core_degree):
+@pytest.mark.parametrize("core_degree", (4, 8, 12), ids=("m4", "m8", "m12"))
+def test_variants_share_initial_parameters_and_no_factor_decay(core_degree):
     params = []
-    for transform, power in VARIANTS:
+    for transform, power in (VARIANTS[1:] if core_degree == 4 else VARIANTS):
         config = _config(core_degree, transform, power)
         specs = attention_parameter_specs(config.model)
         names = {s.name for s in specs}
@@ -147,8 +151,7 @@ def test_all_three_variants_share_initial_parameters_and_no_factor_decay(core_de
             np.testing.assert_array_equal(variant[path], params[0][path])
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
-@pytest.mark.parametrize("transform,power", VARIANTS)
+@pytest.mark.parametrize("core_degree,transform,power", STATIC_CASES)
 def test_static_training_updates_factors_and_reports_effective_coefficients(core_degree, transform, power):
     config = _config(core_degree, transform, power)
     state = create_state(config, jax.random.PRNGKey(1))
@@ -184,7 +187,7 @@ def test_legacy_direct_factors_are_unchanged(core_degree):
     np.testing.assert_array_equal(spec.initial, taylor_square_factors(core_degree))
 
 
-@pytest.mark.parametrize("core_degree", (8, 12))
+@pytest.mark.parametrize("core_degree", (4, 8, 12), ids=("m4", "m8", "m12"))
 def test_relative_start_and_prefactor_structural_zero(core_degree):
     b = jnp.ones((2, core_degree + 1))
     f = static_square_factors(b, core_degree, parameterization="relative_taylor")
@@ -195,6 +198,18 @@ def test_relative_start_and_prefactor_structural_zero(core_degree):
         static_square_factors(x, core_degree, parameterization="relative_taylor"),
         core_degree + 1, input_power=1)[..., 0].sum())(b)
     np.testing.assert_array_equal(gradient, 0.)
+
+
+@pytest.mark.parametrize("power", (0, 1), ids=("softplus", "prefactor"))
+def test_m4_transformed_mosaic_recipe_uses_total_degree(power):
+    from scaffolds.transformer.attention.backends.selection import resolve_attention_backend
+
+    config = _config(4, "softplus", power, attention_backend="mosaic", hidden_size=128,
+                     qk_head_dim=64, value_head_dim=64, max_seq_len=2048)
+    assert config.model.attention_degree == 4 + power
+    assert config.model.mosaic_score_transform_supported()
+    assert resolve_attention_backend(config.model, dtype="bfloat16", platform="gpu",
+                                     sequence_length=2048) == "mosaic"
 
 
 @pytest.mark.parametrize("dtype,time,expected", (("float32", 2048, "blocked"),

@@ -1,4 +1,4 @@
-"""Static SoS counterparts of the six pinned query SoS recipes, with relative-Taylor factors."""
+"""Static relative-Taylor SoS recipes and their explicit degree-four extensions."""
 from dataclasses import replace
 from functools import partial
 import argparse
@@ -18,6 +18,13 @@ CONTROLS = {
     (8, "softplus", 1): ("r841f35a24241", "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b"),
     (12, "softplus", 1): ("rf637de9b65b1", "22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903"),
 }
+# The two degree-four runs preserve their degree-eight recipe and change only
+# polynomial degree. These are recipe sources, not completed degree-four controls.
+DEGREE_EXTENSIONS = {
+    (4, "softplus", 0): (8, "softplus", 0),
+    (4, "softplus", 1): (8, "softplus", 1),
+}
+DESCRIPTORS = (*CONTROLS, *DEGREE_EXTENSIONS)
 STATIC_CHANGES = dict(
     attention_coefficient_conditioning="static", attention_coefficient_activation="identity",
     attention_coefficient_kernel_weight_decay=False, attention_coefficient_projection_initial_std=0.,
@@ -40,13 +47,17 @@ GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_static_sos.py",)
 
 def control_config(core_degree, transform, power):
     descriptor = (core_degree, transform, power)
-    if descriptor not in CONTROLS:
-        raise ValueError("Static SoS requires core degree 8 or 12 and raw, softplus, or softplus-prefactor weights")
-    run_id, digest = CONTROLS[descriptor]
+    source = DEGREE_EXTENSIONS.get(descriptor, descriptor)
+    if source not in CONTROLS:
+        raise ValueError("Static SoS requires core degree 8 or 12, or the explicit degree-four softplus variants")
+    run_id, digest = CONTROLS[source]
     path = RUNS / run_id / "config.yaml"
     if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
         raise ValueError(f"Pinned query SoS control {run_id} changed")
-    return load_config(path)
+    config = load_config(path)
+    if source != descriptor:
+        config.model = replace(config.model, attention_degree=core_degree + power)
+    return config
 
 
 def static_config(core_degree, transform, power):
@@ -131,7 +142,9 @@ def check_initialization(config):
     core = config.model.attention_degree - config.model.attention_coefficient_input_power
     key = (core, config.model.attention_score_transform, config.model.attention_coefficient_input_power)
     facts = _initial_parameter_check(config, control_config(*key))
-    return {**facts, "control_run_id": CONTROLS[key][0], "sos_core_degree": core,
+    source = DEGREE_EXTENSIONS.get(key, key)
+    return {**facts, "control_run_id": CONTROLS[source][0], "source_core_degree": source[0],
+            "initialization_reference_core_degree": core, "sos_core_degree": core,
             "polynomial_degree": config.model.attention_degree, "score_transform": key[1], "input_power": key[2]}
 
 
