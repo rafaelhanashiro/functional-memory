@@ -1,39 +1,124 @@
 {
-  "source_commit": "c1512b0abaf528035e0443b016d8471cc2867621",
-  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
   "capability": "Raw-input unit-L2 coefficient projection with softplus-times-SoS prefactor, core degrees 8 and 12",
-  "cpu_checks": [
+  "status": "passed",
+  "source_commit": "c1512b0abaf528035e0443b016d8471cc2867621",
+  "frozen_execution_sha256": "c8cca1b3f31e98dbeb9edfefd56eaf27cc01a595b1cb369a8ee28efe3c644bf2",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "hardware": {
+    "cluster": "kennel",
+    "node": "shiba",
+    "device_type": "NVIDIA B200",
+    "gpu_count_per_execution": 1,
+    "cuda_environment": "cuda13",
+    "backend": "mosaic",
+    "attention_weight_precision": "bf16",
+    "versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "optax": "0.2.8",
+      "orbax-checkpoint": "0.11.40"
+    }
+  },
+  "checks_per_execution": {
+    "cpu-tests": {
+      "passed": 858,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cpu-distributed-tests": {
+      "passed": 11,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "gpu-tests": {
+      "passed": 150,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "composition_checks": {
+    "test_file": "scaffolds/transformer/tests/test_softplus_sos_raw_input.py",
+    "cpu_cases_passed": 6,
+    "gpu_cases_passed": 2,
+    "gpu_core_degrees": [
+      8,
+      12
+    ],
+    "gpu_sequence_length": 512,
+    "reference": "Independent direct-square FP64 outputs and VJPs, analytic L2 input Jacobian, shared residual and Q/K/V-only RMSNorm gain gradients",
+    "production_context_checks": "Existing softplus-SoS Mosaic suite covers 2048-token output and generator VJPs at both core degrees; each full-shape pilot uses 2048 tokens."
+  },
+  "executions": [
     {
-      "test_file": "scaffolds/transformer/tests/test_softplus_sos_raw_input.py",
-      "selection": "not gpu",
-      "passed": 6,
-      "gpu_deselected": 4
+      "core_degree": 8,
+      "total_degree": 9,
+      "run_id": "r35805940a380",
+      "slurm_job_id": "3796",
+      "status": "passed",
+      "completed_utc": "2026-11-16T20:51:49.461116+00:00",
+      "acceptance_identity": "31aaf018403a0d08c68dc91b049e4b41afe18eca1144408af724e18dfd19b9ee",
+      "config_sha256": "7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484",
+      "success_sha256": "26f3642940bdca87653969e84f00918f9830a9ba6f87cad9f5737532e6a30a60",
+      "test_report_sha256": {
+        "cpu-tests": "f0cc4d48cb1ca7dcd066bc2b76becc7d2615bd30e00c27c2c408777ef0a573f4",
+        "cpu-distributed-tests": "969500029e09d8f129d0ee5e56f930783f1d58beb6066970d50edd8d9136ba93",
+        "gpu-tests": "812a9934d0b1640b79a319bf1f2fdf104e58aa4c7fbe277237b1adc9485ade3b"
+      },
+      "initialization": {
+        "parameter_count": 200150806,
+        "parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
+        "control_run_id": "r841f35a24241",
+        "all_initial_parameters_match_control": true
+      },
+      "pilot_and_resume": {
+        "pilot_updates": 20,
+        "resumed_update": 21,
+        "restored_step": 20,
+        "resumed_data_start_sequence": 5120,
+        "full_checkpoint_state_sha256": "b43cb71aab2790bb03754beb013a61131a95b2652c57ba47aeeda01f160b952e",
+        "checkpoint_restore_exact": true,
+        "next_batch_and_rng_exact": true
+      }
     },
     {
-      "test_files": [
-        "scaffolds/transformer/tests/test_coefficient_input_normalization.py",
-        "scaffolds/transformer/tests/test_coefficient_raw_input.py"
-      ],
-      "selection": "unsupported-combination cases",
-      "passed": 17
-    },
-    {
-      "test_file": "experiments/transformer_pp/tests/test_coefficient_l2_acceptance.py",
-      "passed": 119
+      "core_degree": 12,
+      "total_degree": 13,
+      "run_id": "r5198d688e9d4",
+      "slurm_job_id": "3797",
+      "status": "passed",
+      "completed_utc": "2026-11-16T20:51:55.027645+00:00",
+      "acceptance_identity": "dac82592ad35355e182fa31f12d5f30394e30224676cb9dd8484b467eac59450",
+      "config_sha256": "ba829833e479a9e566c60c89cf55d748b4c64dcc636e787d7140d56fba3ec1f4",
+      "success_sha256": "7d0b752e95b746528b0b825cebcbe004cfce05b245d85b21f3ee162066da495c",
+      "test_report_sha256": {
+        "cpu-tests": "546705150b2cc85e295906314fa835cb9c6b3a27146089830e65e9d8d07d0c05",
+        "cpu-distributed-tests": "871937a86629a5014fe53c09406d7b454aad36280bce42d4d198e51a7a7bf161",
+        "gpu-tests": "55308e5c3603e5891fb8281b4dd683c7a8cc20489549e127b886fa25627ad8e2"
+      },
+      "initialization": {
+        "parameter_count": 200905126,
+        "parameter_sha256": "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16",
+        "control_run_id": "rf637de9b65b1",
+        "all_initial_parameters_match_control": true
+      },
+      "pilot_and_resume": {
+        "pilot_updates": 20,
+        "resumed_update": 21,
+        "restored_step": 20,
+        "resumed_data_start_sequence": 5120,
+        "full_checkpoint_state_sha256": "895d15c68b72aedc2f132c132fb2dfed05a65bbdee918ead6a2bce8084d571a1",
+        "checkpoint_restore_exact": true,
+        "next_batch_and_rng_exact": true
+      }
     }
   ],
-  "gpu_checks": {
-    "status": "pending",
-    "test_file": "scaffolds/transformer/tests/test_softplus_sos_raw_input.py",
-    "required_before_production": true,
-    "device_type": "B200",
-    "production_precision": "bf16",
-    "additional_requirements": [
-      "existing transformed Mosaic output and VJP checks at 2048 tokens",
-      "full-shape initialization fingerprint",
-      "full-shape training pilot",
-      "fresh-process optimizer and data resume"
-    ]
+  "reproduce": {
+    "module": "experiments.transformer_pp.coefficient_l2_acceptance",
+    "arguments_template": "experiments/transformer_pp/runs/<run_id>/config.yaml --directory experiments/transformer_pp/runs/<run_id>/.runtime/acceptance/B200-1 --gpu-count 1 --gpu-type B200",
+    "environment": "scaffolds/transformer/.venv-cuda13/bin/python"
   },
-  "limits": "CPU results establish composition and gradient routing; GPU qualification has not yet passed."
+  "limits": "Qualifies native B200 BF16 composition and training/resume. The joint BF16X3 cases exist but were deselected by the production BF16 acceptance policy; this record makes no BF16X3 or H100 qualification claim."
 }

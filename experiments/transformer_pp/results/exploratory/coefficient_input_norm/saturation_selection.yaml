@@ -16,7 +16,7 @@ settings:
   - 100
   all_heads_y_limits_percent:
   - 0
-  - 0.25
+  - 0.5
   bar_color: '#28699b'
   head_aggregation: fraction of sampled tokens per generator coordinate in layer 8,
     head 1
@@ -28,8 +28,9 @@ settings:
     m+1
   missing_convention: Not run; never interpreted as zero
   limits: One held-out sequence. Original controls have only the selected-head probe;
-    all-head panels contain L2 runs only. Raw L2 m=8 runs do not exist. Neither L2
-    placement has been run for softplus-times-SoS.
+    all-head panels contain L2 runs only. Raw L2 m=8 has not been run for ordinary
+    query or SoS. Softplus-times-SoS has completed raw L2 at both degrees but no post-RMSNorm
+    L2 runs.
 runs:
 - study: transformer_pp
   run_id: r25a5f78841b2
@@ -327,6 +328,46 @@ runs:
     metadata.json:
       path: experiments/transformer_pp/runs/rfadcac37b6d0/metadata.json
       sha256: 289dc6795410e7ec1e1d5687c379ce2e109717368496dc4638dfa46e239554a3
+- study: transformer_pp
+  run_id: r35805940a380
+  role: softplus_times_sos_raw_l2_m8
+  label: SoS + softplus + prefactor, core degree 8, raw-input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r35805940a380/config.yaml
+      sha256: 7bc37b678c418d4568b1a77f20fa85df2890075ad5b523446f9a5ce7d8ac1484
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r35805940a380/metrics.jsonl
+      sha256: d9204ce614805ad6b3af604f14bd769bc1f209910cab8aa9e682350d407d5e2b
+    completion.json:
+      path: experiments/transformer_pp/runs/r35805940a380/completion.json
+      sha256: 348862d249767d68fe373bc8b9feae50c139e09c0b66a8d868c1763a0b0878a2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r35805940a380/metadata.json
+      sha256: 4762e8b3d989d1cda6dd2f8e9efc45b1f53ac76a7be9f10c85019395cf2e8bb7
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r35805940a380/best_validation.json
+      sha256: 7089b6d6b4d82aaca52ae36af542e7eb64d9eb5cd9d3146b682d6b8cd7c64807
+- study: transformer_pp
+  run_id: r5198d688e9d4
+  role: softplus_times_sos_raw_l2_m12
+  label: SoS + softplus + prefactor, core degree 12, raw-input L2
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/config.yaml
+      sha256: ba829833e479a9e566c60c89cf55d748b4c64dcc636e787d7140d56fba3ec1f4
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/metrics.jsonl
+      sha256: 04bf7dfd726457229b4bd24e5dc318fcd38b53f2fc5567b06673fd466999cd6f
+    completion.json:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/completion.json
+      sha256: 39db236b65f84932eaffadee3a3b9fa7666170a547fd6107e42e054a2a0a0090
+    metadata.json:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/metadata.json
+      sha256: bca45b426b15c71e57c04e708ee898c9e81d54882380263dd083183c5a57dfce
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r5198d688e9d4/best_validation.json
+      sha256: 4ecd33710ecb789d2627437d807a3b9175e612f392a86717eb0a06f56227cc6c
 panels:
 - family: direct
   degree: 8
@@ -369,7 +410,7 @@ panels:
     post_rmsnorm:
       status: not_run
     pre_rmsnorm:
-      status: not_run
+      run_role: softplus_times_sos_raw_l2_m8
 - family: direct
   degree: 12
   label: Query
@@ -411,4 +452,4 @@ panels:
     post_rmsnorm:
       status: not_run
     pre_rmsnorm:
-      status: not_run
+      run_role: softplus_times_sos_raw_l2_m12

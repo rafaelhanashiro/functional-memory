@@ -5,7 +5,7 @@ input to the tanh coefficient generator reduces saturation and improves perplexi
 It contains four completed post-RMSNorm L2 runs, at degrees eight and twelve,
 and two completed degree-twelve raw-input L2 runs at the 15-layer width-896 shape.
 Two further raw-input L2 runs for softplus-times-SoS cores of degree eight and
-twelve are submitted for acceptance and training, each matched to its original-input parent.
+twelve also completed, each matched to its original-input parent.
 These runs remain exploratory and enter no canonical comparison.
 
 | Coefficient form | Unit-L2 input run | Original-input control |
@@ -163,9 +163,9 @@ across generator coordinates, not model-contribution-weighted sensitivities.
 
 ## Raw-input L2 for softplus-times-SoS
 
-The two new runs are submitted as independent Kennel jobs 3796 and 3797; neither has
-trained yet. They retain `w(s) = u h(u)`, with `u = softplus(s)` and a
-query-conditioned SoS core `h = U² + V²`. Core degrees eight and twelve give
+Both runs completed all 7,570 updates on one B200 each on Kennel, retaining
+the validation-best checkpoint at update 7,500. They retain `w(s) = u h(u)`,
+with `u = softplus(s)` and a query-conditioned SoS core `h = U² + V²`. Core degrees eight and twelve give
 total degrees nine and thirteen after the prefactor.
 
 | Core degree | Raw-input L2 run | Original-input control | Control best PPL |
@@ -182,6 +182,30 @@ shape, RoPE, native Mosaic, initial parameters, W decay 0.1, no a/b decay,
 seed 42, optimizer, data, and 7,570-update budget. The comparison asks whether
 raw-input L2 improves these stronger softplus-times-SoS controls.
 
+| Core degree | Best PPL, original / raw L2 | Terminal PPL, original / raw L2 | Best-PPL change, raw L2 − original |
+| --- | ---: | ---: | ---: |
+| 8 | **14.0953** / 14.1313 | **14.0992** / 14.1353 | +0.0360 |
+| 12 | **14.0934** / 14.0967 | **14.0972** / 14.1006 | +0.0033 |
+
+Raw-input L2 slightly worsens the degree-eight result and is nearly tied at
+degree twelve. Both completed without numerical failure. Across updates
+501–7,570, each raw-L2 run clipped twice versus once for its original-input
+control. The maximum pre-clip norms were 2.0195 versus 1.2121 at m=8 and
+2.7499 versus 1.8003 at m=12. Thus the intervention does not improve clipping
+frequency or maximum gradient norm in either matched comparison.
+
+At checkpoint 7,500, the matched layer-8/head-1 saturation drops from
+**26.2207% to 0%** at m=8 and **18.5697% to 0%** at m=12. Raw-L2 mean tanh
+derivatives in this head are 0.9425 and 0.9634. Averaging all sampled
+layers/heads/coordinates gives 0.0637% and 0.0395% saturation, respectively.
+These small means hide a strongly saturated U2 coordinate in layer 7, head 2:
+88.77% at m=8 and 44.04% at m=12. Terminal all-model averages are 0.0619%
+and 0.0402%. All diagnostics are finite; each describes the same single held-out
+sequence, with equal weighting rather than amplitude or contribution weighting.
+The original controls have no matched all-model probe. Reduced saturation in
+the matched head therefore accompanies a small regression or near tie, rather
+than evidence that removing saturation improves these models.
+
 ## Saturation by coordinate
 
 The [selected-head bars](saturation_by_coordinate.png) compare the original
@@ -189,11 +213,10 @@ coefficient input, L2 after RMSNorm, and raw-input L2 for query and SoS at
 degrees eight and twelve. They also include the softplus-times-SoS runs
 `r841f35a24241` (core degree eight) and `rf637de9b65b1` (core degree twelve):
 `w(s) = u h(u)`, where `u = softplus(s)` and `h = U² + V²`. The prefactor makes
-the total degrees nine and thirteen. This figure is a completed snapshot from
-before the new raw-input L2 runs: all four softplus-times-SoS L2 cells still say
-**Not run**. It contains no measurements from the new runs above.
-Their matched-head mean saturation is **26.22%** at m=8 and **18.57%** at m=12,
-with best validation PPL **14.0953** and **14.0934**. The new native probe
+the total degrees nine and thirteen. Their completed raw-input L2 variants
+now occupy the Raw L2 cells; post-RMSNorm L2 remains **Not run** for this form.
+The original-input matched-head mean saturation is **26.22%** at m=8 and
+**18.57%** at m=12, with best validation PPL **14.0953** and **14.0934**. The native probe
 `rfadcac37b6d0` checks parameter identity and captures the factor generators
 before expansion. This head has less saturation at m=12 for this variant; the
 single-sequence comparison does not establish a causal link to PPL.
@@ -202,8 +225,8 @@ Each blue bar is the fraction of tokens with
 `abs(tanh(z)) >= 0.99`, combining both signs. All panels use layer 8, head 1,
 checkpoint 7,500, the same first held-out 2,048-token sequence, and a linear
 0–100% axis. Every coordinate in this head has exactly zero measured saturation
-in all six completed L2 runs. Raw-input L2 has not been run at degree eight;
-those cells say **Not run**, not zero.
+in all eight completed L2 runs. Raw-input L2 has not been run at degree eight
+for ordinary query or SoS; those cells say **Not run**, not zero.
 Each completed panel also shows its run's **best validation PPL** to four decimal
 places, read from the pinned training `best_validation.json`. This is the run's
 validation evaluation, not the single-sequence diagnostic perplexity. The coordinate
@@ -212,12 +235,13 @@ explicit score-transform, prefactor-power, core-degree, and total-degree fields.
 
 The separate [all-layer/head bars](saturation_all_heads.png) average each
 coordinate's token saturation over all 15 layers and 14 heads. This L2-only
-view uses a shared **0–0.25%** axis to show the small remaining SoS saturation.
-Its largest coordinate mean is U2: 0.1283% for degree-eight post-RMSNorm L2,
-0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for degree-twelve raw L2.
+view uses a shared **0–0.5%** axis to show the small remaining SoS saturation.
+For ordinary SoS, the largest coordinate mean is U2: 0.1283% for degree-eight
+post-RMSNorm L2, 0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for
+degree-twelve raw L2. Softplus-times-SoS raw L2 also peaks at U2, at 0.4836%
+for core degree eight and 0.2100% for core degree twelve.
 All query coordinates average zero at this checkpoint. No matched all-model
 probe exists for the original controls, so they are not included in this view.
-Softplus-times-SoS has no completed L2 runs and is omitted from this L2-only figure.
 The percentages here are at checkpoint 7,500, rather than the terminal
 measurements reported above.
 
@@ -257,10 +281,12 @@ The degree-eight result is mixed. At degree twelve, raw-input L2 improves on
 post-RMSNorm L2 for both forms, but both L2 choices remain worse than the original
 input in this single-seed comparison. Keep coefficient-input L2 as an exploration;
 the results do not justify replacing the original input normalization by default.
-The immediate open decision is whether raw-input L2 improves the softplus-times-SoS
-prefactor models at core degrees eight and twelve. Six earlier L2 runs are
-complete; the two selected additions are submitted for acceptance and training. An intermediate
-input scale remains a possible later experiment.
+All eight L2 runs are complete. For softplus-times-SoS, raw-input L2 slightly
+worsens m=8 and is nearly tied at m=12, with no clipping improvement despite
+removing saturation in the selected head. This also leaves the original
+coefficient input as the default. The open decision is whether an intermediate
+input scale warrants a separate experiment; single-seed results cannot resolve
+very small quality differences.
 
 Refresh the selected scientific inputs after new measurements:
 

@@ -2206,7 +2206,7 @@ hashes, and each run's full-shape pilot and fresh-process resume.
 
 ### Raw-input L2 for softplus-times-SoS
 
-Two runs are submitted on Kennel: `r35805940a380` (job 3796) uses the
+Two runs completed on Kennel: `r35805940a380` (job 3796) uses the
 degree-eight SoS core of `r841f35a24241`, and `r5198d688e9d4` (job 3797) uses the
 degree-twelve core of `rf637de9b65b1`. Both retain `w(s) = u h(u)`, where
 `u = softplus(s)` and `h` is the SoS core; total degrees are nine and thirteen.
@@ -2216,13 +2216,16 @@ divided by `max(||input||_2, 1e-6)` in FP32; Q/K/V retain the RMSNorm path.
 Both retain their parent's complete 15-layer width-896 recipe, including RoPE,
 native Mosaic, initial parameters, W decay 0.1, no a/b decay, seed 42, optimizer,
 data, and 7,570 updates. The [exploration](results/exploratory/coefficient_input_norm/README.md)
-owns the parent PPL comparisons and open decision. Neither new run has trained yet.
+owns the parent PPL comparisons and open decision. Both completed all 7,570
+updates and retained the validation-best checkpoint at 7,500. Raw L2 gives best
+PPL 14.1313 and 14.0967, versus 14.0953 and 14.0934 in the original-input parents;
+the intervention does not improve these single-seed comparisons.
 
-From the isolated worktree after committing its frozen execution inputs, submit
-these two independent one-B200 jobs. Each allocation runs
+The two independent one-B200 jobs were submitted from the isolated worktree
+after committing its frozen execution inputs. Each allocation passed
 `coefficient_l2_acceptance` before production, including the composed raw-input
 L2/softplus/SoS forward and gradient checks, its 20-update full-shape pilot, and
-fresh-process optimizer/data resume. Live partition allowances must still satisfy
+fresh-process optimizer/data resume. Fresh submissions must satisfy
 [cluster policy](../../CLUSTERS.md).
 
 ```bash

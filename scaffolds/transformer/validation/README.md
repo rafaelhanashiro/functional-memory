@@ -4039,7 +4039,15 @@ attention outputs and gradients, shared residual gradients, Q/K/V-only RMSNorm
 gain gradients, and core-coordinate diagnostics. Seventeen existing rejection
 cases and all 119 matched-recipe acceptance checks also pass.
 
-Native B200 qualification is pending. Each allocation requires the new composed
-BF16 kernel cases, existing 2,048-token transformed-kernel checks, exact initial
-parameter fingerprints, a full-shape pilot, and fresh-process resume before
-production. The composition changes no Mosaic arithmetic.
+Both one-B200 allocations (jobs 3796 and 3797) passed **858 CPU, 11 distributed
+CPU, and 150 GPU checks each**, with zero failures, errors, or skips. The GPU
+selection includes both composed raw-L2/softplus/SoS-prefactor BF16 cases at 512
+tokens and existing 2,048-token transformed-kernel checks. Both full-shape initial
+parameter fingerprints match their controls exactly. Each 20-update native
+Mosaic pilot resumed in a fresh process at update 21 with the exact checkpoint
+state, next batch, and RNG; Q/K/V retain the shared RMSNorm path.
+
+This qualifies the composition on B200 with the locked CUDA 13 environment and
+BF16 attention weights. The joint BF16X3 cases were deselected by the production
+acceptance policy, so this record makes no BF16X3 or H100 qualification claim.
+The composition changes no Mosaic arithmetic.
