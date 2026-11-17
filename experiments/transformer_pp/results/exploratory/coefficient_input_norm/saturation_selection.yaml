@@ -1,5 +1,5 @@
-question: Where do query, SoS, and softplus-times-SoS coefficient generators saturate
-  at core degrees 8 and 12, and how do available L2 variants compare?
+question: Where and in which direction do query, SoS, and softplus-times-SoS coefficient
+  generators saturate at core degrees 8 and 12, and how do available L2 variants compare?
 settings:
   layer_index: 7
   head_index: 0
@@ -18,6 +18,15 @@ settings:
   - 0
   - 0.5
   bar_color: '#28699b'
+  head_bar_style: stacked_signed_tails
+  head_tail_colors:
+    positive: '#28699b'
+    negative: '#df6a2e'
+  head_signed_fields:
+    positive: saturation_tanh_ge099
+    negative: saturation_tanh_le_neg099
+  head_signed_zero_policy: Both tails are exactly zero when combined saturation is
+    exactly zero; nonzero combined fractions without signed measurements are rejected.
   head_aggregation: fraction of sampled tokens per generator coordinate in layer 8,
     head 1
   all_heads_aggregation: mean token saturation per generator coordinate over all layers

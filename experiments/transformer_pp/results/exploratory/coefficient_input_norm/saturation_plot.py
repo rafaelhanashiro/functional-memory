@@ -1,7 +1,7 @@
-"""Single-color saturation bars from explicitly selected, pinned measurements.
+"""Saturation bars from explicitly selected, pinned measurements.
 
 The matched-head figure includes original-input controls, softplus times SoS,
-and both L2 placements.
+and both L2 placements, with positive and negative saturation stacked separately.
 The supplemental figure averages the L2 measurements over all layers and heads;
 original controls have only a matched-head probe. Missing runs stay explicit.
 No GPU, checkpoint, dataset, or numerical archive is needed to regenerate.
@@ -16,6 +16,7 @@ import sys
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 import numpy as np
 import yaml
 
@@ -29,6 +30,7 @@ from scaffolds.records.selections import verify_pinned_runs
 
 
 BLUE = "#28699b"
+ORANGE = "#df6a2e"
 INK = "#24323d"
 MUTED = "#667582"
 GRID = "#dce2e8"
@@ -69,6 +71,8 @@ def load(selection: dict) -> list[dict]:
     assert settings["saturation_absolute_tanh_threshold"] == .99
     assert settings["checkpoint_step"] == 7500
     assert settings["ppl_metric"] == "validation-best"
+    signed_fields = settings["head_signed_fields"]
+    assert signed_fields == {"positive": "saturation_tanh_ge099", "negative": "saturation_tanh_le_neg099"}
     entries = {entry["role"]: entry for entry in selection["runs"]}
     assert len(entries) == len(selection["runs"])
     records: dict[str, list[dict]] = {}
@@ -145,6 +149,11 @@ def load(selection: dict) -> list[dict]:
                 assert expected == names
                 cell["selected_head"] = np.asarray([value["saturation_abs_tanh_ge099"]
                                                      for value in values], dtype=np.float64)
+                cell["selected_head_positive"] = np.asarray(
+                    [value[signed_fields["positive"]] for value in values], dtype=np.float64)
+                cell["selected_head_negative"] = np.asarray(
+                    [value[signed_fields["negative"]] for value in values], dtype=np.float64)
+                cell["signed_saturation_source"] = "measured_signed_tails"
                 cell["all_layers_heads"] = None
             else:
                 assert model["attention_coefficient_input_normalization"] == "l2"
@@ -164,10 +173,21 @@ def load(selection: dict) -> list[dict]:
                 assert fractions.shape == (model["num_layers"], model["num_heads"], degree + 1)
                 check_fractions(fractions)
                 cell["selected_head"] = fractions[settings["layer_index"], settings["head_index"]]
+                # These historical L2 measurements have no signed-tail fields.
+                # Zero combined saturation determines both nonnegative tails exactly;
+                # refuse to infer a sign split for any nonzero measurement.
+                assert not cell["selected_head"].any(), "Nonzero L2 saturation needs a signed probe"
+                cell["selected_head_positive"] = np.zeros_like(cell["selected_head"])
+                cell["selected_head_negative"] = np.zeros_like(cell["selected_head"])
+                cell["signed_saturation_source"] = "inferred_from_exact_zero_total"
                 cell["all_layers_heads"] = fractions.mean(axis=(0, 1))
                 cell["layers"] = model["num_layers"]
                 cell["heads"] = model["num_heads"]
             check_fractions(cell["selected_head"])
+            for tail in ("positive", "negative"):
+                check_fractions(cell[f"selected_head_{tail}"])
+            np.testing.assert_array_equal(cell["selected_head_positive"] + cell["selected_head_negative"],
+                                          cell["selected_head"])
             result["cells"][variant] = cell
         panels.append(result)
     assert [(panel["family"], panel["degree"], panel["input_power"]) for panel in panels] == [
@@ -194,7 +214,7 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
     assert color == BLUE
     fig, axes = plt.subplots(len(panels), len(variants), figsize=(17, 20) if matched else (13, 18),
                              squeeze=False, sharey=True)
-    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.89 if matched else .855,
+    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.872 if matched else .855,
                         bottom=.085, hspace=.76 if matched else .66, wspace=.16)
     for index, panel in enumerate(panels):
         for column, variant in enumerate(variants):
@@ -221,7 +241,16 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
             percent = 100 * cell[scope]
             assert np.max(percent) <= ymax
             positions = np.arange(len(percent))
-            ax.bar(positions, percent, width=.72, color=color, linewidth=0, zorder=2)
+            if matched:
+                assert settings["head_bar_style"] == "stacked_signed_tails"
+                assert settings["head_tail_colors"] == {"positive": BLUE, "negative": ORANGE}
+                positive = 100 * cell["selected_head_positive"]
+                negative = 100 * cell["selected_head_negative"]
+                ax.bar(positions, positive, width=.72, color=BLUE, linewidth=0, zorder=2)
+                ax.bar(positions, negative, bottom=positive, width=.72, color=ORANGE,
+                       linewidth=0, zorder=2)
+            else:
+                ax.bar(positions, percent, width=.72, color=color, linewidth=0, zorder=2)
             ax.set_xticks(positions, coordinate_ticks(panel["coordinates"]))
             ax.grid(axis="y", color=GRID, linewidth=.7)
             ax.text(0, 1.035, _mean_label(percent), transform=ax.transAxes,
@@ -238,17 +267,21 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
                           color=MUTED, fontsize=10.5, labelpad=7)
     for column, variant in enumerate(variants):
         bounds = axes[0, column].get_position()
-        fig.text((bounds.x0 + bounds.x1) / 2, .925 if matched else .895, TITLES[variant], ha="center",
+        fig.text((bounds.x0 + bounds.x1) / 2, .907 if matched else .895, TITLES[variant], ha="center",
                  fontsize=18, fontweight="bold", color=INK)
-    fig.suptitle("Transformer++ · tanh saturation" if matched else "Transformer++ · tanh saturation across all heads",
+    fig.suptitle("Transformer++ · tanh saturation by direction" if matched else "Transformer++ · tanh saturation across all heads",
                  x=.055, y=.975, ha="left", fontsize=25 if matched else 23,
                  fontweight="bold", color=INK)
     if matched:
+        fig.legend(handles=[Patch(facecolor=BLUE, label=r"Positive: $\tanh z\geq0.99$"),
+                            Patch(facecolor=ORANGE, label=r"Negative: $\tanh z\leq-0.99$")],
+                   loc="upper left", bbox_to_anchor=(.055, .934), borderaxespad=0,
+                   frameon=False, ncol=2, fontsize=12, labelcolor=INK, columnspacing=3)
         subtitle = (f"Layer {settings['layer_index'] + 1}, head {settings['head_index'] + 1}"
                     f"  ·  checkpoint {settings['checkpoint_step']:,}  ·  same 2,048-token sequence"
                     r"  ·  $|\tanh z|\geq0.99$")
         ylabel = "Saturated tokens (%)"
-        footer = ("PPL: best validation evaluation. Bars combine both saturation tails; shared 0–100% scale.\n"
+        footer = ("PPL: best validation evaluation. Stacked height and Mean include both tails; shared 0–100% scale.\n"
                   "SoS bars: U/V factor generators. Softplus + prefactor: w(s) = u h(u), u = softplus(s), h = U² + V².\n"
                   "m is the SoS core degree; the prefactor gives total degree m + 1. One head and one sequence; missing runs are not zeros.")
     else:
@@ -274,7 +307,9 @@ def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
 def save_summary(panels: list[dict]) -> None:
     fields = ["run_id", "family", "degree", "total_degree", "score_transform", "input_power",
               "input_variant", "scope", "coordinate", "status",
-              "saturation_fraction", "saturation_percent", "best_validation_perplexity", "best_validation_step"]
+              "saturation_fraction", "saturation_percent", "positive_saturation_fraction",
+              "negative_saturation_fraction", "signed_saturation_source",
+              "best_validation_perplexity", "best_validation_step"]
     with (OUT / "saturation_by_coordinate.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
@@ -295,6 +330,12 @@ def save_summary(panels: list[dict]) -> None:
                                          "scope": scope, "coordinate": coordinate, "status": status,
                                          "saturation_fraction": "" if value is None else format(value, ".12g"),
                                          "saturation_percent": "" if value is None else format(100 * value, ".12g"),
+                                         "positive_saturation_fraction": (format(cell["selected_head_positive"][index], ".12g")
+                                                                          if scope == "selected_head" and values is not None else ""),
+                                         "negative_saturation_fraction": (format(cell["selected_head_negative"][index], ".12g")
+                                                                          if scope == "selected_head" and values is not None else ""),
+                                         "signed_saturation_source": (cell["signed_saturation_source"]
+                                                                      if scope == "selected_head" and values is not None else ""),
                                          "best_validation_perplexity": (format(cell["best_validation_perplexity"], ".12g")
                                                                         if "best_validation_perplexity" in cell else ""),
                                          "best_validation_step": cell.get("best_validation_step", "")})

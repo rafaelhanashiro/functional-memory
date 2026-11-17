@@ -221,8 +221,13 @@ The original-input matched-head mean saturation is **26.22%** at m=8 and
 before expansion. This head has less saturation at m=12 for this variant; the
 single-sequence comparison does not establish a causal link to PPL.
 
-Each blue bar is the fraction of tokens with
-`abs(tanh(z)) >= 0.99`, combining both signs. All panels use layer 8, head 1,
+Each bar stacks positive saturation (`tanh(z) >= 0.99`, blue) and negative
+saturation (`tanh(z) <= -0.99`, orange). Its total height and the panel mean
+remain the fraction of tokens with `abs(tanh(z)) >= 0.99`. Signed fractions
+come directly from the original-input probes. Historical L2 telemetry stores
+only the combined fraction; exact zero in this head implies that both tails
+are exactly zero, and the plotting code rejects nonzero totals without signed
+measurements. All panels use layer 8, head 1,
 checkpoint 7,500, the same first held-out 2,048-token sequence, and a linear
 0–100% axis. Every coordinate in this head has exactly zero measured saturation
 in all eight completed L2 runs. Raw-input L2 has not been run at degree eight
@@ -230,12 +235,21 @@ for ordinary query or SoS; those cells say **Not run**, not zero.
 Each completed panel also shows its run's **best validation PPL** to four decimal
 places, read from the pinned training `best_validation.json`. This is the run's
 validation evaluation, not the single-sequence diagnostic perplexity. The coordinate
-table retains the PPL and its checkpoint step alongside saturation, with
+table retains the PPL and its checkpoint step alongside total and signed saturation,
+identifies measured tails versus tails inferred from an exact zero total, and includes
 explicit score-transform, prefactor-power, core-degree, and total-degree fields.
+
+The most saturated original query and degree-twelve SoS coordinates are
+predominantly one-sided on this sequence. For example, SoS m=12 U2 and V4
+are 100% negatively saturated, while U3 is 100% positively saturated. These
+factor generators are approximately constant across this sample; other
+coordinates occupy both tails. Tail fractions do not measure the amplitude
+of coefficient variation or establish behavior on other sequences.
 
 The separate [all-layer/head bars](saturation_all_heads.png) average each
 coordinate's token saturation over all 15 layers and 14 heads. This L2-only
-view uses a shared **0–0.5%** axis to show the small remaining SoS saturation.
+view retains combined-tail blue bars and uses a shared **0–0.5%** axis to show
+the small remaining SoS saturation; its signed split was not measured.
 For ordinary SoS, the largest coordinate mean is U2: 0.1283% for degree-eight
 post-RMSNorm L2, 0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for
 degree-twelve raw L2. Softplus-times-SoS raw L2 also peaks at U2, at 0.4836%
