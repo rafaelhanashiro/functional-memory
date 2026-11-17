@@ -1,10 +1,17 @@
 """Qualify softplus composed with query SoS, optionally multiplied by its input.
 
 The SoS core has degree eight or twelve. The actual polynomial has degree m
-for h(z), m+1 for z*h(z), z=softplus(s). Each pair starts from the completed
-query-SoS run's exact parameters at its degree: h=T_m. The prefactor changes no learned parameter and is
+for h(z), m+1 for z*h(z), z=softplus(s). Each run starts from a completed
+raw-score query-SoS control's exact parameters: h=T_m. The prefactor changes no learned parameter and is
 represented by a structural zero prepended to the expanded coefficients. Mosaic
 evaluates the resulting polynomial and differentiates through the full composition.
+
+The recipe's SoS core degree, depth, width and update count select its control: the degree-eight and
+degree-twelve controls at the 15-layer width-896 reference shape, and the degree-twelve controls at the 12-layer
+width-640 shape with twice and four times its 1x budget. No raw-score SoS run of core degree twelve exists at that
+shape's 1x budget, so a 1x recipe is the 2x control's with derive_recipe's 1x schedule
+(``derive_recipe.py --budget 1``) and starts from the 2x control's parameters: initialization does not depend on
+the budget.
 """
 from dataclasses import replace
 from functools import partial
@@ -21,22 +28,48 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
-# Exact recipe and initial-parameter fingerprints retained by each completed
-# raw-score SoS control. The prefactor must not add any learned parameter.
+# derive_recipe's 1x schedule at the 12-layer width-640 shape, batch 128 unchanged, in place of the 2x control's
+# budget-derived fields: 7,551 updates, warmup 454, validation every 100 updates through 1,500 and every 500 after.
+L12_D640_1X_SCHEDULE = {"optim": {"total_steps": 7551, "warmup_steps": 454},
+                        "train": {"eval_early_every": 100, "eval_early_until": 1500, "eval_every": 500}}
+# Each completed raw-score SoS control, selected by the recipe's (SoS core degree, depth, width, update count): its
+# recipe SHA256 and its initial parameters' SHA256 and count at seed 42, computed on CPU with
+# acceptance.initialization_facts on the control recipe (the count is also the one its completion holds). The
+# prefactor must not add any learned parameter. The 12-layer width-640 controls share one fingerprint and count.
 CONTROLS = {
-    8: {
+    (8, 15, 896, 7570): {
         "run_id": "reeefbcc19abf",
         "config_sha256": "7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326",
         "parameter_sha256": "bacacd7eeee7c67dd4d5deb55ebfeef925ff4631a188d50d2e45524b6618c74d",
         "parameter_count": 200_150_806,
     },
-    12: {
+    (12, 15, 896, 7570): {
         "run_id": "r3d52b7ab43d1",
         "config_sha256": "9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa",
         "parameter_sha256": "9ece005626c3c8ecc0a53f69547fc9f393b1fee1b0dd83b71a0d20f38471ce16",
         "parameter_count": 200_905_126,
     },
+    (12, 12, 640, 7551): {
+        "run_id": "r08be7093202a",
+        "config_sha256": "4683fd9da0993fd319e38e593a4dedafdf9cbe73d26cedf38795e1fa518c2a3f",
+        "parameter_sha256": "c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9",
+        "parameter_count": 99_986_216,
+        "schedule": L12_D640_1X_SCHEDULE,
+    },
+    (12, 12, 640, 15103): {
+        "run_id": "r08be7093202a",
+        "config_sha256": "4683fd9da0993fd319e38e593a4dedafdf9cbe73d26cedf38795e1fa518c2a3f",
+        "parameter_sha256": "c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9",
+        "parameter_count": 99_986_216,
+    },
+    (12, 12, 640, 30205): {
+        "run_id": "r1f935f18fe21",
+        "config_sha256": "8351d24f33e1c4f6a54983fe7a069c76911d7fdf6db35e537ed122aaf7a51cec",
+        "parameter_sha256": "c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9",
+        "parameter_count": 99_986_216,
+    },
 }
+SELECTING_FIELDS = ("SoS core degree", "model.num_layers", "model.hidden_size", "optim.total_steps")
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name",
                   "wandb_group", "wandb_dir", "wandb_mode")
 CAPTURE_POLICY = {
@@ -50,12 +83,34 @@ GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
              "scaffolds/transformer/tests/test_mosaic_softplus_sos.py")
 
 
-def control_config(core_degree=8):
-    control = CONTROLS[core_degree]
+def control_key(config):
+    """The recipe's (SoS core degree, depth, width, update count); refuse one that selects no control."""
+    model = config.model
+    key = (model.attention_degree - model.attention_coefficient_input_power, model.num_layers, model.hidden_size,
+           config.optim.total_steps)
+    if key not in CONTROLS:
+        known = "; ".join(f"{control['run_id']} {list(selected)}" for selected, control in CONTROLS.items())
+        raise ValueError(f"No raw-score SoS control has this recipe's {list(SELECTING_FIELDS)} = {list(key)}; "
+                         f"the controls have {known}")
+    return key
+
+
+def control_config(key):
+    if key not in CONTROLS:
+        raise ValueError(f"No raw-score SoS control {key!r}")
+    control = CONTROLS[key]
     path = RUNS / control["run_id"] / "config.yaml"
     if hashlib.sha256(path.read_bytes()).hexdigest() != control["config_sha256"]:
         raise ValueError(f"Pinned SoS control recipe {control['run_id']} changed")
     return load_config(path)
+
+
+def control_recipe(key):
+    """The control's recipe at the selected budget: its own, or the 2x control's with the derived 1x schedule."""
+    recipe = config_to_dict(control_config(key))
+    for section, values in CONTROLS[key].get("schedule", {}).items():
+        recipe[section].update(values)
+    return recipe
 
 
 def check_recipe(config):
@@ -64,9 +119,9 @@ def check_recipe(config):
     if (config.model.attention_degree, power) not in ((8, 0), (9, 1), (12, 0), (13, 1)):
         raise ValueError("Runs require a degree-eight or degree-twelve SoS core: "
                          "(total degree, input power) = (8,0), (9,1), (12,0) or (13,1)")
-    core_degree = config.model.attention_degree - power
-    control = CONTROLS[core_degree]
-    actual, expected = config_to_dict(config), config_to_dict(control_config(core_degree))
+    selected = control_key(config)
+    core_degree, control = selected[0], CONTROLS[selected]
+    actual, expected = config_to_dict(config), control_recipe(selected)
     expected["model"].update(attention_score_transform="softplus",
                              attention_degree=core_degree + power,
                              attention_coefficient_input_power=power)
@@ -83,16 +138,19 @@ def check_recipe(config):
 
 def check_initialization(config):
     check_recipe(config)
-    core_degree = config.model.attention_degree - config.model.attention_coefficient_input_power
-    control = CONTROLS[core_degree]
+    selected = control_key(config)
+    core_degree, control = selected[0], CONTROLS[selected]
     # Parameter initialization is backend independent; use the host reference.
     facts = initialization_facts(replace(config, model=replace(config.model, attention_backend="blocked")))
     expected = {key: control[key] for key in ("parameter_count", "parameter_sha256")}
     if facts != expected:
-        raise RuntimeError(f"Initial parameters differ from the degree-{core_degree} SoS control: {facts}")
+        raise RuntimeError(f"Initial parameters differ from the degree-{core_degree} SoS control "
+                           f"{control['run_id']}: {facts}")
     return {**matches_softmax_backbone_initialization(config),
             "control_run_id": control["run_id"], "control_parameter_sha256": control["parameter_sha256"],
             "control_parameter_count": control["parameter_count"],
+            "control_selection": dict(zip(SELECTING_FIELDS, selected)),
+            "derived_1x_schedule": "schedule" in control,
             "sos_core_degree": core_degree, "polynomial_degree": config.model.attention_degree,
             "input_power": config.model.attention_coefficient_input_power,
             "initial_kernel": ("z*" if config.model.attention_coefficient_input_power else "") + f"T_{core_degree}(z)",

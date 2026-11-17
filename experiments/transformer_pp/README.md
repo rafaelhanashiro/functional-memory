@@ -2350,3 +2350,107 @@ sbatch --partition="$partition" --exclude=akita,mastiff,collie,samoyed,doodle,te
 
 The existing [softplus–SoS topic](results/exploratory/softplus_sos/README.md)
 contains the explicit degree-matched controls and the open comparison.
+
+### The 12-layer width-640 shape at 1x, 2x and 4x
+
+Added 2026-11-16 at the user's request. Six runs train the two degree-twelve compositions at the 12-layer
+width-640 shape with 1, 2 and 4 times its 1x budget: `rf637de9b65b1`'s `z h_t(z)` with `z = softplus(s)` and a
+query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_coefficient_input_power: 1`), and
+`rc5aac8f37a2e`'s `h_t(z)` without the prefactor (`attention_degree: 12`, `attention_coefficient_input_power: 0`).
+Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.565 at
+1x, 2x and 4x, 0.88%, 0.63% and 0.27% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
+below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, findings and limits: the
+[topic](results/exploratory/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x).
+
+| Run | Label | Updates | Warmup | Validation |
+| --- | --- | ---: | ---: | --- |
+| `r3b9c8cc6fab8` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
+| `re7593f1d0a4c` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
+| `r4589172dcd8b` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
+| `r5a18841b21b5` | `query-m12-sos-softplus-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
+| `r83fa09df3931` | `query-m12-sos-softplus-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
+| `r0623d3020268` | `query-m12-sos-softplus-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
+
+- Recipes: `rf637de9b65b1` and `rc5aac8f37a2e` derived with `derive_recipe.py --partner <run> --layers 12
+  --width 640 --budget 1` (`2`, `4`) and allocated with `scaffolds.records create`; at each budget the two
+  recipes differ only in `attention_degree` and `attention_coefficient_input_power`: 10 heads, SwiGLU width 1,664, batch
+  128 × 2,048 tokens, 38 validation batches, coefficient-projection std 1/sqrt(640), 99,986,216 parameters; the
+  exp runs' schedules at this shape. Seed, data order, learning-rate schedule, W decay (a and b exempt), RoPE, QK
+  setup, output head RMSNorm and gradient-event capture are the partner's. Beyond these, execution paths and
+  labels, each recipe writes `attention_coefficient_input_source: post_rmsnorm`, the scaffold default the partner
+  loads with.
+- Acceptance: [`softplus_sos_acceptance`](softplus_sos_acceptance.py) selects the raw-score SoS control by SoS
+  core degree, depth, width and update count, and requires the recipe to be the control's but for the score
+  transform, degree, input power and gradient-event capture. The 2x runs' control is the 2x raw-score SoS run
+  `r08be7093202a` (recipe SHA256 `4683fd9d`) and the 4x runs' `r1f935f18fe21` (`8351d24f`). No raw-score SoS
+  run of core degree twelve exists at 1x here, so the 1x runs' control is `r08be7093202a` with derive_recipe's
+  1x schedule in place of its own. The adapter pins each control's seed-42 parameter fingerprint and count,
+  computed on CPU: `c8a7ed88` and 99,986,216 for both controls, the values computed for each of the six runs
+  (initialization does not depend on the budget, and the prefactor adds no parameter).
+- Kernels and GPUs: the Mosaic transformed SoS kernels at total degree thirteen (twelve without the prefactor), on one H100 or B200; the
+  adapter refuses other GPU types, and B300 remains unqualified for these kernels. Their composed GPU suite
+  passed in the acceptance of `rc5aac8f37a2e` on `dogo`'s H100 SXM (job 2981) and of `rf637de9b65b1` on
+  `shiba`'s B200 (job 2982), and again in job 4513 (`r4589172dcd8b`, `dogo`'s H100 SXM); the other five runs
+  reused that pass by matching test identity (each record's `acceptance.summary.reused_tests`, which also lists
+  reused CPU test stages), and each run's acceptance ran its own initialization, pilot and resume checks.
+  `mastiff` (H100 PCIe) is excluded: Slurm grants its failing H100 to one-GPU jobs first (CLUSTERS.md). B200
+  jobs run in the worktree's `.venv-cuda13`. Every update of the six runs trained on `dogo`'s H100 SXM, in the
+  CUDA 12 environment; the attempts granted `shiba`'s B200 were preempted during acceptance, before any update.
+- Time limits: 1.4 times the upper H100 SXM projection, for the estimate's uncertainty and `dogo`'s variation
+  between attempts, plus acceptance's two-hour reserve, rounded up to whole hours. A projection is the run's
+  training time plus its 28 validations at 25–40 s each, checkpoints included (their time on `dogo` at this
+  shape). Training time per update:
+  - H100 SXM, 0.97–1.06 s: `rc5aac8f37a2e`'s 3.34 s on `dogo` (core degree twelve without the prefactor,
+    reference shape) times the prefactor's 1.04–1.06 at core degree eight (`r841f35a24241` over `r41a4c74c5f58`,
+    B200) times this shape's 0.28–0.30 of the reference's time on H100s (raw-score SoS and softplus input at
+    degree twelve on `mastiff`; fixed coefficients at degree eight on `dogo`, `rd77db79142e6` over
+    `ra040de24096c`).
+  - B200, 0.88–0.91 s: `rf637de9b65b1`'s 2.85 s times 0.31–0.32, the ratio on Blackwell (direct query at degrees
+    eight and twelve and fixed Taylor at degree twelve on `akita`'s B300). No run at this shape has trained on a
+    B200.
+  - Without the prefactor, 0.94–1.00 s on the H100 SXM (`rc5aac8f37a2e`'s 3.34 s times 0.28–0.30) and, by the
+    prefactor's 1.04–1.06, less than the prefactor runs on the B200: the table's projections bound these runs
+    too, and their limits are the same.
+
+  Validations add 9–17 % to the 1x run's training time, 4–8 % at 2x and 2–4 % at 4x, against 5 % at the
+  reference shape: a validation covers the same tokens at both shapes, an update half as many here. The
+  softplus-input degree-twelve runs at this shape took 1.00–1.03 s per update on `dogo`, validations included.
+
+  | Run | H100 SXM projection, hours | B200 projection, hours | Limit, hours |
+  | --- | ---: | ---: | ---: |
+  | 1x | 2.2–2.5 | 2.1–2.2 | 6 |
+  | 2x | 4.3–4.8 | 3.9–4.1 | 9 |
+  | 4x | 8.4–9.2 | 7.6–8.0 | 15 |
+
+  Acceptance projects again from its pilot on the granted GPU and refuses an allocation whose projection
+  exceeds the limit less two hours: 4, 7 and 13 hours, about 1.91, 1.67 and 1.55 s per update.
+
+  On `dogo` the trainer ran 2.45, 4.68 and 9.13 hours at 1x, 2x and 4x with the prefactor and 2.34, 4.39 and
+  8.53 without it (`completion.json`), within the H100 SXM projections.
+
+Branch `claude/l12-d640-softplus-sos`. The six runs were submitted on 2026-11-17 from the worktree root at launch
+commit `9251ea11`, after the frozen execution set was committed, each as one job with no dependency: the 4x
+`z h_t(z)` run on `standard` (job 4513), the other five on `long` (jobs 4514–4518), all excluding `akita`,
+`mastiff`, `collie`, `samoyed`, `doodle` and `terrier`. `dogo` stayed eligible: the placeholder holding its
+failing H100 (job 4436, CLUSTERS.md) outlasted every start and requeue. Attempts granted `shiba`'s B200 (1x
+`z h_t(z)`, 2x and 4x `h_t(z)`) or, once, `dogo` (2x `z h_t(z)`) were preempted during acceptance, before any
+update, and requeued in the same job; the 4x `h_t(z)` run was preempted again at update 215, before its first
+checkpoint, and restarted from update 0. Each record lists its job and attempts and the artifact-root locations
+of its validation-best checkpoint, kept gradient-event states and log. The jobs as submitted:
+
+```bash
+submit() {  # partition, time, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude="$5" --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+EXCL=akita,mastiff,collie,samoyed,doodle,terrier
+submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x, job 4513
+submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r0623d3020268      # 4x, no prefactor, job 4514
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x, job 4515
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       # 2x, no prefactor, job 4516
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x, job 4517
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor, job 4518
+```
