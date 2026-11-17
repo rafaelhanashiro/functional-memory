@@ -484,7 +484,8 @@ def test_records_create_accepts_a_fused_recipe_without_the_triton_opt_out(tmp_pa
     from scaffolds.records.__main__ import main
 
     source = tmp_path / "score_mlp.yaml"
-    save_config(_config("exp_residual", 8, attention_backend=backend), source)
+    save_config(_config("exp_residual", 8, attention_backend=backend,
+                        attention_blocked_implementation="strips"), source)
     monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
     main()
     run = Path(capsys.readouterr().out.strip())
