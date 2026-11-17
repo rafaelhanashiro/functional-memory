@@ -21,17 +21,18 @@
     </nav>
   </header>
   <main>
-    <section class="papers">
-      <details class="paper" data-writeup="literature/2507.02754.md">
-        <summary>
-          <span class="paper-head">
-            <span class="paper-title">Fast and Simplex: 2-Simplicial Attention in Triton</span>
-            <span class="paper-meta">Roy et al. · 2025 · <a href="https://arxiv.org/pdf/2507.02754" target="_blank" rel="noopener">arXiv</a></span>
-          </span>
-          <svg class="chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>
-        </summary>
-        <div class="writeup"></div>
-      </details>
+    <form class="add-resource" autocomplete="off">
+      <input name="url" type="text" inputmode="url" placeholder="Paste a link" aria-label="Link to a paper or resource" required>
+      <button class="button primary" type="submit">Add</button>
+    </form>
+    <p class="literature-status" aria-live="polite"></p>
+    <section class="resource-group" data-group="seen" hidden>
+      <h2>Seen</h2>
+      <div class="papers"></div>
+    </section>
+    <section class="resource-group" data-group="unseen" hidden>
+      <h2>Not seen yet</h2>
+      <div class="papers"></div>
     </section>
   </main>
 </div>

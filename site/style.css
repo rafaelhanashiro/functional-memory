@@ -60,7 +60,49 @@ main {
   padding: 40px 0 80px;
 }
 
-/* Literature: one expandable item per paper */
+/* Literature: an add-by-link field, then seen and not-seen groups of expandable items */
+.add-resource {
+  display: flex;
+  gap: 10px;
+}
+.add-resource input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.add-resource input::placeholder { color: #a1a1aa; }
+.add-resource input:focus {
+  outline: none;
+  border-color: #a1a1aa;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06);
+}
+.add-resource .button {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 10px;
+}
+.literature-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.literature-status:empty { display: none; }
+.resource-group { margin-top: 36px; }
+.resource-group h2 {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .papers {
   display: grid;
   gap: 12px;
@@ -85,7 +127,45 @@ main {
   cursor: pointer;
   list-style: none;
 }
+.paper.seen { background: #f3faf5; border-color: #d3eadb; }
+.paper.seen:hover, .paper.seen[open] { border-color: #b8dcc4; }
+.paper.unseen { background: #fdf5f5; border-color: #f1d9d9; }
+.paper.unseen:hover, .paper.unseen[open] { border-color: #e7c0c0; }
+.paper.moved { animation: settle 0.35s ease; }
+@keyframes settle {
+  from { opacity: 0.35; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
 .paper summary::-webkit-details-marker { display: none; }
+.paper-head { flex: 1; min-width: 0; }
+.seen-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1.5px solid #dcb3b3;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.seen-toggle svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.15s;
+}
+.seen-toggle:hover svg { stroke: #c9a3a3; }
+.seen-toggle[aria-pressed="true"] { border-color: #3d9a5d; background: #3d9a5d; }
+.seen-toggle[aria-pressed="true"] svg { stroke: #fff; }
+.seen-toggle:active { transform: scale(0.92); }
+.seen-toggle:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .paper summary:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
@@ -128,7 +208,7 @@ main {
 .writeup {
   margin: 0 22px;
   padding: 18px 0 24px;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid rgba(24, 24, 27, 0.08);
   line-height: 1.65;
 }
 .paper[open] .writeup { animation: reveal 0.25s ease; }
