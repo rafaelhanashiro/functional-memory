@@ -76,7 +76,7 @@ not a controlled diagnosis of one cause of the older runs' instability.
 | Run | Label | J | Parameters | Status |
 | --- | --- | ---: | ---: | --- |
 | `rea8b942672f4` | `score-mlp-conventional-j4` | 4 | 199,208,956 | B300 acceptance |
-| `rfc68c6d26f40` | `score-mlp-conventional-j8` | 8 | 199,964,116 | queued for B300 qualification |
+| `rfc68c6d26f40` | `score-mlp-conventional-j8` | 8 | 199,964,116 | B300 acceptance |
 
 ## Open decision
 

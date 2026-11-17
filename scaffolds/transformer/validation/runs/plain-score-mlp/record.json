@@ -9,7 +9,7 @@
     "plain_score_mlp": {
       "passed": 14,
       "gpu_cases_deselected": 2,
-      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q scaffolds/transformer/tests/test_plain_score_mlp.py -k \"not gpu\""
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests/test_plain_score_mlp.py -m 'not gpu'"
     },
     "config_regressions": {
       "passed": 143,
@@ -29,8 +29,12 @@
     }
   },
   "gpu": {
-    "status": "awaiting allocation qualification",
-    "required": "production T2048 BF16 outputs/all gradients, full-model pilot, checkpoint resume"
+    "status": "allocation qualification in progress",
+    "required": "production T2048 BF16 outputs/all gradients, full-model pilot, checkpoint resume",
+    "slurm_jobs": [
+      "4471",
+      "4472"
+    ]
   },
-  "source_commit": "09bc5f0a"
+  "source_commit": "0fdc6dcebbbc0e265ae69e6e626685f27bbdaf59"
 }
