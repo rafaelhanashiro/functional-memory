@@ -1,12 +1,70 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos/experiments/transformer_pp/runs/r1b9e2e69f7f0/.runtime/acceptance/H100-1",
+      "allocation": "JobId=4716 JobName=r1b9e2e69f7f0 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20082 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:03 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-17T10:44:25 EligibleTime=2026-11-17T10:44:27 AccrueTime=2026-11-17T10:44:27 StartTime=2026-11-17T10:44:28 EndTime=2026-11-18T10:44:28 Deadline=N/A PreemptEligibleTime=2026-11-17T10:44:28 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-17T10:44:28 Scheduler=Main Partition=long AllocNode:Sid=kennel:2182253 ReqNodeList=(null) ExcNodeList=akita,collie,doodle,mastiff,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos/experiments/transformer_pp/runs/r1b9e2e69f7f0/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos/experiments/transformer_pp/runs/r1b9e2e69f7f0/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r1b9e2e69f7f0/config.yaml",
+      "config_sha256": "a610a21be997808f3369c6c4a8f7f1a5a18c150c2d9fce939dc1f8138a93f9c4",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "594d0b59fbff4621abd7101cdc6b57c9aa3254c7",
+      "slurm_job_id": "4716",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-17T15:44:31.982005+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r1b9e2e69f7f0/config.yaml",
     "sha256": "a610a21be997808f3369c6c4a8f7f1a5a18c150c2d9fce939dc1f8138a93f9c4"
   },
+  "frozen_execution_sha256": "95084c1a3bed810d264178df7c57b7b4cb67588697a34f2914688c6c835452f8",
   "home_cluster": "kennel",
   "label": "static-sos-core-m12-softplus-rope",
+  "log_path": "experiments/transformer_pp/runs/r1b9e2e69f7f0/training.log",
   "name": "static-sos-core-m12-softplus-rope",
   "record_schema_version": 1,
   "run_id": "r1b9e2e69f7f0",
-  "status": "planned"
+  "source_commit": "594d0b59fbff4621abd7101cdc6b57c9aa3254c7",
+  "status": "acceptance",
+  "submission": {
+    "allocation_seconds": 86400,
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard,long",
+      "--exclude=akita,mastiff,collie,samoyed,doodle,terrier",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r1b9e2e69f7f0",
+      "--output=experiments/transformer_pp/runs/r1b9e2e69f7f0/training.log",
+      "--error=experiments/transformer_pp/runs/r1b9e2e69f7f0/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.static_sos_acceptance",
+      "experiments/transformer_pp/runs/r1b9e2e69f7f0/config.yaml",
+      "594d0b59fbff4621abd7101cdc6b57c9aa3254c7",
+      "1",
+      "H100,B200"
+    ],
+    "gpu_count": 1,
+    "gpu_types": [
+      "H100",
+      "B200"
+    ],
+    "launch_commit": "594d0b59fbff4621abd7101cdc6b57c9aa3254c7",
+    "partition_requested": "standard,long",
+    "release_command": [
+      "scontrol",
+      "release",
+      "4716"
+    ],
+    "slurm_job_id": "4716",
+    "submitted_utc": "2026-11-17T15:44:25.319598+00:00"
+  }
 }

@@ -40,7 +40,12 @@ to zero and makes the negative-score tail vanish. Each allocation must pass CPU 
 GPU forward/gradient checks, actual model initialization and decay-mask checks,
 a full-shape pilot, and fresh-process checkpoint resume before training.
 
-**Status.** Six recipes allocated; acceptance and training are tracked in their run records.
+**Status.** All six jobs are allocated on one H100 each and performing full acceptance
+before training: raw core 8/12 are jobs 4713/4714 (standard), softplus core 8/12
+are 4715/4716 (long), and prefactor core 8/12 are 4717/4718 (long).
+The read-only monitor checks these runs every five minutes and reports failures,
+stalls, phase changes and completion. Current acceptance and training outcomes
+remain authoritative in the run records. No training PPL is available yet.
 
 **Open decision.** Does input dependence improve each of these three score functions,
 and does the prefactor's benefit persist for static factors? Report validation-best

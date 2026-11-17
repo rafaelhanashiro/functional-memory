@@ -1,0 +1,135 @@
+{
+  "capability": "Static relative-Taylor SoS on raw and softplus scores, with optional softplus prefactor",
+  "status": "kernel_qualified",
+  "checked_utc": "2026-11-17T15:44:24.754701+00:00",
+  "source_commit": "594d0b59fbff4621abd7101cdc6b57c9aa3254c7",
+  "frozen_execution_sha256": "95084c1a3bed810d264178df7c57b7b4cb67588697a34f2914688c6c835452f8",
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "backend": "mosaic",
+  "core_degrees": [
+    8,
+    12
+  ],
+  "total_degrees": [
+    8,
+    9,
+    12,
+    13
+  ],
+  "sequence_lengths": [
+    512,
+    2048
+  ],
+  "reference": "Independent host FP64 direct square factors; outputs and q/k/v/factor gradients, shared reductions and causality",
+  "hardware_qualifications": [
+    {
+      "job_id": "4702",
+      "gpu": "H100",
+      "node": "dogo",
+      "cuda_environment": "cuda",
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml_path": "scaffolds/transformer/validation/logs/static-sos-4702/gpu-tests.xml",
+      "xml_sha256": "5f150fffe9d6e6729c0fd54907f536e9d19538450eb682a74e54d730ad5276b6",
+      "log_path": "scaffolds/transformer/validation/logs/static-sos-4702.log",
+      "log_sha256": "0798c060fed99bb1d5ba9e68f299d6140ead55d1557d91080fa5669da68a56c9"
+    },
+    {
+      "job_id": "4703",
+      "gpu": "B200",
+      "node": "shiba",
+      "cuda_environment": "cuda13",
+      "counts": {
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "xml_path": "scaffolds/transformer/validation/logs/static-sos-4703/gpu-tests.xml",
+      "xml_sha256": "e27ac2868853f81154bc84f3c7c483c95c763da9b31e63d70565e1ecd6a09d71",
+      "log_path": "scaffolds/transformer/validation/logs/static-sos-4703.log",
+      "log_sha256": "76dd95212bc682207d47a6d33951ab1142662732a9ad133f0a95879523a0b182"
+    }
+  ],
+  "cpu_validation": {
+    "source_commit": "594d0b59",
+    "worktree": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/static-sos",
+    "evidence_kind": "receipt transcribed from completed tool output; full stdout was not saved to disk",
+    "cpu_acceptance_union": {
+      "passed": 573,
+      "deselected": 24,
+      "warnings": 14,
+      "seconds": 688.43,
+      "summary": "573 passed, 24 deselected, 14 warnings in 688.43s (0:11:28)",
+      "reproduce": "JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python - <<'PY'\nimport subprocess, sys\nfrom experiments.transformer_pp import static_sos_acceptance as adapter\nfrom scaffolds.transformer.acceptance import test_paths\nfrom scaffolds.transformer.configs import config_to_dict\npaths = set()\nfor key in adapter.CONTROLS:\n    config = adapter.static_config(*key)\n    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)\n    paths.update(test_paths(spec, config_to_dict(config), resolved_backend='mosaic', cpu=True))\nraise SystemExit(subprocess.call([sys.executable, '-m', 'pytest', '-q', '-c', 'scaffolds/transformer/pyproject.toml', *sorted(paths), '-m', 'not gpu', '-k', 'not distributed', '--maxfail=3']))\nPY\n"
+    },
+    "cpu_distributed_acceptance_union": {
+      "passed": 11,
+      "deselected": 586,
+      "seconds": 25.46,
+      "summary": "11 passed, 586 deselected in 25.46s",
+      "reproduce": "JAX_PLATFORMS=cpu XLA_FLAGS=--xla_force_host_platform_device_count=2 scaffolds/transformer/.venv/bin/python - <<'PY'\nimport subprocess, sys\nfrom experiments.transformer_pp import static_sos_acceptance as adapter\nfrom scaffolds.transformer.acceptance import test_paths\nfrom scaffolds.transformer.configs import config_to_dict\npaths = set()\nfor key in adapter.CONTROLS:\n    config = adapter.static_config(*key)\n    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)\n    paths.update(test_paths(spec, config_to_dict(config), resolved_backend='mosaic', cpu=True))\nraise SystemExit(subprocess.call([sys.executable, '-m', 'pytest', '-q', '-c', 'scaffolds/transformer/pyproject.toml', *sorted(paths), '-m', 'not gpu', '-k', 'distributed', '--maxfail=3']))\nPY\n"
+    },
+    "focused_diagnostics_and_auto_backend": {
+      "passed": 9,
+      "deselected": 18,
+      "seconds": 21.57,
+      "note": "The independent effective-coefficient convolution assertions were added after full-suite collection and separately passed in this focused run."
+    },
+    "new_tests_initial": {
+      "passed": 47,
+      "seconds": 53.24
+    },
+    "gpu_collection_bf16": {
+      "collected": 16,
+      "deselected": 6,
+      "seconds": 1.63
+    }
+  },
+  "initialization": {
+    "ra3bffee9a528": {
+      "parameter_count": 198455476,
+      "static_factor_shape": [
+        15,
+        14,
+        9
+      ],
+      "static_stored_value": 1.0,
+      "factor_mapping": "F_j = f_j (1 + b_j) / 2",
+      "factor_weight_decay": false,
+      "backbone_sha256": "b21237923982b82c703e3a08417da1b10d1c94b564a8d694a9d45c5157754fc8",
+      "all_backbone_parameters_match_control": true,
+      "effective_factors_match_control": true,
+      "control_run_id": "r841f35a24241",
+      "sos_core_degree": 8,
+      "polynomial_degree": 9,
+      "score_transform": "softplus",
+      "input_power": 1
+    },
+    "r28a991faed4f": {
+      "parameter_count": 198456316,
+      "static_factor_shape": [
+        15,
+        14,
+        13
+      ],
+      "static_stored_value": 1.0,
+      "factor_mapping": "F_j = f_j (1 + b_j) / 2",
+      "factor_weight_decay": false,
+      "backbone_sha256": "b21237923982b82c703e3a08417da1b10d1c94b564a8d694a9d45c5157754fc8",
+      "all_backbone_parameters_match_control": true,
+      "effective_factors_match_control": true,
+      "control_run_id": "rf637de9b65b1",
+      "sos_core_degree": 12,
+      "polynomial_degree": 13,
+      "score_transform": "softplus",
+      "input_power": 1
+    }
+  },
+  "limits": "Kernel correctness and full-size initialization only. Each production allocation still requires full acceptance, timing pilot, and fresh-process checkpoint resume.",
+  "reproduce": "Submit scaffolds/transformer/validation/qualify_static_sos.sbatch with the worktree root and launch commit on one H100 or B200."
+}
