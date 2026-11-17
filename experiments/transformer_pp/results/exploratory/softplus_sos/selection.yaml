@@ -30,6 +30,26 @@ settings:
   sos_core_degrees:
   - 8
   - 12
+  single_head_parameters:
+    roles:
+      primary_softplus_times_sos: 8
+      primary_softplus_times_sos_m12: 12
+    layer_index: 7
+    head_index: 0
+    selection_rule: Same middle layer and first head as the original SoS parameter
+      figure; chosen before inspecting these histories.
+    fields:
+      a: modulation_amplitude
+      b: projection_bias
+      w_l2: projection_kernel_l2
+    w_norm:
+      input_dimension: 896
+      convention: Euclidean norm over input channels; no saved step-zero norm
+    coordinate_convention: U_0,...,U_(m/2),V_0,...,V_(m/2-1); m is the core degree,
+      total degree m+1
+    scaling: Raw generator parameters; no factorial or Taylor-factor rescaling
+    initialization: Analytic a=0,b=1 markers; recorded curves begin at update 100
+    coefficient_input_normalization: none
 runs:
 - study: transformer_pp
   run_id: r41a4c74c5f58

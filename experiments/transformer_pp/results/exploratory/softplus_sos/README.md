@@ -74,3 +74,26 @@ Refresh input pins after collecting run measurements:
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/softplus_sos
 ```
+
+## Prefactor factor-generator histories
+
+The [combined parameter figure](head_parameters_combined.png)
+([PDF](head_parameters_combined.pdf)) shows raw learned a, b, and W-vector L2
+norms for the two original-input prefactor runs, `r841f35a24241` and
+`rf637de9b65b1`. It uses layer 8, head 1, matching the existing SoS diagnostic.
+The explicit roles, fields, and head are recorded in `selection.yaml`.
+
+Each section plots the U/V factor powers for core m=8 or m=12; the corresponding
+weights are `z [U_t(z)^2 + V_t(z)^2]`, with `z=softplus(s)`, giving total degrees
+9 and 13. These are the original coefficient inputs without L2 normalization.
+No factorial or fixed Taylor-factor scaling is applied to the displayed generator
+parameters. W norms span 896 input channels. The 28 saved snapshots cover updates
+100–7,570; step-zero a=0 and b=1 diamonds are analytic, and no step-zero W norm is
+imputed. All panels within a section's row share a linear y-axis. The figure
+describes this fixed head, not a whole-model parameter average or saturation rate.
+
+Regenerate both formats from the pinned, committed measurements:
+
+```bash
+scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/exploratory/softplus_sos/plot_head_parameters.py
+```
