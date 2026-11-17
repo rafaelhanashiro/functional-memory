@@ -5,7 +5,8 @@ this server's own Unix user are answered. Besides static files it accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
     POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
-    PATCH /api/literature/<id>     {"seen": true or false}: move a resource between the two groups
+    PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
+                                   groups; {"title": ...} renames it
 
     nohup setsid python3 site/serve.py --port 8765 > <log> 2>&1 < /dev/null &
 """
@@ -273,19 +274,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if body is None:
             return
         try:
-            seen = json.loads(body)["seen"]
-        except (ValueError, KeyError, TypeError):
-            seen = None
-        if not isinstance(seen, bool):
-            self._json(400, {"error": 'Expected {"seen": true or false}'})
+            changes = json.loads(body)
+        except ValueError:
+            changes = None
+        if not isinstance(changes, dict) or not changes or set(changes) - {"seen", "title"}:
+            self._json(400, {"error": 'Expected {"seen": true or false} or {"title": ...}'})
             return
+        if "seen" in changes and not isinstance(changes["seen"], bool):
+            self._json(400, {"error": "seen must be true or false"})
+            return
+        if "title" in changes:
+            title = " ".join(changes["title"].split()) if isinstance(changes["title"], str) else ""
+            if not title:
+                self._json(400, {"error": "The title can't be empty"})
+                return
+            changes["title"] = title
         with LOCK:
             papers = load_list()
             entry = next((paper for paper in papers if paper["id"] == match.group(1)), None)
             if entry is None:
                 self._json(404, {"error": f"No resource {match.group(1)}"})
                 return
-            entry["seen"] = seen
+            entry.update(changes)
             save_list(papers)
         self._json(200, entry)
 

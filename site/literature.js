@@ -73,6 +73,10 @@ function showView(card, paper, text) {
 }
 
 function showEditor(card, paper, original) {
+  const title = element("input", "editor-title");
+  title.value = paper.title;
+  title.placeholder = "Title";
+  title.setAttribute("aria-label", "Title");
   const input = element("textarea", "editor-input");
   input.value = original;
   input.placeholder = "Markdown, with math in $...$ and $$...$$";
@@ -86,18 +90,39 @@ function showEditor(card, paper, original) {
     input.style.height = "auto";
     input.style.height = `${input.scrollHeight + 2}px`;
   };
+  const mark = () => {
+    if (title.value.trim() === paper.title && input.value === original) dirty.delete(card);
+    else dirty.add(card);
+    note.textContent = dirty.has(card) ? "Unsaved changes" : "";
+  };
   const cancel = () => {
     if (!dirty.has(card) || confirm("Discard unsaved changes?")) showView(card, paper, original);
   };
   async function save() {
-    const text = input.value.trim() ? `${input.value.trimEnd()}\n` : "";
+    const name = title.value.replace(/\s+/g, " ").trim();
+    if (!name) {
+      note.textContent = "The title can't be empty";
+      title.focus();
+      return;
+    }
+    const text = input.value === original ? original : input.value.trim() ? `${input.value.trimEnd()}\n` : "";
     saveButton.disabled = true;
     note.textContent = "Saving…";
     try {
-      const response = await fetch(writeupPath(paper), {
-        method: "PUT", body: text, headers: {"Content-Type": "text/markdown; charset=utf-8"},
-      });
-      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      if (name !== paper.title) {
+        const response = await fetch(`${API}/${encodeURIComponent(paper.id)}`, {
+          method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({title: name}),
+        });
+        if (!response.ok) throw new Error(await failure(response));
+        paper.title = name;
+        card.querySelector(".paper-title").textContent = name;
+      }
+      if (text !== original) {
+        const response = await fetch(writeupPath(paper), {
+          method: "PUT", body: text, headers: {"Content-Type": "text/markdown; charset=utf-8"},
+        });
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      }
       showView(card, paper, text);
     } catch (error) {
       note.textContent = `Not saved: ${error.message}`;
@@ -105,22 +130,12 @@ function showEditor(card, paper, original) {
     }
   }
 
+  title.addEventListener("input", mark);
   input.addEventListener("input", () => {
-    if (input.value === original) dirty.delete(card);
-    else dirty.add(card);
-    note.textContent = dirty.has(card) ? "Unsaved changes" : "";
+    mark();
     grow();
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(update);
-  });
-  input.addEventListener("keydown", (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
-      event.preventDefault();
-      save();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      cancel();
-    }
   });
 
   const panes = element("div", "editor-panes");
@@ -128,7 +143,17 @@ function showEditor(card, paper, original) {
   const actions = element("div", "editor-actions");
   actions.append(note, button("Cancel", "ghost", cancel), saveButton);
   const editor = element("div", "editor");
-  editor.append(panes, actions);
+  editor.append(title, panes, actions);
+  editor.addEventListener("keydown", (event) => {
+    if (((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s")
+        || (event.target === title && event.key === "Enter")) {
+      event.preventDefault();
+      save();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+    }
+  });
   card.querySelector(".writeup").replaceChildren(editor);
   update();
   grow();
@@ -139,6 +164,7 @@ function showEditor(card, paper, original) {
 
 function createCard(paper) {
   const card = element("details", "paper");
+  card.dataset.id = paper.id;
   const summary = element("summary");
   const head = element("span", "paper-head");
   const meta = element("span", "paper-meta");

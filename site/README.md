@@ -11,7 +11,7 @@ View it through `ssh -fN -o ExitOnForwardFailure=yes -L 8765:127.0.0.1:8765 rafa
 at http://127.0.0.1:8765.
 
 `literature/papers.json` lists the literature resources (title, authors, year, link, and
-whether the user has seen it). The page adds a resource from a link, reading its metadata,
+whether the user has seen it). The page adds a resource from a link, reading its metadata, renames it,
 and switches it between seen and not seen; each resource's write-up is the user's own
 Markdown file `literature/<id>.md` (math in `$...$` and `$$...$$`), edited on the page.
 All of these go through `serve.py`, which writes the files without committing them.
