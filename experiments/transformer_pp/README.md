@@ -2387,26 +2387,42 @@ comparisons.
   `shiba`'s B200 (job 2982); every allocation runs it again. `mastiff` (H100 PCIe) is excluded: Slurm grants its
   failing H100 to one-GPU jobs first (CLUSTERS.md), and on 2026-11-16 it was draining. B200 jobs run in the
   worktree's `.venv-cuda13`.
-- Time limits: 1.4 times the H100 SXM projection, for the estimate's uncertainty and `dogo`'s variation between
-  attempts, plus acceptance's two-hour reserve, rounded up to whole hours. A projection is an estimated wall time
-  per update, validation included, over the run's updates. On the H100 SXM it is 1.08 s: `rc5aac8f37a2e`'s
-  3.52 s on `dogo` (core degree twelve without the prefactor, reference shape) times the prefactor's 1.06 at core
-  degree eight (`r841f35a24241` over `r41a4c74c5f58`, B200) times this shape's 0.29 of the reference's time
-  (raw-score SoS and softplus input at degree twelve on `mastiff`). On the B200 it is 0.87 s, `rf637de9b65b1`'s
-  3.01 s times 0.29; no run at this shape has trained on a B200. The softplus-input degree-twelve runs at this
-  shape took 1.00–1.03 s on `dogo`.
+- Time limits: 1.4 times the upper H100 SXM projection, for the estimate's uncertainty and `dogo`'s variation
+  between attempts, plus acceptance's two-hour reserve, rounded up to whole hours. A projection is the run's
+  training time plus its 28 validations at 25–40 s each, checkpoints included (their time on `dogo` at this
+  shape). Training time per update:
+  - H100 SXM, 0.97–1.06 s: `rc5aac8f37a2e`'s 3.34 s on `dogo` (core degree twelve without the prefactor,
+    reference shape) times the prefactor's 1.04–1.06 at core degree eight (`r841f35a24241` over `r41a4c74c5f58`,
+    B200) times this shape's 0.28–0.30 of the reference's time on H100s (raw-score SoS and softplus input at
+    degree twelve on `mastiff`; fixed coefficients at degree eight on `dogo`, `rd77db79142e6` over
+    `ra040de24096c`).
+  - B200, 0.88–0.91 s: `rf637de9b65b1`'s 2.85 s times 0.31–0.32, the ratio on Blackwell (direct query at degrees
+    eight and twelve and fixed Taylor at degree twelve on `akita`'s B300). No run at this shape has trained on a
+    B200.
+
+  Validations add 9–17 % to the 1x run's training time, 4–8 % at 2x and 2–4 % at 4x, against 5 % at the
+  reference shape: a validation covers the same tokens at both shapes, an update half as many here. The
+  softplus-input degree-twelve runs at this shape took 1.00–1.03 s per update on `dogo`, validations included.
 
   | Run | H100 SXM projection, hours | B200 projection, hours | Limit, hours |
   | --- | ---: | ---: | ---: |
-  | 1x | 2.3 | 1.8 | 6 |
-  | 2x | 4.5 | 3.7 | 9 |
-  | 4x | 9.1 | 7.3 | 15 |
+  | 1x | 2.2–2.5 | 2.1–2.2 | 6 |
+  | 2x | 4.3–4.8 | 3.9–4.1 | 9 |
+  | 4x | 8.4–9.2 | 7.6–8.0 | 15 |
 
   Acceptance projects again from its pilot on the granted GPU and refuses an allocation whose projection
   exceeds the limit less two hours: 4, 7 and 13 hours, about 1.91, 1.67 and 1.55 s per update.
 
-Branch `claude/l12-d640-softplus-sos`. Submit each run independently on `long` from the worktree root after
-committing the frozen execution set:
+Branch `claude/l12-d640-softplus-sos`. Submit each run independently from the worktree root after committing the
+frozen execution set and checking the live `standard` and `long` allowances, counting the user's jobs from every
+worktree (CLUSTERS.md). All three limits fit `standard`'s 24 hours: give free `standard` slots to the longest runs
+(the 4x, then the 2x) and put the rest on `long`. Submit a `standard` job first and let it start before the `long`
+ones: on a full node it preempts the youngest lower-tier job, ours included, so also exclude any node hosting one
+of our running `long` jobs (`squeue -u "$USER" -p long -t R -o %N`).
+
+The placeholder holding `dogo`'s failing H100 (CLUSTERS.md), job 4436 on `standard`, ends on 2026-11-17 at
+23:41 EST. A start or requeue on `dogo` after its placeholder ends can be granted that GPU and stop at JAX
+initialization, so `dogo` stays eligible only while a placeholder outlasts every start and requeue of the run.
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
@@ -2416,10 +2432,11 @@ submit() {  # partition, time, adapter, GPU types, excluded nodes, run
     scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-# dogo's H100 at Slurm GPU index 4 fails CUDA initialization under JAX (CLUSTERS.md): add dogo to EXCL unless a
-# placeholder job holds that GPU.
+# dogo's H100 at Slurm GPU index 4 fails CUDA initialization under JAX: add dogo to EXCL unless the placeholder
+# holding it (end time below) outlasts every start and requeue of the job.
+squeue -u "$USER" -n hold-dogo-badgpu -o '%.8i %.9P %.20e'
 EXCL=akita,mastiff,collie,samoyed,doodle,terrier
-submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8   # 1x
-submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c   # 2x
-submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x
+submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x; long if no standard slot is free
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x; standard if a slot is free
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x; standard if a slot is free
 ```
