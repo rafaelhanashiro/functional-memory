@@ -1,12 +1,103 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+      "sha256": "198077eaa1c7237c939fd51d4cfe905a1241876739cd8982f6a59ae19397fc76",
+      "size_bytes": 429
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/plain-score-mlp/experiments/transformer_pp/runs/rfc68c6d26f40/.runtime/acceptance/B300-1",
+      "allocation": "JobId=4446 JobName=rfc68c6d26f40 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20115 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-16T23:45:03 EligibleTime=2026-11-16T23:45:03 AccrueTime=2026-11-16T23:45:03 StartTime=2026-11-16T23:48:03 EndTime=2026-11-17T23:48:03 Deadline=N/A PreemptEligibleTime=2026-11-16T23:48:03 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-16T23:48:03 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1235160 ReqNodeList=(null) ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/plain-score-mlp/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/plain-score-mlp StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/plain-score-mlp/experiments/transformer_pp/runs/rfc68c6d26f40/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/plain-score-mlp/experiments/transformer_pp/runs/rfc68c6d26f40/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:b300:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml",
+      "config_sha256": "732c516977b0605c3df6397f27ec229873ded32db35543b76f88d31f0393eaa1",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "09bc5f0a7c80ad91ccca3f048f52bba71c2f5836",
+      "slurm_job_id": "4446",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-17T04:48:08.013597+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml",
     "sha256": "732c516977b0605c3df6397f27ec229873ded32db35543b76f88d31f0393eaa1"
   },
+  "frozen_execution_sha256": "3fe9c23c193ba312e487a591ff826b635db2e8841184299a509b234463cf1b47",
   "home_cluster": "kennel",
   "label": "score-mlp-conventional-j8",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+    "sha256": "198077eaa1c7237c939fd51d4cfe905a1241876739cd8982f6a59ae19397fc76",
+    "size_bytes": 429
+  },
+  "log_path": "experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
   "name": "score-mlp-conventional-j8",
   "record_schema_version": 1,
   "run_id": "rfc68c6d26f40",
-  "status": "planned"
+  "source_commit": "09bc5f0a7c80ad91ccca3f048f52bba71c2f5836",
+  "status": "acceptance",
+  "submissions": [
+    {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=standard",
+        "--gres=gpu:b300:1",
+        "--cpus-per-task=16",
+        "--mem=128G",
+        "--time=24:00:00",
+        "--job-name=rfc68c6d26f40",
+        "--output=experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+        "--error=experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+        "scaffolds/transformer/launchers/kennel.sbatch",
+        "experiments.transformer_pp.acceptance",
+        "experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml",
+        "373565de03e879a4bb9a0b66e89ab47c31a85a1a",
+        "1",
+        "B300"
+      ],
+      "gpu_count": 1,
+      "gpu_types": [
+        "B300"
+      ],
+      "launch_commit": "373565de03e879a4bb9a0b66e89ab47c31a85a1a",
+      "partition": "standard",
+      "slurm_job_id": "4444",
+      "submitted_utc": "2026-11-17T04:43:54.856241+00:00"
+    },
+    {
+      "command": [
+        "sbatch",
+        "--parsable",
+        "--partition=standard",
+        "--gres=gpu:b300:1",
+        "--cpus-per-task=16",
+        "--mem=128G",
+        "--time=24:00:00",
+        "--job-name=rfc68c6d26f40",
+        "--output=experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+        "--error=experiments/transformer_pp/runs/rfc68c6d26f40/training.log",
+        "scaffolds/transformer/launchers/kennel.sbatch",
+        "experiments.transformer_pp.acceptance",
+        "experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml",
+        "09bc5f0a7c80ad91ccca3f048f52bba71c2f5836",
+        "1",
+        "B300"
+      ],
+      "gpu_count": 1,
+      "gpu_types": [
+        "B300"
+      ],
+      "launch_commit": "09bc5f0a7c80ad91ccca3f048f52bba71c2f5836",
+      "partition": "standard",
+      "slurm_job_id": "4446",
+      "submitted_utc": "2026-11-17T04:45:03.163894+00:00"
+    }
+  ]
 }

@@ -21,10 +21,16 @@
     },
     "records_index": {
       "passed": 27
+    },
+    "historical_fused": {
+      "passed": 98,
+      "gpu_cases_deselected": 40,
+      "note": "97 passed initially; both fresh-recipe backend cases passed after the auto fixture selected canonical strips."
     }
   },
   "gpu": {
     "status": "awaiting allocation qualification",
     "required": "production T2048 BF16 outputs/all gradients, full-model pilot, checkpoint resume"
-  }
+  },
+  "source_commit": "09bc5f0a"
 }
