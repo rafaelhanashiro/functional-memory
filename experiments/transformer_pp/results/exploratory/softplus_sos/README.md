@@ -71,16 +71,17 @@ of the composition and its vanishing negative tail across seeds and recipes.
 
 ## The 12-layer width-640 shape at 1x, 2x and 4x
 
-Planned; no results. Three runs train the degree-twelve prefactor composition z h_t(z) of `rf637de9b65b1`
-at the 12-layer width-640 shape with 1, 2 and 4 times its 1x budget
+Planned; no results. Six runs train the two degree-twelve compositions at the 12-layer width-640 shape with
+1, 2 and 4 times its 1x budget: the prefactor composition z h_t(z) of `rf637de9b65b1` and h_t(z) without it,
+of `rc5aac8f37a2e`
 ([methods and launch](../../../README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x)). Each is compared
-with the runs at its shape and budget:
+with the other composition and the runs at its shape and budget:
 
-| Budget (updates) | Run | exp | Polynomial comparisons |
-| --- | --- | --- | --- |
-| 1x (7,551) | `r3b9c8cc6fab8` | `r3e2fa2532c23` | degree-eight query `r95a5691d293f`, degree-eight softplus input `r1d342ca6e58c` |
-| 2x (15,103) | `re7593f1d0a4c` | `rd920368a922e` | degree-twelve raw-score SoS `r08be7093202a`, degree-twelve softplus input `r53d5bbcac16f` |
-| 4x (30,205) | `r4589172dcd8b` | `r333444bd4304` | degree-twelve raw-score SoS `r1f935f18fe21`, degree-twelve softplus input `rb74e8b994b74` |
+| Budget (updates) | z h_t(z) | h_t(z) | exp | Polynomial comparisons |
+| --- | --- | --- | --- | --- |
+| 1x (7,551) | `r3b9c8cc6fab8` | `r5a18841b21b5` | `r3e2fa2532c23` | degree-eight query `r95a5691d293f`, degree-eight softplus input `r1d342ca6e58c` |
+| 2x (15,103) | `re7593f1d0a4c` | `r83fa09df3931` | `rd920368a922e` | degree-twelve raw-score SoS `r08be7093202a`, degree-twelve softplus input `r53d5bbcac16f` |
+| 4x (30,205) | `r4589172dcd8b` | `r0623d3020268` | `r333444bd4304` | degree-twelve raw-score SoS `r1f935f18fe21`, degree-twelve softplus input `rb74e8b994b74` |
 
 No raw-score SoS or softplus-input run of degree twelve exists at 1x at this shape, so the 1x
 polynomial comparisons differ from the run in degree as well. Report validation-best and terminal PPL

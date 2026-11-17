@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r83fa09df3931/config.yaml",
+    "sha256": "14fc6d6dff5a31e11b45c424d976c6346d6f051689584b521ef17f6521dddb62"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-sos-softplus-w-decay-l12-d640-2x",
+  "name": "query-m12-sos-softplus-w-decay-l12-d640-2x",
+  "record_schema_version": 1,
+  "run_id": "r83fa09df3931",
+  "status": "planned"
+}

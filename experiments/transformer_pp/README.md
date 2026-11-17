@@ -2353,10 +2353,11 @@ contains the explicit degree-matched controls and the open comparison.
 
 ### The 12-layer width-640 shape at 1x, 2x and 4x
 
-Added 2026-11-16 at the user's request. Three runs train `rf637de9b65b1`'s composition, `z h_t(z)` with
-`z = softplus(s)` and a query-conditioned SoS core of degree twelve (`attention_degree: 13`,
-`attention_coefficient_input_power: 1`), at the 12-layer width-640 shape with 1, 2 and 4 times its 1x budget.
-Home cluster: **Kennel**. All three are planned; the
+Added 2026-11-16 at the user's request. Six runs train the two degree-twelve compositions at the 12-layer
+width-640 shape with 1, 2 and 4 times its 1x budget: `rf637de9b65b1`'s `z h_t(z)` with `z = softplus(s)` and a
+query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_coefficient_input_power: 1`), and
+`rc5aac8f37a2e`'s `h_t(z)` without the prefactor (`attention_degree: 12`, `attention_coefficient_input_power: 0`).
+Home cluster: **Kennel**. All six are planned; the
 [topic](results/exploratory/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x) lists their
 comparisons.
 
@@ -2365,9 +2366,13 @@ comparisons.
 | `r3b9c8cc6fab8` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
 | `re7593f1d0a4c` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
 | `r4589172dcd8b` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
+| `r5a18841b21b5` | `query-m12-sos-softplus-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
+| `r83fa09df3931` | `query-m12-sos-softplus-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
+| `r0623d3020268` | `query-m12-sos-softplus-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
 
-- Recipes: `rf637de9b65b1` derived with `derive_recipe.py --partner rf637de9b65b1 --layers 12 --width 640
-  --budget 1` (`2`, `4`) and allocated with `scaffolds.records create`: 10 heads, SwiGLU width 1,664, batch
+- Recipes: `rf637de9b65b1` and `rc5aac8f37a2e` derived with `derive_recipe.py --partner <run> --layers 12
+  --width 640 --budget 1` (`2`, `4`) and allocated with `scaffolds.records create`; at each budget the two
+  recipes differ only in `attention_degree` and `attention_coefficient_input_power`: 10 heads, SwiGLU width 1,664, batch
   128 × 2,048 tokens, 38 validation batches, coefficient-projection std 1/sqrt(640), 99,986,216 parameters; the
   exp runs' schedules at this shape. Seed, data order, learning-rate schedule, W decay (a and b exempt), RoPE, QK
   setup, output head RMSNorm and gradient-event capture are the partner's. Beyond these, execution paths and
@@ -2375,13 +2380,13 @@ comparisons.
   loads with.
 - Acceptance: [`softplus_sos_acceptance`](softplus_sos_acceptance.py) selects the raw-score SoS control by SoS
   core degree, depth, width and update count, and requires the recipe to be the control's but for the score
-  transform, degree, input power and gradient-event capture. The 2x run's control is the 2x raw-score SoS run
-  `r08be7093202a` (recipe SHA256 `4683fd9d`) and the 4x run's `r1f935f18fe21` (`8351d24f`). No raw-score SoS
-  run of core degree twelve exists at 1x here, so the 1x run's control is `r08be7093202a` with derive_recipe's
+  transform, degree, input power and gradient-event capture. The 2x runs' control is the 2x raw-score SoS run
+  `r08be7093202a` (recipe SHA256 `4683fd9d`) and the 4x runs' `r1f935f18fe21` (`8351d24f`). No raw-score SoS
+  run of core degree twelve exists at 1x here, so the 1x runs' control is `r08be7093202a` with derive_recipe's
   1x schedule in place of its own. The adapter pins each control's seed-42 parameter fingerprint and count,
-  computed on CPU: `c8a7ed88` and 99,986,216 for both controls, the values computed for each of the three runs
-  (initialization does not depend on the budget).
-- Kernels and GPUs: the Mosaic transformed SoS kernels at total degree thirteen, on one H100 or B200; the
+  computed on CPU: `c8a7ed88` and 99,986,216 for both controls, the values computed for each of the six runs
+  (initialization does not depend on the budget, and the prefactor adds no parameter).
+- Kernels and GPUs: the Mosaic transformed SoS kernels at total degree thirteen (twelve without the prefactor), on one H100 or B200; the
   adapter refuses other GPU types, and B300 remains unqualified for these kernels. Their composed GPU suite
   passed in the acceptance of `rc5aac8f37a2e` on `dogo`'s H100 SXM (job 2981) and of `rf637de9b65b1` on
   `shiba`'s B200 (job 2982); every allocation runs it again. `mastiff` (H100 PCIe) is excluded: Slurm grants its
@@ -2399,6 +2404,9 @@ comparisons.
   - B200, 0.88–0.91 s: `rf637de9b65b1`'s 2.85 s times 0.31–0.32, the ratio on Blackwell (direct query at degrees
     eight and twelve and fixed Taylor at degree twelve on `akita`'s B300). No run at this shape has trained on a
     B200.
+  - Without the prefactor, 0.94–1.00 s on the H100 SXM (`rc5aac8f37a2e`'s 3.34 s times 0.28–0.30) and, by the
+    prefactor's 1.04–1.06, less than the prefactor runs on the B200: the table's projections bound these runs
+    too, and their limits are the same.
 
   Validations add 9–17 % to the 1x run's training time, 4–8 % at 2x and 2–4 % at 4x, against 5 % at the
   reference shape: a validation covers the same tokens at both shapes, an update half as many here. The
@@ -2439,4 +2447,7 @@ EXCL=akita,mastiff,collie,samoyed,doodle,terrier
 submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x; long if no standard slot is free
 submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x; standard if a slot is free
 submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x; standard if a slot is free
+submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r0623d3020268      # 4x, no prefactor; standard if free
+submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       # 2x, no prefactor; standard if free
+submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor; standard if free
 ```

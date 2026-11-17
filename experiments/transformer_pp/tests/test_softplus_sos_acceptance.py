@@ -30,6 +30,9 @@ RUNS = {
     "r3b9c8cc6fab8": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-1x", 1, L12_D640_1X),
     "re7593f1d0a4c": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-2x", 1, L12_D640_2X),
     "r4589172dcd8b": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x", 1, L12_D640_4X),
+    "r5a18841b21b5": ("query-m12-sos-softplus-w-decay-l12-d640-1x", 0, L12_D640_1X),
+    "r83fa09df3931": ("query-m12-sos-softplus-w-decay-l12-d640-2x", 0, L12_D640_2X),
+    "r0623d3020268": ("query-m12-sos-softplus-w-decay-l12-d640-4x", 0, L12_D640_4X),
 }
 # The 1x schedule's fields other than the update count, which selects the control.
 SCHEDULE_FIELDS = tuple((section, key) for section, values in adapter.L12_D640_1X_SCHEDULE.items() for key in values
