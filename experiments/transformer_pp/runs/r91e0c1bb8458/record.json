@@ -3,10 +3,49 @@
     "path": "experiments/transformer_pp/runs/r91e0c1bb8458/config.yaml",
     "sha256": "f0546b480d708ba6037a89acfeb7b05a4c87d12dfc5633a88ff75cbdb2e09f52"
   },
+  "frozen_execution_sha256": "d0044af335c30fde4ea4f7ab1e9880b1872298a7206fcb24d779e340a1d519f4",
   "home_cluster": "kennel",
   "label": "static-sos-core-m4-prefactor-rope",
   "name": "static-sos-core-m4-prefactor-rope",
   "record_schema_version": 1,
   "run_id": "r91e0c1bb8458",
-  "status": "planned"
+  "source_commit": "31f1b7847703b21b7fbe0226959d2c714ba3ae68",
+  "status": "submitted",
+  "submission": {
+    "allocation_seconds": 86400,
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard,long",
+      "--exclude=akita,mastiff,collie,samoyed,doodle,terrier",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r91e0c1bb8458",
+      "--output=experiments/transformer_pp/runs/r91e0c1bb8458/training.log",
+      "--error=experiments/transformer_pp/runs/r91e0c1bb8458/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.static_sos_acceptance",
+      "experiments/transformer_pp/runs/r91e0c1bb8458/config.yaml",
+      "31f1b7847703b21b7fbe0226959d2c714ba3ae68",
+      "1",
+      "H100,B200"
+    ],
+    "gpu_count": 1,
+    "gpu_types": [
+      "H100",
+      "B200"
+    ],
+    "launch_commit": "31f1b7847703b21b7fbe0226959d2c714ba3ae68",
+    "partition_requested": "standard,long",
+    "release_command": [
+      "scontrol",
+      "release",
+      "4740"
+    ],
+    "slurm_job_id": "4740",
+    "submitted_utc": "2026-11-17T16:02:33.853102+00:00"
+  }
 }

@@ -4077,3 +4077,20 @@ Reproduce GPU qualification from the frozen worktree with
 `scaffolds/transformer/validation/qualify_static_sos.sbatch`, passing the worktree
 root and launch commit, on one H100 or B200. The qualification record contains
 the CPU commands and hashes of the retained ignored GPU logs and JUnit reports.
+
+The degree-four extension uses unchanged production arithmetic (source
+`31f1b784`): total degrees four/five for softplus without/with prefactor. Its
+30 recipe/initialization tests and 10 focused CPU numerical tests pass. Eight
+additional GPU cases cover both transformed forms, BF16/BF16X3, 2,048-token
+production dispatch, shared-factor reductions and causal gradients. GPU execution
+and full-model pilot/resume remain required inside each allocation; the launch
+alone is not a completed hardware qualification.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml \
+  experiments/transformer_pp/tests/test_static_sos_acceptance.py
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml \
+  scaffolds/transformer/tests/test_static_sos.py -k m4
+```

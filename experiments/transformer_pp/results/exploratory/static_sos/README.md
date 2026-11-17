@@ -58,8 +58,10 @@ are 4715/4716 (long), and prefactor core 8/12 are 4717/4718 (long).
 The read-only monitor checks these runs every five minutes and reports failures,
 stalls, phase changes and completion. Current acceptance and training outcomes
 remain authoritative in the run records. No training PPL is available yet.
-The two degree-four recipes are allocated in their own worktree and awaiting
-submission with full per-allocation acceptance.
+The two degree-four jobs are 4739 (softplus, in B200 acceptance on long) and
+4740 (prefactor, queued with standard/long eligibility). Their separate read-only
+monitor checks progress every five minutes; both require full per-allocation
+acceptance before training.
 
 **Open decision.** Does input dependence improve each of these three score functions,
 and does the prefactor's benefit persist for static factors? Report validation-best
