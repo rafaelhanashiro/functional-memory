@@ -201,6 +201,7 @@ def test_output_bias_rejects_incompatible_form_or_gate(form, decay):
                                       query_log_decay=jnp.zeros(q.shape[:3]) if decay else None)
 
 
+@pytest.mark.gpu
 @pytest.mark.parametrize("width", (4, 8))
 def test_gpu_conventional_production_length_outputs_and_all_gradients(width):
     """T=2048, dk=dv64, BF16 QKV; FP32 activations/parameters and a nonzero output bias."""
