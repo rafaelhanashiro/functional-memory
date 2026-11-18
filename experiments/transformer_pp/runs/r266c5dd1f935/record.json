@@ -1,24 +1,6 @@
 {
-  "acceptance": {
-    "allocation_seconds": 86400,
-    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
-    "failed_utc": "2026-11-18T16:16:09.930777+00:00",
-    "failure": {
-      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1/failure.json",
-      "sha256": "a477a8208cb86cabfbb70bc75addf986b81e732182f864ed739b06a79c255779"
-    },
-    "identity": "09154640632def267ca7d82da6c357770315201cc910941e0fe9caaf5c24e431",
-    "slurm_job_id": "6507",
-    "stage": "gpu-tests",
-    "status": "failed"
-  },
-  "artifacts": [
-    {
-      "path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
-      "sha256": "1e0f0389740b9e607305f7193177f45c302a8f7d17aa3a207918bc123601f59c",
-      "size_bytes": 11127
-    }
-  ],
+  "acceptance": null,
+  "artifacts": [],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1",
@@ -37,6 +19,22 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-11-18T15:58:56.972864+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1",
+      "allocation": "JobId=6681 JobName=r266c5dd1f935 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20065 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-18T13:58:34 EligibleTime=2026-11-18T13:58:34 AccrueTime=2026-11-18T13:58:34 StartTime=2026-11-18T13:59:28 EndTime=2026-11-19T13:59:28 Deadline=N/A PreemptEligibleTime=2026-11-18T13:59:28 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-18T13:59:28 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1672016 ReqNodeList=shiba ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
+      "config_sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "f3dc72c4015d6856748260b97655914024b51144",
+      "slurm_job_id": "6681",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-18T18:59:34.489092+00:00",
+      "stop_after_step": null
     }
   ],
   "config": {
@@ -44,23 +42,19 @@
     "sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29"
   },
   "control_run_id": "r6a76e7fbde45",
-  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
-  "frozen_execution_sha256": "52c34a499d4da148c94d44ca9b99bde5be19f15344786db08e5478acb29ce478",
+  "error": null,
+  "frozen_execution_sha256": "e9936f49ff8879f1c0c830b0f507c51d0e570840b979413a4a418a1f642f253f",
   "home_cluster": "kennel",
   "label": "softplus-head-rmsnorm-rope",
-  "log": {
-    "path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
-    "sha256": "1e0f0389740b9e607305f7193177f45c302a8f7d17aa3a207918bc123601f59c",
-    "size_bytes": 11127
-  },
+  "log": null,
   "log_path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
   "name": "softplus-head-rmsnorm-rope",
   "parameter_count": 198453586,
   "record_schema_version": 1,
   "run_id": "r266c5dd1f935",
   "seed": 42,
-  "source_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
-  "status": "acceptance_failed",
+  "source_commit": "f3dc72c4015d6856748260b97655914024b51144",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
@@ -79,18 +73,18 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_pp.pointwise_attention_acceptance",
       "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
-      "1bc755a4a25455e7458661822b9361d37d85614f",
+      "f3dc72c4015d6856748260b97655914024b51144",
       "1",
       "B200"
     ],
     "gpu_count": 1,
     "gpu_type": "B200",
     "held": false,
-    "launch_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
+    "launch_commit": "f3dc72c4015d6856748260b97655914024b51144",
     "partition": "standard",
-    "released_utc": "2026-11-18T15:57:24.512110+00:00",
-    "slurm_job_id": "6507",
-    "submitted_utc": "2026-11-18T15:57:24.502178+00:00",
+    "released_utc": "2026-11-18T18:58:34.884047+00:00",
+    "slurm_job_id": "6681",
+    "submitted_utc": "2026-11-18T18:58:34.862424+00:00",
     "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines"
   },
   "training_tokens": 3968860160

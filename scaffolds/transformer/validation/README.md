@@ -51,7 +51,8 @@ On B200, job `6665` passed all 20 focused GPU checks. These include both
 embedding compute dtypes, fourteen pointwise kernel checks, and four full-model
 checks across sigmoid and softplus with distinct and repeated token IDs. All
 four full-model checks passed the original GPU-to-CPU tolerances and produced
-bitwise-identical outputs and gradients on a second call.
+bitwise-identical outputs and gradients on a second call. Job `6674` passed all
+20 checks again with an additional replay through a newly jitted model function.
 
 Every production allocation requires the full suite, initialization, a
 20-update pilot, and fresh-process checkpoint resume. The pointwise acceptance
