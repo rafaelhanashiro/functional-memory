@@ -792,12 +792,13 @@ and node of every allocation.
 
 ## Original FoX sigmoid gate
 
-Three runs replace the Gated DeltaNet gate of the no-RoPE forget-gate runs with the
+Four runs replace the Gated DeltaNet gate of the no-RoPE forget-gate runs with the
 Forgetting Transformer's own gate (`attention_forget_gate_form: sigmoid`):
 `log alpha_t = log sigmoid(x_t w_f + b_f)` per layer and head, with the paper's
 initialization `w_f ~ N(0, 0.02^2)` and `b_f = 0`; `w_f` takes weight decay and `b_f` does
-not. Everything else is copied from the source. The softmax run also drops QK
-normalization (`qk_norm: false`, plain scores), matching FoX (LLaMA); exp and query keep
+not. Everything else is copied from the source. The softmax run `reeb92d46a95d` also drops QK
+normalization (`qk_norm: false`, plain scores), matching FoX (LLaMA), while `rac200ce11221` keeps
+it, so the gate is its only change; exp and query keep
 the canonical QK RMSNorm with a learned head scale and per-head output RMSNorm. See the
 [forget gate topic](results/exploratory/forget_gate/README.md).
 
@@ -806,6 +807,7 @@ the canonical QK RMSNorm with a learned head scale and per-head output RMSNorm. 
 | `reeb92d46a95d` | softmax-sigmoid-forget-gate-no-rope-plain-qk | `r5adc29a91e3b` | sigmoid gate, plain scores | blocked |
 | `rdd3e9cb3bb80` | exp-sigmoid-forget-gate-no-rope | `r183f08346ddc` | sigmoid gate | blocked |
 | `rfa9636279199` | query-m4-sigmoid-forget-gate-no-rope-w-decay | `r4a80e28ce0a7` | sigmoid gate | blocked |
+| `rac200ce11221` | softmax-sigmoid-forget-gate-no-rope-qk-norm | `r5adc29a91e3b` | sigmoid gate | blocked |
 
 Home cluster: **Kennel**. Each record holds its launch commit, its exact `submission`, and
 the partition and node of every allocation. Submit each on one B300 or H100; the blocked
@@ -822,6 +824,42 @@ for run in reeb92d46a95d rdd3e9cb3bb80 rfa9636279199; do
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 done
+```
+
+`rac200ce11221` runs from `worktrees/fox-sigmoid-qknorm`, branch `codex/fox-sigmoid-qknorm`, on one
+B300, matching its control's GPU type:
+
+```bash
+sbatch --parsable --partition=standard --gres=gpu:b300:1 --nodelist=akita \
+  --cpus-per-task=16 --mem=128G --time=24:00:00 --job-name=rac200ce11221 \
+  --output=experiments/transformer_pp/runs/rac200ce11221/training.log \
+  --error=experiments/transformer_pp/runs/rac200ce11221/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  experiments/transformer_pp/runs/rac200ce11221/config.yaml "$(git rev-parse HEAD)" 1 B300
+```
+
+## Static coefficients with FoX NoPE
+
+`r17fd7f040bff` replaces the query-dependent coefficient generator of the FoX NoPE control
+`r4a80e28ce0a7` with learned static degree-four coefficients per layer and head. The recipe keeps
+the control's factorial scaling, gate initialization, QK and output RMSNorm, seed, context,
+optimizer and 7,570-update budget. Weight decay 0.1 applies to the gate projection; the static
+coefficients and the gate's rates and biases are exempt. The comparison is in the
+[forget-gate topic](results/exploratory/forget_gate/README.md#static-coefficients-with-fox-nope).
+
+Home cluster: Kennel. It runs from `worktrees/static-fox-nope-m4`, branch
+`codex/static-fox-nope-m4`, with its own locked environment. The experiment adapter
+(`static_fox_acceptance.py`) pins the source recipe, verifies the shared initial parameters and
+decay masks, and requires the full shared acceptance before training:
+
+```bash
+run=r17fd7f040bff
+sbatch --parsable --partition=long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+  --time=48:00:00 --exclude=akita,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_fox_acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 ```
 
 ## Context length

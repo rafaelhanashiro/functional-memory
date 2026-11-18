@@ -191,16 +191,40 @@ Validation perplexity; best is update 7,500 for every run, terminal is update 7,
 - Limits: one seed. The control ran on a Kennel B300 at an earlier commit on Mosaic, and
   `r4a80e28ce0a7` on a B300; the gated degree-eight run trained on ORCD H100s.
 
+### Static coefficients with FoX NoPE
+
+`r17fd7f040bff` asks whether the gate needs query-dependent coefficients. It replaces the
+coefficient generator of the FoX NoPE + W decay control `r4a80e28ce0a7` with one learned static
+coefficient vector per layer and head,
+
+$$w_{ti,h}=\exp(L_{t,h}-L_{i,h})\sum_{r=0}^{4}\frac{\tilde c_{\ell,h,r}}{r!}s_{ti,h}^{r},$$
+
+stored at one, so it starts as Taylor. The gate, its initialization and projection decay 0.1, NoPE,
+QK and output RMSNorm, seed 42 and the 7,570-update budget match the control; the static
+coefficients and the gate's rates and biases take no weight decay. Launch command:
+[study README](../../../README.md#static-coefficients-with-fox-nope).
+
+| Run | 2,500 | 5,000 | Best | Terminal |
+| --- | ---: | ---: | ---: | ---: |
+| Static, FoX NoPE `r17fd7f040bff` | 17.58 | 14.92 | **13.759** | 13.761 |
+| Query + W decay, FoX NoPE `r4a80e28ce0a7` | 17.84 | 15.08 | 13.873 | 13.875 |
+| FoX exp `r183f08346ddc` | 17.40 | 14.77 | 13.628 | 13.630 |
+
+- Under the gate the coefficients need not depend on the query: static coefficients are 0.8% better
+  than query (13.759 against 13.873), and ahead at every point shown.
+- They stay 1.0% behind FoX exp (13.628).
+- Limits: one seed. Static trained on an H100 PCIe (`mastiff`), its control on a B300.
+
 ### Original FoX sigmoid gate
 
-Three runs (added 2026-11-05) replace the Gated DeltaNet gate of the no-RoPE runs with the
+Four runs replace the Gated DeltaNet gate of the no-RoPE runs with the
 Forgetting Transformer's own gate, $\log\alpha_t = \log\sigma(w_f^\top x_t + b_f)$ per layer
 and head, initialized as in its code: $w_f \sim \mathcal N(0, 0.02^2)$ and $b_f = 0$, so every
 gate starts near $\sigma(0) = 1/2$; $w_f$ takes weight decay and $b_f$ does not. The Gated
 DeltaNet gate is the same sigmoid raised to a learned per-head power,
 $\alpha_t = \sigma(-z_t)^{e^{A_{\log}}}$ with $z_t = w_\alpha^\top x_t + b_{dt}$, under
-Mamba-2's initialization. Exp and query change only the gate; softmax also drops QK
-normalization (plain scores), as in FoX (LLaMA). All are 1× (7,570 updates), seed 42, on the
+Mamba-2's initialization. Exp, query and one softmax run change only the gate; the other
+softmax run also drops QK normalization (plain scores), as in FoX (LLaMA). All are 1× (7,570 updates), seed 42, on the
 blocked backend; launch commands are in the
 [study README](../../../README.md#original-fox-sigmoid-gate).
 
@@ -214,6 +238,7 @@ terminal is update 7,570:
 | Query + W decay, sigmoid gate `rfa9636279199` | sigmoid | 18.58 | 15.64 | 14.372 | 14.377 | H100 SXM (`dogo`) |
 | Forget gate, no RoPE, projection decay `r4a80e28ce0a7` | Gated DeltaNet | 17.84 | 15.08 | **13.873** | 13.875 | B300 |
 | Softmax, sigmoid gate, plain scores `reeb92d46a95d` | sigmoid | 18.01 | 15.23 | 14.014 | 14.014 | H100 PCIe (`mastiff`) to update 200, then B300 (`akita`) |
+| Softmax, sigmoid gate, QK normalization `rac200ce11221` | sigmoid | 17.88 | 15.18 | 13.985 | 13.986 | B300 (`akita`) to update 5,000, then H100 |
 | FoX softmax `r5adc29a91e3b` | Gated DeltaNet | 17.39 | 14.81 | **13.680** | 13.680 | B300 (`akita`) |
 
 - Where the gate is the only change it costs 2.8% on exp (14.005 against 13.628) and 3.6% on
@@ -222,6 +247,9 @@ terminal is update 7,570:
 - Softmax with plain scores, as in FoX (LLaMA), trails its control by 2.4% (14.014 against
   13.680). That gap narrowed from 4.2% at update 1,500, but the run changes the QK
   normalization as well as the gate, so it does not isolate the gate.
+- With the control's QK normalization kept (`rac200ce11221`), so that the gate is the only change,
+  softmax trails its control by 2.2% (13.985 against 13.680). QK normalization accounts for only
+  0.2 of the plain-score run's 2.4 points.
 - The sigmoid gate stays short-range. At update 100 its heads' mean half-lives on the
   diagnostic sample have 10/50/90th percentiles of 0.38/0.52/1.4 tokens (exp) with none over
   64 tokens, against 0.31/3.2/79 tokens and 17% over 64 for the Gated DeltaNet gate. It
