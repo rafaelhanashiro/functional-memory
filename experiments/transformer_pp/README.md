@@ -2514,6 +2514,8 @@ submit_zero_constant standard rc28ef4dbe26d
 submit_zero_constant long r7d5baf55104e
 ```
 
+Submitted at `8fc456c3`: Query job 6509 and Static job 6510 on standard; SoS job
+6511 on long. All three were granted one B200 each on shiba and entered acceptance.
 The two standard submissions fill the two remaining slots under the current
 four-GPU user allowance; the independent SoS submission uses long.
 

@@ -275,7 +275,8 @@ The two direct forms start at `T8(z)-1`. The SoS start is the sum of the squared
 Taylor factors after removing each factor's constant; removing these constants
 also changes higher expanded coefficients. Its expanded c0 and c1 remain zero.
 
-Results are pending. The open comparison is whether each restriction improves
+Jobs 6509 (Query), 6510 (Static), and 6511 (SoS) are qualifying on one B200 each
+under frozen source `8fc456c3`. Results are pending. The open comparison is whether each restriction improves
 validation-best and terminal PPL, and whether it changes gradient spikes or
 coefficient dynamics. Query is matched to the existing softplus Query control
 `ra3b54e2489f8`, whose constant starts at zero but is learnable. Static's parent

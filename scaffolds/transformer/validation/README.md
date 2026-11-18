@@ -19,6 +19,8 @@ polynomials and U0,V0 before query-SoS square expansion. The feature suite passe
 initialization, parameter counts, AdamW decay ownership, three optimizer updates,
 diagnostics, negative tails, and legacy checkpoint configuration compatibility.
 The pinned-recipe adapter passed 66 checks and the records suite passed 94.
+Existing configuration, score-transform, softplus-SoS, and coefficient-selection
+regressions passed all 238 CPU cases (four GPU cases deselected).
 
 Nine new GPU cases cover all three families at 512 and 2,048 tokens, including
 wide scores and native Mosaic dispatch. GPU numerical qualification is pending.

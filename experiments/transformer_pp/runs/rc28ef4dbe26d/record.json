@@ -1,12 +1,65 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant/experiments/transformer_pp/runs/rc28ef4dbe26d/.runtime/acceptance/B200-1",
+      "allocation": "JobId=6510 JobName=rc28ef4dbe26d UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20065 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:10 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-18T11:04:44 EligibleTime=2026-11-18T11:04:44 AccrueTime=2026-11-18T11:04:44 StartTime=2026-11-18T11:04:45 EndTime=2026-11-19T11:04:45 Deadline=N/A PreemptEligibleTime=2026-11-18T11:04:45 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-18T11:04:45 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1222399 ReqNodeList=shiba ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant/experiments/transformer_pp/runs/rc28ef4dbe26d/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant/experiments/transformer_pp/runs/rc28ef4dbe26d/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/rc28ef4dbe26d/config.yaml",
+      "config_sha256": "43c10fbb7b60c648d4d615abc440a5596769340cde3dbbd70d76889aa0af2c41",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "8fc456c3001a0a3b05f871584ef803e707a2e0c3",
+      "slurm_job_id": "6510",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-18T16:04:55.467029+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/rc28ef4dbe26d/config.yaml",
     "sha256": "43c10fbb7b60c648d4d615abc440a5596769340cde3dbbd70d76889aa0af2c41"
   },
+  "frozen_execution_sha256": "9d6e4ffa575410b3ba09f94781b460db38d395ccb88953692b146135b96cd47e",
   "home_cluster": "kennel",
   "label": "static-m8-softplus-zero-constant",
+  "log_path": "experiments/transformer_pp/runs/rc28ef4dbe26d/training.log",
   "name": "static-m8-softplus-zero-constant",
   "record_schema_version": 1,
   "run_id": "rc28ef4dbe26d",
-  "status": "planned"
+  "source_commit": "8fc456c3001a0a3b05f871584ef803e707a2e0c3",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard",
+      "--nodelist=shiba",
+      "--exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=rc28ef4dbe26d",
+      "--output=experiments/transformer_pp/runs/rc28ef4dbe26d/training.log",
+      "--error=experiments/transformer_pp/runs/rc28ef4dbe26d/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.softplus_zero_constant_acceptance",
+      "experiments/transformer_pp/runs/rc28ef4dbe26d/config.yaml",
+      "8fc456c3001a0a3b05f871584ef803e707a2e0c3",
+      "1",
+      "B200"
+    ],
+    "gpu_count": 1,
+    "gpu_types": [
+      "B200"
+    ],
+    "launch_commit": "8fc456c3001a0a3b05f871584ef803e707a2e0c3",
+    "nodelist": "shiba",
+    "partition": "standard",
+    "slurm_job_id": "6510",
+    "submitted_utc": "2026-11-18T16:04:44.706998+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/softplus-zero-constant"
+  }
 }
