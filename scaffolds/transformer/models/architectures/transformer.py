@@ -26,6 +26,26 @@ def _call_block_remat(
                  attention_parameters=attention_parameters)
 
 
+class TokenEmbedding(nnx.Embed):
+    """Gather from the FP32 table so repeated tokens' gradients sum in FP32."""
+
+    def __call__(self, inputs: jax.Array, out_sharding=None) -> jax.Array:
+        if not jnp.issubdtype(inputs.dtype, jnp.integer):
+            raise ValueError("Input type must be an integer or unsigned integer.")
+        table = self.embedding[...]
+        if self.num_embeddings == 1:
+            rows = jnp.broadcast_to(table, inputs.shape + (self.features,))
+        else:
+            def take_rows(table, indices):
+                return jnp.take(table, indices, axis=0)
+
+            if out_sharding is not None:
+                take_rows = jax.sharding.auto_axes(out_sharding=out_sharding)(take_rows)
+            rows = take_rows(table, inputs)
+        (rows,) = self.promote_dtype((rows,), dtype=self.dtype, inexact=False)
+        return rows
+
+
 class SwiGLU(nnx.Module):
     def __init__(self, hidden_size: int, intermediate_size: int, *, rngs: nnx.Rngs):
         self.gate_proj = nnx.Linear(hidden_size, intermediate_size, use_bias=False, rngs=rngs)
@@ -89,7 +109,7 @@ class TransformerLM(nnx.Module):
 
             config = replace(config, attention_backend=resolve_attention_backend(config))
         self.config = config
-        self.token_embedding = nnx.Embed(config.vocab_size, config.hidden_size, rngs=rngs)
+        self.token_embedding = TokenEmbedding(config.vocab_size, config.hidden_size, rngs=rngs)
         self.token_embedding.embedding.set_metadata(weight_decay=False)
         self.dropout = nnx.Dropout(config.dropout)
         self.layer_names = tuple(f"layers_{idx}" for idx in range(config.num_layers))
