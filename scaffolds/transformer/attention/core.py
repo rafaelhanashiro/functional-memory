@@ -57,8 +57,10 @@ def attention_core(
     and amplitude) shift each order r >= 1 of tanh query coefficients; every other kernel rejects them.
     ``score_transform`` (attention/score_transform.py) evaluates tanh query coefficients' polynomial at
     z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or the Mosaic
-    transformed query-polynomial kernels; every other mechanism and backend rejects a transform other than
-    "identity".
+    transformed query-polynomial kernels. Parameter-free sigmoid/softplus attention uses this same operation
+    with a constant FP32 query-coefficient table [0, 1]; the "tanh" activation label selects the general
+    polynomial operation and applies no activation to these already-effective coefficients. Every other
+    mechanism and backend rejects a transform other than "identity".
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS

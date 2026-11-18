@@ -189,7 +189,9 @@ class ModelConfig:
     # backend (training on its causal strips) or on the Mosaic transformed query-polynomial kernels
     # (mosaic_score_transform_supported), without a forget gate or score biases; every other backend
     # rejects it, and auto never resolves it.
-    attention_score_transform: Literal["identity", "softplus", "abs"] = "identity"
+    # Fixed static degree-one coefficients (0, 1) also implement the parameter-free
+    # sigmoid and softplus attention baselines: the resulting weight is exactly phi(s).
+    attention_score_transform: Literal["identity", "softplus", "abs", "sigmoid"] = "identity"
     # The start of the order-0 offset b_0 of diagonal tanh query coefficients, c_0(x_t) = b_0 + a_0
     # tanh(x_t w_0), in place of Taylor's 1 (null). With attention_coefficient_amplitude_initial 0, c_0
     # starts at exactly this value: 0 with the softplus transform starts the kernel at
@@ -389,22 +391,25 @@ class ModelConfig:
 
     def mosaic_score_transform_supported(self) -> bool:
         """Whether the Mosaic transformed query-polynomial kernels implement this recipe: the tanh query
-        polynomial evaluated at a transformed score (``mosaic_score_transform_problem``). Only an explicit
+        polynomial or fixed pointwise kernel evaluated at a transformed score (``mosaic_score_transform_problem``). Only an explicit
         ``mosaic`` backend selects them; ``auto`` never does, and transformed recipes reject it."""
         return self.mosaic_score_transform_problem() is None
 
     def mosaic_score_transform_problem(self) -> str | None:
         """Why the Mosaic transformed query-polynomial kernels cannot run this recipe, or None. They are the
-        query polynomial's kernels with phi(s) evaluated in their tiles, on H100 and B300 alike, so they take
+        query polynomial's kernels with phi(s) evaluated in their tiles, on H100 and B200, so they take
         the recipes those kernels take (``mosaic_supported``'s query case: RoPE, Q/K widths 8-128, value width
         64, the degrees ``query_degree_supported`` fits at the recipe's length) with diagonal tanh query
-        coefficients and no forget gate or score biases. Backend resolution checks the GPU and length."""
+        coefficients or fixed degree-one (0, 1) coefficients and no forget gate or score biases.
+        Backend resolution checks the GPU and length."""
         from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
 
         transform = getattr(self, "attention_score_transform", "identity")
         if transform == "identity":
             return "the recipe has no score transform"
-        problem = _query_coefficient_problem(self)
+        if transform == "sigmoid" and not _fixed_pointwise_attention(self):
+            return "the sigmoid score transform is qualified only for fixed static degree-one (0, 1) coefficients"
+        problem = None if _fixed_pointwise_attention(self) else _query_coefficient_problem(self)
         if problem is None and self.positional_encoding != "rope":
             problem = "the Mosaic query-polynomial kernels run RoPE recipes"
         if problem is None and (self.attention_forget_gate or self.attention_score_bias != "none"):
@@ -1102,9 +1107,30 @@ def _query_coefficient_problem(model) -> str | None:
     return None
 
 
+def _fixed_pointwise_attention(model) -> bool:
+    """The parameter-free sigmoid/softplus kernels represented as p(phi(s)) = phi(s)."""
+    return (model.attention_score_transform in ("sigmoid", "softplus")
+            and model.attention_mechanism == "dot_product" and not model.attention_normalization
+            and model.quadratic_mode == "fixed" and model.attention_degree == 1
+            and model.attention_coefficients == "fixed"
+            and model.attention_coefficient_parameterization == "direct"
+            and model.attention_coefficient_conditioning == "static"
+            and model.attention_coefficient_activation == "identity"
+            and model.attention_fixed_coefficients == (0.0, 1.0)
+            and model.attention_fixed_square_factors is None
+            and model.attention_coefficient_readout == "diagonal"
+            and model.attention_coefficient_orders is None
+            and model.attention_coefficient_gate == "none"
+            and model.attention_coefficient_scale == "none"
+            and model.attention_coefficient_amplitude_scale == "none"
+            and model.attention_coefficient_input_power == 0
+            and model.attention_kernel_basis == "polynomial")
+
+
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
-    coefficients with RoPE or no positional encoding, without a forget gate or score biases (allocation and
+    coefficients or fixed static degree-one (0, 1) sigmoid/softplus kernels with RoPE or no positional
+    encoding, without a forget gate or score biases (allocation and
     acceptance train it on the causal strips there), or on the Mosaic transformed query-polynomial kernels for
     the recipes they take (``mosaic_score_transform_problem``). A constant-coefficient start sets b_0's
     initial value of the same coefficients on any backend. The identity transform and a null start change
@@ -1126,7 +1152,9 @@ def _validate_score_transform(model: ModelConfig) -> None:
         model.attention_coefficient_constant_initial = float(start)
     if transform == "identity":
         return
-    problem = _query_coefficient_problem(model)
+    if transform == "sigmoid" and not _fixed_pointwise_attention(model):
+        raise ValueError("The sigmoid score transform is qualified only for fixed static degree-one (0, 1) coefficients")
+    problem = None if _fixed_pointwise_attention(model) else _query_coefficient_problem(model)
     if problem is None and model.positional_encoding not in ("rope", "none"):
         problem = "it applies with RoPE or no positional encoding, not PaTH"
     if problem is None and model.attention_forget_gate:

@@ -806,3 +806,28 @@ def test_constant_starts_alone_select_their_cpu_checks(backend):
                                                                          cpu=True)) is selected
         gpu = preflight.test_paths(spec, config, resolved_backend=backend, cpu=False)
         assert preflight.SCORE_TRANSFORM_TESTS not in gpu and preflight.SCORE_TRANSFORM_STRIPS_TESTS not in gpu
+
+
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+def test_fixed_pointwise_mosaic_selects_its_full_qualification_without_polynomial_grids(transform):
+    model = {"attention_mechanism": "dot_product", "attention_backend": "mosaic",
+             "attention_score_transform": transform, "attention_degree": 1,
+             "attention_coefficients": "fixed", "attention_fixed_coefficients": [0.0, 1.0],
+             "attention_coefficient_conditioning": "static", "attention_normalization": False,
+             "attention_output_scaling": "head_rms_norm", "qk_norm": True, "qk_norm_head_scale": True}
+    config = {"model": model}
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=("common_cpu.py",),
+                                   gpu_tests=("own_gpu.py",), select_tests=preflight.attention_test_paths)
+    cpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    assert "common_cpu.py" in cpu
+    assert preflight.QK_HEAD_SCALE_TESTS in cpu
+    assert preflight.SCORE_TRANSFORM_TESTS in cpu
+    gpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False,
+                               runtime_test_paths=("runtime_gpu.py",))
+    assert set(gpu) == {"own_gpu.py", "runtime_gpu.py", preflight.POINTWISE_ATTENTION_TESTS,
+                        preflight.POINTWISE_SCORE_TRANSFORM_TESTS}
+    # Removing the transform keeps the existing fixed-polynomial grid exactly.
+    model["attention_score_transform"] = "identity"
+    ordinary = preflight.attention_test_paths(config, "mosaic", False)
+    assert ordinary == ("scaffolds/transformer/tests/test_mosaic_unnormalized.py",
+                        "scaffolds/transformer/tests/test_mosaic_repeatability.py")

@@ -1,0 +1,16 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
+    "sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29"
+  },
+  "control_run_id": "r6a76e7fbde45",
+  "home_cluster": "kennel",
+  "label": "softplus-head-rmsnorm-rope",
+  "name": "softplus-head-rmsnorm-rope",
+  "parameter_count": 198453586,
+  "record_schema_version": 1,
+  "run_id": "r266c5dd1f935",
+  "seed": 42,
+  "status": "planned",
+  "training_tokens": 3968860160
+}

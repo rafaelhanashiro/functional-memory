@@ -1,15 +1,17 @@
-"""Transformed polynomial inputs of tanh query-coefficient polynomial attention.
+"""Parameter-free score transforms for query polynomials and fixed pointwise attention.
 
 Every order of the polynomial reads a parameter-free function of the score instead of the score
 itself. With s_ti = Q_t K_i^T / sqrt(d_K) (after QK normalization, head scale and RoPE),
 
     W(t,i) = sum_(r=0..m) c_r(x_t) z_ti^r,    z_ti = phi(s_ti),
 
-where c_r keeps its generator and factorial scales and phi is
+Query coefficients keep their generator and factorial scales. Fixed degree-one coefficients [0, 1]
+instead give W(t,i) = phi(s_ti), with no coefficient parameters. The transforms are
 
 - ``identity``: z = s (every historical recipe; the kernels compute exactly as before);
 - ``softplus``: z = log(1 + exp(s)), positive and increasing, z -> 0 as s -> -inf and z - s -> 0 as
   s -> +inf;
+- ``sigmoid``: z = 1 / (1 + exp(-s)), bounded between zero and one for finite scores;
 - ``abs``: z = |s|.
 
 With c_0 = 0 and c_r = 1/r! for r >= 1 (a Taylor start with ``attention_coefficient_constant_initial:
@@ -21,7 +23,9 @@ negative score gives a large weight of the sign of (-1)^m.
 Softplus is evaluated as max(s, 0) + log1p(exp(-|s|)), finite for every finite s, with derivative
 sigmoid(s); abs has derivative sign(s), zero at s = 0. Both derivatives are their JVP rules: JAX's
 own derivative of |s| at zero is 1, which would also make the autodiff derivative of the softplus
-formula 0 at s = 0 instead of 1/2. The blocked backend (``backends/reference.py``: the scan and the causal
+formula 0 at s = 0 instead of 1/2. Sigmoid's JVP preserves positive-tail gradients after its value rounds
+to one, with derivative 1/4 at zero; nonfinite scores remain invalid rather than saturating to finite
+weights. The blocked backend (``backends/reference.py``: the scan and the causal
 strips) and the Mosaic transformed query-polynomial kernels (``backends/mosaic/api.py``
 ``transformed_query_polynomial_attention``, the same derivatives at s = 0) evaluate the transform; every
 other backend and kernel refuses a transformed recipe instead of computing the untransformed polynomial.
@@ -30,10 +34,11 @@ other backend and kernel refuses a transformed recipe instead of computing the u
 import jax
 import jax.numpy as jnp
 
-TRANSFORMS = ("identity", "softplus", "abs")
+TRANSFORMS = ("identity", "softplus", "abs", "sigmoid")
 # Formulas recorded in the attention identity.
 FORMULAS = {"softplus": "z_ti = softplus(s_ti) = log(1 + exp(s_ti)), evaluated as max(s_ti, 0) + log1p(exp(-|s_ti|))",
-            "abs": "z_ti = |s_ti|"}
+            "abs": "z_ti = |s_ti|",
+            "sigmoid": "z_ti = sigmoid(s_ti) = 1 / (1 + exp(-s_ti)), evaluated with exp(-|s_ti|)"}
 
 
 @jax.custom_jvp
@@ -46,6 +51,26 @@ def softplus(scores):
 def _softplus_jvp(primals, tangents):
     (scores,), (tangent,) = primals, tangents
     return softplus(scores), jax.nn.sigmoid(scores) * tangent
+
+
+@jax.custom_jvp
+def sigmoid(scores):
+    """Stable logistic value; nonfinite scores remain invalid attention inputs.
+
+    The derivative uses exp(-abs(s))/(1 + exp(-abs(s)))**2, rather than z*(1-z): positive-tail
+    gradients remain representable even after the value itself rounds to one.
+    """
+    tail = jnp.exp(-jnp.abs(scores))
+    value = jnp.where(scores >= 0.0, 1.0, tail) / (1.0 + tail)
+    return jnp.where(jnp.isfinite(scores), value, jnp.nan)
+
+
+@sigmoid.defjvp
+def _sigmoid_jvp(primals, tangents):
+    (scores,), (tangent,) = primals, tangents
+    tail = jnp.exp(-jnp.abs(scores))
+    slope = tail / (1.0 + tail) ** 2
+    return sigmoid(scores), jnp.where(jnp.isfinite(scores), slope, jnp.nan) * tangent
 
 
 @jax.custom_jvp
@@ -70,4 +95,6 @@ def apply(scores, transform: str):
     """phi(scores) elementwise, in the scores' dtype. The identity returns ``scores`` itself: no operation."""
     if validate(transform) == "identity":
         return scores
+    if transform == "sigmoid":
+        return sigmoid(scores)
     return softplus(scores) if transform == "softplus" else absolute(scores)

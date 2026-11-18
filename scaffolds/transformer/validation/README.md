@@ -11,6 +11,24 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Fixed sigmoid and softplus attention (2026-11-18)
+
+The fixed degree-one `[0, 1]` route evaluates sigmoid or softplus inside the shared
+Mosaic transformed kernels. It adds no parameters. Both full reference-shape
+initializations and actual optimizer decay masks match the pinned exp control
+exactly: 198,453,586 parameters. Acceptance-selector and pinned-recipe regression
+checks passed 191 CPU tests. Thirteen focused transform checks passed, covering
+independent NumPy values and all gradients, finite extreme tails, numerical
+failure behavior, blocked scan/strips agreement, and forward/backward lowering
+for H100 and B200 at the production context.
+
+GPU numerical qualification and full-recipe pilots are pending. The dedicated
+suite checks production-context BF16 forward and all Q/K/V/coefficient gradients
+against independent CPU references, causality, tails, nonfinite scores, exact
+repeatability, and complete model gradients with QK and output RMSNorm. Each
+production allocation must pass this suite, initialization, a 20-update pilot,
+and fresh-process checkpoint resume. H100/B200 are admitted; B300 is not.
+
 ### Unit-L2 coefficient inputs (2026-11-14)
 
 The coefficient-only normalizer passed **21 CPU checks in 64.58 seconds**, alongside

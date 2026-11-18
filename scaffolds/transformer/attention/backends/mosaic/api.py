@@ -17,7 +17,7 @@ defaults to ``default_precision``.
   nonfinite score or weight, or whose BF16 output overflows, is NaN; coefficient
   gradients are FP32 and stay per query.
 - ``transformed_query_polynomial_attention`` (the blocked reference's ``score_transform``): the
-  same polynomial evaluated at z = phi(s) per causal pair, phi = softplus or abs, inside the tiles of
+  same polynomial evaluated at z = phi(s) per causal pair, phi = softplus, abs or sigmoid, inside the tiles of
   the same kernels, with the chain rule through phi in both gradient passes.
 - ``query_decay_attention`` and ``endpoint_decay_attention`` (the blocked reference's
   query-distance forget gates): the query polynomial times exp((t-i) l), with a per-query
@@ -53,7 +53,7 @@ import jax.numpy as jnp
 from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import (
     BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY,
-    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SOFTPLUS, TAYLOR,
+    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SIGMOID, QUERY_SOFTPLUS, TAYLOR,
 )
 
 WIDTHS = (8, 16, 32, 64, 128)
@@ -336,7 +336,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
 
 # The kernel family of each score transform (attention/score_transform.py) but the identity, which is
 # query_polynomial_attention itself.
-TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS}
+TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS, "sigmoid": QUERY_SIGMOID}
 # Device admission is narrower than the shared kernel architecture: B200 (sm100) uses the Blackwell
 # kernels, but admission does not imply qualification of B300 (sm103). Qualification tests can override
 # these allowlists while exercising a new device before its production runs are permitted.
@@ -377,8 +377,9 @@ _transformed_query.defvjp(_transformed_query_fwd, _transformed_query_bwd)
 
 def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: str, precision: str | None = None):
     """Unnormalized causal sum_i p_(b,t,h)(phi(s_ti)) v_i with FP32 coefficients c[B, T, H, m+1], where phi is the
-    score transform ``transform``: "softplus" (ln(1 + e^s)) or "abs" (|s|), evaluated per causal pair inside the
-    tiles. Gradients follow the chain rule through phi, phi' = sigmoid(s) or sign(s) (zero at s = 0), and the
+    score transform ``transform``: "softplus" (ln(1 + e^s)), "abs" (|s|), or "sigmoid" (1/(1+e^-s)), evaluated
+    per causal pair inside the tiles. Gradients follow the chain rule through phi, with stable sigmoid tail
+    gradients and sign(s) zero at s = 0, and the
     coefficient gradients are dc_r = sum_i dP z^r. Failure behavior, shapes and precisions are those of
     ``query_polynomial_attention``, on H100 (sm90) and B200 (sm100). B300 (sm103) remains unqualified despite
     sharing the Blackwell kernels. The identity transform is that operation itself, so it is refused here."""

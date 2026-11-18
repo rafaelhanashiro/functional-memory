@@ -24,7 +24,7 @@ import pytest
 from scaffolds.transformer.attention.backends.mosaic import api, blackwell, common, hopper
 
 TRANSFORMS = ("softplus", "abs")
-FAMILIES = {"softplus": common.QUERY_SOFTPLUS, "abs": common.QUERY_ABS}
+FAMILIES = {"softplus": common.QUERY_SOFTPLUS, "abs": common.QUERY_ABS, "sigmoid": common.QUERY_SIGMOID}
 
 
 def _lowers_for_cuda(function, *operands):
@@ -48,6 +48,7 @@ def test_families_count_like_the_query_family():
         assert family not in (*common.DECAY_FAMILIES, *common.PER_ORDER_FAMILIES, *common.SCORE_BIAS_FAMILIES)
         assert api.default_precision(family, 8) == common.BF16
     assert common.approx_math(common.QUERY_SOFTPLUS) and not common.approx_math(common.QUERY_ABS)
+    assert common.approx_math(common.QUERY_SIGMOID)
     assert not common.approx_math(common.QUERY)
 
 
