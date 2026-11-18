@@ -15,7 +15,10 @@ authors, year, link, and whether the user has seen it). On the page the user add
 resource from a link (it goes to the top, with metadata read from the link), reorders,
 renames, and switches resources between seen and not seen, and edits each resource's
 write-up, their own Markdown file `literature/<id>.md` (math in `$...$` and `$$...$$`).
-All of these go through `serve.py`, which writes the files without committing them.
+The Meeting page shows the agenda and the notes, `meeting/agenda.md` and `meeting/notes.md`,
+edited the same way. Images pasted or dropped into any editor are stored in `media/` and
+linked from the Markdown. All of these go through `serve.py`, which writes the files
+without committing them.
 
 Its content changes only on the user's explicit instruction: do not add, update, or
 refresh anything here otherwise, even when newer results exist.

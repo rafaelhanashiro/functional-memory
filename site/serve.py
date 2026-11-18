@@ -4,6 +4,8 @@ The login node is shared and every user can reach 127.0.0.1, so only connections
 this server's own Unix user are answered. Besides static files it accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
+    PUT   /meeting/agenda.md        replace the meeting agenda (likewise notes.md)
+    POST  /api/media               an image body (PNG, JPEG, GIF, WebP): store it in media/
     PUT   /api/literature          {"order": [ids]}: reorder the resources (the page's order)
     POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
     PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
@@ -14,7 +16,7 @@ this server's own Unix user are answered. Besides static files it accepts:
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from datetime import date, datetime
 import functools
 from html.parser import HTMLParser
 import http.server
@@ -22,6 +24,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import tempfile
 import threading
 import urllib.parse
@@ -31,12 +34,15 @@ import xml.etree.ElementTree as ET
 SITE = Path(__file__).resolve().parent
 LITERATURE = SITE / "literature"
 LIST = LITERATURE / "papers.json"
-WRITEUP = re.compile(r"/literature/([A-Za-z0-9._-]+\.md)")
+DOCUMENT = re.compile(r"/(literature/[A-Za-z0-9._-]+\.md|meeting/(?:agenda|notes)\.md)")
 RESOURCE = re.compile(r"/api/literature/([A-Za-z0-9._-]+)")
 ARXIV = re.compile(r"arxiv\.org/(?:abs|pdf|html)/([0-9]{4}\.[0-9]{4,5}|[a-z-]+(?:\.[a-z]{2})?/[0-9]{7})", re.I)
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
 AGENT = "Mozilla/5.0 (functional-memory literature list)"
+MEDIA = SITE / "media"
+IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
+MAX_IMAGE_BYTES = 25 << 20
 FETCH_BYTES = 4 << 20
 LOOPBACK = "0100007F"
 LOCK = threading.Lock()
@@ -54,10 +60,10 @@ def peer_uid(client_port: int, server_port: int) -> int | None:
     return None
 
 
-def write_atomic(path: Path, text: str) -> None:
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, prefix=".",
-                                     suffix=".tmp", delete=False) as handle:
-        handle.write(text)
+def write_atomic(path: Path, content: str | bytes) -> None:
+    data = content.encode("utf-8") if isinstance(content, str) else content
+    with tempfile.NamedTemporaryFile("wb", dir=path.parent, prefix=".", suffix=".tmp", delete=False) as handle:
+        handle.write(data)
     os.chmod(handle.name, 0o644)
     os.replace(handle.name, path)
 
@@ -208,8 +214,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/literature":
             self._reorder()
             return
-        match = WRITEUP.fullmatch(self._route())
-        target = LITERATURE / match.group(1) if match else None
+        match = DOCUMENT.fullmatch(self._route())
+        target = SITE / match.group(1) if match else None
         if target is None or not target.is_file():
             self.send_error(404)
             return
@@ -219,7 +225,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         try:
             text = body.decode("utf-8")
         except UnicodeDecodeError:
-            self.send_error(400, "Write-ups must be UTF-8")
+            self.send_error(400, "Documents must be UTF-8")
             return
         write_atomic(target, text)
         self.send_response(204)
@@ -244,8 +250,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             save_list([papers[identifier] for identifier in order])
         self._json(200, {"order": order})
 
+    def _upload(self):
+        kind = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        length = int(self.headers.get("Content-Length") or 0)
+        if kind not in IMAGES:
+            self._json(415, {"error": "Only PNG, JPEG, GIF and WebP images can be added"})
+            return
+        if not 0 < length <= MAX_IMAGE_BYTES:
+            self._json(413, {"error": f"Images must be at most {MAX_IMAGE_BYTES >> 20} MB"})
+            return
+        data = self.rfile.read(length)
+        MEDIA.mkdir(exist_ok=True)
+        name = f"{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(3)}{IMAGES[kind]}"
+        write_atomic(MEDIA / name, data)
+        self._json(201, {"path": f"media/{name}"})
+
     def do_POST(self):
         if not self._same_user():
+            return
+        if self._route() == "/api/media":
+            self._upload()
             return
         if self._route() != "/api/literature":
             self.send_error(404)

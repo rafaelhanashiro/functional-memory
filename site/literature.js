@@ -1,10 +1,9 @@
 // The literature list (literature/papers.json) is shown in its stored order, split into
 // seen and not seen yet; new links go to the top and the grip on each card reorders them
-// (drag, or arrow keys). Adding, reordering, switching groups, and saving a write-up all
-// go through serve.py. Each write-up is a Markdown file (math in $...$,
-// $$...$$, \(...\), \[...\]) fetched whenever its item opens; "Edit" shows it beside a live
-// preview. Code spans and blocks are matched first so their dollar signs stay literal.
-const MATH = /(```[\s\S]*?```|`[^`\n]+`)|\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$])\$(?!\s)((?:\\.|[^$\\\n])+?)(?<!\s)\$/g;
+// (drag, or arrow keys). Adding, reordering, switching groups, renaming, and saving a
+// write-up (literature/<id>.md, shown when its card opens) all go through serve.py.
+import {button, dirty, element, failure, saveText, showEditor, showView} from "./editor.js";
+
 const EMPTY = '<p class="empty">No write-up yet.</p>';
 const API = "api/literature";
 const CHECK = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 10.5l3 3 6-7"/></svg>';
@@ -17,42 +16,8 @@ const groups = {
 const form = document.querySelector(".add-resource");
 const status = document.querySelector(".literature-status");
 const cards = new Map();
-const dirty = new Set();
 let papers = [];
 let saving = Promise.resolve();
-
-function render(markdown) {
-  const math = [];
-  const source = markdown.replace(MATH, (match, code, display, bracket, paren, inline) => {
-    if (code !== undefined) return code;
-    const block = display !== undefined || bracket !== undefined;
-    math.push(katex.renderToString(display ?? bracket ?? paren ?? inline, {displayMode: block, throwOnError: false}));
-    return `${math.length - 1}`;
-  });
-  return marked.parse(source).replace(/(\d+)/g, (match, index) => math[index]);
-}
-
-function element(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text) node.textContent = text;
-  return node;
-}
-
-function button(label, kind, onClick) {
-  const node = element("button", `button ${kind}`, label);
-  node.type = "button";
-  node.addEventListener("click", onClick);
-  return node;
-}
-
-async function failure(response) {
-  try {
-    return (await response.json()).error;
-  } catch {
-    return `${response.status} ${response.statusText}`;
-  }
-}
 
 function authorsLabel(authors) {
   const surname = (name) => name.trim().split(/\s+/).pop();
@@ -66,101 +31,28 @@ function writeupPath(paper) {
   return `literature/${paper.id}.md`;
 }
 
-// Write-ups: a rendered view with "Edit", or the editor with a live preview.
+// Write-ups: a rendered view with "Edit", or the shared editor with the title field.
 
-function showView(card, paper, text) {
-  dirty.delete(card);
-  const view = element("div", "writeup-view");
-  view.innerHTML = text.trim() ? render(text) : EMPTY;
-  card.querySelector(".writeup").replaceChildren(button("Edit", "edit", () => showEditor(card, paper, text)), view);
+function openWriteup(card, paper, text) {
+  showView(card.querySelector(".writeup"), text, {empty: EMPTY, onEdit: () => editWriteup(card, paper, text)});
 }
 
-function showEditor(card, paper, original) {
-  const title = element("input", "editor-title");
-  title.value = paper.title;
-  title.placeholder = "Title";
-  title.setAttribute("aria-label", "Title");
-  const input = element("textarea", "editor-input");
-  input.value = original;
-  input.placeholder = "Markdown, with math in $...$ and $$...$$";
-  const preview = element("div", "writeup-view editor-preview");
-  const note = element("span", "editor-status");
-  const saveButton = button("Save", "primary", () => save());
-  let frame = 0;
-
-  const update = () => { preview.innerHTML = input.value.trim() ? render(input.value) : EMPTY; };
-  const grow = () => {
-    input.style.height = "auto";
-    input.style.height = `${input.scrollHeight + 2}px`;
-  };
-  const mark = () => {
-    if (title.value.trim() === paper.title && input.value === original) dirty.delete(card);
-    else dirty.add(card);
-    note.textContent = dirty.has(card) ? "Unsaved changes" : "";
-  };
-  const cancel = () => {
-    if (!dirty.has(card) || confirm("Discard unsaved changes?")) showView(card, paper, original);
-  };
-  async function save() {
-    const name = title.value.replace(/\s+/g, " ").trim();
-    if (!name) {
-      note.textContent = "The title can't be empty";
-      title.focus();
-      return;
-    }
-    const text = input.value === original ? original : input.value.trim() ? `${input.value.trimEnd()}\n` : "";
-    saveButton.disabled = true;
-    note.textContent = "Saving…";
-    try {
-      if (name !== paper.title) {
+function editWriteup(card, paper, text) {
+  showEditor(card.querySelector(".writeup"), {
+    key: card, text, title: paper.title, empty: EMPTY,
+    save: async ({text: next, title}) => {
+      if (title !== paper.title) {
         const response = await fetch(`${API}/${encodeURIComponent(paper.id)}`, {
-          method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({title: name}),
+          method: "PATCH", headers: {"Content-Type": "application/json"}, body: JSON.stringify({title}),
         });
         if (!response.ok) throw new Error(await failure(response));
-        paper.title = name;
-        card.querySelector(".paper-title").textContent = name;
+        paper.title = title;
+        card.querySelector(".paper-title").textContent = title;
       }
-      if (text !== original) {
-        const response = await fetch(writeupPath(paper), {
-          method: "PUT", body: text, headers: {"Content-Type": "text/markdown; charset=utf-8"},
-        });
-        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-      }
-      showView(card, paper, text);
-    } catch (error) {
-      note.textContent = `Not saved: ${error.message}`;
-      saveButton.disabled = false;
-    }
-  }
-
-  title.addEventListener("input", mark);
-  input.addEventListener("input", () => {
-    mark();
-    grow();
-    cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(update);
+      if (next !== text) await saveText(writeupPath(paper), next);
+    },
+    close: (next) => openWriteup(card, paper, next),
   });
-
-  const panes = element("div", "editor-panes");
-  panes.append(input, preview);
-  const actions = element("div", "editor-actions");
-  actions.append(note, button("Cancel", "ghost", cancel), saveButton);
-  const editor = element("div", "editor");
-  editor.append(title, panes, actions);
-  editor.addEventListener("keydown", (event) => {
-    if (((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s")
-        || (event.target === title && event.key === "Enter")) {
-      event.preventDefault();
-      save();
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      cancel();
-    }
-  });
-  card.querySelector(".writeup").replaceChildren(editor);
-  update();
-  grow();
-  input.focus();
 }
 
 // The list: one card per resource, placed in its group.
@@ -208,7 +100,7 @@ function createCard(paper) {
     try {
       const response = await fetch(writeupPath(paper), {cache: "no-store"});
       if (!response.ok) throw new Error(response.statusText);
-      showView(card, paper, await response.text());
+      openWriteup(card, paper, await response.text());
     } catch {
       card.querySelector(".writeup").innerHTML = '<p class="empty">Could not load the write-up.</p>';
     }
@@ -387,10 +279,6 @@ form.addEventListener("submit", async (event) => {
     for (const control of form.elements) control.disabled = false;
     form.elements.url.focus();
   }
-});
-
-window.addEventListener("beforeunload", (event) => {
-  if (dirty.size) event.preventDefault();
 });
 
 (async () => {
