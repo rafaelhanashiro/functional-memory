@@ -60,53 +60,65 @@ main {
   padding: 40px 0 80px;
 }
 
-/* Runs: links to the pages of run collections */
+/* Runs: tiles linking to the pages of run collections */
 .subpages {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
 }
 .subpage {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 22px;
-  border: 1px solid var(--rule);
-  border-radius: 12px;
-  background: #fff;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 152px;
+  padding: 20px 22px;
+  border: 1px solid rgba(79, 70, 229, 0.14);
+  border-radius: 16px;
+  background: linear-gradient(140deg, #eef2ff 0%, #e0f2fe 100%);
   color: var(--text);
   text-decoration: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .subpage:hover {
-  border-color: #d4d4d8;
-  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px rgba(24, 24, 27, 0.06);
+  border-color: rgba(79, 70, 229, 0.28);
+  box-shadow: 0 12px 30px rgba(30, 41, 59, 0.12);
+  transform: translateY(-2px);
 }
-.subpage:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
-.subpage-head { flex: 1; min-width: 0; }
+.subpage:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
 .subpage-title {
-  display: block;
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
 }
 .subpage-meta {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
+  margin-top: 8px;
+  color: #475569;
   font-size: 0.9rem;
 }
-.arrow {
-  flex: none;
-  width: 18px;
-  height: 18px;
+.subpage-arrow {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.subpage-arrow svg {
+  width: 16px;
+  height: 16px;
   fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.6;
+  stroke: #334155;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform 0.15s, stroke 0.15s;
 }
-.subpage:hover .arrow { transform: translateX(3px); stroke: var(--text); }
+.subpage:hover .subpage-arrow { background: #fff; transform: translate(2px, -2px); }
 .back {
   display: inline-block;
   margin-bottom: 10px;
