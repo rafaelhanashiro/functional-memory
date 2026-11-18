@@ -1,150 +1,59 @@
-question: Trained on the reference shape's token count, twice its own 1x budget, how
-  do the attention variants compare at the 12-layer width-640 shape at degrees eight
-  and twelve, and how close does each come to its reference-shape counterpart at the
-  same tokens? At four times the 1x budget, how do the five degree-twelve RoPE polynomials
-  and softmax compare with exp there and with their 2x runs?
-study: transformer_pp
+question: How do the attention variants compare at the 12-layer width-640 shape as
+  its token budget grows? At twice its 1x budget, the reference shape's token count,
+  the variants at degrees eight and twelve against exp, their 1x runs at this shape
+  and the reference shape at the same tokens; at four times the budget, the five degree-twelve
+  RoPE polynomials and softmax against exp and their 2x runs.
+study: experiments/transformer_pp
 settings:
-  metric: held-out validation perplexity
-  report:
-  - validation-best
-  - terminal at the last update
-  shape:
-    name: 12-layer width-640
-    layers: 12
-    width: 640
-    heads: 10
-    training_steps: 15103
-    warmup_steps: 908
-    global_batch_size: 128
-    budget: twice the shape's 1x budget
-    validation_best_step: 15000
-  four_x_shape:
-    name: 12-layer width-640
-    training_steps: 30205
-    warmup_steps: 1815
-    global_batch_size: 128
-    budget: four times the shape's 1x budget
-    validation_best_step: 30205
-    tokens_at_validation_best: 7918059520
-  one_x_shape:
-    name: 12-layer width-640
-    training_steps: 7551
-    warmup_steps: 454
-    global_batch_size: 128
-    validation_best_step: 7551
-  reference_shape:
-    name: reference
-    layers: 15
-    width: 896
-    heads: 14
-    training_steps: 7570
-    warmup_steps: 455
-    global_batch_size: 256
-    validation_best_step: 7500
-  training_context: 2048
-  seed: 42
-  tokens_at_validation_best: 3932160000 at both shapes (2x update 15000, reference
-    update 7500)
-  baseline:
-    l12_d640_2x: l12_d640_2x_exp
-    l12_d640_4x: l12_d640_4x_exp
-  backend: 2x and 4x RoPE polynomials on the Mosaic query-polynomial kernels (softplus
-    on their transformed family, H100 only), 2x FoX query and FoX exp on the blocked
-    backend's causal strips, exp on fused Triton, softmax on cuDNN; the 1x softplus
-    partner on the causal strips, the 1x FoX exp partner on the blocked scan
-  comparison_groups:
+  metric: validation-best and terminal validation perplexity, reported separately
+  shapes:
+    l12_d640:
+      num_layers: 12
+      hidden_size: 640
+      num_heads: 10
+    reference:
+      num_layers: 15
+      hidden_size: 896
+      num_heads: 14
+  budgets:
+    l12_d640_1x:
+      updates: 7551
+      warmup_steps: 454
+      batch_size: 128
+      validation_best_step: 7551
     l12_d640_2x:
-    - l12_d640_2x_query_m8
-    - l12_d640_2x_query_m12
-    - l12_d640_2x_static_m8
-    - l12_d640_2x_static_m12
-    - l12_d640_2x_fixed_taylor_m8
-    - l12_d640_2x_fixed_taylor_m12
-    - l12_d640_2x_softplus_input_m8
-    - l12_d640_2x_softplus_input_m12
-    - l12_d640_2x_sum_of_squares_m8
-    - l12_d640_2x_sum_of_squares_m12
-    - l12_d640_2x_fox_query_m8
-    - l12_d640_2x_fox_query_m12
-    - l12_d640_2x_exp
-    - l12_d640_2x_softmax
-    - l12_d640_2x_fox_exp
+      updates: 15103
+      warmup_steps: 908
+      batch_size: 128
+      validation_best_step: 15000
     l12_d640_4x:
-    - l12_d640_4x_query_m12
-    - l12_d640_4x_static_m12
-    - l12_d640_4x_fixed_taylor_m12
-    - l12_d640_4x_softplus_input_m12
-    - l12_d640_4x_sum_of_squares_m12
-    - l12_d640_4x_exp
-    - l12_d640_4x_softmax
-  partners:
-    l12_d640_2x_query_m8:
-      one_x: l12_d640_1x_query_m8
-      reference: reference_1x_query_m8
-    l12_d640_2x_query_m12:
-      reference: reference_1x_query_m12
-    l12_d640_2x_static_m8:
-      reference: reference_1x_static_m8
-    l12_d640_2x_fixed_taylor_m8:
-      reference: reference_1x_fixed_taylor_m8
-    l12_d640_2x_fixed_taylor_m12:
-      reference: reference_1x_fixed_taylor_m12
-    l12_d640_2x_softplus_input_m8:
-      one_x: l12_d640_1x_softplus_input_m8
-      reference: reference_1x_softplus_input_m8
-    l12_d640_2x_softplus_input_m12:
-      reference: reference_1x_softplus_input_m12
-    l12_d640_2x_sum_of_squares_m8:
-      reference: reference_1x_sum_of_squares_m8
-    l12_d640_2x_sum_of_squares_m12:
-      reference: reference_1x_sum_of_squares_m12
-    l12_d640_2x_fox_query_m8:
-      reference: reference_1x_fox_query_m8
-    l12_d640_2x_exp:
-      one_x: l12_d640_1x_exp
-      reference: reference_1x_exp
-    l12_d640_2x_softmax:
-      one_x: l12_d640_1x_softmax
-      reference: reference_1x_softmax
-    l12_d640_2x_fox_exp:
-      one_x: l12_d640_1x_fox_exp
-      reference: reference_1x_fox_exp
-    l12_d640_4x_query_m12:
-      two_x: l12_d640_2x_query_m12
-    l12_d640_4x_static_m12:
-      two_x: l12_d640_2x_static_m12
-    l12_d640_4x_fixed_taylor_m12:
-      two_x: l12_d640_2x_fixed_taylor_m12
-    l12_d640_4x_softplus_input_m12:
-      two_x: l12_d640_2x_softplus_input_m12
-    l12_d640_4x_sum_of_squares_m12:
-      two_x: l12_d640_2x_sum_of_squares_m12
-    l12_d640_4x_exp:
-      two_x: l12_d640_2x_exp
-    l12_d640_4x_softmax:
-      two_x: l12_d640_2x_softmax
-  unpartnered: l12_d640_2x_static_m12 and l12_d640_2x_fox_query_m12 have neither partner;
-    the other 2x runs without a one_x partner have no 1x run at this shape at their
-    degree
-  same_fraction:
-    description: gap to exp at the 2x update s against the 4x update 2s, and at the
-      last updates; every evaluation uses the same validation batches
-    validation_batches: 38
-    two_x_steps:
-    - 3000
+      updates: 30205
+      warmup_steps: 1815
+      batch_size: 128
+      validation_best_step: 30205
+    reference_1x:
+      updates: 7570
+      warmup_steps: 455
+      batch_size: 256
+      validation_best_step: 7500
+  matched_updates:
+  - - 3000
     - 6000
-    - 9000
+  - - 6000
     - 12000
-    - 15000
-    - 15103
-    four_x_steps:
-    - 6000
-    - 12000
+  - - 9000
     - 18000
+  - - 12000
     - 24000
+  - - 15000
     - 30000
+  - - 15103
     - 30205
+  sequence_length: 2049
+  seed: 42
+data_identity:
+  train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
 runs:
 - study: transformer_pp
   run_id: r3759b2a57a54

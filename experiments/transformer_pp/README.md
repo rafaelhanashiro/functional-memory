@@ -167,7 +167,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Model scale
 
-The [model scale collection](results/model_scale/README.md) repeats eight attention
+The [shape-pair collection](results/l12_d640/shape_pairs/README.md) repeats eight attention
 variants at the 12-layer width-640 shape. Each recipe is its reference-shape partner's,
 derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 `scaffolds.records create`:
@@ -1901,7 +1901,7 @@ shape's token count, twice the shape's 1x budget, at degrees eight and twelve. A
 query at degree eight (validation-best 15.314) and FoX exp (15.320) lead, 2.90% and 2.87% below exp (15.772);
 the ten RoPE polynomials lie within −0.36% to +0.07% of exp and softmax is 2.66% above it; the thirteen with a
 reference-shape counterpart stay 10.1–12.4% above it at the same tokens. Question, comparisons, results and
-limits: the [matched_tokens topic](results/exploratory/matched_tokens/README.md).
+limits: the [budgets collection](results/l12_d640/budgets/README.md).
 
 - Recipes: each 1x run at the shape derived with `derive_recipe.py --budget 2` and allocated with
   `scaffolds.records create`: 15,103 updates, warmup 908, validation every 200 updates through 3,000 and every
@@ -1965,7 +1965,7 @@ the degree-twelve query, static, fixed Taylor, softplus input and sum-of-squares
 sum of squares (validation-best 14.565) and softplus input (14.581) are 0.28% and 0.16% below exp (14.605), query
 ties it (+0.01%), fixed Taylor and static are 0.07% and 0.13% above it, and softmax 3.34%; against exp each
 polynomial is 0.08–0.19 percentage points worse than at 2x. Runs, results and limits: the
-[matched_tokens topic](results/exploratory/matched_tokens/README.md#four-times-the-budget).
+[budgets collection](results/l12_d640/budgets/README.md#four-times-the-budget).
 
 - Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
   30,205 updates of 128 × 2,048 tokens (7.92B prediction tokens), warmup 1,815, validation every 400 updates
@@ -1990,7 +1990,7 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   fused Triton for exp, cuDNN for softmax. Each run requests one B300 or H100 (the softplus run an H100 alone)
   and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not verified reset
   (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. All seven finished on `dogo`, four of them after starting
-  on `akita`'s B300; the topic's [4x limits](results/exploratory/matched_tokens/README.md#4x-limits) list each
+  on `akita`'s B300; the budgets collection's [4x limits](results/l12_d640/budgets/README.md#4x-limits) list each
   run's GPUs and resumptions.
 - Time limits: the projection on the slowest eligible GPU, the H100 SXM, plus acceptance's two-hour reserve,
   rounded up with room. A projection is a 2x run's wall time per update, validation included, over 30,205

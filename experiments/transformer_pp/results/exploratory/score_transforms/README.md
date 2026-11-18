@@ -217,7 +217,7 @@ degree eight (14.262) did not: 0.42% below the control, level with exp (14.257) 
 at degree eight (14.218). Nor did softplus at degree twelve (validation-best 14.222, terminal 14.226): 0.02%
 below its control, 0.24% below exp and 0.60% below fixed Taylor at degree twelve (14.309). At twice the
 12-layer width-640 budget, on the Mosaic transformed kernels, softplus is 0.25% (degree eight) and 0.11% (degree
-twelve) below the query runs ([matched_tokens](../matched_tokens/README.md)). All runs are complete. Whether to
+twelve) below the query runs ([budgets](../../l12_d640/budgets/README.md)). All runs are complete. Whether to
 promote the topic to its own canonical collection or discard it with its runs and their artifacts is the user's
 decision.
 

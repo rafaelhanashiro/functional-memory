@@ -1,4 +1,4 @@
-"""The model-scale comparison regenerates from its pinned runs."""
+"""The shape-pair comparison regenerates from its pinned runs."""
 
 import copy
 import hashlib
@@ -8,12 +8,12 @@ from pathlib import Path
 import pytest
 import yaml
 
-from experiments.transformer_pp.results.model_scale.plot import (
+from experiments.transformer_pp.results.l12_d640.shape_pairs.plot import (
     DIRECTORY, ROOT, check_recipes, load_runs, main, variant_of)
 
 
 SELECTION = yaml.safe_load((DIRECTORY / "selection.yaml").read_text())
-DERIVED = ("model_scale.png", "model_scale.pdf", "summary.csv", "README.md")
+DERIVED = ("shape_pairs.png", "shape_pairs.pdf", "summary.csv", "README.md")
 # Validation-best perplexity as quoted in the README: (15-layer width-896, 12-layer width-640).
 BEST = {"softmax": (14.543, 17.964), "exp": (14.257, 17.550), "fixed_taylor_m4": (14.722, 18.087),
         "static_m4": (14.767, 18.010), "query_m4_w_decay": (14.709, 17.944), "query_m8_w_decay": (14.323, 17.592),
@@ -147,7 +147,7 @@ def test_a_change_to_both_runs_of_a_pair_is_rejected():
 
 def test_each_12_layer_recipe_is_its_partner_derived_by_the_study_rules():
     from experiments.transformer_pp.derive_recipe import derive
-    from experiments.transformer_pp.results.model_scale.plot import _recipe
+    from experiments.transformer_pp.results.l12_d640.shape_pairs.plot import _recipe
 
     configs = _configs()
     for variant, (reference, small) in PAIRS.items():

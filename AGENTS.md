@@ -84,19 +84,23 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Six attention questions have their own canonical collections at the user's request:
+  Seven attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
   static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet),
   `results/rational_polynomial/` (separate learned denominator polynomials), and the
   Transformer++ study's `experiments/transformer_pp/results/degree_scaling/`
   (perplexity against polynomial degree for four coefficient families),
-  `experiments/transformer_pp/results/model_scale/` (attention variants at a smaller
-  model shape against their reference-shape partners) and
   `experiments/transformer_pp/results/score_mlp/` (a learned MLP of the score and query
-  token in place of exp). Do not
+  token in place of exp), and the 12-layer width-640 shape's
+  `experiments/transformer_pp/results/l12_d640/shape_pairs/` (attention variants at 1×
+  against their reference-shape partners) and `.../l12_d640/budgets/` (the variants at
+  1×, 2× and 4× the shape's budget). Do not
   create a result directory for any other mechanism or sweep unless the user asks.
   Each canonical collection stands alone: never merge one into another, and never fold
-  a newly canonical experiment into an existing collection. Learning curves and
+  a newly canonical experiment into an existing collection. A shape folder such as
+  `l12_d640/` only groups one model shape's canonical collections, each in its own
+  sub-directory; its README indexes them and links that shape's exploratory topics, which
+  stay under `exploratory/`. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -114,7 +118,8 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   selection. The applicable `results/exploratory/README.md` lists the open topics;
   the root exploratory index may link to study-local topics. Mention open topics in
   status updates. A topic ends in one of two ways: promote it or discard it.
-  Promoting makes the topic its own canonical collection, `results/<topic>/`: move its
+  Promoting makes the topic its own canonical collection, `results/<topic>/` (or, for a
+  topic about one model shape, a new collection in that shape's folder): move its
   selection, findings, and code there, add regeneration code and tests, list it in the
   root README and in the canonical collections above, and delete the topic. A promoted
   topic is never merged into an existing canonical collection, even a related one.

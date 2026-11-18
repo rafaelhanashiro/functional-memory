@@ -1,14 +1,12 @@
-# Matched tokens
+# Budgets
 
-Opened: 2026-11-12. Status: **open**. All runs are complete: the fifteen at twice the 1x budget, covered from
-[Runs](#runs) to [Limits](#limits), and the seven at four times it ([below](#four-times-the-budget)). Promoting or
-discarding the topic is the user's decision ([below](#open-decision)). Each run's status is in its record and the
-study's `runs.csv`.
+How do the attention variants compare at the 12-layer width-640 shape as its token budget grows? Trained
+on the reference shape's token count, twice its own 1x budget, how do they compare at degrees eight and
+twelve, and how close does each come to its reference-shape counterpart at the same tokens? At four times
+the 1x budget, how do the five degree-twelve RoPE polynomials and softmax compare with exp there and with
+their 2x runs? Each run's status is in its record and the study's `runs.csv`.
 
-Trained on the reference shape's token count, twice its own 1x budget, how do the attention variants compare
-at the 12-layer width-640 shape at degrees eight and twelve? How close does each come to its reference-shape
-counterpart at the same tokens? At four times the 1x budget, how do the five degree-twelve RoPE polynomials and
-softmax compare with exp there and with their 2x runs?
+![Each variant against exp at 2x, and the degree-twelve RoPE polynomials from 2x to 4x](budgets.png)
 
 ## Runs
 
@@ -66,6 +64,8 @@ is the same. The [selection](selection.yaml) names each run's role and pins its 
 At 2x, against exp at 2x, in order of validation-best perplexity (`metrics.jsonl`; `best_validation.json` and
 `completion.json` agree):
 
+<!-- BEGIN GENERATED 2X RESULTS -->
+
 | Run | Variant | `m` | Validation-best PPL (update) | vs exp | Terminal PPL (update 15,103) | vs exp |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | `r656e8e652b72` | FoX query | 8 | 15.314 (15,000) | −2.90% | 15.325 | −2.87% |
@@ -84,8 +84,12 @@ At 2x, against exp at 2x, in order of validation-best perplexity (`metrics.jsonl
 | `rd77db79142e6` | fixed Taylor | 8 | 15.783 (15,000) | +0.07% | 15.788 | +0.07% |
 | `r3bb5b8bd5c6a` | softmax | – | 16.192 (15,000) | +2.66% | 16.203 | +2.70% |
 
+<!-- END GENERATED 2X RESULTS -->
+
 Against the 1x runs, validation-best perplexity with terminal in parentheses (the 1x runs at this shape end at
 their validation best); percentages compare validation-best values:
+
+<!-- BEGIN GENERATED 2X PARTNERS -->
 
 | Run | Variant | `m` | 2x | 1x at 12-layer width-640 | 2x vs 1x | Reference shape, 1x | 2x vs reference shape |
 | --- | --- | ---: | ---: | --- | ---: | --- | ---: |
@@ -95,7 +99,7 @@ their validation best); percentages compare validation-best values:
 | `r84f325593209` | static | 12 | 15.778 (15.783) | – | – | – | – |
 | `rd77db79142e6` | fixed Taylor | 8 | 15.783 (15.788) | – | – | `ra7ee8a4b2544` 14.218 (14.223) | +11.00% |
 | `rffab7c4eeac5` | fixed Taylor | 12 | 15.763 (15.769) | – | – | `rb2b70dae4d21` 14.309 (14.311) | +10.16% |
-| `rc6a7e50d27e1` | softplus input | 8 | 15.740 (15.748) | `r1d342ca6e58c` 17.488, causal strips | −9.99% | `ra3b54e2489f8` 14.262 (14.265) | +10.36% |
+| `rc6a7e50d27e1` | softplus input | 8 | 15.740 (15.748) | `r1d342ca6e58c` 17.488 | −9.99% | `ra3b54e2489f8` 14.262 (14.265) | +10.36% |
 | `r53d5bbcac16f` | softplus input | 12 | 15.724 (15.731) | – | – | `r9eb845aae5bb` 14.222 (14.226) | +10.56% |
 | `rccd2cb5e8bab` | sum of squares | 8 | 15.740 (15.748) | – | – | `reeefbcc19abf` 14.196 (14.200) | +10.88% |
 | `r08be7093202a` | sum of squares | 12 | 15.715 (15.721) | – | – | `r3d52b7ab43d1` 14.165 (14.168) | +10.95% |
@@ -104,6 +108,8 @@ their validation best); percentages compare validation-best values:
 | `rd920368a922e` | exp | – | 15.772 (15.777) | `r3e2fa2532c23` 17.550 | −10.14% | `r6a76e7fbde45` 14.257 (14.262) | +10.62% |
 | `r3bb5b8bd5c6a` | softmax | – | 16.192 (16.203) | `rf81c96f76a1d` 17.964 | −9.86% | `r9040f12f3d80` 14.543 (14.546) | +11.34% |
 | `re634d82ee479` | FoX exp | – | 15.320 (15.330) | `ra5dfd978d3bd` 16.753 | −8.56% | `r183f08346ddc` 13.628 (13.630) | +12.41% |
+
+<!-- END GENERATED 2X PARTNERS -->
 
 –: no run at that shape and degree. At the 12-layer width-640 shape static, fixed Taylor and FoX query have 1x
 runs only at `m = 4`, query at `m = 4` and `m = 8`, softplus only at `m = 8`, sum of squares none; the reference
@@ -155,7 +161,7 @@ At 2x:
 
 ## Four times the budget
 
-Added 2026-11-15 at the user's request: the five degree-twelve RoPE polynomials above, exp and softmax at four
+The five degree-twelve RoPE polynomials above, exp and softmax at four
 times the shape's 1x budget, each its 2x run derived with `derive_recipe.py --budget 4`: 30,205 updates of
 128 × 2,048 tokens (7.92B prediction tokens, twice the 2x runs' 3.96B), warmup 1,815, validation every 400 updates
 through 6,000 and every 2,000 after, seed 42. One GPU each; home cluster Kennel.
@@ -182,6 +188,8 @@ Against exp at 4x, in order of validation-best perplexity (`metrics.jsonl`; `bes
 its terminal value is the same; every 2x run is validation-best at update 15,000. The last column compares
 validation-best values, 4x against 2x:
 
+<!-- BEGIN GENERATED 4X RESULTS -->
+
 | Run | Variant | `m` | Validation-best PPL (update) | Terminal PPL (update 30,205) | vs exp | 2x validation-best | 2x vs exp | 2x to 4x |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `r1f935f18fe21` | sum of squares | 12 | 14.565 (30,205) | 14.565 | −0.28% | 15.715 | −0.36% | −7.32% |
@@ -192,9 +200,13 @@ validation-best values, 4x against 2x:
 | `r0f8122dd8439` | static | 12 | 14.624 (30,205) | 14.624 | +0.13% | 15.778 | +0.04% | −7.31% |
 | `r93df1e48c8fd` | softmax | – | 15.092 (30,205) | 15.092 | +3.34% | 16.192 | +2.66% | −6.79% |
 
+<!-- END GENERATED 4X RESULTS -->
+
 Gap to exp in percent at the same fraction of training, as 2x / 4x: the 2x run at update `s` against exp at 2x,
 the 4x run at update `2s` against exp at 4x, and in the last column the last updates. Every evaluation uses the
 same 38 validation batches (`metrics.jsonl`):
+
+<!-- BEGIN GENERATED 4X MATCHED POINTS -->
 
 | Variant | `m` | 3,000 / 6,000 | 6,000 / 12,000 | 9,000 / 18,000 | 12,000 / 24,000 | 15,000 / 30,000 | 15,103 / 30,205 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -204,6 +216,8 @@ same 38 validation batches (`metrics.jsonl`):
 | fixed Taylor | 12 | −0.06 / +0.07 | −0.10 / +0.12 | −0.06 / +0.11 | −0.07 / +0.08 | −0.06 / +0.05 | −0.05 / +0.07 |
 | static | 12 | +0.13 / +0.12 | −0.01 / +0.16 | 0.00 / +0.14 | +0.09 / +0.10 | +0.04 / +0.11 | +0.04 / +0.13 |
 | softmax | – | +1.26 / +2.90 | +2.04 / +3.25 | +2.47 / +3.32 | +2.57 / +3.30 | +2.66 / +3.34 | +2.70 / +3.34 |
+
+<!-- END GENERATED 4X MATCHED POINTS -->
 
 ### 4x findings
 
@@ -246,13 +260,17 @@ same 38 validation batches (`metrics.jsonl`):
 - The 2x runs trained on H100 PCIe and H100 SXM GPUs ([Limits](#limits)), so the 2x-to-4x comparisons cross GPUs
   as well as budgets.
 
-## Open decision
+## Regeneration
 
-The fifteen 2x runs and the seven 4x runs are complete. Whether to promote the topic to its own canonical
-collection or discard it with its runs and their artifacts is the user's decision.
-
-Refresh the selection after the runs' scientific files change:
+From the repository root, re-pin the selection after its runs change, then regenerate `summary.csv`,
+`budgets.png`/`.pdf` and the tables above:
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/matched_tokens
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/l12_d640/budgets
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.l12_d640.budgets.plot
 ```
+
+`tests/` checks the pins; that every run trains its role's variant, degree, shape and schedule; that each 4x
+recipe is its 2x run derived with `derive_recipe.py --budget 4`, and each 2x run with a 1x partner at its
+degree that partner derived with `--budget 2` (apart from the softplus run's attention backend); the quoted
+values; and byte-identical regeneration.

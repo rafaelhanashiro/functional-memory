@@ -1,8 +1,8 @@
-"""Regenerate the Transformer++ model-scale comparison from its pinned runs.
+"""Regenerate the Transformer++ shape-pair comparison from its pinned runs.
 
-    PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.model_scale.plot
+    PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.l12_d640.shape_pairs.plot
 
-Writes ``summary.csv``, ``model_scale.png``/``.pdf``, and the generated tables in ``README.md``:
+Writes ``summary.csv``, ``shape_pairs.png``/``.pdf``, and the generated tables in ``README.md``:
 each attention variant's validation-best and terminal perplexity at the 15-layer width-896
 reference shape and at the 12-layer width-640 shape, both at 1x Chinchilla, with its difference
 from softmax within each shape.
@@ -24,7 +24,7 @@ from scaffolds.records.selections import verify_pinned_runs
 
 
 DIRECTORY = Path(__file__).resolve().parent
-ROOT = DIRECTORY.parents[3]
+ROOT = DIRECTORY.parents[4]
 FIELDS = (
     "run_id", "role", "variant", "shape", "status", "parameter_count", "terminal_step", "training_tokens",
     "terminal_validation_nll", "terminal_validation_perplexity", "best_validation_step", "best_validation_nll",
@@ -365,8 +365,8 @@ def render(rows: list[dict], output: Path = DIRECTORY) -> None:
                     "Gated DeltaNet gate and no positional encoding.\nThe 12-layer runs halve the batch, hold the "
                     "update count within 0.3%, and keep the validation set and everything else of their partner.",
                     fontsize=8.5, color=MUTED, va="top", linespacing=1.35)
-        figure.savefig(output / "model_scale.png", dpi=180, metadata={"Software": "Matplotlib"})
-        figure.savefig(output / "model_scale.pdf", metadata={"CreationDate": None, "ModDate": None,
+        figure.savefig(output / "shape_pairs.png", dpi=180, metadata={"Software": "Matplotlib"})
+        figure.savefig(output / "shape_pairs.pdf", metadata={"CreationDate": None, "ModDate": None,
                                                             "Creator": "Matplotlib"})
         plt.close(figure)
 

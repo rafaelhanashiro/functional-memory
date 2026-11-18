@@ -171,7 +171,7 @@ also spikes.
   lowest at 4x.** Of 12, 14 and 9 such runs at 1x, 2x and 4x (`runs.csv`), it is 0.52% below the next at 1x
   (degree-eight softplus input) and 0.28% below the next at 2x (raw-score SoS). At 4x raw-score SoS is 0.0003
   lower (14.5645 against 14.5649, 0.002%). The forget-gate runs at 1x and 2x are lower still
-  ([model_scale](../../model_scale/README.md), [matched_tokens](../matched_tokens/README.md)); none trained at
+  ([shape pairs](../../l12_d640/shape_pairs/README.md), [budgets](../../l12_d640/budgets/README.md)); none trained at
   4x.
 - **Its lead over exp narrows with the budget**: 0.88% at 1x, 0.63% at 2x and 0.27% at 4x, against 1.15% at
   the reference shape at the 2x runs' validation-best token count. It narrows with the budget at each fifth of

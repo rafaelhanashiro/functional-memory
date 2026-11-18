@@ -9,9 +9,12 @@ validation perplexity against polynomial degree `m = 1-8` and 12 for fixed Taylo
 Hermite, learned static, and query coefficients with projection weight decay (Taylor and
 query only at 12), with softmax as the reference level; all thirty-four runs are complete.
 
-The canonical [model scale](model_scale/README.md) collection repeats eight attention
-variants at the 12-layer width-640 shape (98,977,016 parameters at 1×) and compares each
-with its reference-shape partner; all sixteen runs are complete.
+The [12-layer width-640 shape](l12_d640/README.md) groups that shape's two canonical
+collections: [shape pairs](l12_d640/shape_pairs/README.md) repeats eight attention variants
+there (98,977,016 parameters at 1×) and compares each with its reference-shape partner, and
+[budgets](l12_d640/budgets/README.md) compares the variants at 1×, 2× and 4× the shape's
+budget with exp and, at 2×, with the reference shape at the same tokens. All their selected
+runs are complete.
 
 The canonical [score MLP](score_mlp/README.md) collection compares a conventional SiLU MLP
 of the score and the query token, in place of exp at widths `J = 4` and 8, with exp, query

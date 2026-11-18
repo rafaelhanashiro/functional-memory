@@ -1,6 +1,4 @@
-# Model scale
-
-Canonical collection, created 2026-11-07 at the user's request.
+# Shape pairs
 
 **Question.** Do the attention-variant comparisons of the Transformer++ recipe hold at a
 smaller model shape? Eight variants train at the 12-layer width-640 shape, each against its
@@ -9,7 +7,7 @@ partner at the 15-layer width-896 reference shape, both at 1× Chinchilla.
 ## Method
 
 Each 12-layer run is its partner's recipe derived by the study's
-[recipe rules](../../README.md#model-shapes-and-token-budgets) with
+[recipe rules](../../../README.md#model-shapes-and-token-budgets) with
 `derive_recipe.py --layers 12 --width 640`: 10 heads of width 64 for queries, keys and
 values, SwiGLU width 1,664, batch 128, 7,551 updates (1.98B prediction tokens), warmup 454,
 and the reference's 4,864 validation sequences (38 batches of 128) at the same cadence.
@@ -37,11 +35,11 @@ forget gate's projection Uniform(±1/sqrt(640)).
 | FoX exp, no positional encoding | `ra5dfd978d3bd` | `r183f08346ddc` | 13.628 |
 
 The [selection](selection.yaml) pins each pair. Launch commands are in the
-[study README](../../README.md#model-scale).
+[study README](../../../README.md#model-scale).
 
 ## Results
 
-![Validation-best perplexity of eight attention variants at the two shapes](model_scale.png)
+![Validation-best perplexity of eight attention variants at the two shapes](shape_pairs.png)
 
 <!-- BEGIN GENERATED RESULTS -->
 
@@ -120,11 +118,11 @@ Validation-best updates: 15 × 896 (reference) 7,500; 12 × 640 7,551.
 ## Regeneration
 
 From the worktree root, re-pin the selection after its runs change, then regenerate
-`summary.csv`, `model_scale.png`/`.pdf` and the tables above:
+`summary.csv`, `shape_pairs.png`/`.pdf` and the tables above:
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/model_scale
-PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.model_scale.plot
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/l12_d640/shape_pairs
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.l12_d640.shape_pairs.plot
 ```
 
 `tests/` checks the pins; that each pair differs only by the shape rules and matches a fresh
