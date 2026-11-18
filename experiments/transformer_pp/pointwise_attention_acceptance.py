@@ -32,6 +32,7 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
                   "wandb_group", "wandb_dir", "wandb_mode")
 OWN_TESTS = "experiments/transformer_pp/tests/test_pointwise_attention_acceptance.py"
 INTEGRATION_TESTS = "scaffolds/transformer/tests/test_pointwise_attention.py"
+EMBEDDING_TESTS = "scaffolds/transformer/tests/test_embedding_precision.py"
 KERNEL_TESTS = "scaffolds/transformer/tests/test_pointwise_score_transform.py"
 GPU_TYPES = ("H100", "B200")
 
@@ -98,8 +99,9 @@ def check_initialization(config: Config) -> dict:
 def experiment_spec(config: Config, *, entry_module: str):
     check_recipe(config)
     shared = attention_spec(config, entry_module=entry_module)
-    return replace(shared, cpu_tests=(*shared.cpu_tests, OWN_TESTS, INTEGRATION_TESTS, KERNEL_TESTS),
-                   gpu_tests=(*shared.gpu_tests, INTEGRATION_TESTS, KERNEL_TESTS), check_config=check_recipe,
+    return replace(shared, cpu_tests=(*shared.cpu_tests, OWN_TESTS, INTEGRATION_TESTS, KERNEL_TESTS, EMBEDDING_TESTS),
+                   gpu_tests=(*shared.gpu_tests, INTEGRATION_TESTS, KERNEL_TESTS, EMBEDDING_TESTS),
+                   check_config=check_recipe,
                    required_backend="mosaic", check_initialization=check_initialization)
 
 

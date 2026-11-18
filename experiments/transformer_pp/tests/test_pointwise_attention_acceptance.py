@@ -98,9 +98,9 @@ def test_acceptance_keeps_kernel_tests_pilot_resume_and_initialization(transform
     assert spec.pilot_steps == 20
     for cpu in (True, False):
         paths = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=cpu)
-        assert adapter.KERNEL_TESTS in paths
+        assert {adapter.KERNEL_TESTS, adapter.INTEGRATION_TESTS, adapter.EMBEDDING_TESTS} <= set(paths)
         if cpu:
-            assert adapter.OWN_TESTS in paths and adapter.INTEGRATION_TESTS in paths
+            assert adapter.OWN_TESTS in paths
     assert "resume" in acceptance.CHECKS
 
 

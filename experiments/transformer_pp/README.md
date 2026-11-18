@@ -930,6 +930,9 @@ RMSNorm, all 198,453,586 trainable parameters, initialization, optimizer, data,
 and 7,570-update budget. Fixed degree-one coefficients `[0, 1]` after the score
 transform implement the functions without a learned coefficient generator.
 
+Both runs sum input embedding gradients for repeated tokens in FP32. The
+historical exp control summed them in BF16.
+
 Home cluster: Kennel. Branch `codex/pointwise-attention-baselines`, worktree
 `worktrees/pointwise-attention-baselines`. The shared Mosaic transformed kernels
 run on one B200 per job. The [acceptance adapter](pointwise_attention_acceptance.py)

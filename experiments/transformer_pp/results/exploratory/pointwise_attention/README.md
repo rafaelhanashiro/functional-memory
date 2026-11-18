@@ -19,9 +19,11 @@ score offsets, or additional gates are learned.
 
 The shared scaffold expresses each function as fixed `p(z) = z`, coefficients
 `[0, 1]`, after the selected score transform. Its Mosaic transformed attention
-kernels compute the causal weighted sum. The exp control used its fused
-exponential backend; this implementation difference is recorded and qualified,
-not a scientific hyperparameter change.
+kernels compute the causal weighted sum. The historical exp control used its
+fused exponential backend. It also summed input embedding gradients for repeated
+token IDs in BF16. The sigmoid and softplus runs sum those gradients in FP32.
+Their comparison with each other matches embedding precision. Their comparisons
+with historical exp include both the score function and the precision change.
 
 The [study launch instructions](../../../README.md#sigmoid-and-softplus-attention)
 use one B200 per run in `standard`. Before production, acceptance verifies the
@@ -29,14 +31,8 @@ pinned control recipe, every initialized parameter and optimizer decay mask,
 forward and backward kernel correctness, the full-recipe training pilot, and
 fresh-process checkpoint resume. Run records and logs hold the current status.
 
-Both runs are currently `acceptance_failed`, before any training update. CPU and
-attention-kernel GPU checks passed; the full-model exact-repeatability fixture
-fails because repeated token IDs cause nondeterministic BF16 embedding-gradient
-accumulation. A read-only diagnostic reproduced the same behavior with exp and
-confirmed exact full-model repeats with distinct token IDs. The
-[scaffold validation record](../../../../../scaffolds/transformer/validation/README.md#fixed-sigmoid-and-softplus-attention-2026-11-18)
-documents the evidence. The test fixture needs correction before qualification
-and launch can continue; the recipes and frozen execution code are unchanged.
+The [scaffold validation record](../../../../../scaffolds/transformer/validation/README.md#fixed-sigmoid-and-softplus-attention-2026-11-18)
+describes the repeated-token gradient check and the full-model qualification.
 
 No training conclusions yet. The open decision is whether either fixed nonlinear
 function merits further comparison with exp and learned SoS attention. Report

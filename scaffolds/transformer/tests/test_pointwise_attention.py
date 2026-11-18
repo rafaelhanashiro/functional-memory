@@ -145,14 +145,16 @@ def test_pointwise_diagnostics_measure_the_transformed_weights(transform):
 
 @pytest.mark.gpu
 @pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
-def test_pointwise_mosaic_full_model_bf16_gradients_and_repeatability(transform):
+@pytest.mark.parametrize("unique_tokens", (True, False), ids=("unique", "repeated"))
+def test_pointwise_mosaic_full_model_bf16_gradients_and_repeatability(transform, unique_tokens):
     from scaffolds.transformer.attention.backends.mosaic.api import transformed_compute_capability_supported
 
     gpu = jax.devices()[0]
     if gpu.platform != "gpu" or not transformed_compute_capability_supported(gpu.compute_capability):
         pytest.skip("Pointwise Mosaic attention is qualified on H100/B200")
     cpu = jax.devices("cpu")[0]
-    config = _config(transform, max_seq_len=256, vocab_size=64, hidden_size=64,
+    vocab_size = 512 if unique_tokens else 64
+    config = _config(transform, max_seq_len=256, vocab_size=vocab_size, hidden_size=64,
                      qk_head_dim=64, value_head_dim=64, intermediate_size=128, attention_backend="mosaic")
     assert resolve_attention_backend(config.model, dtype="bfloat16") == "mosaic"
     with jax.default_device(cpu):
@@ -165,27 +167,33 @@ def test_pointwise_mosaic_full_model_bf16_gradients_and_repeatability(transform)
             if isinstance(module, multihead.MultiHeadAttention):
                 module.backend = "blocked"
         blocked_graph, _ = nnx.split(model, nnx.Param)
-        tokens = jnp.asarray(np.random.default_rng(31).integers(0, 64, size=(1, 256)), jnp.int32)
+        rng = np.random.default_rng(31)
+        ids = rng.permutation(vocab_size)[:256] if unique_tokens else rng.integers(vocab_size, size=256)
+        tokens = jnp.asarray(ids[None, :], jnp.int32)
 
-    def evaluate(graph, device):
+    def program(graph):
         def loss(parameters, inputs):
             logits = nnx.merge(graph, parameters)(inputs).astype(jnp.float32)
             return jnp.mean(logits ** 2), logits
-        return jax.jit(jax.value_and_grad(loss, has_aux=True))(
-            jax.device_put(params, device), jax.device_put(tokens, device))
+        return jax.jit(jax.value_and_grad(loss, has_aux=True))
 
-    actual = evaluate(mosaic_graph, gpu)
-    repeated = evaluate(mosaic_graph, gpu)
-    expected = evaluate(blocked_graph, cpu)
-    for first, second in zip(jax.tree.leaves(actual), jax.tree.leaves(repeated), strict=True):
-        np.testing.assert_array_equal(first, second)
-    for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
-        got, want = np.asarray(got, np.float64), np.asarray(want, np.float64)
-        assert np.isfinite(got).all()
+    gpu_program = program(mosaic_graph)
+    gpu_inputs = jax.device_put((params, tokens), gpu)
+    actual = gpu_program(*gpu_inputs)
+    for replay in (gpu_program, program(mosaic_graph)):
+        repeated = replay(*gpu_inputs)
+        for (path, first), second in zip(jax.tree.leaves_with_path(actual), jax.tree.leaves(repeated), strict=True):
+            np.testing.assert_array_equal(first, second, err_msg=jax.tree_util.keystr(path))
+
+    expected = program(blocked_graph)(*jax.device_put((params, tokens), cpu))
+    for (path, first), reference in zip(jax.tree.leaves_with_path(actual), jax.tree.leaves(expected), strict=True):
+        name = jax.tree_util.keystr(path)
+        got, want = np.asarray(first, np.float64), np.asarray(reference, np.float64)
+        assert np.isfinite(got).all(), name
         # BF16 matmuls in the complete model accumulate the tile-level rounding differences.
         scale = max(float(np.max(np.abs(want))), 1e-8)
-        np.testing.assert_allclose(got, want, rtol=.03, atol=.015 * scale)
-        assert np.linalg.norm(got - want) <= .03 * max(np.linalg.norm(want), 1e-8)
+        np.testing.assert_allclose(got, want, rtol=.03, atol=.015 * scale, err_msg=name)
+        assert np.linalg.norm(got - want) <= .03 * max(np.linalg.norm(want), 1e-8), name
     gradients = dict(nnx.to_flat_state(actual[1]))
     for projection in ("q_proj", "k_proj", "v_proj"):
         arrays = [np.asarray(value[...]) for path, value in gradients.items() if projection in path]

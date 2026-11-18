@@ -36,16 +36,26 @@ blocked-exp control with one compiled callable and with a fresh compilation.
 Using distinct token IDs made every output and parameter gradient bitwise equal
 over three repeats and a fresh compilation, for all three functions. Every
 per-array relative-L2 difference against the CPU blocked model stayed below 1.2%.
-The strict fixture needs distinct indices, following the existing normalized
-polynomial replay test; the mathematical recipe and attention kernels need no
-change for this diagnosed failure. [pointwise_repeatability.json](pointwise_repeatability.json)
-records the evidence and [probe](pointwise_repeatability_probe.py).
+The [original measurements](pointwise_repeatability.json) and
+[diagnostic program](pointwise_repeatability_probe.py) record the behavior
+before the input embedding precision fix.
 
-The production acceptance suites remain failed and the training pilots have not
-run. Every production allocation still requires the full suite, initialization,
-a 20-update pilot, and fresh-process checkpoint resume. H100/B200 are admitted;
-B300 is not. This diagnostic changed no frozen execution code or run recipe and
-did not relaunch the failed jobs.
+The shared model now gathers FP32 embedding rows and casts the gathered
+activations to the compute dtype. Its repeated-ID regression gives two token
+occurrences the gradients 1 and 1/1024 in the same channel. Their FP32 sum
+is 1.0009765625. The previous BF16 accumulation returned 1. The new CPU check
+recovers the exact sum and checks forward activations against the former lookup
+for both BF16 and FP32 training.
+
+On B200, job `6665` passed all 20 focused GPU checks. These include both
+embedding compute dtypes, fourteen pointwise kernel checks, and four full-model
+checks across sigmoid and softplus with distinct and repeated token IDs. All
+four full-model checks passed the original GPU-to-CPU tolerances and produced
+bitwise-identical outputs and gradients on a second call.
+
+Every production allocation requires the full suite, initialization, a
+20-update pilot, and fresh-process checkpoint resume. The pointwise acceptance
+adapter admits H100 and B200.
 
 ### Unit-L2 coefficient inputs (2026-11-14)
 
