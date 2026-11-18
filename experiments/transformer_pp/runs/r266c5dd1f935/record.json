@@ -1,16 +1,69 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1",
+      "allocation": "JobId=6507 JobName=r266c5dd1f935 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20065 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-18T10:57:24 EligibleTime=2026-11-18T10:57:24 AccrueTime=2026-11-18T10:57:24 StartTime=2026-11-18T10:58:49 EndTime=2026-11-19T10:58:49 Deadline=N/A PreemptEligibleTime=2026-11-18T10:58:49 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-18T10:58:49 Scheduler=Main Partition=standard AllocNode:Sid=kennel:1191464 ReqNodeList=shiba ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
+      "config_sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
+      "slurm_job_id": "6507",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-18T15:58:56.972864+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
     "sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29"
   },
   "control_run_id": "r6a76e7fbde45",
+  "frozen_execution_sha256": "52c34a499d4da148c94d44ca9b99bde5be19f15344786db08e5478acb29ce478",
   "home_cluster": "kennel",
   "label": "softplus-head-rmsnorm-rope",
+  "log_path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
   "name": "softplus-head-rmsnorm-rope",
   "parameter_count": 198453586,
   "record_schema_version": 1,
   "run_id": "r266c5dd1f935",
   "seed": 42,
-  "status": "planned",
+  "source_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--hold",
+      "--partition=standard",
+      "--nodelist=shiba",
+      "--exclude=collie,samoyed,doodle,terrier,akita,mastiff,dogo",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=24:00:00",
+      "--job-name=r266c5dd1f935",
+      "--output=experiments/transformer_pp/runs/r266c5dd1f935/training.log",
+      "--error=experiments/transformer_pp/runs/r266c5dd1f935/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.pointwise_attention_acceptance",
+      "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
+      "1bc755a4a25455e7458661822b9361d37d85614f",
+      "1",
+      "B200"
+    ],
+    "gpu_count": 1,
+    "gpu_type": "B200",
+    "held": false,
+    "launch_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
+    "partition": "standard",
+    "released_utc": "2026-11-18T15:57:24.512110+00:00",
+    "slurm_job_id": "6507",
+    "submitted_utc": "2026-11-18T15:57:24.502178+00:00",
+    "working_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines"
+  },
   "training_tokens": 3968860160
 }
