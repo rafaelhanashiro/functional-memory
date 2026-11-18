@@ -1,0 +1,123 @@
+question: Can a learned MLP of the score and the query token replace exp in unnormalized
+  attention? The conventional SiLU score MLP at widths J = 4 and 8 against exp and
+  two degree-four polynomial controls, all Transformer++ at the 15-layer width-896
+  shape and 1x Chinchilla.
+study: experiments/transformer_pp
+settings:
+  metric: validation-best and terminal validation perplexity, reported separately
+  curve_start_update: 500
+  late_window_start: 4000
+  shape:
+    num_layers: 15
+    hidden_size: 896
+    num_heads: 14
+    intermediate_size: 2304
+    batch_size: 256
+    updates: 7570
+    warmup_steps: 455
+  seed: 42
+  initialization: transformer_truncated_reference
+data_identity:
+  train_manifest_sha256: 9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+runs:
+- study: transformer_pp
+  run_id: rea8b942672f4
+  role: primary
+  variant: score_mlp_j4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rea8b942672f4/config.yaml
+      sha256: 5acc9e1ed1f5f435afae6ed30e362ddc096e62854f394aa6fa59a7cd737a1c8a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rea8b942672f4/metrics.jsonl
+      sha256: ec329f8657c69baac39e69061455e3f674507f147579ed5a8d2cb755159e5d8b
+    completion.json:
+      path: experiments/transformer_pp/runs/rea8b942672f4/completion.json
+      sha256: 263cc93192be62e0883a7905390334689dd5672eb7b2c7f5f1df291f44cfef18
+    metadata.json:
+      path: experiments/transformer_pp/runs/rea8b942672f4/metadata.json
+      sha256: 4d8b48569c0d2bd172698acbf585c6f796fbffb30e84c62fd46d2f9923cb3bb6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rea8b942672f4/best_validation.json
+      sha256: db82b6f5c9e077ed1e2976587417b798a7f868b3b71bdf5b50a03a1e77e548e9
+- study: transformer_pp
+  run_id: rfc68c6d26f40
+  role: primary
+  variant: score_mlp_j8
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rfc68c6d26f40/config.yaml
+      sha256: 732c516977b0605c3df6397f27ec229873ded32db35543b76f88d31f0393eaa1
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rfc68c6d26f40/metrics.jsonl
+      sha256: ccd59fd766684b5609ae1d7fea85913178d16121b1d47262d375dbd4792f0157
+    completion.json:
+      path: experiments/transformer_pp/runs/rfc68c6d26f40/completion.json
+      sha256: 9c36325b51461419a8933511c1964089254246882cdbddb56948861d2a1a1d94
+    metadata.json:
+      path: experiments/transformer_pp/runs/rfc68c6d26f40/metadata.json
+      sha256: ac96fbc7d5a0abee834189071b8c9d8234368e4ff4f73f7d703437a808de927f
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rfc68c6d26f40/best_validation.json
+      sha256: 5b61cd667f1306a3b561a0101191ee1d2c7356e8b291415d8e3cea427edfa113
+- study: transformer_pp
+  run_id: r6a76e7fbde45
+  role: control
+  variant: exp
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metrics.jsonl
+      sha256: adcc711574d95b506246b762fef2fdb724ab1aa00f618c0546cb3f47c4ce165d
+    completion.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/completion.json
+      sha256: 8b7e7bf2d3124fe5dff032355b96a42f3982166f58978f998b47b3415ae4298e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metadata.json
+      sha256: 7fa4b1ed64bf0e895b67d2db757a580599e831500a0757ad7787ed7d7a4c92ae
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
+      sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r2b22f2ff6461
+  role: control
+  variant: query_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/config.yaml
+      sha256: 6a88b0c50103f4ca51b0bf97107a9f3192cf0b9f8a97e14bc7f9173f4b7e2cd0
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metrics.jsonl
+      sha256: 6ce4862b74cc17870352b58b94c8a03e38160895bd066136638e887870454cad
+    completion.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/completion.json
+      sha256: cc149ac50f4beaca569155c677cc2fc6aed5366ea77f6ad6ef965958de7aba4e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/metadata.json
+      sha256: 01c91b8ebab021a9181c9ae5e36f9cb225536ec337152c0d1222e65be4cb664c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2b22f2ff6461/best_validation.json
+      sha256: 2412159042d9b6e6d346cc495b80ad070a1337a1314b2fff0c50ea41ae8d27b9
+- study: transformer_pp
+  run_id: r816ab0fbe119
+  role: control
+  variant: fixed_taylor_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914

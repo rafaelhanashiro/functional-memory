@@ -14,6 +14,7 @@ a result collection can combine runs from several studies.
 | Transformer++: attention variants under its recipe, with model shape and token budget per run | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
 | Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-8` and 12 | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
 | Transformer++ model scale: eight attention variants at the 12-layer width-640 shape against their reference-shape partners | [Comparison across shapes](experiments/transformer_pp/results/model_scale/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#model-scale) |
+| Transformer++ score MLP: a conventional SiLU MLP of the score and query token in place of exp, at `J = 4` and 8 | [Learning curves and comparison](experiments/transformer_pp/results/score_mlp/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#score-mlp) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in

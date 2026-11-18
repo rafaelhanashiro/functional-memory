@@ -971,6 +971,95 @@ the strips, gate extremes, invalid sums, repeatability, and a two-layer model.
 and the decay. Diagnostics report each head's `log alpha` statistics (per order for per-order
 gates, with their half-lives) and the gate's parameters (for a fixed rate, the slopes); `runs.csv`
 has an `attention_forget_gate_constant_rate` column, empty without the constant form.
+### Score-MLP attention
+
+`attention_score_mlp_architecture: conventional` selects the ordinary one-hidden-layer
+baseline, `f(s,x) = b_out + J^(-1/2) sum_j a_j SiLU(w_j s + U_j^T x + b_j)`.
+All parameters are independent per layer and head. The readout `a` is static learned
+weights; only the hidden offsets depend on the query token. The input `x` is the
+existing pre-attention RMSNorm activation, with no additional normalization. There
+is no exponential multiplier or division by an attention sum. QK normalization,
+RoPE and attention-output RMSNorm follow the recipe.
+
+The reference initialization uses the independent mechanism random stream:
+`w,a ~ N(0,1)`, `U ~ N(0,1/hidden_size)`, and hidden/output biases zero. The scalar
+score and the activation vector thus contribute comparable variance; a single
+fan-in scale over their concatenation would suppress the score by the hidden width.
+The `1/sqrt(J)` readout scale keeps the aggregate variance comparable across widths.
+The weights `U,w,a` take the optimizer's ordinary weight decay; biases do not. This
+architecture uses `form: kernel`, with no fitted constant lists or forget gate.
+The fused implementation adds `b_out * cumsum(v)` in FP32 before its final output
+cast; the blocked reference includes the same constant in each causal score weight.
+
+The default `dynamic_readout` architecture below preserves the historical recipes.
+
+`attention_score_mlp_width: J` (default null, off) replaces exp in unnormalized
+dot-product attention by a learned, input-dependent score function
+(`attention/score_mlp.py`): `o_t = sum_(i<=t) f(x_t, s_ti) v_i`, never divided by a row
+sum, with `s_ti = q_t . k_i / sqrt(d_K)` after QK normalization and RoPE. Per layer and
+head, `J` units read the attention input `x_t` after the block's input RMSNorm:
+`a_tj = alpha_j + x_t . A_j` and `b_tj = beta_j + x_t . B_j`.
+
+| `attention_score_mlp_form` | `f(x_t, s)` |
+| --- | --- |
+| `kernel` (default) | `sum_j a_tj SiLU(w_j s + b_tj)` |
+| `exp_residual` | `exp(s) (1 + sum_j a_tj SiLU(w_j s + b_tj))` |
+
+`A` and `B` (`score_mlp_amplitude_kernel`, `score_mlp_offset_kernel`,
+`[layers, heads, hidden_size, J]`) start at zero, so `f` starts query-independent;
+`alpha`, `beta`, and `w` (`score_mlp_amplitude_bias`, `score_mlp_offset_bias`,
+`score_mlp_slope`, `[layers, heads, J]`) start at the recipe's frozen lists
+`attention_score_mlp_{amplitude,offset,slope}_initial`. All are FP32 and draw no random
+numbers, so the backbone is the exp control's. `attention_score_mlp_kernel_weight_decay:
+true` decays `A` and `B` (default false); `alpha`, `beta`, and `w` never decay. The
+only activation is `silu`.
+
+`score_mlp.initial_constants(J, form)` gives the starting lists:
+
+- `exp_residual`: `alpha = 0`, `w = 1`, `beta` evenly spaced on [-3, 3] (0 for `J = 1`).
+  The model starts exactly at the unnormalized exp control; only `alpha` and `A`
+  receive gradient on the first update.
+- `kernel`: `fit_exp_initialization(J)` minimizes the relative squared error
+  `int_{-4}^{4} (f(s)/exp(s) - 1)^2 ds` (trapezoid rule, 1,601 points). Unconstrained,
+  this has no minimizer: units moved into their left tails, `SiLU(z) ~ z e^z`, reach
+  any accuracy with diverging, cancelling amplitudes. The fit keeps `alpha_j >= 0`,
+  `w_j` in [1/4, 4], and each transition `-beta_j / w_j` in [-8, 4], and runs variable
+  projection with a projected Levenberg-Marquardt step from 16 deterministic starts.
+  `score_mlp.EXP_FITS` pins the results: maximum relative error on [-4, 4] 3.47% for
+  `J = 4` and 0.030% for `J = 8`. The units cancel (summed magnitudes up to about 25
+  times `f` at `s = 0` and 450 times at `s = -4`). Outside the interval the fitted `f`
+  grows about linearly beyond `s = 4` and turns negative below `s = -4.5` (`J = 4`) or
+  `-5.1` (`J = 8`), reaching about -1.0 and -0.7 near `s = -8`.
+
+A score MLP requires `attention_normalization: false`, `attention_degree: null`,
+fixed static coefficients, `quadratic_mode: fixed`, `attention_backend: blocked`,
+`fused`, or `auto`, and `positional_encoding: rope` or `none`; configuration and the
+module reject PaTH. With `attention_forget_gate: true` (cumulative mode, input form only)
+each weight is also multiplied by `exp(L_t - L_i)`; the gate exists on the blocked backend
+only, so a gated score MLP requires `blocked`. Weights may be signed; exp is not
+row-shifted; a nonfinite score, kernel value, or output poisons its row with NaN, as in
+the other unnormalized kernels.
+
+`fused` runs `attention/backends/fused_score_mlp.py` (Pallas Triton, Ampere or newer,
+head widths up to 128, BF16 or FP32 Q/K/V): units are evaluated in FP32 on 32x32 score
+tiles that never leave the chip, in a forward query-tile kernel, a query-tile backward for
+dQ, da, db and per-query dw partials (summed over batch and time), and a key-tile backward
+for dK and dV. Its module docstring derives each gradient. `auto` resolves to `fused` on
+such a GPU for an ungated score MLP and to `blocked` otherwise. Diagnostics come from the
+blocked path on either backend; they name the
+kernel `score_mlp_unnormalized` or `exp_score_mlp_residual_unnormalized`, keep the
+signed-kernel statistics (kernel and weight-sum extrema, negative-weight fractions), and
+report the learned `alpha`, `beta`, `w` and per-head statistics of `a` and `b` on the
+diagnostic sample under `coefficients`. `runs.csv` gives these runs the `score_mlp`
+family and lists `score_mlp_width`, `score_mlp_form`, and `score_mlp_kernel_weight_decay`.
+
+Cost: `J` SiLU evaluations per score pair in the forward, recomputed in the backward,
+plus the per-unit gradient reductions. On the blocked backend, the custom derivative of
+the unit sum keeps only the scores and units; forward and backward loop over `min(J, T)`
+key chunks inside the checkpointed scan and evaluate every unit per chunk, so their
+intermediates stay about one `[batch, heads, 128, T]` score tile for any `J`. The fused
+kernel recomputes the units in both backward programs and stores no score tile; measured
+costs of both backends are in `validation/README.md`.
 
 ### PaTH position encoding
 
@@ -1534,7 +1623,7 @@ in one packed vector:
 
 Parameter groups are embedding, output head, attention Q/K/V, attention output
 projection, MLP, norm scales, QK-norm scales, attention-output norm scales,
-attention coefficients, and other. `update_norm` is the actual parameter change
+attention coefficients, score-MLP units (`attention_score_mlp`), and other. `update_norm` is the actual parameter change
 after the whole AdamW step. Gated DeltaNet and GLA record the residual and update
 statistics only. Recording never changes the update: on CPU the update is
 bit-identical with and without it, on one device and on two, and on GPU the

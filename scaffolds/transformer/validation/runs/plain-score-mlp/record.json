@@ -1,0 +1,40 @@
+{
+  "mechanism": "conventional score MLP",
+  "formula": "b_out + sum_j a_j * SiLU(w_j*s + U_j^T*x + b_j) / sqrt(J)",
+  "widths": [
+    4,
+    8
+  ],
+  "cpu": {
+    "plain_score_mlp": {
+      "passed": 14,
+      "gpu_cases_deselected": 2,
+      "command": "JAX_PLATFORMS=cpu OMP_NUM_THREADS=4 scaffolds/transformer/.venv/bin/python -m pytest -q -c scaffolds/transformer/pyproject.toml scaffolds/transformer/tests/test_plain_score_mlp.py -m 'not gpu'"
+    },
+    "config_regressions": {
+      "passed": 143,
+      "files": [
+        "test_config.py",
+        "test_unnormalized_config.py",
+        "test_fixed_polynomial_config.py"
+      ]
+    },
+    "records_index": {
+      "passed": 27
+    },
+    "historical_fused": {
+      "passed": 98,
+      "gpu_cases_deselected": 40,
+      "note": "97 passed initially; both fresh-recipe backend cases passed after the auto fixture selected canonical strips."
+    }
+  },
+  "gpu": {
+    "status": "allocation qualification in progress",
+    "required": "production T2048 BF16 outputs/all gradients, full-model pilot, checkpoint resume",
+    "slurm_jobs": [
+      "4471",
+      "4472"
+    ]
+  },
+  "source_commit": "0fdc6dcebbbc0e265ae69e6e626685f27bbdaf59"
+}

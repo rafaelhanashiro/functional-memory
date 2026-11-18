@@ -2454,3 +2454,39 @@ submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       
 submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x, job 4517
 submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor, job 4518
 ```
+
+## Score MLP
+
+Can a learned MLP of the score and the query token replace exp? The conventional score MLP
+replaces the kernel of unnormalized attention with
+
+$$f(s, x_t) = b_{\mathrm{out}} + \frac{1}{\sqrt{J}}\sum_{j=1}^{J} a_j\,\mathrm{SiLU}\big(w_j s + U_j^\top x_t + b_j\big),$$
+
+where $s$ is the query–key score and $x_t$ the query token's pre-attention RMSNorm activation;
+head output RMSNorm follows. The slopes $w_j$, input weights $U_j$, readout weights $a_j$ and
+both biases are learned per layer and head and do not depend on the token. The slopes and
+readout weights start from $\mathcal{N}(0, 1)$, the input weights from $\mathcal{N}(0, 1/896)$,
+and the biases at zero, drawn from a separate stream so that the backbone keeps its reference
+initialization. Ordinary weight decay applies to the weights, not the biases. `rea8b942672f4`
+(`J = 4`) and `rfc68c6d26f40` (`J = 8`) copy `query-m4-head-scale` (`r2b22f2ff6461`) except
+for this kernel, on the fused score-MLP kernel (`attention_backend: fused`). The
+[scaffold API](../../scaffolds/transformer/README.md#score-mlp-attention) specifies every
+score-MLP form, and the [score MLP collection](results/score_mlp/README.md) compares the two
+runs with exp and the degree-four controls.
+
+Home cluster: Kennel. Worktree `worktrees/plain-score-mlp`, branch `codex/plain-score-mlp`,
+one B300 each. With both worktree environments synced and the inputs committed:
+
+```bash
+for run in rea8b942672f4 rfc68c6d26f40; do
+  sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+The launcher qualifies the conventional outputs and gradients, a full-model pilot, and a
+fresh-process checkpoint resume in each allocation before production.

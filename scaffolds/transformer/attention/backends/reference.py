@@ -26,6 +26,7 @@ from scaffolds.transformer.attention.spline import (
 )
 from scaffolds.transformer.attention.score_bias import HISTOGRAM_EDGES, NEAR_ZERO, operand_kind
 from scaffolds.transformer.attention.score_transform import apply as transform_scores, validate as validate_transform
+from scaffolds.transformer.attention.score_mlp import FORMS as SCORE_MLP_FORMS, score_kernel
 from scaffolds.transformer.attention.unnormalized import _learned_polynomial
 
 QUERY_BLOCK_SIZE = 128
@@ -71,6 +72,10 @@ class _Mechanism(NamedTuple):
     score_bias: str | None = None
     # The query polynomial's input z = phi(s) (attention/score_transform.py); "identity" is s itself.
     score_transform: str = "identity"
+    score_mlp: bool = False
+    score_mlp_form: str = "kernel"
+    score_mlp_slope: jax.Array | None = None
+    score_mlp_output_bias: jax.Array | None = None
 
 
 def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, attention_normalization,
@@ -79,7 +84,8 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                query_gate_input, key_gate_input, gate_log_rate, spline_knots=None, spline_coefficients=None,
                query_spline_coefficients=None, score_bias_row_shift=None, score_bias_query_input=None,
                score_bias_key_input=None, score_bias_offset=None, score_bias_amplitude=None,
-               score_transform="identity", **denominators) -> _Mechanism:
+               score_transform="identity", score_mlp_amplitude=None, score_mlp_offset=None,
+               score_mlp_slope=None, score_mlp_form="kernel", score_mlp_output_bias=None, **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
@@ -115,6 +121,23 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                               or polynomial_coefficients is not None or coefficients is not None
                               or polynomial_square_factors is not None or denominators):
         raise ValueError("Query coefficients define an unnormalized polynomial of degree >= 1 alone")
+    score_mlp_arrays = (score_mlp_amplitude, score_mlp_offset, score_mlp_slope)
+    score_mlp = any(array is not None for array in score_mlp_arrays)
+    if score_mlp:
+        if any(array is None for array in score_mlp_arrays):
+            raise ValueError("A score MLP requires its unit amplitudes, offsets, and slopes")
+        if (attention_normalization or attention_degree is not None or quadratic_mode != "fixed"
+                or coefficients is not None or polynomial_coefficients is not None
+                or polynomial_square_factors is not None or query_conditioned or denominators
+                or spline is not None):
+            raise ValueError("A score MLP defines an unnormalized kernel alone, without a degree or coefficients")
+        if score_mlp_form not in SCORE_MLP_FORMS:
+            raise ValueError(f"Unknown score-MLP form: {score_mlp_form}")
+        if query_decay_mode != "cumulative":
+            raise ValueError("A score MLP supports only the cumulative forget-gate decay")
+    if score_mlp_output_bias is not None and (
+            not score_mlp or score_mlp_form != "kernel" or query_log_decay is not None):
+        raise ValueError("A score-MLP output bias requires the kernel form without a forget gate")
     nonnegative = polynomial_square_factors is not None
     if nonnegative:
         if polynomial_coefficients is not None or quadratic_mode != "fixed" or not attention_normalization:
@@ -127,7 +150,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         if polynomial_coefficients is None or not attention_normalization:
             raise ValueError("Denominator coefficients require learned numerator coefficients and row normalization")
         denominator_factor_arrays = denominator_factors(selected[0], selected[1], selected[2], dtype=compute)
-    signed = query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
+    signed = score_mlp or query_conditioned or polynomial_coefficients is not None or quadratic_mode == "unrestricted" or (
         not nonnegative and quadratic_mode == "fixed"
         and attention_degree is not None and attention_degree % 2 == 1
     ) or spline is not None
@@ -191,6 +214,14 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
             not query_conditioned or key_conditioned or decayed or score_bias is not None):
         raise ValueError("A score transform applies to query-coefficient polynomial attention alone, without key "
                          "factors, decay, or score biases")
+    if score_mlp:
+        width = score_mlp_slope.shape[-1] if score_mlp_slope.ndim == 2 else 0
+        if (width < 1 or score_mlp_slope.shape != (heads, width)
+                or score_mlp_amplitude.shape != (batch, time, heads, width)
+                or score_mlp_offset.shape != score_mlp_amplitude.shape):
+            raise ValueError("A score MLP requires amplitudes and offsets [batch,time,heads,J] and slopes [heads,J]")
+        if score_mlp_output_bias is not None and score_mlp_output_bias.shape != (heads, 1):
+            raise ValueError("A score-MLP output bias must have shape [heads,1]")
     if min(batch, time, heads, qk_dim, v.shape[-1]) <= 0:
         raise ValueError("Attention dimensions must be positive")
     if spline is not None:
@@ -210,14 +241,18 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         query_conditioned=query_conditioned, key_conditioned=key_conditioned, nonnegative=nonnegative,
         rational=rational, signed=signed, extended_diagnostics=extended_diagnostics, endpoint=endpoint,
         decayed=decayed, per_order=per_order, query_decay_mode=query_decay_mode, spline=spline,
-        score_bias=score_bias, score_transform=score_transform,
+        score_bias=score_bias, score_transform=score_transform, score_mlp=score_mlp,
+        score_mlp_form=score_mlp_form,
+        score_mlp_slope=None if score_mlp_slope is None else score_mlp_slope.astype(compute),
+        score_mlp_output_bias=None if score_mlp_output_bias is None else score_mlp_output_bias.astype(compute),
     )
 
 
 def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positions, k, v, query_coefficients,
                   key_factors, query_gate_input, key_gate, gate_log_rate, gate_rate, query_log_decay,
                   key_log_decay, compute, output_dtype, return_diagnostics, spline_pieces=None,
-                  score_bias_rows=None, score_bias_key=None, score_bias_head=None):
+                  score_bias_rows=None, score_bias_key=None, score_bias_head=None,
+                  score_mlp_amplitude=None, score_mlp_offset=None):
     """The query block [start, start + block_size) against the keys at ``key_positions``.
 
     ``query`` holds the block's queries and ``rows(array)`` takes its rows of a query-side
@@ -267,7 +302,17 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     # As for the polynomials, a nonfinite or positive raw log alpha_t poisons its query's row, and a
     # nonfinite endpoint input or log rate every causal pair it enters (and so those pairs' rows).
     poison_invalid_rate = m.decayed and m.attention_degree is None and m.query_decay_mode == "query_distance"
-    if not m.attention_normalization and m.attention_degree is None:
+    if m.score_mlp:
+        safe_scores = jnp.where(causal, scores, 0.0)
+        amplitude, offset = (jnp.swapaxes(rows(array), 1, 2)
+                             for array in (score_mlp_amplitude, score_mlp_offset))
+        kernel = score_kernel(safe_scores, amplitude, offset, m.score_mlp_slope, m.score_mlp_form)
+        if m.score_mlp_output_bias is not None:
+            kernel = kernel + m.score_mlp_output_bias[None, :, None, :]
+        if m.decayed:
+            kernel = kernel * jnp.exp(gap)
+        invalid_kernel = ~jnp.isfinite(kernel)
+    elif not m.attention_normalization and m.attention_degree is None:
         # A row shift changes the unnormalized operator. Underflow to zero
         # is allowed; a nonfinite causal exponential poisons the output.
         kernel = jnp.exp(jnp.where(causal, logits, 0.0))
@@ -643,6 +688,11 @@ def blocked_dot_product_attention(
     score_bias_offset: jax.Array | None = None,
     score_bias_amplitude: jax.Array | None = None,
     score_transform: str = "identity",
+    score_mlp_amplitude: jax.Array | None = None,
+    score_mlp_offset: jax.Array | None = None,
+    score_mlp_slope: jax.Array | None = None,
+    score_mlp_form: str = "kernel",
+    score_mlp_output_bias: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
     **denominators,
@@ -719,6 +769,11 @@ def blocked_dot_product_attention(
     strips train transformed recipes and the scan diagnoses them, adding per-head measurements
     (``score_transform_*``): raw-score and input moments and extrema, raw scores below zero, pairs where the
     polynomial decreases in z, and histograms of s and z pooled over heads.
+    A score MLP takes amplitudes and offsets [batch,time,heads,J] and slopes [heads,J].
+    Its kernel is sum_j a_j SiLU(w_j s+b_j), or exp(s) (1+that sum) for exp_residual.
+    A per-head output bias [heads,1] adds to the kernel before weighting V and diagnostics;
+    this bias requires the pure kernel form without decay. The caller supplies any width
+    scaling in the amplitudes. Historical unbiased MLPs may use cumulative decay.
     Diagnostics exclude padded queries and masked future entries.
     """
     return _blocked_scan(
@@ -732,6 +787,9 @@ def blocked_dot_product_attention(
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
         score_bias_amplitude=score_bias_amplitude, score_transform=score_transform,
+        score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
+        score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
+        score_mlp_output_bias=score_mlp_output_bias,
         query_block_size=query_block_size, return_diagnostics=return_diagnostics, **denominators,
     )
 
@@ -743,6 +801,8 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   spline_knots=None, spline_coefficients=None, query_spline_coefficients=None,
                   score_bias_row_shift=None, score_bias_query_input=None, score_bias_key_input=None,
                   score_bias_offset=None, score_bias_amplitude=None, score_transform="identity",
+                  score_mlp_amplitude=None, score_mlp_offset=None, score_mlp_slope=None,
+                  score_mlp_form="kernel", score_mlp_output_bias=None,
                   query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, **denominators):
     """blocked_dot_product_attention with its arithmetic in ``compute``: FP32 there, FP64 only
     in exact-arithmetic tests of the strips against the scan."""
@@ -756,7 +816,10 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
-        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, **denominators,
+        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform,
+        score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
+        score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
+        score_mlp_output_bias=score_mlp_output_bias, **denominators,
     )
     batch, time, heads, qk_dim = q.shape
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -796,6 +859,11 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         if m.score_bias == "pair":
             score_bias_key = jnp.swapaxes(score_bias_key_input.astype(compute), 1, 2)[:, :, None]
             score_bias_head = (score_bias_offset.astype(compute), score_bias_amplitude.astype(compute))
+    padded_amplitude = padded_offset = None
+    if m.score_mlp:
+        padded_amplitude, padded_offset = (jnp.pad(array.astype(compute),
+                                                   ((0, 0), (0, pad), (0, 0), (0, 0)))
+                                            for array in (score_mlp_amplitude, score_mlp_offset))
     starts = jnp.arange(block_count, dtype=jnp.int32) * block_size
     key_positions = jnp.arange(time)
 
@@ -810,6 +878,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
             compute=compute, output_dtype=v.dtype, return_diagnostics=return_diagnostics,
             spline_pieces=spline_pieces, score_bias_rows=score_bias_rows, score_bias_key=score_bias_key,
             score_bias_head=score_bias_head,
+            score_mlp_amplitude=padded_amplitude, score_mlp_offset=padded_offset,
         )
 
     _, result = jax.lax.scan(
@@ -894,6 +963,11 @@ def strip_dot_product_attention(
     score_bias_offset: jax.Array | None = None,
     score_bias_amplitude: jax.Array | None = None,
     score_transform: str = "identity",
+    score_mlp_amplitude: jax.Array | None = None,
+    score_mlp_offset: jax.Array | None = None,
+    score_mlp_slope: jax.Array | None = None,
+    score_mlp_form: str = "kernel",
+    score_mlp_output_bias: jax.Array | None = None,
     strip_size: int = STRIP_SIZE,
     **denominators,
 ) -> jax.Array:
@@ -931,7 +1005,10 @@ def strip_dot_product_attention(
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
-        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, **denominators,
+        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform,
+        score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
+        score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
+        score_mlp_output_bias=score_mlp_output_bias, **denominators,
     )
     time = q.shape[1]
     # The strips slice these full arrays inside their checkpoints, so the residuals each layer
@@ -961,6 +1038,10 @@ def strip_dot_product_attention(
             operands["score_bias_head"] = (_exact_upcast(score_bias_offset, compute),
                                            _exact_upcast(score_bias_amplitude, compute))
 
+    if m.score_mlp:
+        operands["score_mlp_amplitude"] = _exact_upcast(score_mlp_amplitude, compute)
+        operands["score_mlp_offset"] = _exact_upcast(score_mlp_offset, compute)
+
     def attend_strip(arrays, *, start, end):
         def prefix(name, axis=1):
             return None if name not in arrays else jax.lax.slice_in_dim(arrays[name], 0, end, axis=axis)
@@ -975,6 +1056,7 @@ def strip_dot_product_attention(
             compute=compute, output_dtype=compute, return_diagnostics=False,
             spline_pieces=arrays.get("spline_pieces"), score_bias_rows=arrays.get("score_bias_rows"),
             score_bias_key=prefix("score_bias_key", axis=3), score_bias_head=arrays.get("score_bias_head"),
+            score_mlp_amplitude=arrays.get("score_mlp_amplitude"), score_mlp_offset=arrays.get("score_mlp_offset"),
         )
         # The block's conversion to V's dtype, rounded explicitly: a consumer that upcasts the
         # output (head RMSNorm) would otherwise let XLA drop it. A signed kernel's row with an

@@ -175,6 +175,20 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         from scaffolds.transformer.attention.learned_quadratic import parameter_specs
 
         specs = parameter_specs(mode=config.quadratic_mode, sharing=config.quadratic_sharing)
+    if getattr(config, "attention_score_mlp_width", None) is not None:
+        from scaffolds.transformer.attention.score_mlp import parameter_specs as score_mlp_specs
+
+        if config.attention_score_mlp_architecture == "conventional":
+            from scaffolds.transformer.attention.score_mlp import conventional_parameter_specs
+
+            specs += conventional_parameter_specs(hidden_size=config.hidden_size, width=config.attention_score_mlp_width)
+        else:
+            specs += score_mlp_specs(
+                hidden_size=config.hidden_size, width=config.attention_score_mlp_width,
+                amplitude_initial=config.attention_score_mlp_amplitude_initial,
+                slope_initial=config.attention_score_mlp_slope_initial,
+                offset_initial=config.attention_score_mlp_offset_initial,
+                kernel_weight_decay=config.attention_score_mlp_kernel_weight_decay)
     if getattr(config, "qk_norm", False):
         from scaffolds.transformer.attention.qk_norm import (
             initial_scale, parameter_specs as qk_norm_specs, rms_parameter_specs, rms_head_scale_specs,

@@ -1,0 +1,344 @@
+{
+  "attention_seconds_per_update": {
+    "blocked_exp": 6.19,
+    "blocked_exp_residual-4": 25.04,
+    "blocked_exp_residual-8": 30.3,
+    "blocked_kernel-4": 23.32,
+    "blocked_kernel-8": 28.59,
+    "fused_exp": 0.79,
+    "fused_exp_residual-4": 4.04,
+    "fused_exp_residual-8": 8.33,
+    "fused_kernel-4": 3.71,
+    "fused_kernel-8": 8.1
+  },
+  "command": "python -m scaffolds.transformer.benchmarks.benchmark_score_mlp --output scaffolds/transformer/validation/runs/score-mlp/fused-throughput.json",
+  "created_utc": "2026-11-04T22:57:11.024319+00:00",
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "kernel_settings": {
+    "block_k": 32,
+    "block_q": 32,
+    "num_stages": 2,
+    "num_warps": 4
+  },
+  "measure": "jit forward + VJP of one layer and micro-batch, median of 10 calls after 3 warm calls, milliseconds",
+  "milliseconds": {
+    "blocked_exp": 25.782,
+    "blocked_exp_residual-4": 104.314,
+    "blocked_exp_residual-8": 126.241,
+    "blocked_kernel-4": 97.181,
+    "blocked_kernel-8": 119.109,
+    "fused_exp": 3.287,
+    "fused_exp_residual-4": 16.82,
+    "fused_exp_residual-8": 34.692,
+    "fused_kernel-4": 15.478,
+    "fused_kernel-8": 33.739
+  },
+  "node": "dogo",
+  "note": "15 layers x 16 micro-batches per update; excludes remat recomputation and the rest of the model",
+  "producer": "scaffolds/transformer/benchmarks/benchmark_score_mlp.py",
+  "provenance": {
+    "device": {
+      "description": "cuda:0",
+      "id": 0,
+      "kind": "NVIDIA H100 80GB HBM3",
+      "platform": "gpu",
+      "process_index": 0
+    },
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "0",
+      "JAX_PLATFORMS": "cuda",
+      "SLURM_JOB_ID": "235165",
+      "SLURM_STEP_ID": null,
+      "XLA_FLAGS": null
+    },
+    "hostname": "dogo.csail.mit.edu",
+    "package_versions": {
+      "flax": "0.12.7",
+      "jax": "0.10.0",
+      "jax-cuda12-plugin": "0.10.0",
+      "jaxlib": "0.10.0",
+      "numpy": "2.4.6",
+      "nvidia-cudnn-cu12": "9.22.0.52"
+    },
+    "platform": "Linux-6.8.0-106-generic-x86_64-with-glibc2.39",
+    "python": "3.11.16",
+    "source_commit": "b1712a0c5926826008b60331f0103b35507d795e",
+    "source_dirty": true,
+    "source_sha256": {
+      "scaffolds/transformer/attention/__init__.py": "0a21df8dcefe750872141602b4c96aff999c403997438957926250c916cb2913",
+      "scaffolds/transformer/attention/backends/__init__.py": "fc73b96b509d55a0f8a4df7d0cf1cc1ec2c3888d89e7173e4bc5e463a60307e1",
+      "scaffolds/transformer/attention/backends/chunked_gla_triton.py": "41414d6211c843e4baf595d6f4e10da6711ac3cc0a6cc742b33166315b38c554",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/__init__.py": "ef92364015dd7b51126b31aa2b8d02bb351c576851c1a975b003cb7f398b5317",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_triton_call.py": "c8fc64909df8487d5b02f1d4af8a41af6b075faf0be34803b51f09a0f7471289",
+      "scaffolds/transformer/attention/backends/ejkernel_bridge/_utils.py": "8cf1c80f16d5700d9c24a347c31c522be5161fc62b525cef9345b700bac3cd1b",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule.py": "07c78127f6ae50107d51f2acfcd5982f3b97e95c4cee1787eff401cd90b69389",
+      "scaffolds/transformer/attention/backends/fla_gated_delta_rule_kernels.py": "37b1b0fad5a8ea13c0ebdd9c798d4a868fe385ccb8dc234ac8d80db5b2feec15",
+      "scaffolds/transformer/attention/backends/fla_independent_gated_delta_rule_kernels.py": "06bedf24690a1180660df5eb927a04719a0ff341410461d9e8dc3e051d4ee264",
+      "scaffolds/transformer/attention/backends/fla_path_attention.py": "8b985feac5ab27e9c39e065cbcfdb7b4904be85620953002eb98b1058a6474a8",
+      "scaffolds/transformer/attention/backends/fla_path_attention_kernels.py": "82b13d08a02984b857c40f69ef581294b55c997bcb85ad282b8f7a650e8b5e98",
+      "scaffolds/transformer/attention/backends/fla_path_polynomial_kernels.py": "a1168fd3f422a14c5a16073d3b98dbbb72d35ab81366f27b75d2d497f948591f",
+      "scaffolds/transformer/attention/backends/fused_learned_polynomial.py": "39fb6f0f882ed4cb0227dddff7480398eddc2210b3efb9f810b698b13d52903e",
+      "scaffolds/transformer/attention/backends/fused_normalized_polynomial.py": "5ddf0f0590e7a84586fce84a6231ff9d870c61f634b56b02aa804602513bd770",
+      "scaffolds/transformer/attention/backends/fused_quadratic.py": "0f0fca19c8af2d7d616c9e96d788c86c58d8a226db69e4f5cb36b1c39b246fef",
+      "scaffolds/transformer/attention/backends/fused_query_key_polynomial.py": "20b6a04287352ca51ddc69f0d7399889b9c19a0e40230bda849de065ed055290",
+      "scaffolds/transformer/attention/backends/fused_query_polynomial.py": "06b65fa98394728709beae046848a57427dac9e7b3ccee48371a5d8db22be80c",
+      "scaffolds/transformer/attention/backends/fused_score_mlp.py": "e2dad5f7feaa0b658b9bfbcd0ac7698c83576f9596ef117ae2cb9c4b1584fb31",
+      "scaffolds/transformer/attention/backends/fused_taylor.py": "b0eccdbff0701b02be950f64ab5db5a1dcaff0c6fca8b68c01fd3277ef2d157a",
+      "scaffolds/transformer/attention/backends/fused_unnormalized.py": "97f01d04d630e256fe1a1506574030045526a510b0108e31a9bdc783c2d2b99d",
+      "scaffolds/transformer/attention/backends/mosaic/__init__.py": "895aaddb244c2f1e7967a80668ca7f97199446c0db8e08776a95cbbd0b4e3034",
+      "scaffolds/transformer/attention/backends/mosaic/api.py": "e3166a51081cf27d2cd5e8f36a99963364e943912b0c9bdf16157ffd9e4c2781",
+      "scaffolds/transformer/attention/backends/mosaic/blackwell.py": "c3d9a08ebd88bef7a8f17199bdff830d04ba981c9b7ecc3f290c8bcb3983cbcc",
+      "scaffolds/transformer/attention/backends/mosaic/common.py": "4b202fba8c034b9e8befeaf151906fb4e9aa7b2dca0bb3c93063133e0951b7be",
+      "scaffolds/transformer/attention/backends/mosaic/hopper.py": "aac192218b95592665b3f74da417027e425eb993460a3ef8f3d98f86d90b45a9",
+      "scaffolds/transformer/attention/backends/polynomial_gdn.py": "443248e13f7b5bbea675f33c78e29f969043f76d36dad8f65420c41a495e1ac2",
+      "scaffolds/transformer/attention/backends/polynomial_gdn_kernels.py": "98f2edab325a3ab75bb79f932f5ad85ca9313b246db99bdefbcb82e64cb4588b",
+      "scaffolds/transformer/attention/backends/reference.py": "ea3a88583c9f472139eb609b2a42c2b6ce01ac13d3e4fcd3d5cd9fbc23b44e39",
+      "scaffolds/transformer/attention/backends/selection.py": "e701053d0042825355d929d93a508c87f04528e6318bc3c309dae88f9eb77cf7",
+      "scaffolds/transformer/attention/backends/triton_port.py": "bf7323f3dfe4b9deb089d4c11a7c959c781e892c55d6db990ec234b1a9e2597b",
+      "scaffolds/transformer/attention/core.py": "e3a6c7f933278da3667ab22eae5923d41b2c252198cc229e1fa2b8eca3651133",
+      "scaffolds/transformer/attention/forget_gate.py": "2cf3f9faca71a50853615d3e242c198bdaea9c3f7c09b421749ab3397fd604f2",
+      "scaffolds/transformer/attention/gated_deltanet.py": "cd8f10f8fdcf602daf372905d8e690f8f43a77a575ac2a99b8415a734e446a6e",
+      "scaffolds/transformer/attention/gla.py": "15fcedae8355786adcf0c386d8d597065bdd5e412011c6eb12bfa7d1592fa72a",
+      "scaffolds/transformer/attention/input_dependent.py": "2ea82f32882449a1a5f910ac83b93e56e66045fa9488d26a5b073a7f9ec69e36",
+      "scaffolds/transformer/attention/learned_polynomial.py": "ffcc1cc0eef829864f13bfb4413e14f97c3c4390e879492947d07d73199b88dd",
+      "scaffolds/transformer/attention/learned_quadratic.py": "2dd52c7b2f839836f8b7ea799ab382d8974957160902cc30d6c710a00b9b4f40",
+      "scaffolds/transformer/attention/multihead.py": "0dbf83867826f6ac62c2490308420d4a3a7bc96e590a4aee8deafd69915b214e",
+      "scaffolds/transformer/attention/nonnegative_polynomial.py": "e9162adc1772395c4e677350d0a8938d12e523ea371cae3db037ec50d4e82df6",
+      "scaffolds/transformer/attention/output_scaling.py": "575d9ea927319a3d55039b621e7ff00028aca0d3b06085168edf9609f78bd708",
+      "scaffolds/transformer/attention/parameters.py": "4415231a28929f4f971dce0ee7677c9a84f4848c34012d723af82dfb6e6fc4b8",
+      "scaffolds/transformer/attention/path.py": "158d419d57f420c8b2363d766df6aa1e8099d746070d73c537a2a57ff6557588",
+      "scaffolds/transformer/attention/polynomial_gdn_reference.py": "ea10043a9e9077bc870f594c71aeb0d5d098788a8e50c1b93df25a92ba8df25b",
+      "scaffolds/transformer/attention/positional.py": "c0199dfcb66d3f80d212ec0c3dfa534880aa7adae44eaf9a7c4894843ab0c269",
+      "scaffolds/transformer/attention/qk_norm.py": "e50e5812ad7dfcc68b63abb6d2340499a4722acb3e913f3abb08a74cc2d68cd9",
+      "scaffolds/transformer/attention/rational_polynomial.py": "83907937199331c5f1815369543a83a1372e8154343ae072c48a12a9d0b823f9",
+      "scaffolds/transformer/attention/score_mlp.py": "33d95b23ce9ed633b339a57bb73057aa5035d44740e1654dda0564323aabed51",
+      "scaffolds/transformer/attention/softmax.py": "47470b42e8e212c91a5044d448f4c36b4d30b9d0b581d3153e6fb73f91f4b04d",
+      "scaffolds/transformer/attention/taylor.py": "550a930352ac08533bf345508a9382a039c1caa27fba2e1b67659dbe27f768a1",
+      "scaffolds/transformer/attention/unnormalized.py": "327957b89995b8edb6eb70c3b994b0bf3c1de750813d87979378f2a0bc153155",
+      "scaffolds/transformer/benchmarks/benchmark_attention.py": "e07681b2c193e6a2c5642d150bc9a8d39b3ffd87de9812ea281010b21f9ec400",
+      "scaffolds/transformer/uv.lock": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0"
+    },
+    "visible_devices": [
+      {
+        "id": 0,
+        "kind": "NVIDIA H100 80GB HBM3"
+      }
+    ]
+  },
+  "shape": {
+    "batch": 16,
+    "heads": 14,
+    "qk_head_dim": 64,
+    "time": 2048,
+    "value_head_dim": 64
+  },
+  "slurm_job_id": "235165",
+  "source_commit": "b1712a0c5926826008b60331f0103b35507d795e",
+  "tile_sweep": {
+    "measure": "fused kernels with BLOCK_Q, BLOCK_K, NUM_WARPS, NUM_STAGES patched at trace time; medians, ms",
+    "milliseconds": {
+      "exp_residual-4 tiles=32x32 warps=4 stages=1": {
+        "backward_ms": 13.454,
+        "forward_and_vjp_ms": 17.552,
+        "forward_ms": 4.098
+      },
+      "exp_residual-4 tiles=32x32 warps=4 stages=2": {
+        "backward_ms": 13.202,
+        "forward_and_vjp_ms": 16.814,
+        "forward_ms": 3.612
+      },
+      "exp_residual-4 tiles=32x32 warps=4 stages=3": {
+        "backward_ms": 12.156,
+        "forward_and_vjp_ms": 15.763,
+        "forward_ms": 3.607
+      },
+      "exp_residual-4 tiles=32x32 warps=8 stages=2": {
+        "backward_ms": 26.551,
+        "forward_and_vjp_ms": 33.314,
+        "forward_ms": 6.763
+      },
+      "exp_residual-4 tiles=32x64 warps=4 stages=2": {
+        "backward_ms": 14.178,
+        "forward_and_vjp_ms": 17.419,
+        "forward_ms": 3.241
+      },
+      "exp_residual-4 tiles=64x32 warps=4 stages=2": {
+        "backward_ms": 12.458,
+        "forward_and_vjp_ms": 15.521,
+        "forward_ms": 3.063
+      },
+      "exp_residual-4 tiles=64x64 warps=4 stages=2": {
+        "backward_ms": 25.444,
+        "forward_and_vjp_ms": 29.886,
+        "forward_ms": 4.442
+      },
+      "exp_residual-8 tiles=32x32 warps=4 stages=1": {
+        "backward_ms": 34.643,
+        "forward_and_vjp_ms": 42.168,
+        "forward_ms": 7.525
+      },
+      "exp_residual-8 tiles=32x32 warps=4 stages=2": {
+        "backward_ms": 28.308,
+        "forward_and_vjp_ms": 34.722,
+        "forward_ms": 6.414
+      },
+      "exp_residual-8 tiles=32x32 warps=4 stages=3": {
+        "backward_ms": 29.532,
+        "forward_and_vjp_ms": 35.735,
+        "forward_ms": 6.203
+      },
+      "exp_residual-8 tiles=32x32 warps=8 stages=2": {
+        "backward_ms": 53.924,
+        "forward_and_vjp_ms": 70.732,
+        "forward_ms": 16.808
+      },
+      "exp_residual-8 tiles=32x64 warps=4 stages=2": {
+        "backward_ms": 42.458,
+        "forward_and_vjp_ms": 50.137,
+        "forward_ms": 7.679
+      },
+      "exp_residual-8 tiles=64x32 warps=4 stages=2": {
+        "backward_ms": 43.38,
+        "forward_and_vjp_ms": 50.451,
+        "forward_ms": 7.071
+      },
+      "exp_residual-8 tiles=64x64 warps=4 stages=2": {
+        "backward_ms": 116.695,
+        "forward_and_vjp_ms": 127.295,
+        "forward_ms": 10.6
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=1": {
+        "backward_ms": 12.575,
+        "forward_and_vjp_ms": 16.293,
+        "forward_ms": 3.718
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=2": {
+        "backward_ms": 11.918,
+        "forward_and_vjp_ms": 15.4,
+        "forward_ms": 3.482
+      },
+      "kernel-4 tiles=32x32 warps=4 stages=3": {
+        "backward_ms": 11.699,
+        "forward_and_vjp_ms": 15.138,
+        "forward_ms": 3.439
+      },
+      "kernel-4 tiles=32x32 warps=8 stages=2": {
+        "backward_ms": 25.561,
+        "forward_and_vjp_ms": 31.719,
+        "forward_ms": 6.158
+      },
+      "kernel-4 tiles=32x64 warps=4 stages=2": {
+        "backward_ms": 11.636,
+        "forward_and_vjp_ms": 14.68,
+        "forward_ms": 3.044
+      },
+      "kernel-4 tiles=64x32 warps=4 stages=2": {
+        "backward_ms": 10.663,
+        "forward_and_vjp_ms": 13.502,
+        "forward_ms": 2.839
+      },
+      "kernel-4 tiles=64x64 warps=4 stages=2": {
+        "backward_ms": 18.926,
+        "forward_and_vjp_ms": 23.021,
+        "forward_ms": 4.095
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=1": {
+        "backward_ms": 34.259,
+        "forward_and_vjp_ms": 41.659,
+        "forward_ms": 7.4
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=2": {
+        "backward_ms": 27.505,
+        "forward_and_vjp_ms": 33.659,
+        "forward_ms": 6.154
+      },
+      "kernel-8 tiles=32x32 warps=4 stages=3": {
+        "backward_ms": 26.101,
+        "forward_and_vjp_ms": 32.249,
+        "forward_ms": 6.148
+      },
+      "kernel-8 tiles=32x32 warps=8 stages=2": {
+        "backward_ms": 50.863,
+        "forward_and_vjp_ms": 67.141,
+        "forward_ms": 16.278
+      },
+      "kernel-8 tiles=32x64 warps=4 stages=2": {
+        "backward_ms": 35.728,
+        "forward_and_vjp_ms": 42.926,
+        "forward_ms": 7.198
+      },
+      "kernel-8 tiles=64x32 warps=4 stages=2": {
+        "backward_ms": 35.576,
+        "forward_and_vjp_ms": 42.029,
+        "forward_ms": 6.453
+      },
+      "kernel-8 tiles=64x64 warps=4 stages=2": {
+        "backward_ms": 84.926,
+        "forward_and_vjp_ms": 95.106,
+        "forward_ms": 10.18
+      }
+    }
+  },
+  "timings": {
+    "blocked_exp": {
+      "compilation_seconds": 6.243,
+      "median_ms": 25.782,
+      "p10_ms": 25.686,
+      "p90_ms": 25.827
+    },
+    "blocked_exp_residual-4": {
+      "compilation_seconds": 6.983,
+      "median_ms": 104.314,
+      "p10_ms": 104.246,
+      "p90_ms": 104.411
+    },
+    "blocked_exp_residual-8": {
+      "compilation_seconds": 6.783,
+      "median_ms": 126.241,
+      "p10_ms": 126.199,
+      "p90_ms": 126.344
+    },
+    "blocked_kernel-4": {
+      "compilation_seconds": 17.275,
+      "median_ms": 97.181,
+      "p10_ms": 97.155,
+      "p90_ms": 97.387
+    },
+    "blocked_kernel-8": {
+      "compilation_seconds": 7.86,
+      "median_ms": 119.109,
+      "p10_ms": 119.016,
+      "p90_ms": 119.46
+    },
+    "fused_exp": {
+      "compilation_seconds": 3.628,
+      "median_ms": 3.287,
+      "p10_ms": 3.266,
+      "p90_ms": 3.3
+    },
+    "fused_exp_residual-4": {
+      "compilation_seconds": 3.825,
+      "median_ms": 16.82,
+      "p10_ms": 16.739,
+      "p90_ms": 16.95
+    },
+    "fused_exp_residual-8": {
+      "compilation_seconds": 6.205,
+      "median_ms": 34.692,
+      "p10_ms": 34.542,
+      "p90_ms": 34.807
+    },
+    "fused_kernel-4": {
+      "compilation_seconds": 4.569,
+      "median_ms": 15.478,
+      "p10_ms": 15.392,
+      "p90_ms": 15.554
+    },
+    "fused_kernel-8": {
+      "compilation_seconds": 5.933,
+      "median_ms": 33.739,
+      "p10_ms": 33.709,
+      "p90_ms": 33.827
+    }
+  }
+}

@@ -40,6 +40,7 @@ INDEX_COLUMNS = (
     "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
     "attention_score_transform", "coefficient_parameterization", "coefficient_input_power", "coefficient_initialization",
     "coefficient_constant_initial", "coefficient_sharing", "coefficient_orders",
+    "score_mlp_width", "score_mlp_form", "score_mlp_architecture", "score_mlp_kernel_weight_decay",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
     "coefficient_penalty_denominator", "query_coefficient_learning_rate_scale",
     "coefficient_release_schedule", "coefficient_release_step", "coefficient_release_end_step",
@@ -448,11 +449,14 @@ def _attention_family(model: Mapping[str, Any], record: Mapping[str, Any], kerne
         "fixed_polynomial": "polynomial", "fixed_polynomial_unnormalized": "polynomial",
         "fixed_polynomial_sum_of_squares": "polynomial",
         "learned_spline_unnormalized": "spline", "query_spline_unnormalized": "spline",
+        "score_mlp_unnormalized": "score_mlp", "exp_score_mlp_residual_unnormalized": "score_mlp",
     }
     if kernel in families:
         return families[kernel]
     if model.get("attention_kernel_basis", "polynomial") == "bspline":
         return "spline"
+    if model.get("attention_score_mlp_width") is not None:
+        return "score_mlp"
     if model.get("attention_fixed_coefficients") is not None or model.get("attention_fixed_square_factors") is not None:
         return "polynomial"
     if model.get("attention_coefficients") == "learned" or model.get("quadratic_mode") in {"positive", "unrestricted"}:
@@ -585,6 +589,14 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "attention_score_bias": model.get("attention_score_bias", "none") if model else None,
         # Likewise the polynomial's input transform: a model recipe without the field reads the score itself.
         "attention_score_transform": model.get("attention_score_transform", "identity") if model else None,
+        "score_mlp_width": model.get("attention_score_mlp_width"),
+        "score_mlp_architecture": model.get("attention_score_mlp_architecture", "dynamic_readout")
+            if model.get("attention_score_mlp_width") is not None else None,
+        "score_mlp_form": model.get("attention_score_mlp_form", "kernel")
+            if model.get("attention_score_mlp_width") is not None else None,
+        "score_mlp_kernel_weight_decay": (model.get("attention_score_mlp_architecture") == "conventional"
+                                         or model.get("attention_score_mlp_kernel_weight_decay", False))
+            if model.get("attention_score_mlp_width") is not None else None,
         "coefficient_parameterization": oracle["parameterization"] if coefficient_table else _first(model.get("attention_coefficient_parameterization"), record.get("attention_coefficient_parameterization")),
         "coefficient_input_power": model.get("attention_coefficient_input_power"),
         "coefficient_initialization": "captured_parent_coefficients" if free_coefficients else "parent_checkpoint" if static_coefficients and oracle.get("static_initialization") == "checkpoint" else "mean_parent_token_coefficients" if static_coefficients else "mean_parent_batch_coefficients" if shared_batch_coefficients else model.get("attention_coefficient_initialization"),
