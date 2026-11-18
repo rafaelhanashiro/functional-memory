@@ -3431,6 +3431,26 @@ passes original coefficient replay over all 256 sequences, repeated shared-table
 forward execution, an improving mean-gradient update, an unchanged source tree,
 and exact checkpoint resume for the 15-layer degree-eight model.
 
+## Static polynomial attention with cumulative FoX
+
+Learned direct static coefficients take the cumulative input gate on the blocked backend, with RoPE
+or no positional encoding, through the query-coefficient decay operation with every query's
+coefficients equal. `tests/test_static_forget_gate.py` checks the forward values and the Q, K, V,
+coefficient, input and gate-parameter gradients against an independent FP64 oracle with an explicit
+product of gates, and checks parameter ownership, the zero-decay limit, causal masking, diagnostics and
+the rejected configurations; acceptance runs it for every such recipe:
+
+```bash
+JAX_PLATFORMS=cpu PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m pytest -q \
+  scaffolds/transformer/tests/test_static_forget_gate.py -m 'not gpu'
+```
+
+Its GPU case compares production at the default matmul precision with the host FP64 oracle at 2,048
+tokens, BF16 activations and width 64. It passed on one H100 PCIe with the locked CUDA 12 environment
+at source `a7c6831c`, with relative errors below 1.8% for the output and every gradient. On CPU the
+current implementation reproduces that source's parameters, loss and gradients bitwise for the recipe
+of `r17fd7f040bff` at a 2-layer width-128 shape.
+
 ## Static coefficient fitting
 
 The [CPU record](runs/static-coefficient-fit/cpu.json) qualifies one coefficient

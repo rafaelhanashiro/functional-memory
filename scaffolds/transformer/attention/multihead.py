@@ -293,7 +293,8 @@ class MultiHeadAttention(nnx.Module):
         # (the dispatch refuses a shared cumulative gate there). The
         # query-key endpoint gate applies to all three, in the query-distance mode. Static
         # coefficients take the input-free query-distance gate (conditioning none), whose rate reads
-        # no token, or the per-order query-key gate; they then run the query-coefficient decay operation.
+        # no token, the per-order query-key gate, or the shared cumulative input gate on the blocked
+        # backend (static FoX); they then run the query-coefficient decay operation.
         input_free_gate = attention_forget_gate_conditioning == "none"
         exponential_gate = (attention_degree is None and quadratic_mode == "fixed"
                             and attention_coefficient_conditioning == "static" and not input_free_gate)
@@ -303,7 +304,10 @@ class MultiHeadAttention(nnx.Module):
                                   and attention_coefficient_orders is None and attention_kernel_basis == "polynomial")
         polynomial_gate = (static_gate_polynomial if input_free_gate else
                            (attention_coefficient_conditioning == "query" and attention_coefficient_activation != "identity")
-                           or (static_gate_polynomial and attention_forget_gate_conditioning == "query_key"))
+                           or (static_gate_polynomial and attention_forget_gate_conditioning == "query_key")
+                           or (static_gate_polynomial and attention_forget_gate_conditioning == "query"
+                               and attention_forget_gate_mode == "cumulative" and attention_forget_gate_form == "input"
+                               and backend == "blocked"))
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and (
@@ -312,7 +316,8 @@ class MultiHeadAttention(nnx.Module):
                 and attention_forget_gate_form == "input"))
         if attention_forget_gate and not ((exponential_gate or polynomial_gate) and forget_backend_supported):
             raise ValueError("The forget gate requires softmax, the unnormalized exponential, or nonlinear query "
-                             "coefficients (unnormalized static coefficients take the input-free gate): RoPE/none "
+                             "coefficients (unnormalized static coefficients take the input-free gate, the "
+                             "per-order query-key gate, or the cumulative input gate on blocked): RoPE/none "
                              "on the blocked backend (query-distance and per-order cumulative decay of polynomials "
                              "also on mosaic), or PaTH on blocked/fused/auto")
         if attention_forget_gate_mode == "query_distance" and positional_encoding == "path":
@@ -804,9 +809,9 @@ class MultiHeadAttention(nnx.Module):
                     parameters["key_polynomial_factors"] = key_factors
         if (self.attention_forget_gate and query_coefficients is None and self.attention_degree is not None
                 and self.attention_coefficient_conditioning == "static"
-                and self.attention_forget_gate_conditioning in ("none", "query_key")):
-            # Static coefficients under the input-free or query-key gate run the query-coefficient decay operation
-            # with every query's coefficients equal; broadcasting sums the per-query gradients back to
+                and self.attention_forget_gate_conditioning in ("none", "query_key", "query")):
+            # Static coefficients under the input-free, query-key or cumulative input gate run the query-coefficient
+            # decay operation with every query's coefficients equal; broadcasting sums the per-query gradients back to
             # the per-head coefficients, as the log decay's broadcast does to A_log and dt_bias.
             represented = parameters.pop("polynomial_coefficients", None)
             if represented is None:

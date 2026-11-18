@@ -427,6 +427,20 @@ def attention_identity(config) -> dict:
                                "lambda = exp(A_log) softplus(dt_bias) per layer/head, read from no token, with Gated "
                                "DeltaNet's initialization"),
         )
+    static_cumulative_gate = (forget_gate and gate_conditioning == "query" and gate_mode == "cumulative"
+                              and forget_gate_form == "input" and not gate_per_order and not query_conditioned
+                              and has_learned_polynomial(config.model))
+    if static_cumulative_gate:
+        # Learned static coefficients with the shared cumulative input gate (static FoX): only the gate reads x_t.
+        identity.update(
+            attention_forget_gate=True,
+            attention_forget_gate_mode=gate_mode,
+            forget_gate_parameter_count=(config.model.hidden_size + 2) * config.model.num_layers * config.model.num_heads,
+            attention_formula=(f"sum_(i<=t) prod_(j=i+1..t) alpha_j sum_(r<={degree}) c_r s_ti^r v_i, "
+                               f"s_ti = Q_t K_i^T / sqrt(d_k); learned static c ({sharing}) initialized at {initialized}; "
+                               "log alpha_t = -exp(A_log) softplus(x_t w_alpha + dt_bias) per layer/head, with Gated "
+                               "DeltaNet's initialization; x_t is the activation after the block input RMSNorm"),
+        )
     static_query_key_gate = forget_gate and gate_conditioning == "query_key" and has_learned_polynomial(config.model)
     if static_query_key_gate:
         # Learned static coefficients with the per-order query-key gate: only the rates read tokens.
@@ -461,7 +475,7 @@ def attention_identity(config) -> dict:
                 "s_ti = Q_t K_i^T / sqrt(d_k); independent gates per layer/head/order, initialized "
                 "by duplicating the shared gate; x is the pre-attention RMSNorm activation"))
     if (forget_gate and not query_conditioned and not input_free_gate and not static_query_key_gate
-            and not has_score_mlp(config.model)):
+            and not static_cumulative_gate and not has_score_mlp(config.model)):
         # Softmax and the unnormalized exponential: the cumulative decay of the input-dependent gate
         # joins every score (the Forgetting Transformer), with the Gated DeltaNet (input) or the
         # original sigmoid gate, or the constant form, ALiBi's bias with learned or fixed slopes; or,
@@ -1821,8 +1835,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite polynomial coefficients")
         if getattr(config.model, "attention_forget_gate", False):
-            # Static coefficients take the input-free gate, or the per-order query-key gate: rates and half-lives
-            # per layer, head and order.
+            # Static coefficients take the input-free gate, the per-order query-key gate (rates and half-lives
+            # per layer, head and order), or the shared cumulative input gate.
             gate_conditioning = getattr(config.model, "attention_forget_gate_conditioning", "query")
             coefficient_report["forget_gate"] = (
                 forget_gate_report(params, raw_layers, conditioning="none") if gate_conditioning == "none" else

@@ -904,6 +904,12 @@ from the block's normalized input, with GDN's initialization (`exp(A_log)` unifo
 | unnormalized exponential | `exp(s_ti + L_t - L_i)` | RoPE, none, or PaTH | `blocked`; PaTH also `fused` |
 | nonlinear query coefficients | `p_t(s_ti) exp(L_t - L_i)` | RoPE, none, or PaTH (tanh) | `blocked`; PaTH also `fused` |
 | learned static coefficients, input-free gate | `p(s_ti) exp(-(t-i) lambda)` | RoPE or none | `blocked`, `mosaic` |
+| learned static coefficients, cumulative input gate | `p(s_ti) exp(L_t - L_i)` | RoPE or none | `blocked` |
+
+Static coefficients under a gate keep their parameter ownership and their one factorial division: the
+attention layer gives every query the same effective coefficients, so the query-coefficient decay
+operation applies the gate and broadcasting sums the gradients back into the static array. No
+coefficient projection is created, and the coefficients take no weight decay.
 
 `attention_forget_gate_form: sigmoid` replaces the gate with the Forgetting Transformer's
 original `log alpha_t = log sigmoid(x_t w_f + b_f)` (Lin et al., 2025), initialized as in the

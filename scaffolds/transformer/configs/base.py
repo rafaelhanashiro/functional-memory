@@ -783,8 +783,9 @@ class ModelConfig:
             raise ValueError("A forget gate form requires the forget gate")
         # Softmax and the unnormalized exponential add L_t - L_i to every score (the Forgetting
         # Transformer; with PaTH, PaTH-FoX); nonlinear query-coefficient polynomials multiply their
-        # weights by exp(L_t - L_i). Learned static coefficients take only the input-free
-        # query-distance gate (conditioning none), on the query-coefficient decay kernels.
+        # weights by exp(L_t - L_i). Learned static coefficients take the input-free query-distance
+        # gate (conditioning none), the per-order query-key gate, or the shared cumulative input gate
+        # on the blocked backend, each on the query-coefficient decay operation.
         exponential = (self.attention_degree is None and self.attention_coefficients == "fixed"
                        and self.quadratic_mode == "fixed" and self.attention_coefficient_conditioning == "static")
         polynomial = (not self.attention_normalization and self.attention_coefficient_conditioning == "query"
@@ -800,7 +801,15 @@ class ModelConfig:
         # Learned static coefficients also take the per-order query-key gate, whose rates alone read the tokens.
         query_key_static = (static_polynomial and self.attention_forget_gate_conditioning == "query_key"
                             and self.attention_forget_gate_per_order is True)
-        gated_polynomial = static_polynomial if input_free else polynomial or query_key_static
+        # ... and the shared cumulative input gate (static FoX) on the blocked backend, where every query's
+        # coefficients are the static ones.
+        cumulative_static = (static_polynomial and self.attention_forget_gate_conditioning == "query"
+                             and self.attention_forget_gate_mode == "cumulative"
+                             and self.attention_forget_gate_form == "input"
+                             and self.attention_forget_gate_per_order is False
+                             and self.attention_forget_gate_rate_activation == "softplus"
+                             and self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
+        gated_polynomial = static_polynomial if input_free else polynomial or query_key_static or cumulative_static
         if not isinstance(self.attention_forget_gate_per_order, bool):
             raise ValueError("model.attention_forget_gate_per_order must be a boolean")
         if self.attention_forget_gate_per_order and (
@@ -866,7 +875,8 @@ class ModelConfig:
                 or not forget_backend_supported):
             raise ValueError("The forget gate applies to softmax, unnormalized exponential, and unnormalized "
                              "nonlinear query-conditioned polynomial attention (learned static coefficients take "
-                             "the input-free gate): RoPE/none on the blocked backend (query-distance and per-order "
+                             "the input-free gate, the per-order query-key gate, or the cumulative input gate on "
+                             "the blocked backend): RoPE/none on the blocked backend (query-distance and per-order "
                              "cumulative decay of polynomials also on mosaic), or PaTH on blocked/fused/auto")
         if self.attention_forget_gate_mode == "query_distance" and self.positional_encoding == "path":
             # The PaTH reference and fused kernels apply only the cumulative decay exp(L_t - L_i).

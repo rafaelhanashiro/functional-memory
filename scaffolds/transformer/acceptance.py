@@ -71,6 +71,7 @@ EXPONENTIAL_QUERY_DISTANCE_TESTS = "scaffolds/transformer/tests/test_exponential
 EXPONENTIAL_QUERY_KEY_TESTS = "scaffolds/transformer/tests/test_exponential_query_key.py"
 ENDPOINT_DECAY_TESTS = "scaffolds/transformer/tests/test_endpoint_decay.py"
 INPUT_FREE_GATE_TESTS = "scaffolds/transformer/tests/test_input_free_gate.py"
+STATIC_FORGET_GATE_TESTS = "scaffolds/transformer/tests/test_static_forget_gate.py"
 CONSTANT_DECAY_TESTS = "scaffolds/transformer/tests/test_constant_decay.py"
 SIGMOID_GATE_TESTS = "scaffolds/transformer/tests/test_sigmoid_forget_gate.py"
 SCORE_MLP_TESTS = "scaffolds/transformer/tests/test_score_mlp_attention.py"
@@ -261,6 +262,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # Static coefficients under the input-free gate: CPU references through the blocked scan and
         # strips, and on the GPU the Mosaic decay kernels through the production dispatch.
         paths.append(INPUT_FREE_GATE_TESTS)
+    if (model.get("attention_forget_gate", False) and model.get("attention_forget_gate_conditioning", "query") == "query"
+            and model.get("attention_degree") is not None
+            and model.get("attention_coefficient_conditioning", "static") == "static"):
+        # Static coefficients under the shared cumulative input gate (static FoX): CPU references against an
+        # independent FP64 oracle, and on the GPU the full-context BF16 forward and gradients.
+        paths.append(STATIC_FORGET_GATE_TESTS)
     if model.get("attention_score_mlp_width") is not None:
         # CPU stages run its exact checks; GPU stages its production-shape BF16 qualification.
         paths.append(SCORE_MLP_TESTS)
