@@ -1,5 +1,140 @@
 [
   {
+    "id": "2404.19756",
+    "title": "KAN: Kolmogorov-Arnold Networks",
+    "authors": [
+      "Ziming Liu",
+      "Yixuan Wang",
+      "Sachin Vaidya",
+      "Fabian Ruehle",
+      "James Halverson",
+      "Marin Soljačić",
+      "Thomas Y. Hou",
+      "Max Tegmark"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2404.19756",
+    "arxiv": "2404.19756",
+    "seen": true,
+    "added": "2026-11-18"
+  },
+  {
+    "id": "2610.14219",
+    "title": "Learnable Low-Rank Polynomial Sketch for Effective Linear Attention",
+    "authors": [
+      "Zongyue Qin",
+      "Haoran Deng",
+      "Jason Cong",
+      "Yizhou Sun"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2610.14219",
+    "arxiv": "2610.14219",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2310.01655",
+    "title": "PolySketchFormer: Fast Transformers via Sketching Polynomial Kernels",
+    "authors": [
+      "Praneeth Kacham",
+      "Vahab Mirrokni",
+      "Peilin Zhong"
+    ],
+    "year": 2023,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2310.01655",
+    "arxiv": "2310.01655",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2410.10254",
+    "title": "LoLCATs: On Low-Rank Linearizing of Large Language Models",
+    "authors": [
+      "Michael Zhang",
+      "Simran Arora",
+      "Rahul Chalamala",
+      "Alan Wu",
+      "Benjamin Spector",
+      "Aaryan Singhal",
+      "Krithik Ramesh",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2410.10254",
+    "arxiv": "2410.10254",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2607.07386",
+    "title": "Sparse Delta Memory: Scaling the State of Linear RNNs through Sparsity",
+    "authors": [
+      "Loïc Cabannes",
+      "Pierre-Emmanuel Mazaré",
+      "Ilze Amanda Auzina",
+      "Théo Le Pendeven",
+      "Gergely Szilvasy",
+      "Matthijs Douze",
+      "Maria Lomeli",
+      "Justin Carpentier",
+      "Gabriel Synnaeve",
+      "Hervé Jégou"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2607.07386",
+    "arxiv": "2607.07386",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2605.29157",
+    "title": "Parallax: Parameterized Local Linear Attention for Language Modeling",
+    "authors": [
+      "Yifei Zuo",
+      "Dhruv Pai",
+      "Zhichen Zeng",
+      "Alec Dewulf",
+      "Shuming Hu",
+      "Zhaoran Wang"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2605.29157",
+    "arxiv": "2605.29157",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "github-tilde-research-wall-attention-release-attention",
+    "title": "Wall Attention",
+    "authors": [],
+    "year": null,
+    "source": "GitHub",
+    "url": "https://github.com/tilde-research/wall-attention-release",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2606.27748",
+    "title": "Flexformer: Flexible Linear Transformer with Learnable Attention Kernel",
+    "authors": [
+      "Haoran Zhang",
+      "Feng Zhou"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2606.27748",
+    "arxiv": "2606.27748",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
     "id": "2507.02754",
     "title": "Fast and Simplex: 2-Simplicial Attention in Triton",
     "authors": [
