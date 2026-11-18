@@ -1,4 +1,24 @@
 {
+  "acceptance": {
+    "allocation_seconds": 86400,
+    "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
+    "failed_utc": "2026-11-18T16:16:09.930777+00:00",
+    "failure": {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1/failure.json",
+      "sha256": "a477a8208cb86cabfbb70bc75addf986b81e732182f864ed739b06a79c255779"
+    },
+    "identity": "09154640632def267ca7d82da6c357770315201cc910941e0fe9caaf5c24e431",
+    "slurm_job_id": "6507",
+    "stage": "gpu-tests",
+    "status": "failed"
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
+      "sha256": "1e0f0389740b9e607305f7193177f45c302a8f7d17aa3a207918bc123601f59c",
+      "size_bytes": 11127
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pointwise-attention-baselines/experiments/transformer_pp/runs/r266c5dd1f935/.runtime/acceptance/B200-1",
@@ -6,6 +26,8 @@
       "allocation_seconds": 86400,
       "config_path": "experiments/transformer_pp/runs/r266c5dd1f935/config.yaml",
       "config_sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29",
+      "exit_code": 1,
+      "finished_utc": "2026-11-18T16:16:15.989073+00:00",
       "gpu_count": 1,
       "gpu_type": "B200",
       "home_cluster": "kennel",
@@ -22,9 +44,15 @@
     "sha256": "daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29"
   },
   "control_run_id": "r6a76e7fbde45",
+  "error": "RuntimeError: Acceptance gpu-tests failed with pytest exit code 1",
   "frozen_execution_sha256": "52c34a499d4da148c94d44ca9b99bde5be19f15344786db08e5478acb29ce478",
   "home_cluster": "kennel",
   "label": "softplus-head-rmsnorm-rope",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
+    "sha256": "1e0f0389740b9e607305f7193177f45c302a8f7d17aa3a207918bc123601f59c",
+    "size_bytes": 11127
+  },
   "log_path": "experiments/transformer_pp/runs/r266c5dd1f935/training.log",
   "name": "softplus-head-rmsnorm-rope",
   "parameter_count": 198453586,
@@ -32,7 +60,7 @@
   "run_id": "r266c5dd1f935",
   "seed": 42,
   "source_commit": "1bc755a4a25455e7458661822b9361d37d85614f",
-  "status": "acceptance",
+  "status": "acceptance_failed",
   "submission": {
     "command": [
       "sbatch",

@@ -22,12 +22,30 @@ independent NumPy values and all gradients, finite extreme tails, numerical
 failure behavior, blocked scan/strips agreement, and forward/backward lowering
 for H100 and B200 at the production context.
 
-GPU numerical qualification and full-recipe pilots are pending. The dedicated
-suite checks production-context BF16 forward and all Q/K/V/coefficient gradients
-against independent CPU references, causality, tails, nonfinite scores, exact
-repeatability, and complete model gradients with QK and output RMSNorm. Each
-production allocation must pass this suite, initialization, a 20-update pilot,
-and fresh-process checkpoint resume. H100/B200 are admitted; B300 is not.
+Both allocations passed 619 CPU and 10 distributed CPU checks. All 14 dedicated
+Mosaic kernel GPU checks passed on B200, covering production-context BF16 forward
+and all Q/K/V/coefficient gradients against independent CPU references, causality,
+tails, nonfinite scores, and exact kernel repeatability. The two full-model
+repeatability checks failed before the training pilot: their 256-token fixture
+draws from only 64 embedding indices, and BF16 atomic accumulation makes the
+embedding gradient vary by update order. Loss, logits, and all other gradients
+repeat exactly.
+
+Read-only diagnostic job `6520` reproduced this for sigmoid, softplus, and a
+blocked-exp control with one compiled callable and with a fresh compilation.
+Using distinct token IDs made every output and parameter gradient bitwise equal
+over three repeats and a fresh compilation, for all three functions. Every
+per-array relative-L2 difference against the CPU blocked model stayed below 1.2%.
+The strict fixture needs distinct indices, following the existing normalized
+polynomial replay test; the mathematical recipe and attention kernels need no
+change for this diagnosed failure. [pointwise_repeatability.json](pointwise_repeatability.json)
+records the evidence and [probe](pointwise_repeatability_probe.py).
+
+The production acceptance suites remain failed and the training pilots have not
+run. Every production allocation still requires the full suite, initialization,
+a 20-update pilot, and fresh-process checkpoint resume. H100/B200 are admitted;
+B300 is not. This diagnostic changed no frozen execution code or run recipe and
+did not relaunch the failed jobs.
 
 ### Unit-L2 coefficient inputs (2026-11-14)
 

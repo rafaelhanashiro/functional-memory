@@ -29,6 +29,15 @@ pinned control recipe, every initialized parameter and optimizer decay mask,
 forward and backward kernel correctness, the full-recipe training pilot, and
 fresh-process checkpoint resume. Run records and logs hold the current status.
 
+Both runs are currently `acceptance_failed`, before any training update. CPU and
+attention-kernel GPU checks passed; the full-model exact-repeatability fixture
+fails because repeated token IDs cause nondeterministic BF16 embedding-gradient
+accumulation. A read-only diagnostic reproduced the same behavior with exp and
+confirmed exact full-model repeats with distinct token IDs. The
+[scaffold validation record](../../../../../scaffolds/transformer/validation/README.md#fixed-sigmoid-and-softplus-attention-2026-11-18)
+documents the evidence. The test fixture needs correction before qualification
+and launch can continue; the recipes and frozen execution code are unchanged.
+
 No training conclusions yet. The open decision is whether either fixed nonlinear
 function merits further comparison with exp and learned SoS attention. Report
 validation-best and terminal PPL separately; one seed does not measure variance.
