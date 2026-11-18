@@ -25,6 +25,11 @@ formula 0 at s = 0 instead of 1/2. The blocked backend (``backends/reference.py`
 strips) and the Mosaic transformed query-polynomial kernels (``backends/mosaic/api.py``
 ``transformed_query_polynomial_attention``, the same derivatives at s = 0) evaluate the transform; every
 other backend and kernel refuses a transformed recipe instead of computing the untransformed polynomial.
+
+``attention_coefficient_zero_constant`` structurally omits direct c_0 (query or
+static) or both query-SoS factor constants. Static softplus coefficients are
+broadcast over queries into the same transformed-query kernel; its coefficient
+VJP sums over that broadcast. No query generator is added to the static model.
 """
 
 import jax

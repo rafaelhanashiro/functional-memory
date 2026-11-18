@@ -91,7 +91,8 @@ def effective_coefficients_numpy(factors, degree: int | None = None) -> np.ndarr
     return out
 
 
-def query_square_coefficients(generated: jax.Array, degree: int, *, input_power: int = 0) -> jax.Array:
+def query_square_coefficients(generated: jax.Array, degree: int, *, input_power: int = 0,
+                              zero_constant: bool = False) -> jax.Array:
     """Actual coefficients of z^input_power (q1(z)^2 + q2(z)^2), of TOTAL degree ``degree``.
 
     ``generated`` contains g_j=b_j+a_j tanh(W_j^T x), with core_degree+1 factors,
@@ -99,6 +100,12 @@ def query_square_coefficients(generated: jax.Array, degree: int, *, input_power:
     square factors f. Thus g=1 starts h at T_core_degree; input_power=1 starts p at
     z T_core_degree(z), not T_degree(z). The returned FP32 coefficients already include
     factorial order scaling. Padding fixes c_0 exactly to zero without a learned parameter.
+
+    With ``zero_constant=True``, ``generated`` has core_degree-1 entries: only
+    U_1..U_k and V_1..V_(k-1). Their fixed f_j retain the original Taylor factors;
+    U_0,V_0 are structural zeros before expansion. Both expanded c_0 and c_1
+    therefore stay exactly zero. This variant has no prefactor and does not
+    initialize to T_core_degree: it removes the original factors' constants.
     """
     if type(input_power) is not int or input_power not in (0, 1):
         raise ValueError("input_power must be the integer 0 or 1")
@@ -106,9 +113,18 @@ def query_square_coefficients(generated: jax.Array, degree: int, *, input_power:
         raise ValueError("The total polynomial degree must be an integer")
     core_degree = degree - input_power
     _validate_degree(core_degree)
-    if generated.shape[-1] != core_degree + 1:
-        raise ValueError("Generated square factors must have core_degree + 1 entries")
-    factors = jnp.asarray(taylor_square_factors(core_degree), jnp.float32) * (1 + generated.astype(jnp.float32)) / 2
+    if type(zero_constant) is not bool or (zero_constant and input_power):
+        raise ValueError("Zero factor constants require a boolean flag and no input prefactor")
+    if generated.shape[-1] != core_degree + 1 - 2 * int(zero_constant):
+        raise ValueError("Generated square factors must match the active factor coordinates" if zero_constant else
+                         "Generated square factors must have core_degree + 1 entries")
+    fixed = jnp.asarray(taylor_square_factors(core_degree), jnp.float32)
+    if zero_constant:
+        indices = jnp.asarray([j for j in range(core_degree + 1) if j not in (0, core_degree // 2 + 1)])
+        active = fixed[indices] * (1 + generated.astype(jnp.float32)) / 2
+        factors = jnp.zeros((*generated.shape[:-1], core_degree + 1), jnp.float32).at[..., indices].set(active)
+    else:
+        factors = fixed * (1 + generated.astype(jnp.float32)) / 2
     terms = [jnp.zeros(factors.shape[:-1], jnp.float32) for _ in range(core_degree + 1)]
     for part in split_factors(factors, core_degree):
         for i in range(part.shape[-1]):

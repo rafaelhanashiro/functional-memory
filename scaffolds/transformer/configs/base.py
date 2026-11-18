@@ -96,6 +96,10 @@ class ModelConfig:
     # Optional ascending active monomial orders for static or diagonal tanh-query coefficients.
     # Store only these entries; all omitted orders remain exactly zero.
     attention_coefficient_orders: tuple[int, ...] | None = None
+    # Omit direct c_0, or both query-SoS factor constants U_0,V_0, structurally.
+    # Compact arrays store only the surviving coordinates. With SoS this fixes
+    # expanded c_0 and c_1 at zero, without an input prefactor.
+    attention_coefficient_zero_constant: bool = False
     # Query coefficients use the incoming attention activation, per layer/head. "query_key" also
     # multiplies each key's degree-r term by f_r(x_i) = 1 + a_r tanh(w_r^T x_i) from the key token.
     attention_coefficient_conditioning: Literal["static", "query", "query_key"] = "static"
@@ -404,7 +408,7 @@ class ModelConfig:
         transform = getattr(self, "attention_score_transform", "identity")
         if transform == "identity":
             return "the recipe has no score transform"
-        problem = _query_coefficient_problem(self)
+        problem = _transformed_coefficient_problem(self)
         if problem is None and self.positional_encoding != "rope":
             problem = "the Mosaic query-polynomial kernels run RoPE recipes"
         if problem is None and (self.attention_forget_gate or self.attention_score_bias != "none"):
@@ -923,6 +927,7 @@ class ModelConfig:
             if not self.attention_normalization and self.attention_coefficient_conditioning != "query":
                 raise ValueError("A sum-of-squares kernel requires normalized static or unnormalized query attention")
         _validate_score_bias(self)
+        _validate_zero_constant(self)
         _validate_score_transform(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
@@ -1102,6 +1107,46 @@ def _query_coefficient_problem(model) -> str | None:
     return None
 
 
+def _validate_zero_constant(model: ModelConfig) -> None:
+    if type(model.attention_coefficient_zero_constant) is not bool:
+        raise ValueError("model.attention_coefficient_zero_constant must be a boolean")
+    if not model.attention_coefficient_zero_constant:
+        return
+    query = model.attention_coefficient_conditioning == "query" and model.attention_coefficient_activation == "tanh"
+    static = (model.attention_coefficient_conditioning == "static"
+              and model.attention_coefficient_activation == "identity"
+              and model.attention_coefficient_parameterization == "direct")
+    if (model.attention_mechanism != "dot_product" or model.attention_normalization
+            or model.attention_coefficients != "learned" or model.quadratic_mode != "fixed"
+            or model.attention_degree is None or model.attention_degree < 1
+            or model.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+            or model.attention_coefficient_sharing != "per_head" or not (query or static)
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_readout != "diagonal" or model.attention_coefficient_orders is not None
+            or model.attention_coefficient_tanh_bias or model.attention_coefficient_gate != "none"
+            or model.attention_coefficient_input_power != 0 or model.attention_coefficient_input_normalization != "none"
+            or model.attention_coefficient_constant_initial not in (None, 0.0)
+            or model.attention_score_transform != "softplus" or model.attention_score_bias != "none"
+            or model.attention_forget_gate or model.attention_kernel_basis != "polynomial"
+            or model.positional_encoding != "rope" or model.attention_backend not in ("mosaic", "blocked")):
+        raise ValueError("A structural zero constant requires softplus/RoPE unnormalized learned per-head "
+                         "direct static or diagonal tanh query coefficients (direct or SoS), without selected "
+                         "orders, a prefactor, gates, inner biases, L2, or a nonzero constant start")
+
+
+def _transformed_coefficient_problem(model) -> str | None:
+    # Static zero-constant softplus uses broadcast coefficients on the same
+    # transformed-query kernels. Every other transformed recipe keeps its limits.
+    if (getattr(model, "attention_coefficient_zero_constant", False)
+            and model.attention_coefficient_conditioning == "static"):
+        try:
+            _validate_zero_constant(model)
+        except ValueError as error:
+            return str(error)
+        return None
+    return _query_coefficient_problem(model)
+
+
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
     coefficients with RoPE or no positional encoding, without a forget gate or score biases (allocation and
@@ -1126,7 +1171,7 @@ def _validate_score_transform(model: ModelConfig) -> None:
         model.attention_coefficient_constant_initial = float(start)
     if transform == "identity":
         return
-    problem = _query_coefficient_problem(model)
+    problem = _transformed_coefficient_problem(model)
     if problem is None and model.positional_encoding not in ("rope", "none"):
         problem = "it applies with RoPE or no positional encoding, not PaTH"
     if problem is None and model.attention_forget_gate:

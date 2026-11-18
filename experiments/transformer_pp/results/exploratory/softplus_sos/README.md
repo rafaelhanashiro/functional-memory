@@ -251,3 +251,36 @@ Refresh the selection after the runs' scientific files change:
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/softplus_sos
 ```
+
+## Structural zero constants
+
+Added 2026-11-18. The three new degree-eight runs test whether the constant must
+remain zero throughout training, rather than merely starting at zero or removing
+the baseline through an extra input prefactor. Their
+[selection](zero_constant_selection.yaml) pins each run and its controls;
+[methods and launch instructions](../../../README.md#softplus-polynomials-with-structural-zero-constants)
+specify the shared recipe. They are exploratory and enter no canonical selection.
+
+| Variant | Run | Weight, z=softplus(s) | Learned generator coordinates |
+| --- | --- | --- | --- |
+| Query | `rb5b604ae829a` | sum from r=1 to 8 of c_r(x) z^r | r1..r8 |
+| Static | `rc28ef4dbe26d` | sum from r=1 to 8 of c_r z^r | r1..r8 |
+| Query SoS | `r7d5baf55104e` | U(z)² + V(z)², U0=V0=0 | U1..U4, V1..V3 |
+
+All three have total degree eight, softplus inputs, RoPE, no L2 coefficient-input
+normalization, and no prefactor. They retain the reference-shape recipe and
+established WD policy. The removed constants have no trainable parameters, and
+all surviving initial values, including W draws, match the recipe parents.
+The two direct forms start at `T8(z)-1`. The SoS start is the sum of the squared
+Taylor factors after removing each factor's constant; removing these constants
+also changes higher expanded coefficients. Its expanded c0 and c1 remain zero.
+
+Results are pending. The open comparison is whether each restriction improves
+validation-best and terminal PPL, and whether it changes gradient spikes or
+coefficient dynamics. Query is matched to the existing softplus Query control
+`ra3b54e2489f8`, whose constant starts at zero but is learnable. Static's parent
+`r9c69dd7cfc8d` has raw-score inputs, so that comparison changes both the transform
+and constant policy. SoS is compared with the learned-constant softplus run
+`r41a4c74c5f58` and prefactor run `r841f35a24241`; the prefactor has total degree
+nine, unlike the new degree-eight SoS. One seed does not establish significance
+or isolate optimization from the changed function class and initialization.

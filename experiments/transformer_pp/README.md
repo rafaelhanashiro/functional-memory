@@ -2454,3 +2454,69 @@ submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       
 submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r3b9c8cc6fab8       # 1x, job 4517
 submit long 6:00:00 softplus_sos_acceptance H100,B200 $EXCL r5a18841b21b5       # 1x, no prefactor, job 4518
 ```
+
+## Softplus polynomials with structural zero constants
+
+Opened 2026-11-18 on Kennel. Three fresh Transformer++ runs test a vanishing
+negative-score tail without an input prefactor, at total degree eight. They use
+an isolated worktree and branch, `codex/softplus-zero-constant`. The existing
+[softplus composition topic](results/exploratory/softplus_sos/README.md#structural-zero-constants)
+owns the explicit controls, comparison limits, and open decision.
+
+| Variant | Run | Structural restriction | Recipe parent |
+| --- | --- | --- | --- |
+| Query | `rb5b604ae829a` | c0=0; learn r1..r8 | `ra3b54e2489f8` |
+| Static | `rc28ef4dbe26d` | c0=0; learn r1..r8 | `r9c69dd7cfc8d` |
+| Query SoS | `r7d5baf55104e` | U0=V0=0; learn U1..U4,V1..V3 | `r41a4c74c5f58` |
+
+All use `z=softplus(s)`, RoPE, the 15-layer width-896 shape, canonical QK RMSNorm
+and per-head score scales, per-head output RMSNorm, the original coefficient
+inputs after RMSNorm without L2 normalization, seed 42, batch 256, microbatch
+16, and 7,570 updates. The LR schedule, validation data, and reporting cadence
+match the parents. WD is 0.1 on backbone matrices and query/SoS coefficient W;
+query amplitudes and biases and static polynomial coefficients retain their
+established no-decay policy. All three capture gradient events.
+
+`attention_coefficient_zero_constant: true` removes the coordinates from the
+trainable parameter arrays; they cannot become nonzero under AdamW. Query and
+Static initialize at `T8(z)-1`. SoS retains the nonconstant coordinates of the
+parent Taylor factorization and fixes both factor constants to zero, giving
+`(U_T8(z)-U_T8(0))² + (V_T8(z)-V_T8(0))²` initially. This is a degree-eight
+polynomial with expanded c0=c1=0, not `T8(z)-1` and not `z*h(z)`. Its weight
+vanishes at least quadratically in z. The surviving random W columns are exact
+slices of the parent's draws. No checkpoint is used to initialize these runs.
+
+The [acceptance adapter](softplus_zero_constant_acceptance.py) pins each parent
+recipe, verifies surviving initial parameters and backbone identity, and requires
+CPU algebra/update/diagnostic tests, GPU outputs and all operand gradients
+against an independent reference, the full-shape 20-update pilot, and fresh-process
+resume. Production uses native Mosaic transformed-polynomial kernels; static
+coefficients broadcast over queries with summed gradients. H100 and B200 are
+admitted; these submissions request B200 on Kennel. The blocked implementation
+is used only for references and evaluation diagnostics.
+
+Submit all three independently from their worktree after committing the frozen
+execution set and checking live standard/long allowances:
+
+```bash
+submit_zero_constant() {  # partition, run
+  local partition="$1" run="$2"
+  sbatch --partition="$partition" --nodelist=shiba \
+    --exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier \
+    --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.softplus_zero_constant_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200
+}
+submit_zero_constant standard rb5b604ae829a
+submit_zero_constant standard rc28ef4dbe26d
+submit_zero_constant long r7d5baf55104e
+```
+
+The two standard submissions fill the two remaining slots under the current
+four-GPU user allowance; the independent SoS submission uses long.
+
+Every allocation qualifies before production. Check each run's authoritative
+`record.json` for its submission, acceptance, and current outcome. Code, lock,
+recipes, and study membership remain frozen while any of these jobs can run or requeue.

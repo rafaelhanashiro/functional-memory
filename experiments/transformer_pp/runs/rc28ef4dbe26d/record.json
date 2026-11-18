@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc28ef4dbe26d/config.yaml",
+    "sha256": "43c10fbb7b60c648d4d615abc440a5596769340cde3dbbd70d76889aa0af2c41"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8-softplus-zero-constant",
+  "name": "static-m8-softplus-zero-constant",
+  "record_schema_version": 1,
+  "run_id": "rc28ef4dbe26d",
+  "status": "planned"
+}

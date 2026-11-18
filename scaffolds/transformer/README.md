@@ -751,11 +751,11 @@ parameter-free function of the score instead of the score itself (`attention/sco
   keys]` block at a time; a blocked recipe trains on the strips, which `scaffolds.records create` gives a fresh
   blocked recipe and requires (also with `--allow-scan-blocked-attention`). An explicit `mosaic` backend runs
   `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
-  polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
-  `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
-  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. The entry
-  point refuses them there too (`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint
-  without backend selection; `tests/test_mosaic_score_transform.py` admits the GPU it qualifies. Softplus is
+  polynomial's Hopper and Blackwell kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
+  `common.QUERY_ABS`). Backend selection and the entry point admit H100 (sm90) and B200 (sm100);
+  B300 (sm103) remains unqualified for transformed kernels despite sharing the Blackwell architecture.
+  The entry point's device check also covers models restored without backend selection;
+  `tests/test_mosaic_score_transform.py` can admit a device for explicit qualification. Softplus is
   `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
   `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
   `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked
@@ -794,6 +794,32 @@ parameter-free function of the score instead of the score itself (`attention/sco
   GPU stage (degrees 1-12, every Q/K width, unit and wide scores, the production context against host FP64
   and the strips, future-token invariance, NaN rows, repeatability, dispatch), beside the query kernels' own
   GPU cases. A recipe with only the constant start adds `tests/test_score_transform.py` on CPU.
+
+### Structural zero constants with softplus inputs
+
+`attention_coefficient_zero_constant: true` omits the constant coordinates from
+the trainable arrays, instead of merely initializing them to zero. The default
+is false. This option applies to unnormalized, learned per-head softplus
+polynomials with RoPE: direct static coefficients, direct diagonal tanh query
+coefficients, or diagonal tanh query sum-of-squares factors, without a prefactor,
+gates, score biases, or coefficient-input L2 normalization.
+
+Direct degree-m polynomials store only orders 1 through m. Query SoS stores
+only U1 through U(m/2) and V1 through V(m/2-1); U0 and V0 are structural zeros
+before square expansion, so both expanded coefficients c0 and c1 are zero.
+The resulting SoS polynomial still has total degree m. It behaves as
+`z² * (U_tilde(z)² + V_tilde(z)²)` for `z = softplus(s)`, not the distinct
+`z * h(z)` prefactor construction. Surviving Taylor-factor coefficients retain
+their original initialization; setting the factor constants to zero does not
+produce the Taylor polynomial with only its constant removed.
+
+The native Mosaic transformed-polynomial kernel consumes the expanded
+coefficients. Static coefficients are broadcast over queries, with their
+gradients summed through that broadcast. The blocked implementation is the
+diagnostic/reference path. Parameter counts exclude the omitted coordinates;
+weight-decay ownership of the surviving parameters is unchanged. Configs and
+attention identities record the restriction; the run index exposes it as
+`coefficient_zero_constant`.
 
 ### B-spline score function
 

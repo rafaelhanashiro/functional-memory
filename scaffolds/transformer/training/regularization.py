@@ -48,10 +48,10 @@ def coefficient_penalty_sum(params, model, *, include_denominator: bool = True) 
     numerator_weights, denominator_weights = penalty_weights(
         model.attention_degree, denominator_degree(model) if rational else None)
     numerator = params["polynomial_coefficients"][...].astype(jnp.float32)
-    from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+    from scaffolds.transformer.attention.parameters import coefficient_coordinates, expand_polynomial_coefficients
 
     numerator = expand_polynomial_coefficients(numerator, model.attention_degree,
-                                               getattr(model, "attention_coefficient_orders", None))
+                                               coefficient_coordinates(model))
     total = jnp.sum(jnp.asarray(numerator_weights, jnp.float32) * jnp.square(numerator))
     if rational and include_denominator:
         if denominator_constant(model) != "fixed":

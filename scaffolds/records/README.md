@@ -91,6 +91,8 @@ whole sweep before any jobs can run or requeue.
   coefficients from coefficients predicted from the incoming query activation.
   `coefficient_orders` lists explicitly selected polynomial powers as a JSON array;
   it stays empty when the recipe does not restrict the powers.
+  `coefficient_zero_constant` records structural removal of direct constants or
+  both SoS factor constants; it stays unknown for recipes that predate the field.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 

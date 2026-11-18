@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rb5b604ae829a/config.yaml",
+    "sha256": "479b6bbfb567a3551557650d332e73f97baff20c6ac41a5c1e1b6b66f51f46d0"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-softplus-zero-constant-w-decay",
+  "name": "query-m8-softplus-zero-constant-w-decay",
+  "record_schema_version": 1,
+  "run_id": "rb5b604ae829a",
+  "status": "planned"
+}

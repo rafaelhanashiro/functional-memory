@@ -1,0 +1,132 @@
+question: Does removing the constant throughout training improve softplus-input query,
+  static, and SoS polynomials at degree eight?
+settings:
+  degree: 8
+  score_transform: softplus
+  coefficient_input_normalization: none
+  positional_encoding: rope
+  weight_decay: 0.1
+  query_projection_weight_decay: true
+  query_amplitude_bias_weight_decay: false
+  static_coefficient_weight_decay: false
+  direct_constant_policy: c0 structurally absent; learn r1..r8
+  sos_constant_policy: U0 and V0 structurally absent before square expansion; learn
+    U1..U4,V1..V3; expanded c0=c1=0
+  input_power: 0
+  initialization: retain the parent nonconstant coordinates, including exact surviving
+    W draws
+  ppl_metrics:
+  - validation-best
+  - terminal
+  limitations:
+  - One seed (42).
+  - Static parent also differs in score transform; no completed static softplus learned-constant
+    control exists.
+  - Prefactor control has total degree nine; zero-constant SoS has total degree eight.
+  - Removing SoS factor constants changes higher expanded coefficients at initialization;
+    it is not T8 minus its constant.
+runs:
+- study: transformer_pp
+  run_id: rb5b604ae829a
+  role: zero_constant_query
+  label: Query, softplus, c0=0
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb5b604ae829a/config.yaml
+      sha256: 479b6bbfb567a3551557650d332e73f97baff20c6ac41a5c1e1b6b66f51f46d0
+- study: transformer_pp
+  run_id: rc28ef4dbe26d
+  role: zero_constant_static
+  label: Static, softplus, c0=0
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc28ef4dbe26d/config.yaml
+      sha256: 43c10fbb7b60c648d4d615abc440a5596769340cde3dbbd70d76889aa0af2c41
+- study: transformer_pp
+  run_id: r7d5baf55104e
+  role: zero_constant_sos
+  label: Query SoS, softplus, U0=V0=0, no prefactor
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7d5baf55104e/config.yaml
+      sha256: 36d9129103bc260a96fe9ede4f0c65d6a3af16c5e304c5732e9ad9a8abda6ad5
+- study: transformer_pp
+  run_id: ra3b54e2489f8
+  role: query_softplus_control
+  label: Query softplus, learnable constant initialized at zero
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/config.yaml
+      sha256: adcdb8b7e740ccba18fb7f2bb58fa61fbfdbd14b8012af7d340084b9230387e8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metrics.jsonl
+      sha256: 5140f6c7616d040a3d42f2c160ae9bd1dbf05af71d9d1e18d7004417bea55376
+    completion.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/completion.json
+      sha256: c18bfc1c6c466880e0fb95b821bde777a4f80b67d628d1f763f19b4459e5f9b0
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metadata.json
+      sha256: 1acd67f9b01c47658e98407080f6c300a255c6082130e1c193b46d298f679617
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/best_validation.json
+      sha256: f87bb399b3dd68ae8abec08b14a8225198bef5069e04288208fcb056b2584ad3
+- study: transformer_pp
+  run_id: r9c69dd7cfc8d
+  role: static_raw_score_control
+  label: Static raw-score m8, all coefficients learned
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml
+      sha256: f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metrics.jsonl
+      sha256: 7994e681ec0020b763e35ec84df2e4174fe5e87e0be81e427d59b95e59161652
+    completion.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/completion.json
+      sha256: 537356576ae1b09299fc6d9f0042718f58ddfdbe14cd9ed1ce318ceb5e358db2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metadata.json
+      sha256: 727c612235e3a51db9f1549c44a63e11ddb55470e9a93ad2cf69b38e26b16d57
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/best_validation.json
+      sha256: 7167b5c06e3836695633f652f3926ea4207438153e88b9ed1d16632b774071fb
+- study: transformer_pp
+  run_id: r41a4c74c5f58
+  role: sos_softplus_control
+  label: Query SoS softplus, learned factor constants
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml
+      sha256: 851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metrics.jsonl
+      sha256: 49be5d0bf16b835e95bfc69231d9aeb46d194a4fb7c1a8fe2073e9e6207db3bb
+    completion.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/completion.json
+      sha256: 1e2abce0eec8e98379b06a89664e0d6cb70e526eb895dc6404d9d75607cdc328
+    metadata.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metadata.json
+      sha256: 42b7fbbd934fa9a59985bb3e030d3f6ccba4e62c592eb7b7e86b1f9066809f02
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/best_validation.json
+      sha256: ff78b0bb95d83d8297a3448a51c7cbcdee95b35e7e9d9f32c70c77b3e5088e24
+- study: transformer_pp
+  run_id: r841f35a24241
+  role: sos_prefactor_control
+  label: Query SoS softplus times prefactor, total degree nine
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r841f35a24241/config.yaml
+      sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl
+      sha256: 556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e
+    completion.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/completion.json
+      sha256: 11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37
+    metadata.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/metadata.json
+      sha256: db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/best_validation.json
+      sha256: bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495
