@@ -1,15 +1,18 @@
-"""Serve the results site on Kennel's loopback interface and save literature edits.
+"""Serve the results site on Kennel's loopback interface and save the user's edits.
 
 The login node is shared and every user can reach 127.0.0.1, so only connections from
 this server's own Unix user are answered. Besides static files it accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
-    PUT   /meeting/agenda.md        replace the meeting agenda (likewise notes.md)
+    PUT   /meeting/agenda.md       replace the meeting agenda (likewise notes.md)
     POST  /api/media               an image body (PNG, JPEG, GIF, WebP): store it in media/
     PUT   /api/literature          {"order": [ids]}: reorder the resources (the page's order)
     POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
     PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
                                    groups; {"title": ...} renames it
+
+Saving a document deletes the images in media/ that no write-up, agenda, or notes link to,
+once they are more than a day old (an image pasted into unsaved text is not linked yet).
 
     nohup setsid python3 site/serve.py --port 8765 > <log> 2>&1 < /dev/null &
 """
@@ -25,8 +28,10 @@ import os
 from pathlib import Path
 import re
 import secrets
+import sys
 import tempfile
 import threading
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -43,9 +48,12 @@ MEDIA = SITE / "media"
 IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
 MAX_IMAGE_BYTES = 25 << 20
+UNLINKED_IMAGE_SECONDS = 24 * 3600
+MEDIA_LINK = re.compile(r"media/([A-Za-z0-9._-]+)")
 FETCH_BYTES = 4 << 20
 LOOPBACK = "0100007F"
 LOCK = threading.Lock()
+MEDIA_LOCK = threading.Lock()
 
 
 def peer_uid(client_port: int, server_port: int) -> int | None:
@@ -66,6 +74,21 @@ def write_atomic(path: Path, content: str | bytes) -> None:
         handle.write(data)
     os.chmod(handle.name, 0o644)
     os.replace(handle.name, path)
+
+
+def prune_media() -> list[str]:
+    """Delete images over a day old that no write-up, agenda, or notes link to."""
+    documents = [*LITERATURE.glob("*.md"), *(SITE / "meeting").glob("*.md")]
+    linked = {name for path in documents for name in MEDIA_LINK.findall(path.read_text(errors="replace"))}
+    cutoff = time.time() - UNLINKED_IMAGE_SECONDS
+    removed = []
+    with MEDIA_LOCK:
+        for image in MEDIA.glob("*") if MEDIA.is_dir() else []:
+            if (image.is_file() and not image.name.startswith(".") and image.name not in linked
+                    and image.stat().st_mtime < cutoff):
+                image.unlink(missing_ok=True)
+                removed.append(image.name)
+    return removed
 
 
 def load_list() -> list[dict]:
@@ -230,6 +253,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         write_atomic(target, text)
         self.send_response(204)
         self.end_headers()
+        for name in prune_media():
+            print(f"removed unlinked image media/{name}", file=sys.stderr, flush=True)
 
     def _reorder(self):
         body = self._body()

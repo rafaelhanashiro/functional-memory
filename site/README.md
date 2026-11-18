@@ -17,7 +17,8 @@ renames, and switches resources between seen and not seen, and edits each resour
 write-up, their own Markdown file `literature/<id>.md` (math in `$...$` and `$$...$$`).
 The Meeting page shows the agenda and the notes, `meeting/agenda.md` and `meeting/notes.md`,
 edited the same way. Images pasted or dropped into any editor are stored in `media/` and
-linked from the Markdown. All of these go through `serve.py`, which writes the files
+linked from the Markdown; saving any document deletes the images that nothing links to
+once they are more than a day old. Commit only images that are linked. All of these go through `serve.py`, which writes the files
 without committing them.
 
 Its content changes only on the user's explicit instruction: do not add, update, or
