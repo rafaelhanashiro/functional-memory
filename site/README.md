@@ -8,7 +8,9 @@ nohup setsid python3 site/serve.py --port 8765 > <log> 2>&1 < /dev/null &
 ```
 
 View it through `ssh -fN -o ExitOnForwardFailure=yes -L 8765:127.0.0.1:8765 rafah@kennel.csail.mit.edu`
-at http://127.0.0.1:8765.
+at http://127.0.0.1:8765. Elsewhere, such as a laptop with Python 3.9 or later, run
+`python3 site/serve.py --port 8766` from the repository root and open http://127.0.0.1:8766
+(another port while a tunnel holds 8765); edits there are saved in that checkout.
 
 `literature/papers.json` lists the literature resources in the page's order (title,
 authors, year, link, and whether the user has seen it). On the page the user adds a

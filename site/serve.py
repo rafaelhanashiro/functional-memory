@@ -1,7 +1,9 @@
 """Serve the results site on Kennel's loopback interface and save the user's edits.
 
-The login node is shared and every user can reach 127.0.0.1, so only connections from
-this server's own Unix user are answered. Besides static files it accepts:
+The login node is shared and every user can reach 127.0.0.1, so on Linux only connections
+from this server's own Unix user are answered (elsewhere, such as on a laptop, there is no
+/proc/net/tcp to check and every local connection is answered). Besides static files it
+accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
     PUT   /meeting/agenda.md       replace the meeting agenda (likewise notes.md)
@@ -52,13 +54,15 @@ UNLINKED_IMAGE_SECONDS = 24 * 3600
 MEDIA_LINK = re.compile(r"media/([A-Za-z0-9._-]+)")
 FETCH_BYTES = 4 << 20
 LOOPBACK = "0100007F"
+PEERS = "/proc/net/tcp"
+CHECK_PEERS = os.path.isfile(PEERS)
 LOCK = threading.Lock()
 MEDIA_LOCK = threading.Lock()
 
 
 def peer_uid(client_port: int, server_port: int) -> int | None:
     """The Unix user owning the loopback TCP socket that connected to this server."""
-    with open("/proc/net/tcp") as table:
+    with open(PEERS) as table:
         next(table)
         for line in table:
             fields = line.split()
@@ -200,7 +204,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def _same_user(self) -> bool:
-        if peer_uid(self.client_address[1], self.server.server_address[1]) == os.getuid():
+        if not CHECK_PEERS or peer_uid(self.client_address[1], self.server.server_address[1]) == os.getuid():
             return True
         self.send_error(403)
         return False
@@ -378,6 +382,9 @@ def main() -> None:
     args = parser.parse_args()
     handler = functools.partial(Handler, directory=str(SITE))
     with http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler) as server:
+        if not CHECK_PEERS:
+            print("No /proc/net/tcp here: answering every local connection", file=sys.stderr, flush=True)
+        print(f"Serving http://127.0.0.1:{args.port}", file=sys.stderr, flush=True)
         server.serve_forever()
 
 
