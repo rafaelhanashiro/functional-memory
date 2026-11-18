@@ -4,6 +4,7 @@ The login node is shared and every user can reach 127.0.0.1, so only connections
 this server's own Unix user are answered. Besides static files it accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
+    PUT   /api/literature          {"order": [ids]}: reorder the resources (the page's order)
     POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
     PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
                                    groups; {"title": ...} renames it
@@ -204,6 +205,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         if not self._same_user():
             return
+        if self._route() == "/api/literature":
+            self._reorder()
+            return
         match = WRITEUP.fullmatch(self._route())
         target = LITERATURE / match.group(1) if match else None
         if target is None or not target.is_file():
@@ -220,6 +224,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         write_atomic(target, text)
         self.send_response(204)
         self.end_headers()
+
+    def _reorder(self):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            order = json.loads(body)["order"]
+        except (ValueError, KeyError, TypeError):
+            order = None
+        if not isinstance(order, list) or not all(isinstance(identifier, str) for identifier in order):
+            self._json(400, {"error": 'Expected {"order": [ids]}'})
+            return
+        with LOCK:
+            papers = {paper["id"]: paper for paper in load_list()}
+            if len(order) != len(papers) or set(order) != set(papers):
+                self._json(409, {"error": "The list changed since the page loaded; reload it"})
+                return
+            save_list([papers[identifier] for identifier in order])
+        self._json(200, {"order": order})
 
     def do_POST(self):
         if not self._same_user():
@@ -260,7 +283,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                      **({"arxiv": identifier} if identifier else {}), "seen": False,
                      "added": date.today().isoformat()}
             (LITERATURE / f"{entry['id']}.md").touch()
-            save_list([*papers, entry])
+            save_list([entry, *papers])
         self._json(201, entry)
 
     def do_PATCH(self):

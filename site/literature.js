@@ -1,6 +1,7 @@
-// The literature list (literature/papers.json) is shown in two groups, seen and not seen
-// yet, newest first. Adding a link, switching a resource between the groups, and saving a
-// write-up all go through serve.py. Each write-up is a Markdown file (math in $...$,
+// The literature list (literature/papers.json) is shown in its stored order, split into
+// seen and not seen yet; new links go to the top and the grip on each card reorders them
+// (drag, or arrow keys). Adding, reordering, switching groups, and saving a write-up all
+// go through serve.py. Each write-up is a Markdown file (math in $...$,
 // $$...$$, \(...\), \[...\]) fetched whenever its item opens; "Edit" shows it beside a live
 // preview. Code spans and blocks are matched first so their dollar signs stay literal.
 const MATH = /(```[\s\S]*?```|`[^`\n]+`)|\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$])\$(?!\s)((?:\\.|[^$\\\n])+?)(?<!\s)\$/g;
@@ -8,6 +9,7 @@ const EMPTY = '<p class="empty">No write-up yet.</p>';
 const API = "api/literature";
 const CHECK = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 10.5l3 3 6-7"/></svg>';
 const CHEVRON = '<svg class="chevron" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7.5l5 5 5-5"/></svg>';
+const GRIP = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5" r="1.4"/><circle cx="12.5" cy="5" r="1.4"/><circle cx="7.5" cy="10" r="1.4"/><circle cx="12.5" cy="10" r="1.4"/><circle cx="7.5" cy="15" r="1.4"/><circle cx="12.5" cy="15" r="1.4"/></svg>';
 const groups = {
   seen: document.querySelector('[data-group="seen"]'),
   unseen: document.querySelector('[data-group="unseen"]'),
@@ -17,6 +19,7 @@ const status = document.querySelector(".literature-status");
 const cards = new Map();
 const dirty = new Set();
 let papers = [];
+let saving = Promise.resolve();
 
 function render(markdown) {
   const math = [];
@@ -184,7 +187,15 @@ function createCard(paper) {
     event.preventDefault();
     setSeen(paper, !paper.seen);
   });
-  summary.append(head, toggle);
+  const handle = element("button", "drag-handle");
+  handle.type = "button";
+  handle.innerHTML = GRIP;
+  handle.title = "Drag to reorder";
+  handle.setAttribute("aria-label", "Reorder: drag, or press the up and down arrow keys");
+  handle.addEventListener("click", (event) => event.preventDefault());
+  handle.addEventListener("pointerdown", (event) => drag(event, card, handle));
+  handle.addEventListener("keydown", (event) => nudge(event, card, handle));
+  summary.append(handle, head, toggle);
   summary.insertAdjacentHTML("beforeend", CHEVRON);
   summary.addEventListener("click", (event) => {
     if (event.target.closest("a, button") || !card.open || !dirty.has(card)) return;
@@ -208,7 +219,7 @@ function createCard(paper) {
 
 function layout() {
   const order = {seen: [], unseen: []};
-  for (const paper of [...papers].reverse()) {
+  for (const paper of papers) {
     const card = cards.get(paper.id) ?? createCard(paper);
     card.classList.toggle("seen", paper.seen);
     card.classList.toggle("unseen", !paper.seen);
@@ -226,6 +237,108 @@ function layout() {
     });
     group.hidden = order[name].length === 0;
   }
+}
+
+// Reordering: the grip lifts its card, a dashed slot follows the pointer within the
+// card's group, and the drop saves the new order of the whole list.
+
+function drag(event, card, handle) {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  const list = card.parentElement;
+  const start = card.getBoundingClientRect();
+  const offset = event.clientY - start.top;
+  const slot = element("div", "drop-slot");
+  slot.style.height = `${start.height}px`;
+  list.insertBefore(slot, card);
+  Object.assign(card.style, {
+    position: "fixed", left: `${start.left}px`, top: `${start.top}px`, width: `${start.width}px`, zIndex: "20",
+  });
+  card.classList.add("dragging");
+  document.body.classList.add("reordering");
+  handle.setPointerCapture(event.pointerId);
+  let pointer = event.clientY;
+  let frame = 0;
+
+  const place = () => {
+    card.style.top = `${pointer - offset}px`;
+    let before = null;
+    for (const sibling of list.children) {
+      if (sibling === card || sibling === slot) continue;
+      const box = sibling.getBoundingClientRect();
+      if (pointer < box.top + box.height / 2) {
+        before = sibling;
+        break;
+      }
+    }
+    list.insertBefore(slot, before);
+  };
+  const scroll = () => {
+    const edge = 72;
+    const speed = pointer < edge ? (pointer - edge) / 4 : pointer > innerHeight - edge ? (pointer - innerHeight + edge) / 4 : 0;
+    if (speed) {
+      window.scrollBy(0, speed);
+      place();
+    }
+    frame = requestAnimationFrame(scroll);
+  };
+  const move = (moved) => {
+    pointer = moved.clientY;
+    place();
+  };
+  const end = () => {
+    cancelAnimationFrame(frame);
+    handle.removeEventListener("pointermove", move);
+    handle.removeEventListener("pointerup", end);
+    handle.removeEventListener("pointercancel", end);
+    list.insertBefore(card, slot);
+    slot.remove();
+    card.removeAttribute("style");
+    card.classList.remove("dragging");
+    document.body.classList.remove("reordering");
+    saveOrder(card);
+  };
+  handle.addEventListener("pointermove", move);
+  handle.addEventListener("pointerup", end);
+  handle.addEventListener("pointercancel", end);
+  frame = requestAnimationFrame(scroll);
+}
+
+function nudge(event, card, handle) {
+  const up = event.key === "ArrowUp";
+  if (!up && event.key !== "ArrowDown") return;
+  event.preventDefault();
+  const neighbor = up ? card.previousElementSibling : card.nextElementSibling;
+  if (!neighbor) return;
+  card.parentElement.insertBefore(card, up ? neighbor : neighbor.nextElementSibling);
+  handle.focus();
+  saveOrder(card);
+}
+
+function saveOrder(card) {
+  const id = card.dataset.id;
+  const next = card.nextElementSibling?.dataset.id;
+  const previous = card.previousElementSibling?.dataset.id;
+  const before = papers.map((paper) => paper.id);
+  const order = before.filter((other) => other !== id);
+  if (next) order.splice(order.indexOf(next), 0, id);
+  else if (previous) order.splice(order.indexOf(previous) + 1, 0, id);
+  else return;
+  if (order.join(" ") === before.join(" ")) return;
+  const byId = new Map(papers.map((paper) => [paper.id, paper]));
+  papers = order.map((other) => byId.get(other));
+  layout();
+  saving = saving.then(async () => {
+    try {
+      const response = await fetch(API, {
+        method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify({order}),
+      });
+      if (!response.ok) throw new Error(await failure(response));
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = `Order not saved: ${error.message}`;
+    }
+  });
 }
 
 function settle(card) {
@@ -263,7 +376,7 @@ form.addEventListener("submit", async (event) => {
     });
     if (!response.ok) throw new Error(await failure(response));
     const paper = await response.json();
-    papers.push(paper);
+    papers.unshift(paper);
     layout();
     settle(cards.get(paper.id));
     form.reset();

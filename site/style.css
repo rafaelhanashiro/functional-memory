@@ -137,6 +137,37 @@ main {
   to { opacity: 1; transform: none; }
 }
 .paper summary::-webkit-details-marker { display: none; }
+.paper summary { position: relative; }
+.drag-handle {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: #a1a1aa;
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+  transform: translateY(-50%);
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.drag-handle svg { width: 14px; height: 14px; fill: currentColor; }
+.paper:hover .drag-handle, .paper.dragging .drag-handle, .drag-handle:focus-visible { opacity: 1; }
+.drag-handle:hover { color: var(--text); background: rgba(24, 24, 27, 0.05); }
+.drag-handle:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+@media (hover: none) { .drag-handle { opacity: 0.55; } }
+.paper.dragging { box-shadow: 0 14px 36px rgba(24, 24, 27, 0.16); }
+.drop-slot {
+  border: 1.5px dashed #d4d4d8;
+  border-radius: 12px;
+}
+body.reordering, body.reordering * { cursor: grabbing !important; user-select: none; }
 .paper-head { flex: 1; min-width: 0; }
 .seen-toggle {
   flex: none;
@@ -344,5 +375,6 @@ main {
   .brand { padding-bottom: 4px; }
   nav { gap: 22px; }
   .paper summary { padding: 16px 18px; }
+  .drag-handle { left: 1px; }
   .writeup { margin: 0 18px; }
 }
