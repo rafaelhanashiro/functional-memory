@@ -337,12 +337,6 @@ width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spi
 
 ## Exploratory diagnostics
 
-The [spline attention topic](results/exploratory/spline_attention/README.md) calibrates
-fixed knots from the ordinary static and query models' scores at initialization
-and retained checkpoints. It records forward-only diagnostics on training examples
-before a proposed static/query spline comparison without FoX; its README gives
-the exact one-GPU Kennel launch command.
-
 ### Even polynomial powers
 
 The [even-powers topic](results/exploratory/even_powers/README.md) tests static
@@ -1130,19 +1124,85 @@ polynomials of `r4339a245820e` and `rca97cc9db8f2` by quartic B-splines on the f
 [-32, -6, 0, 6, 32], started exactly at T4, on the blocked strips backend
 (`model.attention_kernel_basis: bspline`; scaffold README, "B-spline score function").
 Question, recipe, controls and results are in the
-[spline topic](results/exploratory/spline_attention/README.md).
+[spline attention collection](results/spline_attention/README.md).
 
-Home cluster: Kennel. Branch `claude/spline-attention`, worktree `worktrees/spline-attention`.
-B300 updates project about 10-11 hours, so both use `standard` on one B300:
+`rb1a3a991da6c` calibrates the knots from the two controls' scores at initialization and at their
+retained checkpoints, with forward-only diagnostics on training examples. Home cluster: Kennel. Run it
+from its isolated worktree after syncing the environment and committing the execution files; the
+launcher requests one H100 in `standard`, freezes the execution set, and checks the diagnostic statistics
+against an explicit reference before processing model snapshots:
 
 ```bash
-for run in r7e4193fcafbd rf303a5f94487; do
+uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q experiments/transformer_pp/tests/test_calibrate_spline_scores.py
+sbatch --parsable --job-name=spline-score-calibration \
+  --output="$PWD/experiments/transformer_pp/runs/rb1a3a991da6c/training.log" \
+  experiments/transformer_pp/calibrate_spline_scores.sbatch \
+  "$PWD" "$(git rev-parse HEAD)" rb1a3a991da6c
+```
+
+The affine-initialization comparison uses `r325f7d64b940` (static) and
+`r2de7f1f4c9ce` (query + W decay), starting from f(s) = 1 + s/4 while preserving
+the paired spline recipes. See the collection above for the exact coefficients, controls
+and validation checks.
+
+Home cluster: Kennel. Branch `codex/spline-affine-init`, worktree
+`worktrees/spline-affine-init`. Each independent one-B300 run is expected to fit
+`standard`'s 24-hour limit (source runs took about 11 and 12 hours). Check live
+standard/long allowances before submission and commit all frozen inputs first:
+
+```bash
+for run in r325f7d64b940 r2de7f1f4c9ce; do
   sbatch --parsable --partition=standard --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
     --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
     --output="experiments/transformer_pp/runs/$run/training.log" \
     --error="experiments/transformer_pp/runs/$run/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_affine_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+The quadratic-initialization comparison uses `r3ba9a42b7abd` (static) and
+`r2c5883395415` (query + W decay), starting from f(s) = 1 + s + s²/2 while
+preserving the paired spline recipes. The same topic records the exact initial
+coefficients and the additional pilot check for actual coefficient movement.
+Home cluster: Kennel. Branch `codex/spline-quadratic-init`, worktree
+`worktrees/spline-quadratic-init`. After checking the live allowances and
+committing frozen inputs, submit each independently (the second entry uses
+`long` while the four-GPU `standard` allowance is committed):
+
+```bash
+for allocation in r3ba9a42b7abd:standard r2c5883395415:long; do
+  run=${allocation%:*}
+  partition=${allocation#*:}
+  sbatch --parsable --partition="$partition" --gres=gpu:b300:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_quadratic_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+done
+```
+
+The scaled binomial-quartic comparison uses `ra4c3ada624af` (static) and
+`r78fa0d682f44` (query + W decay), starting from f(s) = (1 + s/4)⁴ / 16.
+The [spline attention collection](results/spline_attention/README.md) records its
+exact coefficients, controls, unchanged scientific settings, and qualification.
+Home cluster: Kennel. Branch `codex/spline-binomial-init`, worktree
+`worktrees/spline-binomial-init`. Each independent job accepts one B300 or H100
+and uses an available `standard` slot after checking live allowances. Resumptions
+use the frozen launch commit below and the existing checkpoint; acceptance runs
+on the allocated GPU type before training resumes. Follow `CLUSTERS.md` for
+unavailable nodes and hardware exclusions.
+
+```bash
+for run in ra4c3ada624af r78fa0d682f44; do
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=24:00:00 --exclude=collie,samoyed,doodle,terrier,shiba,mastiff --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.spline_binomial_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" 87c6a91a9f63d6f986d3bb1cccad79232dab81af 1 B300,H100
 done
 ```
 

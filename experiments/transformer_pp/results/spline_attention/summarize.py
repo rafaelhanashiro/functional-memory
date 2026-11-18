@@ -1,4 +1,9 @@
-"""Summarize the pinned spline-knot calibration; every quantile is labeled by its sampling level."""
+"""Summarize the pinned spline-knot calibration; every quantile is labeled by its sampling level.
+
+    PYTHONPATH=. scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.spline_attention.summarize
+
+Writes ``summary.csv``, ``coverage.csv`` and ``score_coverage.png``.
+"""
 import csv
 import json
 from pathlib import Path
@@ -12,7 +17,7 @@ import yaml
 from scaffolds.records.selections import verify_pinned_runs
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[4]
+ROOT = HERE.parents[3]
 STYLE = {"static": ("Static", "#1f77b4"), "query_wdecay": ("Query + W decay", "#d62728")}
 
 
@@ -61,7 +66,7 @@ def summarize(rows):
     return result, coverage
 
 
-def main():
+def main(output: Path = HERE):
     selection = yaml.safe_load((HERE / "selection.yaml").read_text())
     entries = [entry for entry in selection["runs"] if entry["role"] == "score_calibration"]
     if len(entries) != 1:
@@ -109,10 +114,10 @@ def main():
     for axis in axes:
         axis.grid(alpha=0.2)
     fig.tight_layout()
-    fig.savefig(HERE / "score_coverage.png", dpi=160, metadata={"Software": "Matplotlib"})
+    fig.savefig(output / "score_coverage.png", dpi=160, metadata={"Software": "Matplotlib"})
     plt.close(fig)
-    write_csv(HERE / "summary.csv", summaries)
-    write_csv(HERE / "coverage.csv", coverage_rows)
+    write_csv(output / "summary.csv", summaries)
+    write_csv(output / "coverage.csv", coverage_rows)
 
 
 if __name__ == "__main__":

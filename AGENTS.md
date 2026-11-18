@@ -84,14 +84,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Seven attention questions have their own canonical collections at the user's request:
+  Eight attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
   static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet),
   `results/rational_polynomial/` (separate learned denominator polynomials), and the
   Transformer++ study's `experiments/transformer_pp/results/degree_scaling/`
   (perplexity against polynomial degree for four coefficient families),
   `experiments/transformer_pp/results/score_mlp/` (a learned MLP of the score and query
-  token in place of exp), and the 12-layer width-640 shape's
+  token in place of exp), `experiments/transformer_pp/results/spline_attention/` (a learned
+  quartic B-spline of the score and its initial function), and the 12-layer width-640 shape's
   `experiments/transformer_pp/results/l12_d640/shape_pairs/` (attention variants at 1×
   against their reference-shape partners) and `.../l12_d640/budgets/` (the variants at
   1×, 2× and 4× the shape's budget). Do not

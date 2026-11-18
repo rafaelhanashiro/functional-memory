@@ -9,6 +9,10 @@ validation perplexity against polynomial degree `m = 1-8` and 12 for fixed Taylo
 Hermite, learned static, and query coefficients with projection weight decay (Taylor and
 query only at 12), with softmax as the reference level; all thirty-four runs are complete.
 
+The canonical [spline attention](spline_attention/README.md) collection replaces the degree-four
+polynomial kernel by a learned quartic B-spline of the score, static or query-dependent, from four
+initial functions; started at Taylor it ties the polynomial and every other start is 6–22% behind.
+
 The [12-layer width-640 shape](l12_d640/README.md) groups that shape's two canonical
 collections: [shape pairs](l12_d640/shape_pairs/README.md) repeats eight attention variants
 there (98,977,016 parameters at 1×) and compares each with its reference-shape partner, and

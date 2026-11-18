@@ -794,7 +794,7 @@ def _release_identity(config, release, formula: str) -> dict:
 def spline_identity(model) -> dict:
     """The B-spline score function's basis, start, parameters, and formula (attention/spline.py)."""
     from scaffolds.transformer.attention.spline import (
-        basis_count, clamped_knot_vector, piece_centres, taylor_coefficients,
+        basis_count, clamped_knot_vector, piece_centres, initial_coefficients,
     )
 
     degree, knots = model.attention_degree, tuple(model.attention_spline_knots)
@@ -805,6 +805,14 @@ def spline_identity(model) -> dict:
              f"with each endpoint repeated {degree + 1} times (C^{degree - 1} at the interior knots); outside "
              f"[{knots[0]:g}, {knots[-1]:g}] f continues its first or last polynomial piece")
     start = f"the exact B-spline coefficients of T_{degree}(s) = sum_(r<={degree}) s^r / r!, so f = T_{degree}"
+    initialization = model.attention_coefficient_initialization
+    intercept, slope = model.attention_spline_initial_intercept, model.attention_spline_initial_slope
+    powers = model.attention_spline_initial_power_coefficients
+    if initialization == "affine":
+        start = f"the exact B-spline coefficients of the affine function f(s) = {intercept:g} + ({slope:g})*s"
+    if initialization == "polynomial":
+        terms = " + ".join(f"({coefficient:g})*s^{r}" for r, coefficient in enumerate(powers))
+        start = f"the exact B-spline coefficients of the polynomial f(s) = {terms}"
     if query:
         spread = model.attention_coefficient_projection_initial_std
         amplitude = model.attention_coefficient_amplitude_initial
@@ -832,15 +840,20 @@ def spline_identity(model) -> dict:
         "attention_spline_evaluation": ("per-piece local polynomials sum_r P_jr (s - c_j)^r from a fixed exact "
                                         "linear map of theta, Horner's rule in the compute dtype (FP32)"),
         "attention_spline_piece_centres": [float(centre) for centre in piece_centres(knots)],
-        "attention_spline_initial_coefficients": [str(value) for value in taylor_coefficients(knots, degree)],
+        "attention_spline_initial_coefficients": [str(value) for value in initial_coefficients(
+            knots, degree, initialization, intercept=intercept, slope=slope, power_coefficients=powers)],
         "attention_coefficients": "learned",
         "attention_coefficient_parameterization": "direct",
-        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_initialization": initialization,
         "attention_coefficient_sharing": "per_head",
         "attention_coefficient_count": per_layer_head * model.num_layers * model.num_heads,
         "attention_coefficient_conditioning": model.attention_coefficient_conditioning,
         "coefficient_penalty": 0.0,
     }
+    if initialization == "polynomial":
+        identity["attention_spline_initial_power_coefficients"] = list(powers)
+    if initialization == "affine":
+        identity.update(attention_spline_initial_intercept=intercept, attention_spline_initial_slope=slope)
     if query:
         identity.update(
             attention_coefficient_activation="tanh",

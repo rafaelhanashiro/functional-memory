@@ -63,6 +63,8 @@ def config_to_dict(config: Config) -> dict[str, Any]:
     for key in SCORE_MLP_CONSTANTS:
         if getattr(config.model, key) is not None:
             values["model"][key] = list(getattr(config.model, key))
+    if config.model.attention_spline_initial_power_coefficients is not None:
+        values["model"]["attention_spline_initial_power_coefficients"] = list(config.model.attention_spline_initial_power_coefficients)
     values["train"]["workdir"] = str(config.train.workdir)
     for key in ("checkpoint_dir", "wandb_dir"):
         if getattr(config.train, key) is not None:
@@ -113,6 +115,11 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         spline_knots = value["model"].setdefault("attention_spline_knots", None)
         if isinstance(spline_knots, (tuple, list)):
             value["model"]["attention_spline_knots"] = [float(knot) for knot in spline_knots]
+        value["model"].setdefault("attention_spline_initial_intercept", None)
+        value["model"].setdefault("attention_spline_initial_slope", None)
+        spline_powers = value["model"].setdefault("attention_spline_initial_power_coefficients", None)
+        if isinstance(spline_powers, (tuple, list)):
+            value["model"]["attention_spline_initial_power_coefficients"] = [float(coefficient) for coefficient in spline_powers]
         value["model"].setdefault("attention_coefficient_parameterization", "direct")
         value["model"].setdefault("attention_coefficient_initialization", "taylor")
         value["model"].setdefault("attention_denominator_degree", None)

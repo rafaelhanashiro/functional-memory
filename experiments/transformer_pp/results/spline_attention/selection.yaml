@@ -1,0 +1,223 @@
+question: How do static and query-dependent quartic splines compare with global polynomials,
+  and how does their initialization affect learning?
+settings:
+  metric: score distributions and absolute-weight coverage
+  spline_tail_policy: polynomial_continuation
+  fox: false
+runs:
+- study: transformer_pp
+  run_id: rb1a3a991da6c
+  role: score_calibration
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml
+      sha256: 51bb93f5e02e26dce76108f085833ffafc1f2b9db968409a6a102c5bfa430bf9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rb1a3a991da6c/metrics.jsonl
+      sha256: 773d3465cb13bf4f528ec1617ae0ee947c06de312de1bd74108d0321ba3c5e9a
+    completion.json:
+      path: experiments/transformer_pp/runs/rb1a3a991da6c/completion.json
+      sha256: 9b2535e4f00a35af495ecb08eced64af9adb79fda2272dc903f8188c1ddf6def
+    metadata.json:
+      path: experiments/transformer_pp/runs/rb1a3a991da6c/metadata.json
+      sha256: b2320650c7d9d5c9643da10cd866b2565f902682154c2d389d892c097982c820
+- study: transformer_pp
+  run_id: r7e4193fcafbd
+  role: static_spline
+  label: static quartic spline
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/config.yaml
+      sha256: 250aa775cc7e7635512a7a1194e40a5f9830d3326880bed1842d7674f83be2f9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/metrics.jsonl
+      sha256: 846ede789cd36523aa947e4d3e309d8d06a7cdf40ab5014a45542e96d9b72456
+    completion.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/completion.json
+      sha256: b2e09dfd357238e6c2b41bd94811492ebb8f36475c696c6021f59ae23b09dbd7
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/metadata.json
+      sha256: cc9c6fd31e7a16768029a19ad8e76c4776644ebe4c81b4a91d244c3ee15e9226
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7e4193fcafbd/best_validation.json
+      sha256: 3f30a1792ae37d747472e9e7014ff6a13ac1430ce842808de216b0716276d68e
+- study: transformer_pp
+  run_id: rf303a5f94487
+  role: query_spline
+  label: query quartic spline + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf303a5f94487/config.yaml
+      sha256: 1c8ea9e57d7f7a6e4ce0308f12c0fa50a3fba3b8adaea8b6972a26da4f2b2e14
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf303a5f94487/metrics.jsonl
+      sha256: e2eb41b6dd2b169d0a15c168f52c04dacd480409f03a89ada96d6eaadc6cb778
+    completion.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/completion.json
+      sha256: fac1399185eca64a19eb363710b9d32d7a4c7dd27892fa3977aa2cce5f9ea1e3
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/metadata.json
+      sha256: ae5960df05f81a5a5216f48f5a0f6c6d8af202e3a9d9439cc0011e3a47ee3ad6
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf303a5f94487/best_validation.json
+      sha256: ade8570ef6e3ffb30cf919baa63abda57aa834da44511f59c7c0978159cf635d
+- study: transformer_pp
+  run_id: r4339a245820e
+  role: control_static
+  label: static m = 4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4339a245820e/config.yaml
+      sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4339a245820e/metrics.jsonl
+      sha256: aac549c56baf062d85bf3a4026d92a81ea0181671127c7cfd89b75fbdd849fd4
+    completion.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/completion.json
+      sha256: afb56b2641f922fef2a15097909d892309d9814cf091d88d9fecc9b88743dc27
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/metadata.json
+      sha256: e365b09aa102c907956d144ffcb066ee4bb78cfc52c554abce53013ffaa152f8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/best_validation.json
+      sha256: d487f8d386c07df16a7e5f8b7d6f6ff756be16fe0abc1b1d57829813167a5514
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: control_query
+  label: query m = 4 + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r325f7d64b940
+  role: static_spline_affine
+  label: Static spline, affine initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r325f7d64b940/config.yaml
+      sha256: a2f8a745477ceb5c48aaa4cda9c8665b0e769cb1beb00ee0596cc832bcfcf887
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r325f7d64b940/metrics.jsonl
+      sha256: 020020ccca7cef8d5250ad90bf89cf2255a8223e4b3dfaf6222762c6e539ee2d
+    completion.json:
+      path: experiments/transformer_pp/runs/r325f7d64b940/completion.json
+      sha256: e3bef1806fdd0348565870b93dcf616a8bf9e39565d931a48fe476c0c7539e3b
+    metadata.json:
+      path: experiments/transformer_pp/runs/r325f7d64b940/metadata.json
+      sha256: 812c60c9c0a2543dcb3a0cb7bce25c2127333a5073f77f9838722588170423bb
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r325f7d64b940/best_validation.json
+      sha256: f1ee7110490f35d8ff43af7001fcf71f73c2bb17a56781938b521aabb1d9d208
+- study: transformer_pp
+  run_id: r2de7f1f4c9ce
+  role: query_spline_affine
+  label: Query spline + W decay, affine initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/config.yaml
+      sha256: a028060d5c046cf551e3186a963cc2720153d5d87c6fbb74a7d961fe55a4b2ee
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/metrics.jsonl
+      sha256: a840ef646207c0e062d6be32ae3585c9417f66f9aeba5443cf0b391ed9e7f940
+    completion.json:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/completion.json
+      sha256: a6b2561ae5cce968e3c8a8b250c2c5142532aa0a3242f38630df11226c43024b
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/metadata.json
+      sha256: a6d01ebdf948bbe808498be9850f991d689c06e1e567ba1befc0d20ae808a1e0
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2de7f1f4c9ce/best_validation.json
+      sha256: 0eb6d7805c2d38244c082be631f616604cfadad8b06c3f559b06733587deb9c6
+- study: transformer_pp
+  run_id: r3ba9a42b7abd
+  role: static_spline_quadratic
+  label: Static spline, quadratic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/config.yaml
+      sha256: fb9daf2dbdfa1f8c8c78406e28fa3f8ef48738d0f26751311da4b155c0927e5a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/metrics.jsonl
+      sha256: e6515436aa5b8803ad27ad40522eef0200d0c2cb5bea33846c42ae5f6b0d6500
+    completion.json:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/completion.json
+      sha256: 243cdb70693b98646a50ffdefc1c144367e1fe7b26a3a9ddea17e717f5bf5468
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/metadata.json
+      sha256: 25a70cac114647ac36efebe04c4b206ea5a703c2fda0e56cc762a931a6c5d1f1
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3ba9a42b7abd/best_validation.json
+      sha256: 7c83d679502ea14bf20455ab9ceff414cac90acf1e4b47fcc74f249a95887319
+- study: transformer_pp
+  run_id: r2c5883395415
+  role: query_spline_quadratic
+  label: Query spline + W decay, quadratic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2c5883395415/config.yaml
+      sha256: cfecf2e9b53069dee5e98b42e63a66b5ff338a9af5190ea99503bf5a80f4f248
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2c5883395415/metrics.jsonl
+      sha256: bd8bab86c3dedf41b214767e1cf467886cff120bde04abe908ad1b2897f617ca
+    completion.json:
+      path: experiments/transformer_pp/runs/r2c5883395415/completion.json
+      sha256: 0922b0b8851b9f88d57ddd34f7b1a56f174ad28394bcb9dd4db8f1b5ada0a3f3
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2c5883395415/metadata.json
+      sha256: efc85ec304537511aef92eedfe0e982aa47b036b7f135d0f25eb5609cb83d02c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2c5883395415/best_validation.json
+      sha256: c960d106df8803a5158093f0c29dbbfdb09e5bf0429cad54f8ed0378910c361a
+- study: transformer_pp
+  run_id: ra4c3ada624af
+  role: static_spline_binomial
+  label: Static spline, scaled binomial-quartic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/config.yaml
+      sha256: a97790ccf38ed5c953c44c7b872b9bb27a47065f34c344ffb5ea1be5d3c11707
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/metrics.jsonl
+      sha256: ca183f632c57227d974d96f6bd4462a496533406a72730f85cdb02ba3fc5ad05
+    completion.json:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/completion.json
+      sha256: 6c82fe0f4055cc214851c777afc0c2095a0d21ef9e7026021593ab7140d4a42c
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/metadata.json
+      sha256: 3723f98240ad7f47ff715b3de87bd01a47963b7643f6ace164e41d0c1e6e25d4
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra4c3ada624af/best_validation.json
+      sha256: 47e3c823600c3f29e75793a6481370bef60ad81ec93f0f6513e3a68c59d5dae4
+- study: transformer_pp
+  run_id: r78fa0d682f44
+  role: query_spline_binomial
+  label: Query spline + W decay, scaled binomial-quartic initialization
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/config.yaml
+      sha256: 9bc5997ddd71b15b1603fbdbb2d41acffb6d08f29755a7b0553ec1d8041a060b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/metrics.jsonl
+      sha256: 6278742eabc5ac6ba36285b4d6ce45da97b077afed30905a8700b9a93c4c25e1
+    completion.json:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/completion.json
+      sha256: b489e25f8bab1d4fe2930440217a061024c3317ee079c764ee42ce66dc4c35dd
+    metadata.json:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/metadata.json
+      sha256: 837f611f087d075aad61a31f3b98daea3f7bbc307751b2ba2f232cddd7524bcc
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r78fa0d682f44/best_validation.json
+      sha256: d70601e4e7aa00eec457f9e23f331d25681c10b65361a92933ed6bb7a0f02a75

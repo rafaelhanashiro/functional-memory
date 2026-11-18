@@ -4207,3 +4207,84 @@ width64 and BF16 Q/K/V, checking every MLP and Q/K/V/input derivative. Each
 production recipe's acceptance runs these checks, the historical fused checks,
 a full-model pilot and fresh-process checkpoint resume before training.
 [Qualification record](runs/plain-score-mlp/record.json).
+
+## Affine B-spline initialization (2026-11-10)
+
+The CPU spline suite passes **98 tests** (two GPU tests deselected) with the locked
+environment:
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest \
+  scaffolds/transformer/tests/test_spline_attention.py -q -m 'not gpu' --maxfail=1
+```
+
+Affine initialization computes exact coefficients from Greville abscissae for any
+supported degree and knot vector. Checks cover exact polynomial reproduction on
+every piece; FP32/FP64 values and derivatives at knots and in the polynomial tails;
+static and query model logits against the equivalent fixed monomial function;
+backbone initialization, FP32 parameter storage, decay masks, serialization and
+historical Taylor compatibility. An Adam update at learning rate `1e-4` moves every
+coefficient when its basis is active; after the initially zero query amplitude
+moves, task gradients reach the query projection. Existing output/gradient checks
+against independent Cox–de Boor/de Boor references also pass. The attention backend
+computation is unchanged. GPU acceptance for the new initialization is pending
+and remains required on the actual training allocation.
+
+## Polynomial B-spline initialization (2026-11-10)
+
+The locked CPU environment passes **126 spline tests** and **120 shared acceptance
+tests**. The spline command above now includes exact polynomial-to-B-spline
+blossoming for several degrees and knot vectors, independent Cox–de Boor values,
+FP32/FP64 values and score derivatives at knots and in the tails, model-logit parity
+with the matching fixed monomial kernel, and unchanged Taylor/affine starts,
+backbone draws, decay masks and historical config loading.
+
+For a degree-four basis on `[-32, -6, 0, 6, 32]`, initializing from `[1, 1, 0.5]`
+produces `[481, 559/2, 605/6, -10, 6, 815/6, 661/2, 545]` before FP32 rounding.
+With all eight basis functions active, actual static and query Adam updates at
+`1e-4` change every coefficient. Query amplitudes move from zero and subsequently
+pass finite task gradients to their projection. The production pilot callback
+can check finite updates from its real validation diagnostics before acceptance
+passes; shared tests verify its recorded facts, fail-before-success behavior, and
+backward compatibility for adapters without a callback.
+
+GPU qualification now selects four production-precision cases: static/query
+coefficients near the Taylor/quadratic starts, at 2,048 tokens and width 64,
+comparing outputs and Q/K/V/coefficient gradients against FP64. This new
+initialization still requires those GPU checks, full-recipe initialization,
+pilot coefficient-update evidence, runtime projection, and exact checkpoint
+resume on each production allocation. No new kernel arithmetic is introduced.
+
+## Binomial quartic B-spline initialization (2026-11-10)
+
+The locked CPU environment passes **141 spline tests** (six GPU cases deselected)
+with the command above. The initializer matrix includes
+`(1 + s/4)^4 / 16`, supplied as ascending power coefficients
+`[1/16, 1/16, 3/128, 1/256, 1/4096]`. On the same degree-four basis and knots,
+its exact spline coefficients are
+`[2401/16, 343/32, -49/32, 35/64, -45/64, 405/32, 3645/32, 6561/16]`;
+each is exactly representable in FP32. The maximum coefficient magnitude is
+410.0625 and maximum FP32 spacing is 0.000030517578125.
+
+Checks include exact reproduction on every piece, FP32/FP64 values and derivatives
+through fourth order at the knots, in both polynomial tails, and at the
+fourth-order zero `s = -4`. Static and query model logits match the corresponding
+fixed monomial kernel with the actual output RMSNorm epsilon. Actual Adam updates
+at learning rate `1e-4` move all eight coefficients when their basis functions are
+active; query amplitudes move from zero and then pass task gradients to W.
+Existing initialization, decay-mask, serialization and historical-recipe checks
+also cover this start.
+
+Common output scaling is not assumed to cancel exactly: a separate test verifies
+`RMSNorm(y/16, eps) = RMSNorm(y, 256*eps)` in the implemented arithmetic, including
+zero and low-energy rows. The requested `eps = 1e-6` is retained. For an unscaled
+head-output RMS of 1, 0.1, or 0.01, the scaled/unscaled normalized amplitudes are
+approximately 0.999873, 0.987490, and 0.532642. These are analytic examples, not
+measurements of the production score/output distribution.
+
+GPU acceptance selects six production-precision cases: Taylor, quadratic and
+binomial starts, each with static and query coefficients. Outputs and
+Q/K/V/coefficient gradients are compared against FP64 at the production context
+and head width. These allocation checks, the actual-recipe pilot and its observed
+coefficient movement, and exact checkpoint resumption remain required before
+training. No production arithmetic or normalization setting changed.
