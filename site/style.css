@@ -60,32 +60,34 @@ main {
   padding: 40px 0 80px;
 }
 
-/* Runs: tiles linking to the pages of run collections */
+/* Runs: full-width banners linking to the pages of run collections */
 .subpages {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 .subpage {
-  position: relative;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  min-height: 152px;
-  padding: 20px 22px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px 28px;
   border: 1px solid rgba(79, 70, 229, 0.14);
   border-radius: 16px;
-  background: linear-gradient(140deg, #eef2ff 0%, #e0f2fe 100%);
+  background: linear-gradient(100deg, #eef2ff 0%, #e0f2fe 100%);
   color: var(--text);
   text-decoration: none;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .subpage:hover {
   border-color: rgba(79, 70, 229, 0.28);
-  box-shadow: 0 12px 30px rgba(30, 41, 59, 0.12);
-  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(30, 41, 59, 0.10);
 }
 .subpage:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+.subpage-head {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
 .subpage-title {
   font-size: 2.1rem;
   font-weight: 700;
@@ -98,27 +100,25 @@ main {
   font-size: 0.9rem;
 }
 .subpage-arrow {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   display: grid;
+  flex: none;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.75);
   transition: background 0.18s ease, transform 0.18s ease;
 }
 .subpage-arrow svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   fill: none;
   stroke: #334155;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.subpage:hover .subpage-arrow { background: #fff; transform: translate(2px, -2px); }
+.subpage:hover .subpage-arrow { background: #fff; transform: translateX(3px); }
 .back {
   display: inline-block;
   margin-bottom: 10px;
