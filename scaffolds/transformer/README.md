@@ -12,6 +12,11 @@ The input token embedding and output vocabulary projection are always independen
 trainable arrays. `model.tie_embeddings` must be `false`; `true` is rejected.
 Supporting tied embeddings requires a scaffold change, rather than a recipe toggle.
 
+The input lookup gathers rows from the FP32 parameter table, then casts the
+selected rows to the training compute dtype. During backpropagation this widens
+each token occurrence's gradient to FP32 before summing contributions for
+repeated token IDs.
+
 AdamW applies weight decay to projection weights, including the independent output
 vocabulary projection. It excludes input embeddings, all RMSNorm scales (including
 GLA's per-head scales), all biases (including the GLA retention-gate bias), and
