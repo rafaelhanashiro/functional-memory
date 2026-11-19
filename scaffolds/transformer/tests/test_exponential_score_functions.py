@@ -147,8 +147,12 @@ def test_recipe_validation():
         _exp_model(attention_score_prefactor="softplus", attention_normalization=True)
     with pytest.raises(ValueError, match="blocked or fused"):
         _exp_model(attention_score_prefactor="sigmoid", attention_backend="auto")
-    with pytest.raises(ValueError, match="prefactor applies so far to the exponential"):
-        _exp_model(attention_score_prefactor="softplus", attention_backend="blocked", attention_degree=4)
+    # A polynomial takes a prefactor on the blocked backend (attention/pieces.py), on no fast kernel.
+    _exp_model(attention_score_prefactor="softplus", attention_backend="blocked", attention_degree=4,
+               attention_blocked_implementation="strips")
+    with pytest.raises(ValueError, match="prefactor applies to the exponential"):
+        _exp_model(attention_score_prefactor="softplus", attention_backend="mosaic", attention_degree=4,
+                   qk_head_dim=64, value_head_dim=64)
 
 
 def test_layers_build_and_differentiate():

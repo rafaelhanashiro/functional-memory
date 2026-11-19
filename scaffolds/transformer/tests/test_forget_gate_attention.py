@@ -104,8 +104,12 @@ def test_configurations(kernel):
     for backend in ("fused", "cudnn", "mosaic", "xla"):
         with pytest.raises(ValueError):
             _config(kernel, attention_backend=backend)
-    with pytest.raises(ValueError, match="forget gate"):
-        _config(kernel, attention_degree=2)  # a fixed Taylor kernel takes no forget gate
+    if kernel == "softmax":
+        with pytest.raises(ValueError, match="forget gate"):
+            _config(kernel, attention_degree=2)  # normalized Taylor attention takes no forget gate
+    else:
+        # Unnormalized fixed Taylor coefficients take it on the blocked backend, per query (attention/pieces.py).
+        assert _config(kernel, attention_degree=2).model.attention_forget_gate
 
 
 @pytest.mark.parametrize("kernel", KERNELS)

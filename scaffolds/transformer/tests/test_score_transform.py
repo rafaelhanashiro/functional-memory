@@ -32,6 +32,7 @@ from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, fixed_diagnostic_sample
 from scaffolds.transformer.training.state import create_state
 from scaffolds.transformer.training.tracking import run_tags
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 ROOT = Path(__file__).resolve().parents[3]
 RUNS = ROOT / "experiments" / "transformer_pp" / "runs"
@@ -448,8 +449,12 @@ def test_historical_recipes_keep_their_meaning():
     {"attention_score_bias": "static"},
 ))
 def test_unqualified_recipes_are_rejected(changes):
-    with pytest.raises(ValueError, match="score transform|Unknown attention score transform"):
-        validate_config(_config("softplus", **changes))
+    def build(**settings):
+        config = _config("softplus", **settings)
+        validate_config(config)
+        return config
+
+    refused_unless_composed(build, changes, match="score transform|Unknown attention score transform")
 
 
 @pytest.mark.parametrize("start", (float("nan"), float("inf"), True, "zero"))
@@ -501,10 +506,13 @@ def test_accepted_recipes_and_rejected_training_options():
     MultiHeadAttention(16, 2, 2, 8, 8, **arguments, attention_score_transform="softplus")
     MultiHeadAttention(16, 2, 2, 8, 8, **{**arguments, "backend": "mosaic"}, attention_score_transform="softplus")
     for changes in ({"backend": "fused"}, {"backend": "mosaic", "positional_encoding": "none"},
-                    {"attention_coefficient_activation": "sigmoid"}, {"attention_forget_gate": True},
-                    {"positional_encoding": "path"}):
+                    {"backend": "mosaic", "attention_coefficient_activation": "sigmoid"},
+                    {"backend": "mosaic", "attention_forget_gate": True}, {"positional_encoding": "path"}):
         with pytest.raises(ValueError, match="score transform"):
             MultiHeadAttention(16, 2, 2, 8, 8, **{**arguments, **changes}, attention_score_transform="softplus")
+    # The blocked backend composes the transform with any generator and a forget gate (attention/pieces.py).
+    for changes in ({"attention_coefficient_activation": "sigmoid"}, {"attention_forget_gate": True}):
+        MultiHeadAttention(16, 2, 2, 8, 8, **{**arguments, **changes}, attention_score_transform="softplus")
     with pytest.raises(ValueError, match="Unknown attention score transform"):
         MultiHeadAttention(16, 2, 2, 8, 8, **arguments, attention_score_transform="square")
     model = build_model(_config("abs").model, 0)
@@ -571,6 +579,10 @@ def test_every_other_kernel_and_backend_refuses_a_transform():
         dict(attention_degree=4, attention_normalization=False, polynomial_coefficients=c[0, 0, 0]),
         dict(attention_degree=4, attention_normalization=True),
         dict(attention_degree=4, attention_normalization=False),
+    )
+    # On the blocked backend a per-query polynomial composes the transform with key factors, any generator,
+    # decay and score biases (attention/pieces.py; test_blocked_composition.py); other backends still refuse.
+    composed = (
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
              key_polynomial_factors=jnp.ones_like(c), attention_coefficient_activation="tanh"),
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
@@ -581,6 +593,10 @@ def test_every_other_kernel_and_backend_refuses_a_transform():
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
              attention_coefficient_activation="tanh", score_bias_row_shift=jnp.zeros((*q.shape[:3], 4))),
     )
+    for arguments in composed:
+        assert np.isfinite(np.asarray(attention_core(q, k, v, backend="blocked", **arguments, **transform))).all()
+        with pytest.raises(ValueError, match="score transform"):
+            attention_core(q, k, v, backend="fused", **arguments, **transform)
     for arguments in refusals:
         with pytest.raises(ValueError, match="score transform"):
             attention_core(q, k, v, backend="blocked", **arguments, **transform)
@@ -595,9 +611,9 @@ def test_every_other_kernel_and_backend_refuses_a_transform():
     for arguments in (dict(key_polynomial_factors=jnp.ones_like(c)), dict(query_log_decay=jnp.cumsum(-jnp.ones(
             q.shape[:3]), axis=1)), dict(score_bias_row_shift=jnp.zeros((*q.shape[:3], 4)))):
         for attend in (reference.blocked_dot_product_attention, reference.strip_dot_product_attention):
-            with pytest.raises(ValueError, match="score transform"):
-                attend(q, k, v, attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
-                       **arguments, **transform)
+            output = attend(q, k, v, attention_degree=4, attention_normalization=False,
+                            query_polynomial_coefficients=c, **arguments, **transform)
+            assert np.isfinite(np.asarray(output)).all()
     for attend in (reference.blocked_dot_product_attention, reference.strip_dot_product_attention):
         with pytest.raises(ValueError, match="score transform"):
             attend(q, k, v, attention_degree=4, attention_normalization=False, **transform)

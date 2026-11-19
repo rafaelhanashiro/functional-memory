@@ -18,6 +18,7 @@ from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.numerics import is_signed_kernel
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity
 from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 TOKENS = jnp.arange(16).reshape(2, 8) % 32
 SQUARES = dict(attention_coefficient_parameterization="sum_of_squares", attention_coefficient_scale="none",
@@ -145,8 +146,7 @@ def test_static_coefficients_receive_gradients_through_the_gate():
     dict(attention_coefficient_initialization="hermite", attention_coefficient_conditioning="query_key"),
 ))
 def test_unqualified_recipes_are_rejected(changes):
-    with pytest.raises(ValueError):
-        _config(**changes)
+    refused_unless_composed(_config, changes)
 
 
 @pytest.mark.parametrize("changes,decay", ((SQUARES, False), (dict(attention_coefficient_initialization="hermite"), False),

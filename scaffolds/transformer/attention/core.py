@@ -89,8 +89,11 @@ def attention_core(
         ("score_bias_row_shift", score_bias_row_shift), ("score_bias_query_input", score_bias_query_input),
         ("score_bias_key_input", score_bias_key_input), ("score_bias_offset", score_bias_offset),
         ("score_bias_amplitude", score_bias_amplitude)) if value is not None}
-    if score_bias and (query_polynomial_coefficients is None or key_polynomial_factors is not None
-                       or attention_coefficient_activation != "tanh"):
+    # On the blocked backend a per-query polynomial from any nonlinear generator composes with score biases (below).
+    blocked_query = (backend == "blocked" and query_polynomial_coefficients is not None
+                     and attention_coefficient_activation != "identity")
+    if score_bias and not blocked_query and (query_polynomial_coefficients is None or key_polynomial_factors is not None
+                                             or attention_coefficient_activation != "tanh"):
         # No other kernel may ignore them: it would silently train the unshifted polynomial.
         raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
     from scaffolds.transformer.attention.pieces import ScoreFunction
@@ -106,8 +109,36 @@ def attention_core(
                                                        score_mlp_output_bias)))
     functions = {} if ScoreFunction(score_transform, score_prefactor).identity else dict(
         score_transform=score_transform, score_prefactor=score_prefactor)
+    endpoint_operands = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
+    decay = query_log_decay is not None or endpoint_operands
+    per_order = ((query_log_decay is not None and query_log_decay.ndim == 4)
+                 or (query_gate_input is not None and query_gate_input.ndim == 4))
+    # Composition (attention/pieces.py): on the blocked backend a per-query polynomial (static and fixed coefficients
+    # arrive broadcast per query) takes key factors, any decay, score biases, a transform and a prefactor together.
+    # Only combinations no specialized route below implements take this route, so every other call is unchanged.
+    combined = (score_prefactor != "none"
+                or (score_transform != "identity" or score_bias) and attention_coefficient_activation != "tanh"
+                or score_transform != "identity" and (key_polynomial_factors is not None or score_bias or decay)
+                or score_bias and (key_polynomial_factors is not None or decay and not (endpoint_operands and per_order))
+                or decay and key_polynomial_factors is not None)
+    if (backend == "blocked" and query_polynomial_coefficients is not None and combined
+            and attention_coefficient_activation != "identity" and not attention_normalization):
+        from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
+
+        if query_polynomial_coefficients.shape[-1] != (attention_degree or 0) + 1:
+            raise ValueError("Query coefficient count must match attention degree")
+        operands = {name: value for name, value in (
+            ("key_polynomial_factors", key_polynomial_factors), ("query_log_decay", query_log_decay),
+            ("query_gate_input", query_gate_input), ("key_gate_input", key_gate_input),
+            ("gate_log_rate", gate_log_rate)) if value is not None}
+        return blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
+            attention_normalization=False, query_polynomial_coefficients=query_polynomial_coefficients,
+            query_decay_mode=query_decay_mode, score_transform=score_transform, score_prefactor=score_prefactor,
+            return_diagnostics=return_diagnostics, **operands, **score_bias)
     if score_prefactor != "none" and not exponential:
-        raise ValueError("A score prefactor applies so far to the exponential (softmax or unnormalized)")
+        raise ValueError("A score prefactor applies to the exponential, or on the blocked backend to a per-query "
+                         "polynomial")
     if exponential:
         transform = {}
     static_sos = polynomial_square_factors is not None and not attention_normalization

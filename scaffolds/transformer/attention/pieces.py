@@ -13,6 +13,12 @@ reference composition. A fast kernel implements some combinations and declares w
 recipe on a fast backend must lie inside its kernel's declaration, and its acceptance qualifies
 that kernel against the blocked backend. The exponential applies the decay inside the exponent,
 exp(phi(s) + log D), which is the same weight.
+
+Coefficients per query: on the blocked backend, static and fixed polynomial coefficients that meet a
+forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients
+(MultiHeadAttention._coefficients_per_query), so every unnormalized polynomial with RoPE or no positional
+encoding takes any of those pieces together (configs.base._blocked_polynomial; attention_core's
+composition route). Per-degree score biases shift each order's base, (phi(s) + beta_r)^r.
 """
 
 from dataclasses import dataclass
@@ -65,3 +71,181 @@ def exponential_kernel_name(score_function: ScoreFunction, *, normalized: bool) 
     if score_function.prefactor != "none":
         name = f"{score_function.prefactor}_times_{name}"
     return f"{name}_normalized" if normalized else f"{name}_unnormalized"
+
+# Fast kernels' declarations: each says which recipes its kernels implement (moved from ModelConfig,
+# whose methods of the same names delegate here). The blocked backend implements every recipe.
+
+
+def _base():
+    from scaffolds.transformer.configs import base
+
+    return base
+
+
+def mosaic_supported(model) -> bool:
+    """Whether a Mosaic GPU kernel implements this recipe's attention: normalized fixed
+    Taylor, tanh query-conditioned polynomial attention, or an unnormalized polynomial with
+    static (fixed or learned) coefficients, at its widths and degrees."""
+    from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+    degree = model.attention_degree
+    integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+    if getattr(model, "attention_kernel_basis", "polynomial") != "polynomial":
+        return False  # No Mosaic kernel evaluates a B-spline basis.
+    if getattr(model, "attention_score_bias", "none") != "none":
+        return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
+    if getattr(model, "attention_score_transform", "identity") != "identity":
+        return False  # Transforms run on their own kernels (mosaic_score_transform_supported).
+    taylor = (model.attention_normalization and integer_degree and degree >= 1
+              and model.attention_coefficients == "fixed" and model.quadratic_mode == "fixed"
+              and model.attention_fixed_coefficients is None and model.attention_fixed_square_factors is None
+              and model.attention_coefficient_parameterization == "direct"
+              and model.attention_coefficient_conditioning == "static")
+    query = (not model.attention_normalization and model.attention_coefficient_conditioning in ("query", "query_key")
+             and model.attention_coefficient_activation in (*_base().AFFINE_ACTIVATIONS, *_base().PURE_ACTIVATIONS)
+             and integer_degree and not model.attention_forget_gate
+             and query_degree_supported(degree, model.qk_head_dim, model.max_seq_len))
+    # Static coefficients run on the query-coefficient kernel with every query's coefficients equal;
+    # with a distance gate they run on the decay kernels instead (mosaic_decay_supported).
+    static = (not model.attention_normalization and model.attention_coefficient_conditioning == "static"
+              and model.quadratic_mode == "fixed"
+              and model.attention_coefficient_parameterization in ("direct", "sum_of_squares")
+              and model.attention_fixed_square_factors is None and integer_degree
+              and not model.attention_forget_gate
+              and query_degree_supported(degree, model.qk_head_dim, model.max_seq_len))
+    return (model.attention_mechanism == "dot_product" and (taylor or query or static)
+            and getattr(model, "positional_encoding", "rope") == "rope"
+            and model.qk_head_dim in WIDTHS and model.value_head_dim == VALUE_WIDTH)
+
+
+def mosaic_decay_supported(model) -> bool:
+    """Whether the Mosaic GPU decay kernels implement this recipe: tanh or sigmoid
+    query-conditioned unnormalized polynomial attention with an input-form query-distance
+    forget gate (query or endpoint query-key rates) or per-order cumulative query gates, or
+    learned static coefficients with an input-free gate (the query-gate kernels with every
+    query's coefficients and rates equal) or the per-order query-key gate (every query's
+    coefficients equal), with RoPE or no positional encoding.
+    Shared gates must fit B300's kernels (and so H100's); per-order gates must fit H100's, and
+    B300 refuses the per-order shapes it cannot hold, and every per-order cumulative gate, when
+    the model is traced (``query_degree_supported``).
+    Only an explicit ``mosaic`` backend selects them; ``auto`` keeps its historical choice."""
+    from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+    degree = model.attention_degree
+    integer_degree = isinstance(degree, int) and not isinstance(degree, bool)
+    if getattr(model, "attention_score_bias", "none") != "none":
+        return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
+    if getattr(model, "attention_score_transform", "identity") != "identity":
+        return False  # Transforms take no forget gate.
+    input_free = model.attention_forget_gate_conditioning == "none"
+    static = (model.attention_coefficient_conditioning == "static" and model.attention_coefficients == "learned"
+              and model.attention_coefficient_parameterization == "direct")
+    query = (model.attention_coefficient_conditioning == "query"
+             and model.attention_coefficient_activation in (*_base().AFFINE_ACTIVATIONS, *_base().PURE_ACTIVATIONS))
+    coefficients = static if input_free else query or (static and model.attention_forget_gate_conditioning == "query_key")
+    return (model.attention_mechanism == "dot_product" and not model.attention_normalization
+            and getattr(model, "attention_kernel_basis", "polynomial") == "polynomial"
+            and coefficients
+            and model.attention_forget_gate
+            and (model.attention_forget_gate_mode == "query_distance"
+                 or model.attention_forget_gate_mode == "cumulative" and not input_free)
+            and model.attention_forget_gate_form == "input" and integer_degree
+            and query_degree_supported(degree, model.qk_head_dim, model.max_seq_len,
+                                       gate="query" if input_free else model.attention_forget_gate_conditioning,
+                                       per_order=model.attention_forget_gate_per_order,
+                                       mode=model.attention_forget_gate_mode)
+            and model.positional_encoding in ("rope", "none")
+            and model.qk_head_dim in WIDTHS and model.value_head_dim == VALUE_WIDTH)
+
+
+def mosaic_score_bias_supported(model) -> bool:
+    """Whether the Mosaic GPU score-bias kernels implement this recipe: per-degree score biases of
+    the tanh query-coefficient polynomial, with no forget gate or the per-order query-key endpoint
+    gate (``mosaic_score_bias_problem``). Only an explicit ``mosaic`` backend selects them; ``auto``
+    never does, and score-bias recipes reject it."""
+    return mosaic_score_bias_problem(model) is None
+
+
+def mosaic_score_bias_problem(model) -> str | None:
+    """Why the Mosaic score-bias kernels cannot run this recipe, or None. They take Q/K widths 8-128,
+    value width 64, and degree 1-12 on H100, where their forward, dQ and dK/dV kernels must fit in
+    shared memory (``score_bias_supported``); their entry points refuse other GPUs before tracing.
+    Backend resolution checks the sequence length (a multiple of 128 rows)."""
+    from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS
+
+    if getattr(model, "attention_score_bias", "none") == "none":
+        return "the recipe has no score biases"
+    problem = _base()._score_bias_problem(model)
+    if problem is None and model.qk_head_dim not in WIDTHS:
+        problem = f"Q/K width {model.qk_head_dim} is not one of {WIDTHS}"
+    if problem is None and model.value_head_dim != VALUE_WIDTH:
+        problem = f"value width {model.value_head_dim} is not {VALUE_WIDTH}"
+    if problem is None:
+        from scaffolds.transformer.attention.backends.mosaic.score_bias import (
+            HOPPER_TIME_MULTIPLE, SHIFT_OF_MODE, implementation_name, score_bias_supported,
+        )
+
+        gate = "endpoint" if model.attention_forget_gate else "none"  # the per-order query-key gate
+        shift = SHIFT_OF_MODE.get(model.attention_score_bias)  # row (static, query) or pair (query_key)
+        # Shared memory does not depend on the length; ask at the recipe's length in whole 128-row tiles.
+        rows = -(-model.max_seq_len // HOPPER_TIME_MULTIPLE) * HOPPER_TIME_MULTIPLE
+        if shift is None:
+            problem = f"no kernel takes score bias {model.attention_score_bias!r}"
+        elif not score_bias_supported(model.attention_degree, model.qk_head_dim, rows, gate=gate, shift=shift):
+            problem = (f"H100's {implementation_name(gate, shift)} kernels do not hold degree "
+                       f"{model.attention_degree} at Q/K width {model.qk_head_dim} in shared memory")
+    return problem
+
+
+def mosaic_score_transform_supported(model) -> bool:
+    """Whether the Mosaic transformed query-polynomial kernels implement this recipe: the tanh query
+    polynomial or fixed pointwise kernel evaluated at a transformed score (``mosaic_score_transform_problem``). Only an explicit
+    ``mosaic`` backend selects them; ``auto`` never does, and transformed recipes reject it."""
+    return mosaic_score_transform_problem(model) is None
+
+
+def mosaic_score_transform_problem(model) -> str | None:
+    """Why the Mosaic transformed query-polynomial kernels cannot run this recipe, or None. They are the
+    query polynomial's kernels with phi(s) evaluated in their tiles, on H100 and B200, so they take
+    the recipes those kernels take (``mosaic_supported``'s query case: RoPE, Q/K widths 8-128, value width
+    64, the degrees ``query_degree_supported`` fits at the recipe's length) with diagonal tanh query
+    coefficients or fixed degree-one (0, 1) coefficients and no forget gate or score biases.
+    Backend resolution checks the GPU and length."""
+    from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+
+    transform = getattr(model, "attention_score_transform", "identity")
+    if transform == "identity":
+        return "the recipe has no score transform"
+    problem = _base()._transformed_coefficient_problem(model)
+    if problem is None and model.positional_encoding != "rope":
+        problem = "the Mosaic query-polynomial kernels run RoPE recipes"
+    if problem is None and (model.attention_forget_gate or model.attention_score_bias != "none"):
+        problem = "it takes no forget gate or score biases"
+    if problem is None and model.qk_head_dim not in WIDTHS:
+        problem = f"Q/K width {model.qk_head_dim} is not one of {WIDTHS}"
+    if problem is None and model.value_head_dim != VALUE_WIDTH:
+        problem = f"value width {model.value_head_dim} is not {VALUE_WIDTH}"
+    if problem is None and not query_degree_supported(model.attention_degree, model.qk_head_dim, model.max_seq_len,
+                                                      transform=transform):
+        problem = (f"the kernels do not hold degree {model.attention_degree} at Q/K width {model.qk_head_dim} "
+                   f"and {model.max_seq_len} tokens in shared memory")
+    return problem
+
+
+def path_fused_supported(model) -> bool:
+    """Whether FLA's fused PaTH kernels cover this recipe's widths and degree (any GPU, length)."""
+    from scaffolds.transformer.attention.backends.fla_path_attention import HEAD_DIMS, MAX_DEGREE
+
+    degree = model.attention_degree
+    return (model.positional_encoding == "path" and model.qk_head_dim in HEAD_DIMS
+            and model.value_head_dim == model.qk_head_dim
+            and (degree is None or (isinstance(degree, int) and 1 <= degree <= MAX_DEGREE)))
+
+
+def path_kernel(model) -> str | None:
+    """The PaTH attention kernel this recipe uses, or None for RoPE recipes."""
+    if model.positional_encoding != "path":
+        return None
+    if model.attention_degree is None:
+        return "softmax" if model.attention_normalization else "exp"
+    return "query_polynomial"
