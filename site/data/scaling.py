@@ -43,12 +43,10 @@ def polynomial_row(label: str, decayed: str | None, plain: str | None) -> list[d
 
 def chinchilla() -> list[dict]:
     return [
-        {"title": "Softmax, exp and GDN",
+        {"key": "references", "title": "Softmax, exp and GDN",
          "tables": [{"head": ["Attention", "PPL"], "compact": True,
                      "rows": [[text(label), perplexity(run_id)] for label, run_id in CHINCHILLA_REFERENCES]}]},
-        {"title": "Polynomial attention",
-         "intro": "<var>W</var> decay applies weight decay to the coefficient generator's projection "
-                  "<var>W</var>; fixed Taylor and static have no <var>W</var>.",
+        {"key": "polynomials", "title": "Polynomial attention",
          "layout": "pair",
          "tables": [{"title": f"<var>m</var> = {degree}",
                      "head": ["Attention", "<var>W</var> decay", "No <var>W</var> decay"],
@@ -61,8 +59,7 @@ def sequences() -> list[dict]:
     for column in (1, 2):
         bold_lowest([row[column] for row in rows])
     return [{
-        "intro": "Each model trained on 2,048-token and on 4,096-token sequences with the same budget of "
-                 "4B tokens: 128 sequences per update at 4k instead of 256.",
+        "key": "sequences",
         "tables": [{"head": ["Attention", "2k", "4k"], "compact": True, "rows": rows}],
     }]
 

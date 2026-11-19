@@ -14,8 +14,6 @@ export function section(host, title) {
   return host;
 }
 
-export const intro = (text) => html("p", "intro", text);
-
 // A results table. Each body row is a list of cells, or {cells, className}; a cell is
 // {text, best, muted, rowspan, label}, where best bolds it, muted grays it, and label marks a
 // row-group name.

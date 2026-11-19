@@ -1,0 +1,1 @@
+Coefficient generators regressed onto a free fit's coefficients (the teacher) on the frozen Taylor model. MSE runs from the Taylor start to the selected snapshot; perplexity is on the fitted batch and on 256 held-out sequences.

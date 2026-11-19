@@ -73,15 +73,9 @@ def overfitting() -> list[dict]:
          number(query_key["selected_heldout"]["perplexity"], 3, QUERY_KEY)],
     ]
     return [
-        {"intro": "Each fit freezes a pretrained degree-4 model and trains only its coefficients on one batch of "
-                  "<var>B</var> sequences: free coefficients for every sequence and query (on the fixed-Taylor "
-                  "model), the model's own coefficient generators, or its static coefficients. Perplexity is on "
-                  "that batch.",
+        {"key": "fits",
          "tables": [{"head": ["Fit", "Start checkpoint", "Start PPL", "Best fitted PPL"], "rows": rows}]},
-        {"title": "Regression",
-         "intro": "Coefficient generators regressed onto a free fit's coefficients (the teacher) on the frozen "
-                  "Taylor model. MSE runs from the Taylor start to the selected snapshot; perplexity is on the "
-                  "fitted batch and on 256 held-out sequences.",
+        {"key": "regression", "title": "Regression",
          "tables": [{"head": ["Model", "MSE", "Fitted-batch PPL", "Held-out PPL"], "rows": regression}]},
     ]
 
@@ -93,11 +87,8 @@ def continued_pretraining() -> list[dict]:
         return number(best(run_id), 4, run_id) if run_id else text("—")
 
     return [{
+        "key": "cpt",
         "title": "Validation perplexity · 2k additional steps",
-        "intro": "Each model trains for 2,000 more updates from a 1× checkpoint, fixed Taylor's or exp's, with "
-                 "the parameters it adds at learning rate <span class=\"tex\">10^{-3}</span>; or from its own, keeping "
-                 "its coefficient optimizer state, at <span class=\"tex\">10^{-4}</span>. Fixed Taylor's own start "
-                 "is its Taylor start.",
         "tables": [{"head": ["Attention during CPT", "Taylor start", "Exp start", "Same-model start"],
                     "rows": [[text(label), *(cell(run_id) for run_id in runs)] for label, *runs in CONTINUATIONS]}],
     }]

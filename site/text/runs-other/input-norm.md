@@ -1,0 +1,1 @@
+The coefficient generator's input scaled to unit L2 norm, after the block's RMSNorm or on the raw input before it; the last variant multiplies a softplus-input SoS polynomial by its input, which adds one to the total degree.

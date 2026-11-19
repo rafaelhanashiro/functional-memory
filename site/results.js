@@ -1,19 +1,15 @@
 // Result pages drawn from a data file that a generator in data/ writes: an element with
 // data-source="data/<name>.json" and data-key="<page>" gets that page's sections, each an optional
-// heading and intro over its tables, whose cells the generator has already formatted. Math is
-// TeX in .tex elements, set with KaTeX on the pages that load it.
-import {html, intro, table} from "./tables.js";
-
-function typeset(root) {
-  if (typeof katex === "undefined") return;
-  for (const node of root.querySelectorAll(".tex")) katex.render(node.textContent, node, {throwOnError: false});
-}
+// heading over its tables, whose cells the generator has already formatted, with places for the
+// user's text above and below them (text.js).
+import {html, table} from "./tables.js";
+import {mountText, slot} from "./text.js";
 
 function render(sections, host) {
   for (const part of sections) {
     const node = html("section", "result");
     if (part.title) node.append(html("h2", "", part.title));
-    if (part.intro) node.append(intro(part.intro));
+    node.append(slot(part.key, "intro"));
     const tables = part.tables.map((spec) => {
       const wrap = table(spec.head, spec.rows, {compact: Boolean(spec.compact)});
       if (!spec.title) return wrap;
@@ -28,11 +24,11 @@ function render(sections, host) {
     } else {
       node.append(...tables);
     }
+    node.append(slot(`${part.key}-notes`));
     host.append(node);
   }
 }
 
-typeset(document);
 for (const host of document.querySelectorAll("[data-source]")) {
   fetch(host.dataset.source, {cache: "no-store"})
     .then((response) => {
@@ -41,7 +37,7 @@ for (const host of document.querySelectorAll("[data-source]")) {
     })
     .then((data) => {
       render(data[host.dataset.key], host);
-      typeset(host);
+      mountText(host);
     })
     .catch(() => host.append(html("p", "empty", "Could not load the results.")));
 }

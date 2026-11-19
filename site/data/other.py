@@ -51,8 +51,6 @@ def powers() -> dict:
     summary = {row["role"]: row for row in rows(EVEN)}
     return {
         "title": "Selected powers",
-        "intro": "Polynomials restricted to the even powers 0, 2, 4, 6, 8 or to the constant and the odd "
-                 "powers 1, 3, 5, 7, beside full polynomials of degree 4 and 8.",
         "columns": [{"label": label, "degree": degree} for label, degree in POWER_COLUMNS],
         "rows": [{"label": label, "cells": [
             {"run_id": summary[role]["run_id"], "perplexity": float(summary[role]["best_validation_perplexity"])}
@@ -68,8 +66,6 @@ def gates() -> dict:
                         "run_id": run_id, "perplexity": best(run_id)})
     return {
         "title": "Per-degree coefficient gates",
-        "intro": "Query + W decay with RoPE, where a gate computed from each token scales every degree's "
-                 "coefficient: a sigmoid, or GDN-style at degree 4.",
         "rows": entries,
     }
 
@@ -77,9 +73,6 @@ def gates() -> dict:
 def input_norm() -> dict:
     return {
         "title": "Coefficient input L2",
-        "intro": "The coefficient generator's input scaled to unit L2 norm, after the block's RMSNorm or on the "
-                 "raw input before it; the last variant multiplies a softplus-input SoS polynomial by its input, "
-                 "which adds one to the total degree.",
         "columns": list(L2_COLUMNS),
         "groups": [{"label": label, "rows": [{"degree": degree, "cells": [cell(run_id) for run_id in runs]}
                                              for degree, runs in entries]} for label, entries in L2_GROUPS],
@@ -89,8 +82,6 @@ def input_norm() -> dict:
 def zero_constant() -> dict:
     return {
         "title": "Zero constant",
-        "intro": "Degree-8 polynomials of the softplus of the score with the constant coefficient fixed at "
-                 "<var>c</var><sub>0</sub>&nbsp;=&nbsp;0; query variants use W decay.",
         "rows": [{"label": label, **cell(run_id)} for label, run_id in ZERO_CONSTANT],
     }
 
@@ -110,23 +101,15 @@ def decay_and_lr() -> dict:
     return {
         "title": "Decay and LR experiments",
         "parts": [
-            {"title": "Coefficient weight decay",
-             "intro": "Degree-4 query and query-key coefficients with weight decay 0.1 on the tanh projection "
-                      "<var>W</var> (both query and key <var>W</var> for query-key), or on <var>a</var>, "
-                      "<var>b</var> and <var>W</var>; backbone decay is unchanged. The query-key runs also "
-                      "differ in kernel: fused without <var>W</var> decay, Mosaic with it.",
+            {"key": "weight-decay", "title": "Coefficient weight decay",
              "head": ["Attention", "Without <var>W</var> decay", "With <var>W</var> decay (0.1)",
                       "With <var>a</var>, <var>b</var>, <var>W</var> decay (0.1)"],
              "rows": [[label, *(cell(run_id) for run_id in runs)] for label, runs in DECAY]},
-            {"title": "Coefficient learning rate",
-             "intro": "Degree-4 query coefficients with the learning rate of <var>a</var> and <var>b</var> "
-                      "tripled; <var>W</var> and the backbone keep theirs, and neither run decays <var>W</var>.",
+            {"key": "learning-rate", "title": "Coefficient learning rate",
              "head": ["Attention", "Coefficient LR ×1", "Coefficient LR ×3"],
              "rows": [[label, *(cell(run_id) for run_id in runs)] for label, runs in LEARNING_RATE],
              "compact": True},
-            {"title": "Taylor warmup, then query + W decay",
-             "intro": "Degree-8 query + W decay with the coefficients held at Taylor for the first 455 updates "
-                      "while the backbone trains, then released all at once or one degree at a time.",
+            {"key": "release", "title": "Taylor warmup, then query + W decay",
              "head": ["Run", "Release update", "PPL"],
              "rows": [[label, release_update(run_id), cell(run_id)] for label, run_id in RELEASE],
              "compact": True},

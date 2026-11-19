@@ -8,6 +8,9 @@ accepts:
     PUT    /literature/<id>.md      replace an existing write-up with the request body
     PUT    /meeting/<date>-agenda.md, /meeting/<date>-notes.md
                                     likewise a meeting's agenda or notes (dates as YYYY-MM-DD)
+    GET    /api/text/<page>         {"blocks": {name: Markdown}}: the texts of <page>.html, each
+                                    kept in text/<page>/<name>.md
+    PUT    /text/<page>/<name>.md   save one of those texts; an empty body deletes it
     GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first
     POST   /api/meetings            {"date": ..., "title": ...}: add a meeting, with an empty
                                     agenda and notes (the title, its name, is optional)
@@ -21,7 +24,7 @@ accepts:
 
 A meeting's name is kept in meeting/<date>.json; an unnamed meeting has none.
 
-Saving a document deletes the images in media/ that no write-up, agenda, or notes link to,
+Saving a document deletes the images in media/ that no write-up, agenda, notes, or page text link to,
 once they are more than a day old (an image pasted into unsaved text is not linked yet).
 
     nohup setsid python3 site/serve.py --port 8765 > <log> 2>&1 < /dev/null &
@@ -59,6 +62,9 @@ RESOURCE = re.compile(r"/api/literature/([A-Za-z0-9._-]+)")
 ARXIV = re.compile(r"arxiv\.org/(?:abs|pdf|html)/([0-9]{4}\.[0-9]{4,5}|[a-z-]+(?:\.[a-z]{2})?/[0-9]{7})", re.I)
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
 AGENT = "Mozilla/5.0 (functional-memory literature list)"
+TEXT = SITE / "text"
+TEXT_API = re.compile(r"/api/text/([a-z0-9-]+)")
+TEXT_FILE = re.compile(r"/text/([a-z0-9-]+)/([a-z0-9-]+)\.md")
 MEDIA = SITE / "media"
 IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
@@ -94,8 +100,8 @@ def write_atomic(path: Path, content: str | bytes) -> None:
 
 
 def prune_media() -> list[str]:
-    """Delete images over a day old that no write-up, agenda, or notes link to."""
-    documents = [*LITERATURE.glob("*.md"), *MEETINGS.glob("*.md")]
+    """Delete images over a day old that no write-up, agenda, notes, or page text link to."""
+    documents = [*LITERATURE.glob("*.md"), *MEETINGS.glob("*.md"), *TEXT.glob("*/*.md")]
     linked = {name for path in documents for name in MEDIA_LINK.findall(path.read_text(errors="replace"))}
     cutoff = time.time() - UNLINKED_IMAGE_SECONDS
     removed = []
@@ -291,6 +297,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/meetings":
             self._json(200, {"meetings": list_meetings()})
             return
+        page = TEXT_API.fullmatch(self._route())
+        if page:
+            if not (SITE / f"{page.group(1)}.html").is_file():
+                self.send_error(404)
+                return
+            texts = sorted((TEXT / page.group(1)).glob("*.md"))
+            self._json(200, {"blocks": {path.stem: path.read_text(errors="replace") for path in texts}})
+            return
         super().do_GET()
 
     def do_HEAD(self):
@@ -304,8 +318,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self._reorder()
             return
         match = DOCUMENT.fullmatch(self._route())
-        target = SITE / match.group(1) if match else None
-        if target is None or not target.is_file():
+        block = TEXT_FILE.fullmatch(self._route())
+        if match:
+            target, found = SITE / match.group(1), (SITE / match.group(1)).is_file()
+        elif block:  # a page's text, created on its first save
+            target, found = TEXT / block.group(1) / f"{block.group(2)}.md", (SITE / f"{block.group(1)}.html").is_file()
+        else:
+            target, found = None, False
+        if not found:
             self.send_error(404)
             return
         body = self._body()
@@ -316,7 +336,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         except UnicodeDecodeError:
             self.send_error(400, "Documents must be UTF-8")
             return
-        write_atomic(target, text)
+        if block and not text.strip():
+            target.unlink(missing_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            write_atomic(target, text)
         self.send_response(204)
         self.end_headers()
         for name in prune_media():
