@@ -53,7 +53,8 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
 
     score_function = ScoreFunction(getattr(model_config, "attention_score_transform", "identity"),
                                    getattr(model_config, "attention_score_prefactor", "none"))
-    if not score_function.identity and _exponential_kernel(model_config):
+    if (not score_function.identity and getattr(model_config, "attention_mechanism", None) == "dot_product"
+            and _exponential_kernel(model_config)):
         # The exponential's score functions (attention/pieces.py): an explicit blocked backend, or the fused
         # kernel, whose declaration ModelConfig has checked; nothing selects them automatically.
         if request not in ("blocked", "fused"):
