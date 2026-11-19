@@ -5,7 +5,8 @@ cumulative decay, per-degree row shifts, a score transform and a prefactor toget
 
     w_ti = f(s_ti) D_ti sum_r c_r(t) K_r(i) (phi(s_ti) + beta_r(t))^r,    beta_0 = 0,
 
-checked against an FP64 dense evaluation, forward and VJP, on the scan and the causal strips; and recipes
+checked against an FP64 dense evaluation, forward and VJP, on the scan and the causal strips (on the GPU,
+``pytest -m gpu``: the strips at production precision and length); and recipes
 the scaffold refused before the refactor (fixed Taylor coefficients with a forget gate, static coefficients
 with score biases or other gates, transforms with gates) build and train through the model.
 """
@@ -169,3 +170,40 @@ def test_fixed_taylor_with_gate_is_static_taylor_with_gate():
             leaf.value = fixed_leaves[path]
     nnx.update(static, static_state)
     np.testing.assert_allclose(np.asarray(fixed(tokens)), np.asarray(static(tokens)), rtol=2e-6, atol=2e-6)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("name", ["everything", "transform+decay", "bias+decay", "prefactor+decay"])
+def test_gpu_strips_at_production_precision(name):
+    """The causal strips in BF16 at 2,048 tokens against the FP64 dense composition."""
+    if jax.default_backend() != "gpu":
+        pytest.skip("Requires a GPU allocation")
+    combination = COMBINATIONS[name]
+    q, k, v, c, key_factors, log_decay, row_shift, cotangent = _operands(seed=11, shape=(1, 2048, 2, 64, 64))
+    keys = key_factors if combination.get("keys") else None
+    decay = log_decay if combination.get("decay") else None
+    shift = row_shift if combination.get("bias") else None
+    transform, prefactor = combination.get("transform", "identity"), combination.get("prefactor", "none")
+    extra = {name: value for name, value in (("key_polynomial_factors", keys), ("query_log_decay", decay),
+                                             ("score_bias_row_shift", shift)) if value is not None}
+    q, k, v = (x.astype(jnp.bfloat16) for x in (q, k, v))
+
+    def strips(q, k, v, c):
+        return attention_core(q, k, v, backend="blocked", attention_degree=c.shape[-1] - 1,
+                              attention_normalization=False, query_polynomial_coefficients=c,
+                              attention_coefficient_activation="tanh", score_transform=transform,
+                              score_prefactor=prefactor, blocked_implementation="strips", **extra)
+
+    output, pullback = jax.jit(lambda *operands: jax.vjp(strips, *operands))(q, k, v, c)
+    actual = (output, *pullback(cotangent.astype(jnp.bfloat16)))
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        as64 = lambda x: None if x is None else x.astype(jnp.float64)
+        dense = partial(_dense, key_factors=as64(keys), log_decay=as64(decay), row_shift=as64(shift),
+                        transform=transform, prefactor=prefactor)
+        reference, pullback64 = jax.vjp(dense, *(x.astype(jnp.float64) for x in (q, k, v, c)))
+        expected = (reference, *pullback64(cotangent.astype(jnp.bfloat16).astype(jnp.float64)))
+    for label, observed, wanted in zip(("output", "dq", "dk", "dv", "dc"), actual, expected, strict=True):
+        observed, wanted = np.asarray(observed, np.float64), np.asarray(wanted, np.float64)
+        assert np.isfinite(observed).all(), f"{name} {label}: nonfinite values"
+        error = np.linalg.norm(observed - wanted) / np.linalg.norm(wanted)
+        assert error <= 0.03, f"{name} {label}: relative L2 error {error:.3g}"

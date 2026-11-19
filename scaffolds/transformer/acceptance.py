@@ -127,6 +127,9 @@ POINTWISE_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_pointwise_sc
 # The exponential's score functions f(s) exp(phi(s)) (attention/pieces.py): the blocked scan and strips
 # against FP64 on the CPU; the fused kernel against the blocked backend and FP64 on the GPU.
 EXPONENTIAL_SCORE_FUNCTION_TESTS = "scaffolds/transformer/tests/test_exponential_score_functions.py"
+# Composition on the blocked backend (attention/pieces.py): per-query polynomials with key factors, decay, score
+# biases, transforms and prefactors together, against FP64 (the scan and strips on the CPU; the strips on the GPU).
+BLOCKED_COMPOSITION_TESTS = "scaffolds/transformer/tests/test_blocked_composition.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -183,6 +186,22 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # requeue restoration; its data-parallel case runs in the two-device stage.
         paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
+    from scaffolds.transformer.configs.base import ModelConfig, _blocked_polynomial
+
+    composed = (resolved_backend == "blocked" and (
+        model.get("attention_forget_gate", False) or model.get("attention_score_transform", "identity") != "identity"
+        or model.get("attention_score_bias", "none") != "none"
+        or model.get("attention_score_prefactor", "none") != "none"))
+    if composed:
+        from dataclasses import MISSING, fields
+        from types import SimpleNamespace
+
+        # The recipe's settings over ModelConfig's defaults, without revalidating the recipe here.
+        defaults = {field.name: field.default for field in fields(ModelConfig) if field.default is not MISSING}
+        composed = _blocked_polynomial(SimpleNamespace(**{**defaults, **model}))
+    # Their GPU stage runs these beside the other strips gates, including where it returns early below.
+    composition = (BLOCKED_COMPOSITION_TESTS,) if composed else ()
+    paths.extend(composition)
     if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked":
         implementation = model.get("attention_blocked_implementation", "scan")
         if implementation != "strips":
@@ -196,7 +215,7 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # at production precision against host FP64. The backbone's other GPU cases qualify kernels these
             # runs never train on (the fused Triton and Mosaic kernels, and the scan), and some refuse or skip
             # on GPUs those kernels are not qualified on, which would fail acceptance.
-            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, *composition)))
     transform = model.get("attention_score_transform", "identity")
     exponential_scores = (
         (transform != "identity" or model.get("attention_score_prefactor", "none") != "none")
@@ -236,7 +255,7 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # strips' existing one for the tanh query polynomial (with score biases). The backbone's other GPU
             # cases qualify kernels these runs never train on and can skip or refuse on a GPU those kernels are
             # not qualified on, which would fail acceptance.
-            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, SCORE_TRANSFORM_STRIPS_TESTS)))
+            return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, SCORE_TRANSFORM_STRIPS_TESTS, *composition)))
         # The FP64 reference through the scan and the strips with every gradient, the start, refusals and
         # diagnostics.
         paths.append(SCORE_TRANSFORM_TESTS)
