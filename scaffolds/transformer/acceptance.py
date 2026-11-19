@@ -124,6 +124,9 @@ SCORE_TRANSFORM_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_transfo
 MOSAIC_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_mosaic_score_transform.py"
 POINTWISE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_pointwise_attention.py"
 POINTWISE_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_pointwise_score_transform.py"
+# The exponential's score functions f(s) exp(phi(s)) (attention/pieces.py): the blocked scan and strips
+# against FP64 on the CPU; the fused kernel against the blocked backend and FP64 on the GPU.
+EXPONENTIAL_SCORE_FUNCTION_TESTS = "scaffolds/transformer/tests/test_exponential_score_functions.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -195,7 +198,19 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # on GPUs those kernels are not qualified on, which would fail acceptance.
             return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS)))
     transform = model.get("attention_score_transform", "identity")
-    if transform != "identity" and resolved_backend == "mosaic":
+    exponential_scores = (
+        (transform != "identity" or model.get("attention_score_prefactor", "none") != "none")
+        and model.get("attention_mechanism", "dot_product") == "dot_product" and model.get("attention_degree") is None
+        and model.get("attention_coefficients", "fixed") == "fixed" and model.get("quadratic_mode", "fixed") == "fixed"
+        and model.get("attention_score_mlp_width") is None)
+    if exponential_scores:
+        implementation = model.get("attention_blocked_implementation", "scan")
+        if resolved_backend not in ("fused", "blocked") or (resolved_backend == "blocked" and implementation != "strips"):
+            raise ValueError("The exponential's score functions train on the fused kernel or the blocked backend's "
+                             f"causal strips; this recipe resolves {resolved_backend!r} with "
+                             f"attention_blocked_implementation: {implementation}")
+        paths.append(EXPONENTIAL_SCORE_FUNCTION_TESTS)
+    elif transform != "identity" and resolved_backend == "mosaic":
         # The Mosaic transformed query-polynomial kernels. CPU: the FP64 references through the scan and the
         # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
         # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the

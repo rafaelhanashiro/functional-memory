@@ -1,0 +1,3135 @@
+{
+ "description": "Recipe receipts (scaffolds/transformer/receipt.py) of every run recipe under main's code before the attention-pieces refactor; runs created since record their own receipt. Check with python -m scaffolds.records receipts experiments/<study>.",
+ "commit": "0f7c17c786bcc934e00280104fa492b2e27040e5",
+ "receipts": {
+  "attention_scaling/r017d9cc1cb0d": {
+   "version": 1,
+   "loss": 6.051807403564453,
+   "digest": "ed4e5405fcf983eb99fa37137a8e02365e3720b4a9c56ca74af6c3abed93cf4f",
+   "arrays_count": 44
+  },
+  "attention_scaling/r0369400ca1a3": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "c5fed074cae27e9a085e2cf54bdf951dada41939bd6f54f225450a17475f840f",
+   "arrays_count": 46
+  },
+  "attention_scaling/r03bfa6fd7b2e": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "0f7d9967f29018210ca7c8e3b985d997b55710893ef1294334a98e2e946874b9",
+   "arrays_count": 48
+  },
+  "attention_scaling/r03d397da0bd0": {
+   "version": 1,
+   "loss": 6.03814697265625,
+   "digest": "6770ab0ff209cdd2a25fe409c31ffa3e9ce9e3cc5f048a288626d637b5bf0e2d",
+   "arrays_count": 44
+  },
+  "attention_scaling/r044b3356f215": {
+   "version": 1,
+   "loss": 5.608230113983154,
+   "digest": "9b84ed2c369712351dedf563c969d91b8bface07e1602d679e0cf5873a5666af",
+   "arrays_count": 44
+  },
+  "attention_scaling/r0470d7fcaae6": {
+   "version": 1,
+   "loss": 6.118367671966553,
+   "digest": "8a78672a15a6c8b0a3fd86a49deb93aa554bbae0059d469eb04f9b1eddaa6843",
+   "arrays_count": 46
+  },
+  "attention_scaling/r05b79574172d": {
+   "version": 1,
+   "loss": 6.080322265625,
+   "digest": "1d5aa187b2a888729463c8b15c927f9f8a7faed679c8731160d3717258bd77c3",
+   "arrays_count": 44
+  },
+  "attention_scaling/r05cd33157d94": {
+   "version": 1,
+   "loss": 5.595727920532227,
+   "digest": "b4b94cf792c8f3d53dfe70533ca144d911605c7e604b7b32a580a335b442a50b",
+   "arrays_count": 48
+  },
+  "attention_scaling/r0603c2e23137": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "daf2292ab9bf0ba9dc6e2d5a5bf965457b95011af0007c9a9b2977b4b2e18095",
+   "arrays_count": 48
+  },
+  "attention_scaling/r07aedd2efff4": {
+   "version": 1,
+   "loss": 5.575881004333496,
+   "digest": "ae0fc5de987ce92b9ba682f35ecc3c015d2370f7beba63383780373cccad0c66",
+   "arrays_count": 46
+  },
+  "attention_scaling/r07bee5b16e61": {
+   "version": 1,
+   "loss": 6.073160171508789,
+   "digest": "b45742b0e2ddd0f212cbc6b60f176a09498eb487b11e9d6cba67a9629df57559",
+   "arrays_count": 46
+  },
+  "attention_scaling/r07d041c22d72": {
+   "version": 1,
+   "loss": 6.008579730987549,
+   "digest": "4daeec75644513120073fb7a05a91e95d320edcdf3ca9d69a4b350b2a5f94319",
+   "arrays_count": 62
+  },
+  "attention_scaling/r084fa12cb862": {
+   "version": 1,
+   "loss": 5.5694684982299805,
+   "digest": "471e6235180cc00f09de58270ae79797bdb20150bca4e8c17ce671b1598fb547",
+   "arrays_count": 44
+  },
+  "attention_scaling/r09f5913a71c5": {
+   "version": 1,
+   "loss": 5.603470802307129,
+   "digest": "0c4802c1f0497022be612362499fedf3b3e24b954ca8dcc521942ec2eea19e7b",
+   "arrays_count": 78
+  },
+  "attention_scaling/r0aab2b77017f": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "d612b814dd315b39652a145502e24535b88d0f66f0dea21d8b1866e5ea47dd79",
+   "arrays_count": 56
+  },
+  "attention_scaling/r0b7141a987dc": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "072049774683b92ac900ee0da771eb2a4196d14e0e6e1f3140477bd3261da5df",
+   "arrays_count": 56
+  },
+  "attention_scaling/r0bc57959ef6c": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "89bbfe2a41c40f6a70b2d28104d7232e7de4e0272cd5eacb7115fa8d49cd0b35",
+   "arrays_count": 52
+  },
+  "attention_scaling/r0c9b8b75ec17": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "144ccd200e11a14bf2dc3a9527b439c0f95a57619b4fcd150e9afdfb309fa2ec",
+   "arrays_count": 52
+  },
+  "attention_scaling/r0f3f397194f7": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "d926c1f4cb5a013c5aec97f211096915c53338030e2b40e647c52aa595be56b3",
+   "arrays_count": 46
+  },
+  "attention_scaling/r0ff512377204": {
+   "version": 1,
+   "loss": 6.042455673217773,
+   "digest": "4a2bc77483964087affb13ba7d8c6ff1a43e3e5a0d347f1f86693b51e33680ba",
+   "arrays_count": 44
+  },
+  "attention_scaling/r10baef5d8428": {
+   "version": 1,
+   "loss": 5.605896949768066,
+   "digest": "68068df78edf3ef17eb6dc167c3f770c363745f99b7082b9caf8efb7faa778d9",
+   "arrays_count": 44
+  },
+  "attention_scaling/r118c41829531": {
+   "version": 1,
+   "loss": 5.577049255371094,
+   "digest": "d9888360061b72f2bcb2b73d5291a8cd5b06a8b1490c417cb37973528e2db681",
+   "arrays_count": 78
+  },
+  "attention_scaling/r12b67bf38fb9": {
+   "version": 1,
+   "loss": 5.616611003875732,
+   "digest": "3d4cc72d646553f74c50cd5d4f12da89c49c1d36daf29e6df9646bedac08684c",
+   "arrays_count": 44
+  },
+  "attention_scaling/r13c144b8fd17": {
+   "version": 1,
+   "loss": 6.080076217651367,
+   "digest": "fca3d45f525108b99858db55e760abebf3093fc5ec4dac841985938188a39450",
+   "arrays_count": 46
+  },
+  "attention_scaling/r14638c8c209d": {
+   "version": 1,
+   "loss": 5.570788860321045,
+   "digest": "53c00f4f56c6614cbc6dad69333a91150aedaf58d0734672c77bca21d6659ba1",
+   "arrays_count": 44
+  },
+  "attention_scaling/r152fb7a657da": {
+   "version": 1,
+   "loss": 5.599264621734619,
+   "digest": "0c9fab60a6f2fb1926aa2b002b319e8313a587144f6a516dbc4bc85fa17dc8b4",
+   "arrays_count": 46
+  },
+  "attention_scaling/r19adcf21128c": {
+   "version": 1,
+   "loss": 5.608654975891113,
+   "digest": "92c4e9286026189702eae61b74520f480759af63e528d0c22062216f73357104",
+   "arrays_count": 44
+  },
+  "attention_scaling/r19f5818e818a": {
+   "version": 1,
+   "loss": 5.61024284362793,
+   "digest": "f52ed1d78c82da7fcfa3a3f0fd2a06318b7332783b96057c39037339b42e114a",
+   "arrays_count": 44
+  },
+  "attention_scaling/r1a1ed79adcf7": {
+   "version": 1,
+   "loss": 5.595299243927002,
+   "digest": "1147b1dfe2607128b4aa3801111f2133b3ef06accc29c6022918e9c62e3ec4b6",
+   "arrays_count": 78
+  },
+  "attention_scaling/r1b5a327ff833": {
+   "version": 1,
+   "loss": 5.5801615715026855,
+   "digest": "19d711789974bc36e7b8288f8b454278deab5c34747c0d66a57aca55363ef3b1",
+   "arrays_count": 46
+  },
+  "attention_scaling/r1fc62fb52631": {
+   "version": 1,
+   "loss": 5.608230113983154,
+   "digest": "9b84ed2c369712351dedf563c969d91b8bface07e1602d679e0cf5873a5666af",
+   "arrays_count": 44
+  },
+  "attention_scaling/r1fd67af7256d": {
+   "version": 1,
+   "loss": 5.988654136657715,
+   "digest": "c609c8754286709fb2ea197f67ee1a34dae379a2c78930c4eaf314557f8a6703",
+   "arrays_count": 44
+  },
+  "attention_scaling/r1feece425074": {
+   "version": 1,
+   "loss": 6.038147449493408,
+   "digest": "a2529dde56ee398a6044272d34f547b15dfcb8d1f25fdc48702fd389c418dbcb",
+   "arrays_count": 44
+  },
+  "attention_scaling/r215d3d91dd02": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "03ff6053b031b0752607ec53ab9f44de24d2b6ae14fc6e712556adab6687927c",
+   "arrays_count": 52
+  },
+  "attention_scaling/r22e37bb7def8": {
+   "version": 1,
+   "loss": 6.029034614562988,
+   "digest": "1caebcc4fb1785986c4776bd82007efaefcdefc58e5ceaa4e3dcee71f696b72c",
+   "arrays_count": 44
+  },
+  "attention_scaling/r24f0b9033141": {
+   "version": 1,
+   "loss": 5.5694684982299805,
+   "digest": "471e6235180cc00f09de58270ae79797bdb20150bca4e8c17ce671b1598fb547",
+   "arrays_count": 44
+  },
+  "attention_scaling/r2662ef3a91b8": {
+   "version": 1,
+   "loss": 5.934615135192871,
+   "digest": "804051bc7dfb1cb21616a9d076169925b0216a6ea61f258c264e3f28e936f41b",
+   "arrays_count": 62
+  },
+  "attention_scaling/r2aa13b45ae42": {
+   "version": 1,
+   "loss": 6.073530197143555,
+   "digest": "2f6a26039f54d934925ebe5b7e8aa1442f5b14747d3887b86d5cb9d14e5641a0",
+   "arrays_count": 44
+  },
+  "attention_scaling/r2ae88e422d60": {
+   "version": 1,
+   "loss": 5.6062703132629395,
+   "digest": "7e2982c2b1aa024ecd5a3b3150fbf0cf9df7e36ea066b930b586da1fc4eed1df",
+   "arrays_count": 46
+  },
+  "attention_scaling/r2dbfae04dcb7": {
+   "version": 1,
+   "loss": 5.60865592956543,
+   "digest": "ad1043a409a75832569ce79f9251c1cd5b3e3a0cca52b5c3a000b8a4969fe505",
+   "arrays_count": 44
+  },
+  "attention_scaling/r2fb020d67c0d": {
+   "version": 1,
+   "loss": 5.5850982666015625,
+   "digest": "9c1e56069f6f12cdfa4d2847032a590beab967e11277d684bb89b924546601f5",
+   "arrays_count": 90
+  },
+  "attention_scaling/r3012d19137cd": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "bd64bee8d63d5b4c98bf5e822822b2dcfc9678bd4e9f545d050af5489ebcfc82",
+   "arrays_count": 48
+  },
+  "attention_scaling/r3035bbb7b2ac": {
+   "version": 1,
+   "loss": 5.6104607582092285,
+   "digest": "aadd1224a62db5755095d2b096332aefdf3d9d333bb497305a0e7d559299c40d",
+   "arrays_count": 78
+  },
+  "attention_scaling/r30c715becc6b": {
+   "version": 1,
+   "loss": 5.57029914855957,
+   "digest": "260858d20775bb40064d1d079375601daea02f5d475cef63d2f3feb316405c24",
+   "arrays_count": 46
+  },
+  "attention_scaling/r32ea521d99f3": {
+   "version": 1,
+   "loss": 6.04220724105835,
+   "digest": "917c7dc11a049c16e0ef3fab0a124b81ebd70ddec52fbf48fd9a3f7cbb42600a",
+   "arrays_count": 44
+  },
+  "attention_scaling/r34a8abd83902": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r34a8abd83902/config.yaml.schema_version"
+  },
+  "attention_scaling/r34b6ba7e769e": {
+   "version": 1,
+   "loss": 6.125674724578857,
+   "digest": "b3a1cf737a2bf4124bf7e639889504a044d7657e0d3bad03fcb8aa55baada111",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3527098ab9e7": {
+   "version": 1,
+   "loss": 5.619948387145996,
+   "digest": "66f7b15d9b0d4e01662e14383c266a7bcaa279dfd91e38e923e021280c3a047d",
+   "arrays_count": 44
+  },
+  "attention_scaling/r353d59c575aa": {
+   "version": 1,
+   "loss": 5.5850982666015625,
+   "digest": "b0da6c4cd8bd267dfcfebe8c38c567f3a89450cc1a59b00bdf052b38dd835d3f",
+   "arrays_count": 78
+  },
+  "attention_scaling/r362b2df6edbd": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "1cfad94fb0c6208d7388085ecf98f0bfca5dfcb17657cb78649fd85fc7b563c9",
+   "arrays_count": 52
+  },
+  "attention_scaling/r396be98a8147": {
+   "version": 1,
+   "loss": 5.6055402755737305,
+   "digest": "16032643a209d7d712dfd7758f1cb828c4870b4348a0dcda49e6c37e2bc51867",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3abedaf51474": {
+   "version": 1,
+   "loss": 5.61024284362793,
+   "digest": "f52ed1d78c82da7fcfa3a3f0fd2a06318b7332783b96057c39037339b42e114a",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3bb3e706c834": {
+   "version": 1,
+   "loss": 5.5801615715026855,
+   "digest": "19d711789974bc36e7b8288f8b454278deab5c34747c0d66a57aca55363ef3b1",
+   "arrays_count": 46
+  },
+  "attention_scaling/r3cd03a6b0920": {
+   "version": 1,
+   "loss": 5.579290390014648,
+   "digest": "a9f245367eef29430d21806275d7678c0095e97f5cc659640491bc9e817f20f7",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3d631b7b8afe": {
+   "version": 1,
+   "loss": 6.111110687255859,
+   "digest": "f60cc70236b3d5982e6401bcbe666bf584bc343013781fd68d3396f247dc6605",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3dd3f20a884a": {
+   "version": 1,
+   "loss": 6.024699687957764,
+   "digest": "8ab80ea318dd63799aef1bf17cdf8756d8c4249141edd6dd30359c177cf52997",
+   "arrays_count": 44
+  },
+  "attention_scaling/r3ee94aa0ddda": {
+   "version": 1,
+   "loss": 5.605318069458008,
+   "digest": "c457d41c46df557bb6f6eae45bf242695bacff57b45e9baf8d7ec6fc2f1a874b",
+   "arrays_count": 46
+  },
+  "attention_scaling/r406ddaedf670": {
+   "version": 1,
+   "loss": 5.988595008850098,
+   "digest": "90c9eef3d7b6709a82f8cd08ac5e52be181715e14059ed1c63753690a20c74c4",
+   "arrays_count": 44
+  },
+  "attention_scaling/r4150da71c076": {
+   "version": 1,
+   "loss": 5.6104607582092285,
+   "digest": "aadd1224a62db5755095d2b096332aefdf3d9d333bb497305a0e7d559299c40d",
+   "arrays_count": 78
+  },
+  "attention_scaling/r42dffc8a90eb": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "d494aeddcbaf6a4654803253fd39376926912713edb41a47806381df0d4afbcf",
+   "arrays_count": 46
+  },
+  "attention_scaling/r454c40d18898": {
+   "version": 1,
+   "loss": 5.616611003875732,
+   "digest": "3d4cc72d646553f74c50cd5d4f12da89c49c1d36daf29e6df9646bedac08684c",
+   "arrays_count": 44
+  },
+  "attention_scaling/r46d468fd1e3c": {
+   "version": 1,
+   "loss": 5.6075639724731445,
+   "digest": "8caa82d3bfa37d9d99d72d87a8b5bd63fb222ba589745706bafe6e7c5e84c5fc",
+   "arrays_count": 44
+  },
+  "attention_scaling/r4836c6eba58f": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "61cf69ec61afcd8295992085bc9ac1c9eb4419546096c7e1501c64a4e893341b",
+   "arrays_count": 46
+  },
+  "attention_scaling/r48a4c0358cd2": {
+   "version": 1,
+   "loss": 5.605318069458008,
+   "digest": "787f1f77b2c802ddc4f1cc338a47952cd57fadc411dc90a90ae69570d4aef190",
+   "arrays_count": 44
+  },
+  "attention_scaling/r4923c6939e74": {
+   "version": 1,
+   "loss": 6.038178443908691,
+   "digest": "c0e7c67f8e4eb4cf24602f5ae615cbb23e41794cf1d3e7b0bba2b4c528de5339",
+   "arrays_count": 44
+  },
+  "attention_scaling/r498f3a5f7d6e": {
+   "version": 1,
+   "loss": 6.0192365646362305,
+   "digest": "157b47902c7b50391bd3e3fa5597ffb56a1c609a5ee81febd7bc9fa49519733e",
+   "arrays_count": 44
+  },
+  "attention_scaling/r49ac1e58fba3": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "79047a51e3b65c8289748991d0699343e09614ab23afb0227f3dd81a8cde4009",
+   "arrays_count": 52
+  },
+  "attention_scaling/r4a7c601b4b1f": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "7a989a259d70df292d1a5dfe431244a27e89a41dccb153ba7e7d8c776344fdcc",
+   "arrays_count": 56
+  },
+  "attention_scaling/r4b3575f76cd9": {
+   "version": 1,
+   "loss": 5.6062703132629395,
+   "digest": "7e2982c2b1aa024ecd5a3b3150fbf0cf9df7e36ea066b930b586da1fc4eed1df",
+   "arrays_count": 46
+  },
+  "attention_scaling/r4be7ce6ada3a": {
+   "version": 1,
+   "loss": 5.575881004333496,
+   "digest": "aecda39bc506500e7ea0abc2e40a9eb3d7c874589f3adea1de4a5cabe1b73ff9",
+   "arrays_count": 44
+  },
+  "attention_scaling/r4c59bee0931e": {
+   "version": 1,
+   "loss": 5.608649253845215,
+   "digest": "b07ff63d17c2051a94d259dec9a1c274f1263cbd52128e9ada0df071dcb2370e",
+   "arrays_count": 44
+  },
+  "attention_scaling/r4ca180050f16": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "d926c1f4cb5a013c5aec97f211096915c53338030e2b40e647c52aa595be56b3",
+   "arrays_count": 46
+  },
+  "attention_scaling/r4cee946a1a4b": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "7ff73d683a49f8c32cb10f52a02e04ef3a6ecd05b50131c9c1b2408f63fa5c2e",
+   "arrays_count": 52
+  },
+  "attention_scaling/r4de2b1429c8a": {
+   "version": 1,
+   "loss": 5.575897216796875,
+   "digest": "c8f60c04a9da4c494731217ead26b981538d361322729cf0efbce2cad85eb35e",
+   "arrays_count": 62
+  },
+  "attention_scaling/r4e3f4097a60e": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "b64cb9a0e816f3fc0195eb99047f9fad382fc026c29f4dd943cfb5ac13a0b314",
+   "arrays_count": 56
+  },
+  "attention_scaling/r4f1b4ae4d06f": {
+   "version": 1,
+   "loss": 5.607174873352051,
+   "digest": "6681319a432866aece13afe89ebfed4fc7cf3ab6d906e0aed7cc4eb6739797ef",
+   "arrays_count": 44
+  },
+  "attention_scaling/r50088d29f2b5": {
+   "version": 1,
+   "loss": 6.0266571044921875,
+   "digest": "9497c287a0b37709beaf0cbfa8274370ff5e0cea9a5f809174bbad907064c9ce",
+   "arrays_count": 42
+  },
+  "attention_scaling/r507d1c2632b2": {
+   "version": 1,
+   "loss": 6.039193153381348,
+   "digest": "13e18a9b2ad0280da527e05b8b188591b0b3b129257381beb76682ec4582a601",
+   "arrays_count": 46
+  },
+  "attention_scaling/r50be104c2a9e": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "2ebf1d617dd369dc4af00a89bb6c17207363efb442123e6c14f4e5bb5f754744",
+   "arrays_count": 52
+  },
+  "attention_scaling/r512daaa27a15": {
+   "version": 1,
+   "loss": 5.6062703132629395,
+   "digest": "a2dacd8b25afef4dd042654d603bea52c4d58680e55e1447b21b8aad5e2709fe",
+   "arrays_count": 44
+  },
+  "attention_scaling/r5408301aa174": {
+   "version": 1,
+   "loss": 5.609565734863281,
+   "digest": "72a054713160cbc9c565470568861a8c04fcec8c266a8e1e8cd80196d789578e",
+   "arrays_count": 44
+  },
+  "attention_scaling/r550732028d3b": {
+   "version": 1,
+   "loss": 5.570788860321045,
+   "digest": "53c00f4f56c6614cbc6dad69333a91150aedaf58d0734672c77bca21d6659ba1",
+   "arrays_count": 44
+  },
+  "attention_scaling/r5613919f06af": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "827dd16df84c591e2a09ccb2869d768c6197c913c014f8c16ebc08639c75d666",
+   "arrays_count": 46
+  },
+  "attention_scaling/r56825fdc3ac0": {
+   "version": 1,
+   "loss": 5.597487449645996,
+   "digest": "cebdbb1f1d1bc07317598cec64bd56ce6235ca784bb7c2bc08831ddf3706729d",
+   "arrays_count": 44
+  },
+  "attention_scaling/r57cb14fbf264": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r57cb14fbf264/config.yaml.schema_version"
+  },
+  "attention_scaling/r57edb320f33d": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r57edb320f33d/config.yaml.schema_version"
+  },
+  "attention_scaling/r59490b6e0818": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "5ac418a32773dbcc3a776e41230fab15f849491e2450328d225c2afc5a60f731",
+   "arrays_count": 54
+  },
+  "attention_scaling/r596270e15ba1": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "619bf42dbb7b21f2b6f61bc9662cf3e2572b8a9d009ab3ec33261fab4a6423de",
+   "arrays_count": 44
+  },
+  "attention_scaling/r5ae483d40d62": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "b00d2a30c8d9d41b67fdde878c08e1e0d8b0ef491d48634c11fc0c9f9af71b4f",
+   "arrays_count": 48
+  },
+  "attention_scaling/r5b013b1a762b": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "d21ac7ad97ee22d3ee7d7f1e0b061b2e439cad9f3414a08600e716126d8cec2f",
+   "arrays_count": 52
+  },
+  "attention_scaling/r5bcd4095e392": {
+   "version": 1,
+   "loss": 5.60865592956543,
+   "digest": "7d14f1d2b1bd5404757ac38c0cf2a8f3c21e3364db840132c89eaf2d90781b44",
+   "arrays_count": 44
+  },
+  "attention_scaling/r5be9a97f06e2": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "83a626c44428bd344216339c97898db603796a73a9dd8b1f54a4d2753e5a5602",
+   "arrays_count": 52
+  },
+  "attention_scaling/r5c585f396585": {
+   "version": 1,
+   "loss": 5.608466148376465,
+   "digest": "8c26518454aded9ca36181a7955437bbe7dc2577f3559cbed42ac2a9a9487b54",
+   "arrays_count": 42
+  },
+  "attention_scaling/r5c9701488368": {
+   "version": 1,
+   "loss": 5.5850982666015625,
+   "digest": "4704ede76311790853ae5942c3614768e70b4279bd18c92320ced8bf28812f36",
+   "arrays_count": 82
+  },
+  "attention_scaling/r5dd863a55076": {
+   "version": 1,
+   "loss": 5.607174873352051,
+   "digest": "6681319a432866aece13afe89ebfed4fc7cf3ab6d906e0aed7cc4eb6739797ef",
+   "arrays_count": 44
+  },
+  "attention_scaling/r5e070a3a9738": {
+   "version": 1,
+   "loss": 6.015655994415283,
+   "digest": "739f790e024d702d3b227076396c77ef33b9878c6563edd168a74b0566141b69",
+   "arrays_count": 62
+  },
+  "attention_scaling/r60a3e3a79bae": {
+   "version": 1,
+   "loss": 5.619887351989746,
+   "digest": "3d112fd5fb7ab26cf31ce5bdaf75d55bd46e8f95ee0ecff73474e44788752538",
+   "arrays_count": 44
+  },
+  "attention_scaling/r643656c05f32": {
+   "version": 1,
+   "loss": 5.5694684982299805,
+   "digest": "a1f3a47e597365021904101b5ec961f46d889254af197b1a97b2d4265337b96e",
+   "arrays_count": 46
+  },
+  "attention_scaling/r668a588ddc0b": {
+   "version": 1,
+   "loss": 5.608650207519531,
+   "digest": "7a3fbff961fbc61ba250d427a9dfa7b1bc181be6917b6777cd091a8fed68fee8",
+   "arrays_count": 44
+  },
+  "attention_scaling/r66db587096c4": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "f38d95f2126bcf225392cbffb3e792d7b4bbf59ee39fddcf80a6f663b1cd36be",
+   "arrays_count": 56
+  },
+  "attention_scaling/r67e1c33d19fa": {
+   "version": 1,
+   "loss": 5.6062703132629395,
+   "digest": "a2dacd8b25afef4dd042654d603bea52c4d58680e55e1447b21b8aad5e2709fe",
+   "arrays_count": 44
+  },
+  "attention_scaling/r697221e420ad": {
+   "version": 1,
+   "loss": 5.605898857116699,
+   "digest": "9f1d569ea16e7853bc26a74088a0f944ead80b7fb02de5def55f747eb8dd69ac",
+   "arrays_count": 44
+  },
+  "attention_scaling/r69893658e068": {
+   "version": 1,
+   "loss": 6.101746559143066,
+   "digest": "1c799da7bb179e224acf284d47739e60844405eafac30dac9facaee8fcc717f8",
+   "arrays_count": 44
+  },
+  "attention_scaling/r6b07ec71f32e": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "d494aeddcbaf6a4654803253fd39376926912713edb41a47806381df0d4afbcf",
+   "arrays_count": 46
+  },
+  "attention_scaling/r6b480b3c9510": {
+   "version": 1,
+   "loss": 5.57029914855957,
+   "digest": "260858d20775bb40064d1d079375601daea02f5d475cef63d2f3feb316405c24",
+   "arrays_count": 46
+  },
+  "attention_scaling/r6bba734352f0": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "5e9d79589c0c4cbc5107399d65ac698ffcbb6609a452c0f49664973f4e54f252",
+   "arrays_count": 54
+  },
+  "attention_scaling/r6c2b0b793143": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "1360543a6804ef0c55bb9754b1870a9d38f24cf4760b63217978e1169c3af1cb",
+   "arrays_count": 48
+  },
+  "attention_scaling/r6ddf65b22727": {
+   "version": 1,
+   "loss": 5.605318069458008,
+   "digest": "787f1f77b2c802ddc4f1cc338a47952cd57fadc411dc90a90ae69570d4aef190",
+   "arrays_count": 44
+  },
+  "attention_scaling/r6e11d7bd996d": {
+   "version": 1,
+   "loss": 6.074228763580322,
+   "digest": "92e1e8c78f149cc901fa83a56a1cad9048d6c5e796c5125a28c751b8b0e423a1",
+   "arrays_count": 62
+  },
+  "attention_scaling/r6e4b2c93c240": {
+   "version": 1,
+   "loss": 5.555051803588867,
+   "digest": "ba8165c1c85c0cb5bb1773948b9a77ce9981c9f5a547f0807156bb7161437b8d",
+   "arrays_count": 78
+  },
+  "attention_scaling/r6fdf6d484fd2": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "5e54dcc5000c580ceb51716524a2c31822d466c3c6e5add7ea710c0757d94d20",
+   "arrays_count": 52
+  },
+  "attention_scaling/r70a43cecfc16": {
+   "version": 1,
+   "loss": 5.6075639724731445,
+   "digest": "8caa82d3bfa37d9d99d72d87a8b5bd63fb222ba589745706bafe6e7c5e84c5fc",
+   "arrays_count": 44
+  },
+  "attention_scaling/r722fc3dd263e": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "aff3bc90de4c732d79f1148b6f66bb0d0071d4d55c643fc4d36331f88d47cda1",
+   "arrays_count": 52
+  },
+  "attention_scaling/r74f492893587": {
+   "version": 1,
+   "loss": 5.5850982666015625,
+   "digest": "b0da6c4cd8bd267dfcfebe8c38c567f3a89450cc1a59b00bdf052b38dd835d3f",
+   "arrays_count": 78
+  },
+  "attention_scaling/r7500b587043a": {
+   "version": 1,
+   "loss": 5.6085524559021,
+   "digest": "63298d39d671774ae2ff58f70dfbdf529b65c088ab58975111b6c6a47248fd84",
+   "arrays_count": 42
+  },
+  "attention_scaling/r75b81509b10b": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "9b5114d826f70142a8f65873e1e212df9b89f92f1bdf5a31bd0b6fc9371f750e",
+   "arrays_count": 52
+  },
+  "attention_scaling/r780717f99165": {
+   "version": 1,
+   "loss": 5.566810607910156,
+   "digest": "67829be9062290dd7bdc57b2267944034a6132246bbd523e3ff78c3784ab8516",
+   "arrays_count": 44
+  },
+  "attention_scaling/r79ad5ebadada": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r79ad5ebadada/config.yaml.schema_version"
+  },
+  "attention_scaling/r7d7f7491353d": {
+   "version": 1,
+   "loss": 5.606827259063721,
+   "digest": "62fe0ab24715d9d8438ffe62ddb47b5fef3e65855a349deb5841fb03b8a1b421",
+   "arrays_count": 44
+  },
+  "attention_scaling/r7d911aee60ed": {
+   "version": 1,
+   "loss": 5.605896949768066,
+   "digest": "68068df78edf3ef17eb6dc167c3f770c363745f99b7082b9caf8efb7faa778d9",
+   "arrays_count": 44
+  },
+  "attention_scaling/r7da4ece380b4": {
+   "version": 1,
+   "loss": 5.570524215698242,
+   "digest": "308a8fdb51bfaff2a46dd3d5000fd810b2dc30862556126affae9c759e2717f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/r7e3adc0c0668": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "4d4e79747d0c8f9c28ba558ab6b73363f2adc87d0b74626d853858157ff7c319",
+   "arrays_count": 46
+  },
+  "attention_scaling/r80300a4cd5fa": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "5e54dcc5000c580ceb51716524a2c31822d466c3c6e5add7ea710c0757d94d20",
+   "arrays_count": 52
+  },
+  "attention_scaling/r810a6797098b": {
+   "version": 1,
+   "loss": 6.124783515930176,
+   "digest": "adda0bcc3d3825a3769d7961df0d42a36eec90cb80a1ce91d029e9f7ee837eb1",
+   "arrays_count": 44
+  },
+  "attention_scaling/r81260072928b": {
+   "version": 1,
+   "loss": 5.609528064727783,
+   "digest": "01a15a2ad0e755126901bcae1bd15c0449d67c16161705d131d3efc1d7661402",
+   "arrays_count": 44
+  },
+  "attention_scaling/r832110abf732": {
+   "version": 1,
+   "loss": 5.60865592956543,
+   "digest": "ad1043a409a75832569ce79f9251c1cd5b3e3a0cca52b5c3a000b8a4969fe505",
+   "arrays_count": 44
+  },
+  "attention_scaling/r85ac149e17bb": {
+   "version": 1,
+   "loss": 6.053810119628906,
+   "digest": "67decde9a23511f4c82de29897e707e0d7ebc532a93109e9c3ff5bef35827e4f",
+   "arrays_count": 44
+  },
+  "attention_scaling/r85e7da52f1c4": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "619bf42dbb7b21f2b6f61bc9662cf3e2572b8a9d009ab3ec33261fab4a6423de",
+   "arrays_count": 44
+  },
+  "attention_scaling/r86b223e4d9e9": {
+   "version": 1,
+   "loss": 5.555051803588867,
+   "digest": "ba8165c1c85c0cb5bb1773948b9a77ce9981c9f5a547f0807156bb7161437b8d",
+   "arrays_count": 78
+  },
+  "attention_scaling/r884251bdf38b": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "b00d2a30c8d9d41b67fdde878c08e1e0d8b0ef491d48634c11fc0c9f9af71b4f",
+   "arrays_count": 48
+  },
+  "attention_scaling/r88e2fc31b2e3": {
+   "version": 1,
+   "loss": 5.608649253845215,
+   "digest": "b07ff63d17c2051a94d259dec9a1c274f1263cbd52128e9ada0df071dcb2370e",
+   "arrays_count": 44
+  },
+  "attention_scaling/r8a623356c02a": {
+   "version": 1,
+   "loss": 5.567538261413574,
+   "digest": "20ea7be5f5bbbfea8533665cf00a5c2e029582ed091b90e8953e399dd2df2af8",
+   "arrays_count": 44
+  },
+  "attention_scaling/r8ad66f3912c2": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "827dd16df84c591e2a09ccb2869d768c6197c913c014f8c16ebc08639c75d666",
+   "arrays_count": 46
+  },
+  "attention_scaling/r8b46f1ad9453": {
+   "version": 1,
+   "loss": 6.060476303100586,
+   "digest": "132a7b9c71d32c4828fe7862a98d11d2fe7c32108a2ac1255735b8f87d087391",
+   "arrays_count": 44
+  },
+  "attention_scaling/r8b936520deda": {
+   "version": 1,
+   "loss": 5.575881004333496,
+   "digest": "ae0fc5de987ce92b9ba682f35ecc3c015d2370f7beba63383780373cccad0c66",
+   "arrays_count": 46
+  },
+  "attention_scaling/r8c8f8624a87a": {
+   "version": 1,
+   "loss": 5.608649730682373,
+   "digest": "4127762a10eea0353620e0607c3f9f9c97c8fa61699e89f656d54bc64ffc5dfe",
+   "arrays_count": 44
+  },
+  "attention_scaling/r8c9b076f9635": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "93972107e93ae7955240c4056ba43a08940f1b69a331940880e59d4d230c3898",
+   "arrays_count": 52
+  },
+  "attention_scaling/r8cf3214ce097": {
+   "version": 1,
+   "loss": 5.57029914855957,
+   "digest": "8efc5e944b9efa90b9c714f741bd8cc84dd5dc42de577c01d5876fd0612b8c30",
+   "arrays_count": 44
+  },
+  "attention_scaling/r8cfaa9398718": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "827dd16df84c591e2a09ccb2869d768c6197c913c014f8c16ebc08639c75d666",
+   "arrays_count": 46
+  },
+  "attention_scaling/r8de9574f7dac": {
+   "version": 1,
+   "loss": 6.120807647705078,
+   "digest": "04a90f3093dab5aee972805b70136bceab17fad79f71e74d2ac35c3d6d041ca4",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9025a7b40a08": {
+   "version": 1,
+   "loss": 5.608161449432373,
+   "digest": "35e0f0ddc00f5f81dc350e75e6a13e23efb1119deba75fae2768fef926f59e7f",
+   "arrays_count": 42
+  },
+  "attention_scaling/r90f6452bba82": {
+   "version": 1,
+   "loss": 5.595727920532227,
+   "digest": "1716e7c1b5354e1a04d616bf3aead41ae4cce0ac7e559730b7aac132383eec13",
+   "arrays_count": 48
+  },
+  "attention_scaling/r93c9d0814322": {
+   "version": 1,
+   "loss": 6.031534671783447,
+   "digest": "0a6c140fe457d16790cee2dd81965e22bfabfdd38ad66b430199367e3be1a8f6",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9528e0dbda86": {
+   "version": 1,
+   "loss": 5.607623100280762,
+   "digest": "4d4e79747d0c8f9c28ba558ab6b73363f2adc87d0b74626d853858157ff7c319",
+   "arrays_count": 46
+  },
+  "attention_scaling/r9534f1d3ef99": {
+   "version": 1,
+   "loss": 6.118367671966553,
+   "digest": "f5970348d3c0ef0d3b6f1cdf7e72c18456925ef08e35b3beba5e93583032c5be",
+   "arrays_count": 44
+  },
+  "attention_scaling/r95bf49d1203c": {
+   "version": 1,
+   "loss": 6.042207717895508,
+   "digest": "37dca02adbbe1d19cd5593dcbc6829a45ed5f18a06aac55021cad1a10c335c3d",
+   "arrays_count": 44
+  },
+  "attention_scaling/r95c5dea57a89": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "f6fc69f9cb54f1732361f2c5bed476e1e0b984916bc15e739f32ddc98375d3fc",
+   "arrays_count": 56
+  },
+  "attention_scaling/r987d35acfb2c": {
+   "version": 1,
+   "loss": 5.609528064727783,
+   "digest": "01a15a2ad0e755126901bcae1bd15c0449d67c16161705d131d3efc1d7661402",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9968775086c3": {
+   "version": 1,
+   "loss": 5.605898857116699,
+   "digest": "9f1d569ea16e7853bc26a74088a0f944ead80b7fb02de5def55f747eb8dd69ac",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9c89729b9f23": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "b6dc1c55cd4dc0e5a9b48ad58a1adb6a265f432710ca56f93c308349fdd257e0",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9cf9589b9855": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "fa98bd774623558e0eb1190521da969792cffcebf00e8d8e610b5d5b39d69ad9",
+   "arrays_count": 50
+  },
+  "attention_scaling/r9f979b7b3bba": {
+   "version": 1,
+   "loss": 5.567538261413574,
+   "digest": "20ea7be5f5bbbfea8533665cf00a5c2e029582ed091b90e8953e399dd2df2af8",
+   "arrays_count": 44
+  },
+  "attention_scaling/r9fa4b8f1cf9a": {
+   "version": 1,
+   "loss": 5.605318069458008,
+   "digest": "c457d41c46df557bb6f6eae45bf242695bacff57b45e9baf8d7ec6fc2f1a874b",
+   "arrays_count": 46
+  },
+  "attention_scaling/ra0bece83eb7b": {
+   "version": 1,
+   "loss": 5.609533309936523,
+   "digest": "73edaa9934e3a64f0941ffec691ef19079fc25dab57532739fdeaf1626bde831",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra14cb10d335d": {
+   "version": 1,
+   "loss": 5.616611003875732,
+   "digest": "3d4cc72d646553f74c50cd5d4f12da89c49c1d36daf29e6df9646bedac08684c",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra1582c10aec6": {
+   "version": 1,
+   "loss": 6.123927116394043,
+   "digest": "9b789ffd0ef4ccd44d39807bd5ca632469b73e9cf8028d3c65bafdd2ef183c1c",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra1630eecb247": {
+   "version": 1,
+   "loss": 5.619948387145996,
+   "digest": "66f7b15d9b0d4e01662e14383c266a7bcaa279dfd91e38e923e021280c3a047d",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra2e7161fdf4a": {
+   "version": 1,
+   "loss": 5.581477165222168,
+   "digest": "91703bdb2daadb28f6c24c88dfa2d0aa5838a19e8172b960861d3ceff70029f0",
+   "arrays_count": 46
+  },
+  "attention_scaling/ra350e90b6839": {
+   "version": 1,
+   "loss": 5.599264621734619,
+   "digest": "0c9fab60a6f2fb1926aa2b002b319e8313a587144f6a516dbc4bc85fa17dc8b4",
+   "arrays_count": 46
+  },
+  "attention_scaling/ra39c41604704": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "d36b6ffec787ba998360af9d0fe05136815edba0ab057a5843494374da514509",
+   "arrays_count": 52
+  },
+  "attention_scaling/ra46296663350": {
+   "version": 1,
+   "loss": 6.125680923461914,
+   "digest": "22eabded50cf671a0e17bd69a3fde8dba891a744a03da5b9bbfadc06e036e61c",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra64f3b7b5e86": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/ra64f3b7b5e86/config.yaml.schema_version"
+  },
+  "attention_scaling/ra6e06f8356a7": {
+   "version": 1,
+   "loss": 5.618954658508301,
+   "digest": "708ac9d0f9e4cd6c0545de916ea2a7c36454684bbf44039e5d1321d8ac2199f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra6f65d5e27f3": {
+   "version": 1,
+   "loss": 6.051807403564453,
+   "digest": "75f45f0a05f830175ff877dc1f092be29b921d307c4d26704b3fa76b82919475",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra740253b1df8": {
+   "version": 1,
+   "loss": 6.0912275314331055,
+   "digest": "b438da9d512e730008fbd26a833e924a907892d47f2ac52c59880e6c57a316ee",
+   "arrays_count": 44
+  },
+  "attention_scaling/ra79e66bd9121": {
+   "version": 1,
+   "loss": 5.603470802307129,
+   "digest": "1338758f700bba4939361ed242b3f156c27d20e05fbd1628614eadca15a3970b",
+   "arrays_count": 94
+  },
+  "attention_scaling/ra98612db06d4": {
+   "version": 1,
+   "loss": 5.5850982666015625,
+   "digest": "48b685bb687aa408b3500d3a6f1b5a3572bd89ca8a76e281bb75030c85140907",
+   "arrays_count": 94
+  },
+  "attention_scaling/ra9b651caa405": {
+   "version": 1,
+   "loss": 6.039194107055664,
+   "digest": "e10aaf74a8bc80f19391a9e9e7b3678347c44787fcf5c4e6144112013f02c4e0",
+   "arrays_count": 44
+  },
+  "attention_scaling/raa043e978a3d": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "21346e606b5553721111c477036d9a9061864a978f2966e1291de9d7ae9c7017",
+   "arrays_count": 48
+  },
+  "attention_scaling/raa1fd6ae9d6d": {
+   "version": 1,
+   "loss": 6.0575032234191895,
+   "digest": "75326539ad47e4d0466921dffc2959b49d9432f1982e134eb6b14341278dfa1d",
+   "arrays_count": 62
+  },
+  "attention_scaling/raa90edf82385": {
+   "version": 1,
+   "loss": 5.970575332641602,
+   "digest": "3ad2d9e7016894b8fe9adba9c58544ef944543ed65a4e06e86b0a28f087e146d",
+   "arrays_count": 44
+  },
+  "attention_scaling/rac317a500871": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "c70ac87ccc6e2758747987cedf7311bc3af1bde767bb9e1ad8b9269a70b51fc0",
+   "arrays_count": 52
+  },
+  "attention_scaling/rad524492116f": {
+   "version": 1,
+   "loss": 5.608654975891113,
+   "digest": "92c4e9286026189702eae61b74520f480759af63e528d0c22062216f73357104",
+   "arrays_count": 44
+  },
+  "attention_scaling/radd66df6371a": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "89bbfe2a41c40f6a70b2d28104d7232e7de4e0272cd5eacb7115fa8d49cd0b35",
+   "arrays_count": 52
+  },
+  "attention_scaling/rae2329afb5bd": {
+   "version": 1,
+   "loss": 5.603470802307129,
+   "digest": "76c649048e85bacd77d6bcf627428ececb27250d4ca9be9ae88dc2b260561a5f",
+   "arrays_count": 82
+  },
+  "attention_scaling/raef9f8b87efd": {
+   "version": 1,
+   "loss": 5.575881004333496,
+   "digest": "ae0fc5de987ce92b9ba682f35ecc3c015d2370f7beba63383780373cccad0c66",
+   "arrays_count": 46
+  },
+  "attention_scaling/raf32fab4ba52": {
+   "version": 1,
+   "loss": 5.606827259063721,
+   "digest": "62fe0ab24715d9d8438ffe62ddb47b5fef3e65855a349deb5841fb03b8a1b421",
+   "arrays_count": 44
+  },
+  "attention_scaling/raf366b32c8f4": {
+   "version": 1,
+   "loss": 6.125680923461914,
+   "digest": "0a4242e4649f147861477ce8652403ae94780c65530a6a4117e9fc3bd3ef6024",
+   "arrays_count": 44
+  },
+  "attention_scaling/raf4c8249eb5a": {
+   "version": 1,
+   "loss": 5.5801615715026855,
+   "digest": "19d711789974bc36e7b8288f8b454278deab5c34747c0d66a57aca55363ef3b1",
+   "arrays_count": 46
+  },
+  "attention_scaling/rafa3585e4f1c": {
+   "version": 1,
+   "loss": 5.609565734863281,
+   "digest": "72a054713160cbc9c565470568861a8c04fcec8c266a8e1e8cd80196d789578e",
+   "arrays_count": 44
+  },
+  "attention_scaling/rb096ae6c7cb5": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "0f7d9967f29018210ca7c8e3b985d997b55710893ef1294334a98e2e946874b9",
+   "arrays_count": 48
+  },
+  "attention_scaling/rb28779009ce5": {
+   "version": 1,
+   "loss": 5.6080522537231445,
+   "digest": "40408f26c1f98dd6e83937fe658ef591c9c6e9f3164fedc3c0d997bf64cb5e18",
+   "arrays_count": 42
+  },
+  "attention_scaling/rb2f51975c4bb": {
+   "version": 1,
+   "loss": 5.6090850830078125,
+   "digest": "f1f094f897fc42bf2518d22a2d0c227ccd1c0aae7a3a1a59f5fcae5034d79e5c",
+   "arrays_count": 44
+  },
+  "attention_scaling/rb306d49a5abe": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "2022f3fdc51e1b78a524cbe0643ec0673118fcff49e3a09455bfda5a31d971e5",
+   "arrays_count": 52
+  },
+  "attention_scaling/rb4db57f82cf1": {
+   "version": 1,
+   "loss": 5.606270790100098,
+   "digest": "a337f62aa197794daeba62b7d48bd48ca70e72c49d37b1312fce24682a3f24ae",
+   "arrays_count": 46
+  },
+  "attention_scaling/rb58cee0a77cd": {
+   "version": 1,
+   "loss": 6.073160171508789,
+   "digest": "2a094d227c34c4dfb0c554c4cc145e8a06b4b5f8ae87c0096d2b223b8a4a98e1",
+   "arrays_count": 44
+  },
+  "attention_scaling/rb6b8eb9aa58e": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rb6b8eb9aa58e/config.yaml.schema_version"
+  },
+  "attention_scaling/rb85a9d2fb62c": {
+   "version": 1,
+   "loss": 5.619948387145996,
+   "digest": "be3e672cb4a0e989e9957b9aae2918379baab135165c58da623d37b708e1572f",
+   "arrays_count": 44
+  },
+  "attention_scaling/rb901a10c4777": {
+   "version": 1,
+   "loss": 5.582457542419434,
+   "digest": "30257e83deb784eb71ec0cd31f42ed9f102af002b1d0c35653a245a942803de9",
+   "arrays_count": 62
+  },
+  "attention_scaling/rba0327a59191": {
+   "version": 1,
+   "loss": 5.606827259063721,
+   "digest": "62fe0ab24715d9d8438ffe62ddb47b5fef3e65855a349deb5841fb03b8a1b421",
+   "arrays_count": 44
+  },
+  "attention_scaling/rba69e9443554": {
+   "version": 1,
+   "loss": 5.566810607910156,
+   "digest": "67829be9062290dd7bdc57b2267944034a6132246bbd523e3ff78c3784ab8516",
+   "arrays_count": 44
+  },
+  "attention_scaling/rba839e6386b7": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "98a6ae08971d9456833cdd5a3a6cc93ce37fe8b86060caaac73bcd67fda94074",
+   "arrays_count": 56
+  },
+  "attention_scaling/rbaa19693c602": {
+   "version": 1,
+   "loss": 6.111110210418701,
+   "digest": "2ce88d73fd6b8defee8167823df679b1a472f0fe82a0206035f80b50704c03b0",
+   "arrays_count": 46
+  },
+  "attention_scaling/rbafa372b4e8b": {
+   "version": 1,
+   "loss": 5.595727920532227,
+   "digest": "4a0470ab1d82ef2278eac7e28f8e2130884c50eb934a4defe95cf12934289b42",
+   "arrays_count": 48
+  },
+  "attention_scaling/rbb8dc34285bf": {
+   "version": 1,
+   "loss": 6.042898654937744,
+   "digest": "3eabbd86c46c3bfdb183af1111109802e4253ec7a395747f0864db0d0b6ea424",
+   "arrays_count": 44
+  },
+  "attention_scaling/rbd4eb6ccc16f": {
+   "version": 1,
+   "loss": 5.591361999511719,
+   "digest": "ad53bda91bc341051ff6c0c6211f7dc386fd4ea0424f8dd9b0817d01a0e3a367",
+   "arrays_count": 54
+  },
+  "attention_scaling/rbde7fc4c2135": {
+   "version": 1,
+   "loss": 5.605898857116699,
+   "digest": "2cc59b1957e47f54e69fc80216ae56d0fa3cdc40c12c372380fe3d68546abfe4",
+   "arrays_count": 44
+  },
+  "attention_scaling/rbdedf102c655": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "b6dc1c55cd4dc0e5a9b48ad58a1adb6a265f432710ca56f93c308349fdd257e0",
+   "arrays_count": 44
+  },
+  "attention_scaling/rbfe1750cc24c": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "aff3bc90de4c732d79f1148b6f66bb0d0071d4d55c643fc4d36331f88d47cda1",
+   "arrays_count": 52
+  },
+  "attention_scaling/rbfeee56c811b": {
+   "version": 1,
+   "loss": 5.608650207519531,
+   "digest": "7a3fbff961fbc61ba250d427a9dfa7b1bc181be6917b6777cd091a8fed68fee8",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc2b555b905dd": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "daf2292ab9bf0ba9dc6e2d5a5bf965457b95011af0007c9a9b2977b4b2e18095",
+   "arrays_count": 48
+  },
+  "attention_scaling/rc2e4acaf01ff": {
+   "version": 1,
+   "loss": 5.609736442565918,
+   "digest": "1fcfad6d9825e7c23c421448c814c7caff64e5ce2b767479f29f1b127b92b4f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc2fa883c75c0": {
+   "version": 1,
+   "loss": 5.605898857116699,
+   "digest": "2cc59b1957e47f54e69fc80216ae56d0fa3cdc40c12c372380fe3d68546abfe4",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc342fe890e6f": {
+   "version": 1,
+   "loss": 5.970575332641602,
+   "digest": "4bb2bbd0cab84cace0f4c2c0165f2cdb07d4becdf7283d4066ca19cb43a8c7c5",
+   "arrays_count": 46
+  },
+  "attention_scaling/rc54b765d22d8": {
+   "version": 1,
+   "loss": 5.60865592956543,
+   "digest": "7d14f1d2b1bd5404757ac38c0cf2a8f3c21e3364db840132c89eaf2d90781b44",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc56893e4c1ac": {
+   "version": 1,
+   "loss": 5.57029914855957,
+   "digest": "8efc5e944b9efa90b9c714f741bd8cc84dd5dc42de577c01d5876fd0612b8c30",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc6d9857b0719": {
+   "version": 1,
+   "loss": 5.575881004333496,
+   "digest": "aecda39bc506500e7ea0abc2e40a9eb3d7c874589f3adea1de4a5cabe1b73ff9",
+   "arrays_count": 44
+  },
+  "attention_scaling/rc836509ca119": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "d70aae112121105926ac3f62d991d48a0cc3c5204824782d68d9e0814b9f91ef",
+   "arrays_count": 52
+  },
+  "attention_scaling/rc8aeb26cf795": {
+   "version": 1,
+   "loss": 5.595727920532227,
+   "digest": "1716e7c1b5354e1a04d616bf3aead41ae4cce0ac7e559730b7aac132383eec13",
+   "arrays_count": 48
+  },
+  "attention_scaling/rc8d38fead82c": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rc8d38fead82c/config.yaml.schema_version"
+  },
+  "attention_scaling/rc9d269a084ce": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "1fb9836133300ffe6380adca82c4e0d621d2a62185adb3723b7e93a3830ecbfc",
+   "arrays_count": 48
+  },
+  "attention_scaling/rccf19c31669d": {
+   "version": 1,
+   "loss": 5.581467628479004,
+   "digest": "3696dc2e73297e092f240f3000cf868f9a9186308512a99557d87ee597fbad82",
+   "arrays_count": 52
+  },
+  "attention_scaling/rd05f99d385bc": {
+   "version": 1,
+   "loss": 5.609533309936523,
+   "digest": "73edaa9934e3a64f0941ffec691ef19079fc25dab57532739fdeaf1626bde831",
+   "arrays_count": 44
+  },
+  "attention_scaling/rd181f3699026": {
+   "version": 1,
+   "loss": 5.61024284362793,
+   "digest": "f52ed1d78c82da7fcfa3a3f0fd2a06318b7332783b96057c39037339b42e114a",
+   "arrays_count": 44
+  },
+  "attention_scaling/rd2003e215536": {
+   "version": 1,
+   "loss": 5.5694684982299805,
+   "digest": "a1f3a47e597365021904101b5ec961f46d889254af197b1a97b2d4265337b96e",
+   "arrays_count": 46
+  },
+  "attention_scaling/rd40af7956426": {
+   "version": 1,
+   "loss": 5.577049255371094,
+   "digest": "53c58eb2c2f65a260a399879e83d5de96edc51175d7af2750daf6e4ef2b9860d",
+   "arrays_count": 90
+  },
+  "attention_scaling/rd4b7fe3f1b11": {
+   "version": 1,
+   "loss": 5.603470802307129,
+   "digest": "0c4802c1f0497022be612362499fedf3b3e24b954ca8dcc521942ec2eea19e7b",
+   "arrays_count": 78
+  },
+  "attention_scaling/rd4f66b1959d2": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "c454cab277804c625010a907365deb7254fddbf043cceb562abd7dd18fda106e",
+   "arrays_count": 52
+  },
+  "attention_scaling/rd5ac0e3013e3": {
+   "version": 1,
+   "loss": 5.595727920532227,
+   "digest": "e7b5ad69e7949b71bdb44534b844bb9cf4992901b4f887d54a377c700fdac077",
+   "arrays_count": 48
+  },
+  "attention_scaling/rd60a1338dad6": {
+   "version": 1,
+   "loss": 5.995628833770752,
+   "digest": "57bcbfa7fcba016419f4645c4c5580faf4aedba972e40549d1cf6ea1d9881be8",
+   "arrays_count": 44
+  },
+  "attention_scaling/rd7428f72915b": {
+   "version": 1,
+   "loss": 6.060476303100586,
+   "digest": "d22b868298340ac5c346119be5e09ea20dc1605569c6a0898a764c484abfd456",
+   "arrays_count": 46
+  },
+  "attention_scaling/rd962214a5556": {
+   "version": 1,
+   "loss": 6.031534671783447,
+   "digest": "9000656b6c1cfbaa206da0f04a897888a736137e429dc3c8837d4db2c6a15e94",
+   "arrays_count": 46
+  },
+  "attention_scaling/rdaa83e375c30": {
+   "version": 1,
+   "loss": 5.570524215698242,
+   "digest": "308a8fdb51bfaff2a46dd3d5000fd810b2dc30862556126affae9c759e2717f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdb78995ba45a": {
+   "version": 1,
+   "loss": 6.080076217651367,
+   "digest": "2c8b469bd127fab2a771c0286ac410818da6831a8c21c18c5f2caf913de67103",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdb9874f67bf1": {
+   "version": 1,
+   "loss": 5.619887351989746,
+   "digest": "3d112fd5fb7ab26cf31ce5bdaf75d55bd46e8f95ee0ecff73474e44788752538",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdb9dec632be7": {
+   "version": 1,
+   "loss": 5.608649730682373,
+   "digest": "4127762a10eea0353620e0607c3f9f9c97c8fa61699e89f656d54bc64ffc5dfe",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdbd4607d5af9": {
+   "version": 1,
+   "loss": 6.031534671783447,
+   "digest": "9bbf35c9a635c03b20fa86dfb19bc796ced9d3a19e750a877925512f03a93d90",
+   "arrays_count": 46
+  },
+  "attention_scaling/rdd5ac28a16e5": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "6e394b32e92704d93574f0faf5ce7eac90a7da8ab206d759fa3cc1ebcb819006",
+   "arrays_count": 48
+  },
+  "attention_scaling/rde534cbb87a1": {
+   "version": 1,
+   "loss": 5.580715656280518,
+   "digest": "2abfa71240b8f31b01724fa47c7aea6e0ab4f9503376784b7443ec34c212bb8c",
+   "arrays_count": 54
+  },
+  "attention_scaling/rdf00da0866a8": {
+   "version": 1,
+   "loss": 5.605898857116699,
+   "digest": "2cc59b1957e47f54e69fc80216ae56d0fa3cdc40c12c372380fe3d68546abfe4",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdf74e4289926": {
+   "version": 1,
+   "loss": 5.577049255371094,
+   "digest": "d9888360061b72f2bcb2b73d5291a8cd5b06a8b1490c417cb37973528e2db681",
+   "arrays_count": 78
+  },
+  "attention_scaling/rdffa3b81e2a1": {
+   "version": 1,
+   "loss": 5.579290390014648,
+   "digest": "a9f245367eef29430d21806275d7678c0095e97f5cc659640491bc9e817f20f7",
+   "arrays_count": 44
+  },
+  "attention_scaling/rdffeab1f703c": {
+   "version": 1,
+   "loss": 5.608574867248535,
+   "digest": "cafc740feb22ec85463eb94153499ce1062eeba8164dd94394155e58dcf1be40",
+   "arrays_count": 42
+  },
+  "attention_scaling/re02fd5349773": {
+   "version": 1,
+   "loss": 6.051260948181152,
+   "digest": "69c2929dd24f241b0848e288af9ac6b2adc8d90a3556f3d6efd7ca2525c7e218",
+   "arrays_count": 44
+  },
+  "attention_scaling/re21d068e25c7": {
+   "version": 1,
+   "loss": 5.6090850830078125,
+   "digest": "f1f094f897fc42bf2518d22a2d0c227ccd1c0aae7a3a1a59f5fcae5034d79e5c",
+   "arrays_count": 44
+  },
+  "attention_scaling/re2a34e737173": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/re2a34e737173/config.yaml.schema_version"
+  },
+  "attention_scaling/re48438a6ad4a": {
+   "version": 1,
+   "loss": 6.043769836425781,
+   "digest": "f88f3d5181fcb262957884ce72c1e1c39f5c87fe018159a60cc7ecac93b592f2",
+   "arrays_count": 44
+  },
+  "attention_scaling/re4bb691edf71": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "2af5fa2bfc565a041cf1638422bcd8a8d915bbe838a4cbcb7b13a3cd3d67c66f",
+   "arrays_count": 44
+  },
+  "attention_scaling/re554c79caddb": {
+   "version": 1,
+   "loss": 6.039193153381348,
+   "digest": "ff5707348c60f75fa61f12156c91874bce0fac66b7eb4f78b65180032b73864c",
+   "arrays_count": 46
+  },
+  "attention_scaling/re67015e7ee89": {
+   "version": 1,
+   "loss": 5.6055402755737305,
+   "digest": "16032643a209d7d712dfd7758f1cb828c4870b4348a0dcda49e6c37e2bc51867",
+   "arrays_count": 44
+  },
+  "attention_scaling/re75e2752c293": {
+   "version": 1,
+   "loss": 6.137210845947266,
+   "digest": "d3d4257c115659d0529e3802b13fac5b7c5b1dca3d6e5014a9955b1924ebc1a7",
+   "arrays_count": 44
+  },
+  "attention_scaling/re782261d6e4f": {
+   "version": 1,
+   "loss": 5.988595008850098,
+   "digest": "34a87a1bbbaf90ef38361334afa7955763f7cca08d4b6bcb02f30b82db7a052d",
+   "arrays_count": 44
+  },
+  "attention_scaling/re7bebad37614": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "daf2292ab9bf0ba9dc6e2d5a5bf965457b95011af0007c9a9b2977b4b2e18095",
+   "arrays_count": 48
+  },
+  "attention_scaling/re7f34348e6ae": {
+   "version": 1,
+   "loss": 5.609736442565918,
+   "digest": "1fcfad6d9825e7c23c421448c814c7caff64e5ce2b767479f29f1b127b92b4f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/re81d054a6087": {
+   "version": 1,
+   "loss": 5.619948387145996,
+   "digest": "be3e672cb4a0e989e9957b9aae2918379baab135165c58da623d37b708e1572f",
+   "arrays_count": 44
+  },
+  "attention_scaling/re8b05edb37b1": {
+   "version": 1,
+   "loss": 6.04123592376709,
+   "digest": "3a97f78ee2cf1f26bb77be5bf17d0fb1ee9ae3288ebd4ac6852be86ea78b871d",
+   "arrays_count": 44
+  },
+  "attention_scaling/rea4fd9479c26": {
+   "version": 1,
+   "loss": 5.970574855804443,
+   "digest": "5ca75a961f83195ecd9178b59155fe0ca856f0d0da828ca39f5e8b4ca02e90e7",
+   "arrays_count": 44
+  },
+  "attention_scaling/rebdf113401ae": {
+   "version": 1,
+   "loss": 5.606270790100098,
+   "digest": "a337f62aa197794daeba62b7d48bd48ca70e72c49d37b1312fce24682a3f24ae",
+   "arrays_count": 46
+  },
+  "attention_scaling/rec520e9303ac": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "f195e2fa7f696035407281887e1f3cf99497ba84f55180a64a319e55f2ffb5e2",
+   "arrays_count": 52
+  },
+  "attention_scaling/rec7a01f3282c": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rec7a01f3282c/config.yaml.schema_version"
+  },
+  "attention_scaling/redf876485ab6": {
+   "version": 1,
+   "loss": 5.5801615715026855,
+   "digest": "062918c51439cdbf18c2b582632da533bf47969249503d871c69eab23c79e2aa",
+   "arrays_count": 44
+  },
+  "attention_scaling/rf09418e36d8b": {
+   "version": 1,
+   "loss": 5.597487449645996,
+   "digest": "cebdbb1f1d1bc07317598cec64bd56ce6235ca784bb7c2bc08831ddf3706729d",
+   "arrays_count": 44
+  },
+  "attention_scaling/rf0bd67774e8c": {
+   "version": 1,
+   "loss": 5.57029914855957,
+   "digest": "260858d20775bb40064d1d079375601daea02f5d475cef63d2f3feb316405c24",
+   "arrays_count": 46
+  },
+  "attention_scaling/rf1160aa95e46": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "a2c5db0632c96cd59c779e943debe5b9ac072705e1849c1044d9669373652906",
+   "arrays_count": 52
+  },
+  "attention_scaling/rf1ece7e314b3": {
+   "version": 1,
+   "loss": 5.597292900085449,
+   "digest": "98c41109991de57ce523c170d0f289a828a123c3b954290a68f0b4db6fb7ace6",
+   "arrays_count": 54
+  },
+  "attention_scaling/rf2f09841f1ff": {
+   "version": 1,
+   "loss": 5.5801615715026855,
+   "digest": "062918c51439cdbf18c2b582632da533bf47969249503d871c69eab23c79e2aa",
+   "arrays_count": 44
+  },
+  "attention_scaling/rf39358c9f550": {
+   "version": 1,
+   "loss": 6.1309003829956055,
+   "digest": "46ddd3ed3e67c63376fe634560a632243ad03117f912e9ee812354eafa2cf13f",
+   "arrays_count": 44
+  },
+  "attention_scaling/rf640fc13f3a8": {
+   "version": 1,
+   "loss": 5.577049255371094,
+   "digest": "d9888360061b72f2bcb2b73d5291a8cd5b06a8b1490c417cb37973528e2db681",
+   "arrays_count": 78
+  },
+  "attention_scaling/rf65d38ec0552": {
+   "version": 1,
+   "loss": 5.574004173278809,
+   "digest": "101276b978ae2bc72a33e303f1dba2de5a97e0efe5f898cf993a92c65e8f386c",
+   "arrays_count": 82
+  },
+  "attention_scaling/rf7277f076b8f": {
+   "version": 1,
+   "loss": 5.6080522537231445,
+   "digest": "40408f26c1f98dd6e83937fe658ef591c9c6e9f3164fedc3c0d997bf64cb5e18",
+   "arrays_count": 42
+  },
+  "attention_scaling/rf7341031e3d5": {
+   "version": 1,
+   "loss": 5.577049255371094,
+   "digest": "8f6c512ddc5583bd16b0a7d8bdf21fbb131718371dcb212c1ce47dacef1ce1f6",
+   "arrays_count": 82
+  },
+  "attention_scaling/rf80525684cee": {
+   "version": 1,
+   "loss": 5.607126235961914,
+   "digest": "2af5fa2bfc565a041cf1638422bcd8a8d915bbe838a4cbcb7b13a3cd3d67c66f",
+   "arrays_count": 44
+  },
+  "attention_scaling/rf885f946fc9b": {
+   "version": 1,
+   "loss": 5.603470802307129,
+   "digest": "7ec567ecef35f319c16885c7e2691b363987df85431e5f6df91777994c93ea80",
+   "arrays_count": 90
+  },
+  "attention_scaling/rfaccbff16fbd": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfaccbff16fbd/config.yaml.schema_version"
+  },
+  "attention_scaling/rfb43d69f60dc": {
+   "version": 1,
+   "loss": 5.58889102935791,
+   "digest": "6e394b32e92704d93574f0faf5ce7eac90a7da8ab206d759fa3cc1ebcb819006",
+   "arrays_count": 48
+  },
+  "attention_scaling/rfb737d019b58": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfb737d019b58/config.yaml.schema_version"
+  },
+  "attention_scaling/rfc37cfdf49d0": {
+   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfc37cfdf49d0/config.yaml.schema_version"
+  },
+  "attention_scaling/rfe3e43bfcabf": {
+   "version": 1,
+   "loss": 5.609533309936523,
+   "digest": "13db90fd217cee700c2bc4c0e4b9b52db2ce40cfad92b86915c2dbd80c16137a",
+   "arrays_count": 44
+  },
+  "attention_scaling/rfedbbc4ec389": {
+   "version": 1,
+   "loss": 5.618954658508301,
+   "digest": "708ac9d0f9e4cd6c0545de916ea2a7c36454684bbf44039e5d1321d8ac2199f9",
+   "arrays_count": 44
+  },
+  "attention_scaling/rfee72428a45e": {
+   "version": 1,
+   "loss": 5.582027435302734,
+   "digest": "d70aae112121105926ac3f62d991d48a0cc3c5204824782d68d9e0814b9f91ef",
+   "arrays_count": 52
+  },
+  "attention_scaling/rfff20b3dbb18": {
+   "version": 1,
+   "loss": 5.609533309936523,
+   "digest": "13db90fd217cee700c2bc4c0e4b9b52db2ce40cfad92b86915c2dbd80c16137a",
+   "arrays_count": 44
+  },
+  "state_rank/r14d11acdd949": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r14d11acdd949/config.yaml.schema_version"
+  },
+  "state_rank/r1e1b58269791": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r1e1b58269791/config.yaml.schema_version"
+  },
+  "state_rank/r2c419979b240": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r2c419979b240/config.yaml.schema_version"
+  },
+  "state_rank/r3793d9db5bf8": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r3793d9db5bf8/config.yaml.schema_version"
+  },
+  "state_rank/r387096e9d9c7": {
+   "error": "ValueError: Config section experiments/state_rank/runs/r387096e9d9c7/config.yaml.model must be a mapping"
+  },
+  "state_rank/r41620672d2e5": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r41620672d2e5/config.yaml.schema_version"
+  },
+  "state_rank/r4a126a76fa48": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r4a126a76fa48/config.yaml.schema_version"
+  },
+  "state_rank/r4bf905cd724d": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r4bf905cd724d/config.yaml.schema_version"
+  },
+  "state_rank/r845135d42740": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r845135d42740/config.yaml.schema_version"
+  },
+  "state_rank/r9364a915d115": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/r9364a915d115/config.yaml.schema_version"
+  },
+  "state_rank/rabd239a7f3dc": {
+   "error": "ValueError: Config section experiments/state_rank/runs/rabd239a7f3dc/config.yaml.model must be a mapping"
+  },
+  "state_rank/rd7981352ed2a": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/rd7981352ed2a/config.yaml.schema_version"
+  },
+  "state_rank/re9c80717f91b": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/re9c80717f91b/config.yaml.schema_version"
+  },
+  "state_rank/red7a4fb9ce56": {
+   "error": "ValueError: Unknown config key experiments/state_rank/runs/red7a4fb9ce56/config.yaml.schema_version"
+  },
+  "transformer_pp/r00f1f91a7803": {
+   "version": 1,
+   "loss": 5.571872711181641,
+   "digest": "3a0d47f05d4a0512ca5cc082aaff3714c4c34df7b27e8f4fba109421f9d96a41",
+   "arrays_count": 56
+  },
+  "transformer_pp/r016b914d927a": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "b1b0f8a55588e7af74ac6ef004b837580f1bb98c86653811c0d84cb2507f9500",
+   "arrays_count": 56
+  },
+  "transformer_pp/r02f984133092": {
+   "version": 1,
+   "loss": 5.569380760192871,
+   "digest": "4e2efc40d5845443c49b66bab9af010945525b790c91bac43665e93c9434c33a",
+   "arrays_count": 64
+  },
+  "transformer_pp/r03be769d2069": {
+   "version": 1,
+   "loss": 5.569380760192871,
+   "digest": "879683e5e61db4318c15e60919426879745aa77591ebc31c0674e08ded98cb87",
+   "arrays_count": 64
+  },
+  "transformer_pp/r043b150cde03": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r043b150cde03/config.yaml.schema_version"
+  },
+  "transformer_pp/r04a5b2a3e8dd": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "ec2b12f4684ac32d12612fec7e27f1390be56a53593714f868ee4f7216e8f605",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0623d3020268": {
+   "version": 1,
+   "loss": 5.5808024406433105,
+   "digest": "a36bd5ac462caa14aedd9d4db89146d532b25cc82e6c247d6377a809756ce0b7",
+   "arrays_count": 56
+  },
+  "transformer_pp/r08be7093202a": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "32bce0dc9275c8d279d678b425cf10d2e8215310f1d7223377501383d187c1ea",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0bdac8e1b97b": {
+   "version": 1,
+   "loss": 5.575616836547852,
+   "digest": "90962afcbf15944e1cb7ca0343e885d9cfd5544d076edf05569ad25567dfa29b",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0c0f3634685c": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6d2d4dd6697ab095c089aa4eeb40382baf1bb16dcf205a3ae62da0be35b55e1f",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0e32dd2bd3f7": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "f0ea88fb190ae94b0fc31ffaa7ea6fa972cd13b1298766c8b9401bc0100a595e",
+   "arrays_count": 52
+  },
+  "transformer_pp/r0e76396bdee5": {
+   "version": 1,
+   "loss": 5.56650447845459,
+   "digest": "088cc8b551a75bf777d331991feb0372e8d82622ac842ae1a471d76c24d8f577",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0ea4c732c5ac": {
+   "version": 1,
+   "loss": 5.572041034698486,
+   "digest": "c7cce453b66f47af1159c60692c6baee4b748b61c6184b03234f8c05e4bdf872",
+   "arrays_count": 50
+  },
+  "transformer_pp/r0f6d929e5992": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "47aaad13d884e13eca565659105a13025c39acb0d0a8c330cc30baa4d9d45094",
+   "arrays_count": 56
+  },
+  "transformer_pp/r0f8122dd8439": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "0808a7f66484c6d2790d8bf6057d4b87d7ff1036bf1bfc00b9b8b92c623dec9f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r0fceea0627c8": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "aef83ca6cc605f041f51e46e5146c7c77be1efc89dec41264c5ec781da9f3647",
+   "arrays_count": 56
+  },
+  "transformer_pp/r111843b4c7cc": {
+   "version": 1,
+   "loss": 5.579413890838623,
+   "digest": "6d529b4832bae590ec706a760bca69c66328fccea85e870d0e770aa0d0ac44b7",
+   "arrays_count": 62
+  },
+  "transformer_pp/r14db6f0e8592": {
+   "version": 1,
+   "loss": 5.585482597351074,
+   "digest": "bfce72eba7bdf4b1e1fcc9971249fc4dea30a3a847ff4dff99177a5eb7e4f632",
+   "arrays_count": 64
+  },
+  "transformer_pp/r1522cd56901a": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r167091e2aeac": {
+   "version": 1,
+   "loss": 5.572086334228516,
+   "digest": "25a8f79212b4e0daaef4db48850ca1b453b67c5ed59ff87891d4ed8cdac2aa61",
+   "arrays_count": 50
+  },
+  "transformer_pp/r16b23893884d": {
+   "version": 1,
+   "loss": 5.586330413818359,
+   "digest": "7fa65e6a59f9e22e49d2b3250dc53c1a6d047591dcff471f9aafb2589e0679b9",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1736cf7a019c": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1736cf7a019c/config.yaml.experiment_kind"
+  },
+  "transformer_pp/r17444ad0f60e": {
+   "version": 1,
+   "loss": 5.5703935623168945,
+   "digest": "9abca43c9dfc143aef039e70610bd83dea471529dd80110301d61bc9dba13a7c",
+   "arrays_count": 56
+  },
+  "transformer_pp/r17a1290cb4ac": {
+   "version": 1,
+   "loss": 5.587196350097656,
+   "digest": "1977c612b28273e01a122ab2f5adb9229c39bbed4d5a8219c94730ede0c41fc3",
+   "arrays_count": 56
+  },
+  "transformer_pp/r17fd7f040bff": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "1b813a3cb5e0f1334541c1e344efbefaf9478b208b86132c968897ce9d04630f",
+   "arrays_count": 58
+  },
+  "transformer_pp/r183f08346ddc": {
+   "version": 1,
+   "loss": 5.566226482391357,
+   "digest": "606fac2d3b8361ed919a3268a715f8fb01ab47fa173c4bb6eb3dc20bccf4e3cb",
+   "arrays_count": 56
+  },
+  "transformer_pp/r18d67098c780": {
+   "version": 1,
+   "loss": 5.588118553161621,
+   "digest": "9fd0900b4742513e4f356ff75b812b4657dd9c5ed9a7370113658071adc5d13c",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1a5d217f030d": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "42581e3c0b9e4a1293473adcb07ff940cb75c0b12b6d765d9091929933981eca",
+   "arrays_count": 62
+  },
+  "transformer_pp/r1ac137c4f1ce": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1ac137c4f1ce/config.yaml.schema_version"
+  },
+  "transformer_pp/r1b1123bf96e0": {
+   "version": 1,
+   "loss": 5.586325645446777,
+   "digest": "b6644169e6eba6f36d5f629c5d5b5c83adbd2e6abb389ebb8fa5673512bb3455",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1b9e2e69f7f0": {
+   "version": 1,
+   "loss": 5.5808024406433105,
+   "digest": "a9e3bf6b569ccf6c867c6769d469136333b53c088cea766be8d249f5b50fba58",
+   "arrays_count": 52
+  },
+  "transformer_pp/r1c72e8860ade": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+   "arrays_count": 52
+  },
+  "transformer_pp/r1c80ab3a466b": {
+   "version": 1,
+   "loss": 5.587961673736572,
+   "digest": "bf38cef8c877058cc0a362f1014ba7cf1f344066ac724938feb481f013de4d9c",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1d342ca6e58c": {
+   "version": 1,
+   "loss": 5.572059631347656,
+   "digest": "e80342ab8813a6962e32ae263a28df83d9addc28eaf37545a54e0fdd0351329b",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1d578d107115": {
+   "version": 1,
+   "loss": 5.558903694152832,
+   "digest": "f0c87ad6748cf69661c70d9ebf1429c32d5d6171cf0fa19d1fdfbcda3227c60d",
+   "arrays_count": 52
+  },
+  "transformer_pp/r1d87cc903125": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1d87cc903125/config.yaml.schema_version"
+  },
+  "transformer_pp/r1f2c24c109f9": {
+   "version": 1,
+   "loss": 5.5658464431762695,
+   "digest": "1e297302a545512c6754a409e6dd27a37c3ebfd33dd058dc2b036aabe508a72c",
+   "arrays_count": 66
+  },
+  "transformer_pp/r1f30febd7de5": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "7d486090b96921a161a2c444da626fb2eff529eb04b9361d86671d1baeb2a1e9",
+   "arrays_count": 56
+  },
+  "transformer_pp/r1f880c4ee659": {
+   "version": 1,
+   "loss": 5.571872711181641,
+   "digest": "b2c70db68b67bf73841136a452e5ef59052e15cfd732f2d8d9ca1095e4ad17d5",
+   "arrays_count": 52
+  },
+  "transformer_pp/r1f935f18fe21": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "32bce0dc9275c8d279d678b425cf10d2e8215310f1d7223377501383d187c1ea",
+   "arrays_count": 56
+  },
+  "transformer_pp/r2047d29a0d9f": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/r208110a25271": {
+   "version": 1,
+   "loss": 5.588127136230469,
+   "digest": "c74c7cb1e7398ce81c1d7a9ceb0b088ee5422820dbf8735232ef173cb0ded254",
+   "arrays_count": 54
+  },
+  "transformer_pp/r20fe6fe864bc": {
+   "version": 1,
+   "loss": 5.570270538330078,
+   "digest": "74280902ee1dde69aec14fe4bbfaf1e07746d4a3812e7f22bb4cdc2180aaed49",
+   "arrays_count": 62
+  },
+  "transformer_pp/r227b0ed7c605": {
+   "version": 1,
+   "loss": 5.570270538330078,
+   "digest": "a88c4bfd84bfcb45465ad0a99b67c66139019b5cc8870f1ca4615dfbf83ed486",
+   "arrays_count": 64
+  },
+  "transformer_pp/r239ea241c978": {
+   "version": 1,
+   "loss": 5.572856903076172,
+   "digest": "2298e0142f619f982cff5ad79181bc373493a9b2236b55a1dc1eb8e060667aea",
+   "arrays_count": 54
+  },
+  "transformer_pp/r2459b843ca81": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "2b70a7aa6d529d29618f562e5f8d233c268d8fa2322084873b2a6d6ea5fc083b",
+   "arrays_count": 60
+  },
+  "transformer_pp/r25a5f78841b2": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "89179e1c24e193c1ce735202ed0c7057b2417db26a4b6db03b7484d5560f93d3",
+   "arrays_count": 56
+  },
+  "transformer_pp/r25fffc16c2f3": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
+   "arrays_count": 56
+  },
+  "transformer_pp/r266c5dd1f935": {
+   "version": 1,
+   "loss": 5.584310531616211,
+   "digest": "35a7dd90c73fe1678f41a6823f5f1c7f87ec7eb06fcbec1a7df9d326f9ee1744",
+   "arrays_count": 50
+  },
+  "transformer_pp/r28a991faed4f": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "fb0fc1ecf50a7a4d24bf1401fd9b8b3b9d6eec81f147d9710c74ec1dce711543",
+   "arrays_count": 52
+  },
+  "transformer_pp/r2a45c518f703": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r2a45c518f703/config.yaml.schema_version"
+  },
+  "transformer_pp/r2b22f2ff6461": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/r2bf71d7b4831": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "acbda09e20b3a32f29658450a01e50f9535c1d6cef3765e05f7b20ae3605a573",
+   "arrays_count": 56
+  },
+  "transformer_pp/r2c432bd3a2a4": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/r2c5883395415": {
+   "version": 1,
+   "loss": 5.579342842102051,
+   "digest": "9447d8a4ec8ab39833806aa3e963fe98814d0d153502e42074cd1b5be1e84b73",
+   "arrays_count": 56
+  },
+  "transformer_pp/r2de7f1f4c9ce": {
+   "version": 1,
+   "loss": 5.5959577560424805,
+   "digest": "04b7bef9cd12969dc5cd3d2156aacea1d527109398fe3883337ca99ba76f8960",
+   "arrays_count": 56
+  },
+  "transformer_pp/r2e081e09c19a": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r2e25140c75db": {
+   "version": 1,
+   "loss": 5.570270538330078,
+   "digest": "8eba0c4156ddfc9d5f375882244eebdf46d76f5c290e146c465aa8c061110c19",
+   "arrays_count": 60
+  },
+  "transformer_pp/r2ebc05346f44": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r2ebc05346f44/config.yaml.implementation"
+  },
+  "transformer_pp/r2f41d054e944": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "47aaad13d884e13eca565659105a13025c39acb0d0a8c330cc30baa4d9d45094",
+   "arrays_count": 56
+  },
+  "transformer_pp/r313eb59e1d5f": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r313eb59e1d5f/config.yaml.schema_version"
+  },
+  "transformer_pp/r319b83140040": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "9f123a3def2958547c554d79fbb2d84093b01c83106c7a21cbadc15060fcc679",
+   "arrays_count": 62
+  },
+  "transformer_pp/r325f7d64b940": {
+   "version": 1,
+   "loss": 5.5959577560424805,
+   "digest": "fcdd660c26a540481e82d57180b2c50e72a35b7f0624cb5596ed7f3d714b9fdd",
+   "arrays_count": 52
+  },
+  "transformer_pp/r331b5fd5bebc": {
+   "version": 1,
+   "loss": 5.555782318115234,
+   "digest": "164762ef7ce7f97a9ec24eb28fef0889217a9840d670a532ea7bfb9831f27b7d",
+   "arrays_count": 54
+  },
+  "transformer_pp/r333444bd4304": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/r339a31ad8d4b": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/r343fff99fa9e": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "9585ebbf0194fd615f04aec177a4703484570db61a103affc56172edf02b3ddc",
+   "arrays_count": 52
+  },
+  "transformer_pp/r35805940a380": {
+   "version": 1,
+   "loss": 5.567205429077148,
+   "digest": "9c9c0c79b5db003310c8f38b30512e77c1e8f819cf115e3df765f7822cd1e9fc",
+   "arrays_count": 56
+  },
+  "transformer_pp/r3759b2a57a54": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "3f36b3091a8b83e17c71099636bbb4765aa09246a27c21f451a6ac2bf1778d5c",
+   "arrays_count": 56
+  },
+  "transformer_pp/r3a332ae60437": {
+   "version": 1,
+   "loss": 5.572206020355225,
+   "digest": "d7593d0d6b0eec58c905a5002a63ca77932f6635a3936033b6e882c750c7affe",
+   "arrays_count": 50
+  },
+  "transformer_pp/r3b9c8cc6fab8": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "d3bc534adf23cc0cbb9d48eba8e9fb0452f9fc60cd4fe37c3574413ce77e2667",
+   "arrays_count": 56
+  },
+  "transformer_pp/r3ba9a42b7abd": {
+   "version": 1,
+   "loss": 5.579342842102051,
+   "digest": "ccc19bf35ea64e8d81a7e756f1a27c6503729c0f76d337a6701ca5503a81e37a",
+   "arrays_count": 52
+  },
+  "transformer_pp/r3bb5b8bd5c6a": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/r3cca4c13edab": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+   "arrays_count": 52
+  },
+  "transformer_pp/r3d14b598d88f": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "3230feb78891d852afa91267550a9e219397eea0020d75c00cf031e389e088e9",
+   "arrays_count": 62
+  },
+  "transformer_pp/r3d52b7ab43d1": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "8c3a569932ad97adda0e938a04e9c78e649b6f9e07256e37df1ba1fc09e28bee",
+   "arrays_count": 56
+  },
+  "transformer_pp/r3e26412b2811": {
+   "version": 1,
+   "loss": 5.569380760192871,
+   "digest": "5e961b62ac032afc598f30506ec800a5546dc7e9b517e97dae4fe129e3d395b7",
+   "arrays_count": 62
+  },
+  "transformer_pp/r3e2fa2532c23": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/r3feaf71ff7af": {
+   "version": 1,
+   "loss": 5.5720930099487305,
+   "digest": "3d7c2e77a500aaa788a024604afa7937d8211f33e2b771fd8716fc4d98c78afc",
+   "arrays_count": 52
+  },
+  "transformer_pp/r41a4c74c5f58": {
+   "version": 1,
+   "loss": 5.580821514129639,
+   "digest": "4ccb01ea7ffc2eac6c46bf521ae5fcee84124517754e309507aea43079b15308",
+   "arrays_count": 56
+  },
+  "transformer_pp/r4339a245820e": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r45831d718944": {
+   "version": 1,
+   "loss": 5.589047431945801,
+   "digest": "043d47460a51025ffeafd739774dea527675efbb0c95dc171caacab8f266ead5",
+   "arrays_count": 52
+  },
+  "transformer_pp/r4589172dcd8b": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "d3bc534adf23cc0cbb9d48eba8e9fb0452f9fc60cd4fe37c3574413ce77e2667",
+   "arrays_count": 56
+  },
+  "transformer_pp/r47bfe39ce9b4": {
+   "version": 1,
+   "loss": 5.570392608642578,
+   "digest": "223f32e22ca4e1bcf85dbfe7b904cb10abc9574f4c0cd36ce6427493da4bc6d1",
+   "arrays_count": 62
+  },
+  "transformer_pp/r4a80e28ce0a7": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r4a80e28ce0a7/config.yaml.model.attention_coefficient_key_kernel_weight_decay"
+  },
+  "transformer_pp/r4cce9a985a70": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6294d733163387f90fec053aa97d43386305708b5b63e1f889a25a0b0128d63f",
+   "arrays_count": 56
+  },
+  "transformer_pp/r4f1682c1b54d": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/r4f169e5370da": {
+   "version": 1,
+   "loss": 5.569404602050781,
+   "digest": "f5a8cf1aa52acc187dfff6a07771de25b0cfbc852d5c6341183edf0eceb3dc6c",
+   "arrays_count": 62
+  },
+  "transformer_pp/r4f3aa6be7108": {
+   "version": 1,
+   "loss": 5.585605621337891,
+   "digest": "a562fa0e1fb4f9fdd19f62e37c141dddcefa3061bc2254f3c423e14a2ebe4cd8",
+   "arrays_count": 56
+  },
+  "transformer_pp/r501f5cca0d4c": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "575078884000d437e9222e517fa4bdb9caac8298625958cfc5b7c9fbbbe364f8",
+   "arrays_count": 60
+  },
+  "transformer_pp/r507193d47450": {
+   "version": 1,
+   "loss": 5.569380760192871,
+   "digest": "58f107389cc144a8348c734c52f75d27a30335d69b11ab5c8b9ec3cedac751cb",
+   "arrays_count": 62
+  },
+  "transformer_pp/r5198d688e9d4": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "72e6d9f4cdcbe210fdc6e0060110e0d425dced855356b6bdf17646f4b4fc1994",
+   "arrays_count": 56
+  },
+  "transformer_pp/r527a30ff7ed1": {
+   "version": 1,
+   "loss": 5.56650447845459,
+   "digest": "aa122ab751c58c6da0848eb7036a8681766bcb687951221d5c76bf7ffeb5de1f",
+   "arrays_count": 56
+  },
+  "transformer_pp/r536dee0929d5": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "61bc027224176e35b7f149f2ad7112e3db2518281868cec7a919608f3bed6239",
+   "arrays_count": 60
+  },
+  "transformer_pp/r53d5bbcac16f": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "f1cc454eb04c56febb5c138a444a99b206d4a3683212a8d06e30ed2dbac23d4b",
+   "arrays_count": 56
+  },
+  "transformer_pp/r54f771e54722": {
+   "version": 1,
+   "loss": 5.580821514129639,
+   "digest": "824fe1e7bfa4890b18f0873e4fc8ae810f939bff2cf3de22bed6bf5dd466003d",
+   "arrays_count": 52
+  },
+  "transformer_pp/r554ce7da6a8a": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "3fa4b709d38a652ac564293d5ac2a847be645a8b67fb87d007e0ac81b6184201",
+   "arrays_count": 62
+  },
+  "transformer_pp/r58efc973ff28": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "3fa4b709d38a652ac564293d5ac2a847be645a8b67fb87d007e0ac81b6184201",
+   "arrays_count": 62
+  },
+  "transformer_pp/r594b3706ecd7": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r594b3706ecd7/config.yaml.schema_version"
+  },
+  "transformer_pp/r5a18841b21b5": {
+   "version": 1,
+   "loss": 5.5808024406433105,
+   "digest": "a36bd5ac462caa14aedd9d4db89146d532b25cc82e6c247d6377a809756ce0b7",
+   "arrays_count": 56
+  },
+  "transformer_pp/r5adc29a91e3b": {
+   "version": 1,
+   "loss": 5.5863542556762695,
+   "digest": "d86c96ebf136acd51a50efaa931ed603c2d247f766bafd86a31a76c2600ed255",
+   "arrays_count": 54
+  },
+  "transformer_pp/r5bd803b3e562": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "61bc027224176e35b7f149f2ad7112e3db2518281868cec7a919608f3bed6239",
+   "arrays_count": 60
+  },
+  "transformer_pp/r5c691128699f": {
+   "version": 1,
+   "loss": 5.580445766448975,
+   "digest": "b9fe2ff2db32dbdaa115b0f0683fdcdfbdbd780c682ad515ae444d0c8fd38969",
+   "arrays_count": 52
+  },
+  "transformer_pp/r5de86f9f02da": {
+   "version": 1,
+   "loss": 5.5720930099487305,
+   "digest": "397c256c2e5f18faac7f323a600f89848f83ef3cf4920e48aa9f235e076e72c6",
+   "arrays_count": 56
+  },
+  "transformer_pp/r5e6f23bd0533": {
+   "version": 1,
+   "loss": 5.572086334228516,
+   "digest": "66de5cb33b2f172b9630aa96cad262e2ed2eb0ebafe609e3bacf992f272566d9",
+   "arrays_count": 52
+  },
+  "transformer_pp/r6122f26085ec": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r6122f26085ec/config.yaml.schema_version"
+  },
+  "transformer_pp/r636f433be44f": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/r656e8e652b72": {
+   "version": 1,
+   "loss": 5.566192626953125,
+   "digest": "49771cb1498d02b2ba18f7c1217a5d4182e367161d3af1ac07ddb5a3c088c8bb",
+   "arrays_count": 62
+  },
+  "transformer_pp/r673e14eab803": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/r688344e6dcc6": {
+   "version": 1,
+   "loss": 5.572086334228516,
+   "digest": "441f40f6a14a714aaffc43dd46db5537d43cf22fdb65aa44800e9f7acc7a429b",
+   "arrays_count": 56
+  },
+  "transformer_pp/r68cac6f03d77": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r68cac6f03d77/config.yaml.model.attention_coefficient_amplitude_weight_decay"
+  },
+  "transformer_pp/r69076c8f91c1": {
+   "version": 1,
+   "loss": 5.550067901611328,
+   "digest": "4fb10f6c7a37f108c907b562003a9ecf324ca2e57d97d48e727e74c25ae1349e",
+   "arrays_count": 58
+  },
+  "transformer_pp/r698f9a157a94": {
+   "version": 1,
+   "loss": 5.589047431945801,
+   "digest": "5d5936f65668b5aa0e6dcc08751d2603c6f1197ae144968d0a090d0a71d422d7",
+   "arrays_count": 56
+  },
+  "transformer_pp/r6a76e7fbde45": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/r6adefb42f443": {
+   "version": 1,
+   "loss": 5.572043418884277,
+   "digest": "35c0c3a2a8973b299ab7e4bc87d99ef28df6baa92c347ba4dc83d2532b68feea",
+   "arrays_count": 56
+  },
+  "transformer_pp/r6b17c3463a60": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "fe326c45537b77512d2954ef7063f493e4587c22edf269123bcd3a991718e48e",
+   "arrays_count": 56
+  },
+  "transformer_pp/r6b38709ed8d3": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r6b38709ed8d3/config.yaml.implementation"
+  },
+  "transformer_pp/r6c9bcd661078": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+   "arrays_count": 52
+  },
+  "transformer_pp/r6d4217061453": {
+   "version": 1,
+   "loss": 5.582253456115723,
+   "digest": "ac316e5e26a5a8d73fcd21cfda77f5508d8c1893e94c12417e92f67b47f3d1f9",
+   "arrays_count": 52
+  },
+  "transformer_pp/r717267afcb78": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "4408f9c9f79120bf2b6bec32dfb7c3584e5c1cbee7f03d3fcb83089eac5ae87f",
+   "arrays_count": 56
+  },
+  "transformer_pp/r738b35a8e314": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/r74495b47d226": {
+   "version": 1,
+   "loss": 5.570246696472168,
+   "digest": "8d4030b5d865ace3052ae2f55e82bb753bb331a52afc15322d2dc59acefcdecb",
+   "arrays_count": 72
+  },
+  "transformer_pp/r74a50aca921e": {
+   "version": 1,
+   "loss": 5.5658464431762695,
+   "digest": "1e297302a545512c6754a409e6dd27a37c3ebfd33dd058dc2b036aabe508a72c",
+   "arrays_count": 66
+  },
+  "transformer_pp/r751984d1ca00": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "575078884000d437e9222e517fa4bdb9caac8298625958cfc5b7c9fbbbe364f8",
+   "arrays_count": 60
+  },
+  "transformer_pp/r751e8aaecb78": {
+   "version": 1,
+   "loss": 5.572028636932373,
+   "digest": "a62a8ec0de7c2b42a2bd1f3e32456e70206e8661980f756d0a3ac9c641ecaf4c",
+   "arrays_count": 50
+  },
+  "transformer_pp/r753a7e8d3212": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "ec2b12f4684ac32d12612fec7e27f1390be56a53593714f868ee4f7216e8f605",
+   "arrays_count": 56
+  },
+  "transformer_pp/r77698776d82c": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "e48523d818803978eba03c747803ca20ec3fc43f8dc1a78acab1e86043605e03",
+   "arrays_count": 60
+  },
+  "transformer_pp/r77b617af91db": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/r77bca86ef253": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
+   "arrays_count": 56
+  },
+  "transformer_pp/r7820049184ef": {
+   "version": 1,
+   "loss": 5.549942493438721,
+   "digest": "15eaf966114fc04c6020f23d56a5fbb15c57bb2d96333d936c335b1983abb25d",
+   "arrays_count": 50
+  },
+  "transformer_pp/r78fa0d682f44": {
+   "version": 1,
+   "loss": 5.5763983726501465,
+   "digest": "a04cf3c857413e2bd0787ecaf8b5e7d51db9dd2a54c6d7b8f154727f387b245a",
+   "arrays_count": 56
+  },
+  "transformer_pp/r79d829a16029": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r79d829a16029/config.yaml.model.attention_coefficient_key_kernel_weight_decay"
+  },
+  "transformer_pp/r7bede0f75198": {
+   "version": 1,
+   "loss": 5.595305442810059,
+   "digest": "39b429e16d1069c0de7d775830f9ffee51d70ccba72926991caff430230d5d8a",
+   "arrays_count": 56
+  },
+  "transformer_pp/r7d5baf55104e": {
+   "version": 1,
+   "loss": 5.563270568847656,
+   "digest": "cd76997e8f3d392ae64ba61ae23ecd15652e54c637b155101a988708842bcc83",
+   "arrays_count": 56
+  },
+  "transformer_pp/r7e34dec9dbd5": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "09da81188b2b440d9a3efcb64907271cc338d9ba87a66681271f8823149ebe6e",
+   "arrays_count": 56
+  },
+  "transformer_pp/r7e4193fcafbd": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "255300ebf7d307c0eb26316fb5f4911acc829c08ec94f7f420c9b09868a4fdbe",
+   "arrays_count": 52
+  },
+  "transformer_pp/r7e6a68545d4f": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r816ab0fbe119": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/r81fad1755b11": {
+   "version": 1,
+   "loss": 5.571872711181641,
+   "digest": "8656efd49254946e375116be0d276ee4e32b9ca091c179080ead71c573d7a05e",
+   "arrays_count": 50
+  },
+  "transformer_pp/r82203a85ef8e": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/r82a80d3091e2": {
+   "version": 1,
+   "loss": 5.566532135009766,
+   "digest": "3fa4b709d38a652ac564293d5ac2a847be645a8b67fb87d007e0ac81b6184201",
+   "arrays_count": 62
+  },
+  "transformer_pp/r83fa09df3931": {
+   "version": 1,
+   "loss": 5.5808024406433105,
+   "digest": "a36bd5ac462caa14aedd9d4db89146d532b25cc82e6c247d6377a809756ce0b7",
+   "arrays_count": 56
+  },
+  "transformer_pp/r841f35a24241": {
+   "version": 1,
+   "loss": 5.567205429077148,
+   "digest": "069d916b67c14d53b9ea7b8975c463742171c8f33e37628820107f6425ce42b5",
+   "arrays_count": 56
+  },
+  "transformer_pp/r84e37a39e2a0": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r84e37a39e2a0/config.yaml.schema_version"
+  },
+  "transformer_pp/r84f325593209": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "0808a7f66484c6d2790d8bf6057d4b87d7ff1036bf1bfc00b9b8b92c623dec9f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r88d8654a8a1d": {
+   "version": 1,
+   "loss": 5.59184455871582,
+   "digest": "4742fd3961a648a8eeb354a3a961a0d10bfb855755810f007a03898389d7baba",
+   "arrays_count": 50
+  },
+  "transformer_pp/r8a526282ac43": {
+   "version": 1,
+   "loss": 5.5720930099487305,
+   "digest": "26d838975bc5d10ee649ee89ded223be1e9e461d3645f382194c0c8564ad6295",
+   "arrays_count": 50
+  },
+  "transformer_pp/r8b4e2a0603aa": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "9585ebbf0194fd615f04aec177a4703484570db61a103affc56172edf02b3ddc",
+   "arrays_count": 52
+  },
+  "transformer_pp/r8c4a6ecdf4d2": {
+   "version": 1,
+   "loss": 5.572048187255859,
+   "digest": "0801c2055cdbb0d39b81285c3611c5148fc2a305694c18ea76b2ffeb4c2ae2f9",
+   "arrays_count": 60
+  },
+  "transformer_pp/r8ccda981be2b": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/r8d4fc24ef537": {
+   "version": 1,
+   "loss": 5.550067901611328,
+   "digest": "4fb10f6c7a37f108c907b562003a9ecf324ca2e57d97d48e727e74c25ae1349e",
+   "arrays_count": 58
+  },
+  "transformer_pp/r8dc6e147601c": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "c88168f22cbd4732934d0d6688961497099cfe0eeb9178e0c15bfdf85a8fd7fb",
+   "arrays_count": 62
+  },
+  "transformer_pp/r8e4d56dfc830": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml.schema_version"
+  },
+  "transformer_pp/r9040f12f3d80": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/r9155f2214b4b": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r9155f2214b4b/config.yaml.schema_version"
+  },
+  "transformer_pp/r917f3650296e": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "34d3aaa1a493eccbda67cbb3333b04f3081c8c5d695b605c261737605ad4d2e1",
+   "arrays_count": 56
+  },
+  "transformer_pp/r91e0c1bb8458": {
+   "version": 1,
+   "loss": 5.567685604095459,
+   "digest": "7d4cf16b96c21baf1820e2604e11188a9918946ba41f2e4ed3ed465d1587271c",
+   "arrays_count": 52
+  },
+  "transformer_pp/r9320e5cd3071": {
+   "version": 1,
+   "loss": 5.570270538330078,
+   "digest": "82616b3d36a488e2a5c825e20730d774b4404a212a3fbba1392b9fb00c1ae4cf",
+   "arrays_count": 62
+  },
+  "transformer_pp/r9353f554b917": {
+   "version": 1,
+   "loss": 5.566192626953125,
+   "digest": "cb40edf4385967a6ac05569ced7810ee066c2e4d4057796d3ef79b6e009f2161",
+   "arrays_count": 62
+  },
+  "transformer_pp/r93df1e48c8fd": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/r94e0f2b8cff9": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/r95a5691d293f": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "3f36b3091a8b83e17c71099636bbb4765aa09246a27c21f451a6ac2bf1778d5c",
+   "arrays_count": 56
+  },
+  "transformer_pp/r95bfff096cd4": {
+   "version": 1,
+   "loss": 5.566226005554199,
+   "digest": "582f9789fc4fa5dda37c9254d71e181b50671041891873587256a584c49d0041",
+   "arrays_count": 62
+  },
+  "transformer_pp/r991a756da7a9": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+   "arrays_count": 52
+  },
+  "transformer_pp/r99ba8f9d26fc": {
+   "version": 1,
+   "loss": 5.57211446762085,
+   "digest": "38be1c325b56e7345afffee80ef06a7ceabb484962a62acef5a4c10770da9224",
+   "arrays_count": 52
+  },
+  "transformer_pp/r99c3ab7d8a77": {
+   "version": 1,
+   "loss": 5.579342842102051,
+   "digest": "e141abfecf580345a8e3720102d1c1a98bac448f6e2097ec5a4da9863e101591",
+   "arrays_count": 52
+  },
+  "transformer_pp/r9c69dd7cfc8d": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+   "arrays_count": 52
+  },
+  "transformer_pp/r9eb845aae5bb": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "3645b1c655ff722eb5f2baf0c9c1043b4bcaf55e6ee8048afe0a8cbe98b0b85c",
+   "arrays_count": 56
+  },
+  "transformer_pp/ra040de24096c": {
+   "version": 1,
+   "loss": 5.572043418884277,
+   "digest": "3c9b091dec8fae1d9bfce49a9a27e41950c246131e1780ce733bd6f944bcd6a3",
+   "arrays_count": 50
+  },
+  "transformer_pp/ra0ad3d431842": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/ra0ad3d431842/config.yaml.schema_version"
+  },
+  "transformer_pp/ra0f402ff6758": {
+   "version": 1,
+   "loss": 5.569380760192871,
+   "digest": "7c7a31cc91d893f173acd6e0d497cf3614338b61d88547b62fdb74aa8a792512",
+   "arrays_count": 60
+  },
+  "transformer_pp/ra15cbb16beb7": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
+   "arrays_count": 56
+  },
+  "transformer_pp/ra3b54e2489f8": {
+   "version": 1,
+   "loss": 5.572059631347656,
+   "digest": "9e1b811fe5e10ba53892e47413b22dd4ffc9158951255b77e819e2402cc2233c",
+   "arrays_count": 56
+  },
+  "transformer_pp/ra3bffee9a528": {
+   "version": 1,
+   "loss": 5.567205429077148,
+   "digest": "1b16d53dedbe5177a65f3d6e1d9a218af925b8dde8bbdc15d7e39d487cea1277",
+   "arrays_count": 52
+  },
+  "transformer_pp/ra4c3ada624af": {
+   "version": 1,
+   "loss": 5.5763983726501465,
+   "digest": "e052d0b294581ee71ae58b5bde501a3d748d4f2548b0e19c97553c54e03650ab",
+   "arrays_count": 52
+  },
+  "transformer_pp/ra5dfd978d3bd": {
+   "version": 1,
+   "loss": 5.566226482391357,
+   "digest": "606fac2d3b8361ed919a3268a715f8fb01ab47fa173c4bb6eb3dc20bccf4e3cb",
+   "arrays_count": 56
+  },
+  "transformer_pp/ra6ae537a5e37": {
+   "version": 1,
+   "loss": 5.555782318115234,
+   "digest": "164762ef7ce7f97a9ec24eb28fef0889217a9840d670a532ea7bfb9831f27b7d",
+   "arrays_count": 54
+  },
+  "transformer_pp/ra7ee8a4b2544": {
+   "version": 1,
+   "loss": 5.572041034698486,
+   "digest": "c7cce453b66f47af1159c60692c6baee4b748b61c6184b03234f8c05e4bdf872",
+   "arrays_count": 50
+  },
+  "transformer_pp/ra7f2fda1c792": {
+   "version": 1,
+   "loss": 5.580445766448975,
+   "digest": "e1921ea078769d1daacb97795c7d940dc819d97c4c75867e4de432d4a37e8a9a",
+   "arrays_count": 50
+  },
+  "transformer_pp/ra9834409e40a": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/ra9834409e40a/config.yaml.schema_version"
+  },
+  "transformer_pp/raa81f92b6aaf": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "e19f4c80521200280319a7551fcfaf202af5615c9a1fda3977e7f818e3cf568f",
+   "arrays_count": 52
+  },
+  "transformer_pp/rac200ce11221": {
+   "version": 1,
+   "loss": 5.601511001586914,
+   "digest": "71b0c7dd79748b247a0e3ac9b8956efb082a53eb7f8929c9fdde594368196460",
+   "arrays_count": 52
+  },
+  "transformer_pp/rae91f24b06b4": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rafcf22b799ed": {
+   "version": 1,
+   "loss": 5.569801330566406,
+   "digest": "9b3bc2706665c08841a58819a9a61ac0963106f3c9b3f5b8e91c6e0d2fc34485",
+   "arrays_count": 66
+  },
+  "transformer_pp/rb1a3a991da6c": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml.schema_version"
+  },
+  "transformer_pp/rb2b70dae4d21": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "4dcad21d53834a8aea05cf7a63adad90c712c91ec58f57b05888a47882e7217d",
+   "arrays_count": 50
+  },
+  "transformer_pp/rb4e5457ef2a0": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "0dc83874c7a75585ef2d3072f2fa6f5ee94b0504fdbcff2400eceaed6f0b3784",
+   "arrays_count": 58
+  },
+  "transformer_pp/rb5b604ae829a": {
+   "version": 1,
+   "loss": 5.572059631347656,
+   "digest": "a9826c36b7f1c3bc739696571e1f5418ee27403645a4840e8a1e54d44b90210f",
+   "arrays_count": 56
+  },
+  "transformer_pp/rb5fe0aef572a": {
+   "version": 1,
+   "loss": 5.605074405670166,
+   "digest": "95b62e0b90fb74c6c99872a051849a111fcc689654ce35359df2de324571b8ac",
+   "arrays_count": 56
+  },
+  "transformer_pp/rb6313357059e": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "575078884000d437e9222e517fa4bdb9caac8298625958cfc5b7c9fbbbe364f8",
+   "arrays_count": 60
+  },
+  "transformer_pp/rb74e8b994b74": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "f1cc454eb04c56febb5c138a444a99b206d4a3683212a8d06e30ed2dbac23d4b",
+   "arrays_count": 56
+  },
+  "transformer_pp/rb74fa2ebede6": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rb786bd19c6b1": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml.schema_version"
+  },
+  "transformer_pp/rb7e83a4b653f": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "61bc027224176e35b7f149f2ad7112e3db2518281868cec7a919608f3bed6239",
+   "arrays_count": 60
+  },
+  "transformer_pp/rbd0cd771c676": {
+   "version": 1,
+   "loss": 5.569160461425781,
+   "digest": "41311d74a0769427e35fd46e88380f0229a5e27cf008e5305e266491999d0e64",
+   "arrays_count": 50
+  },
+  "transformer_pp/rbf05f7baab5e": {
+   "version": 1,
+   "loss": 5.566226005554199,
+   "digest": "74ff1a6de82f9ed84a91eaaca3365829ea1b08847ccfa4f7dc055975b1244989",
+   "arrays_count": 62
+  },
+  "transformer_pp/rc1c463ddc494": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc1c463ddc494/config.yaml.experiment_kind"
+  },
+  "transformer_pp/rc28ef4dbe26d": {
+   "version": 1,
+   "loss": 5.572059631347656,
+   "digest": "5b864e81455f5310324944623db91416756ff05e52b31462af0aa48eea093bf7",
+   "arrays_count": 52
+  },
+  "transformer_pp/rc2f9273c49cc": {
+   "version": 1,
+   "loss": 5.570392608642578,
+   "digest": "100af786207122a589856f48125a639640b7679f180784f65284b27da794385a",
+   "arrays_count": 64
+  },
+  "transformer_pp/rc3dfb9569345": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc3dfb9569345/config.yaml.schema_version"
+  },
+  "transformer_pp/rc5aac8f37a2e": {
+   "version": 1,
+   "loss": 5.5808024406433105,
+   "digest": "99b8ce2a7f18c0b54da8bfc8cee20f3b3df0b37be9518b2c27da5d63d640d1c0",
+   "arrays_count": 56
+  },
+  "transformer_pp/rc60345dfcff7": {
+   "version": 1,
+   "loss": 5.5661773681640625,
+   "digest": "01ddd5d931bfbbe383dc6310ec67cb510f0334f6c598584f0c0c9990c58d006d",
+   "arrays_count": 56
+  },
+  "transformer_pp/rc6a7e50d27e1": {
+   "version": 1,
+   "loss": 5.572059631347656,
+   "digest": "9f642a96f5bdef18f1325aca46d7a6abe07155df33659bd9ad36abdb0fc9c399",
+   "arrays_count": 56
+  },
+  "transformer_pp/rc76733052ecb": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc76733052ecb/config.yaml.schema_version"
+  },
+  "transformer_pp/rc90fb11d4772": {
+   "version": 1,
+   "loss": 5.60740852355957,
+   "digest": "bde3086582cbfc61533d6dca27d0052c21c8ae3ee76392a504ad008c27ca96c9",
+   "arrays_count": 56
+  },
+  "transformer_pp/rc95f2055e96d": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc95f2055e96d/config.yaml.schema_version"
+  },
+  "transformer_pp/rca97cc9db8f2": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rcace22b32f93": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "4dcad21d53834a8aea05cf7a63adad90c712c91ec58f57b05888a47882e7217d",
+   "arrays_count": 50
+  },
+  "transformer_pp/rcaff0dfb095f": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "3bf54900006c9bde9c70f9be2512b6d760e3d53b725b3c73d71b0e9a885aacac",
+   "arrays_count": 56
+  },
+  "transformer_pp/rcb1f56f31981": {
+   "version": 1,
+   "loss": 5.585602760314941,
+   "digest": "619c0fb95d449a7418c70c379fd9f71ae58de21070b9022c9c3602284ade885a",
+   "arrays_count": 56
+  },
+  "transformer_pp/rcc4f4e5d7abb": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
+   "arrays_count": 56
+  },
+  "transformer_pp/rccd2cb5e8bab": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "7599138ebcbc372f4f9018df60c25b2872e08137ca84f6f75d74fdbdc4f24895",
+   "arrays_count": 56
+  },
+  "transformer_pp/rcdfee1e67fd4": {
+   "version": 1,
+   "loss": 5.604794502258301,
+   "digest": "f5f766c06f0409eef88373310b1a9229782abb8a168fe8a8c65eedff27ebcb0b",
+   "arrays_count": 56
+  },
+  "transformer_pp/rceea84f19f6b": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rceea84f19f6b/config.yaml.schema_version"
+  },
+  "transformer_pp/rd10c2ebe1181": {
+   "version": 1,
+   "loss": 5.604786396026611,
+   "digest": "cf6f23f6f1bd7c9fac6ddd442f7b18af889b5ba40a9c0fc5bb1a2723c24a0f5b",
+   "arrays_count": 56
+  },
+  "transformer_pp/rd3501a40e020": {
+   "version": 1,
+   "loss": 5.5703935623168945,
+   "digest": "c84aca5542d49ede83e290d7891ec41ee36fdcb5886f09a4da9567f3d0ad59a4",
+   "arrays_count": 58
+  },
+  "transformer_pp/rd40b46f5dc9b": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
+   "arrays_count": 56
+  },
+  "transformer_pp/rd434701f3492": {
+   "version": 1,
+   "loss": 5.56697940826416,
+   "digest": "13888a0b9fec015876cbb1ecadbd30c0e9a595751dc61e3f0e6cd9f2536e4957",
+   "arrays_count": 50
+  },
+  "transformer_pp/rd5550f8db5e4": {
+   "version": 1,
+   "loss": 5.555782318115234,
+   "digest": "b1d603cf5aaade9d0f1041169bc97a4ea96988b59ea263488a0f2be7fa024f0e",
+   "arrays_count": 52
+  },
+  "transformer_pp/rd5ea49c1fde6": {
+   "version": 1,
+   "loss": 5.579413890838623,
+   "digest": "6d529b4832bae590ec706a760bca69c66328fccea85e870d0e770aa0d0ac44b7",
+   "arrays_count": 62
+  },
+  "transformer_pp/rd6b4d16d81bb": {
+   "version": 1,
+   "loss": 5.579342842102051,
+   "digest": "c165b0bb17b6b3d22590daf55797bfaa29f7e5a61f80bdd4ad2a5b5949f37ef1",
+   "arrays_count": 56
+  },
+  "transformer_pp/rd77db79142e6": {
+   "version": 1,
+   "loss": 5.572041034698486,
+   "digest": "c7cce453b66f47af1159c60692c6baee4b748b61c6184b03234f8c05e4bdf872",
+   "arrays_count": 50
+  },
+  "transformer_pp/rd920368a922e": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/rda6029c3286f": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rda6029c3286f/config.yaml.schema_version"
+  },
+  "transformer_pp/rdacb58b7981c": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "3bf54900006c9bde9c70f9be2512b6d760e3d53b725b3c73d71b0e9a885aacac",
+   "arrays_count": 56
+  },
+  "transformer_pp/rdb1c706a5b85": {
+   "version": 1,
+   "loss": 5.579342842102051,
+   "digest": "2323043b927f24947f71e41a91e01a1f00a4c018b02d75ce767a277a2685463d",
+   "arrays_count": 50
+  },
+  "transformer_pp/rdb67453630c8": {
+   "version": 1,
+   "loss": 5.57211446762085,
+   "digest": "32f2c2f242cf7690060907dc0cc0f8fccf9f4542ac8b4b968ad7abfd11a0c9ad",
+   "arrays_count": 56
+  },
+  "transformer_pp/rdc8b04b223af": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "f9eca0587e3f5ce19695600f021fe6e60d85e0f84f664a2b1f178e1edb33a7e4",
+   "arrays_count": 52
+  },
+  "transformer_pp/rdd3e9cb3bb80": {
+   "version": 1,
+   "loss": 5.586905479431152,
+   "digest": "5ee73ff2c2301a7db4136af56bc83c8f3c9656286b09e1ce63fe12388856362f",
+   "arrays_count": 54
+  },
+  "transformer_pp/rddcbe6dfb1eb": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "6286c60cb93d31491de4fbf775fa91d0db7734b64a7f2af2e472bcc352790c88",
+   "arrays_count": 50
+  },
+  "transformer_pp/rddf0b0173f42": {
+   "version": 1,
+   "loss": 5.580455780029297,
+   "digest": "a72f470e179b4638266e17cd5f33cc771c4688410e208de2c8012b0eace51b6f",
+   "arrays_count": 50
+  },
+  "transformer_pp/rdf6363a4b83c": {
+   "version": 1,
+   "loss": 5.569301128387451,
+   "digest": "27b0b7e9f17f35533b32579d71370900e1357d934a0ade2baedd2d7135b8b50f",
+   "arrays_count": 50
+  },
+  "transformer_pp/rdfc42659424f": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rdfc61c988309": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "8d50746b7423276bab5a760b1290ce604136c15fece7e81366e5ffd8447a748f",
+   "arrays_count": 56
+  },
+  "transformer_pp/re0db53b7b704": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/re0db53b7b704/config.yaml.experiment_kind"
+  },
+  "transformer_pp/re12e78d1ded3": {
+   "version": 1,
+   "loss": 5.57211446762085,
+   "digest": "862b23a9c5ff71b5fe7da3fab90bd0b503a6fd526e44b6d833f582df416ac915",
+   "arrays_count": 50
+  },
+  "transformer_pp/re253a5f1b03e": {
+   "version": 1,
+   "loss": 5.5661773681640625,
+   "digest": "c2b1b15c3f8b7506f578d10f747ad2a9f873973ffd87e301cf95f3b089111b90",
+   "arrays_count": 56
+  },
+  "transformer_pp/re563830cf150": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "79420c0696b8ecbe222822156e93295a6b3832b4f4c5d32ca1004e8b607faf3b",
+   "arrays_count": 54
+  },
+  "transformer_pp/re634d82ee479": {
+   "version": 1,
+   "loss": 5.566226482391357,
+   "digest": "606fac2d3b8361ed919a3268a715f8fb01ab47fa173c4bb6eb3dc20bccf4e3cb",
+   "arrays_count": 56
+  },
+  "transformer_pp/re6d4c820a132": {
+   "version": 1,
+   "loss": 5.555782318115234,
+   "digest": "b1d603cf5aaade9d0f1041169bc97a4ea96988b59ea263488a0f2be7fa024f0e",
+   "arrays_count": 52
+  },
+  "transformer_pp/re7593f1d0a4c": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "d3bc534adf23cc0cbb9d48eba8e9fb0452f9fc60cd4fe37c3574413ce77e2667",
+   "arrays_count": 56
+  },
+  "transformer_pp/rea8b942672f4": {
+   "version": 1,
+   "loss": 5.56126594543457,
+   "digest": "512c8c55af9ec52c3702539d32be2b4f408ed9d3d479b9cb3061da3359581c34",
+   "arrays_count": 60
+  },
+  "transformer_pp/reb9b5be4ff1b": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rec777591a61b": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rec777591a61b/config.yaml.schema_version"
+  },
+  "transformer_pp/rece89382b690": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rece89382b690/config.yaml.schema_version"
+  },
+  "transformer_pp/reeb92d46a95d": {
+   "version": 1,
+   "loss": 5.6054792404174805,
+   "digest": "a299014e5511c30fe3bbc3efb616d65bfac5ec5c91f1a243dff4a55041c11e6a",
+   "arrays_count": 46
+  },
+  "transformer_pp/reeefbcc19abf": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "0b852af602a62729bd5843fe31c27c4a38135e18cc46a2684ed79dfcfa5dd233",
+   "arrays_count": 56
+  },
+  "transformer_pp/ref652c257797": {
+   "version": 1,
+   "loss": 5.581636428833008,
+   "digest": "ff8e0e62bf7ffefc72f38991f56414b6bff04f2093a4e7f8f0e9c6ca83e32f77",
+   "arrays_count": 48
+  },
+  "transformer_pp/rf033859dd68e": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rf033859dd68e/config.yaml.schema_version"
+  },
+  "transformer_pp/rf1993c745e17": {
+   "version": 1,
+   "loss": 5.572014808654785,
+   "digest": "658e49ddf2aed7e186da00542f15fb9fc4a949232cabad01b260720894ba9b6a",
+   "arrays_count": 50
+  },
+  "transformer_pp/rf303a5f94487": {
+   "version": 1,
+   "loss": 5.572854995727539,
+   "digest": "b1cf007b47a90345c958bfb0e0488fa5ba608b7ac112616d1dad1570127e3652",
+   "arrays_count": 56
+  },
+  "transformer_pp/rf378c0e67607": {
+   "version": 1,
+   "loss": 5.573716640472412,
+   "digest": "c2274d2e8d0508b8324b244b41e2a0f125e1a5e62f889877acfc75fc9884b797",
+   "arrays_count": 50
+  },
+  "transformer_pp/rf5b51bd384bc": {
+   "version": 1,
+   "loss": 5.585587501525879,
+   "digest": "6eb55acbff332ae3837fed57a2d8ec70264c09def4cf32bd903b498e6f517beb",
+   "arrays_count": 56
+  },
+  "transformer_pp/rf637de9b65b1": {
+   "version": 1,
+   "loss": 5.56720495223999,
+   "digest": "b158a956a32b9fe34a264af34aff5b74d7a58addec6f0093c0efc512d4e7c047",
+   "arrays_count": 56
+  },
+  "transformer_pp/rf7e1a83e2e23": {
+   "version": 1,
+   "loss": 5.572856903076172,
+   "digest": "2298e0142f619f982cff5ad79181bc373493a9b2236b55a1dc1eb8e060667aea",
+   "arrays_count": 54
+  },
+  "transformer_pp/rf81c96f76a1d": {
+   "version": 1,
+   "loss": 5.593576431274414,
+   "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
+   "arrays_count": 48
+  },
+  "transformer_pp/rf8fc9ab2cecc": {
+   "version": 1,
+   "loss": 5.566192626953125,
+   "digest": "d0739e348ad8ff68637976a50d535c8f8990561a851cfd0df56db4b7f51734a4",
+   "arrays_count": 62
+  },
+  "transformer_pp/rf9099d70ab3a": {
+   "version": 1,
+   "loss": 5.580445766448975,
+   "digest": "89a87e2d2152aa383e72e6f1ba6ee4442f970e36ab012a71096ca663368a8ef5",
+   "arrays_count": 56
+  },
+  "transformer_pp/rfa9636279199": {
+   "version": 1,
+   "loss": 5.587944984436035,
+   "digest": "cf6a09a7ba6fa7c6ce9c55f15260e1c21d7460b7ebbe39250b1b487d21ac8f02",
+   "arrays_count": 60
+  },
+  "transformer_pp/rfadcac37b6d0": {
+   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rfadcac37b6d0/config.yaml.schema_version"
+  },
+  "transformer_pp/rfc68c6d26f40": {
+   "version": 1,
+   "loss": 5.5980963706970215,
+   "digest": "032d29f3115fdfbc47ed54be8ac5febbc18adbd120bb2d5f6d9499d06f686539",
+   "arrays_count": 60
+  },
+  "transformer_pp/rfccffdd239dd": {
+   "version": 1,
+   "loss": 5.572040557861328,
+   "digest": "c4e7366072dc99a08303628c1d452c4476bd537f0d34c51edc2a8a8dbe5821f4",
+   "arrays_count": 56
+  },
+  "transformer_pp/rfe12e5c36e94": {
+   "version": 1,
+   "loss": 5.572049140930176,
+   "digest": "375325dfb524ee8f9bb86b561bd7c74e47c2ff5f47c9cc60c8a443d9de9d9eed",
+   "arrays_count": 50
+  },
+  "transformer_pp/rfe140c073b2f": {
+   "version": 1,
+   "loss": 5.570392608642578,
+   "digest": "d3f2bf718afef46c4b5488e4bce8b752e274f101c262a6fdbd6d08e5481e72a9",
+   "arrays_count": 62
+  },
+  "transformer_pp/rffab7c4eeac5": {
+   "version": 1,
+   "loss": 5.572048664093018,
+   "digest": "4dcad21d53834a8aea05cf7a63adad90c712c91ec58f57b05888a47882e7217d",
+   "arrays_count": 50
+  }
+ }
+}

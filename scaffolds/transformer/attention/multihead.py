@@ -87,6 +87,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_spline_knots=getattr(config, "attention_spline_knots", None),
         attention_score_bias=getattr(config, "attention_score_bias", "none"),
         attention_score_transform=getattr(config, "attention_score_transform", "identity"),
+        attention_score_prefactor=getattr(config, "attention_score_prefactor", "none"),
         score_mlp_width=getattr(config, "attention_score_mlp_width", None),
         score_mlp_architecture=getattr(config, "attention_score_mlp_architecture", "dynamic_readout"),
         score_mlp_form=getattr(config, "attention_score_mlp_form", "kernel"),
@@ -143,6 +144,7 @@ class MultiHeadAttention(nnx.Module):
         attention_spline_knots: tuple[float, ...] | None = None,
         attention_score_bias: str = "none",
         attention_score_transform: str = "identity",
+        attention_score_prefactor: str = "none",
         score_mlp_width: int | None = None,
         score_mlp_architecture: str = "dynamic_readout",
         score_mlp_form: str = "kernel",
@@ -532,16 +534,39 @@ class MultiHeadAttention(nnx.Module):
         if type(attention_coefficient_zero_constant) is not bool:
             raise ValueError("Coefficient zero constant must be a boolean")
         if attention_coefficient_zero_constant and (
-                attention_score_transform != "softplus" or positional_encoding != "rope"
+                attention_score_transform not in ("identity", "softplus") or positional_encoding != "rope"
                 or attention_coefficient_input_power or attention_coefficient_orders is not None
                 or attention_coefficient_input_normalization != "none"
                 or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
                 or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None
                 or not (static_transformed or attention_coefficient_conditioning == "query"
                         and attention_coefficient_activation == "tanh")):
-            raise ValueError("Structural zero constants require direct static or tanh query softplus/RoPE "
+            raise ValueError("Structural zero constants require direct static or tanh query raw or softplus RoPE "
                              "coefficients, without a prefactor, selected orders, fixed coefficients or L2")
-        if validate_transform(attention_score_transform) != "identity" and (
+        # The exponential (softmax or unnormalized) composes with any score function: f(s) exp(phi(s))
+        # (attention/pieces.py), on the blocked backend, or on the fused kernel when it declares it.
+        from scaffolds.transformer.attention.pieces import ScoreFunction, fused_exponential_problem
+
+        score_function = ScoreFunction(attention_score_transform, attention_score_prefactor)
+        exponential_kernel = (attention_degree is None and quadratic_mode == "fixed" and score_mlp_width is None
+                              and attention_fixed_coefficients is None and attention_fixed_square_factors is None
+                              and attention_coefficient_conditioning == "static"
+                              and attention_kernel_basis == "polynomial" and attention_score_bias == "none")
+        if not score_function.identity and exponential_kernel:
+            if positional_encoding not in ("rope", "none"):
+                raise ValueError("Score functions of the exponential apply with RoPE or no positional encoding")
+            if backend not in ("blocked", "fused"):
+                raise ValueError("Score functions of the exponential run on the blocked or fused backend")
+            if backend == "fused":
+                problem = fused_exponential_problem(score_function, attention_degree=attention_degree)
+                if problem is None and (attention_normalization or attention_forget_gate):
+                    problem = "the fused kernel is the unnormalized exponential without a forget gate"
+                if problem is not None:
+                    raise ValueError(f"The fused backend cannot run these score functions: {problem}")
+        elif attention_score_prefactor != "none":
+            raise ValueError("A score prefactor applies so far to the exponential (softmax or unnormalized)")
+        self.attention_score_prefactor = attention_score_prefactor
+        if validate_transform(attention_score_transform) != "identity" and not exponential_kernel and (
                 not (fixed_pointwise or (attention_score_transform != "sigmoid"
                                         and (static_sos or static_transformed
                                              or (attention_coefficient_conditioning == "query"
@@ -976,6 +1001,8 @@ class MultiHeadAttention(nnx.Module):
                 kernel_coefficient_activation = "tanh"  # Select the general polynomial kernel only.
             # Only transformed recipes pass it, so every other recipe's call is unchanged.
             parameters["score_transform"] = self.attention_score_transform
+        if self.attention_score_prefactor != "none":
+            parameters["score_prefactor"] = self.attention_score_prefactor
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,

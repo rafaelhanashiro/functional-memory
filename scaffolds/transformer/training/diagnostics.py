@@ -656,6 +656,7 @@ def attention_identity(config) -> dict:
         identity.update(_score_bias_identity(config.model, identity["attention_formula"]))
     static_sos = (has_sum_of_squares_kernel(config.model) and not normalized and not query_conditioned)
     if not static_sos and (getattr(config.model, "attention_score_transform", "identity") != "identity"
+                          or getattr(config.model, "attention_score_prefactor", "none") != "none"
                           or getattr(config.model, "attention_coefficient_constant_initial", None) is not None):
         identity.update(_score_transform_identity(config.model, identity["attention_formula"]))
     if query_conditioned and config.model.attention_coefficient_parameterization == "sum_of_squares":
@@ -807,6 +808,25 @@ def _score_bias_identity(model, formula: str) -> dict:
     }
 
 
+def _exponential_score_function_identity(model, formula: str) -> dict:
+    """The exponential's score functions (attention/pieces.py): each weight exp(s_ti), its decay inside the
+    exponent, becomes f(s_ti) exp(phi(s_ti) + log D_ti), recorded after every other clause."""
+    from scaffolds.transformer.attention.pieces import ScoreFunction, exponential_kernel_name
+    from scaffolds.transformer.attention.score_transform import FORMULAS, PREFACTOR_FORMULAS
+
+    score_function = ScoreFunction(model.attention_score_transform, model.attention_score_prefactor)
+    phi = "s_ti" if score_function.transform == "identity" else f"{score_function.transform}(s_ti)"
+    factor = "" if score_function.prefactor == "none" else f"{score_function.prefactor}(s_ti) "
+    definitions = ([FORMULAS[score_function.transform]] if score_function.transform != "identity" else []) + (
+        [PREFACTOR_FORMULAS[score_function.prefactor]] if score_function.prefactor != "none" else [])
+    clause = (f"; score functions: every weight exp(s_ti) is {factor}exp({phi}) (a forget gate's log decay "
+              f"stays in the exponent), s_ti = Q_t K_i^T / sqrt(d_k); " + "; ".join(definitions))
+    return {"attention_score_transform": score_function.transform,
+            "attention_score_prefactor": score_function.prefactor,
+            "attention_kernel": exponential_kernel_name(score_function, normalized=model.attention_normalization),
+            "attention_formula": formula + clause}
+
+
 def _score_transform_identity(model, formula: str) -> dict:
     """A score transform (the polynomial reads z_ti = phi(s_ti)) and a constant-coefficient start (b_0's start
     in place of Taylor's 1), each recorded only for recipes that set it, in the query polynomial's formula."""
@@ -814,6 +834,10 @@ def _score_transform_identity(model, formula: str) -> dict:
 
     transform = getattr(model, "attention_score_transform", "identity")
     start = getattr(model, "attention_coefficient_constant_initial", None)
+    from scaffolds.transformer.configs.base import _exponential_kernel
+
+    if _exponential_kernel(model):
+        return _exponential_score_function_identity(model, formula)
     identity = {}
     if transform != "identity":
         if (model.attention_coefficient_conditioning == "static"

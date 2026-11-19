@@ -196,6 +196,12 @@ class ModelConfig:
     # Fixed static degree-one coefficients (0, 1) also implement the parameter-free
     # sigmoid and softplus attention baselines: the resulting weight is exactly phi(s).
     attention_score_transform: Literal["identity", "softplus", "abs", "sigmoid"] = "identity"
+    # The exponential's score functions (attention/pieces.py): its weight is f(s) exp(phi(s)) with the
+    # transform above and this prefactor f, "none" (f = 1, every historical recipe), "softplus" or
+    # "sigmoid". Softmax or unnormalized, with or without a forget gate, on the blocked backend; the
+    # unnormalized exponential without a forget gate also on the fused kernel. Polynomial kernels take
+    # no prefactor yet.
+    attention_score_prefactor: Literal["none", "softplus", "sigmoid"] = "none"
     # The start of the order-0 offset b_0 of diagonal tanh query coefficients, c_0(x_t) = b_0 + a_0
     # tanh(x_t w_0), in place of Taylor's 1 (null). With attention_coefficient_amplitude_initial 0, c_0
     # starts at exactly this value: 0 with the softplus transform starts the kernel at
@@ -1297,10 +1303,10 @@ def _validate_zero_constant(model: ModelConfig) -> None:
             or model.attention_coefficient_tanh_bias or model.attention_coefficient_gate != "none"
             or model.attention_coefficient_input_power != 0 or model.attention_coefficient_input_normalization != "none"
             or model.attention_coefficient_constant_initial not in (None, 0.0)
-            or model.attention_score_transform != "softplus" or model.attention_score_bias != "none"
+            or model.attention_score_transform not in ("identity", "softplus") or model.attention_score_bias != "none"
             or model.attention_forget_gate or model.attention_kernel_basis != "polynomial"
             or model.positional_encoding != "rope" or model.attention_backend not in ("mosaic", "blocked")):
-        raise ValueError("A structural zero constant requires softplus/RoPE unnormalized learned per-head "
+        raise ValueError("A structural zero constant requires raw or softplus scores, RoPE, unnormalized learned per-head "
                          "direct static or diagonal tanh query coefficients (direct or SoS), without selected "
                          "orders, a prefactor, gates, inner biases, L2, or a nonzero constant start")
 
@@ -1322,6 +1328,37 @@ def _transformed_coefficient_problem(model) -> str | None:
             return None
         return _static_sos_problem(model)
     return _query_coefficient_problem(model)
+
+
+def _exponential_kernel(model) -> bool:
+    """Softmax or the unnormalized exponential: no degree, coefficients, spline basis, score MLP, or bias."""
+    return (model.attention_mechanism == "dot_product" and model.attention_degree is None
+            and model.quadratic_mode == "fixed" and model.attention_coefficients == "fixed"
+            and model.attention_fixed_coefficients is None and model.attention_fixed_square_factors is None
+            and model.attention_coefficient_conditioning == "static"
+            and model.attention_kernel_basis == "polynomial"
+            and getattr(model, "attention_score_mlp_width", None) is None
+            and model.attention_score_bias == "none")
+
+
+def _validate_exponential_score_function(model: ModelConfig, score_function) -> None:
+    """f(s) exp(phi(s)) (attention/pieces.py): any transform and prefactor, any forget gate, softmax or
+    unnormalized, with RoPE or no positional encoding on the blocked backend (its scan or causal strips);
+    the fused kernel implements what pieces.fused_exponential_problem declares, unnormalized and ungated."""
+    from scaffolds.transformer.attention.pieces import fused_exponential_problem
+
+    if model.positional_encoding not in ("rope", "none"):
+        raise ValueError("Score functions of the exponential apply with RoPE or no positional encoding; PaTH "
+                         "runs its own kernels")
+    if model.attention_backend not in ("blocked", "fused"):
+        raise ValueError("Score functions of the exponential run on attention_backend blocked or fused; "
+                         f"{model.attention_backend!r} does not evaluate them")
+    if model.attention_backend == "fused":
+        problem = fused_exponential_problem(score_function, attention_degree=model.attention_degree)
+        if problem is None and (model.attention_normalization or model.attention_forget_gate):
+            problem = "the fused kernel is the unnormalized exponential without a forget gate"
+        if problem is not None:
+            raise ValueError(f"Backend 'fused' cannot run these score functions: {problem}")
 
 
 def _validate_score_transform(model: ModelConfig) -> None:
@@ -1347,6 +1384,19 @@ def _validate_score_transform(model: ModelConfig) -> None:
             raise ValueError(f"A constant-coefficient start (attention_coefficient_constant_initial) does not fit "
                              f"this recipe: {problem}")
         model.attention_coefficient_constant_initial = float(start)
+    from scaffolds.transformer.attention.pieces import ScoreFunction
+
+    try:
+        score_function = ScoreFunction(transform, model.attention_score_prefactor)
+    except ValueError as error:
+        raise ValueError(f"model.attention_score_prefactor: {error}") from None
+    if _exponential_kernel(model):
+        if not score_function.identity:
+            _validate_exponential_score_function(model, score_function)
+        return
+    if model.attention_score_prefactor != "none":
+        raise ValueError("A score prefactor applies so far to the exponential kernel (softmax or unnormalized "
+                         "dot-product attention without a degree, coefficients, a score MLP, or score biases)")
     if transform == "identity":
         return
     problem = _transformed_coefficient_problem(model)
