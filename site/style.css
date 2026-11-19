@@ -375,6 +375,55 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .writeup-view .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 .writeup-view .empty { color: var(--muted); font-style: italic; }
 
+/* Result pages: tables and charts */
+.result { margin-top: 36px; }
+.result h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.table-wrap, .chart-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: #fff;
+}
+.chart-wrap { margin-top: 16px; padding: 12px 6px 4px; }
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.results-table th, .results-table td {
+  padding: 12px 18px;
+  text-align: center;
+  white-space: nowrap;
+}
+.results-table th:first-child, .results-table td:first-child { text-align: left; }
+.results-table thead th {
+  background: #f1f5f9;
+  font-weight: 400;
+}
+.results-table thead th:first-child { font-weight: 600; }
+.results-table thead th var { font-weight: 400; }
+.results-table tbody tr:nth-child(even) { background: #f8fafc; }
+.results-table tbody tr + tr td { border-top: 1px solid #eef0f3; }
+.results-table .best { font-weight: 700; }
+var { font-style: italic; }
+.chart { display: block; width: 100%; min-width: 640px; height: auto; }
+.chart text { fill: #27272a; font-size: 14px; }
+.chart .tick { fill: #52525b; }
+.chart .axis-title { font-size: 15px; }
+.chart .legend { font-size: 14.5px; }
+.chart .grid { stroke: #e4e4e7; stroke-width: 1; }
+.chart .axis { fill: none; stroke: #a1a1aa; stroke-width: 1.2; }
+.chart .reference { stroke: #71717a; stroke-width: 1.6; }
+.chart .reference.dashed { stroke-dasharray: 7 5; }
+.chart .reference-label { fill: #52525b; font-size: 14px; }
+.chart .series { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+.chart .series.skipped { stroke-dasharray: 2 6; }
+
 /* Meeting: the agenda and the notes, each a sheet of rendered Markdown */
 .meeting-part + .meeting-part { margin-top: 36px; }
 .meeting-part h2 {

@@ -1,0 +1,574 @@
+{
+  "dtype": "uint16",
+  "format": "ofm-packed-sequences",
+  "metadata": {
+    "dataset_config": "sample-100BT",
+    "dataset_name": "HuggingFaceFW/fineweb-edu",
+    "dataset_revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "dataset_split": "train",
+    "eos_token_id": 2,
+    "partition": {
+      "algorithm": "sha256-text",
+      "validation_fraction": 0.01
+    },
+    "repacked_from": {
+      "dropped_tail_tokens": 2381,
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json",
+      "manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+      "num_sequences": 5859375,
+      "sequence_length": 2049
+    },
+    "shuffle_buffer_size": 10000,
+    "shuffle_seed": 0,
+    "source_epochs_scanned": 1,
+    "split": "train",
+    "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+    "tokenizer_revision": "8efe6c9b93655b934e27bd9981e3ec13e55aee9d"
+  },
+  "num_sequences": 2930402,
+  "num_tokens": 12005856994,
+  "sequence_length": 4097,
+  "shards": [
+    {
+      "num_sequences": 32775,
+      "path": "shard-00000.npy",
+      "sequence_start": 0,
+      "sha256": "276a62cc92456d566fd4ff6fbd84faa388d3cf37396a84d0ca888408322e4fe3"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00001.npy",
+      "sequence_start": 32775,
+      "sha256": "d8ca1af70b865790a155a74e6d15b8b566ba9f8036fa58cb965bf5391a00e40c"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00002.npy",
+      "sequence_start": 65550,
+      "sha256": "b77a17c10880f237287c969a8338404d3815450f838532d8cee5a692ae24a47c"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00003.npy",
+      "sequence_start": 98325,
+      "sha256": "fec806b2282922df09f7bb328c6910327bbccb6ccb571daf090c9418892f10df"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00004.npy",
+      "sequence_start": 131100,
+      "sha256": "8b08227a7e560d3be9ebf1b0ffd850a681783eee9b4bf18148c44fe7315a90f4"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00005.npy",
+      "sequence_start": 163875,
+      "sha256": "7eee70b05233e23c0d45b0ad5dfab49937cf75914e80a48797d091766ab35912"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00006.npy",
+      "sequence_start": 196650,
+      "sha256": "4f3ecceb7ee6e2687b86f6ebf24504baa08771ce186009172012ba97b8fd86eb"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00007.npy",
+      "sequence_start": 229425,
+      "sha256": "3ab7b491c68639dc1ef287374a78d59ef1f4c9b278e7fe35d5de950934ad85b1"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00008.npy",
+      "sequence_start": 262200,
+      "sha256": "6194318d2ec6c0f2fd6dd7717fbab07efa1447f76c82a5d307f061ac0d889cbe"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00009.npy",
+      "sequence_start": 294975,
+      "sha256": "3c2e3bfb0b39ff3f26f28c90655a2f07441f233abae26c515f4a0eb8110d77c9"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00010.npy",
+      "sequence_start": 327750,
+      "sha256": "c71f0bc7db1a6c253996adf3af1992747e6e57bcbe222da83cbc7bdd814f7a6f"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00011.npy",
+      "sequence_start": 360525,
+      "sha256": "8229da6e738fe932ad8e30dbe5dd561af40ac5744586666bac46563af4f60641"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00012.npy",
+      "sequence_start": 393300,
+      "sha256": "630b2f7f734500ca5df1da4c92319466c8176e244f2bcfac668f6d69bbea1cfe"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00013.npy",
+      "sequence_start": 426075,
+      "sha256": "1b05ba1f95d114fe1641f50c829a001a8fbc0568417a7c20b87b5f58634136ea"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00014.npy",
+      "sequence_start": 458850,
+      "sha256": "d4ad5fcca191cb5a29669c24c7fdfa7bca75dd97369dfbb075f3dbb36440fbf3"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00015.npy",
+      "sequence_start": 491625,
+      "sha256": "46924a0d9df389451c745f929076a2771488bb9898924b0a79ad7dde0e0e59cf"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00016.npy",
+      "sequence_start": 524400,
+      "sha256": "2be005e0d2f9c07540b2988523f4e436df3aa4c33bbfcfebb9ee1da4ad58f96e"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00017.npy",
+      "sequence_start": 557175,
+      "sha256": "5b2e6456ec8b6332c58f5e18c69aed0e0a2fc8d80207b0f2482c8452b26adae0"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00018.npy",
+      "sequence_start": 589950,
+      "sha256": "bdc9f0aeff9144c028d3a3e969097783d0ada77fa4fc45dbc1cabd80b22a7a51"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00019.npy",
+      "sequence_start": 622725,
+      "sha256": "4608dd4c2bd77609275d2973ff849428f1b4f55e7762fcc0f7fb1b97c2552886"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00020.npy",
+      "sequence_start": 655500,
+      "sha256": "0a87cef708380bc5a98073671d9b740a2d9d4df27e4b4de986082a484720f736"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00021.npy",
+      "sequence_start": 688275,
+      "sha256": "8b67a11906c77a5262c03224d66748082b8ecec65feb8c22b44e60e14c927b80"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00022.npy",
+      "sequence_start": 721050,
+      "sha256": "0fe1fa11955ba3fe53ed97aa275324662980442de788383e7375f6636ae8b3b6"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00023.npy",
+      "sequence_start": 753825,
+      "sha256": "13f3decefffb0fc83611640ec687115a52c4de894d0f26bed576a07844568687"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00024.npy",
+      "sequence_start": 786600,
+      "sha256": "9a81ed26b0a1b8f249d8f3d12d327611433a5f90c946ea8cf919566251a1b63e"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00025.npy",
+      "sequence_start": 819375,
+      "sha256": "ac5ca82c9d541a49a813fba8abf6ddb2f1dae691395681148fc3167162e20765"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00026.npy",
+      "sequence_start": 852150,
+      "sha256": "100df040ad4e105a0f142f0340aa75022dca2ac1cc0e2aae3d77394a68081f8d"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00027.npy",
+      "sequence_start": 884925,
+      "sha256": "a166c9879623f2d2052e7e099ae23cde108be0c3b3c0cda3d9f6310a1663ccc2"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00028.npy",
+      "sequence_start": 917700,
+      "sha256": "a6657d36627fabc9d7d4d3e92e40d35f8b5500aa20923e0155d145bc20d47c40"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00029.npy",
+      "sequence_start": 950475,
+      "sha256": "781a67a57079b0ed4e2a80b66d328cb0a31d9e4c7c1412b824072db722756cf0"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00030.npy",
+      "sequence_start": 983250,
+      "sha256": "2642a01387469bbeeebbad6a3cf0e7469788c9cd13518d587b71af230941fe50"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00031.npy",
+      "sequence_start": 1016025,
+      "sha256": "49137acbcf32099b28b27ac04a380c0a929eac67c0f89330573f9601640482bc"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00032.npy",
+      "sequence_start": 1048800,
+      "sha256": "7f6e7bcea8f3e8438a93ac67253adf4d1449a34e8eea18b977af2e6a832496a1"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00033.npy",
+      "sequence_start": 1081575,
+      "sha256": "4762b3b8b5d1f4a9260208a8ca7d8663e6e54f68c9f6e007a481110d43fdae09"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00034.npy",
+      "sequence_start": 1114350,
+      "sha256": "5020035bae074e3fcf370359a361694f824dcf00dc70e9dc2d1cbe7768d92121"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00035.npy",
+      "sequence_start": 1147125,
+      "sha256": "c2513c61d635dca9df3f0a2965acdf889e035a10ca21a70bd7196b8dfc755e44"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00036.npy",
+      "sequence_start": 1179900,
+      "sha256": "a547380615f6420b82371dfda5b438d867098e8194c72bc761ad8d4b489b1db5"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00037.npy",
+      "sequence_start": 1212675,
+      "sha256": "39f5cd11ce3730d51694a6b5b96a59c54ce196f8e645eb08ea8347691d60588a"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00038.npy",
+      "sequence_start": 1245450,
+      "sha256": "1060e448be520e2f3f8a91971ede03b08b60bf9383ad439e9622a604eda4dcae"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00039.npy",
+      "sequence_start": 1278225,
+      "sha256": "93872b6bc3bf644d33afb3f5df46f15d376572b07000d27037b44b98346c4a48"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00040.npy",
+      "sequence_start": 1311000,
+      "sha256": "ba2627dbaa8396720a5db3bad9ac2fb4744351d1d641d6a2afe3f96882b7b9d3"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00041.npy",
+      "sequence_start": 1343775,
+      "sha256": "8f55d17b99c159888a42ce2e1baaf85f7d27233a18e9e2ed5b09d9220c8f3156"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00042.npy",
+      "sequence_start": 1376550,
+      "sha256": "f6de50ee415167491922320c7805aed53fe68d293cbe1eb607be1565e39b664a"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00043.npy",
+      "sequence_start": 1409325,
+      "sha256": "496532cf44ac92253b98e8d86318d6b959405f213bdcc76df442c8341e385afc"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00044.npy",
+      "sequence_start": 1442100,
+      "sha256": "50eda91ace5e9bca660c6d66ffc6cdcc42ab98bf9e53e45a4b54ad33492a1889"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00045.npy",
+      "sequence_start": 1474875,
+      "sha256": "b770fd075114eb9f95c807ad763dae84457678080b18e395d3d502b057b8ca52"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00046.npy",
+      "sequence_start": 1507650,
+      "sha256": "674a16f2a1dfe55cdd2e557eefcfab4783e665397cd0e34ae22678cd4cd39538"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00047.npy",
+      "sequence_start": 1540425,
+      "sha256": "e2b1d4ffb38242e9f75db251f42873f58aad98e102cee003d587b8dad8be6800"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00048.npy",
+      "sequence_start": 1573200,
+      "sha256": "c367dc525f297d717d2810241731a37dfb01be4a069fcbc6c8e1298383cb43b1"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00049.npy",
+      "sequence_start": 1605975,
+      "sha256": "f1961936cb9f6b9b5810972656ccf005a00abfa2ac28b0860eca3fbfb837efe3"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00050.npy",
+      "sequence_start": 1638750,
+      "sha256": "65d4533dfd8ef25ea3b966f9370834b2a992803cbb1d8551a29688440b789cab"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00051.npy",
+      "sequence_start": 1671525,
+      "sha256": "aa57848c8b9c9caf855f445ffe0db21b356b87d65e4680e1e79eacba0412ce07"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00052.npy",
+      "sequence_start": 1704300,
+      "sha256": "3c72e942cb40e3969e39ef358e97b87d813af5d0c3f51b02e2c47078ae790924"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00053.npy",
+      "sequence_start": 1737075,
+      "sha256": "4f62b475758d88dc8ef8d30374be393a9f703b97b8435e79d2379d74350d9f08"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00054.npy",
+      "sequence_start": 1769850,
+      "sha256": "6a1729a6e04efd851143fb36207374b405bcb5bdc781dc6f2ec681203895d295"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00055.npy",
+      "sequence_start": 1802625,
+      "sha256": "71b992c832e124f1a6cf891a8e42e487ba48699f64337250b3a06d693a7c7534"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00056.npy",
+      "sequence_start": 1835400,
+      "sha256": "5554a4dfb75b49f56e2425907ce05091c35dbd5ff3239f17bdc76b5f0bf491f9"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00057.npy",
+      "sequence_start": 1868175,
+      "sha256": "07049e792a9e61bae01b35f8a5237153877bb6054e37557b58f9c4c315e5ff4b"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00058.npy",
+      "sequence_start": 1900950,
+      "sha256": "5f0afa701ec6d2d083255d31b863c796779dd09593c24b0d074e52208b9095da"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00059.npy",
+      "sequence_start": 1933725,
+      "sha256": "670029d02560131575408f638eadfb9b943804f53c2ff8e23c35690190681efb"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00060.npy",
+      "sequence_start": 1966500,
+      "sha256": "fbd82d4187a8d201f2dd0a8c63b03e1d18cce7c6ce9c117022678cdab16e2c18"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00061.npy",
+      "sequence_start": 1999275,
+      "sha256": "0ed2b9cda120594e2abc2175383ee954a0783f0d1491cd0b94e1675e62ea13d7"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00062.npy",
+      "sequence_start": 2032050,
+      "sha256": "e806b2bb22a608bd3b71da8e8637524359a829d61acc46130834227a3ea3d977"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00063.npy",
+      "sequence_start": 2064825,
+      "sha256": "1819ce922f1966a6d3505f4fa6b5351b8b069687880599e88aeaf063b18dd749"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00064.npy",
+      "sequence_start": 2097600,
+      "sha256": "9545d63e006cee24b809bf8cd6277c7d40a1aedd313f8bf51ed9575bdc4fe8d5"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00065.npy",
+      "sequence_start": 2130375,
+      "sha256": "1207509bc46c850cb6c9540a5c25ddc24a92bc603d38f210a6761e061ac61f6f"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00066.npy",
+      "sequence_start": 2163150,
+      "sha256": "afa2792f9ad4e13f2fe7966356a9766cc79e17d8b370dbe5d88a4a15381f0fff"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00067.npy",
+      "sequence_start": 2195925,
+      "sha256": "4f0937db817de4d0c55097a42528a21af9e57f765094ca9fbf43877b07482ae9"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00068.npy",
+      "sequence_start": 2228700,
+      "sha256": "8e659a5b1b77e01a66abec41de2fd115a235d8590b672612339d936cf270dfb1"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00069.npy",
+      "sequence_start": 2261475,
+      "sha256": "86373a390d1843eb7c37b3ab011c52a120a57c75fe5a36727e897d3fb4cc8232"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00070.npy",
+      "sequence_start": 2294250,
+      "sha256": "5df62ac26ee6c63961360b8db5a2941e8b514ae51cafb23507b23bf5aac0029c"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00071.npy",
+      "sequence_start": 2327025,
+      "sha256": "1ab34df3307f67d53a60ceaef14a6b9d23f224752f5666034eeb0b96cf8c90a8"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00072.npy",
+      "sequence_start": 2359800,
+      "sha256": "43ecf4349d2bedd91817da2f148a74dfbea3dcb4cfe6ff349da1d793753c7a3b"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00073.npy",
+      "sequence_start": 2392575,
+      "sha256": "4df6fd58e9afd00ea3285117bc9f92e8a15e4f51fb0e253f64498cb166616f90"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00074.npy",
+      "sequence_start": 2425350,
+      "sha256": "825430cd066eb5cfe92c75a8c5d3e1dfc4cb251c03618a4a2aff7d38cc9bb97d"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00075.npy",
+      "sequence_start": 2458125,
+      "sha256": "02565983527fcf7ff697b5e5cd5735d00ff79527bf926f498f7d0825b04c1d75"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00076.npy",
+      "sequence_start": 2490900,
+      "sha256": "dca3fc136f5f3fd0dcfe69b1716f85987e0a8862954167fcca0133414d6b4558"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00077.npy",
+      "sequence_start": 2523675,
+      "sha256": "280a01f8e0aa0995a309c09fda357e66a82c147ae97fdb1e541d05b1fa05b254"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00078.npy",
+      "sequence_start": 2556450,
+      "sha256": "86dbf15497bae14db0148854b2d862a6f8fd97162edb846b32c4beb9f16b9a90"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00079.npy",
+      "sequence_start": 2589225,
+      "sha256": "b1655e06821c59a1d29a09120104b76c6f7ac8fb10e80714a20541859deb9a73"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00080.npy",
+      "sequence_start": 2622000,
+      "sha256": "763f317f5fb346c1b9a1eaeaf6ec77d153200f6772c90c4c0c77f39fde09819b"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00081.npy",
+      "sequence_start": 2654775,
+      "sha256": "cbff33e437bf48ba00f418096bc80c75c61bb28e9b8cef74a04b8b7e96ca7698"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00082.npy",
+      "sequence_start": 2687550,
+      "sha256": "5f26a593042db97430193b1f99e710cd2fe5a2da26b2405aae147c8b7ed88cd9"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00083.npy",
+      "sequence_start": 2720325,
+      "sha256": "5ac7c529e94ea0d065650c2d80982dd765a737c441b64d97ef51806ec5138ff1"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00084.npy",
+      "sequence_start": 2753100,
+      "sha256": "4abb22716bf8cf23670e831a888eb3e9c46cf7465c1ac249a28ad858108b1871"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00085.npy",
+      "sequence_start": 2785875,
+      "sha256": "4653c61d7e8ded7e3994a4e697033a675c40601665f57c16f2d840cc5de8561a"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00086.npy",
+      "sequence_start": 2818650,
+      "sha256": "bbb84d2e8658e0b5d75c6d575dda5a4c7f29d951739698426790e307d00a6efd"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00087.npy",
+      "sequence_start": 2851425,
+      "sha256": "a2671c241b431be483819f1493ad7e06c481f5f8c62855d7517c529d8fb4f1cc"
+    },
+    {
+      "num_sequences": 32775,
+      "path": "shard-00088.npy",
+      "sequence_start": 2884200,
+      "sha256": "173c1094381dd3fc4958cf898c4524a9415293dbd21553e64a08e9f11e72e41a"
+    },
+    {
+      "num_sequences": 13427,
+      "path": "shard-00089.npy",
+      "sequence_start": 2916975,
+      "sha256": "ac80df288160b01566b6e2fce80b6b111606359a0e89cf9c965d9632218ee13c"
+    }
+  ],
+  "version": 1
+}

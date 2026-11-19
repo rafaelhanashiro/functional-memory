@@ -1,5 +1,20 @@
 [
   {
+    "id": "2602.02422",
+    "title": "Poly-attention: a general scheme for higher-order self-attention",
+    "authors": [
+      "Sayak Chakrabarti",
+      "Toniann Pitassi",
+      "Josh Alman"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2602.02422",
+    "arxiv": "2602.02422",
+    "seen": false,
+    "added": "2026-11-18"
+  },
+  {
     "id": "2404.19756",
     "title": "KAN: Kolmogorov-Arnold Networks",
     "authors": [

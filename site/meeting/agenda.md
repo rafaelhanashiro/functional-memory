@@ -1,0 +1,8 @@
+- 100M Chinchilla scalings
+- Poly diagnostics
+- Ablations:
+  - SoS/softplus variants
+  - zero-constants
+    - Raw inputs (not run yet)
+    - Softplus inputs
+  - L2 norm

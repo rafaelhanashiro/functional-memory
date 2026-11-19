@@ -194,7 +194,9 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   `python -m scaffolds.records refresh results/<analysis>`, and regenerate.
 - Commit configurations, provenance, and compact metrics, not datasets or large
   arrays. Numerical archives (`metrics.npz`, `spectra.npz`) stay beside run metadata,
-  ignored by Git; record their SHA256. Keep datasets outside the repository.
+  ignored by Git; record their SHA256. Keep datasets outside the repository; each
+  corpus's manifests, builder and construction record belong in
+  `scaffolds/transformer/data/corpora/`, enough to rebuild it on any cluster.
 - A concluded numerical failure is a scientific result: preserve its stopping step,
   last valid metrics, failure diagnostics, and matching log. Do not call it completed
   training. Retain a diagnostic checkpoint only when justified by the record.

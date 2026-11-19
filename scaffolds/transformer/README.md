@@ -1606,6 +1606,8 @@ A packed corpus is one token stream of documents, each followed by an end-of-doc
 token, cut into fixed rows. Both tools check every source shard against its manifest
 checksum, write a new packed corpus that `PackedBatchIterator` reads, and record the source
 manifest and its SHA256 in the new manifest's metadata.
+The corpora the studies use, their manifests, construction and verification are in
+[`data/corpora/`](data/corpora/README.md).
 
 ```bash
 # The same stream re-cut into rows of another length (metadata.repacked_from).
