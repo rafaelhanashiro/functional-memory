@@ -184,8 +184,10 @@ def test_fused_fp32_matches_blocked_and_fp64(transform, prefactor, shape):
     fused = partial(fused_unnormalized_attention, score_transform=transform, score_prefactor=prefactor)
     blocked = partial(blocked_backend_attention, attention_normalization=False, score_transform=transform,
                       score_prefactor=prefactor)
-    actual = jax.jit(partial(_forward_and_vjp, fused))(operands, cotangent)
-    reference = jax.jit(partial(_forward_and_vjp, blocked))(operands, cotangent)
+    with jax.default_matmul_precision("highest"):
+        # The blocked reference's FP32 dot products at full precision, not TF32.
+        actual = jax.jit(partial(_forward_and_vjp, fused))(operands, cotangent)
+        reference = jax.jit(partial(_forward_and_vjp, blocked))(operands, cotangent)
     expected = _fp64(operands, cotangent, transform=transform, prefactor=prefactor, normalized=False, log_decay=None)
     _assert_close(actual, expected, rtol=1e-4, label=f"fused {transform}/{prefactor} vs FP64")
     _assert_close(actual, reference, rtol=1e-4, label=f"fused {transform}/{prefactor} vs blocked")
