@@ -1,0 +1,3 @@
+- 100M Chinchilla scalings
+- SoS/softplus variants
+- Poly diagnostics
