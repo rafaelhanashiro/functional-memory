@@ -1,6 +1,6 @@
 // The Other runs page: tables drawn from data/other.json, which data/other.py writes from the
 // runs' records and the Transformer++ result summaries.
-import {degreeLabel, intro, section, table} from "./tables.js";
+import {degreeLabel, html, intro, section, table} from "./tables.js";
 
 const value = (cell) => cell ? {text: cell.perplexity.toFixed(4)} : {text: "—"};
 
@@ -36,6 +36,15 @@ function zeroConstant(data, host) {
   ));
 }
 
+// Subsections of one heading, each a table whose cells are text or a run's perplexity.
+function parts(data, host) {
+  section(host, data.title);
+  for (const part of data.parts) {
+    const rows = part.rows.map((row) => row.map((entry) => typeof entry === "string" ? {text: entry} : value(entry)));
+    host.append(html("h3", "", part.title), intro(part.intro), table(part.head, rows, {compact: Boolean(part.compact)}));
+  }
+}
+
 (async () => {
   const main = document.querySelector("main");
   try {
@@ -47,6 +56,7 @@ function zeroConstant(data, host) {
     gates(data.gates, host("gates"));
     inputNorm(data.input_norm, host("input-norm"));
     zeroConstant(data.zero_constant, host("zero-constant"));
+    parts(data.decay_and_lr, host("decay-and-lr"));
   } catch {
     main.append(Object.assign(document.createElement("p"), {className: "empty", textContent: "Could not load the results."}));
   }

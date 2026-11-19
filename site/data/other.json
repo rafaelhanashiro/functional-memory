@@ -197,5 +197,116 @@
         "perplexity": 14.192018540499317
       }
     ]
+  },
+  "decay_and_lr": {
+    "title": "Decay and LR experiments",
+    "parts": [
+      {
+        "title": "Coefficient weight decay",
+        "intro": "Degree-4 query and query-key coefficients with weight decay 0.1 on the tanh projection <var>W</var> (both query and key <var>W</var> for query-key), or on <var>a</var>, <var>b</var> and <var>W</var>; backbone decay is unchanged. The query-key runs also differ in kernel: fused without <var>W</var> decay, Mosaic with it.",
+        "head": [
+          "Attention",
+          "Without <var>W</var> decay",
+          "With <var>W</var> decay (0.1)",
+          "With <var>a</var>, <var>b</var>, <var>W</var> decay (0.1)"
+        ],
+        "rows": [
+          [
+            "Query",
+            {
+              "run_id": "r2b22f2ff6461",
+              "perplexity": 14.7737535481344
+            },
+            {
+              "run_id": "rca97cc9db8f2",
+              "perplexity": 14.708538612353673
+            },
+            {
+              "run_id": "r68cac6f03d77",
+              "perplexity": 14.750169869768488
+            }
+          ],
+          [
+            "Query-key",
+            {
+              "run_id": "r501f5cca0d4c",
+              "perplexity": 14.72171710752831
+            },
+            {
+              "run_id": "r79d829a16029",
+              "perplexity": 14.818336444852049
+            },
+            null
+          ]
+        ]
+      },
+      {
+        "title": "Coefficient learning rate",
+        "intro": "Degree-4 query coefficients with the learning rate of <var>a</var> and <var>b</var> tripled; <var>W</var> and the backbone keep theirs, and neither run decays <var>W</var>.",
+        "head": [
+          "Attention",
+          "Coefficient LR \u00d71",
+          "Coefficient LR \u00d73"
+        ],
+        "rows": [
+          [
+            "Query",
+            {
+              "run_id": "r2b22f2ff6461",
+              "perplexity": 14.7737535481344
+            },
+            {
+              "run_id": "rb74fa2ebede6",
+              "perplexity": 14.919761055551355
+            }
+          ]
+        ],
+        "compact": true
+      },
+      {
+        "title": "Taylor warmup, then query + W decay",
+        "intro": "Degree-8 query + W decay with the coefficients held at Taylor for the first 455 updates while the backbone trains, then released all at once or one degree at a time.",
+        "head": [
+          "Run",
+          "Release update",
+          "PPL"
+        ],
+        "rows": [
+          [
+            "All degrees at once",
+            "456",
+            {
+              "run_id": "rd40b46f5dc9b",
+              "perplexity": 14.229060298544688
+            }
+          ],
+          [
+            "One degree at a time (0 \u2192 8)",
+            "456\u20131,501",
+            {
+              "run_id": "rcc4f4e5d7abb",
+              "perplexity": 14.242058150718305
+            }
+          ],
+          [
+            "Query + W decay, no freeze",
+            "1",
+            {
+              "run_id": "r25fffc16c2f3",
+              "perplexity": 14.322804520454994
+            }
+          ],
+          [
+            "Exp baseline",
+            "\u2014",
+            {
+              "run_id": "r6a76e7fbde45",
+              "perplexity": 14.257176394334465
+            }
+          ]
+        ],
+        "compact": true
+      }
+    ]
   }
 }

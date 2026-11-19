@@ -27,6 +27,15 @@ L2_GROUPS = (
     ("SoS", ((8, ("r717267afcb78", None)), (12, ("r6b17c3463a60", "r2bf71d7b4831")))),
     ("SoS + softplus input + prefactor", ((9, (None, "r35805940a380")), (13, (None, "r5198d688e9d4")))),
 )
+# Decay and LR experiments: rows of (label, run IDs per column; None: not run).
+DECAY = (("Query", ("r2b22f2ff6461", "rca97cc9db8f2", "r68cac6f03d77")), ("Query-key", ("r501f5cca0d4c", "r79d829a16029", None)))
+LEARNING_RATE = (("Query", ("r2b22f2ff6461", "rb74fa2ebede6")),)
+RELEASE = (
+    ("All degrees at once", "rd40b46f5dc9b"),
+    ("One degree at a time (0 → 8)", "rcc4f4e5d7abb"),
+    ("Query + W decay, no freeze", "r25fffc16c2f3"),
+    ("Exp baseline", "r6a76e7fbde45"),
+)
 ZERO_CONSTANT = (
     ("Query + softplus input", "rb5b604ae829a"),
     ("Query SoS + softplus input", "r7d5baf55104e"),
@@ -86,8 +95,48 @@ def zero_constant() -> dict:
     }
 
 
+def release_update(run_id: str) -> str:
+    """The update at which a run's learned coefficients start training ("—" when it learns none)."""
+    config = json.loads((RUNS / run_id / "config.json").read_text())
+    if config["model"].get("attention_coefficients") != "learned":
+        return "—"
+    start, end = config["optim"].get("coefficient_release_step"), config["optim"].get("coefficient_release_end_step")
+    if start is None:
+        return "1"
+    return f"{start + 1:,}–{end + 1:,}" if end is not None else f"{start + 1:,}"
+
+
+def decay_and_lr() -> dict:
+    return {
+        "title": "Decay and LR experiments",
+        "parts": [
+            {"title": "Coefficient weight decay",
+             "intro": "Degree-4 query and query-key coefficients with weight decay 0.1 on the tanh projection "
+                      "<var>W</var> (both query and key <var>W</var> for query-key), or on <var>a</var>, "
+                      "<var>b</var> and <var>W</var>; backbone decay is unchanged. The query-key runs also "
+                      "differ in kernel: fused without <var>W</var> decay, Mosaic with it.",
+             "head": ["Attention", "Without <var>W</var> decay", "With <var>W</var> decay (0.1)",
+                      "With <var>a</var>, <var>b</var>, <var>W</var> decay (0.1)"],
+             "rows": [[label, *(cell(run_id) for run_id in runs)] for label, runs in DECAY]},
+            {"title": "Coefficient learning rate",
+             "intro": "Degree-4 query coefficients with the learning rate of <var>a</var> and <var>b</var> "
+                      "tripled; <var>W</var> and the backbone keep theirs, and neither run decays <var>W</var>.",
+             "head": ["Attention", "Coefficient LR ×1", "Coefficient LR ×3"],
+             "rows": [[label, *(cell(run_id) for run_id in runs)] for label, runs in LEARNING_RATE],
+             "compact": True},
+            {"title": "Taylor warmup, then query + W decay",
+             "intro": "Degree-8 query + W decay with the coefficients held at Taylor for the first 455 updates "
+                      "while the backbone trains, then released all at once or one degree at a time.",
+             "head": ["Run", "Release update", "PPL"],
+             "rows": [[label, release_update(run_id), cell(run_id)] for label, run_id in RELEASE],
+             "compact": True},
+        ],
+    }
+
+
 def main() -> None:
-    data = {"powers": powers(), "gates": gates(), "input_norm": input_norm(), "zero_constant": zero_constant()}
+    data = {"powers": powers(), "gates": gates(), "input_norm": input_norm(), "zero_constant": zero_constant(),
+            "decay_and_lr": decay_and_lr()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")
