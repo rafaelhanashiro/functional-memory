@@ -122,6 +122,8 @@ SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_score_transform.py"
 SCORE_TRANSFORM_STRIPS_TESTS = "scaffolds/transformer/tests/test_score_transform_strips.py"
 SCORE_TRANSFORM_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_transform_lowering.py"
 MOSAIC_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_mosaic_score_transform.py"
+POINTWISE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_pointwise_attention.py"
+POINTWISE_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_pointwise_score_transform.py"
 GRADIENT_EVENT_TESTS = "scaffolds/transformer/tests/test_gradient_events.py"
 
 
@@ -148,6 +150,16 @@ class AcceptanceSpec:
     """Optional recipe/backend selector called as ``(config, resolved_backend, cpu)``."""
     check_pilot: Callable | None = None
     """Called as (config, outcome, terminal_validation) before pilot success; returns extra facts."""
+
+
+def _pointwise_score_transform(model: dict) -> bool:
+    """Fixed [0, 1] on a transformed score runs the pointwise kernel, without learned coefficients."""
+    return (model.get("attention_score_transform", "identity") in ("sigmoid", "softplus")
+            and model.get("attention_degree") == 1
+            and not model.get("attention_normalization", True)
+            and model.get("attention_coefficients", "fixed") == "fixed"
+            and model.get("attention_coefficient_conditioning", "static") == "static"
+            and tuple(model.get("attention_fixed_coefficients") or ()) == (0.0, 1.0))
 
 
 def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu: bool,
@@ -188,7 +200,14 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
         # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the
         # strips at production precision, beside the query kernels' own cases, which the backbone adds.
-        paths.extend((SCORE_TRANSFORM_TESTS, SCORE_TRANSFORM_LOWERING_TESTS) if cpu else (MOSAIC_SCORE_TRANSFORM_TESTS,))
+        if cpu:
+            paths.extend((SCORE_TRANSFORM_TESTS, SCORE_TRANSFORM_LOWERING_TESTS))
+        elif _pointwise_score_transform(model):
+            # Its fixed degree-one weights have a dedicated full-context forward/VJP, model and
+            # repeatability qualification; unrelated high-degree query kernels need not run here.
+            paths.extend((POINTWISE_ATTENTION_TESTS, POINTWISE_SCORE_TRANSFORM_TESTS))
+        else:
+            paths.append(MOSAIC_SCORE_TRANSFORM_TESTS)
     elif transform != "identity":
         implementation = model.get("attention_blocked_implementation", "scan")
         if resolved_backend != "blocked" or implementation != "strips":
@@ -492,9 +511,12 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
         if resolved_backend == "mosaic" and not cpu:
-            query = model.get("attention_coefficient_conditioning", "static") in ("query", "query_key")
-            kernel = "mosaic_query" if query else "mosaic_taylor" if normalized else "mosaic_unnormalized"
-            tests.extend([kernel, "mosaic_repeatability"])
+            if _pointwise_score_transform(model):
+                tests.extend(["pointwise_attention", "pointwise_score_transform"])
+            else:
+                query = model.get("attention_coefficient_conditioning", "static") in ("query", "query_key")
+                kernel = "mosaic_query" if query else "mosaic_taylor" if normalized else "mosaic_unnormalized"
+                tests.extend([kernel, "mosaic_repeatability"])
     if model.get("initialization", "flax_default") != "flax_default" and cpu:
         tests.append("initialization")
     return tuple(f"scaffolds/transformer/tests/test_{name}" + ("" if ".py::" in name else ".py") for name in tests)

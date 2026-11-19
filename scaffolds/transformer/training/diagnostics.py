@@ -788,6 +788,16 @@ def _score_transform_identity(model, formula: str) -> dict:
     start = getattr(model, "attention_coefficient_constant_initial", None)
     identity = {}
     if transform != "identity":
+        if (model.attention_coefficient_conditioning == "static"
+                and model.attention_fixed_coefficients == (0.0, 1.0) and model.attention_degree == 1):
+            # Preserve the following QK-normalization and output-scaling clauses.
+            prefix = "causal_p_1(QK^T / sqrt(d_k)) V, p(x) = sum_(r<=1) c_r x^r, fixed c"
+            if prefix not in formula:
+                raise ValueError("Fixed pointwise attention requires its fixed linear polynomial formula")
+            return {"attention_score_transform": transform, "attention_kernel": f"{transform}_unnormalized",
+                    "attention_signed": False,
+                    "attention_formula": formula.replace(
+                        prefix, f"sum_(i<=t) {transform}(s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k)", 1)}
         if "s_ti^r" not in formula or "s_ti = Q_t K_i^T / sqrt(d_k)" not in formula:
             raise ValueError("A score transform replaces the s_ti^r of a query polynomial formula, which this one lacks")
         formula = formula.replace("s_ti^r", "z_ti^r").replace(
@@ -1483,9 +1493,13 @@ def score_transform_report(raw_layers, config) -> dict:
                 "counts": stack(f"{prefix}_histogram").astype(np.int64).tolist()}
 
     transform = config.model.attention_score_transform
+    fixed_pointwise = (config.model.attention_degree == 1
+                       and config.model.attention_fixed_coefficients == (0.0, 1.0)
+                       and config.model.attention_coefficient_conditioning == "static")
     return {
         "transform": transform,
-        "formula": f"W(t,i) = sum_r c_r(x_t) z_ti^r, {FORMULAS[transform]}",
+        "formula": (f"W(t,i) = z_ti, {FORMULAS[transform]}" if fixed_pointwise
+                    else f"W(t,i) = sum_r c_r(x_t) z_ti^r, {FORMULAS[transform]}"),
         "sample": "fixed_diagnostic_sample",
         "axes": ["layer", "head"],
         "note": "measured by the blocked reference of the same kernel, forward only, over causal pairs",
@@ -1493,7 +1507,8 @@ def score_transform_report(raw_layers, config) -> dict:
         "raw_score": {**moments("raw"), "negative_fraction": serial(stack("raw_negative_count") / pairs)},
         "polynomial_input": moments("input"),
         "decreasing_fraction": serial(stack("decreasing_count") / pairs),
-        "decreasing_formula": "dW/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients",
+        "decreasing_formula": ("dW/dz = 1, so the fixed pointwise kernel never decreases in z" if fixed_pointwise
+                               else "dW/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients"),
         "raw_score_histogram": histogram("raw", "s"),
         "polynomial_input_histogram": histogram("input", "z"),
     }
@@ -1912,6 +1927,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         }
         if not coefficient_report["finite"]:
             issues.append("Nonfinite fixed polynomial coefficients")
+        if getattr(config.model, "attention_score_transform", "identity") != "identity":
+            coefficient_report["score_transform"] = score_transform_report(raw_layers, config)
     elif has_fixed_square_factors(config.model):
         from scaffolds.transformer.attention.nonnegative_polynomial import effective_coefficients_numpy, factor_names
 
@@ -1982,7 +1999,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     if coefficient_report is not None:
         report["coefficients"] = coefficient_report
     if has_fixed_polynomial(config.model):
-        report["kernel_values"] = "unshifted_fixed_polynomial"
+        transform = getattr(config.model, "attention_score_transform", "identity")
+        report["kernel_values"] = ("unshifted_fixed_polynomial" if transform == "identity"
+                                   else f"unshifted_{transform}")
     elif has_fixed_square_factors(config.model):
         report["kernel_values"] = "unshifted_fixed_sum_of_squares"
     if config.model.attention_coefficient_conditioning in ("query", "query_key"):

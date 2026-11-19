@@ -952,6 +952,40 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
+## Sigmoid and softplus attention
+
+The [pointwise attention topic](results/exploratory/pointwise_attention/README.md)
+compares sigmoid `r88d8654a8a1d` and softplus `r266c5dd1f935` with exp control
+`r6a76e7fbde45` at the 15-layer width-896 shape. Each replaces only `exp(s)` in
+the unnormalized causal weighted sum, preserving QK RMSNorm, RoPE, output head
+RMSNorm, all 198,453,586 trainable parameters, initialization, optimizer, data,
+and 7,570-update budget. Fixed degree-one coefficients `[0, 1]` after the score
+transform implement the functions without a learned coefficient generator.
+
+Both runs sum input embedding gradients for repeated tokens in FP32. The
+historical exp control summed them in BF16.
+
+Home cluster: Kennel. Branch `codex/pointwise-attention-baselines`, worktree
+`worktrees/pointwise-attention-baselines`. The shared Mosaic transformed kernels
+run on one B200 per job. The [acceptance adapter](pointwise_attention_acceptance.py)
+pins the exp recipe and exact initialization/decay mask, qualifies the pointwise
+kernels, and requires a full-recipe pilot and fresh-process resume before training.
+Submit from the worktree after committing its frozen inputs and checking the
+live standard/long allowance; the launcher records each execution attempt:
+
+```bash
+for run in r88d8654a8a1d r266c5dd1f935; do
+  sbatch --parsable --partition=standard --nodelist=shiba \
+    --exclude=collie,samoyed,doodle,terrier,akita,mastiff,dogo \
+    --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.pointwise_attention_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200
+done
+```
+
 ## ALiBi-style constant decay without RoPE
 
 The [alibi_decay topic](results/exploratory/alibi_decay/README.md) pretrains

@@ -1,0 +1,48 @@
+question: Does sigmoid or softplus improve on the exponential score function in Transformer++?
+settings:
+  metric: validation perplexity
+  report:
+  - validation-best
+  - terminal
+  context_length: 2048
+  training_updates: 7570
+  seed: 42
+  attention_normalization: false
+  attention_output_scaling: head_rms_norm
+runs:
+- study: transformer_pp
+  run_id: r6a76e7fbde45
+  role: exp_control
+  label: Exp
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metrics.jsonl
+      sha256: adcc711574d95b506246b762fef2fdb724ab1aa00f618c0546cb3f47c4ce165d
+    completion.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/completion.json
+      sha256: 8b7e7bf2d3124fe5dff032355b96a42f3982166f58978f998b47b3415ae4298e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metadata.json
+      sha256: 7fa4b1ed64bf0e895b67d2db757a580599e831500a0757ad7787ed7d7a4c92ae
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
+      sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r88d8654a8a1d
+  role: sigmoid
+  label: Sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r88d8654a8a1d/config.yaml
+      sha256: e5431e8346d73588a3b7fb6e55099fed49881ad465d26c54535b6c3b64dcaf00
+- study: transformer_pp
+  run_id: r266c5dd1f935
+  role: softplus
+  label: Softplus
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r266c5dd1f935/config.yaml
+      sha256: daab9eb0b2ff2a87b003d12503d7c17355236f155fc0962a02fa3c169f0c3d29

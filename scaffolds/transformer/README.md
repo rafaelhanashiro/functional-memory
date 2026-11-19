@@ -744,8 +744,8 @@ own shift:
 
 ### Score transforms
 
-`attention_score_transform` (default `identity`) evaluates the diagonal tanh query polynomial at a
-parameter-free function of the score instead of the score itself (`attention/score_transform.py`):
+`attention_score_transform` (default `identity`) evaluates the diagonal tanh query polynomial, or the fixed
+linear pointwise kernel below, at a parameter-free function of the score (`attention/score_transform.py`):
 
     W(t,i) = sum_(r=0..m) c_r(x_t) z_ti^r,    z_ti = phi(s_ti)
 
@@ -754,9 +754,20 @@ parameter-free function of the score instead of the score itself (`attention/sco
 | `identity` | `s` (every historical recipe) | `c_m s^m` dominates: a large weight of sign `(-1)^m` |
 | `softplus` | `log(1 + exp(s))`, as `max(s, 0) + log1p(exp(-abs(s)))` | `z -> 0`, so `W -> c_0` |
 | `abs` | `abs(s)` | the weight of `-s` |
+| `sigmoid` | `1 / (1 + exp(-s))`, evaluated using `exp(-abs(s))` | `z -> 0`, so `W -> c_0` |
+
+Fixed sigmoid and softplus attention use `attention_degree: 1`, `attention_coefficients: fixed`,
+`attention_fixed_coefficients: [0, 1]`, static conditioning, direct parameterization, identity coefficient
+activation, and coefficient/amplitude scales `none`. This represents exactly `W(t,i) = phi(s_ti)` with no
+coefficient parameters or additional gate. Attention is unnormalized; `attention_output_scaling:
+head_rms_norm` applies after the weighted value sum. The supported backends are explicit `mosaic` with
+RoPE or `blocked` with RoPE or no positional encoding, without forget gates or score biases. Focused
+qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_pointwise_attention.py`.
 
 - Derivatives: `sigmoid(s)` for softplus and `sign(s)` (zero at `s = 0`) for abs, given as JVP rules;
   autodiff of the softplus formula would give 0 at `s = 0`, since JAX takes `|s|`'s derivative there as 1.
+  Sigmoid uses `y / (1 + y)^2`, `y = exp(-abs(s))`, so positive-tail gradients survive after its value
+  rounds to one; its derivative at zero is `1/4`.
   Masked entries evaluate `phi` at their zero score and are zeroed as for every kernel; a nonfinite score
   poisons its row as before.
 - `attention_coefficient_constant_initial` (default null) starts the order-0 offset `b_0` of the same
@@ -775,11 +786,10 @@ parameter-free function of the score instead of the score itself (`attention/sco
   keys]` block at a time; a blocked recipe trains on the strips, which `scaffolds.records create` gives a fresh
   blocked recipe and requires (also with `--allow-scan-blocked-attention`). An explicit `mosaic` backend runs
   `mosaic.api.transformed_query_polynomial_attention(q, k, v, coefficients, transform=...)`: the query
-  polynomial's own H100 and B300 kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
-  `common.QUERY_ABS`). Backend selection admits them on H100 (sm90) alone and refuses a B200 or B300 with the
-  reason, as it refuses the score biases: B300's kernels lower, but no Blackwell GPU has run them. The entry
-  point refuses them there too (`api.TRANSFORM_ARCHITECTURES`), which covers a model restored from a checkpoint
-  without backend selection; `tests/test_mosaic_score_transform.py` admits the GPU it qualifies. Softplus is
+  polynomial's Hopper and Blackwell kernels with `phi` evaluated in their causal tiles (`common.QUERY_SOFTPLUS`,
+  `common.QUERY_ABS`, `common.QUERY_SIGMOID`). Backend selection and the entry point admit H100 (sm90) and
+  B200 (sm100), and refuse the unqualified B300 (sm103), including a model restored without backend selection
+  (`api.TRANSFORM_COMPUTE_CAPABILITIES`). Softplus is
   `(s + max(-s, 0)) + ln(1 + y)`, `y = e^-abs(s)`, from one `ex2.approx` and one `lg2.approx` (below
   `y = 2^-6` the cubic series of `ln(1 + y)`): `s + max(-s, 0)` is `max(s, 0)` for every finite score and NaN at
   `s = -inf`, so a causal score that overflowed makes its row NaN as in the query kernels and the blocked

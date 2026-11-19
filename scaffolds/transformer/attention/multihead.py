@@ -513,16 +513,27 @@ class MultiHeadAttention(nnx.Module):
         # requirements, mirrored for direct construction.
         from scaffolds.transformer.attention.score_transform import validate as validate_transform
 
+        fixed_pointwise = (attention_score_transform in ("sigmoid", "softplus")
+                           and attention_degree == 1 and attention_fixed_coefficients == (0.0, 1.0)
+                           and attention_fixed_square_factors is None
+                           and attention_coefficient_conditioning == "static"
+                           and attention_coefficient_parameterization == "direct"
+                           and attention_coefficient_activation == "identity"
+                           and attention_coefficient_scale == "none"
+                           and attention_coefficient_amplitude_scale == "none"
+                           and attention_coefficient_input_power == 0)
         if validate_transform(attention_score_transform) != "identity" and (
-                (not static_sos and (attention_coefficient_conditioning != "query"
-                                     or attention_coefficient_activation != "tanh"))
+                not (fixed_pointwise or (attention_score_transform != "sigmoid"
+                                        and (static_sos or (attention_coefficient_conditioning == "query"
+                                                            and attention_coefficient_activation == "tanh"))))
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
                 or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
                 or attention_degree < 1 or positional_encoding not in ("rope", "none")
                 or backend not in ("blocked", "mosaic") or backend == "mosaic" and positional_encoding != "rope"
                 or attention_forget_gate or attention_score_bias != "none"):
-            raise ValueError("A score transform requires diagonal tanh query coefficients of unnormalized polynomial "
+            raise ValueError("A score transform requires fixed static linear (0, 1) sigmoid/softplus weights or "
+                             "diagonal tanh query coefficients of unnormalized polynomial "
                              "attention with RoPE or no positional encoding, without selected orders, coefficient "
                              "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend, or "
                              "with RoPE on the mosaic backend")
@@ -919,6 +930,13 @@ class MultiHeadAttention(nnx.Module):
                 coefficient_gate_logits(x, gate_kernel, gate_bias), ungated,
                 parameters["query_polynomial_coefficients"], q, k, gate_log_rate=gate_log_rate)
         if self.attention_score_transform != "identity":
+            if self.attention_coefficient_conditioning == "static" and self.attention_fixed_coefficients is not None:
+                # Fixed [0, 1] makes the transformed polynomial exactly phi(s). Static SoS keeps its own factors.
+                # This is a constant FP32 table, not a learned query generator.
+                represented = parameters.pop("polynomial_coefficients")
+                parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
+                    represented, (batch, seq_len, self.num_heads, 2))
+                kernel_coefficient_activation = "tanh"  # Select the general polynomial kernel only.
             # Only transformed recipes pass it, so every other recipe's call is unchanged.
             parameters["score_transform"] = self.attention_score_transform
         result = attention_core(

@@ -183,16 +183,18 @@ def polynomial_and_derivative(s, coefficients):
 #                 (row) or sum_i dbeta_r (1 - tau_r^2), sum_i dbeta_r tau_r, sum_i dbeta_r (pair); the dK
 #                 pass sums the gate's kind, then sum_t dbeta_r (1 - tau_r^2) per order (pair). Every
 #                 summand of a tile crossing the diagonal is selected with the causal mask first.
-#   query_softplus, query_abs: the query polynomial at a transformed score, sum_r c_r z^r with z = phi(s) per
-#                 pair (attention/score_transform.py): z = softplus(s) = ln(1 + e^s) or z = |s|, with the
-#                 vectors of query. dS = G p'(z) phi'(s), phi' = sigmoid(s) (1/2 at s = 0) or sign(s) (0 at
-#                 s = 0), and the dQ sums are dc_r = sum_i G z^r (``transformed_score``). Masked entries
+#   query_softplus, query_abs, query_sigmoid: sum_r c_r z^r at the per-pair transform phi(s), with the
+#                 vectors of query (attention/score_transform.py); fixed vectors [0, 1] give phi(s) alone.
+#                 dS = G p'(z) phi'(s): softplus uses sigmoid(s), abs uses sign(s), sigmoid uses its stable
+#                 logistic derivative (respectively 1/2, 0, 1/4 at s = 0). The dQ sums are dc_r = sum_i G z^r
+#                 (``transformed_score``). Masked entries
 #                 evaluate phi at their zero score, finite for finite coefficients, and the kernels zero their
 #                 weights and score gradients as for query, so these families need no ``Pair``. A nonfinite
 #                 causal score gives a nonfinite z (softplus's -inf too), so its row is NaN as for query.
 TAYLOR, QUERY = "taylor", "query"
 QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
-TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS)
+QUERY_SIGMOID = "query_sigmoid"
+TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS, QUERY_SIGMOID)
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
 PER_ORDER_CUMULATIVE_DECAY = "per_order_cumulative_decay"
@@ -279,16 +281,16 @@ def vector_counts(family, degree):
         orders = degree + 1
         sums = {PER_ORDER_QUERY_DECAY: 2, PER_ORDER_ENDPOINT_DECAY: 3, PER_ORDER_CUMULATIVE_DECAY: 1}[family]
         return 2 * orders, 2 * orders, sums * orders
-    extra = {QUERY: 0, QUERY_SOFTPLUS: 0, QUERY_ABS: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
+    extra = {QUERY: 0, QUERY_SOFTPLUS: 0, QUERY_ABS: 0, QUERY_SIGMOID: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
     return degree + 1 + extra, degree + 1 + extra, degree + 1 + extra
 
 
 def approx_math(family):
     """Whether a family's kernels use the GPU's approximate exp2/log2 (ex2/lg2.approx: about
     2^-22 relative and absolute error). Only decay families, pair shifts (tanh from exp2) and the
-    softplus transform evaluate transcendentals; a row shift evaluates none, so the flag does not
+    softplus/sigmoid transforms evaluate transcendentals; a row shift evaluates none, so the flag does not
     change it, and the abs transform, which evaluates none either, keeps query's compiler settings."""
-    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES or family == QUERY_SOFTPLUS
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES or family in (QUERY_SOFTPLUS, QUERY_SIGMOID)
 
 
 def key_counts(family, degree):
@@ -346,11 +348,17 @@ def transformed_score(family, s, *, slope=False):
     underflows. Abs: z = |s| and sign(s), 0 at s = 0. z is finite for every finite score and nonfinite for every
     nonfinite one: abs gives +inf at +-inf, softplus +inf at +inf and NaN at -inf, where its limit 0 would give
     the pair the finite weight c_0, and both NaN at NaN. A causal score that overflowed therefore makes its row
-    NaN, as for query and the blocked reference."""
+    NaN, as for query and the blocked reference. Sigmoid uses y = e^-|s|, z = 1/(1+y) for s >= 0 and
+    y/(1+y) otherwise, with slope y/(1+y)^2 so that a value rounded to one still has its positive-tail
+    gradient. Nonfinite sigmoid inputs explicitly become NaN rather than saturating to valid weights."""
     if family == QUERY_ABS:
         z = jnp.abs(s)
         return z, (jnp.where(s > 0.0, 1.0, 0.0) - jnp.where(s < 0.0, 1.0, 0.0) if slope else None)
     y = jnp.exp2(jnp.abs(s) * -LOG2E)
+    if family == QUERY_SIGMOID:
+        inverse = 1.0 / (1.0 + y)
+        z = jnp.where(finite(s), jnp.where(s >= 0.0, 1.0, y) * inverse, jnp.nan)
+        return z, (jnp.where(finite(s), y * inverse * inverse, jnp.nan) if slope else None)
     log1p = jnp.where(y < _SERIES, y * (1.0 - y * (0.5 - y * (1.0 / 3.0))), jnp.log(1.0 + y))
     z = (s + jnp.maximum(-s, 0.0)) + log1p  # s + max(-s, 0) is max(s, 0) exactly for finite s, NaN at s = -inf
     return z, (jnp.exp2((jnp.minimum(s, 0.0) - log1p) * LOG2E) if slope else None)

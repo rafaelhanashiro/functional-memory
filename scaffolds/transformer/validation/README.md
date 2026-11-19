@@ -11,6 +11,53 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Fixed sigmoid and softplus attention (2026-11-18)
+
+The fixed degree-one `[0, 1]` route evaluates sigmoid or softplus inside the shared
+Mosaic transformed kernels. It adds no parameters. Both full reference-shape
+initializations and actual optimizer decay masks match the pinned exp control
+exactly: 198,453,586 parameters. Acceptance-selector and pinned-recipe regression
+checks passed 191 CPU tests. Thirteen focused transform checks passed, covering
+independent NumPy values and all gradients, finite extreme tails, numerical
+failure behavior, blocked scan/strips agreement, and forward/backward lowering
+for H100 and B200 at the production context.
+
+Both allocations passed 619 CPU and 10 distributed CPU checks. All 14 dedicated
+Mosaic kernel GPU checks passed on B200, covering production-context BF16 forward
+and all Q/K/V/coefficient gradients against independent CPU references, causality,
+tails, nonfinite scores, and exact kernel repeatability. The two full-model
+repeatability checks failed before the training pilot: their 256-token fixture
+draws from only 64 embedding indices, and BF16 atomic accumulation makes the
+embedding gradient vary by update order. Loss, logits, and all other gradients
+repeat exactly.
+
+Read-only diagnostic job `6520` reproduced this for sigmoid, softplus, and a
+blocked-exp control with one compiled callable and with a fresh compilation.
+Using distinct token IDs made every output and parameter gradient bitwise equal
+over three repeats and a fresh compilation, for all three functions. Every
+per-array relative-L2 difference against the CPU blocked model stayed below 1.2%.
+The [original measurements](pointwise_repeatability.json) and
+[diagnostic program](pointwise_repeatability_probe.py) record the behavior
+before the input embedding precision fix.
+
+The shared model now gathers FP32 embedding rows and casts the gathered
+activations to the compute dtype. Its repeated-ID regression gives two token
+occurrences the gradients 1 and 1/1024 in the same channel. Their FP32 sum
+is 1.0009765625. The previous BF16 accumulation returned 1. The new CPU check
+recovers the exact sum and checks forward activations against the former lookup
+for both BF16 and FP32 training.
+
+On B200, job `6665` passed all 20 focused GPU checks. These include both
+embedding compute dtypes, fourteen pointwise kernel checks, and four full-model
+checks across sigmoid and softplus with distinct and repeated token IDs. All
+four full-model checks passed the original GPU-to-CPU tolerances and produced
+bitwise-identical outputs and gradients on a second call. Job `6674` passed all
+20 checks again with an additional replay through a newly jitted model function.
+
+Every production allocation requires the full suite, initialization, a
+20-update pilot, and fresh-process checkpoint resume. The pointwise acceptance
+adapter admits H100 and B200.
+
 ### Unit-L2 coefficient inputs (2026-11-14)
 
 The coefficient-only normalizer passed **21 CPU checks in 64.58 seconds**, alongside

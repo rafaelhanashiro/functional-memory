@@ -65,6 +65,10 @@ def attention_core(
     static SoS at z = phi(s), without a forget gate, key factors or score biases, on the blocked backend or
     the Mosaic transformed query-polynomial kernels. ``square_factor_input_power=1`` supplies the static
     SoS prefactor z on softplus inputs; its factors retain even core degree attention_degree - 1.
+    Parameter-free sigmoid/softplus attention uses this same operation with a constant FP32
+    query-coefficient table [0, 1]; the "tanh" activation label selects the general polynomial
+    operation and applies no activation to these already-effective coefficients. Every other
+    mechanism and backend rejects a transform other than "identity".
     The ``score_mlp_*`` arrays (projected unit
     amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
     """
