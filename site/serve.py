@@ -5,16 +5,21 @@ from this server's own Unix user are answered (elsewhere, such as on a laptop, t
 /proc/net/tcp to check and every local connection is answered). Besides static files it
 accepts:
 
-    PUT   /literature/<id>.md      replace an existing write-up with the request body
-    PUT   /meeting/<date>-agenda.md, /meeting/<date>-notes.md
-                                   likewise a meeting's agenda or notes (dates as YYYY-MM-DD)
-    GET   /api/meetings            {"dates": [...]}: the meetings' dates, newest first
-    POST  /api/meetings            {"date": ...}: add a meeting, with an empty agenda and notes
-    POST  /api/media              an image body (PNG, JPEG, GIF, WebP): store it in media/
-    PUT   /api/literature          {"order": [ids]}: reorder the resources (the page's order)
-    POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
-    PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
-                                   groups; {"title": ...} renames it
+    PUT    /literature/<id>.md      replace an existing write-up with the request body
+    PUT    /meeting/<date>-agenda.md, /meeting/<date>-notes.md
+                                    likewise a meeting's agenda or notes (dates as YYYY-MM-DD)
+    GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first
+    POST   /api/meetings            {"date": ..., "title": ...}: add a meeting, with an empty
+                                    agenda and notes (the title, its name, is optional)
+    PATCH  /api/meetings/<date>     {"title": ...} renames a meeting, {"date": ...} moves it
+    DELETE /api/meetings/<date>     delete a meeting: its agenda, notes and name
+    POST   /api/media               an image body (PNG, JPEG, GIF, WebP): store it in media/
+    PUT    /api/literature          {"order": [ids]}: reorder the resources (the page's order)
+    POST   /api/literature          {"url": ...}: add a resource, reading its title, authors and year
+    PATCH  /api/literature/<id>     {"seen": true or false} moves a resource between the two
+                                    groups; {"title": ...} renames it
+
+A meeting's name is kept in meeting/<date>.json; an unnamed meeting has none.
 
 Saving a document deletes the images in media/ that no write-up, agenda, or notes link to,
 once they are more than a day old (an image pasted into unsaved text is not linked yet).
@@ -47,6 +52,8 @@ LIST = LITERATURE / "papers.json"
 MEETINGS = SITE / "meeting"
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 MEETING_FILE = re.compile(r"(\d{4}-\d{2}-\d{2})-(?:agenda|notes)\.md")
+MEETING_API = re.compile(r"/api/meetings/(\d{4}-\d{2}-\d{2})")
+PARTS = ("agenda", "notes")
 DOCUMENT = re.compile(r"/(literature/[A-Za-z0-9._-]+\.md|meeting/\d{4}-\d{2}-\d{2}-(?:agenda|notes)\.md)")
 RESOURCE = re.compile(r"/api/literature/([A-Za-z0-9._-]+)")
 ARXIV = re.compile(r"arxiv\.org/(?:abs|pdf|html)/([0-9]{4}\.[0-9]{4,5}|[a-z-]+(?:\.[a-z]{2})?/[0-9]{7})", re.I)
@@ -101,10 +108,49 @@ def prune_media() -> list[str]:
     return removed
 
 
-def meeting_dates() -> list[str]:
-    """The meetings' dates, newest first: a meeting is meeting/<date>-agenda.md and -notes.md."""
+def meeting_files(day: str) -> list[Path]:
+    """A meeting's agenda and notes, then the file with its name."""
+    return [*(MEETINGS / f"{day}-{part}.md" for part in PARTS), MEETINGS / f"{day}.json"]
+
+
+def meeting_exists(day: str) -> bool:
+    return any(path.exists() for path in meeting_files(day)[:len(PARTS)])
+
+
+def meeting(day: str) -> dict:
+    try:
+        title = json.loads((MEETINGS / f"{day}.json").read_text())["title"]
+    except (OSError, ValueError, KeyError, TypeError):
+        title = ""
+    return {"date": day, "title": title if isinstance(title, str) else ""}
+
+
+def list_meetings() -> list[dict]:
+    """The meetings, newest first: a meeting is meeting/<date>-agenda.md and -notes.md."""
     names = (MEETING_FILE.fullmatch(path.name) for path in MEETINGS.glob("*.md"))
-    return sorted({name.group(1) for name in names if name}, reverse=True)
+    return [meeting(day) for day in sorted({name.group(1) for name in names if name}, reverse=True)]
+
+
+def save_title(day: str, title: str) -> None:
+    path = MEETINGS / f"{day}.json"
+    if title:
+        write_atomic(path, json.dumps({"title": title}, ensure_ascii=False) + "\n")
+    else:
+        path.unlink(missing_ok=True)
+
+
+def parse_day(value) -> str:
+    """The value, if it is a real date written YYYY-MM-DD."""
+    if not isinstance(value, str) or not DATE.fullmatch(value):
+        raise ValueError(f"not a YYYY-MM-DD date: {value!r}")
+    date.fromisoformat(value)
+    return value
+
+
+def parse_title(value) -> str:
+    if not isinstance(value, str):
+        raise ValueError("the name must be text")
+    return " ".join(value.split())
 
 
 def load_list() -> list[dict]:
@@ -243,7 +289,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if not self._same_user():
             return
         if self._route() == "/api/meetings":
-            self._json(200, {"dates": meeting_dates()})
+            self._json(200, {"meetings": list_meetings()})
             return
         super().do_GET()
 
@@ -315,19 +361,49 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if body is None:
             return
         try:
-            day = json.loads(body)["date"]
-            if not DATE.fullmatch(day):
-                raise ValueError(day)
-            date.fromisoformat(day)
-        except (ValueError, KeyError, TypeError):
-            self._json(400, {"error": 'Expected {"date": "YYYY-MM-DD"}'})
+            request = json.loads(body)
+            day = parse_day(request["date"])
+            title = parse_title(request.get("title", ""))
+        except (ValueError, KeyError, TypeError, AttributeError):
+            self._json(400, {"error": 'Expected {"date": "YYYY-MM-DD", "title": ...}'})
             return
-        MEETINGS.mkdir(exist_ok=True)
-        files = [MEETINGS / f"{day}-{part}.md" for part in ("agenda", "notes")]
-        new = [path for path in files if not path.exists()]  # a meeting already on that date stays as it is
-        for path in new:
-            path.touch()
-        self._json(201 if new else 200, {"date": day})
+        with LOCK:
+            if meeting_exists(day):  # a meeting already on that date stays as it is
+                self._json(200, meeting(day))
+                return
+            MEETINGS.mkdir(exist_ok=True)
+            for path in meeting_files(day)[:len(PARTS)]:
+                path.touch()
+            save_title(day, title)
+        self._json(201, meeting(day))
+
+    def _change_meeting(self, day: str):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            changes = json.loads(body)
+            if not isinstance(changes, dict) or not changes or set(changes) - {"date", "title"}:
+                raise ValueError(changes)
+            moved = parse_day(changes.get("date", day))
+            title = parse_title(changes["title"]) if "title" in changes else None
+        except (ValueError, TypeError):
+            self._json(400, {"error": 'Expected {"date": "YYYY-MM-DD"} or {"title": ...}'})
+            return
+        with LOCK:
+            if not meeting_exists(day):
+                self._json(404, {"error": f"No meeting on {day}"})
+                return
+            if moved != day:
+                if meeting_exists(moved):
+                    self._json(409, {"error": f"There is already a meeting on {moved}"})
+                    return
+                for old, new in zip(meeting_files(day), meeting_files(moved)):
+                    if old.exists():
+                        os.rename(old, new)
+            if title is not None:
+                save_title(moved, title)
+        self._json(200, meeting(moved))
 
     def do_POST(self):
         if not self._same_user():
@@ -377,8 +453,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             save_list([entry, *papers])
         self._json(201, entry)
 
+    def do_DELETE(self):
+        if not self._same_user():
+            return
+        match = MEETING_API.fullmatch(self._route())
+        if not match:
+            self.send_error(404)
+            return
+        with LOCK:
+            if not meeting_exists(match.group(1)):
+                self._json(404, {"error": f"No meeting on {match.group(1)}"})
+                return
+            for path in meeting_files(match.group(1)):
+                path.unlink(missing_ok=True)
+        self.send_response(204)
+        self.end_headers()
+
     def do_PATCH(self):
         if not self._same_user():
+            return
+        if meeting_match := MEETING_API.fullmatch(self._route()):
+            self._change_meeting(meeting_match.group(1))
             return
         match = RESOURCE.fullmatch(self._route())
         if not match:

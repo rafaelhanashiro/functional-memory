@@ -25,19 +25,38 @@
     <div class="meetings" hidden>
       <form class="new-meeting" autocomplete="off">
         <input name="date" type="date" aria-label="Meeting date" required>
+        <input name="title" type="text" placeholder="Name (optional)" aria-label="Meeting name">
         <button class="button primary" type="submit">New meeting</button>
       </form>
       <p class="meeting-status" aria-live="polite"></p>
-      <div class="subpages"></div>
+      <div class="meeting-list"></div>
     </div>
     <div class="meeting" hidden>
       <a class="back" href="meeting.html">← Meetings</a>
-      <h1 class="page-title"></h1>
-      <section class="meeting-part" data-part="agenda">
+      <div class="meeting-head">
+        <div>
+          <h1 class="page-title"></h1>
+          <p class="meeting-date" hidden></p>
+        </div>
+        <button class="button" type="button" data-action="edit" hidden>Edit meeting</button>
+      </div>
+      <form class="meeting-details" autocomplete="off" hidden>
+        <div class="meeting-fields">
+          <input name="title" type="text" placeholder="Name (optional)" aria-label="Meeting name">
+          <input name="date" type="date" aria-label="Meeting date" required>
+        </div>
+        <div class="meeting-buttons">
+          <button class="button danger" type="button" data-action="delete">Delete meeting</button>
+          <span class="meeting-form-status" aria-live="polite"></span>
+          <button class="button" type="button" data-action="cancel">Cancel</button>
+          <button class="button primary" type="submit">Save</button>
+        </div>
+      </form>
+      <section class="meeting-part" data-part="agenda" hidden>
         <h2>Agenda</h2>
         <div class="sheet"></div>
       </section>
-      <section class="meeting-part" data-part="notes">
+      <section class="meeting-part" data-part="notes" hidden>
         <h2>Notes</h2>
         <div class="sheet"></div>
       </section>
