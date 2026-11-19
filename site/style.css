@@ -63,17 +63,17 @@ main {
 /* Runs: full-width banners linking to the pages of run collections */
 .subpages {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 .subpage {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  min-height: 118px;
-  padding: 26px 28px;
+  gap: 16px;
+  min-height: 88px;
+  padding: 18px 22px;
   border: 1px solid rgba(79, 70, 229, 0.14);
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(100deg, #eef2ff 0%, #e0f2fe 100%);
   color: var(--text);
   text-decoration: none;
@@ -90,29 +90,29 @@ main {
   min-width: 0;
 }
 .subpage-title {
-  font-size: 2.1rem;
+  font-size: 1.45rem;
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 .subpage-meta {
-  margin-top: 8px;
+  margin-top: 5px;
   color: #475569;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 .subpage-arrow {
   display: grid;
   flex: none;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.75);
   transition: background 0.18s ease, transform 0.18s ease;
 }
 .subpage-arrow svg {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: #334155;
   stroke-width: 1.8;
