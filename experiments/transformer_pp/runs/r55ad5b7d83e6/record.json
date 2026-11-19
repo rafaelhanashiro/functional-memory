@@ -1,12 +1,89 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/completion.json",
+      "sha256": "2b34d0931ea7e6f1da6a48e2dec1fe4e046aa8a67bc6feabdfe8436e26bb5a67",
+      "size_bytes": 99
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/metadata.json",
+      "sha256": "a5ef61b7a594a434e328424153572fc0da3c46f1265519a3e90f2ec4ebebbe90",
+      "size_bytes": 4661
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/metrics.jsonl",
+      "sha256": "42f7852a98fd988363c97e10894c0110f8438b3719c0630da75ea7ed2c2a7a7d",
+      "size_bytes": 238342
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/training.log",
+      "sha256": "04779f71761cd752ba91529e4193853b796541179dfb4c35891bb429b1100df1",
+      "size_bytes": 969
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-19T04:03:33.951379+00:00",
+      "frozen_execution_sha256": "a2a95e5739cdef11cbf265e16accb395e4c5ce2c0a98efbfcc7b5b4705b4133d",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B200",
+      "node": "shiba.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "resolved_attention_backend": "mosaic",
+      "slurm_job_id": "7296",
+      "source_commit": "91724fc3389d434504c5e356b98b90d3c84c93eb",
+      "started_utc": "2026-11-19T03:53:57.433044+00:00"
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/completion.json",
+    "sha256": "2b34d0931ea7e6f1da6a48e2dec1fe4e046aa8a67bc6feabdfe8436e26bb5a67",
+    "size_bytes": 99
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/config.yaml",
     "sha256": "5d0fe74bc1669b2e5fb72dc23b1dddddd64146b573002851aa008b3a62be2bb7"
   },
   "home_cluster": "kennel",
   "label": "softplus_sos_prefactor_m8_swap_one_at_a_time",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/training.log",
+    "sha256": "04779f71761cd752ba91529e4193853b796541179dfb4c35891bb429b1100df1",
+    "size_bytes": 969
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/metadata.json",
+    "sha256": "a5ef61b7a594a434e328424153572fc0da3c46f1265519a3e90f2ec4ebebbe90",
+    "size_bytes": 4661
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/metrics.jsonl",
+    "sha256": "42f7852a98fd988363c97e10894c0110f8438b3719c0630da75ea7ed2c2a7a7d",
+    "size_bytes": 238342
+  },
   "name": "softplus_sos_prefactor_m8_swap_one_at_a_time",
   "record_schema_version": 1,
   "run_id": "r55ad5b7d83e6",
-  "status": "planned"
+  "runtime": {
+    "frozen_execution_sha256": "a2a95e5739cdef11cbf265e16accb395e4c5ce2c0a98efbfcc7b5b4705b4133d",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B200",
+    "node": "shiba.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "7296",
+    "source_commit": "91724fc3389d434504c5e356b98b90d3c84c93eb",
+    "started_utc": "2026-11-19T03:53:57.433044+00:00"
+  },
+  "status": "complete",
+  "submission": {
+    "launch_commit": "91724fc3389d434504c5e356b98b90d3c84c93eb",
+    "partition": "standard",
+    "requested_gpus": "b200:1",
+    "slurm_job_id": "7296",
+    "submitted_utc": "2026-11-19T03:52:30.925565+00:00"
+  }
 }

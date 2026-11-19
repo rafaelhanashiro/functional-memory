@@ -81,6 +81,17 @@ own-coefficient replay. Each recipient evaluates the replacement polynomial at i
 `z = softplus(s)`. Both the donor table and the per-head calibration mean contain the expanded
 coefficients of `z (U(z)² + V(z)²)`, with a zero constant and powers one through nine.
 
+On those 256 sequences the native checkpoint scored 15.278 PPL. Swapping all layers raised
+PPL to 15.605 (+2.14%, +0.02118 NLL per token). Using the calibration means raised it to
+15.463 (+1.21%, +0.01205 NLL). The corresponding differences from own-coefficient replay
+were +0.02117 and +0.01204 NLL. [All-layer measurements](../../../runs/r2384d21a3134/metrics.jsonl)
+
+For one layer at a time, median swap and mean penalties were +0.00097 and +0.00061 NLL.
+Layer 10 had the largest penalty in both conditions (+0.00160 and +0.00116, one-based).
+Each layer scored better with its calibration mean than with its donor's coefficients on this
+sample. The individual penalties summed to +0.01420 for swapping and +0.00831 for the mean.
+[Per-layer measurements](../../../runs/r55ad5b7d83e6/metrics.jsonl)
+
 ## The 12-layer width-640 shape at 1x, 2x and 4x
 
 All six runs are complete. They train the two degree-twelve compositions at the 12-layer width-640 shape with
