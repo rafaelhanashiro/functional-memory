@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r50200ac83292/config.yaml",
+    "sha256": "51876e75a4f054a191970ec37912c708507b8f458e948fa338d37da658c6d757"
+  },
+  "home_cluster": "kennel",
+  "label": "all_layer_swap_query_m8",
+  "name": "all_layer_swap_query_m8",
+  "record_schema_version": 1,
+  "run_id": "r50200ac83292",
+  "status": "planned"
+}

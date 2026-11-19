@@ -9,8 +9,9 @@ from scaffolds.transformer.configs import ModelConfig
 from scaffolds.transformer.models import build_model
 
 
-@pytest.mark.parametrize("form", ["direct", "sum_of_squares"])
-def test_layerwise_losses_against_individual_donor_and_mean_forwards(form):
+@pytest.fixture(params=["direct", "sum_of_squares"])
+def model(request):
+    form = request.param
     config = ModelConfig(vocab_size=32, max_seq_len=6, num_layers=3, hidden_size=8, num_heads=2,
                          num_kv_heads=2, qk_head_dim=2, value_head_dim=4, intermediate_size=12,
                          attention_degree=8, attention_normalization=False, attention_coefficients="learned",
@@ -22,6 +23,11 @@ def test_layerwise_losses_against_individual_donor_and_mean_forwards(form):
                          initialization="transformer_reference", qk_norm=True)
     model = build_model(config, 7)
     model.query_polynomial_amplitude[...] = jnp.full_like(model.query_polynomial_amplitude[...], .8)
+    return model
+
+
+def test_layerwise_losses_against_individual_donor_and_mean_forwards(model):
+    config = model.config
     rows = np.random.default_rng(20).integers(0, 32, (8, 7), dtype=np.int32)
     calibration, recipients = rows[:4], rows[4:]
     graph, state = nnx.split(model, nnx.Param)
@@ -61,3 +67,32 @@ def test_layerwise_losses_against_individual_donor_and_mean_forwards(form):
         matched = (np.asarray(record["sequence_nll"]) - identity[layer]).reshape(-1, 2).mean(axis=1)
         np.testing.assert_allclose(record["delta_nll_vs_identity_replay"], matched.mean(), atol=1e-12)
         np.testing.assert_allclose(record["paired_se_vs_identity_replay"], matched.std(ddof=1) / np.sqrt(2), atol=1e-12)
+
+
+def test_all_layers_use_one_native_donor_or_the_calibration_mean(model):
+    rows = np.random.default_rng(20).integers(0, 32, (8, 7), dtype=np.int32)
+    calibration, recipients = rows[:4], rows[4:]
+    graph, state = nnx.split(model, nnx.Param)
+    order, records = evaluate(graph, state, calibration, recipients, microbatch=2, pairing_seed=42,
+                              layer_scope="all_layers")
+    assert [r["condition"] for r in records] == ["native", "swapped", "calibration_mean"]
+    assert all(r["layer_scope"] == "all_layers" for r in records)
+    np.testing.assert_array_equal(order, np.random.default_rng(42).permutation(len(recipients)))
+    identity = np.array(records[0]["identity_sequence_nll"])
+    np.testing.assert_allclose(identity, records[0]["sequence_nll"], atol=2e-6)
+    # Independent one-sequence forwards keep the donor's entire native layer trajectory.
+    # Average expanded calibration tables across individual sequences and token positions.
+    tables = [model(row[None, :-1], return_coefficients=True)[1] for row in calibration]
+    mean = jnp.concatenate(tables, axis=1).mean(axis=(1, 2), keepdims=True)
+    for condition in records[1:]:
+        expected = []
+        for i, row in enumerate(recipients[order]):
+            donor = recipients[order[i ^ 1]]
+            _, coefficients = model(donor[None, :-1], return_coefficients=True)
+            if condition["condition"] == "calibration_mean":
+                coefficients = jnp.broadcast_to(mean, coefficients.shape)
+            logits = model(row[None, :-1], query_coefficients=coefficients)
+            expected.append(float(sequence_nll(logits, row[None, :])[0]))
+        np.testing.assert_allclose(condition["sequence_nll"], expected, atol=3e-6)
+        np.testing.assert_allclose(condition["delta_nll_vs_identity_replay"],
+                                   (np.array(expected) - identity).mean(), atol=3e-6)

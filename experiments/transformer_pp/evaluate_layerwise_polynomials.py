@@ -1,4 +1,4 @@
-"""Measure held-out NLL with native, exchanged, or mean polynomials at one layer at a time."""
+"""Measure held-out NLL with native, exchanged, or mean polynomials at one or all layers."""
 from __future__ import annotations
 
 import argparse
@@ -33,10 +33,13 @@ def sequence_nll(logits, rows):
     return token_loss.mean(axis=1)
 
 
-def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed, model_dtype="float32"):
+def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed, model_dtype="float32",
+             layer_scope="one_at_a_time"):
     """Rows contain next-token targets. Returned indices are relative to the recipient split."""
     if microbatch < 2 or microbatch % 2:
         raise ValueError("Use an even microbatch for reciprocal donor pairs")
+    if layer_scope not in ("one_at_a_time", "all_layers"):
+        raise ValueError(f"Unknown layer scope: {layer_scope}")
     if calibration.ndim != 2 or recipients.ndim != 2 or calibration.shape[1] != recipients.shape[1]:
         raise ValueError("Calibration and evaluation require packed rows of equal length")
     if min(len(recipients), len(calibration)) < microbatch or recipients.shape[1] < 2 or any(
@@ -79,8 +82,11 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
     partner = np.arange(microbatch) ^ 1
     native_nll = np.empty(len(order), dtype=np.float64)
     conditions = ("swapped", "calibration_mean")
-    losses = {name: np.empty((len(means), len(order)), dtype=np.float64) for name in conditions}
-    identity_nll = np.empty((len(means), len(order)), dtype=np.float64)
+    # None passes the full [layer, batch, token, head, degree] table to the model.
+    targets = (None,) if layer_scope == "all_layers" else range(len(means))
+    loss_shape = (len(targets), len(order))
+    losses = {name: np.empty(loss_shape, dtype=np.float64) for name in conditions}
+    identity_nll = np.empty(loss_shape, dtype=np.float64)
     # The coefficient-fit diagnostic qualifies separately compiled BF16 GPU forwards at
     # 0.002 nats per sequence. Same-compilation identity still gets the strict check.
     external_atol = 0.002 if model_dtype == "bfloat16" and jax.default_backend() == "gpu" else 2e-4
@@ -98,19 +104,25 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
             capture_error = float(np.max(np.abs(ordinary - native_nll[batch])))
             np.testing.assert_allclose(native_nll[batch], ordinary, atol=external_atol, rtol=0,
                                        err_msg="Coefficient capture changed native NLL")
-        for layer in range(len(means)):
-            own = coeff[layer]
-            swapped = own[partner]
-            mean = jnp.broadcast_to(means[layer], own.shape)
-            losses["swapped"][layer, batch] = intervene(params, rows, swapped, layer)
-            losses["calibration_mean"][layer, batch] = intervene(params, rows, mean, layer)
+        for index, layer in enumerate(targets):
+            if layer is None:
+                own = coeff
+                swapped = jnp.take(own, partner, axis=1)
+                mean = jnp.broadcast_to(means[:, None, None, :, :], own.shape)
+            else:
+                own = coeff[layer]
+                swapped = own[partner]
+                mean = jnp.broadcast_to(means[layer], own.shape)
+            losses["swapped"][index, batch] = intervene(params, rows, swapped, layer)
+            losses["calibration_mean"][index, batch] = intervene(params, rows, mean, layer)
             replay = np.asarray(intervene(params, rows, own, layer))
-            identity_nll[layer, batch] = replay
+            identity_nll[index, batch] = replay
+            target = "All layers" if layer is None else f"Layer {layer}"
             np.testing.assert_allclose(replay, native_nll[batch], atol=external_atol, rtol=0,
-                                       err_msg=f"External replay failed at layer {layer}, recipient rows {order[batch]}")
+                                       err_msg=f"{target}: external replay failed for recipient rows {order[batch]}")
             if start == 0:
                 error = np.max(np.abs(replay - native_nll[batch]))
-                print(f"Layer {layer}: identity replay max |ΔNLL| {error:.6g}", flush=True)
+                print(f"{target}: identity replay max |ΔNLL| {error:.6g}", flush=True)
         if start == 0 or (start + microbatch) % 32 == 0:
             print(f"Scored {start + microbatch}/{len(order)} held-out sequences", flush=True)
     if not np.isfinite(native_nll).all() or any(not np.isfinite(x).all() for x in losses.values()):
@@ -119,14 +131,21 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
     records = [{"condition": "native", "nll": float(native_nll.mean()), "sequence_nll": native_nll.tolist(),
                 "capture_max_abs_sequence_nll_error": capture_error,
                 "joint_replay_max_abs_sequence_nll_error": joint_error,
-                "external_replay_atol": external_atol, "identity_sequence_nll_by_layer": identity_nll.tolist(),
-                "identity_max_abs_sequence_nll_error_by_layer": np.abs(identity_nll - native_nll).max(axis=1).tolist()}]
-    for layer in range(len(means)):
+                "external_replay_atol": external_atol}]
+    errors = np.abs(identity_nll - native_nll).max(axis=1)
+    if layer_scope == "all_layers":
+        records[0].update(layer_scope=layer_scope, identity_sequence_nll=identity_nll[0].tolist(),
+                          identity_max_abs_sequence_nll_error=float(errors[0]))
+    else:
+        records[0].update(identity_sequence_nll_by_layer=identity_nll.tolist(),
+                          identity_max_abs_sequence_nll_error_by_layer=errors.tolist())
+    for index, layer in enumerate(targets):
         for condition in conditions:
-            values = losses[condition][layer]
+            values = losses[condition][index]
             delta_per_pair = (values - native_nll).reshape(-1, 2).mean(axis=1)
-            delta_vs_replay = (values - identity_nll[layer]).reshape(-1, 2).mean(axis=1)
-            records.append({"layer_index": layer, "condition": condition, "nll": float(values.mean()),
+            delta_vs_replay = (values - identity_nll[index]).reshape(-1, 2).mean(axis=1)
+            scope = {"layer_scope": layer_scope} if layer is None else {"layer_index": layer}
+            records.append({**scope, "condition": condition, "nll": float(values.mean()),
                             "delta_nll": float(delta_per_pair.mean()),
                             "delta_nll_vs_identity_replay": float(delta_vs_replay.mean()),
                             "paired_se_vs_identity_replay": (float(delta_vs_replay.std(ddof=1) / np.sqrt(len(delta_vs_replay)))
@@ -177,7 +196,8 @@ def run_evaluation(run):
     update_record(run, {"status": "running", "runtime": runtime, "attempts": [*record.get("attempts", []), runtime]})
     graph, params = restore_parent(config, Path(selected["path"]))
     order, metrics = evaluate(graph, params, rows[:calibration_count], rows[calibration_count:],
-                              microbatch=batch, pairing_seed=recipe["pairing_seed"], model_dtype=config.train.dtype)
+                              microbatch=batch, pairing_seed=recipe["pairing_seed"], model_dtype=config.train.dtype,
+                              layer_scope=recipe.get("layer_scope", "one_at_a_time"))
     recipients = order + calibration_count
     metadata = {"calibration_row_range": [0, calibration_count], "recipient_rows": recipients.tolist(),
                 "donor_rows": recipients[np.arange(count) ^ 1].tolist(), "context_length": rows.shape[1] - 1}

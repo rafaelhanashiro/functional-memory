@@ -2344,12 +2344,13 @@ done
 The forward-only diagnostic evaluates the validation-best direct Query and SoS checkpoints at
 degree eight on Kennel. Its [protocol and run IDs](results/exploratory/sum_of_squares/README.md#layerwise-polynomial-swap)
 specify the held-out split, paired swaps and interpretation. From the diagnostic worktree,
-launch each recipe independently. This example uses one B300 per evaluation.
+launch each recipe independently. The loop below launches the simultaneous all-layer evaluations
+on one B300 each. Use `r2d8dd18744ea` and `re6a52dd6fc33` for the original single-layer recipes.
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$PWD/scaffolds/transformer/.venv-cuda13" uv sync --project scaffolds/transformer --locked --extra cuda13 --link-mode hardlink
 study=experiments/transformer_pp
-for run_id in r2d8dd18744ea re6a52dd6fc33; do
+for run_id in r50200ac83292 r850466844aff; do
   sbatch --partition=standard --gres=gpu:b300:1 --cpus-per-task=8 --mem=64G --time=03:00:00 \
     --output="$study/runs/$run_id/training.log" "$study/evaluate_layerwise_polynomials.sbatch" \
     "$PWD" "$(git rev-parse HEAD)" "$run_id"

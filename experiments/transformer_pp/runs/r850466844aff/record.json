@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r850466844aff/config.yaml",
+    "sha256": "564d1d3a41ce6e0aa499916c1f3944193a8c450dd803aebf68c2e1ff11d86359"
+  },
+  "home_cluster": "kennel",
+  "label": "all_layer_swap_sos_m8",
+  "name": "all_layer_swap_sos_m8",
+  "record_schema_version": 1,
+  "run_id": "r850466844aff",
+  "status": "planned"
+}

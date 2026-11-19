@@ -157,6 +157,13 @@ checks native, capture and own-coefficient replay in a joint compilation. A sepa
 every sequence uses the coefficient-fit diagnostic's absolute tolerance of 0.002 nats for
 separately compiled BF16 GPU forwards.
 
+The simultaneous all-layer evaluations are `r50200ac83292` for direct Query and `r850466844aff`
+for SoS. They reuse the corresponding checkpoints, calibration rows and donor pairs above. Each
+recipient borrows the same donor's native coefficient table across all 15 layers at matching heads
+and token positions. Its queries, keys and values are computed from its own evolving hidden states.
+The mean condition supplies each layer and head with its own calibration mean at every position.
+Both conditions also report paired NLL differences from an all-layer own-coefficient replay.
+
 [Launch instructions](../../../README.md#layerwise-polynomial-swap)
 
 ## Limits
