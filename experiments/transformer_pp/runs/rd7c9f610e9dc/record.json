@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd7c9f610e9dc/config.yaml",
+    "sha256": "180902859ae93e7f3dd4aaff1c7d8232d4b1338a556477efe7ce7b91bbf1713a"
+  },
+  "label": "exp-sigmoid-prefactor",
+  "name": "exp-sigmoid-prefactor",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "9019189d42a3884e474e2bf587fd4d3d15a81f785deea714bdd62f271146ba8f",
+    "loss": 5.566558361053467,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rd7c9f610e9dc",
+  "status": "planned"
+}

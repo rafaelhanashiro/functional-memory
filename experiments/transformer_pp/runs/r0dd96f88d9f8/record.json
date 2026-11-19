@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0dd96f88d9f8/config.yaml",
+    "sha256": "26bc14b11b278762547f798b09982e3444c3f83ec0b49b7baa546fcf296f7c16"
+  },
+  "label": "exp-softplus-input",
+  "name": "exp-softplus-input",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "554771b6747947eabbf4ec50936e0ed2b793793b53f9095b87a4d05ed7f3e8b6",
+    "loss": 5.580801486968994,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r0dd96f88d9f8",
+  "status": "planned"
+}

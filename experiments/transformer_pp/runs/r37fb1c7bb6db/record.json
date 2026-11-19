@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r37fb1c7bb6db/config.yaml",
+    "sha256": "ce974b8ec43d87bcd3b32f7edb3db605b294c3e9a0aad4a77f76e410fb519c38"
+  },
+  "label": "static-m8-zero-constant",
+  "name": "static-m8-zero-constant",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "3effdcfa1177bd83cbbafc490da4ff7f0ba3da9a54aa6eca7b315423e0571339",
+    "loss": 5.554239273071289,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r37fb1c7bb6db",
+  "status": "planned"
+}

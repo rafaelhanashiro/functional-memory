@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rbd24b948a240/config.yaml",
+    "sha256": "73cfbeb535da1ed1aa95e8642ad7df6d298bda6a19db9ecc8de97e4863daac0f"
+  },
+  "label": "exp-softplus-prefactor",
+  "name": "exp-softplus-prefactor",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "c05464f751fc64e69cd6b919c19408fe3f3c6a60cd0ed625ff1970b3cee834c4",
+    "loss": 5.562877655029297,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rbd24b948a240",
+  "status": "planned"
+}

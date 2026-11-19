@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc379a8f30f5b/config.yaml",
+    "sha256": "03156f5f38b6baec49468d466963bb5607b64d02154ddb56da8dd9fd7d20caf9"
+  },
+  "label": "sos-m8-zero-constant-w-decay",
+  "name": "sos-m8-zero-constant-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "9872262acc2c75c44cdf12f682f947a4a92c39cb9637b0d90b2ff5375b8eaf85",
+    "loss": 5.557168960571289,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rc379a8f30f5b",
+  "status": "planned"
+}
