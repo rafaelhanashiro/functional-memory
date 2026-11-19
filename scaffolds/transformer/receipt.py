@@ -99,9 +99,14 @@ def _configure_cpu() -> None:
 def main(argv: list[str]) -> int:
     roots = [argument.split("=", 1)[1] for argument in argv if argument.startswith("--code-root=")]
     if roots:
+        root = os.path.realpath(roots[-1])
         if "scaffolds" in sys.modules:
-            raise RuntimeError("--code-root must be selected before the scaffolds package is imported")
-        sys.path.insert(0, os.path.abspath(roots[-1]))
+            # Run as a module: the imported package must already be the requested checkout's.
+            imported = os.path.realpath(os.path.dirname(os.path.dirname(sys.modules["scaffolds"].__path__[0])))
+            if imported != root:
+                raise RuntimeError(f"--code-root {root} differs from the imported scaffolds package's {imported}")
+        else:
+            sys.path.insert(0, root)
     arrays = "--arrays" in argv
     keys_only = "--keys" in argv
     recipes = [argument for argument in argv if not argument.startswith("--")]
@@ -120,7 +125,10 @@ def main(argv: list[str]) -> int:
                     computed[key] = compute(model, arrays=arrays)
                 line.update(computed[key])
         except Exception as error:  # A recipe the code rejects has that rejection as its receipt.
-            line["error"] = f"{type(error).__name__}: {str(error).splitlines()[0] if str(error) else ''}"
+            message = str(error).splitlines()[0] if str(error) else ""
+            for spelling in (os.path.abspath(recipe), recipe):
+                message = message.replace(spelling, "<recipe>")
+            line["error"] = f"{type(error).__name__}: {message}"
         print(json.dumps(line), flush=True)
     return 0
 

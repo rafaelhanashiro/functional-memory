@@ -16,10 +16,10 @@ from scaffolds.transformer.configs import config_to_dict
 KEYS = tuple(adapter.CONTROLS)
 
 
-def variant(key):
+def variant(key, transform="softplus"):
     config = adapter.control_config(key)
     config.model.attention_coefficient_zero_constant = True
-    config.model.attention_score_transform = "softplus"
+    config.model.attention_score_transform = transform
     for name, value in adapter.CAPTURE_POLICY.items():
         setattr(config.train, name, value)
     return config
@@ -56,7 +56,7 @@ def test_controls_are_exact_complete_parents_and_only_scientific_changes_are_all
     ("model", "attention_coefficient_zero_constant", False),
     ("model", "attention_degree", 12),
     ("model", "attention_coefficient_input_power", 1),
-    ("model", "attention_score_transform", "identity"),
+    ("model", "attention_score_transform", "sigmoid"),
     ("model", "attention_backend", "blocked"),
     ("model", "positional_encoding", "none"),
     ("model", "qk_norm_head_scale", False),
@@ -185,3 +185,37 @@ def test_actual_model_backbone_and_surviving_arrays_match_parent(key):
         expected = np.take(value, indices, axis=-1) if path[0] in adapter.COMPACT_PARAMETERS else value
         np.testing.assert_array_equal(actual[path], expected, err_msg=str(path))
     assert sum(value.size for value in actual.values()) == model_parameter_count(config.model)
+
+
+@pytest.mark.parametrize("key", KEYS)
+def test_raw_score_variants_qualify_on_the_plain_query_kernels(key):
+    config = variant(key, "identity")
+    adapter.check_recipe(config)
+    summary = adapter.check_initialization(config)
+    assert summary["score_transform"] == "identity" and "(s)" in summary["initial_kernel"]
+    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
+    gpu = acceptance.test_paths(spec, config_to_dict(config), resolved_backend="mosaic", cpu=False)
+    assert set(adapter.RAW_GPU_TESTS) <= set(gpu)
+    assert "scaffolds/transformer/tests/test_mosaic_softplus_zero_constant.py" not in gpu
+
+
+def test_other_transforms_are_refused():
+    config = variant(KEYS[0], "sigmoid")
+    with pytest.raises(ValueError):
+        adapter.check_recipe(config)
+
+
+def test_raw_score_recipes_may_train_on_b300(tmp_path, monkeypatch):
+    from scaffolds.transformer.configs import save_config
+
+    calls = []
+    monkeypatch.setattr(adapter, "run_acceptance", lambda spec, argv: calls.append((spec, argv)))
+    for transform, allowed in (("identity", True), ("softplus", False)):
+        path = tmp_path / f"{transform}.yaml"
+        save_config(variant(KEYS[0], transform), path)
+        if allowed:
+            adapter.main([str(path), "--gpu-type", "B300"])
+        else:
+            with pytest.raises(ValueError, match="H100 or B200 only"):
+                adapter.main([str(path), "--gpu-type", "B300"])
+    assert len(calls) == 1

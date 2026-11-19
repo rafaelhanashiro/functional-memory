@@ -273,7 +273,7 @@
    "arrays_count": 44
   },
   "attention_scaling/r34a8abd83902": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r34a8abd83902/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/r34b6ba7e769e": {
    "version": 1,
@@ -504,10 +504,10 @@
    "arrays_count": 44
   },
   "attention_scaling/r57cb14fbf264": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r57cb14fbf264/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/r57edb320f33d": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r57edb320f33d/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/r59490b6e0818": {
    "version": 1,
@@ -696,7 +696,7 @@
    "arrays_count": 44
   },
   "attention_scaling/r79ad5ebadada": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/r79ad5ebadada/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/r7d7f7491353d": {
    "version": 1,
@@ -957,7 +957,7 @@
    "arrays_count": 44
   },
   "attention_scaling/ra64f3b7b5e86": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/ra64f3b7b5e86/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/ra6e06f8356a7": {
    "version": 1,
@@ -1104,7 +1104,7 @@
    "arrays_count": 44
   },
   "attention_scaling/rb6b8eb9aa58e": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rb6b8eb9aa58e/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/rb85a9d2fb62c": {
    "version": 1,
@@ -1239,7 +1239,7 @@
    "arrays_count": 48
   },
   "attention_scaling/rc8d38fead82c": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rc8d38fead82c/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/rc9d269a084ce": {
    "version": 1,
@@ -1392,7 +1392,7 @@
    "arrays_count": 44
   },
   "attention_scaling/re2a34e737173": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/re2a34e737173/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/re48438a6ad4a": {
    "version": 1,
@@ -1473,7 +1473,7 @@
    "arrays_count": 52
   },
   "attention_scaling/rec7a01f3282c": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rec7a01f3282c/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/redf876485ab6": {
    "version": 1,
@@ -1554,7 +1554,7 @@
    "arrays_count": 90
   },
   "attention_scaling/rfaccbff16fbd": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfaccbff16fbd/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/rfb43d69f60dc": {
    "version": 1,
@@ -1563,10 +1563,10 @@
    "arrays_count": 48
   },
   "attention_scaling/rfb737d019b58": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfb737d019b58/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/rfc37cfdf49d0": {
-   "error": "ValueError: Unknown config key experiments/attention_scaling/runs/rfc37cfdf49d0/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "attention_scaling/rfe3e43bfcabf": {
    "version": 1,
@@ -1593,46 +1593,46 @@
    "arrays_count": 44
   },
   "state_rank/r14d11acdd949": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r14d11acdd949/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r1e1b58269791": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r1e1b58269791/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r2c419979b240": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r2c419979b240/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r3793d9db5bf8": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r3793d9db5bf8/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r387096e9d9c7": {
-   "error": "ValueError: Config section experiments/state_rank/runs/r387096e9d9c7/config.yaml.model must be a mapping"
+   "error": "ValueError: Config section <recipe>.model must be a mapping"
   },
   "state_rank/r41620672d2e5": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r41620672d2e5/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r4a126a76fa48": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r4a126a76fa48/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r4bf905cd724d": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r4bf905cd724d/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r845135d42740": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r845135d42740/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/r9364a915d115": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/r9364a915d115/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/rabd239a7f3dc": {
-   "error": "ValueError: Config section experiments/state_rank/runs/rabd239a7f3dc/config.yaml.model must be a mapping"
+   "error": "ValueError: Config section <recipe>.model must be a mapping"
   },
   "state_rank/rd7981352ed2a": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/rd7981352ed2a/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/re9c80717f91b": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/re9c80717f91b/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "state_rank/red7a4fb9ce56": {
-   "error": "ValueError: Unknown config key experiments/state_rank/runs/red7a4fb9ce56/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r00f1f91a7803": {
    "version": 1,
@@ -1659,7 +1659,7 @@
    "arrays_count": 64
   },
   "transformer_pp/r043b150cde03": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r043b150cde03/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r04a5b2a3e8dd": {
    "version": 1,
@@ -1758,7 +1758,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r1736cf7a019c": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1736cf7a019c/config.yaml.experiment_kind"
+   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
   },
   "transformer_pp/r17444ad0f60e": {
    "version": 1,
@@ -1797,7 +1797,7 @@
    "arrays_count": 62
   },
   "transformer_pp/r1ac137c4f1ce": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1ac137c4f1ce/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r1b1123bf96e0": {
    "version": 1,
@@ -1836,7 +1836,7 @@
    "arrays_count": 52
   },
   "transformer_pp/r1d87cc903125": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r1d87cc903125/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r1f2c24c109f9": {
    "version": 1,
@@ -1923,7 +1923,7 @@
    "arrays_count": 52
   },
   "transformer_pp/r2a45c518f703": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r2a45c518f703/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r2b22f2ff6461": {
    "version": 1,
@@ -1968,7 +1968,7 @@
    "arrays_count": 60
   },
   "transformer_pp/r2ebc05346f44": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r2ebc05346f44/config.yaml.implementation"
+   "error": "ValueError: Unknown config key <recipe>.implementation"
   },
   "transformer_pp/r2f41d054e944": {
    "version": 1,
@@ -1977,7 +1977,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r313eb59e1d5f": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r313eb59e1d5f/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r319b83140040": {
    "version": 1,
@@ -2118,7 +2118,7 @@
    "arrays_count": 62
   },
   "transformer_pp/r4a80e28ce0a7": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r4a80e28ce0a7/config.yaml.model.attention_coefficient_key_kernel_weight_decay"
+   "error": "ValueError: Unknown config key <recipe>.model.attention_coefficient_key_kernel_weight_decay"
   },
   "transformer_pp/r4cce9a985a70": {
    "version": 1,
@@ -2199,7 +2199,7 @@
    "arrays_count": 62
   },
   "transformer_pp/r594b3706ecd7": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r594b3706ecd7/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r5a18841b21b5": {
    "version": 1,
@@ -2238,7 +2238,7 @@
    "arrays_count": 52
   },
   "transformer_pp/r6122f26085ec": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r6122f26085ec/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r636f433be44f": {
    "version": 1,
@@ -2265,7 +2265,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r68cac6f03d77": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r68cac6f03d77/config.yaml.model.attention_coefficient_amplitude_weight_decay"
+   "error": "ValueError: Unknown config key <recipe>.model.attention_coefficient_amplitude_weight_decay"
   },
   "transformer_pp/r69076c8f91c1": {
    "version": 1,
@@ -2298,7 +2298,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r6b38709ed8d3": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r6b38709ed8d3/config.yaml.implementation"
+   "error": "ValueError: Unknown config key <recipe>.implementation"
   },
   "transformer_pp/r6c9bcd661078": {
    "version": 1,
@@ -2385,7 +2385,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r79d829a16029": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r79d829a16029/config.yaml.model.attention_coefficient_key_kernel_weight_decay"
+   "error": "ValueError: Unknown config key <recipe>.model.attention_coefficient_key_kernel_weight_decay"
   },
   "transformer_pp/r7bede0f75198": {
    "version": 1,
@@ -2454,7 +2454,7 @@
    "arrays_count": 56
   },
   "transformer_pp/r84e37a39e2a0": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r84e37a39e2a0/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r84f325593209": {
    "version": 1,
@@ -2505,7 +2505,7 @@
    "arrays_count": 62
   },
   "transformer_pp/r8e4d56dfc830": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r9040f12f3d80": {
    "version": 1,
@@ -2514,7 +2514,7 @@
    "arrays_count": 48
   },
   "transformer_pp/r9155f2214b4b": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/r9155f2214b4b/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r917f3650296e": {
    "version": 1,
@@ -2601,7 +2601,7 @@
    "arrays_count": 50
   },
   "transformer_pp/ra0ad3d431842": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/ra0ad3d431842/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/ra0f402ff6758": {
    "version": 1,
@@ -2658,7 +2658,7 @@
    "arrays_count": 50
   },
   "transformer_pp/ra9834409e40a": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/ra9834409e40a/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/raa81f92b6aaf": {
    "version": 1,
@@ -2685,7 +2685,7 @@
    "arrays_count": 66
   },
   "transformer_pp/rb1a3a991da6c": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rb1a3a991da6c/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rb2b70dae4d21": {
    "version": 1,
@@ -2730,7 +2730,7 @@
    "arrays_count": 56
   },
   "transformer_pp/rb786bd19c6b1": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rb786bd19c6b1/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rb7e83a4b653f": {
    "version": 1,
@@ -2751,7 +2751,7 @@
    "arrays_count": 62
   },
   "transformer_pp/rc1c463ddc494": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc1c463ddc494/config.yaml.experiment_kind"
+   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
   },
   "transformer_pp/rc28ef4dbe26d": {
    "version": 1,
@@ -2766,7 +2766,7 @@
    "arrays_count": 64
   },
   "transformer_pp/rc3dfb9569345": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc3dfb9569345/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rc5aac8f37a2e": {
    "version": 1,
@@ -2787,7 +2787,7 @@
    "arrays_count": 56
   },
   "transformer_pp/rc76733052ecb": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc76733052ecb/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rc90fb11d4772": {
    "version": 1,
@@ -2796,7 +2796,7 @@
    "arrays_count": 56
   },
   "transformer_pp/rc95f2055e96d": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rc95f2055e96d/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rca97cc9db8f2": {
    "version": 1,
@@ -2841,7 +2841,7 @@
    "arrays_count": 56
   },
   "transformer_pp/rceea84f19f6b": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rceea84f19f6b/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rd10c2ebe1181": {
    "version": 1,
@@ -2898,7 +2898,7 @@
    "arrays_count": 50
   },
   "transformer_pp/rda6029c3286f": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rda6029c3286f/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rdacb58b7981c": {
    "version": 1,
@@ -2961,7 +2961,7 @@
    "arrays_count": 56
   },
   "transformer_pp/re0db53b7b704": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/re0db53b7b704/config.yaml.experiment_kind"
+   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
   },
   "transformer_pp/re12e78d1ded3": {
    "version": 1,
@@ -3012,10 +3012,10 @@
    "arrays_count": 56
   },
   "transformer_pp/rec777591a61b": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rec777591a61b/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rece89382b690": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rece89382b690/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/reeb92d46a95d": {
    "version": 1,
@@ -3036,7 +3036,7 @@
    "arrays_count": 48
   },
   "transformer_pp/rf033859dd68e": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rf033859dd68e/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rf1993c745e17": {
    "version": 1,
@@ -3099,7 +3099,7 @@
    "arrays_count": 60
   },
   "transformer_pp/rfadcac37b6d0": {
-   "error": "ValueError: Unknown config key experiments/transformer_pp/runs/rfadcac37b6d0/config.yaml.schema_version"
+   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rfc68c6d26f40": {
    "version": 1,

@@ -238,8 +238,7 @@ def _receipt_lines(configs: list[Path], *, keys_only: bool = False, jobs: int = 
     import sys
 
     root = Path(__file__).resolve().parents[2]
-    command = [sys.executable, "-m", "scaffolds.transformer.receipt", f"--code-root={root}",
-               *(["--keys"] if keys_only else [])]
+    command = [sys.executable, "-m", "scaffolds.transformer.receipt", *(["--keys"] if keys_only else [])]
     batches = [configs[index::jobs] for index in range(max(1, min(jobs, len(configs))))]
     processes = [subprocess.Popen([*command, *map(str, batch)], stdout=subprocess.PIPE, cwd=root, text=True)
                  for batch in batches if batch]
