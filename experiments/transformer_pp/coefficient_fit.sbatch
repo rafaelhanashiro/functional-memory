@@ -44,7 +44,7 @@ RESULT=0
 wait "$CHILD" || RESULT=$?
 CHILD=""
 if (( RESULT == 0 )); then
-  JAX_PLATFORMS=cpu "$PYTHON" experiments/transformer_pp/results/exploratory/coefficient_oracle/analyze_batch_coefficients.py \
+  JAX_PLATFORMS=cpu "$PYTHON" experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/analyze_batch_coefficients.py \
     --run "$RUN_ROOT" --if-applicable || RESULT=$?
 fi
 "$PYTHON" -m scaffolds.launch.finalize --run "$RUN_ROOT" --exit-code "$RESULT"

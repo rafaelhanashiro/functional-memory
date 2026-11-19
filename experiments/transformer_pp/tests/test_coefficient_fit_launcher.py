@@ -139,7 +139,7 @@ def test_prepare_preserves_parent_and_allocates_the_selected_fit(
         'status': 'complete', 'home_cluster': 'kennel', 'selected_checkpoint': descriptor})
     monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
     study = tmp_path / 'child/experiments/transformer_pp'
-    topic = study / 'results/exploratory/coefficient_oracle'
+    topic = study / 'results/diagnostics/overfitting/coefficient_oracle'
     topic.mkdir(parents=True)
     old_entry = {'run_id': 'rd7bf9bc37cb6', 'role': 'query_generator_single_sequence',
                  'parent_run_id': 'r98d5895c02d0', 'sources': {'config.yaml': {'sha256': 'a' * 64}}}
@@ -322,7 +322,7 @@ def test_prepare_keeps_a_native_query_key_parent_and_trains_both_generators(tmp_
         'status': 'complete', 'home_cluster': 'orcd', 'selected_checkpoint': descriptor})
     monkeypatch.setattr(launcher, 'validate_record', lambda *a, **kw: None)
     study = tmp_path / 'child/experiments/transformer_pp'
-    topic = study / 'results/exploratory/coefficient_oracle'
+    topic = study / 'results/diagnostics/overfitting/coefficient_oracle'
     topic.mkdir(parents=True)
     (topic / 'selection.yaml').write_text(yaml.safe_dump({'settings': {}, 'runs': []}))
     (study / 'sweep.yaml').write_text(yaml.safe_dump({'data_manifests': {'eval': {'sha256': launcher.sha256(manifest)}}}))

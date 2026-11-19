@@ -11,7 +11,7 @@ from pathlib import Path
 
 from polynomial import RESULTS, ROOT, RUNS, best, rows
 
-EVEN = RESULTS / "exploratory/even_powers/summary.csv"
+EVEN = RESULTS / "pretraining/other/even_powers/summary.csv"
 # Selected powers: columns (label, degree) and each row's summary role per column (None: not run).
 POWER_COLUMNS = (("Full", 4), ("Even-only", 8), ("Odd + constant", 7), ("Full", 8))
 POWER_ROWS = (

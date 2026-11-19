@@ -77,7 +77,7 @@ RESULT=0
 run_step "$PYTHON" -m scaffolds.transformer.training.coefficient_fit --run "$RUN_ROOT" "$@" || RESULT=$?
 STEP_PID=""
 if (( RESULT == 0 )); then
-  run_step env JAX_PLATFORMS=cpu "$PYTHON" experiments/transformer_pp/results/exploratory/coefficient_oracle/analyze_batch_coefficients.py \
+  run_step env JAX_PLATFORMS=cpu "$PYTHON" experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/analyze_batch_coefficients.py \
     --run "$RUN_ROOT" --if-applicable || RESULT=$?
 fi
 exit "$RESULT"

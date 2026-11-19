@@ -14,8 +14,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RESULTS = ROOT / "experiments/transformer_pp/results"
-WIDTH = RESULTS / "exploratory/query_width_degree/summary.csv"
-DEGREE = RESULTS / "degree_scaling/summary.csv"
+WIDTH = RESULTS / "pretraining/polynomial/query_width_degree/summary.csv"
+DEGREE = RESULTS / "pretraining/polynomial/degree_scaling/summary.csv"
 FAMILIES = (  # summary family, table label, chart legend
     ("taylor", "Taylor", "Fixed Taylor"),
     ("hermite", "Hermite", "Fixed Hermite"),

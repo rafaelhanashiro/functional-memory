@@ -1,0 +1,365 @@
+"""Saturation bars from explicitly selected, pinned measurements.
+
+The matched-head figure includes original-input controls, softplus times SoS,
+and both L2 placements, with positive and negative saturation stacked separately.
+The supplemental figure averages the L2 measurements over all layers and heads;
+original controls have only a matched-head probe. Missing runs stay explicit.
+No GPU, checkpoint, dataset, or numerical archive is needed to regenerate.
+"""
+from __future__ import annotations
+
+import csv
+import json
+from pathlib import Path
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+import numpy as np
+import yaml
+
+
+ROOT = next(path for path in Path(__file__).resolve().parents if (path / "AGENTS.md").exists())
+OUT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+
+from scaffolds.records import load_run
+from scaffolds.records.selections import verify_pinned_runs
+
+
+BLUE = "#28699b"
+ORANGE = "#df6a2e"
+INK = "#24323d"
+MUTED = "#667582"
+GRID = "#dce2e8"
+VARIANTS = ("none", "post_rmsnorm", "pre_rmsnorm")
+TITLES = {"none": "No L2", "post_rmsnorm": "L2 after RMSNorm", "pre_rmsnorm": "Raw L2"}
+SCOPES = ("selected_head", "all_layers_heads")
+
+
+def coordinate_names(degree: int, family: str) -> list[str]:
+    if family == "direct":
+        return [f"r{r}" for r in range(degree + 1)]
+    if family == "sum_of_squares":
+        half = degree // 2
+        return [f"U{r}" for r in range(half + 1)] + [f"V{r}" for r in range(half)]
+    raise ValueError(f"Unknown coefficient family: {family}")
+
+
+def coordinate_ticks(names: list[str]) -> list[str]:
+    return [rf"${name[0]}_{{{name[1:]}}}$" for name in names]
+
+
+def check_sample(sample: dict, settings: dict) -> None:
+    assert sample["record_sha256"] == settings["sample_record_sha256"]
+    assert sample["selection"] == settings.get("sample_selection", "first_heldout_sequence")
+    assert sample["num_sequences"] == settings.get("sequences", 1)
+    assert sample["prediction_tokens"] == settings.get("prediction_tokens", 2048)
+
+
+def check_fractions(values: np.ndarray) -> None:
+    assert np.isfinite(values).all()
+    assert ((values >= 0) & (values <= 1)).all()
+
+
+def load(selection: dict) -> list[dict]:
+    """Read every panel from its declared role; never infer a newest/best run."""
+    verify_pinned_runs(ROOT, selection["runs"])
+    settings = selection["settings"]
+    assert settings["saturation_absolute_tanh_threshold"] == .99
+    assert settings["checkpoint_step"] == 7500
+    assert settings["ppl_metric"] == "validation-best"
+    signed_fields = settings["head_signed_fields"]
+    assert signed_fields == {"positive": "saturation_tanh_ge099", "negative": "saturation_tanh_le_neg099"}
+    entries = {entry["role"]: entry for entry in selection["runs"]}
+    assert len(entries) == len(selection["runs"])
+    records: dict[str, list[dict]] = {}
+
+    def run_path(role):
+        entry = entries[role]
+        return ROOT / "experiments" / entry["study"] / "runs" / entry["run_id"]
+
+    def measurements(role):
+        if role not in records:
+            path = run_path(role)
+            assert load_run(path)["status"] == "complete"
+            records[role] = [json.loads(line) for line in (path / "metrics.jsonl").read_text().splitlines()
+                             if line.strip()]
+        return records[role]
+
+    panels = []
+    for panel in selection["panels"]:
+        family, degree = panel["family"], panel["degree"]
+        transform, input_power = panel["score_transform"], panel["input_power"]
+        assert (transform, input_power) in {("identity", 0), ("softplus", 1)}
+        assert input_power == 0 or family == "sum_of_squares"
+        names = coordinate_names(degree, family)
+        result = {**panel, "coordinates": names, "cells": {}}
+        for variant in VARIANTS:
+            choice = panel["variants"][variant]
+            if choice.get("status") == "not_run":
+                assert (variant == "pre_rmsnorm" and degree == 8) or (
+                    input_power == 1 and variant in VARIANTS[1:])
+                result["cells"][variant] = {"status": "not_run", "run_id": ""}
+                continue
+            role = choice["run_role"]
+            path = run_path(role)
+            record = load_run(path)
+            assert record["status"] == "complete"
+            config = yaml.safe_load((path / "config.yaml").read_text())
+            model = config["model"]
+            assert model["attention_degree"] == degree + input_power
+            assert model.get("attention_score_transform", "identity") == transform
+            assert model.get("attention_coefficient_input_power", 0) == input_power
+            assert model["attention_coefficient_parameterization"] == family
+            assert model["attention_coefficient_conditioning"] == "query"
+            assert model["attention_coefficient_activation"] == "tanh"
+            assert model["attention_coefficient_kernel_weight_decay"] is True
+            assert config["optim"]["weight_decay"] == .1
+            assert model["positional_encoding"] == "rope"
+            best = json.loads((path / "best_validation.json").read_text())
+            assert best["step"] == record["selected_checkpoint"]["step"] == settings["checkpoint_step"]
+            ppl = float(best["validation_perplexity"])
+            assert np.isfinite(ppl) and ppl > 0
+            cell = {"status": "complete", "run_id": entries[role]["run_id"],
+                    "best_validation_perplexity": ppl, "best_validation_step": best["step"]}
+            if variant == "none":
+                assert model.get("attention_coefficient_input_normalization", "none") == "none"
+                matches = [row for row in measurements(choice["probe_role"])
+                           if row["role"] == choice["measurement_role"]]
+                assert len(matches) == 1
+                row = matches[0]
+                assert row["source_run_id"] == cell["run_id"]
+                assert row["degree"] == degree
+                assert row.get("score_transform", "identity") == transform
+                assert row.get("input_power", 0) == input_power
+                assert row.get("total_degree", degree) == degree + input_power
+                assert row["checkpoint_step"] == settings["checkpoint_step"]
+                assert row["checkpoint_sha256"] == record["selected_checkpoint"]["sha256"]
+                assert row["layer"] == settings["layer_index"] and row["head"] == settings["head_index"]
+                assert row["indexing"] == "zero_based"
+                assert row["parent_parameters_unchanged"] and row["optimizer_updates"] == 0
+                assert row["parent_parameter_sha256_before"] == row["parent_parameter_sha256_after"]
+                check_sample(row["sample"], settings)
+                values = row["degrees"]
+                expected = ([f"r{value['degree']}" for value in values] if family == "direct"
+                            else [value["coordinate_label"] for value in values])
+                assert expected == names
+                cell["selected_head"] = np.asarray([value["saturation_abs_tanh_ge099"]
+                                                     for value in values], dtype=np.float64)
+                cell["selected_head_positive"] = np.asarray(
+                    [value[signed_fields["positive"]] for value in values], dtype=np.float64)
+                cell["selected_head_negative"] = np.asarray(
+                    [value[signed_fields["negative"]] for value in values], dtype=np.float64)
+                cell["signed_saturation_source"] = "measured_signed_tails"
+                cell["all_layers_heads"] = None
+            else:
+                assert model["attention_coefficient_input_normalization"] == "l2"
+                assert model.get("attention_coefficient_input_source", "post_rmsnorm") == variant
+                matches = [row for row in measurements(role) if row["step"] == settings["checkpoint_step"]]
+                assert len(matches) == 1
+                row = matches[0]
+                diagnostic = row["attention_diagnostics"]
+                check_sample(diagnostic["sample"], settings)
+                report = diagnostic["coefficients"]["generator_input"]
+                assert report["normalization"] == "l2" and report["finite"]
+                assert report.get("source", "post_rmsnorm") == variant
+                assert report["coordinate_labels"] == names
+                assert report["saturation_absolute_tanh_threshold"] == .99
+                assert report["projection_axes"] == ["layer", "head", "generator_coordinate"]
+                fractions = np.asarray(report["saturation_fraction"], dtype=np.float64)
+                assert fractions.shape == (model["num_layers"], model["num_heads"], degree + 1)
+                check_fractions(fractions)
+                cell["selected_head"] = fractions[settings["layer_index"], settings["head_index"]]
+                # These historical L2 measurements have no signed-tail fields.
+                # Zero combined saturation determines both nonnegative tails exactly;
+                # refuse to infer a sign split for any nonzero measurement.
+                assert not cell["selected_head"].any(), "Nonzero L2 saturation needs a signed probe"
+                cell["selected_head_positive"] = np.zeros_like(cell["selected_head"])
+                cell["selected_head_negative"] = np.zeros_like(cell["selected_head"])
+                cell["signed_saturation_source"] = "inferred_from_exact_zero_total"
+                cell["all_layers_heads"] = fractions.mean(axis=(0, 1))
+                cell["layers"] = model["num_layers"]
+                cell["heads"] = model["num_heads"]
+            check_fractions(cell["selected_head"])
+            for tail in ("positive", "negative"):
+                check_fractions(cell[f"selected_head_{tail}"])
+            np.testing.assert_array_equal(cell["selected_head_positive"] + cell["selected_head_negative"],
+                                          cell["selected_head"])
+            result["cells"][variant] = cell
+        panels.append(result)
+    assert [(panel["family"], panel["degree"], panel["input_power"]) for panel in panels] == [
+        (family, degree, power) for degree in (8, 12)
+        for family, power in (("direct", 0), ("sum_of_squares", 0), ("sum_of_squares", 1))]
+    return panels
+
+
+def _mean_label(percent: np.ndarray) -> str:
+    mean = float(percent.mean())
+    return "Mean: 0%" if mean == 0 else f"Mean: {mean:.2f}%" if mean >= 1 else f"Mean: {mean:.4f}%"
+
+
+def plot(panels: list[dict], settings: dict, *, scope: str) -> None:
+    matched = scope == "selected_head"
+    variants = VARIANTS if matched else VARIANTS[1:]
+    if not matched:
+        panels = [panel for panel in panels if any(
+            panel["cells"][variant]["status"] != "not_run" for variant in variants)]
+    limits = settings["head_y_limits_percent" if matched else "all_heads_y_limits_percent"]
+    assert limits == ([0, 100] if matched else [0, .5])
+    ymax = limits[1]
+    color = settings["bar_color"]
+    assert color == BLUE
+    fig, axes = plt.subplots(len(panels), len(variants), figsize=(17, 20) if matched else (13, 18),
+                             squeeze=False, sharey=True)
+    fig.subplots_adjust(left=.075 if matched else .09, right=.985, top=.872 if matched else .855,
+                        bottom=.085, hspace=.76 if matched else .66, wspace=.16)
+    for index, panel in enumerate(panels):
+        for column, variant in enumerate(variants):
+            ax = axes[index, column]
+            cell = panel["cells"][variant]
+            if column == 0:
+                ax.set_title(f"{panel['label']} · $m={panel['degree']}$", loc="left",
+                             fontsize=14 if panel["input_power"] else 16,
+                             fontweight="bold", color=INK, pad=28)
+            ax.set_ylim(0, ymax)
+            ax.set_xlim(-.65, len(panel["coordinates"]) - .35)
+            ax.set_yticks([0, 25, 50, 75, 100] if matched else [0, .1, .2, .3, .4, .5])
+            ax.tick_params(axis="both", colors=MUTED, labelsize=10, length=3)
+            ax.spines[["top", "right"]].set_visible(False)
+            ax.spines[["left", "bottom"]].set_color("#b4bfc8")
+            ax.set_axisbelow(True)
+            if cell["status"] == "not_run":
+                ax.set_facecolor("#f6f8fa")
+                ax.set_xticks([])
+                ax.grid(False)
+                ax.text(.5, .5, "Not run", transform=ax.transAxes, ha="center", va="center",
+                        fontsize=16, color=MUTED)
+                continue
+            percent = 100 * cell[scope]
+            assert np.max(percent) <= ymax
+            positions = np.arange(len(percent))
+            if matched:
+                assert settings["head_bar_style"] == "stacked_signed_tails"
+                assert settings["head_tail_colors"] == {"positive": BLUE, "negative": ORANGE}
+                positive = 100 * cell["selected_head_positive"]
+                negative = 100 * cell["selected_head_negative"]
+                ax.bar(positions, positive, width=.72, color=BLUE, linewidth=0, zorder=2)
+                ax.bar(positions, negative, bottom=positive, width=.72, color=ORANGE,
+                       linewidth=0, zorder=2)
+            else:
+                ax.bar(positions, percent, width=.72, color=color, linewidth=0, zorder=2)
+            ax.set_xticks(positions, coordinate_ticks(panel["coordinates"]))
+            ax.grid(axis="y", color=GRID, linewidth=.7)
+            ax.text(0, 1.035, _mean_label(percent), transform=ax.transAxes,
+                    color=MUTED, fontsize=11)
+            ax.text(1, 1.035, f"Best validation PPL: {cell['best_validation_perplexity']:.4f}",
+                    transform=ax.transAxes, ha="right", color=INK, fontsize=11, fontweight="bold")
+            if not percent.any():
+                ax.text(.5, .49, "0% at every coordinate", transform=ax.transAxes,
+                        ha="center", va="center", fontsize=12.5, color=MUTED)
+            if panel["family"] == "sum_of_squares":
+                ax.axvline(panel["degree"] // 2 + .5, color="#acb8c2", linewidth=.8,
+                           linestyle=(0, (3, 3)))
+            ax.set_xlabel("Polynomial order" if panel["family"] == "direct" else "Square-factor coordinate",
+                          color=MUTED, fontsize=10.5, labelpad=7)
+    for column, variant in enumerate(variants):
+        bounds = axes[0, column].get_position()
+        fig.text((bounds.x0 + bounds.x1) / 2, .907 if matched else .895, TITLES[variant], ha="center",
+                 fontsize=18, fontweight="bold", color=INK)
+    fig.suptitle("Transformer++ · tanh saturation by direction" if matched else "Transformer++ · tanh saturation across all heads",
+                 x=.055, y=.975, ha="left", fontsize=25 if matched else 23,
+                 fontweight="bold", color=INK)
+    if matched:
+        fig.legend(handles=[Patch(facecolor=BLUE, label=r"Positive: $\tanh z\geq0.99$"),
+                            Patch(facecolor=ORANGE, label=r"Negative: $\tanh z\leq-0.99$")],
+                   loc="upper left", bbox_to_anchor=(.055, .934), borderaxespad=0,
+                   frameon=False, ncol=2, fontsize=12, labelcolor=INK, columnspacing=3)
+        subtitle = (f"Layer {settings['layer_index'] + 1}, head {settings['head_index'] + 1}"
+                    f"  ·  checkpoint {settings['checkpoint_step']:,}  ·  same 2,048-token sequence"
+                    r"  ·  $|\tanh z|\geq0.99$")
+        ylabel = "Saturated tokens (%)"
+        footer = ("PPL: best validation evaluation. Stacked height and Mean include both tails; shared 0–100% scale.\n"
+                  "SoS bars: U/V factor generators. Softplus + prefactor: w(s) = u h(u), u = softplus(s), h = U² + V².\n"
+                  "m is the SoS core degree; the prefactor gives total degree m + 1. One head and one sequence; missing runs are not zeros.")
+    else:
+        shapes = {(cell["layers"], cell["heads"]) for panel in panels for cell in panel["cells"].values()
+                  if "layers" in cell}
+        assert shapes == {(15, 14)}
+        subtitle = ("Mean across 15 layers × 14 heads  ·  checkpoint 7,500  ·  same 2,048-token sequence\n"
+                    r"$|\tanh z|\geq0.99$  ·  zoomed 0–0.5% scale in every panel")
+        ylabel = "Mean saturated tokens (%)"
+        footer = ("PPL: best validation evaluation. Bars weight layers, heads and tokens equally; SoS labels are square-factor coordinates.\n"
+                  "No-L2 controls have only the selected-head probe. Softplus + prefactor has raw-L2 runs only.\n"
+                  "Ordinary query/SoS raw-L2 m=8 was not run. These are one-sequence diagnostics.")
+    fig.text(.055, .948 if matched else .94, subtitle, ha="left", va="top", fontsize=12, color=MUTED,
+             linespacing=1.7)
+    fig.supylabel(ylabel, x=.018, fontsize=13, color=INK)
+    fig.text(.055, .022, footer, fontsize=10.5 if matched else 10, color=MUTED, linespacing=1.7)
+    stem = "saturation_by_coordinate" if matched else "saturation_all_heads"
+    fig.savefig(OUT / f"{stem}.png", dpi=180, facecolor="white")
+    fig.savefig(OUT / f"{stem}.pdf", facecolor="white", metadata={"CreationDate": None, "ModDate": None})
+    plt.close(fig)
+
+
+def save_summary(panels: list[dict]) -> None:
+    fields = ["run_id", "family", "degree", "total_degree", "score_transform", "input_power",
+              "input_variant", "scope", "coordinate", "status",
+              "saturation_fraction", "saturation_percent", "positive_saturation_fraction",
+              "negative_saturation_fraction", "signed_saturation_source",
+              "best_validation_perplexity", "best_validation_step"]
+    with (OUT / "saturation_by_coordinate.csv").open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        for panel in panels:
+            for variant in VARIANTS:
+                cell = panel["cells"][variant]
+                for scope in SCOPES:
+                    values = cell.get(scope)
+                    status = cell["status"] if cell["status"] == "not_run" else (
+                        "not_measured" if values is None else "measured")
+                    for index, coordinate in enumerate(panel["coordinates"]):
+                        value = None if values is None else float(values[index])
+                        writer.writerow({"run_id": cell["run_id"], "family": panel["family"],
+                                         "degree": panel["degree"],
+                                         "total_degree": panel["degree"] + panel["input_power"],
+                                         "score_transform": panel["score_transform"],
+                                         "input_power": panel["input_power"], "input_variant": variant,
+                                         "scope": scope, "coordinate": coordinate, "status": status,
+                                         "saturation_fraction": "" if value is None else format(value, ".12g"),
+                                         "saturation_percent": "" if value is None else format(100 * value, ".12g"),
+                                         "positive_saturation_fraction": (format(cell["selected_head_positive"][index], ".12g")
+                                                                          if scope == "selected_head" and values is not None else ""),
+                                         "negative_saturation_fraction": (format(cell["selected_head_negative"][index], ".12g")
+                                                                          if scope == "selected_head" and values is not None else ""),
+                                         "signed_saturation_source": (cell["signed_saturation_source"]
+                                                                      if scope == "selected_head" and values is not None else ""),
+                                         "best_validation_perplexity": (format(cell["best_validation_perplexity"], ".12g")
+                                                                        if "best_validation_perplexity" in cell else ""),
+                                         "best_validation_step": cell.get("best_validation_step", "")})
+
+
+def main() -> None:
+    selection = yaml.safe_load((OUT / "saturation_selection.yaml").read_text())
+    panels = load(selection)
+    with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 11, "pdf.fonttype": 42}):
+        for scope in SCOPES:
+            plot(panels, selection["settings"], scope=scope)
+    save_summary(panels)
+    for panel in panels:
+        for variant in VARIANTS:
+            cell = panel["cells"][variant]
+            if cell["status"] == "not_run":
+                print(f"{panel['label']} m={panel['degree']} / {TITLES[variant]}: not run")
+            else:
+                all_heads = cell.get("all_layers_heads")
+                suffix = "not measured" if all_heads is None else f"{100 * all_heads.mean():.6f}%"
+                print(f"{panel['label']} m={panel['degree']} / {TITLES[variant]}: "
+                      f"selected head {100 * cell['selected_head'].mean():.6f}%; all heads {suffix}")
+    print("Regenerated two saturation figures and coordinate CSV from pinned measurements.")
+
+
+if __name__ == "__main__":
+    main()

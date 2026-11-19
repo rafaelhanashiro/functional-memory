@@ -20,5 +20,5 @@ bash scaffolds/transformer/launchers/kennel.sbatch "$@"
 trap finish_record EXIT
 export JAX_PLATFORMS=cpu
 "$PYTHON" -m scaffolds.records index experiments/transformer_pp
-"$PYTHON" -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/query_distance_decay
-"$PYTHON" -m experiments.transformer_pp.results.exploratory.query_distance_decay.compare
+"$PYTHON" -m scaffolds.records refresh experiments/transformer_pp/results/pretraining/fox_alibi/query_distance_decay
+"$PYTHON" -m experiments.transformer_pp.results.pretraining.fox_alibi.query_distance_decay.compare

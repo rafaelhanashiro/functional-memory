@@ -34,7 +34,7 @@ CONTINUATIONS = (
     ("FoX with RoPE, without W decay", "rd5ea49c1fde6", None, ""),
     ("FoX NoPE, with W decay", "r554ce7da6a8a", None, ""),
 )
-FIGURES = {"length-extrapolation": (RESULTS / "diagnostics/extrapolation_ablation", (
+FIGURES = {"length-extrapolation": (RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation", (
     "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
     "position_weights_long_documents.png"))}
 

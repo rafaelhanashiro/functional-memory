@@ -105,7 +105,7 @@ budget, or the same variant across shapes or budgets.
 | 2.5× Chinchilla | 18,925 | 1,138 | every 250 through 3,750, then every 1,250 | 9,922,150,400 |
 
 The 2.5× runs repeat five 1× runs that use the canonical QK setup at the 2.5× budget.
-All five are complete; the [token_budget topic](results/exploratory/token_budget/README.md)
+All five are complete; the [token_budget topic](results/pretraining/scalings/token_budget/README.md)
 compares them with their 1x partners. Each ran on one GPU:
 
 | 2.5× run | Label | 1× partner |
@@ -167,7 +167,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/plot_recipe.py
 
 ## Model scale
 
-The [shape-pair collection](results/l12_d640/shape_pairs/README.md) repeats eight attention
+The [shape-pair collection](results/pretraining/scalings/l12_d640/shape_pairs/README.md) repeats eight attention
 variants at the 12-layer width-640 shape. Each recipe is its reference-shape partner's,
 derived by `derive_recipe.py --layers 12 --width 640` and allocated with
 `scaffolds.records create`:
@@ -203,7 +203,7 @@ node of every allocation.
 
 ## Degree scaling
 
-The [degree scaling collection](results/degree_scaling/README.md) plots 1× terminal validation
+The [degree scaling collection](results/pretraining/polynomial/degree_scaling/README.md) plots 1× terminal validation
 perplexity against polynomial degree `m = 1-8` and 12 (Taylor and query only) for four coefficient families of
 unnormalized polynomial attention with per-head output RMSNorm and the canonical QK
 setup: fixed Taylor (`c_r = 1/r!`), fixed Hermite (`exp(1/2) sum_r He_r(s)/r!` in
@@ -277,7 +277,7 @@ done
 
 ## Query coefficients across key width and degree
 
-The [query_width_degree topic](results/exploratory/query_width_degree/README.md) trains
+The [query_width_degree topic](results/pretraining/polynomial/query_width_degree/README.md) trains
 `query-m4-w-decay`'s recipe at `d_K = 8, 16, 32, 64` and `m = 2, 4, 8`, reusing
 `rca97cc9db8f2` for `d_K = 64`, `m = 4`; the `m = 12` column (`r1b1123bf96e0`, `rcdfee1e67fd4`, `r4f3aa6be7108`, `r0fceea0627c8`) uses
 the same command. Each new run takes one B300 or H100 on `standard,long`:
@@ -295,7 +295,7 @@ done
 
 ## Extrapolation ablation
 
-The [extrapolation_ablation diagnostic](results/diagnostics/extrapolation_ablation/README.md)
+The [extrapolation_ablation diagnostic](results/diagnostics/length_extrapolation/extrapolation_ablation/README.md)
 rescored the query + W decay checkpoint at 16,384 tokens with a 2,048-key window and with RoPE
 distances clamped at 2,047 (`rb786bd19c6b1`). One GPU, no training:
 
@@ -335,11 +335,11 @@ Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, a
 width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
 ([score_biases](results/exploratory/score_biases/README.md)).
 
-## Exploratory diagnostics
+## Further experiments
 
 ### Even polynomial powers
 
-The [even-powers topic](results/exploratory/even_powers/README.md) tests static
+The [even-powers topic](results/pretraining/other/even_powers/README.md) tests static
 and query-conditioned coefficients using only orders 0, 2, 4, 6, and 8 at the
 1× Chinchilla budget (7,570 updates). Both families compare with full degrees
 four and eight. The full degree-eight static control `r9c69dd7cfc8d` is complete;
@@ -382,7 +382,7 @@ resubmission passes that original launch commit (`0c9eed33` here) rather than `H
 
 ### Per-order coefficient gates
 
-The [order-gates topic](results/exploratory/order_gates/README.md) asks whether
+The [order-gates topic](results/pretraining/other/order_gates/README.md) asks whether
 multiplicative gates on individual polynomial orders improve query-conditioned attention
 without a distance-dependent forget gate. Two runs add independent per-order sigmoid gates
 (`model.attention_coefficient_gate: sigmoid`) to the query + weight decay, RoPE recipe of
@@ -432,7 +432,7 @@ Two degree-four query/tanh runs test weight decay on the projection and a higher
 learning rate on the coefficient offsets and amplitudes, separately. Both copy
 `query-m4-head-scale` (`r2b22f2ff6461`) at the 1x Chinchilla budget and keep
 factorial scaling on the entire coefficient. Their methods, explicit control,
-and findings belong to the [query optimization topic](results/exploratory/query_optimization/README.md).
+and findings belong to the [query optimization topic](results/pretraining/other/query_optimization/README.md).
 Their home cluster is Kennel; each uses one GPU with no dependency on the other.
 Both runs are complete.
 
@@ -465,7 +465,7 @@ weight decay 0.1 on the coefficient projections W
 (`model.attention_coefficient_kernel_weight_decay: true`; for key–query, both the query
 W and the key W_k). Each recipe is otherwise its control's; the query m = 4 recipe takes
 ORCD's FineWeb manifests. The question, controls, and findings belong to the
-[query optimization topic](results/exploratory/query_optimization/README.md#projection-decay-at-25).
+[query optimization topic](results/pretraining/other/query_optimization/README.md#projection-decay-at-25).
 Home cluster: **ORCD**. All four are complete: they ran from launch commit `7662886`,
 one H100 each, and their retained checkpoints and logs are under ORCD's artifact root
 at the paths recorded in each run. Key–query keeps its controls' fused query–key kernel
@@ -491,7 +491,7 @@ done
 
 ### Coefficient fitting
 
-The [coefficient fitting topic](results/exploratory/coefficient_oracle/README.md)
+The [coefficient fitting topic](results/diagnostics/overfitting/coefficient_oracle/README.md)
 measures how far coefficients alone can fit a fixed batch of 256 or 1,024 sequences
 with the pretrained backbone frozen: free coefficients, the trained query and
 query-key generators, and static coefficients, all on degree-four backbones with
@@ -523,7 +523,7 @@ acceptance procedure's two-hour reserve. Each job requests one B300 or H100 GPU;
 launcher's frozen-source check and shared runtime qualification run on every allocation,
 and the scientific global batch stays fixed through gradient accumulation.
 
-The [learned-coefficient topic](results/exploratory/learned_coefficient_continuation/README.md)
+The [learned-coefficient topic](results/diagnostics/continued_pretraining/learned_coefficient_continuation/README.md)
 introduces degree-four static or query coefficients (the latter with a decayed projection
 `W`) after 7,500 updates of fixed-Taylor or unnormalized-exp pretraining, 2,000 updates each
 with the canonical QK norm. The Taylor-parent branches reuse the fixed-Taylor control
@@ -546,7 +546,7 @@ for RUN in r2e081e09c19a rae91f24b06b4 r7e6a68545d4f r673e14eab803 rddcbe6dfb1eb
 done
 ```
 
-The [per-token query scale topic](results/exploratory/token_query_scale_continuation/README.md)
+The [per-token query scale topic](results/diagnostics/continued_pretraining/token_query_scale_continuation/README.md)
 compares a bounded per-token score scale on Q, `exp(gamma_h + a_h cos(w_h, x_t))`, with a
 matched fixed-Taylor continuation of the canonical head-scaled parent. Both train all
 backbone parameters for 2,000 additional updates; the gate starts closed (`a_h = 0`) and
@@ -555,7 +555,7 @@ run `re563830cf150` applies weight decay 0.1 to its direction `w` and leaves the
 amplitude exempt; `r82203a85ef8e` is the fixed-Taylor control. Reproduction commands
 are in [CPT with projection weight decay](#cpt-with-projection-weight-decay).
 
-The [forget-gate continuation topic](results/exploratory/forget_gate_continuation/README.md)
+The [forget-gate continuation topic](results/diagnostics/continued_pretraining/forget_gate_continuation/README.md)
 is a positive control for the protocol: it adds the pretraining winner's attention (tanh
 query coefficients at zero amplitude plus Gated DeltaNet's forget gate at its standard
 open initialization, on the blocked backend) to the same parent, reusing the completed
@@ -578,7 +578,7 @@ for the budget), and the pilot's slowest-step projection reached 31 h, beyond `s
 
 ### Continuing pretrained static and query models
 
-The [learned-coefficient CPT comparison](results/exploratory/learned_coefficient_continuation/README.md#continuation-of-the-pretrained-learned-models)
+The [learned-coefficient CPT comparison](results/diagnostics/continued_pretraining/learned_coefficient_continuation/README.md#continuation-of-the-pretrained-learned-models)
 also continues static and query + W decay models from their own step-7,500
 checkpoints for 2,000 updates. All existing parameters and Adam history are retained,
 at a constant learning rate of 0.0001. Their coefficients have already been trained,
@@ -610,8 +610,8 @@ with the same data order and constant learning rates: 0.0001 for the backbone an
 0.1 to the coefficient projection `W` and forget-gate projection `w_alpha`; their
 amplitudes and biases remain exempt. Query-temperature **with RoPE**, `re563830cf150`,
 applies decay 0.1 to its direction `w` only, leaving its amplitude exempt. Definitions,
-controls, and findings belong to the [forget-gate topic](results/exploratory/forget_gate_continuation/README.md)
-and [query-temperature topic](results/exploratory/token_query_scale_continuation/README.md).
+controls, and findings belong to the [forget-gate topic](results/diagnostics/continued_pretraining/forget_gate_continuation/README.md)
+and [query-temperature topic](results/diagnostics/continued_pretraining/token_query_scale_continuation/README.md).
 
 Prepare fresh reproductions in an isolated worktree; the commands below allocate new IDs:
 
@@ -639,7 +639,7 @@ restoration, finite training pilot, and fresh-process resume before production b
 
 ## Teacher-activation coefficient distillation
 
-The open [coefficient-oracle topic](results/exploratory/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
+The open [coefficient-oracle topic](results/diagnostics/overfitting/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
 documents the scientific protocol and its two batches: the fitting batch, and one
 fresh batch that scores the selected generator once. `rec777591a61b` distills the degree-four B256 free teacher into the
 existing dense generator with a frozen Taylor backbone. Home cluster: **Kennel**.
@@ -708,7 +708,7 @@ done
 
 Three degree-four runs copy `query-m4-head-scale` (`r2b22f2ff6461`) and change one part
 of its query attention; see the [coefficient forms](results/exploratory/coefficient_forms/README.md)
-and [forget gate](results/exploratory/forget_gate/README.md) topics.
+and [forget gate](results/pretraining/fox_alibi/forget_gate/README.md) topics.
 
 | Run | Label | Change |
 | --- | --- | --- |
@@ -754,7 +754,7 @@ the Forgetting Transformer decay with Gated DeltaNet's gate) to `softmax-head-sc
 (`r9040f12f3d80`) and `exp-head-scale` (`r6a76e7fbde45`), without RoPE. Each weight's score
 gains `L_t - L_i`: `softmax(s + D)` or `exp(s + D)`, the latter with per-head output
 RMSNorm as in its source. Two use no positional encoding; two use PaTH (PaTH-FoX). See the
-[forget gate topic](results/exploratory/forget_gate/README.md).
+[forget gate topic](results/pretraining/fox_alibi/forget_gate/README.md).
 
 | Run | Label | Source | Positions | Backend |
 | --- | --- | --- | --- | --- |
@@ -794,7 +794,7 @@ not. Everything else is copied from the source. The softmax run `reeb92d46a95d` 
 normalization (`qk_norm: false`, plain scores), matching FoX (LLaMA), while `rac200ce11221` keeps
 it, so the gate is its only change; exp and query keep
 the canonical QK RMSNorm with a learned head scale and per-head output RMSNorm. See the
-[forget gate topic](results/exploratory/forget_gate/README.md).
+[forget gate topic](results/pretraining/fox_alibi/forget_gate/README.md).
 
 | Run | Label | Source | Changes from the source | Backend |
 | --- | --- | --- | --- | --- |
@@ -839,7 +839,7 @@ sbatch --parsable --partition=standard --gres=gpu:b300:1 --nodelist=akita \
 the control's factorial scaling, gate initialization, QK and output RMSNorm, seed, context,
 optimizer and 7,570-update budget. Weight decay 0.1 applies to the gate projection; the static
 coefficients and the gate's rates and biases are exempt. The comparison is in the
-[forget-gate topic](results/exploratory/forget_gate/README.md#static-coefficients-with-fox-nope).
+[forget-gate topic](results/pretraining/fox_alibi/forget_gate/README.md#static-coefficients-with-fox-nope).
 
 Home cluster: Kennel. It runs from `worktrees/static-fox-nope-m4`, branch
 `codex/static-fox-nope-m4`, with its own locked environment. The experiment adapter
@@ -858,7 +858,7 @@ sbatch --parsable --partition=long --gres=gpu:h100:1 --cpus-per-task=16 --mem=12
 
 ## Context length
 
-The [context-length topic](results/exploratory/context_length/README.md) compares
+The [context-length topic](results/pretraining/scalings/context_length/README.md) compares
 held-out per-position loss at and beyond the checkpoints' training length.
 `r2a45c518f703` evaluates the validation-best 2,048-token exp, query + W decay,
 and FoX no RoPE + W decay checkpoints at 16,384 tokens on Kennel. It makes no
@@ -933,7 +933,7 @@ using `attention_degree: 1`, `attention_coefficients: fixed`, and
 `attention_fixed_coefficients: [0.0, 1.0]`. It preserves the exp control
 `r6a76e7fbde45`'s RoPE, canonical QK setup, head RMSNorm output, initialization,
 seed, optimizer, data, 2,048-token context, and 7,570-update budget.
-The [fixed-linear topic](results/exploratory/fixed_linear/README.md) records the
+The [fixed-linear topic](results/pretraining/alternative_attention/fixed_kernels/fixed_linear/README.md) records the
 question and explicit control selection. The existing Mosaic polynomial kernel
 runs the model; coefficients are constants and never enter optimizer state.
 
@@ -954,7 +954,7 @@ sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128
 
 ## Sigmoid and softplus attention
 
-The [pointwise attention topic](results/exploratory/pointwise_attention/README.md)
+The [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md)
 compares sigmoid `r88d8654a8a1d` and softplus `r266c5dd1f935` with exp control
 `r6a76e7fbde45` at the 15-layer width-896 shape. Each replaces only `exp(s)` in
 the unnormalized causal weighted sum, preserving QK RMSNorm, RoPE, output head
@@ -992,9 +992,9 @@ Six runs at the reference shape and 1x budget, opened 2026-11-19 on Kennel (bran
 `claude/score-function-runs`, worktree `worktrees/score-function-runs`). The first three change
 only the exp control `r6a76e7fbde45`'s weight `exp(s)`
 ([scaffold](../../scaffolds/transformer/README.md#attention-pieces-and-recipe-receipts)); results go
-to the [pointwise attention topic](results/exploratory/pointwise_attention/README.md). The other three
+to the [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md). The other three
 repeat the softplus zero-constant runs with raw scores; results go to the
-[softplus_sos topic](results/exploratory/softplus_sos/README.md#structural-zero-constants).
+[zero_constant results](results/pretraining/other/zero_constant/README.md).
 
 | Run | Label | Weight or change | Partner |
 | --- | --- | --- | --- |
@@ -1036,7 +1036,7 @@ done
 
 ## ALiBi-style constant decay without RoPE
 
-The [alibi_decay topic](results/exploratory/alibi_decay/README.md) pretrains
+The [alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md) pretrains
 `query-m4-alibi-no-rope` (`r8d4fc24ef537`): the FoX-without-RoPE recipe of
 `r82a80d3091e2` with `attention_forget_gate_form: constant`, one learned decay rate per
 layer and head starting at ALiBi's slopes, on the blocked backend. It requests a B300 on
@@ -1060,7 +1060,7 @@ every score gains `-m_h (t - i)`, `m_h = 2^(-8 h / 14)` for heads `h = 1..14` in
 with no trainable parameter. `softmax(s - m_h (t - i))` is ALiBi; exp keeps its per-head output
 RMSNorm. `records create` set the causal strips (`attention_blocked_implementation: strips`),
 where the sources trained on the scan. See the
-[alibi_decay topic](results/exploratory/alibi_decay/README.md).
+[alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md).
 
 | Run | Label | Source | Kernel | Parameters |
 | --- | --- | --- | --- | ---: |
@@ -1092,7 +1092,7 @@ done
 `alpha[t,h] ** (t-i)`. All other scientific settings are identical to the control,
 including degree four, factorial coefficient scaling, gate/coefficients initialization,
 seed 42, QK RMSNorm, attention-output RMSNorm, 2,048-token context, 7,570 updates,
-and the AdamW masks. The [query-distance topic](results/exploratory/query_distance_decay/README.md)
+and the AdamW masks. The [query-distance topic](results/pretraining/fox_alibi/query_distance_decay/README.md)
 holds the pinned control and ablation, methods, and best/terminal comparison.
 
 Home cluster: Kennel. Run from `worktrees/query-distance-decay-1x`, branch
@@ -1125,7 +1125,7 @@ rates at initialization. Both use the full m = 4, NoPE + W decay recipe of
 Mosaic decay kernels (`model.attention_backend: mosaic`), which compute the same
 weights as the control's blocked reference. Methods, initialization details, pinned
 controls, kernel throughput, and results live in the
-[query-distance topic](results/exploratory/query_distance_decay/README.md).
+[query-distance topic](results/pretraining/fox_alibi/query_distance_decay/README.md).
 
 Home cluster: Kennel. Branch `codex/endpoint-decay-ablations`, worktree
 `worktrees/endpoint-decay-ablations`. Sync both locked CUDA environments as in
@@ -1156,7 +1156,7 @@ done
 
 `r74495b47d226` combines the degree-four query polynomial, PaTH position encoding,
 and FoX forget gate, with 1× training (7,570 updates) and projection weight decay.
-Its question and selection are in the [forget-gate topic](results/exploratory/forget_gate/README.md).
+Its question and selection are in the [forget-gate topic](results/pretraining/fox_alibi/forget_gate/README.md).
 It uses one GPU on Kennel from `worktrees/fox-path-1x`, branch `codex/fox-path-1x`.
 The shared acceptance procedure runs the new gated-kernel checks, initialization
 and optimizer checks, a full-recipe pilot, and fresh-process resume before training.
@@ -1181,7 +1181,7 @@ at their Taylor initialization until update 455, then train, all at once (`all`)
 at a time from order 0 through update 1,500 (`by_order`). The schedule and its masks are
 described in the [scaffold README](../../scaffolds/transformer/README.md#coefficient-release-schedule);
 question, controls and results are in the
-[coefficient-release topic](results/exploratory/coefficient_release/README.md).
+[coefficient-release topic](results/pretraining/other/coefficient_release/README.md).
 
 Home cluster: Kennel. Branch `claude/coefficient-release`, worktree
 `worktrees/coefficient-release`. After committing the inputs and checking live allowances,
@@ -1206,7 +1206,7 @@ polynomials of `r4339a245820e` and `rca97cc9db8f2` by quartic B-splines on the f
 [-32, -6, 0, 6, 32], started exactly at T4, on the blocked strips backend
 (`model.attention_kernel_basis: bspline`; scaffold README, "B-spline score function").
 Question, recipe, controls and results are in the
-[spline attention collection](results/spline_attention/README.md).
+[spline attention collection](results/pretraining/alternative_attention/splines/spline_attention/README.md).
 
 `rb1a3a991da6c` calibrates the knots from the two controls' scores at initialization and at their
 retained checkpoints, with forward-only diagnostics on training examples. Home cluster: Kennel. Run it
@@ -1268,7 +1268,7 @@ done
 
 The scaled binomial-quartic comparison uses `ra4c3ada624af` (static) and
 `r78fa0d682f44` (query + W decay), starting from f(s) = (1 + s/4)⁴ / 16.
-The [spline attention collection](results/spline_attention/README.md) records its
+The [spline attention collection](results/pretraining/alternative_attention/splines/spline_attention/README.md) records its
 exact coefficients, controls, unchanged scientific settings, and qualification.
 Home cluster: Kennel. Branch `codex/spline-binomial-init`, worktree
 `worktrees/spline-binomial-init`. Each independent job accepts one B300 or H100
@@ -1309,14 +1309,14 @@ From the repository/worktree root:
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records index experiments/transformer_pp
 scaffolds/transformer/.venv/bin/python -m scaffolds.records validate experiments/transformer_pp rc95f2055e96d
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/coefficient_oracle
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle
 ```
 
 Refresh selection pins only after an intentional update to their scientific inputs.
 
 ## Per-order query-distance FoX gates
 
-The [query-distance exploratory comparison](results/exploratory/query_distance_decay/README.md)
+The [query-distance exploratory comparison](results/pretraining/fox_alibi/query_distance_decay/README.md)
 adds query (`r507193d47450`) and query–key (`r03be769d2069`) gates independently
 for orders 0–4. Both retain their shared-gate controls' full Transformer++ recipe
 and 1× budget, on the Mosaic per-order decay kernels (`model.attention_backend:
@@ -1325,7 +1325,7 @@ Kennel. Use one H100 per run on a 24-hour `standard` or `long` allocation;
 acceptance's pilot measures the update time and stops before training if the run
 would not fit. Exclude `akita`: on B300 both per-order updates are slower than on
 either H100, and the query–key run would not fit 24 hours (see the topic's
-[attention kernels](results/exploratory/query_distance_decay/README.md#attention-kernels)).
+[attention kernels](results/pretraining/fox_alibi/query_distance_decay/README.md#attention-kernels)).
 These jobs have no scheduling dependencies on each other.
 
 From the isolated `codex/degree-dependent-fox` worktree, after committing its
@@ -1352,7 +1352,7 @@ GPU, actual source commit, frozen-set hash, timings, and acceptance outcomes.
 
 ### Degree eight
 
-The [degree-eight pair](results/exploratory/query_distance_decay/README.md#degree-eight)
+The [degree-eight pair](results/pretraining/fox_alibi/query_distance_decay/README.md#degree-eight)
 trains the shared query gate (`r9320e5cd3071`: the recipe of `r3e26412b2811` at degree
 eight) and per-order query gates (`r20fe6fe864bc`: `r507193d47450` at degree eight) on the
 Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour `standard`
@@ -1385,7 +1385,7 @@ submit r20fe6fe864bc per_order_decay_acceptance
 
 ### Degree twelve
 
-The [degree-twelve pair](results/exploratory/query_distance_decay/README.md#degree-twelve)
+The [degree-twelve pair](results/pretraining/fox_alibi/query_distance_decay/README.md#degree-twelve)
 trains the shared query gate (`r47bfe39ce9b4`: the recipe of `r9320e5cd3071` at degree
 twelve) and per-order query gates (`rfe140c073b2f`: `r47bfe39ce9b4` with per-order gates) on
 the Mosaic decay kernels. Home cluster: Kennel. Use one H100 per run on a 24-hour allocation,
@@ -1420,7 +1420,7 @@ submit rfe140c073b2f per_order_decay_acceptance
 
 ### Query–key gates at degrees eight and twelve
 
-The [per-order query–key pair](results/exploratory/query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)
+The [per-order query–key pair](results/pretraining/fox_alibi/query_distance_decay/README.md#per-order-query-key-gates-at-degrees-eight-and-twelve)
 gives the per-order query runs the per-order query–key gates of `r03be769d2069`. Each run
 changes only its twin's `model.attention_forget_gate_conditioning` to `query_key`; the key
 projections start at zero, so it starts exactly as the twin.
@@ -1485,7 +1485,7 @@ token), in place of FoX's `L_t - L_i`. Softmax normalizes the decayed scores; ex
 per-head output RMSNorm. The gate, its 188,580 parameters and their initialization are FoX's.
 `records create` set the causal strips (`attention_blocked_implementation: strips`), where the
 controls trained on the scan. Question, comparators and results are in the
-[alibi_decay topic](results/exploratory/alibi_decay/README.md#softmax-and-exp-with-query-distance-gates).
+[alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md#softmax-and-exp-with-query-distance-gates).
 
 | Run | Label | Control | Kernel | Parameters |
 | --- | --- | --- | --- | ---: |
@@ -1528,7 +1528,7 @@ layer and head, since exp has no orders. The key projection `w_k` (`forget_gate_
 zero and takes weight decay, so the run starts exactly as `r17444ad0f60e`; `w_alpha`, `A_log` and
 `b_dt` keep FoX's (Gated DeltaNet's) initialization. No softmax counterpart is planned. Question,
 comparators and results are in the
-[alibi_decay topic](results/exploratory/alibi_decay/README.md#exp-with-a-query-key-gate).
+[alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md#exp-with-a-query-key-gate).
 
 | Run | Label | Control | Kernel | Parameters (key projection) |
 | --- | --- | --- | --- | ---: |
@@ -1569,7 +1569,7 @@ gate starts as a copy of the control's shared draw, so each run starts exactly a
 `records create` set the causal strips. The degree-eight control trained on ORCD; its copy reads
 Kennel's manifests, which hash identically. A third run takes the series to degree twelve on the
 Mosaic kernels ([below](#degree-twelve-on-the-mosaic-kernels)). Question, controls and results are
-in the [forget gate topic](results/exploratory/forget_gate/README.md#per-order-gates).
+in the [forget gate topic](results/pretraining/fox_alibi/forget_gate/README.md#per-order-gates).
 
 | Run | Label | Control | Degree | Parameters (added gates) |
 | --- | --- | --- | ---: | ---: |
@@ -1647,7 +1647,7 @@ sbatch --parsable --partition=standard --time=1-00:00:00 --gres=gpu:1 --cpus-per
 
 ## Learned input-free gates for static coefficients
 
-The [alibi_decay topic](results/exploratory/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
+The [alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md#learned-input-free-gates-for-static-coefficients)
 pretrains the static controls `r4339a245820e` (m = 4) and `r9c69dd7cfc8d` (m = 8) with RoPE
 replaced by the input-free query-distance gate (`model.attention_forget_gate_conditioning:
 none`, `lambda = exp(A_log) softplus(dt_bias)`): `r0e76396bdee5` and `rc60345dfcff7` with one
@@ -1704,7 +1704,7 @@ optimizer update. A threshold event triggers a frozen attention VJP comparison
 against independent FP64 arithmetic, using the same inputs and cotangent and
 all causal keys. Full-state hashes and gradient-parity checks qualify the probes.
 Historical findings and the replay's limits belong to the
-[exploratory topic](results/exploratory/gated_gradient_spikes/README.md).
+[gated_gradient_spikes record](results/diagnostics/learning_dynamics/gated_gradient_spikes/README.md).
 
 These diagnostics use their recorded source commits built on the original
 scaffold, rather than an unrelated current runtime. A fresh execution needs a
@@ -2060,7 +2060,7 @@ submit r6adefb42f443 coefficient_forms_acceptance
 
 The degree-four run is complete, trained on one H100 SXM; its record holds its launch commit, attempt, and the
 artifact-root locations of its validation-best checkpoint and log. Its results are in the
-[sum_of_squares topic](results/exploratory/sum_of_squares/README.md). Its launch command, from `claude/sos-m4`
+[sum_of_squares topic](results/pretraining/parametrizations/sos/sum_of_squares/README.md). Its launch command, from `claude/sos-m4`
 on `long` with a 16-hour limit (degree-four query runs on an H100 PCIe have taken 7.6–10.3 hours, up to 26%
 above their pilots' projections):
 
@@ -2081,7 +2081,7 @@ shape's token count, twice the shape's 1x budget, at degrees eight and twelve. A
 query at degree eight (validation-best 15.314) and FoX exp (15.320) lead, 2.90% and 2.87% below exp (15.772);
 the ten RoPE polynomials lie within −0.36% to +0.07% of exp and softmax is 2.66% above it; the thirteen with a
 reference-shape counterpart stay 10.1–12.4% above it at the same tokens. Question, comparisons, results and
-limits: the [budgets collection](results/l12_d640/budgets/README.md).
+limits: the [budgets collection](results/pretraining/scalings/l12_d640/budgets/README.md).
 
 - Recipes: each 1x run at the shape derived with `derive_recipe.py --budget 2` and allocated with
   `scaffolds.records create`: 15,103 updates, warmup 908, validation every 200 updates through 3,000 and every
@@ -2145,7 +2145,7 @@ the degree-twelve query, static, fixed Taylor, softplus input and sum-of-squares
 sum of squares (validation-best 14.565) and softplus input (14.581) are 0.28% and 0.16% below exp (14.605), query
 ties it (+0.01%), fixed Taylor and static are 0.07% and 0.13% above it, and softmax 3.34%; against exp each
 polynomial is 0.08–0.19 percentage points worse than at 2x. Runs, results and limits: the
-[budgets collection](results/l12_d640/budgets/README.md#four-times-the-budget).
+[budgets collection](results/pretraining/scalings/l12_d640/budgets/README.md#four-times-the-budget).
 
 - Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
   30,205 updates of 128 × 2,048 tokens (7.92B prediction tokens), warmup 1,815, validation every 400 updates
@@ -2170,7 +2170,7 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   fused Triton for exp, cuDNN for softmax. Each run requests one B300 or H100 (the softplus run an H100 alone)
   and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not verified reset
   (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. All seven finished on `dogo`, four of them after starting
-  on `akita`'s B300; the budgets collection's [4x limits](results/l12_d640/budgets/README.md#4x-limits) list each
+  on `akita`'s B300; the budgets collection's [4x limits](results/pretraining/scalings/l12_d640/budgets/README.md#4x-limits) list each
   run's GPUs and resumptions.
 - Time limits: the projection on the slowest eligible GPU, the H100 SXM, plus acceptance's two-hour reserve,
   rounded up with room. A projection is a 2x run's wall time per update, validation included, over 30,205
@@ -2230,7 +2230,7 @@ their dot products, and tanh saturation. It preserves each parent's native Mosai
 forward pass and restores parameters only. The frozen config pins the parent
 recipes, checkpoints, data identity, and saved coefficient measurements.
 
-The [diagnostic record](results/diagnostics/query_parameter_dynamics/README.md)
+The [diagnostic record](results/diagnostics/learning_dynamics/query_parameter_dynamics/README.md)
 contains the findings and regeneration commands. From the isolated diagnostic
 worktree, after committing its execution inputs:
 
@@ -2257,7 +2257,7 @@ The native Mosaic forward is preserved. The capture measures the factor generato
 `g_j = b_j + a_j tanh(W_j^T x)` before expansion into polynomial coefficients;
 raw parameters are checked against the saved training diagnostics. Historical
 expanded-coefficient moments are not compared with factor-generator moments.
-The [SoS exploration](results/exploratory/sum_of_squares/README.md) owns this comparison.
+The [SoS exploration](results/pretraining/parametrizations/sos/sum_of_squares/README.md) owns this comparison.
 
 From its isolated worktree after committing the execution inputs:
 
@@ -2285,7 +2285,7 @@ is `u h(u)`, where `u = softplus(s)` and `h` is a query-conditioned SoS core
 of degree 8 or 12 (total degree 9 or 13). The probe captures the factor
 generators before expansion and checks the raw parameters against training
 measurements. Parent parameters remain unchanged; there are no optimizer updates.
-The [coefficient-input exploration](results/exploratory/coefficient_input_norm/README.md)
+The [coefficient-input exploration](results/pretraining/other/coefficient_input_norm/README.md)
 owns the saturation figure and its explicit selections.
 
 From the isolated worktree after committing its execution inputs:
@@ -2313,8 +2313,8 @@ m=8 and m=12 runs use the 15-layer width-896 shape with RoPE,
 canonical QK RMSNorm/head scales, native Mosaic, per-head output RMSNorm,
 seed 42, W decay 0.1, and each control's complete initialization/optimizer/data
 recipe. W remains trainable without normalization; a and b retain no decay.
-The [exploration](results/exploratory/coefficient_input_norm/README.md) owns the
-explicit run/control selection, completed m=8/m=12 findings, and open decision.
+The [exploration](results/pretraining/other/coefficient_input_norm/README.md) owns the
+explicit run/control selection, completed m=8/m=12 findings, and open question.
 
 The m=12 query run `r7e34dec9dbd5` is paired with `r0fceea0627c8`; the m=12 SoS
 run `r6b17c3463a60` is paired with `r3d52b7ab43d1`. Each has 200,905,126 parameters,
@@ -2361,7 +2361,7 @@ path. Both use the same 15-layer width-896 shape, degree twelve, RoPE, W decay,
 seed, initial parameters, optimizer, data, and 7,570-update budget as their controls.
 Both completed all 7,570 updates and selected their best checkpoint at update
 7,500. The exploration above owns the best/terminal comparisons, saturation and
-gradient findings, and open decision.
+gradient findings, and open question.
 
 The completed independent one-B300 allocations used source commit
 `b75d546a07aa8aedb21c0efe970d8dcedffb5eed` and the commands below. For a fresh
@@ -2395,8 +2395,8 @@ source `pre_rmsnorm`. The coefficient projection receives the raw attention inpu
 divided by `max(||input||_2, 1e-6)` in FP32; Q/K/V retain the RMSNorm path.
 Both retain their parent's complete 15-layer width-896 recipe, including RoPE,
 native Mosaic, initial parameters, W decay 0.1, no a/b decay, seed 42, optimizer,
-data, and 7,570 updates. The [exploration](results/exploratory/coefficient_input_norm/README.md)
-owns the parent PPL comparisons and open decision. Both completed all 7,570
+data, and 7,570 updates. The [exploration](results/pretraining/other/coefficient_input_norm/README.md)
+owns the parent PPL comparisons and open question. Both completed all 7,570
 updates and retained the validation-best checkpoint at 7,500. Raw L2 gives best
 PPL 14.1313 and 14.0967, versus 14.0953 and 14.0934 in the original-input parents;
 the intervention does not improve these single-seed comparisons.
@@ -2426,8 +2426,8 @@ done
 The two runs opened on 2026-11-13 test query-conditioned degree-eight sum-of-squares
 cores with softplus inputs, on the 15-layer width-896 Transformer++ recipe with
 RoPE and coefficient-projection W decay. Their home cluster is Kennel. The
-[exploratory topic](results/exploratory/softplus_sos/README.md) owns the explicit
-controls, findings, limitations, and open decision.
+[softplus_sos results](results/pretraining/parametrizations/sos/softplus_sos/README.md) own the explicit
+controls, findings, limitations, and open question.
 
 Write `z = softplus(Q_t K_i^T / sqrt(d_K))`. Both cores use generated factors
 `F_j(x_t) = f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`, with fixed Taylor square
@@ -2528,7 +2528,7 @@ sbatch --partition="$partition" --exclude=akita,mastiff,collie,samoyed,doodle,te
   "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100,B200
 ```
 
-The existing [softplus–SoS topic](results/exploratory/softplus_sos/README.md)
+The existing [softplus–SoS topic](results/pretraining/parametrizations/sos/softplus_sos/README.md)
 contains the explicit degree-matched controls and the open comparison.
 
 ### The 12-layer width-640 shape at 1x, 2x and 4x
@@ -2540,7 +2540,7 @@ query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_
 Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.565 at
 1x, 2x and 4x, 0.88%, 0.63% and 0.27% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
 below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, findings and limits: the
-[topic](results/exploratory/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x).
+[topic](results/pretraining/parametrizations/sos/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x).
 
 | Run | Label | Updates | Warmup | Validation |
 | --- | --- | ---: | ---: | --- |
@@ -2651,7 +2651,7 @@ initialization. Ordinary weight decay applies to the weights, not the biases. `r
 (`J = 4`) and `rfc68c6d26f40` (`J = 8`) copy `query-m4-head-scale` (`r2b22f2ff6461`) except
 for this kernel, on the fused score-MLP kernel (`attention_backend: fused`). The
 [scaffold API](../../scaffolds/transformer/README.md#score-mlp-attention) specifies every
-score-MLP form, and the [score MLP collection](results/score_mlp/README.md) compares the two
+score-MLP form, and the [score MLP collection](results/pretraining/alternative_attention/mlp/score_mlp/README.md) compares the two
 runs with exp and the degree-four controls.
 
 Home cluster: Kennel. Worktree `worktrees/plain-score-mlp`, branch `codex/plain-score-mlp`,
@@ -2674,8 +2674,8 @@ fresh-process checkpoint resume in each allocation before production.
 ## Static sum-of-squares comparison
 
 Six runs opened on 2026-11-17 compare static SoS with the corresponding query SoS
-models on Kennel. The [exploratory comparison](results/exploratory/static_sos/README.md)
-records the question, all run/control IDs, parameterization and open decision.
+models on Kennel. The [static_sos results](results/pretraining/parametrizations/sos/static_sos/README.md)
+record the question, all run/control IDs, parameterization and open question.
 Each recipe preserves its query partner's model, data, seed and 7,570-update budget.
 Only the coefficient generator is replaced by per-layer/head static factors:
 `attention_static_sos_parameterization: relative_taylor` learns b=1 with
@@ -2736,8 +2736,8 @@ done
 Opened 2026-11-18 on Kennel. Three fresh Transformer++ runs test a vanishing
 negative-score tail without an input prefactor, at total degree eight. They use
 an isolated worktree and branch, `codex/softplus-zero-constant`. The existing
-[softplus composition topic](results/exploratory/softplus_sos/README.md#structural-zero-constants)
-owns the explicit controls, comparison limits, and open decision.
+[zero_constant results](results/pretraining/other/zero_constant/README.md)
+own the explicit controls, comparison limits, and open question.
 
 | Variant | Run | Structural restriction | Recipe parent |
 | --- | --- | --- | --- |

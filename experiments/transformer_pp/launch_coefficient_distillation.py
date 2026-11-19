@@ -17,7 +17,7 @@ from experiments.transformer_pp.coefficient_distillation import read_batch, sha2
 
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_pp"
-TOPIC = STUDY / "results/exploratory/coefficient_oracle"
+TOPIC = STUDY / "results/diagnostics/overfitting/coefficient_oracle"
 
 
 def source_descriptor(run):

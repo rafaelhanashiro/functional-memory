@@ -38,6 +38,8 @@ experiments/<study>/
     metrics.jsonl           canonical measurements (or mechanism-specific data)
     checkpoints/            ignored, on the run's home cluster
     training.log            ignored, retained execution log
+  results/                  Transformer++ only: pretraining/<group>/ and diagnostics/<group>/,
+                            grouped as on the results site; README.md indexes them
   acceptance.py, ...        optional experiment-specific execution code
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
@@ -51,12 +53,20 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   Transformer++ in READMEs, indexes, figures, and reports, never by its size or token budget
   ("200M", "4B", "1x"), and name model shapes by structure (for example the 12-layer
   width-640 shape). The study holds its `recipe.yaml`, run membership,
-  `runs/<run_id>/`, execution helpers, and `results/` collections. Its exploratory
-  diagnostics belong under `experiments/transformer_pp/results/exploratory/<topic>/`,
-  with their runs in the same study. Add runs deliberately; do not reproduce the old
-  grid automatically. Reusable implementations remain in the shared scaffolds.
-  Its nested results follow all selection, provenance, and regeneration rules below;
-  old studies and result selections retain their recipes.
+  `runs/<run_id>/`, execution helpers, and `results/`. Add runs deliberately; do not
+  reproduce the old grid automatically. Reusable implementations remain in the shared
+  scaffolds. Its results mirror the results site (`site/`): `results/pretraining/<group>/`
+  (polynomial, scalings, fox_alibi, parametrizations, alternative_attention, other) and
+  `results/diagnostics/<group>/` (overfitting, continued_pretraining, length_extrapolation,
+  learning_dynamics), indexed by `results/README.md`; their runs stay in the study's `runs/`.
+  They follow the selection, provenance, and regeneration rules below, but not the
+  canonical, exploratory, and diagnostic statuses: every folder has a README (question,
+  runs, findings, limits, the date opened, any open question) and a selection pinned by
+  `scaffolds.records refresh`; a folder with figures or tables also holds the code that
+  regenerates them byte-identically, with tests; the only other decision about a folder
+  is deleting it with its runs and their artifacts. A new result goes into the group it
+  belongs to (ask the user when none fits); folders not yet grouped wait in
+  `results/exploratory/`. Old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
   degree, key width, model shape (depth and width), token budget, coefficient
   parameterization, sharing, and seed distinguish runs within this study; do not create
@@ -84,24 +94,13 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   remain visible. Terminal and validation-best metrics must be distinguished.
 - Keep the maintained attention comparisons in `results/attention_scaling/`: the
   combined heatmap and degree plot, their explicit selections, and regeneration code.
-  Eight attention questions have their own canonical collections at the user's request:
+  Three attention questions have their own canonical collections at the user's request:
   `results/input_dependent_coefficients/` (tanh query-dependent coefficients against
-  static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet),
-  `results/rational_polynomial/` (separate learned denominator polynomials), and the
-  Transformer++ study's `experiments/transformer_pp/results/degree_scaling/`
-  (perplexity against polynomial degree for four coefficient families),
-  `experiments/transformer_pp/results/score_mlp/` (a learned MLP of the score and query
-  token in place of exp), `experiments/transformer_pp/results/spline_attention/` (a learned
-  quartic B-spline of the score and its initial function), and the 12-layer width-640 shape's
-  `experiments/transformer_pp/results/l12_d640/shape_pairs/` (attention variants at 1×
-  against their reference-shape partners) and `.../l12_d640/budgets/` (the variants at
-  1×, 2× and 4× the shape's budget). Do not
+  static ones), `results/gdn_polynomial/` (polynomial Gated DeltaNet), and
+  `results/rational_polynomial/` (separate learned denominator polynomials). Do not
   create a result directory for any other mechanism or sweep unless the user asks.
   Each canonical collection stands alone: never merge one into another, and never fold
-  a newly canonical experiment into an existing collection. A shape folder such as
-  `l12_d640/` only groups one model shape's canonical collections, each in its own
-  sub-directory; its README indexes them and links that shape's exploratory topics, which
-  stay under `exploratory/`. Learning curves and
+  a newly canonical experiment into an existing collection. Learning curves and
   coefficient diagnostics remain available in run measurements; add a maintained
   diagnostic figure only when it serves a requested comparison. State-rank results
   belong to `results/state_rank/`.
@@ -109,18 +108,17 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   Flax-default runs stay in their study as legacy records but enter no selection,
   figure, table, finding, or status report; `results/attention_scaling/collect.py`
   rejects them.
-- Exploratory experiments, whose place in the canonical results is not yet decided,
-  report under their applicable `results/exploratory/<topic>/`, one directory per question with flat
+- Outside Transformer++ (whose results follow the single rule above), exploratory
+  experiments, whose place in the canonical results is not yet decided, report under
+  `results/exploratory/<topic>/`, one directory per question with flat
   files: a README with the question, runs, findings, the open decision, and the date
   opened; an optional selection YAML of explicit run IDs with roles, pinned by
   `scaffolds.records refresh`; and optional figures or tables that regenerate from
   it. Tests are not required. Their runs live in their study like any other run, with
   the usual lifecycle, records, and retained artifacts, and enter no canonical
-  selection. The applicable `results/exploratory/README.md` lists the open topics;
-  the root exploratory index may link to study-local topics. Mention open topics in
+  selection. `results/exploratory/README.md` lists the open topics. Mention open topics in
   status updates. A topic ends in one of two ways: promote it or discard it.
-  Promoting makes the topic its own canonical collection, `results/<topic>/` (or, for a
-  topic about one model shape, a new collection in that shape's folder): move its
+  Promoting makes the topic its own canonical collection, `results/<topic>/`: move its
   selection, findings, and code there, add regeneration code and tests, list it in the
   root README and in the canonical collections above, and delete the topic. A promoted
   topic is never merged into an existing canonical collection, even a related one.

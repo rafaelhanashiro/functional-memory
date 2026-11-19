@@ -17,7 +17,7 @@ from scaffolds.records.selections import refresh_selection
 
 ROOT = Path(__file__).resolve().parents[2]
 STUDY = ROOT / "experiments/transformer_pp"
-TOPIC = STUDY / "results/exploratory/coefficient_oracle"
+TOPIC = STUDY / "results/diagnostics/overfitting/coefficient_oracle"
 PARAMETERIZATIONS = ("query_coefficient_generator", "shared_batch_query_coefficients", "static_coefficients",
                     "free_per_example_query_coefficients", "free_per_example_query_key_coefficients")
 # Submission policy per home cluster (CLUSTERS.md). ORCD requests must name one GPU type;

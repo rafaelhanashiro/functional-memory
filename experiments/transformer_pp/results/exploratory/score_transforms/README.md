@@ -101,7 +101,7 @@ states (softplus 2,845, 5,741, 6,238; abs 1,765, 5,707, 6,823), listed in its re
 - **Abs lost about 2%.** Validation-best and terminal 17.941 at update 7,551, 1.98% above the control. It
   trailed by 10–18% around the learning-rate peak (updates 300–700) and recovered to about 2% behind.
   `|s|` gives a score and its negation the same weight, like the even-only kernels of the
-  [even_powers topic](../even_powers/README.md), which trail full degree eight by about 2% at the
+  [even_powers topic](../../pretraining/other/even_powers/README.md), which trail full degree eight by about 2% at the
   reference shape.
 
 ## Reference shape
@@ -217,7 +217,7 @@ degree eight (14.262) did not: 0.42% below the control, level with exp (14.257) 
 at degree eight (14.218). Nor did softplus at degree twelve (validation-best 14.222, terminal 14.226): 0.02%
 below its control, 0.24% below exp and 0.60% below fixed Taylor at degree twelve (14.309). At twice the
 12-layer width-640 budget, on the Mosaic transformed kernels, softplus is 0.25% (degree eight) and 0.11% (degree
-twelve) below the query runs ([budgets](../../l12_d640/budgets/README.md)). All runs are complete. Whether to
+twelve) below the query runs ([budgets](../../pretraining/scalings/l12_d640/budgets/README.md)). All runs are complete. Whether to
 promote the topic to its own canonical collection or discard it with its runs and their artifacts is the user's
 decision.
 

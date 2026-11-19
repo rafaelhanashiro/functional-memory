@@ -11,11 +11,7 @@ a result collection can combine runs from several studies.
 | Input-dependent (tanh) polynomial coefficients | [Matched-degree comparison](results/input_dependent_coefficients/README.md) | [10B attention runs](experiments/attention_scaling/README.md#input-dependent-coefficient-comparison) |
 | Polynomial Gated DeltaNet: independent erase, polynomial memory, key width | [Heatmap and validation gap](results/gdn_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md#polynomial-gated-deltanet) |
 | Rational polynomial attention: separate learned denominator | [Comparison by denominator](results/rational_polynomial/README.md) | [10B attention runs](experiments/attention_scaling/README.md) |
-| Transformer++: attention variants under its recipe, with model shape and token budget per run | [Results and exploratory diagnostics](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
-| Transformer++ degree scaling: fixed Taylor, fixed Hermite, learned static, and query coefficients at `m = 1-8` and 12 | [Perplexity by degree](experiments/transformer_pp/results/degree_scaling/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#degree-scaling) |
-| Transformer++ at the 12-layer width-640 shape: eight attention variants against their reference-shape partners, and the variants at 1×, 2× and 4× the shape's budget | [Shape index](experiments/transformer_pp/results/l12_d640/README.md): [shape pairs](experiments/transformer_pp/results/l12_d640/shape_pairs/README.md) and [budgets](experiments/transformer_pp/results/l12_d640/budgets/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#model-scale) |
-| Transformer++ score MLP: a conventional SiLU MLP of the score and query token in place of exp, at `J = 4` and 8 | [Learning curves and comparison](experiments/transformer_pp/results/score_mlp/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#score-mlp) |
-| Transformer++ spline attention: a learned quartic B-spline of the score, static or query-dependent, from four initial functions | [Initial functions and controls](experiments/transformer_pp/results/spline_attention/README.md) | [Recipe and runs](experiments/transformer_pp/README.md#spline-attention) |
+| Transformer++: attention variants under its recipe, with model shape and token budget per run | [Pretraining comparisons and diagnostics, grouped as on the results site](experiments/transformer_pp/results/README.md) | [Recipe and runs](experiments/transformer_pp/README.md) |
 | State rank | [Figures and findings](results/state_rank/README.md) | [Runs and execution](experiments/state_rank/README.md) |
 
 Exploratory results awaiting a decision (promote or discard) are in
@@ -24,8 +20,8 @@ training behavior, such as gradient spikes, are in
 [`results/diagnostics/`](results/diagnostics/README.md).
 
 The established 10B attention settings vary within `experiments/attention_scaling/runs/<run_id>/`.
-The separately requested Transformer++ study owns its recipe, runs, results, and exploratory
-diagnostics under `experiments/transformer_pp/`; the folder keeps its original name. Mechanisms and sweeps remain
+The separately requested Transformer++ study owns its recipe, runs, and results under
+`experiments/transformer_pp/`; the folder keeps its original name. Mechanisms and sweeps remain
 runs within their applicable study. The [10B run index](experiments/attention_scaling/runs.csv)
 and [Transformer++ run index](experiments/transformer_pp/runs.csv) expose the settings,
 home cluster, training budget, status, and outcome. Each result collection selects
