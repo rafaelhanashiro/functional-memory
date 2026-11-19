@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2384d21a3134/config.yaml",
+    "sha256": "c302b538a651584d63c87ba38ba2b51769770d98933a04a1655f2d5b5eba4a5f"
+  },
+  "home_cluster": "kennel",
+  "label": "softplus_sos_prefactor_m8_swap_all_layers",
+  "name": "softplus_sos_prefactor_m8_swap_all_layers",
+  "record_schema_version": 1,
+  "run_id": "r2384d21a3134",
+  "status": "planned"
+}

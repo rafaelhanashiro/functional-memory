@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r55ad5b7d83e6/config.yaml",
+    "sha256": "5d0fe74bc1669b2e5fb72dc23b1dddddd64146b573002851aa008b3a62be2bb7"
+  },
+  "home_cluster": "kennel",
+  "label": "softplus_sos_prefactor_m8_swap_one_at_a_time",
+  "name": "softplus_sos_prefactor_m8_swap_one_at_a_time",
+  "record_schema_version": 1,
+  "run_id": "r55ad5b7d83e6",
+  "status": "planned"
+}

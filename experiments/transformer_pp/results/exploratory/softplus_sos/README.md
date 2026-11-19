@@ -71,6 +71,16 @@ SoS degree-twelve control (14.1649), direct softplus (14.2223), direct query
 (14.2256), and shared exp control (14.2572). These comparisons do not identify
 which mechanism caused the improvement.
 
+## Coefficient swaps with the softplus prefactor
+
+The single-layer evaluation `r55ad5b7d83e6` and simultaneous all-layer evaluation `r2384d21a3134`
+use the retained step-7,500 checkpoint of `r841f35a24241`. Both follow the
+[coefficient-swap protocol](../sum_of_squares/README.md#layerwise-polynomial-swap), including
+the same 64 calibration sequences, 256 evaluation sequences, position-matched donors and
+own-coefficient replay. Each recipient evaluates the replacement polynomial at its own
+`z = softplus(s)`. Both the donor table and the per-head calibration mean contain the expanded
+coefficients of `z (U(z)² + V(z)²)`, with a zero constant and powers one through nine.
+
 ## The 12-layer width-640 shape at 1x, 2x and 4x
 
 All six runs are complete. They train the two degree-twelve compositions at the 12-layer width-640 shape with

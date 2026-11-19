@@ -46,14 +46,16 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
             size % microbatch for size in (len(calibration), len(recipients))):
         raise ValueError("Use nonempty complete microbatches with next-token targets")
 
+    coefficient_domain = {"coefficient_score_transform": nnx.merge(graph, params).config.attention_score_transform}
+
     @jax.jit
     def calibration_mean(state, rows):
-        _, coeff = nnx.merge(graph, state)(rows[:, :-1], deterministic=True, return_coefficients=True)
+        _, coeff = nnx.merge(graph, state)(rows[:, :-1], deterministic=True, return_coefficients=True, **coefficient_domain)
         return coeff.mean(axis=(1, 2))  # [layer, head, monomial degree]
 
     @jax.jit
     def native(state, rows):
-        logits, coeff = nnx.merge(graph, state)(rows[:, :-1], deterministic=True, return_coefficients=True)
+        logits, coeff = nnx.merge(graph, state)(rows[:, :-1], deterministic=True, return_coefficients=True, **coefficient_domain)
         return sequence_nll(logits, rows), coeff
 
     @jax.jit
@@ -61,14 +63,14 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
         model = nnx.merge(graph, state)
         inputs = rows[:, :-1]
         ordinary = model(inputs, deterministic=True)
-        captured, coefficients = model(inputs, deterministic=True, return_coefficients=True)
-        replayed = model(inputs, deterministic=True, query_coefficients=coefficients)
+        captured, coefficients = model(inputs, deterministic=True, return_coefficients=True, **coefficient_domain)
+        replayed = model(inputs, deterministic=True, query_coefficients=coefficients, **coefficient_domain)
         return tuple(sequence_nll(logits, rows) for logits in (ordinary, captured, replayed))
 
     @partial(jax.jit, static_argnames=("layer",))
     def intervene(state, rows, coefficients, layer):
         logits = nnx.merge(graph, state)(rows[:, :-1], deterministic=True, query_coefficients=coefficients,
-                                         coefficient_override_layer=layer)
+                                         coefficient_override_layer=layer, **coefficient_domain)
         return sequence_nll(logits, rows)
 
     means = np.mean([

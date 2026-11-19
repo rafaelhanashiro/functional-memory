@@ -537,6 +537,7 @@ class MultiHeadAttention(nnx.Module):
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
         coefficient_source_input: jax.Array | None = None,
+        coefficient_score_transform: str = "identity",
     ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array] | jax.Array]:
         """Optionally replace or return effective query coefficients [B, T, H, m+1].
 
@@ -565,10 +566,9 @@ class MultiHeadAttention(nnx.Module):
                 query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
                              "shift every order's score")
-        if self.attention_score_transform != "identity" and (
+        if self.attention_score_transform != coefficient_score_transform and (
                 query_coefficients is not None or return_coefficients or key_factors is not None):
-            raise ValueError("Coefficient override and capture assume sum_r c_r s^r; a score transform evaluates "
-                             "the polynomial at z = phi(s)")
+            raise ValueError("Coefficient score transform must match the model's attention_score_transform")
         if query_coefficients is not None or return_coefficients:
             if (self.attention_coefficient_conditioning not in ("static", "query")
                     or self.attention_normalization or self.attention_degree is None

@@ -2359,6 +2359,11 @@ done
 
 ## Softplus and sum-of-squares composition
 
+The frozen degree-eight core with the softplus prefactor also has two
+[coefficient swap evaluations](results/exploratory/softplus_sos/README.md#coefficient-swaps-with-the-softplus-prefactor).
+Use the layerwise polynomial swap command above with run IDs `r55ad5b7d83e6` and `r2384d21a3134`
+and `--gres=gpu:b200:1` for the transformed Mosaic kernel on Kennel.
+
 The two runs opened on 2026-11-13 test query-conditioned degree-eight sum-of-squares
 cores with softplus inputs, on the 15-layer width-896 Transformer++ recipe with
 RoPE and coefficient-projection W decay. Their home cluster is Kennel. The

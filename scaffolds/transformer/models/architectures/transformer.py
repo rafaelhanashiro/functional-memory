@@ -79,10 +79,12 @@ class Block(nnx.Module):
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
+        coefficient_score_transform: str = "identity",
     ):
         extra = {}
         if query_coefficients is not None or return_coefficients:
-            extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients}
+            extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients,
+                     "coefficient_score_transform": coefficient_score_transform}
         if key_factors is not None:
             extra["key_factors"] = key_factors
         if self.coefficients_read_pre_norm:
@@ -139,12 +141,15 @@ class TransformerLM(nnx.Module):
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
         coefficient_override_layer: int | None = None,
+        coefficient_score_transform: str = "identity",
     ):
         """Optionally replace or return effective coefficients [L, B, T, H, m+1].
 
         Overrides replace static coefficients or bypass the query generator; all
         other operations remain differentiable. Capture returns coefficients from
         this same forward pass, after scaling. No scaling is applied to overrides.
+        Coefficients multiply powers of the declared score transform, which must
+        match the model. A softplus prefactor is already encoded by a zero c_0.
         For a single-layer intervention, pass a static zero-based
         ``coefficient_override_layer`` and coefficients [B,T,H,m+1]. Later
         layers generate their coefficients from the intervened hidden states.
@@ -165,9 +170,8 @@ class TransformerLM(nnx.Module):
             if cfg.attention_score_bias != "none":
                 raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
                                  "shift every order's score")
-            if cfg.attention_score_transform != "identity":
-                raise ValueError("Coefficient override and capture assume sum_r c_r s^r; a score transform "
-                                 "evaluates the polynomial at z = phi(s)")
+            if cfg.attention_score_transform != coefficient_score_transform:
+                raise ValueError("Coefficient score transform must match the model's attention_score_transform")
             fixed_direct = (cfg.attention_coefficients == "fixed"
                             and cfg.attention_coefficient_conditioning == "static"
                             and cfg.attention_fixed_square_factors is None)
@@ -220,6 +224,7 @@ class TransformerLM(nnx.Module):
                     result = layer(x, deterministic=deterministic, rngs=rngs,
                                    return_diagnostics=return_diagnostics, attention_parameters=parameters,
                                    query_coefficients=layer_coefficients, return_coefficients=return_coefficients,
+                                   coefficient_score_transform=coefficient_score_transform,
                                    **layer_key_factors)
             if return_diagnostics:
                 x, layer_diagnostics = result
