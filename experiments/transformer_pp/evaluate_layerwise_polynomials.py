@@ -33,7 +33,7 @@ def sequence_nll(logits, rows):
     return token_loss.mean(axis=1)
 
 
-def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed):
+def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed, model_dtype="float32"):
     """Rows contain next-token targets. Returned indices are relative to the recipient split."""
     if microbatch < 2 or microbatch % 2:
         raise ValueError("Use an even microbatch for reciprocal donor pairs")
@@ -54,8 +54,13 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
         return sequence_nll(logits, rows), coeff
 
     @jax.jit
-    def ordinary_nll(state, rows):
-        return sequence_nll(nnx.merge(graph, state)(rows[:, :-1], deterministic=True), rows)
+    def qualify_replay(state, rows):
+        model = nnx.merge(graph, state)
+        inputs = rows[:, :-1]
+        ordinary = model(inputs, deterministic=True)
+        captured, coefficients = model(inputs, deterministic=True, return_coefficients=True)
+        replayed = model(inputs, deterministic=True, query_coefficients=coefficients)
+        return tuple(sequence_nll(logits, rows) for logits in (ordinary, captured, replayed))
 
     @partial(jax.jit, static_argnames=("layer",))
     def intervene(state, rows, coefficients, layer):
@@ -75,15 +80,23 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
     native_nll = np.empty(len(order), dtype=np.float64)
     conditions = ("swapped", "calibration_mean")
     losses = {name: np.empty((len(means), len(order)), dtype=np.float64) for name in conditions}
-    replay_error = np.zeros(len(means))
+    identity_nll = np.empty((len(means), len(order)), dtype=np.float64)
+    # The coefficient-fit diagnostic qualifies separately compiled BF16 GPU forwards at
+    # 0.002 nats per sequence. Same-compilation identity still gets the strict check.
+    external_atol = 0.002 if model_dtype == "bfloat16" and jax.default_backend() == "gpu" else 2e-4
     for start in range(0, len(order), microbatch):
         batch = slice(start, start + microbatch)
         rows = jnp.asarray(recipients[order[batch]])
         native_nll[batch], coeff = native(params, rows)
         if start == 0:
-            ordinary = np.asarray(ordinary_nll(params, rows))
+            ordinary, captured, replayed = map(np.asarray, qualify_replay(params, rows))
+            np.testing.assert_allclose(captured, ordinary, atol=1e-5, rtol=1e-5,
+                                       err_msg="Joint coefficient capture changed native NLL")
+            np.testing.assert_allclose(replayed, ordinary, atol=1e-5, rtol=1e-5,
+                                       err_msg="Joint coefficient replay changed native NLL")
+            joint_error = float(np.max(np.abs(replayed - ordinary)))
             capture_error = float(np.max(np.abs(ordinary - native_nll[batch])))
-            np.testing.assert_allclose(native_nll[batch], ordinary, atol=2e-4, rtol=0,
+            np.testing.assert_allclose(native_nll[batch], ordinary, atol=external_atol, rtol=0,
                                        err_msg="Coefficient capture changed native NLL")
         for layer in range(len(means)):
             own = coeff[layer]
@@ -91,11 +104,13 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
             mean = jnp.broadcast_to(means[layer], own.shape)
             losses["swapped"][layer, batch] = intervene(params, rows, swapped, layer)
             losses["calibration_mean"][layer, batch] = intervene(params, rows, mean, layer)
+            replay = np.asarray(intervene(params, rows, own, layer))
+            identity_nll[layer, batch] = replay
+            np.testing.assert_allclose(replay, native_nll[batch], atol=external_atol, rtol=0,
+                                       err_msg=f"External replay failed at layer {layer}, recipient rows {order[batch]}")
             if start == 0:
-                replay = np.asarray(intervene(params, rows, own, layer))
-                replay_error[layer] = np.max(np.abs(replay - native_nll[batch]))
-                np.testing.assert_allclose(replay, native_nll[batch], atol=2e-4, rtol=0,
-                                           err_msg=f"Native coefficient replay failed at layer {layer}")
+                error = np.max(np.abs(replay - native_nll[batch]))
+                print(f"Layer {layer}: identity replay max |ΔNLL| {error:.6g}", flush=True)
         if start == 0 or (start + microbatch) % 32 == 0:
             print(f"Scored {start + microbatch}/{len(order)} held-out sequences", flush=True)
     if not np.isfinite(native_nll).all() or any(not np.isfinite(x).all() for x in losses.values()):
@@ -103,13 +118,19 @@ def evaluate(graph, params, calibration, recipients, *, microbatch, pairing_seed
 
     records = [{"condition": "native", "nll": float(native_nll.mean()), "sequence_nll": native_nll.tolist(),
                 "capture_max_abs_sequence_nll_error": capture_error,
-                "identity_max_abs_sequence_nll_error_by_layer": replay_error.tolist()}]
+                "joint_replay_max_abs_sequence_nll_error": joint_error,
+                "external_replay_atol": external_atol, "identity_sequence_nll_by_layer": identity_nll.tolist(),
+                "identity_max_abs_sequence_nll_error_by_layer": np.abs(identity_nll - native_nll).max(axis=1).tolist()}]
     for layer in range(len(means)):
         for condition in conditions:
             values = losses[condition][layer]
             delta_per_pair = (values - native_nll).reshape(-1, 2).mean(axis=1)
+            delta_vs_replay = (values - identity_nll[layer]).reshape(-1, 2).mean(axis=1)
             records.append({"layer_index": layer, "condition": condition, "nll": float(values.mean()),
                             "delta_nll": float(delta_per_pair.mean()),
+                            "delta_nll_vs_identity_replay": float(delta_vs_replay.mean()),
+                            "paired_se_vs_identity_replay": (float(delta_vs_replay.std(ddof=1) / np.sqrt(len(delta_vs_replay)))
+                                                             if len(delta_vs_replay) > 1 else None),
                             "paired_se": (float(delta_per_pair.std(ddof=1) / np.sqrt(len(delta_per_pair)))
                                           if len(delta_per_pair) > 1 else None),
                             "sequence_nll": values.tolist()})
@@ -156,7 +177,7 @@ def run_evaluation(run):
     update_record(run, {"status": "running", "runtime": runtime, "attempts": [*record.get("attempts", []), runtime]})
     graph, params = restore_parent(config, Path(selected["path"]))
     order, metrics = evaluate(graph, params, rows[:calibration_count], rows[calibration_count:],
-                              microbatch=batch, pairing_seed=recipe["pairing_seed"])
+                              microbatch=batch, pairing_seed=recipe["pairing_seed"], model_dtype=config.train.dtype)
     recipients = order + calibration_count
     metadata = {"calibration_row_range": [0, calibration_count], "recipient_rows": recipients.tolist(),
                 "donor_rows": recipients[np.arange(count) ^ 1].tolist(), "context_length": rows.shape[1] - 1}

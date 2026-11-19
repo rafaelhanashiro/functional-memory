@@ -150,6 +150,13 @@ records native, swapped and calibration-mean next-token NLL. A positive `delta_n
 increase relative to native on the same sequences. The standard error uses the 128 pair means.
 The order of the per-sequence losses and the donor row IDs are in `metadata.json`.
 
+For evaluations with the external replay control, `delta_nll_vs_identity_replay` compares each
+intervention with the recipient's own coefficients passed through the same compiled program,
+on every sequence. The native row also records the per-layer identity losses. The first batch
+checks native, capture and own-coefficient replay in a joint compilation. A separate check on
+every sequence uses the coefficient-fit diagnostic's absolute tolerance of 0.002 nats for
+separately compiled BF16 GPU forwards.
+
 [Launch instructions](../../../README.md#layerwise-polynomial-swap)
 
 ## Limits

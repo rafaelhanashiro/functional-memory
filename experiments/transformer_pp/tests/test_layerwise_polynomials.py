@@ -30,6 +30,10 @@ def test_layerwise_losses_against_individual_donor_and_mean_forwards(form):
     assert len(metrics) == 1 + 2 * config.num_layers
     native = np.asarray(sequence_nll(model(recipients[order, :-1]), recipients[order]))
     np.testing.assert_allclose(metrics[0]["sequence_nll"], native, atol=2e-6)
+    identity = np.asarray(metrics[0]["identity_sequence_nll_by_layer"])
+    np.testing.assert_allclose(identity, np.broadcast_to(native, (config.num_layers, len(order))), atol=2e-6)
+    assert metrics[0]["joint_replay_max_abs_sequence_nll_error"] <= 1e-5
+    assert metrics[0]["external_replay_atol"] == 2e-4
     _, calibration_coeff = model(calibration[:, :-1], return_coefficients=True)
     _, donor_coeff = model(recipients[:, :-1], return_coefficients=True)
     mean = calibration_coeff.mean(axis=(1, 2))
@@ -54,3 +58,6 @@ def test_layerwise_losses_against_individual_donor_and_mean_forwards(form):
         delta = (np.asarray(expected) - native).reshape(-1, 2).mean(axis=1)
         np.testing.assert_allclose(record["delta_nll"], delta.mean(), atol=3e-6)
         np.testing.assert_allclose(record["paired_se"], delta.std(ddof=1) / np.sqrt(2), atol=3e-6)
+        matched = (np.asarray(record["sequence_nll"]) - identity[layer]).reshape(-1, 2).mean(axis=1)
+        np.testing.assert_allclose(record["delta_nll_vs_identity_replay"], matched.mean(), atol=1e-12)
+        np.testing.assert_allclose(record["paired_se_vs_identity_replay"], matched.std(ddof=1) / np.sqrt(2), atol=1e-12)
