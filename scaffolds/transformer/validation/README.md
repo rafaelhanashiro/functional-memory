@@ -58,6 +58,23 @@ Every production allocation requires the full suite, initialization, a
 20-update pilot, and fresh-process checkpoint resume. The pointwise acceptance
 adapter admits H100 and B200.
 
+### Softplus polynomials with structural zero constants (2026-11-18)
+
+The compact parameterization removes c0 for learned direct query/static
+polynomials and U0,V0 before query-SoS square expansion. The feature suite passed
+24 CPU checks, including independent FP64 outputs and all VJPs, exact surviving
+initialization, parameter counts, AdamW decay ownership, three optimizer updates,
+diagnostics, negative tails, and legacy checkpoint configuration compatibility.
+The pinned-recipe adapter passed 66 checks and the records suite passed 94.
+Existing configuration, score-transform, softplus-SoS, and coefficient-selection
+regressions passed all 238 CPU cases (four GPU cases deselected).
+
+Nine new GPU cases cover all three families at 512 and 2,048 tokens, including
+wide scores and native Mosaic dispatch. GPU numerical qualification is pending.
+Each production allocation must pass these checks, the existing Mosaic query
+suite, the full-shape pilot, and fresh-process resume before training. The
+transformed kernels admit H100 and B200; B300 is not qualified here.
+
 ### Unit-L2 coefficient inputs (2026-11-14)
 
 The coefficient-only normalizer passed **21 CPU checks in 64.58 seconds**, alongside

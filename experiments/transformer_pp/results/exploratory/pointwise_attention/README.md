@@ -34,9 +34,26 @@ fresh-process checkpoint resume. Run records and logs hold the current status.
 The [scaffold validation record](../../../../../scaffolds/transformer/validation/README.md#fixed-sigmoid-and-softplus-attention-2026-11-18)
 describes the repeated-token gradient check and the full-model qualification.
 
-No training conclusions yet. The open decision is whether either fixed nonlinear
-function merits further comparison with exp and learned SoS attention. Report
-validation-best and terminal PPL separately; one seed does not measure variance.
+## Results
+
+Validation perplexity, best with terminal in parentheses. Both runs trained on one B200.
+
+| Run | Weight | Best (terminal) | vs exp |
+| --- | --- | ---: | ---: |
+| `r266c5dd1f935` | softplus(s) | 15.744 (15.748) | +10.43% |
+| `r88d8654a8a1d` | sigmoid(s) | 16.135 (16.142) | +13.17% |
+| `r6a76e7fbde45` | exp(s) | 14.257 (14.262) | – |
+
+- Neither fixed function comes close to exp: softplus trails it by 10.4% and sigmoid by
+  13.2%. Learned polynomials of softplus(s), in the [softplus_sos](../softplus_sos/README.md)
+  topic, reach 14.13–14.34.
+- Limits: one seed. The comparison with exp also includes the embedding-gradient precision change described
+  above.
+
+## Open decision
+
+Whether either fixed function merits further comparison with exp and learned SoS attention: promote the topic
+or discard it with its runs and their artifacts.
 
 Canonical measurements remain with the runs. Refresh the explicit source pins
 when updating this comparison:

@@ -38,7 +38,8 @@ UNNORMALIZED_MEASUREMENTS = frozenset((
 def _initialization_text(model) -> str:
     """How the learned coefficients start, for formula strings."""
     initialization = getattr(model, "attention_coefficient_initialization", "taylor")
-    orders = getattr(model, "attention_coefficient_orders", None)
+    from scaffolds.transformer.attention.parameters import coefficient_coordinates
+    orders = coefficient_coordinates(model)
     if initialization == "taylor" and orders is not None:
         return f"1/r! for r in {list(orders)}; omitted orders fixed at zero"
     return "1/r!" if initialization == "taylor" else "linear attention (a_1 = 1, every other coefficient 0)"
@@ -669,6 +670,15 @@ def attention_identity(config) -> dict:
                    f"{core_degree}, b initially 1, a initially {config.model.attention_coefficient_amplitude_initial:g}; "
                    f"z = {'softplus(s)' if transform == 'softplus' else 's'}, s = Q_t K_i^T / sqrt(d_k); "
                    "x_t is the pre-attention RMSNorm activation; factors and expanded coefficients computed in FP32")
+        if getattr(config.model, "attention_coefficient_zero_constant", False):
+            formula = (f"sum_(i<=t) h_t(z_ti) v_i; h_t(z) = U_t(z)^2 + V_t(z)^2; "
+                       f"deg U = {core_degree // 2}, deg V = {core_degree // 2 - 1}; "
+                       "U_0 = V_0 = 0 structurally; each nonconstant factor coefficient "
+                       "F_j(x_t) = f_j (1 + b_j + a_j tanh(W_j^T x_t))/2; "
+                       f"fixed nonconstant f_j are retained from the Taylor square factors of T_{core_degree}, "
+                       f"b initially 1, a initially {config.model.attention_coefficient_amplitude_initial:g}; "
+                       "z = softplus(s), s = Q_t K_i^T / sqrt(d_k); x_t is the pre-attention RMSNorm activation; "
+                       "factors and expanded coefficients computed in FP32")
         if scaling != "none":
             formula += ("; then per-head RMSNorm over value channels with a learned gain"
                         if scaling == "head_rms_norm" else "; divided by the number of visible keys")
@@ -737,6 +747,24 @@ def attention_identity(config) -> dict:
             attention_coefficient_input_normalization="l2",
             attention_coefficient_input_l2_epsilon=COEFFICIENT_INPUT_L2_EPS,
             attention_formula=identity["attention_formula"] + formula_suffix)
+    if getattr(config.model, "attention_coefficient_zero_constant", False):
+        from scaffolds.transformer.attention.parameters import coefficient_coordinates
+
+        coordinates = coefficient_coordinates(config.model)
+        square = config.model.attention_coefficient_parameterization == "sum_of_squares"
+        labels = ([f"U{r}" for r in range(degree // 2 + 1)]
+                  + [f"V{r}" for r in range(degree // 2)]) if square else [f"r{r}" for r in range(degree + 1)]
+        identity.update(
+            attention_coefficient_zero_constant=True,
+            attention_coefficient_active_coordinates=[labels[index] for index in coordinates],
+            attention_coefficient_structural_zero_orders=[0, 1] if square else [0],
+            attention_coefficient_count=len(coordinates) * (config.model.hidden_size + 2 if query_conditioned else 1)
+            * config.model.num_layers * config.model.num_heads,
+            attention_formula=identity["attention_formula"] + (
+                "; only U_1..U_k and V_1..V_(k-1) have generators; expanded c_0 = c_1 = 0"
+                if square else "; c_0 = 0 structurally; only orders 1..m have learned parameters"))
+        if square:
+            identity["attention_coefficient_factor_count"] = len(coordinates)
     return identity
 
 
@@ -798,10 +826,15 @@ def _score_transform_identity(model, formula: str) -> dict:
                     "attention_signed": False,
                     "attention_formula": formula.replace(
                         prefix, f"sum_(i<=t) {transform}(s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k)", 1)}
-        if "s_ti^r" not in formula or "s_ti = Q_t K_i^T / sqrt(d_k)" not in formula:
-            raise ValueError("A score transform replaces the s_ti^r of a query polynomial formula, which this one lacks")
-        formula = formula.replace("s_ti^r", "z_ti^r").replace(
-            "s_ti = Q_t K_i^T / sqrt(d_k)", f"{FORMULAS[transform]}, s_ti = Q_t K_i^T / sqrt(d_k)", 1)
+        if (getattr(model, "attention_coefficient_zero_constant", False)
+                and model.attention_coefficient_conditioning == "static"):
+            formula = formula.replace("QK^T / sqrt(d_k)", "softplus(QK^T / sqrt(d_k))")
+            formula += "; " + FORMULAS[transform]
+        else:
+            if "s_ti^r" not in formula or "s_ti = Q_t K_i^T / sqrt(d_k)" not in formula:
+                raise ValueError("A score transform replaces the s_ti^r of a query polynomial formula, which this one lacks")
+            formula = formula.replace("s_ti^r", "z_ti^r").replace(
+                "s_ti = Q_t K_i^T / sqrt(d_k)", f"{FORMULAS[transform]}, s_ti = Q_t K_i^T / sqrt(d_k)", 1)
         identity["attention_score_transform"] = transform
     if start is not None:
         if "b_r initially 1/r!" not in formula:
@@ -1105,7 +1138,8 @@ def polynomial_coefficient_report(params, config) -> dict:
         effective = np.concatenate([numerator, expanded if constant == "learned" else expanded[..., 1:]], axis=-1)
     else:
         raw = np.asarray(jax.device_get(params["polynomial_coefficients"][...]), dtype=np.float64)
-        orders = config.model.attention_coefficient_orders
+        from scaffolds.transformer.attention.parameters import coefficient_coordinates
+        orders = coefficient_coordinates(config.model)
         raw_names = [f"c{order}" for order in (range(raw.shape[-1]) if orders is None else orders)]
         effective = raw
         if orders is not None:
@@ -1134,7 +1168,7 @@ def polynomial_coefficient_report(params, config) -> dict:
 
 def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coefficient_scale="none",
                              readout_scale=1.0, activation="tanh", orders=None,
-                             parameterization="direct", input_power=0) -> dict:
+                             parameterization="direct", input_power=0, zero_constant=False) -> dict:
     """Summarize actual input-dependent coefficients on the pinned diagnostic sample.
 
     Projection biases are explicitly named; they are never presented as the
@@ -1169,10 +1203,19 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
     if parameterization == "sum_of_squares":
+        core_degree = summaries["mean"].shape[-1] - 1 - input_power
         report.update(parameterization=parameterization, input_power=input_power,
-                      core_degree=kernel.shape[-1] - 1,
+                      core_degree=core_degree,
                       generator_axis="square factor index, not expanded polynomial order",
                       effective_coefficient_formula="p_t(z) = sum_r c_r(x_t) z^r; c_r already include factorial scaling")
+    if zero_constant:
+        if parameterization == "sum_of_squares":
+            labels = ([f"U{r}" for r in range(1, core_degree // 2 + 1)]
+                      + [f"V{r}" for r in range(1, core_degree // 2)])
+        else:
+            labels = [f"r{r}" for r in orders]
+        report.update(zero_constant=True, generator_coordinate_labels=labels,
+                      structural_zero_orders=[0, 1] if parameterization == "sum_of_squares" else [0])
     if amplitude is not None:
         report.update(activation=activation, modulation_amplitude=_serializable(amplitude))
         if amplitude_scale == "factorial":
@@ -1860,14 +1903,18 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         if not coefficient_report["finite"]:
             issues.append("Nonfinite B-spline coefficients or projection parameters")
     elif config.model.attention_coefficient_conditioning in ("query", "query_key"):
+        from scaffolds.transformer.attention.parameters import coefficient_coordinates
+        compact_orders = (coefficient_coordinates(config.model)
+                          if config.model.attention_coefficient_parameterization == "direct" else None)
         coefficient_report = query_coefficient_report(
             params, raw_layers, amplitude_scale=config.model.attention_coefficient_amplitude_scale,
             coefficient_scale=config.model.attention_coefficient_scale,
             readout_scale=config.model.attention_coefficient_readout_scale,
             activation=config.model.attention_coefficient_activation,
-            orders=config.model.attention_coefficient_orders,
+            orders=compact_orders,
             parameterization=config.model.attention_coefficient_parameterization,
-            input_power=getattr(config.model, "attention_coefficient_input_power", 0))
+            input_power=getattr(config.model, "attention_coefficient_input_power", 0),
+            zero_constant=getattr(config.model, "attention_coefficient_zero_constant", False))
         if not coefficient_report["finite"]:
             issues.append("Nonfinite query-dependent polynomial coefficients or projection parameters")
         if getattr(config.model, "attention_coefficient_input_normalization", "none") == "l2":

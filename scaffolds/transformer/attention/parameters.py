@@ -30,6 +30,10 @@ class AttentionParameterSpec:
     # Draw the shared control's array once and repeat it on this axis at initialization.
     # The stored copies are independent trainable parameters afterwards.
     repeat_initial_axis: int | None = None
+    # Draw the full parent array before selecting compact surviving coordinates.
+    # This preserves their exact random start when a structural constant is omitted.
+    initial_selection: tuple[int, ...] | None = None
+    initial_full_size: int | None = None
 
 
 def _mamba2_dt_bias(key, shape):
@@ -93,6 +97,15 @@ def expand_polynomial_coefficients(values: jax.Array, degree: int, orders: tuple
         raise ValueError("Stored coefficient count must match attention_coefficient_orders")
     expanded = jnp.zeros((*values.shape[:-1], degree + 1), dtype=values.dtype)
     return expanded.at[..., jnp.asarray(orders)].set(values)
+
+
+def coefficient_coordinates(config) -> tuple[int, ...] | None:
+    """Stored generator coordinates in the full polynomial/factor coordinate axis."""
+    if not getattr(config, "attention_coefficient_zero_constant", False):
+        return getattr(config, "attention_coefficient_orders", None)
+    degree = config.attention_degree
+    omitted = {0, degree // 2 + 1} if config.attention_coefficient_parameterization == "sum_of_squares" else {0}
+    return tuple(index for index in range(degree + 1) if index not in omitted)
 
 
 def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
@@ -161,16 +174,19 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
             specs = tuple(replace(spec, initial=tuple(value * math.factorial(order)
                                                       for order, value in enumerate(spec.initial)))
                           if spec.name in SCALED_COEFFICIENTS else spec for spec in specs)
-        orders = getattr(config, "attention_coefficient_orders", None)
+        orders = coefficient_coordinates(config)
         if orders is not None:
-            # Select after factorial storage scaling, so indices still denote actual powers.
+            # Select after factorial storage scaling. Indices denote actual direct
+            # powers, or full U/V factor coordinates for structural-zero SoS.
             selected = []
             for spec in specs:
                 if spec.name == "query_polynomial_kernel":
                     width, count = spec.initial_shape
                     spec = replace(spec, initial=tuple(spec.initial[row * count + order]
                                                        for row in range(width) for order in orders),
-                                   initial_shape=(width, len(orders)))
+                                   initial_shape=(width, len(orders)),
+                                   **({"initial_selection": orders, "initial_full_size": count}
+                                      if getattr(config, "attention_coefficient_zero_constant", False) else {}))
                 elif spec.name in ("polynomial_coefficients", "query_polynomial_bias",
                                     "query_polynomial_amplitude", "query_polynomial_tanh_bias"):
                     spec = replace(spec, initial=tuple(spec.initial[order] for order in orders))
@@ -272,7 +288,12 @@ def initial_attention_parameter_values(specs, *, num_layers: int, num_heads: int
                     draw = RANDOM_INITIALIZERS[spec.initializer](name_key, shape[:axis] + shape[axis + 1:])
                     value = jnp.broadcast_to(jnp.expand_dims(draw, axis), shape)
             else:
-                value = value + spec.initial_std * jax.random.normal(name_key, shape, jnp.float32)
+                draw_shape = ((*shape[:-1], spec.initial_full_size)
+                              if spec.initial_selection is not None else shape)
+                draw = jax.random.normal(name_key, draw_shape, jnp.float32)
+                if spec.initial_selection is not None:
+                    draw = jnp.take(draw, jnp.asarray(spec.initial_selection), axis=-1)
+                value = value + spec.initial_std * draw
         values[spec.name] = value
     return values
 

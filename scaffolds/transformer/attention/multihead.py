@@ -67,6 +67,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_amplitude_scale=config.attention_coefficient_amplitude_scale,
         attention_coefficient_scale=config.attention_coefficient_scale,
         attention_coefficient_orders=config.attention_coefficient_orders,
+        attention_coefficient_zero_constant=config.attention_coefficient_zero_constant,
         attention_coefficient_gate=getattr(config, "attention_coefficient_gate", "none"),
         attention_fixed_square_factors=config.attention_fixed_square_factors,
         qk_norm=config.qk_norm, qk_norm_eps=config.qk_norm_eps,
@@ -126,6 +127,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_amplitude_scale: str = "none",
         attention_coefficient_scale: str = "none",
         attention_coefficient_orders: tuple[int, ...] | None = None,
+        attention_coefficient_zero_constant: bool = False,
         attention_coefficient_gate: str = "none",
         qk_norm_type: str = "cosine_log_scale",
         qk_norm_head_scale: bool = False,
@@ -443,6 +445,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_readout = attention_coefficient_readout
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_orders = attention_coefficient_orders
+        self.attention_coefficient_zero_constant = attention_coefficient_zero_constant
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         self.attention_coefficient_parameterization = attention_coefficient_parameterization
         self.attention_coefficient_input_power = attention_coefficient_input_power
@@ -522,10 +525,27 @@ class MultiHeadAttention(nnx.Module):
                            and attention_coefficient_scale == "none"
                            and attention_coefficient_amplitude_scale == "none"
                            and attention_coefficient_input_power == 0)
+        static_transformed = (attention_coefficient_zero_constant
+                              and attention_coefficient_conditioning == "static"
+                              and attention_coefficient_parameterization == "direct"
+                              and attention_coefficient_activation == "identity")
+        if type(attention_coefficient_zero_constant) is not bool:
+            raise ValueError("Coefficient zero constant must be a boolean")
+        if attention_coefficient_zero_constant and (
+                attention_score_transform != "softplus" or positional_encoding != "rope"
+                or attention_coefficient_input_power or attention_coefficient_orders is not None
+                or attention_coefficient_input_normalization != "none"
+                or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+                or attention_fixed_coefficients is not None or attention_fixed_square_factors is not None
+                or not (static_transformed or attention_coefficient_conditioning == "query"
+                        and attention_coefficient_activation == "tanh")):
+            raise ValueError("Structural zero constants require direct static or tanh query softplus/RoPE "
+                             "coefficients, without a prefactor, selected orders, fixed coefficients or L2")
         if validate_transform(attention_score_transform) != "identity" and (
                 not (fixed_pointwise or (attention_score_transform != "sigmoid"
-                                        and (static_sos or (attention_coefficient_conditioning == "query"
-                                                            and attention_coefficient_activation == "tanh"))))
+                                        and (static_sos or static_transformed
+                                             or (attention_coefficient_conditioning == "query"
+                                                 and attention_coefficient_activation == "tanh"))))
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
                 or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
@@ -538,6 +558,10 @@ class MultiHeadAttention(nnx.Module):
                              "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend, or "
                              "with RoPE on the mosaic backend")
         self.attention_score_transform = attention_score_transform
+        if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
+            # The same compact selection and factorial handling as explicit orders,
+            # while the public recipe records the structural constraint separately.
+            self.attention_coefficient_orders = tuple(range(1, attention_degree + 1))
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.num_kv_heads = num_kv_heads
@@ -733,7 +757,8 @@ class MultiHeadAttention(nnx.Module):
 
                     effective_coefficients = query_square_coefficients(
                         effective_coefficients, self.attention_degree,
-                        input_power=self.attention_coefficient_input_power)
+                        input_power=self.attention_coefficient_input_power,
+                        zero_constant=self.attention_coefficient_zero_constant)
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
@@ -818,6 +843,17 @@ class MultiHeadAttention(nnx.Module):
             parameters.update(attention_operands(
                 self.attention_score_bias, x, {name: score_bias[name] for name in bias_names}))
         kernel_coefficient_activation = self.attention_coefficient_activation
+        if (self.attention_score_transform != "identity" and self.attention_coefficient_conditioning == "static"
+                and self.attention_coefficient_zero_constant):
+            # Static zero-constant coefficients use the native transformed-query kernel with a
+            # broadcast operand. Its VJP sums back over queries into the stored
+            # per-head coefficients; no activation or query generator is applied.
+            represented = parameters.pop("polynomial_coefficients", None)
+            if represented is None:
+                raise ValueError("Transformed static attention requires learned direct coefficients")
+            parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
+                represented.astype(jnp.float32), (batch, seq_len, self.num_heads, self.attention_degree + 1))
+            kernel_coefficient_activation = "tanh"
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
             if (self.attention_fixed_square_factors is not None
@@ -931,7 +967,8 @@ class MultiHeadAttention(nnx.Module):
                 parameters["query_polynomial_coefficients"], q, k, gate_log_rate=gate_log_rate)
         if self.attention_score_transform != "identity":
             if self.attention_coefficient_conditioning == "static" and self.attention_fixed_coefficients is not None:
-                # Fixed [0, 1] makes the transformed polynomial exactly phi(s). Static SoS keeps its own factors.
+                # Fixed [0, 1] makes the transformed polynomial exactly phi(s). Static SoS keeps its own
+                # factors, and static zero-constant coefficients were routed above.
                 # This is a constant FP32 table, not a learned query generator.
                 represented = parameters.pop("polynomial_coefficients")
                 parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
