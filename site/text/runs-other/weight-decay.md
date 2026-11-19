@@ -1,0 +1,1 @@
+Degree-4 query and query-key coefficients with weight decay 0.1 on the tanh projection $W$ (both query and key $W$ for query-key), or on $a$, $b$ and $W$; backbone decay is unchanged. The query-key runs also differ in kernel: fused without $W$ decay, Mosaic with it.

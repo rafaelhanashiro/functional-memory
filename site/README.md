@@ -36,7 +36,15 @@ it from the Transformer++ runs' records and result summaries: `polynomial.py` (P
 its chart), `other.py` (Other runs), `scaling.py` (2.5× Chinchilla and 4k sequences), and
 `diagnostics.py` (Overfitting and Continued pretraining; it also copies the Length extrapolation
 figures from their result collection into `figures/`). `results.js` draws the tables of the
-last two from cells the generators format. Rerun a generator only when the user asks for newer
+last two from cells the generators format.
+
+The result pages' text is the user's, edited on the page: the pencil in the header switches a
+page to editing, where clicking a text, or an empty place for one, opens the shared editor
+(`text.js`). There is a place under each page's title, over each table or figure (an intro), and
+under it (notes). Each text is Markdown with math in `text/<page>/<name>.md`, which `serve.py`
+lists for the page and saves, deleting a text the user empties. Like the meetings' files, these
+are the user's once written: never overwrite, regenerate, or delete them, and commit their edits
+only when the user asks. New content the user asks for may add new texts. Rerun a generator only when the user asks for newer
 results. Every perplexity on the site is the run's validation-best value, never the terminal
 one; the overfitting fits report perplexity on the batch they fit. The Learned polynomials
 figure in `figures/` is a copy with no generator.

@@ -1,0 +1,1 @@
+Each fit freezes a pretrained degree-4 model and trains only its coefficients on one batch of $B$ sequences: free coefficients for every sequence and query (on the fixed-Taylor model), the model's own coefficient generators, or its static coefficients. Perplexity is on that batch.

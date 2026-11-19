@@ -1,6 +1,7 @@
 // The Polynomial runs page: tables and a chart drawn from data/polynomial.json, which
-// data/polynomial.py writes from the Transformer++ result summaries.
+// data/polynomial.py writes from the Transformer++ result summaries, with places for the user's text.
 import {degreeLabel, html, section, table} from "./tables.js";
+import {mountText, slot} from "./text.js";
 
 const SVG = "http://www.w3.org/2000/svg";
 const COLORS = {taylor: "#2563eb", hermite: "#ea580c", static: "#059669", query_w_decay: "#d97706"};
@@ -148,4 +149,12 @@ function degreeChart(data) {
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }
+  // Each section's text sits under its heading and its notes under its content (text.js).
+  for (const host of document.querySelectorAll(".result[data-result]")) {
+    const heading = host.querySelector("h2");
+    if (!heading) continue;
+    heading.after(slot(host.dataset.result, "intro"));
+    host.append(slot(`${host.dataset.result}-notes`));
+  }
+  mountText(main);
 })();

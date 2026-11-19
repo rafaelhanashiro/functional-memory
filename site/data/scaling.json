@@ -1,6 +1,7 @@
 {
   "chinchilla": [
     {
+      "key": "references",
       "title": "Softmax, exp and GDN",
       "tables": [
         {
@@ -45,8 +46,8 @@
       ]
     },
     {
+      "key": "polynomials",
       "title": "Polynomial attention",
-      "intro": "<var>W</var> decay applies weight decay to the coefficient generator's projection <var>W</var>; fixed Taylor and static have no <var>W</var>.",
       "layout": "pair",
       "tables": [
         {
@@ -190,7 +191,7 @@
   ],
   "sequences": [
     {
-      "intro": "Each model trained on 2,048-token and on 4,096-token sequences with the same budget of 4B tokens: 128 sequences per update at 4k instead of 256.",
+      "key": "sequences",
       "tables": [
         {
           "head": [

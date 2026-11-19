@@ -1,0 +1,1 @@
+Each model trains for 2,000 more updates from a 1× checkpoint, fixed Taylor's or exp's, with the parameters it adds at learning rate $10^{-3}$; or from its own, keeping its coefficient optimizer state, at $10^{-4}$. Fixed Taylor's own start is its Taylor start.
