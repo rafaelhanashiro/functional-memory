@@ -138,16 +138,25 @@ class TransformerLM(nnx.Module):
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
+        coefficient_override_layer: int | None = None,
     ):
         """Optionally replace or return effective coefficients [L, B, T, H, m+1].
 
         Overrides replace static coefficients or bypass the query generator; all
         other operations remain differentiable. Capture returns coefficients from
         this same forward pass, after scaling. No scaling is applied to overrides.
+        For a single-layer intervention, pass a static zero-based
+        ``coefficient_override_layer`` and coefficients [B,T,H,m+1]. Later
+        layers generate their coefficients from the intervened hidden states.
         ``key_factors`` [L, B, T, H, m+1], with replaced static coefficients, also
         multiplies key i's order-r term: the pair coefficient is c_r(t) * g_r(i).
         """
         cfg = self.config
+        if coefficient_override_layer is not None:
+            if type(coefficient_override_layer) is not int or not 0 <= coefficient_override_layer < cfg.num_layers:
+                raise ValueError("coefficient_override_layer must be a valid zero-based layer index")
+            if query_coefficients is None or key_factors is not None:
+                raise ValueError("A single-layer override requires query_coefficients alone")
         if return_coefficients and return_diagnostics:
             raise ValueError("return_coefficients and return_diagnostics are mutually exclusive")
         if query_coefficients is not None or return_coefficients:
@@ -162,16 +171,21 @@ class TransformerLM(nnx.Module):
             fixed_direct = (cfg.attention_coefficients == "fixed"
                             and cfg.attention_coefficient_conditioning == "static"
                             and cfg.attention_fixed_square_factors is None)
+            query_sos = (cfg.attention_coefficient_conditioning == "query"
+                         and cfg.attention_coefficient_parameterization == "sum_of_squares")
             if (cfg.attention_coefficient_conditioning not in ("static", "query")
                     or (cfg.attention_coefficients != "learned" and not fixed_direct)
                     or cfg.attention_normalization
-                    or cfg.attention_coefficient_parameterization != "direct"
+                    or (cfg.attention_coefficient_parameterization != "direct" and not query_sos)
                     or cfg.attention_degree is None or cfg.attention_degree < 1):
-                raise ValueError("Coefficient override and capture require unnormalized direct static or query coefficients")
+                raise ValueError("Coefficient override and capture require unnormalized direct static or query "
+                                 "coefficients, or query SoS")
             if cfg.remat:
                 raise ValueError("Coefficient override and capture require model.remat == False")
             if query_coefficients is not None:
-                expected = (cfg.num_layers, *tokens.shape, cfg.num_heads, cfg.attention_degree + 1)
+                expected = (*tokens.shape, cfg.num_heads, cfg.attention_degree + 1)
+                if coefficient_override_layer is None:
+                    expected = (cfg.num_layers, *expected)
                 if query_coefficients.shape != expected:
                     raise ValueError(f"query_coefficients must have shape {expected}, got {query_coefficients.shape}")
         if key_factors is not None and (query_coefficients is None or key_factors.shape != query_coefficients.shape
@@ -189,7 +203,12 @@ class TransformerLM(nnx.Module):
         for index, layer_name in enumerate(self.layer_names):
             layer = getattr(self, layer_name)
             parameters = parameters_for_layer(self, self.attention_parameter_specs, index)
-            layer_coefficients = None if query_coefficients is None else query_coefficients[index]
+            layer_coefficients = None
+            if query_coefficients is not None:
+                if coefficient_override_layer is None:
+                    layer_coefficients = query_coefficients[index]
+                elif index == coefficient_override_layer:
+                    layer_coefficients = query_coefficients
             layer_key_factors = {} if key_factors is None else {"key_factors": key_factors[index]}
             if cfg.remat:
                 result = nnx.remat(_call_block_remat, static_argnums=(2, 4))(

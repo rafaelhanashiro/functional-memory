@@ -1,0 +1,12 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2d8dd18744ea/config.yaml",
+    "sha256": "6c819b6e5bcda83051251894a9899cc83440b78aba5dba7b31233e33362055f4"
+  },
+  "home_cluster": "kennel",
+  "label": "layerwise_swap_query_m8",
+  "name": "layerwise_swap_query_m8",
+  "record_schema_version": 1,
+  "run_id": "r2d8dd18744ea",
+  "status": "planned"
+}

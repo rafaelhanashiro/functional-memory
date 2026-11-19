@@ -130,6 +130,28 @@ python -m scaffolds.records refresh experiments/transformer_pp/results/explorato
 python experiments/transformer_pp/results/exploratory/sum_of_squares/saturation_plot.py
 ```
 
+## Layerwise polynomial swap
+
+Does a head's polynomial fit its own query better than the one it would generate for another
+sequence at the same position? The direct Query diagnostic `r2d8dd18744ea` and SoS diagnostic
+`re6a52dd6fc33` use their respective degree-eight checkpoints `r25fffc16c2f3` and `reeefbcc19abf`
+at update 7,500. Both evaluate the same packed validation rows at the training context of 2,048.
+
+Each intervention replaces all 14 heads' polynomials in one of 15 layers. Each head receives
+the same head's nine effective monomial coefficients from the other sequence at the same position.
+The recipient supplies its own queries, keys and values. Subsequent layers generate coefficients
+from the resulting hidden states. For SoS, the vector contains the coefficients of the expanded
+polynomial `U² + V²`.
+
+Validation rows 0–63 supply one mean coefficient vector per layer and head, averaged over
+calibration positions and sequences after expansion. Rows 64–319 form 128 reciprocal pairs from
+a seed-42 permutation. Every condition and both models use those pairs. Each run's `metrics.jsonl`
+records native, swapped and calibration-mean next-token NLL. A positive `delta_nll` is a loss
+increase relative to native on the same sequences. The standard error uses the 128 pair means.
+The order of the per-sequence losses and the donor row IDs are in `metadata.json`.
+
+[Launch instructions](../../../README.md#layerwise-polynomial-swap)
+
 ## Limits
 
 - One seed per cell; differences below about 0.2% are not resolved.
