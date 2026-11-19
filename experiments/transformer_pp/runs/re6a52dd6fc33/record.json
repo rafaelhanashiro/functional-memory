@@ -1,12 +1,89 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/re6a52dd6fc33/completion.json",
+      "sha256": "9537892f213522f5ccf496f24a7fb7be023f1ab6fe1a9452802147132a6d7b57",
+      "size_bytes": 100
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re6a52dd6fc33/metadata.json",
+      "sha256": "a5ef61b7a594a434e328424153572fc0da3c46f1265519a3e90f2ec4ebebbe90",
+      "size_bytes": 4661
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re6a52dd6fc33/metrics.jsonl",
+      "sha256": "b3a7dde3df7c077a8787f90614786dcef93d83d038e2b1067a09c233dab20fbb",
+      "size_bytes": 160005
+    },
+    {
+      "path": "experiments/transformer_pp/runs/re6a52dd6fc33/training.log",
+      "sha256": "af5b2ae5254ccbea38a273ac3ac9ba9dcabd98c18286e24167cc1869250a9b6b",
+      "size_bytes": 369
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-19T03:15:11.074790+00:00",
+      "frozen_execution_sha256": "99e1d30d75d7e7a26f030a9d59e62bbf65b5c5a86bc04866aa75a868ec63b302",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA B300 SXM6 AC",
+      "node": "akita.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "resolved_attention_backend": "mosaic",
+      "slurm_job_id": "7256",
+      "source_commit": "c09c6e6d48ac202a7e17d3d9610c0fcfd7afad0e",
+      "started_utc": "2026-11-19T03:03:06.321929+00:00"
+    }
+  ],
+  "completion": {
+    "path": "experiments/transformer_pp/runs/re6a52dd6fc33/completion.json",
+    "sha256": "9537892f213522f5ccf496f24a7fb7be023f1ab6fe1a9452802147132a6d7b57",
+    "size_bytes": 100
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/re6a52dd6fc33/config.yaml",
     "sha256": "e4621b691cdfe79a2373e6d63d87fa9ba7cc63e1a2f75a14b7667f46d7213aa0"
   },
   "home_cluster": "kennel",
   "label": "layerwise_swap_sos_m8",
+  "log": {
+    "path": "experiments/transformer_pp/runs/re6a52dd6fc33/training.log",
+    "sha256": "af5b2ae5254ccbea38a273ac3ac9ba9dcabd98c18286e24167cc1869250a9b6b",
+    "size_bytes": 369
+  },
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/re6a52dd6fc33/metadata.json",
+    "sha256": "a5ef61b7a594a434e328424153572fc0da3c46f1265519a3e90f2ec4ebebbe90",
+    "size_bytes": 4661
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/re6a52dd6fc33/metrics.jsonl",
+    "sha256": "b3a7dde3df7c077a8787f90614786dcef93d83d038e2b1067a09c233dab20fbb",
+    "size_bytes": 160005
+  },
   "name": "layerwise_swap_sos_m8",
   "record_schema_version": 1,
   "run_id": "re6a52dd6fc33",
-  "status": "planned"
+  "runtime": {
+    "frozen_execution_sha256": "99e1d30d75d7e7a26f030a9d59e62bbf65b5c5a86bc04866aa75a868ec63b302",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA B300 SXM6 AC",
+    "node": "akita.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "resolved_attention_backend": "mosaic",
+    "slurm_job_id": "7256",
+    "source_commit": "c09c6e6d48ac202a7e17d3d9610c0fcfd7afad0e",
+    "started_utc": "2026-11-19T03:03:06.321929+00:00"
+  },
+  "status": "complete",
+  "submission": {
+    "launch_commit": "c09c6e6d48ac202a7e17d3d9610c0fcfd7afad0e",
+    "partition": "standard",
+    "requested_gpus": "b300:1",
+    "slurm_job_id": "7256",
+    "submitted_utc": "2026-11-19T03:02:13.658343+00:00"
+  }
 }
