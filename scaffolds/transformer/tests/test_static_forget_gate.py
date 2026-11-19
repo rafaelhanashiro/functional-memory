@@ -16,6 +16,7 @@ from scaffolds.transformer.configs import Config, ModelConfig, config_to_dict
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, fixed_diagnostic_sample
 from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 
 def _config(**changes):
@@ -191,8 +192,7 @@ def test_model_owns_static_coefficients_and_applies_factorial_once():
                                     {"attention_forget_gate_form": "constant"},
                                     {"attention_coefficients": "fixed"}))
 def test_unqualified_static_gate_configurations_remain_rejected(change):
-    with pytest.raises(ValueError):
-        _config(**change)
+    refused_unless_composed(_config, change)
 
 
 def test_core_gates_static_coefficients_only_through_the_query_route():

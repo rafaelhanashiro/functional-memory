@@ -34,6 +34,7 @@ from scaffolds.transformer.training.diagnostics import attention_diagnostics, at
 from scaffolds.transformer.training.optim import attention_weight_decay_mask, make_optimizer
 from scaffolds.transformer.training.state import create_state
 from scaffolds.transformer.training.tracking import run_tags
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 ROOT = Path(__file__).resolve().parents[3]
 RUNS = ROOT / "experiments" / "transformer_pp" / "runs"
@@ -527,11 +528,19 @@ def test_every_other_kernel_and_backend_refuses_score_bias_operands():
         dict(attention_degree=None, attention_normalization=True),
         dict(attention_degree=None, attention_normalization=False),
         dict(attention_degree=4, attention_normalization=True),
+    )
+    # On the blocked backend a per-query polynomial composes the biases with key factors and any generator
+    # (attention/pieces.py; test_blocked_composition.py); other backends still refuse them.
+    composed = (
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
              key_polynomial_factors=jnp.ones_like(c), attention_coefficient_activation="tanh"),
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,
              attention_coefficient_activation="sigmoid"),
     )
+    for arguments in composed:
+        assert np.isfinite(np.asarray(attention_core(q, k, v, backend="blocked", **arguments, **row))).all()
+        with pytest.raises(ValueError, match="score bias"):
+            attention_core(q, k, v, backend="fused", **arguments, **row)
     for arguments in refusals:
         with pytest.raises(ValueError, match="score bias"):
             attention_core(q, k, v, **arguments, **row)
@@ -649,8 +658,7 @@ def test_weight_decay_reaches_only_the_projections(mode, gated):
     {"attention_forget_gate": True, "attention_forget_gate_per_order": True},
 ))
 def test_unqualified_recipes_are_rejected(changes):
-    with pytest.raises(ValueError, match="score bias"):
-        _config(**changes)
+    refused_unless_composed(_config, changes, match="score bias")
 
 
 @pytest.mark.parametrize("changes,reason", (
@@ -711,8 +719,12 @@ def test_rejected_training_options_and_accepted_backbones():
         MultiHeadAttention(16, 2, 2, 8, 8, backend="blocked", attention_degree=4, attention_normalization=False,
                            attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
                            attention_score_bias="pair", rngs=nnx.Rngs(0))
+    # Any nonlinear generator takes score biases on the blocked backend; the Mosaic kernels take tanh alone.
+    MultiHeadAttention(16, 2, 2, 8, 8, backend="blocked", attention_degree=4, attention_normalization=False,
+                       attention_coefficient_conditioning="query", attention_coefficient_activation="sigmoid",
+                       attention_score_bias="query", rngs=nnx.Rngs(0))
     with pytest.raises(ValueError, match="score bias"):
-        MultiHeadAttention(16, 2, 2, 8, 8, backend="blocked", attention_degree=4, attention_normalization=False,
+        MultiHeadAttention(16, 2, 2, 8, 8, backend="mosaic", attention_degree=4, attention_normalization=False,
                            attention_coefficient_conditioning="query", attention_coefficient_activation="sigmoid",
                            attention_score_bias="query", rngs=nnx.Rngs(0))
     model = build_model(_config().model, 0)

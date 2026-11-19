@@ -669,10 +669,10 @@ def test_blocked_score_bias_recipes_qualify_the_strips_and_no_kernel(mode, gated
     assert not {preflight.SCORE_BIAS_LOWERING_TESTS, preflight.MOSAIC_SCORE_BIAS_TESTS,
                 preflight.SCORE_BIAS_STRIPS_TESTS} & set(cpu)
     assert preflight.QUERY_TANH_POLYNOMIAL_TESTS in cpu and (preflight.PER_ORDER_DECAY_TESTS in cpu) is gated
-    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS,)
+    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS, preflight.BLOCKED_COMPOSITION_TESTS)
     own = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
     assert preflight.test_paths(own, config, resolved_backend="blocked", cpu=False) == (
-        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS)
+        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS, preflight.BLOCKED_COMPOSITION_TESTS)
     assert preflight.mosaic_test_options(config, "blocked") == ()
     module = (preflight.ROOT / preflight.SCORE_BIAS_STRIPS_TESTS).read_text()
     assert "pytestmark = pytest.mark.gpu" in module and "mosaic" not in module.lower()
@@ -739,10 +739,12 @@ def test_score_transform_recipes_qualify_the_strips_and_no_kernel(transform, sta
             preflight.QUERY_TANH_POLYNOMIAL_TESTS} <= set(cpu)
     assert not {preflight.SCORE_TRANSFORM_STRIPS_TESTS, preflight.SCORE_BIAS_STRIPS_TESTS,
                 preflight.SCORE_BIAS_TESTS} & set(cpu)
-    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS)
+    assert gpu == (preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS,
+                   preflight.BLOCKED_COMPOSITION_TESTS)
     own = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
     assert preflight.test_paths(own, config, resolved_backend="blocked", cpu=False) == (
-        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS)
+        "own_gpu_test.py", preflight.SCORE_BIAS_STRIPS_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS,
+        preflight.BLOCKED_COMPOSITION_TESTS)
     assert preflight.mosaic_test_options(config, "blocked") == ()
     module = (preflight.ROOT / preflight.SCORE_TRANSFORM_STRIPS_TESTS).read_text()
     assert "pytestmark = pytest.mark.gpu" in module and "mosaic" not in module.lower()

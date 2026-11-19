@@ -478,13 +478,27 @@ INVALID = (
     ({"attention_forget_gate_form": "sigmoid"}, "sigmoid forget gate form"),
     (PATH, "query-distance decay mode requires RoPE"),
     ({**PATH, "attention_backend": "fused"}, "query-distance decay mode requires RoPE"),
-    ({"attention_degree": 2}, "forget gate"),
     ({"attention_backend": "fused"}, "forget gate"),
     ({"attention_backend": "mosaic"}, None),
     ({"attention_backend": "auto"}, "forget gate"),
     ({"attention_backend": "cudnn"}, None),
     ({"attention_forget_gate": False}, "requires model.attention_forget_gate"),
 )
+
+
+@pytest.mark.parametrize("kernel", KERNELS)
+def test_a_degree_composes_with_the_gate_only_unnormalized(kernel):
+    """Normalized Taylor attention takes no gate; unnormalized fixed Taylor coefficients take the query-distance
+    gate on the blocked backend, per query (attention/pieces.py), in the configuration and in the module alike."""
+    if kernel == "softmax":
+        with pytest.raises(ValueError, match="forget gate"):
+            _config(kernel, attention_degree=2)
+        model = _config(kernel).model
+        model.attention_degree = 2  # bypass config validation
+        with pytest.raises(ValueError):
+            attention_from_config(model, rngs=nnx.Rngs(0))
+    else:
+        attention_from_config(_config(kernel, attention_degree=2).model, rngs=nnx.Rngs(0))
 
 
 @pytest.mark.parametrize("change,message", INVALID,

@@ -34,6 +34,7 @@ from scaffolds.transformer.training.diagnostics import (
 )
 from scaffolds.transformer.training.optim import attention_weight_decay_mask
 from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 DEGREES = (4, 8, 12)
 IMPLEMENTATIONS = ("scan", "strips")
@@ -546,10 +547,9 @@ INVALID = (
 @pytest.mark.parametrize("change,message", INVALID,
                          ids=[",".join(f"{k}={v}" for k, v in c.items())[:60] for c, _ in INVALID])
 def test_unqualified_recipes_are_rejected(change, message):
-    """Auto and fused, endpoint or bounded rates, other gate forms, PaTH, no gate, static coefficients,
-    and softmax or the exponential (Mosaic below)."""
-    with pytest.raises(ValueError, match=message):
-        _config(4, **change)
+    """Auto and fused, endpoint or bounded rates, other gate forms, PaTH, no gate, and softmax or the
+    exponential (Mosaic below); static coefficients compose on the blocked backend and are refused on Mosaic."""
+    refused_unless_composed(lambda **settings: _config(4, **settings), change, match=message)
 
 
 # The Transformer++ head widths and context, where the Mosaic decay kernels run per-order gates.
