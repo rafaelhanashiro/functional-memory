@@ -6,8 +6,11 @@ from this server's own Unix user are answered (elsewhere, such as on a laptop, t
 accepts:
 
     PUT   /literature/<id>.md      replace an existing write-up with the request body
-    PUT   /meeting/agenda.md       replace the meeting agenda (likewise notes.md)
-    POST  /api/media               an image body (PNG, JPEG, GIF, WebP): store it in media/
+    PUT   /meeting/<date>-agenda.md, /meeting/<date>-notes.md
+                                   likewise a meeting's agenda or notes (dates as YYYY-MM-DD)
+    GET   /api/meetings            {"dates": [...]}: the meetings' dates, newest first
+    POST  /api/meetings            {"date": ...}: add a meeting, with an empty agenda and notes
+    POST  /api/media              an image body (PNG, JPEG, GIF, WebP): store it in media/
     PUT   /api/literature          {"order": [ids]}: reorder the resources (the page's order)
     POST  /api/literature          {"url": ...}: add a resource, reading its title, authors and year
     PATCH /api/literature/<id>     {"seen": true or false} moves a resource between the two
@@ -41,7 +44,10 @@ import xml.etree.ElementTree as ET
 SITE = Path(__file__).resolve().parent
 LITERATURE = SITE / "literature"
 LIST = LITERATURE / "papers.json"
-DOCUMENT = re.compile(r"/(literature/[A-Za-z0-9._-]+\.md|meeting/(?:agenda|notes)\.md)")
+MEETINGS = SITE / "meeting"
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+MEETING_FILE = re.compile(r"(\d{4}-\d{2}-\d{2})-(?:agenda|notes)\.md")
+DOCUMENT = re.compile(r"/(literature/[A-Za-z0-9._-]+\.md|meeting/\d{4}-\d{2}-\d{2}-(?:agenda|notes)\.md)")
 RESOURCE = re.compile(r"/api/literature/([A-Za-z0-9._-]+)")
 ARXIV = re.compile(r"arxiv\.org/(?:abs|pdf|html)/([0-9]{4}\.[0-9]{4,5}|[a-z-]+(?:\.[a-z]{2})?/[0-9]{7})", re.I)
 ATOM = {"a": "http://www.w3.org/2005/Atom"}
@@ -82,7 +88,7 @@ def write_atomic(path: Path, content: str | bytes) -> None:
 
 def prune_media() -> list[str]:
     """Delete images over a day old that no write-up, agenda, or notes link to."""
-    documents = [*LITERATURE.glob("*.md"), *(SITE / "meeting").glob("*.md")]
+    documents = [*LITERATURE.glob("*.md"), *MEETINGS.glob("*.md")]
     linked = {name for path in documents for name in MEDIA_LINK.findall(path.read_text(errors="replace"))}
     cutoff = time.time() - UNLINKED_IMAGE_SECONDS
     removed = []
@@ -93,6 +99,12 @@ def prune_media() -> list[str]:
                 image.unlink(missing_ok=True)
                 removed.append(image.name)
     return removed
+
+
+def meeting_dates() -> list[str]:
+    """The meetings' dates, newest first: a meeting is meeting/<date>-agenda.md and -notes.md."""
+    names = (MEETING_FILE.fullmatch(path.name) for path in MEETINGS.glob("*.md"))
+    return sorted({name.group(1) for name in names if name}, reverse=True)
 
 
 def load_list() -> list[dict]:
@@ -228,8 +240,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self._same_user():
-            super().do_GET()
+        if not self._same_user():
+            return
+        if self._route() == "/api/meetings":
+            self._json(200, {"dates": meeting_dates()})
+            return
+        super().do_GET()
 
     def do_HEAD(self):
         if self._same_user():
@@ -294,11 +310,33 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         write_atomic(MEDIA / name, data)
         self._json(201, {"path": f"media/{name}"})
 
+    def _add_meeting(self):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            day = json.loads(body)["date"]
+            if not DATE.fullmatch(day):
+                raise ValueError(day)
+            date.fromisoformat(day)
+        except (ValueError, KeyError, TypeError):
+            self._json(400, {"error": 'Expected {"date": "YYYY-MM-DD"}'})
+            return
+        MEETINGS.mkdir(exist_ok=True)
+        files = [MEETINGS / f"{day}-{part}.md" for part in ("agenda", "notes")]
+        new = [path for path in files if not path.exists()]  # a meeting already on that date stays as it is
+        for path in new:
+            path.touch()
+        self._json(201 if new else 200, {"date": day})
+
     def do_POST(self):
         if not self._same_user():
             return
         if self._route() == "/api/media":
             self._upload()
+            return
+        if self._route() == "/api/meetings":
+            self._add_meeting()
             return
         if self._route() != "/api/literature":
             self.send_error(404)

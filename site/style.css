@@ -446,9 +446,43 @@ var { font-style: italic; }
 .chart .series { fill: none; stroke-width: 2.6; stroke-linecap: round; }
 .chart .series.skipped { stroke-dasharray: 2 6; }
 
-/* Meeting: the agenda and the notes, each a sheet of rendered Markdown */
+/* Meetings: a dated form that adds a meeting above a banner per meeting, newest first, and
+   each meeting's page, its agenda and notes, each a sheet of rendered Markdown */
+.new-meeting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.new-meeting input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.new-meeting input:focus {
+  outline: none;
+  border-color: #a1a1aa;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.06);
+}
+.new-meeting .button {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 10px;
+}
+.meeting-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.meeting-status:empty { display: none; }
+.meetings .subpages { margin-top: 28px; }
+.page-title + .meeting-part { margin-top: 28px; }
 .meeting-part + .meeting-part { margin-top: 36px; }
-.meeting-part h2 {
+.meeting-part > h2 {
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.78rem;
@@ -482,13 +516,17 @@ var { font-style: italic; }
 .button:disabled { opacity: 0.5; cursor: default; }
 .button.primary { border-color: var(--text); background: var(--text); color: #fff; }
 .button.primary:hover { border-color: #3f3f46; background: #3f3f46; }
-.button.edit {
+.view-actions {
+  display: flex;
   float: right;
+  gap: 6px;
   margin: 0 0 12px 16px;
+}
+.view-actions .button {
   padding: 4px 12px;
   color: var(--muted);
 }
-.button.edit:hover { color: var(--text); }
+.view-actions .button:hover { color: var(--text); }
 .editor-panes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -550,4 +588,21 @@ var { font-style: italic; }
   .drag-handle { left: 1px; }
   .writeup { margin: 0 18px; }
   .sheet { padding: 16px 18px 18px; }
+}
+
+/* Printing, as a meeting's PDF buttons do: the text without the site's header, the buttons
+   and the sheets' frames, and from a PDF button only its own part. Callouts and code keep
+   their colours, and boxes, images and equations stay whole on a page when they fit. */
+@media print {
+  body { background: none; }
+  .page { max-width: none; padding: 0; }
+  header, .back, .view-actions, .new-meeting { display: none; }
+  main { padding: 0; }
+  .sheet { padding: 0; border: 0; }
+  .printing-part .meeting-part:not(.printing) { display: none; }
+  .printing-part .meeting-part { margin-top: 24px; }
+  .writeup-view { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .writeup-view pre { white-space: pre-wrap; }
+  .writeup-view :is(.callout, pre, table, img, .katex-display) { break-inside: avoid; }
+  .writeup-view :is(h1, h2, h3, h4) { break-after: avoid; }
 }

@@ -34,6 +34,17 @@ marked.use({renderer: {
   },
 }});
 
+// Folded callouts open while the page prints, so a PDF of it shows them whole.
+let unfolded = [];
+window.addEventListener("beforeprint", () => {
+  unfolded = [...document.querySelectorAll("details.callout:not([open])")];
+  for (const callout of unfolded) callout.open = true;
+});
+window.addEventListener("afterprint", () => {
+  for (const callout of unfolded) callout.open = false;
+  unfolded = [];
+});
+
 export function render(markdown) {
   const math = [];
   const source = markdown.replace(MATH, (match, code, display, bracket, paren, inline, offset) => {
@@ -101,11 +112,13 @@ async function uploadImage(file) {
   return (await response.json()).path;
 }
 
-// The rendered text with an "Edit" button.
-export function showView(host, text, {empty, onEdit}) {
+// The rendered text with an "Edit" button, and to its left any other buttons given.
+export function showView(host, text, {empty, onEdit, actions = []}) {
   const view = element("div", "writeup-view");
   view.innerHTML = text.trim() ? render(text) : empty;
-  host.replaceChildren(button("Edit", "edit", onEdit), view);
+  const bar = element("div", "view-actions");
+  bar.append(...actions, button("Edit", "edit", onEdit));
+  host.replaceChildren(bar, view);
 }
 
 // Markdown keys in the editor's text box, as in Obsidian: Tab and Shift+Tab move list items a

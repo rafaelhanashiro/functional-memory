@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meeting · Functional Memory</title>
+<title>Meetings · Functional Memory</title>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="style.css">
 <script defer src="vendor/marked/marked.min.js"></script>
@@ -18,18 +18,30 @@
       <a href="runs.html">Runs</a>
       <a href="diagnostics.html">Diagnostics</a>
       <a href="literature.html">Literature</a>
-      <a href="meeting.html" aria-current="page">Meeting</a>
+      <a href="meeting.html" aria-current="page">Meetings</a>
     </nav>
   </header>
   <main>
-    <section class="meeting-part" data-document="meeting/agenda.md">
-      <h2>Agenda</h2>
-      <div class="sheet"></div>
-    </section>
-    <section class="meeting-part" data-document="meeting/notes.md">
-      <h2>Notes</h2>
-      <div class="sheet"></div>
-    </section>
+    <div class="meetings" hidden>
+      <form class="new-meeting" autocomplete="off">
+        <input name="date" type="date" aria-label="Meeting date" required>
+        <button class="button primary" type="submit">New meeting</button>
+      </form>
+      <p class="meeting-status" aria-live="polite"></p>
+      <div class="subpages"></div>
+    </div>
+    <div class="meeting" hidden>
+      <a class="back" href="meeting.html">← Meetings</a>
+      <h1 class="page-title"></h1>
+      <section class="meeting-part" data-part="agenda">
+        <h2>Agenda</h2>
+        <div class="sheet"></div>
+      </section>
+      <section class="meeting-part" data-part="notes">
+        <h2>Notes</h2>
+        <div class="sheet"></div>
+      </section>
+    </div>
   </main>
 </div>
 </body>
