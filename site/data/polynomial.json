@@ -1,0 +1,347 @@
+{
+  "width_degree": {
+    "title": "Scaling Query Attention + WD",
+    "metric": "validation-best perplexity",
+    "source": "experiments/transformer_pp/results/exploratory/query_width_degree/summary.csv",
+    "degrees": [
+      2,
+      4,
+      8,
+      12
+    ],
+    "rows": [
+      {
+        "width": 8,
+        "cells": [
+          {
+            "degree": 2,
+            "run_id": "r7bede0f75198",
+            "perplexity": 19.395732419112115
+          },
+          {
+            "degree": 4,
+            "run_id": "r1c80ab3a466b",
+            "perplexity": 17.43033089529024
+          },
+          {
+            "degree": 8,
+            "run_id": "r16b23893884d",
+            "perplexity": 16.85410046939811
+          },
+          {
+            "degree": 12,
+            "run_id": "r1b1123bf96e0",
+            "perplexity": 16.680902146755237
+          }
+        ]
+      },
+      {
+        "width": 16,
+        "cells": [
+          {
+            "degree": 2,
+            "run_id": "rc90fb11d4772",
+            "perplexity": 17.20532381414788
+          },
+          {
+            "degree": 4,
+            "run_id": "rb5fe0aef572a",
+            "perplexity": 15.767880112028275
+          },
+          {
+            "degree": 8,
+            "run_id": "rd10c2ebe1181",
+            "perplexity": 15.412547331160157
+          },
+          {
+            "degree": 12,
+            "run_id": "rcdfee1e67fd4",
+            "perplexity": 15.449460166675681
+          }
+        ]
+      },
+      {
+        "width": 32,
+        "cells": [
+          {
+            "degree": 2,
+            "run_id": "r18d67098c780",
+            "perplexity": 16.145791828708198
+          },
+          {
+            "degree": 4,
+            "run_id": "rcb1f56f31981",
+            "perplexity": 15.224819449223952
+          },
+          {
+            "degree": 8,
+            "run_id": "rf5b51bd384bc",
+            "perplexity": 15.046023060444565
+          },
+          {
+            "degree": 12,
+            "run_id": "r4f3aa6be7108",
+            "perplexity": 14.80274483867279
+          }
+        ]
+      },
+      {
+        "width": 64,
+        "cells": [
+          {
+            "degree": 2,
+            "run_id": "rd6b4d16d81bb",
+            "perplexity": 15.82676032374304
+          },
+          {
+            "degree": 4,
+            "run_id": "rca97cc9db8f2",
+            "perplexity": 14.708538612353673
+          },
+          {
+            "degree": 8,
+            "run_id": "r25fffc16c2f3",
+            "perplexity": 14.322804520454994
+          },
+          {
+            "degree": 12,
+            "run_id": "r0fceea0627c8",
+            "perplexity": 14.22564113077577
+          }
+        ]
+      }
+    ]
+  },
+  "degree_scaling": {
+    "title": "Degree scaling of unnormalized polynomial attention",
+    "metric": "terminal validation perplexity at update 7,570",
+    "source": "experiments/transformer_pp/results/degree_scaling/summary.csv",
+    "degrees": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12
+    ],
+    "families": [
+      {
+        "family": "taylor",
+        "label": "Taylor",
+        "legend": "Fixed Taylor",
+        "points": [
+          {
+            "degree": 1,
+            "run_id": "ra7f2fda1c792",
+            "perplexity": 19.555541751056182
+          },
+          {
+            "degree": 2,
+            "run_id": "rdb1c706a5b85",
+            "perplexity": 15.912101762004047
+          },
+          {
+            "degree": 3,
+            "run_id": "r81fad1755b11",
+            "perplexity": 15.973965300170388
+          },
+          {
+            "degree": 4,
+            "run_id": "r816ab0fbe119",
+            "perplexity": 14.724208826639307
+          },
+          {
+            "degree": 5,
+            "run_id": "r8a526282ac43",
+            "perplexity": 14.84285111894532
+          },
+          {
+            "degree": 6,
+            "run_id": "r167091e2aeac",
+            "perplexity": 14.334409799170324
+          },
+          {
+            "degree": 7,
+            "run_id": "re12e78d1ded3",
+            "perplexity": 14.3094522424953
+          },
+          {
+            "degree": 8,
+            "run_id": "ra7ee8a4b2544",
+            "perplexity": 14.223098195379803
+          },
+          {
+            "degree": 12,
+            "run_id": "rb2b70dae4d21",
+            "perplexity": 14.310621023570507
+          }
+        ]
+      },
+      {
+        "family": "hermite",
+        "label": "Hermite",
+        "legend": "Fixed Hermite",
+        "points": [
+          {
+            "degree": 1,
+            "run_id": "rddf0b0173f42",
+            "perplexity": 19.513477645210898
+          },
+          {
+            "degree": 2,
+            "run_id": "rdf6363a4b83c",
+            "perplexity": 16.167604820744003
+          },
+          {
+            "degree": 3,
+            "run_id": "rf378c0e67607",
+            "perplexity": 15.731912876384438
+          },
+          {
+            "degree": 4,
+            "run_id": "rbd0cd771c676",
+            "perplexity": 14.987369100583622
+          },
+          {
+            "degree": 5,
+            "run_id": "rf1993c745e17",
+            "perplexity": 14.60852304899199
+          },
+          {
+            "degree": 6,
+            "run_id": "r3a332ae60437",
+            "perplexity": 14.396400366716547
+          },
+          {
+            "degree": 7,
+            "run_id": "r751e8aaecb78",
+            "perplexity": 14.27130036382769
+          },
+          {
+            "degree": 8,
+            "run_id": "ra040de24096c",
+            "perplexity": 14.23130066722539
+          }
+        ]
+      },
+      {
+        "family": "static",
+        "label": "Static",
+        "legend": "Learned static",
+        "points": [
+          {
+            "degree": 1,
+            "run_id": "r5c691128699f",
+            "perplexity": 19.531213776891477
+          },
+          {
+            "degree": 2,
+            "run_id": "r99c3ab7d8a77",
+            "perplexity": 15.822335161288262
+          },
+          {
+            "degree": 3,
+            "run_id": "r1f880c4ee659",
+            "perplexity": 16.649045964302488
+          },
+          {
+            "degree": 4,
+            "run_id": "r4339a245820e",
+            "perplexity": 14.772677235209382
+          },
+          {
+            "degree": 5,
+            "run_id": "r3feaf71ff7af",
+            "perplexity": 14.871341110413981
+          },
+          {
+            "degree": 6,
+            "run_id": "r5e6f23bd0533",
+            "perplexity": 14.408397926071276
+          },
+          {
+            "degree": 7,
+            "run_id": "r99ba8f9d26fc",
+            "perplexity": 14.426975308845268
+          },
+          {
+            "degree": 8,
+            "run_id": "r9c69dd7cfc8d",
+            "perplexity": 14.298509499529386
+          }
+        ]
+      },
+      {
+        "family": "query_w_decay",
+        "label": "Query + W decay",
+        "legend": "Query, W decay",
+        "points": [
+          {
+            "degree": 1,
+            "run_id": "rf9099d70ab3a",
+            "perplexity": 19.218573675522794
+          },
+          {
+            "degree": 2,
+            "run_id": "rd6b4d16d81bb",
+            "perplexity": 15.831986380910145
+          },
+          {
+            "degree": 3,
+            "run_id": "r00f1f91a7803",
+            "perplexity": 16.44316958382084
+          },
+          {
+            "degree": 4,
+            "run_id": "rca97cc9db8f2",
+            "perplexity": 14.713560360530277
+          },
+          {
+            "degree": 5,
+            "run_id": "r5de86f9f02da",
+            "perplexity": 15.07994476688696
+          },
+          {
+            "degree": 6,
+            "run_id": "r688344e6dcc6",
+            "perplexity": 14.640934237496058
+          },
+          {
+            "degree": 7,
+            "run_id": "rdb67453630c8",
+            "perplexity": 14.384250652443606
+          },
+          {
+            "degree": 8,
+            "run_id": "r25fffc16c2f3",
+            "perplexity": 14.32776335302089
+          },
+          {
+            "degree": 12,
+            "run_id": "r0fceea0627c8",
+            "perplexity": 14.229577447944328
+          }
+        ]
+      }
+    ],
+    "references": [
+      {
+        "family": "softmax",
+        "label": "Softmax",
+        "line": "solid",
+        "run_id": "r9040f12f3d80",
+        "perplexity": 14.546208751487343
+      },
+      {
+        "family": "exp",
+        "label": "Exp",
+        "line": "dashed",
+        "run_id": "r6a76e7fbde45",
+        "perplexity": 14.2617289304223
+      }
+    ]
+  }
+}

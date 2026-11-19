@@ -23,5 +23,13 @@ linked from the Markdown; saving any document deletes the images that nothing li
 once they are more than a day old. Commit only images that are linked. All of these go through `serve.py`, which writes the files
 without committing them.
 
+The Polynomial runs page draws its tables and chart from `data/polynomial.json`, which
+`data/polynomial.py` writes from the Transformer++ result summaries; rerun it only when the
+user asks for newer results.
+
+The Meeting page's files (`meeting/agenda.md`, `meeting/notes.md`, and the images they link
+in `media/`) belong to the user, who edits them live: never write, reset, regenerate, or
+stage them; commit them only when the user asks.
+
 Its content changes only on the user's explicit instruction: do not add, update, or
 refresh anything here otherwise, even when newer results exist.
