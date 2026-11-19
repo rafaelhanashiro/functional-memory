@@ -1,7 +1,10 @@
 """Fused unnormalized causal attention and its derivative on CUDA.
 
 The kernel k(S) is the exponential (``degree=None``) or its degree-m Taylor
-truncation p_m(S) = sum_{n<=m} S^n / n!. Each Pallas/Triton program owns a query
+truncation p_m(S) = sum_{n<=m} S^n / n!. The exponential also takes the score
+functions of attention/pieces.py: k(S) = f(S) exp(phi(S)), with the transform
+phi and prefactor f in softplus and sigmoid (attention/score_transform.py, with
+the same stable formulas and derivatives). Each Pallas/Triton program owns a query
 tile (forward/dQ) or a key tile (dK/dV). Only causal tiles are visited. Scores
 and kernel weights stay in registers/shared memory; neither pass materializes a
 sequence-square array. Unshifted kernel values and accumulators are FP32. Mixed
@@ -60,11 +63,48 @@ def _dot(a, b):
     return pl.dot(a.astype(jnp.float32), b.astype(jnp.float32), precision=_F32_DOT)
 
 
+def _softplus(scores):
+    """max(s, 0) + log1p(exp(-|s|)), as attention/score_transform.py; its derivative is sigmoid(s)."""
+    return jnp.maximum(scores, 0.0) + jnp.log1p(jnp.exp(-jnp.abs(scores)))
+
+
+def _sigmoid_and_slope(scores):
+    """sigmoid(s) and its derivative exp(-|s|) / (1 + exp(-|s|))^2, as attention/score_transform.py."""
+    tail = jnp.exp(-jnp.abs(scores))
+    return jnp.where(scores >= 0.0, 1.0, tail) / (1.0 + tail), tail / ((1.0 + tail) * (1.0 + tail))
+
+
+def _score_function(scores, transform, prefactor):
+    """f(s) exp(phi(s)) and its derivative f'(s) exp(phi(s)) + f(s) exp(phi(s)) phi'(s)."""
+    if transform == "softplus":
+        values = jnp.exp(_softplus(scores))
+        derivative = values * _sigmoid_and_slope(scores)[0]
+    elif transform == "sigmoid":
+        exponent, slope = _sigmoid_and_slope(scores)
+        values = jnp.exp(exponent)
+        derivative = values * slope
+    else:
+        values = jnp.exp(scores)
+        derivative = values
+    if prefactor == "softplus":
+        factor, factor_slope = _softplus(scores), _sigmoid_and_slope(scores)[0]
+    elif prefactor == "sigmoid":
+        factor, factor_slope = _sigmoid_and_slope(scores)
+    else:
+        return values, derivative
+    return factor * values, factor_slope * values + factor * derivative
+
+
 def _kernel(scores, degree):
+    """``degree`` is the attention degree, or (None, transform, prefactor) for a score function."""
+    if isinstance(degree, tuple):
+        return _score_function(scores, degree[1], degree[2])[0]
     return jnp.exp(scores) if degree is None else _polynomial(scores, degree)
 
 
 def _kernel_and_derivative(scores, degree):
+    if isinstance(degree, tuple):
+        return _score_function(scores, degree[1], degree[2])
     if degree is None:
         values = jnp.exp(scores)
         return values, values
@@ -72,6 +112,10 @@ def _kernel_and_derivative(scores, degree):
 
 
 def _kernel_name(degree):
+    if isinstance(degree, tuple):
+        from scaffolds.transformer.attention.pieces import ScoreFunction, exponential_kernel_name
+
+        return exponential_kernel_name(ScoreFunction(degree[1], degree[2]), normalized=False)
     return "exp_unnormalized" if degree is None else f"taylor_{degree}_unnormalized"
 
 
@@ -95,7 +139,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, out_ref, *, degree, time, dq, dv, block
         causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
         values = _kernel(jnp.where(causal, scores, 0.0), degree)
         invalid_entries = causal & (~jnp.isfinite(scores) | ~jnp.isfinite(values))
-        if degree is not None and degree % 2 == 0:
+        if isinstance(degree, int) and degree % 2 == 0:
             # Even truncations are strictly positive in exact arithmetic.
             invalid_entries |= causal & (values <= 0)
         invalid |= jnp.max(invalid_entries.astype(jnp.int32), axis=1) != 0
@@ -234,11 +278,14 @@ def _attention_bwd(degree, residuals, do):
 _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
-def fused_unnormalized_attention(q, k, v, *, attention_degree: int | None = None):
+def fused_unnormalized_attention(q, k, v, *, attention_degree: int | None = None, score_transform: str = "identity",
+                                 score_prefactor: str = "none"):
     """Causal k(QK^T / sqrt(d_k))V, without a row denominator.
 
     ``attention_degree=None`` selects the exponential; a nonnegative integer m
-    selects its unshifted degree-m Taylor truncation.
+    selects its unshifted degree-m Taylor truncation. ``score_transform`` and
+    ``score_prefactor`` give the exponential k(S) = f(S) exp(phi(S))
+    (attention/pieces.py ``fused_exponential_problem``).
 
     Supports BF16 and FP32 Q/K/V with one common dtype, positive dimensions, and head widths up to 128.
     GPU execution requires an Ampere-or-newer NVIDIA device (TF32x3 support).
@@ -257,4 +304,13 @@ def fused_unnormalized_attention(q, k, v, *, attention_degree: int | None = None
         raise ValueError("Fused attention supports Q/K and value head dimensions up to 128")
     if q.dtype != k.dtype or q.dtype != v.dtype or q.dtype not in (jnp.float32, jnp.bfloat16):
         raise ValueError("Fused attention requires a common float32 or bfloat16 dtype")
-    return _attention(q, k, v, attention_degree)
+    from scaffolds.transformer.attention.pieces import ScoreFunction, fused_exponential_problem
+
+    score_function = ScoreFunction(score_transform, score_prefactor)
+    problem = fused_exponential_problem(score_function, attention_degree=attention_degree)
+    if problem is not None:
+        raise ValueError(f"Fused unnormalized attention cannot evaluate this score function: {problem}")
+    if score_function.identity:
+        # Every historical recipe: the same static argument, kernels and names as before.
+        return _attention(q, k, v, attention_degree)
+    return _attention(q, k, v, (None, score_transform, score_prefactor))

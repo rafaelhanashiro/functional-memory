@@ -1,4 +1,4 @@
-"""Qualify degree-eight softplus polynomials with structurally absent constants.
+"""Qualify degree-eight polynomials with structurally absent constants, on softplus or raw scores.
 
 Direct query/static polynomials omit c0. Query SoS omits U0 and V0 before
 square expansion and has no input prefactor. Surviving parameters preserve their
@@ -45,6 +45,9 @@ CPU_TESTS = ("scaffolds/transformer/tests/test_softplus_zero_constant.py",
              "experiments/transformer_pp/tests/test_softplus_zero_constant_acceptance.py")
 GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_softplus_zero_constant.py",
              "scaffolds/transformer/tests/test_mosaic_query.py")
+# Raw scores (the identity transform) train on the plain Mosaic query kernels with c_0 = 0 (or U_0 = V_0 = 0).
+RAW_GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_query.py",)
+TRANSFORMS = ("softplus", "identity")
 COMPACT_PARAMETERS = frozenset(("polynomial_coefficients", "query_polynomial_kernel",
                                "query_polynomial_amplitude", "query_polynomial_bias"))
 
@@ -70,9 +73,12 @@ def control_config(key):
 def check_recipe(config):
     validate_config(config)
     key = control_key(config)
+    transform = config.model.attention_score_transform
+    if transform not in TRANSFORMS:
+        raise ValueError(f"Zero-constant runs read softplus or raw scores, not {transform!r}")
     actual, expected = config_to_dict(config), config_to_dict(control_config(key))
     expected["model"].update(attention_coefficient_zero_constant=True,
-                             attention_score_transform="softplus")
+                             attention_score_transform=transform)
     expected["train"].update(CAPTURE_POLICY)
     for recipe in (actual, expected):
         for name in EXECUTION_KEYS:
@@ -125,18 +131,26 @@ def check_initialization(config):
     return {**matches_softmax_backbone_initialization(config),
             **check_surviving_initialization(config, control_config(key)),
             "control_run_id": control["run_id"], "control_config_sha256": control["config_sha256"],
-            "score_transform": "softplus", "polynomial_degree": 8, "input_power": 0,
+            "score_transform": config.model.attention_score_transform, "polynomial_degree": 8, "input_power": 0,
             "constant_policy": "U0=V0=0" if key[1] == "sum_of_squares" else "c0=0",
-            "initial_kernel": ("(U_T8(z)-U_T8(0))^2+(V_T8(z)-V_T8(0))^2"
-                               if key[1] == "sum_of_squares" else "T_8(z)-1")}
+            "initial_kernel": ("(U_T8({x})-U_T8(0))^2+(V_T8({x})-V_T8(0))^2"
+                               if key[1] == "sum_of_squares" else "T_8({x})-1").format(
+                x="z" if config.model.attention_score_transform == "softplus" else "s")}
 
 
 def experiment_spec(config, *, entry_module):
     check_recipe(config)
     shared = attention_spec(config, entry_module=entry_module)
+    gpu_tests = GPU_TESTS if config.model.attention_score_transform == "softplus" else RAW_GPU_TESTS
     return replace(shared, cpu_tests=(*shared.cpu_tests, *CPU_TESTS),
-                   gpu_tests=(*shared.gpu_tests, *GPU_TESTS), required_backend="mosaic",
+                   gpu_tests=(*shared.gpu_tests, *gpu_tests), required_backend="mosaic",
                    check_config=check_recipe, check_initialization=check_initialization)
+
+
+def _raw_scores(argv) -> bool:
+    """Whether the recipe named on the command line reads raw scores (the identity transform)."""
+    recipes = [Path(argument) for argument in argv if argument.endswith(".yaml") and Path(argument).is_file()]
+    return bool(recipes) and load_config(recipes[0]).model.attention_score_transform == "identity"
 
 
 def main(argv=None):
@@ -145,8 +159,10 @@ def main(argv=None):
     parser.add_argument("--gpu-type", default="H100")
     parser.add_argument("--runtime-env", action="store_true")
     args = parser.parse_known_args(argv)[0]
-    if not args.runtime_env and args.gpu_type.upper() not in ("H100", "B200"):
-        raise ValueError("These Mosaic softplus runs qualify and train on H100 or B200 only")
+    gpu = args.gpu_type.upper()
+    if not args.runtime_env and gpu not in ("H100", "B200") and not (gpu == "B300" and _raw_scores(argv)):
+        raise ValueError("These Mosaic softplus runs qualify and train on H100 or B200 only; raw-score runs, on "
+                         "the plain Mosaic query kernels, also on B300")
     run_acceptance(partial(experiment_spec, entry_module=__name__), argv)
 
 

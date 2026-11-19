@@ -105,6 +105,30 @@ full-recipe qualification; consult `CLUSTERS.md` for its measured scope.
 
 ## Attention and parameter ownership
 
+### Attention pieces and recipe receipts
+
+`attention/pieces.py` states the fixed order in which a layer's pieces apply: scores
+`s = QK^T / sqrt(d_K)`, transform `z = phi(s)`, kernel `K(z)` (the exponential, or a polynomial whose
+coefficients are fixed, static or generated per query), prefactor and decay `w = f(s) K(z) D`, then
+normalization. The blocked backend is the reference composition; each fast kernel declares which
+combinations it implements, and acceptance qualifies it against the blocked backend.
+
+The exponential takes any score function, `w = f(s) exp(phi(s))`: `attention_score_transform`
+(`identity`, `softplus`, `sigmoid`, `abs`) and `attention_score_prefactor` (`none`, `softplus`,
+`sigmoid`; default `none`, every historical recipe). Softmax or unnormalized, with or without a forget
+gate (whose log decay stays in the exponent), it runs on the blocked backend; the fused unnormalized
+kernel implements the transforms `identity`, `softplus`, `sigmoid` with every prefactor, ungated
+(`pieces.fused_exponential_problem`). `exp(softplus(s)) = 1 + e^s` exactly. Kernel names record the
+functions, e.g. `softplus_times_exp_unnormalized` or `exp_softplus_unnormalized`.
+
+A recipe receipt (`receipt.py`) builds the recipe's model at a tiny shape (2 layers, width 128, 2 heads,
+64 tokens, vocabulary 256) on the CPU, single-threaded, on the blocked backend, and hashes its parameter
+names and initial values, the loss on fixed tokens and every gradient. `python -m scaffolds.records
+create` records each new run's receipt from the code that will train it, and `python -m scaffolds.records
+receipts experiments/<study>...` recomputes every run's receipt with the current checkout and compares it
+with the record, or for runs that predate receipts with `validation/recipe_receipts.json` (main's code
+before the attention-pieces refactor). Receipts are bitwise within one environment.
+
 `model.attention_forget_gate: true` adds the existing per-layer/head gate
 `log(alpha_t) = -exp(A_log) * softplus(x_t w_alpha + b_dt)`, computed in FP32 from
 the pre-attention RMSNorm activation, to softmax, unnormalized exponential, and
@@ -830,14 +854,15 @@ qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_po
   and the strips, future-token invariance, NaN rows, repeatability, dispatch), beside the query kernels' own
   GPU cases. A recipe with only the constant start adds `tests/test_score_transform.py` on CPU.
 
-### Structural zero constants with softplus inputs
+### Structural zero constants
 
 `attention_coefficient_zero_constant: true` omits the constant coordinates from
 the trainable arrays, instead of merely initializing them to zero. The default
-is false. This option applies to unnormalized, learned per-head softplus
-polynomials with RoPE: direct static coefficients, direct diagonal tanh query
+is false. This option applies to unnormalized, learned per-head polynomials of
+raw or softplus scores with RoPE: direct static coefficients, direct diagonal tanh query
 coefficients, or diagonal tanh query sum-of-squares factors, without a prefactor,
-gates, score biases, or coefficient-input L2 normalization.
+gates, score biases, or coefficient-input L2 normalization. On raw scores they
+run on the plain Mosaic query kernels.
 
 Direct degree-m polynomials store only orders 1 through m. Query SoS stores
 only U1 through U(m/2) and V1 through V(m/2-1); U0 and V0 are structural zeros
@@ -848,7 +873,7 @@ The resulting SoS polynomial still has total degree m. It behaves as
 their original initialization; setting the factor constants to zero does not
 produce the Taylor polynomial with only its constant removed.
 
-The native Mosaic transformed-polynomial kernel consumes the expanded
+With softplus inputs the native Mosaic transformed-polynomial kernel consumes the expanded
 coefficients. Static coefficients are broadcast over queries, with their
 gradients summed through that broadcast. The blocked implementation is the
 diagnostic/reference path. Parameter counts exclude the omitted coordinates;

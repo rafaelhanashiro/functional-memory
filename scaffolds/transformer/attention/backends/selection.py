@@ -48,7 +48,19 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
                          f"{request!r} never selects them")
     transformed = getattr(model_config, "attention_score_transform", "identity") != "identity"
-    if transformed and request not in ("blocked", "mosaic"):
+    from scaffolds.transformer.attention.pieces import ScoreFunction
+    from scaffolds.transformer.configs.base import _exponential_kernel
+
+    score_function = ScoreFunction(getattr(model_config, "attention_score_transform", "identity"),
+                                   getattr(model_config, "attention_score_prefactor", "none"))
+    if (not score_function.identity and getattr(model_config, "attention_mechanism", None) == "dot_product"
+            and _exponential_kernel(model_config)):
+        # The exponential's score functions (attention/pieces.py): an explicit blocked backend, or the fused
+        # kernel, whose declaration ModelConfig has checked; nothing selects them automatically.
+        if request not in ("blocked", "fused"):
+            raise ValueError(f"Score functions of the exponential run on an explicit blocked or fused backend; "
+                             f"{request!r} never selects them")
+    elif transformed and request not in ("blocked", "mosaic"):
         # Nor may a transformed polynomial input reach a kernel that evaluates the untransformed polynomial.
         raise ValueError(f"A score transform runs on an explicit blocked or mosaic backend; {request!r} never "
                          "selects it")

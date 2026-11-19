@@ -197,6 +197,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   ignored by Git; record their SHA256. Keep datasets outside the repository; each
   corpus's manifests, builder and construction record belong in
   `scaffolds/transformer/data/corpora/`, enough to rebuild it on any cluster.
+- Each run's record holds its recipe receipt (`scaffolds/transformer/receipt.py`), recorded by
+  `scaffolds.records create`. Before merging a change to shared code, run
+  `python -m scaffolds.records receipts experiments/<study>...`: every run must report the same
+  receipt (or the same rejection); report any difference to the user before merging.
 - A concluded numerical failure is a scientific result: preserve its stopping step,
   last valid metrics, failure diagnostics, and matching log. Do not call it completed
   training. Retain a diagnostic checkpoint only when justified by the record.

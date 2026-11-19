@@ -563,10 +563,12 @@ def test_mosaic_recipes_run_where_the_query_kernels_run(changes, problem):
 def test_every_other_kernel_and_backend_refuses_a_transform():
     q, k, v, c = (jnp.asarray(array, jnp.float32) for array in _operands("mixed", time=5))
     transform = {"score_transform": "softplus"}
+    # The exponential (softmax or unnormalized) takes any transform: test_exponential_score_functions.py.
+    for normalized in (True, False):
+        attention_core(q, k, v, backend="blocked", attention_degree=None, attention_normalization=normalized,
+                       **transform)
     refusals = (
         dict(attention_degree=4, attention_normalization=False, polynomial_coefficients=c[0, 0, 0]),
-        dict(attention_degree=None, attention_normalization=True),
-        dict(attention_degree=None, attention_normalization=False),
         dict(attention_degree=4, attention_normalization=True),
         dict(attention_degree=4, attention_normalization=False),
         dict(attention_degree=4, attention_normalization=False, query_polynomial_coefficients=c,

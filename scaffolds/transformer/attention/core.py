@@ -50,6 +50,7 @@ def attention_core(
     weights_dtype=None,
     blocked_implementation: str = "scan",
     score_transform: str = "identity",
+    score_prefactor: str = "none",
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
@@ -67,8 +68,11 @@ def attention_core(
     SoS prefactor z on softplus inputs; its factors retain even core degree attention_degree - 1.
     Parameter-free sigmoid/softplus attention uses this same operation with a constant FP32
     query-coefficient table [0, 1]; the "tanh" activation label selects the general polynomial
-    operation and applies no activation to these already-effective coefficients. Every other
-    mechanism and backend rejects a transform other than "identity".
+    operation and applies no activation to these already-effective coefficients. The exponential
+    (softmax, or unnormalized, with or without a forget gate) takes any transform, and with
+    ``score_prefactor`` (attention/pieces.py) the weight f(s) exp(phi(s)): on the blocked backend, and
+    without decay on the fused unnormalized kernel. Every other mechanism and backend rejects a transform
+    other than "identity" and a prefactor other than "none".
     The ``score_mlp_*`` arrays (projected unit
     amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
     """
@@ -89,14 +93,29 @@ def attention_core(
                        or attention_coefficient_activation != "tanh"):
         # No other kernel may ignore them: it would silently train the unshifted polynomial.
         raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
+    from scaffolds.transformer.attention.pieces import ScoreFunction
+
     # The historical calls are unchanged without a transform.
     transform = {} if validate_transform(score_transform) == "identity" else {"score_transform": score_transform}
+    # The exponential's score functions f(s) exp(phi(s)): only a non-identity pair is passed on.
+    exponential = (attention_degree is None and quadratic_mode == "fixed" and coefficients is None
+                   and polynomial_coefficients is None and polynomial_square_factors is None
+                   and query_polynomial_coefficients is None and key_polynomial_factors is None and not denominators
+                   and spline_knots is None and spline_coefficients is None and query_spline_coefficients is None
+                   and all(array is None for array in (score_mlp_amplitude, score_mlp_offset, score_mlp_slope,
+                                                       score_mlp_output_bias)))
+    functions = {} if ScoreFunction(score_transform, score_prefactor).identity else dict(
+        score_transform=score_transform, score_prefactor=score_prefactor)
+    if score_prefactor != "none" and not exponential:
+        raise ValueError("A score prefactor applies so far to the exponential (softmax or unnormalized)")
+    if exponential:
+        transform = {}
     static_sos = polynomial_square_factors is not None and not attention_normalization
     if type(square_factor_input_power) is not int or square_factor_input_power not in (0, 1):
         raise ValueError("Square-factor input power must be the integer 0 or 1")
     if square_factor_input_power and (not static_sos or score_transform != "softplus"):
         raise ValueError("Square-factor input power requires unnormalized static SoS on softplus scores")
-    if transform and ((not static_sos and (query_polynomial_coefficients is None
+    if transform and not exponential and ((not static_sos and (query_polynomial_coefficients is None
                                           or attention_coefficient_activation != "tanh"))
                       or key_polynomial_factors is not None or score_bias or query_log_decay is not None
                       or any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))):
@@ -168,7 +187,7 @@ def attention_core(
         return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
                                          attention_normalization=attention_normalization,
                                          query_decay_mode=query_decay_mode, return_diagnostics=return_diagnostics,
-                                         **decay)
+                                         **decay, **functions)
     if (query_log_decay is not None or endpoint) and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:
@@ -220,6 +239,7 @@ def attention_core(
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients, **strips,
+            **functions,
         )
     if polynomial_coefficients is not None or polynomial_square_factors is not None or denominators:
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention
@@ -249,6 +269,14 @@ def attention_core(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, **strips,
         )
+    if functions:
+        # Softmax of f(s) exp(phi(s)): the blocked reference composition.
+        if backend != "blocked":
+            raise ValueError("Softmax with a score transform or prefactor runs on the blocked backend")
+        from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
+
+        return blocked_backend_attention(q, k, v, implementation=blocked_implementation, attention_normalization=True,
+                                         return_diagnostics=return_diagnostics, **functions)
     from scaffolds.transformer.attention.softmax import softmax_attention
 
     return softmax_attention(

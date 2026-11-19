@@ -38,7 +38,7 @@ INDEX_COLUMNS = (
     "coefficient_gate", "attention_forget_gate", "attention_forget_gate_mode",
     "attention_forget_gate_form", "attention_forget_gate_constant_rate", "attention_forget_gate_conditioning",
     "attention_forget_gate_rate_activation", "attention_forget_gate_per_order", "attention_score_bias",
-    "attention_score_transform", "coefficient_parameterization", "coefficient_input_power", "coefficient_initialization",
+    "attention_score_transform", "attention_score_prefactor", "coefficient_parameterization", "coefficient_input_power", "coefficient_initialization",
     "coefficient_constant_initial", "coefficient_zero_constant", "coefficient_sharing", "coefficient_orders",
     "score_mlp_width", "score_mlp_form", "score_mlp_architecture", "score_mlp_kernel_weight_decay",
     "denominator_degree", "denominator_parameterization", "denominator_constant", "coefficient_penalty",
@@ -227,6 +227,70 @@ def create_run(study: str | Path, config: Mapping[str, Any], label: str | None =
         _atomic_write(sweep_path, yaml.safe_dump(common, sort_keys=False))
     regenerate_index(study)
     return run
+
+
+RECEIPT_BASELINE = Path(__file__).resolve().parents[1] / "transformer" / "validation" / "recipe_receipts.json"
+
+
+def _receipt_lines(configs: list[Path], *, keys_only: bool = False, jobs: int = 1) -> list[dict[str, Any]]:
+    """Run scaffolds.transformer.receipt over recipes in ``jobs`` parallel processes of this checkout."""
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[2]
+    command = [sys.executable, "-m", "scaffolds.transformer.receipt", *(["--keys"] if keys_only else [])]
+    batches = [configs[index::jobs] for index in range(max(1, min(jobs, len(configs))))]
+    processes = [subprocess.Popen([*command, *map(str, batch)], stdout=subprocess.PIPE, cwd=root, text=True)
+                 for batch in batches if batch]
+    lines = []
+    for process in processes:
+        output, _ = process.communicate()
+        if process.returncode:
+            raise RuntimeError(f"Receipt computation failed with exit code {process.returncode}")
+        lines.extend(json.loads(line) for line in output.splitlines() if line.strip())
+    return lines
+
+
+def recipe_receipt(config_path: str | Path) -> dict[str, Any]:
+    """The recipe's receipt (scaffolds/transformer/receipt.py) under this checkout's code."""
+    (line,) = _receipt_lines([Path(config_path).resolve()])
+    if "error" in line:
+        raise ValueError(f"{config_path}: the recipe has no receipt: {line['error']}")
+    return {key: line[key] for key in ("version", "loss", "digest", "arrays_count")}
+
+
+def check_receipts(runs: list[Path], *, jobs: int = 12) -> list[dict[str, Any]]:
+    """Recompute each run's receipt with this checkout and compare it with the run record's receipt, or for
+    runs that predate receipts with the scaffold's baseline (``validation/recipe_receipts.json``). Recipes
+    with one tiny-model key are computed once."""
+    baseline = json.loads(RECEIPT_BASELINE.read_text())["receipts"] if RECEIPT_BASELINE.exists() else {}
+    configs = [(Path(run) / "config.yaml").resolve() for run in runs]
+    keys = {Path(line["recipe"]): line for line in _receipt_lines(configs, keys_only=True, jobs=jobs)}
+    representatives = {}
+    for config in configs:
+        key = keys[config].get("key")
+        if key is not None:
+            representatives.setdefault(key, config)
+    computed = {line["key"]: line for line in _receipt_lines(list(representatives.values()), jobs=jobs)}
+    results = []
+    for run, config in zip(runs, configs):
+        run = Path(run)
+        stored = load_run(run).get("receipt") if (run / "record.json").exists() else None
+        source = "record"
+        if stored is None:
+            stored, source = baseline.get(f"{run.parent.parent.name}/{run.name}"), "baseline"
+        line = keys[config]
+        current = computed.get(line.get("key"), line)
+        if stored is None:
+            status = "no receipt"
+        elif "error" in stored or "error" in current:
+            status = "same rejection" if stored.get("error") == current.get("error") else "differs"
+        else:
+            status = "same" if stored["digest"] == current["digest"] else "differs"
+        results.append({"run": f"{run.parent.parent.name}/{run.name}", "status": status, "source": source,
+                        **({"stored_loss": stored.get("loss"), "current_loss": current.get("loss"),
+                            "current_error": current.get("error")} if status == "differs" else {})})
+    return results
 
 
 def _merge(destination: dict[str, Any], changes: Mapping[str, Any]) -> None:
@@ -589,6 +653,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "attention_score_bias": model.get("attention_score_bias", "none") if model else None,
         # Likewise the polynomial's input transform: a model recipe without the field reads the score itself.
         "attention_score_transform": model.get("attention_score_transform", "identity") if model else None,
+        "attention_score_prefactor": model.get("attention_score_prefactor", "none") if model else None,
         "score_mlp_width": model.get("attention_score_mlp_width"),
         "score_mlp_architecture": model.get("attention_score_mlp_architecture", "dynamic_readout")
             if model.get("attention_score_mlp_width") is not None else None,

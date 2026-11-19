@@ -253,7 +253,7 @@ def test_negative_tail_has_first_or_second_order_zero(family):
     {"attention_coefficient_zero_constant": 1},
     {"attention_coefficient_zero_constant": "true"},
     {"attention_coefficient_input_power": 1, "attention_degree": 9},
-    {"attention_score_transform": "identity"},
+    {"attention_score_transform": "sigmoid"},
     {"attention_coefficient_orders": (1, 2, 3, 4, 5, 6, 7, 8)},
     {"attention_coefficient_input_normalization": "l2"},
     {"attention_forget_gate": True},

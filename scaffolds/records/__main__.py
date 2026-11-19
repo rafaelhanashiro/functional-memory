@@ -5,7 +5,10 @@ from pathlib import Path
 
 import yaml
 
-from . import create_run, load_study, regenerate_index, rename_study, run_directory, validate_record
+from . import (
+    check_receipts, create_run, load_study, recipe_receipt, regenerate_index, rename_study, run_directory,
+    update_record, validate_record,
+)
 from .selections import refresh_selection
 
 
@@ -37,6 +40,11 @@ def main() -> None:
         help="explicitly keep the historical blocked scan for a fresh dot-product recipe on the blocked "
              "(or auto) backend instead of causal strips",
     )
+    receipts = commands.add_parser(
+        "receipts", help="recompute runs' recipe receipts with this checkout and compare them with their records "
+                         "(or, for runs that predate receipts, the scaffold's baseline)")
+    receipts.add_argument("study", type=Path, nargs="+")
+    receipts.add_argument("--jobs", type=int, default=12)
     index = commands.add_parser("index")
     index.add_argument("study", type=Path)
     validate = commands.add_parser(
@@ -164,11 +172,25 @@ def main() -> None:
             recipe["train"]["wandb_group"] = study.name
             recipe["train"]["wandb_run_name"] = args.label
             recipe["train"]["wandb_dir"] = None
-        print(create_run(args.study, recipe, args.label))
+        run = create_run(args.study, recipe, args.label)
+        if isinstance(recipe.get("model"), dict):
+            # What this checkout's code computes for the recipe; merges and refactors compare against it.
+            update_record(run, {"receipt": recipe_receipt(run / "config.yaml")})
+        print(run)
     elif args.command == "refresh":
         for result in args.result:
             changes = refresh_selection(result)
             print("\n".join(f"{result}/{change}" for change in changes) or f"{result}: selections already current")
+    elif args.command == "receipts":
+        runs = [study / "runs" / run["run_id"] for study in args.study for run in load_study(study)["runs"]]
+        results = check_receipts(runs, jobs=args.jobs)
+        for result in results:
+            if result["status"] not in ("same", "same rejection"):
+                print(json.dumps(result))
+        counts = {status: sum(r["status"] == status for r in results) for status in sorted({r["status"] for r in results})}
+        print(json.dumps({"runs": len(results), **counts}))
+        if any(r["status"] == "differs" for r in results):
+            raise SystemExit(1)
     elif args.command == "index":
         print(regenerate_index(args.study))
     elif args.command == "rename-study":
