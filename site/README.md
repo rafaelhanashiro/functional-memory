@@ -25,7 +25,8 @@ without committing them.
 
 The Polynomial runs page draws its tables and chart from `data/polynomial.json`, which
 `data/polynomial.py` writes from the Transformer++ result summaries; rerun it only when the
-user asks for newer results.
+user asks for newer results. Every perplexity on the site is the run's validation-best value,
+never the terminal one.
 
 The Meeting page's files (`meeting/agenda.md`, `meeting/notes.md`, and the images they link
 in `media/`) belong to the user, who edits them live: never write, reset, regenerate, or

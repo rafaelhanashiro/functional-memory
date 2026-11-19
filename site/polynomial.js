@@ -41,13 +41,14 @@ function table(head, body) {
   return wrap;
 }
 
+// Bold marks the lowest value as shown, so values that tie at the shown precision are all bold.
 function widthDegree(data, host) {
   const values = data.rows.flatMap((row) => row.cells.filter(Boolean).map((cell) => cell.perplexity));
-  const best = Math.min(...values);
+  const best = Math.min(...values).toFixed(4);
   section(host, data.title).append(table(
     ["Key width <var>d</var><sub><var>K</var></sub>", ...data.degrees.map(degreeLabel)],
     data.rows.map((row) => [{text: String(row.width)}, ...row.cells.map((cell) => cell
-      ? {text: cell.perplexity.toFixed(4), best: cell.perplexity === best} : {text: "—"})]),
+      ? {text: cell.perplexity.toFixed(4), best: cell.perplexity.toFixed(4) === best} : {text: "—"})]),
   ));
 }
 
@@ -58,7 +59,7 @@ function degreeTable(data) {
     ["Attention", ...data.degrees.map(degreeLabel)],
     data.families.map((family, index) => [{text: family.label}, ...data.degrees.map((degree, column) => {
       const value = lookup[index].get(degree);
-      return value === undefined ? {text: "—"} : {text: value.toFixed(2), best: value === best[column]};
+      return value === undefined ? {text: "—"} : {text: value.toFixed(2), best: value.toFixed(2) === best[column].toFixed(2)};
     })]),
   );
 }
@@ -109,7 +110,7 @@ function degreeChart(data) {
   }
   chart.append(svg("text", {x: margin.left + plotWidth / 2, y: height - 10, class: "axis-title", "text-anchor": "middle"}, "Polynomial degree"));
   chart.append(svg("text", {x: 0, y: 0, class: "axis-title", "text-anchor": "middle",
-    transform: `translate(22 ${margin.top + plotHeight / 2}) rotate(-90)`}, "Terminal validation perplexity (lower is better)"));
+    transform: `translate(22 ${margin.top + plotHeight / 2}) rotate(-90)`}, "Best validation perplexity (lower is better)"));
 
   for (const reference of data.references) {
     const level = y(reference.perplexity);

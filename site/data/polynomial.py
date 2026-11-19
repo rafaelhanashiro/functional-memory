@@ -2,9 +2,9 @@
 
     python3 site/data/polynomial.py
 
-The width table quotes validation-best perplexity (query_width_degree/summary.csv); the degree
-table and chart quote terminal perplexity at update 7,570 (degree_scaling/summary.csv), as in
-the figures they reproduce. Rerun only when the user asks for newer results.
+Every value is a run's validation-best perplexity (the site always quotes best, never terminal),
+from query_width_degree/summary.csv and degree_scaling/summary.csv. Rerun only when the user
+asks for newer results.
 """
 from __future__ import annotations
 
@@ -54,16 +54,16 @@ def degree_scaling() -> dict:
     references = {row["family"]: row for row in runs if row["role"] == "reference"}
     return {
         "title": "Degree scaling of unnormalized polynomial attention",
-        "metric": "terminal validation perplexity at update 7,570",
+        "metric": "validation-best perplexity",
         "source": DEGREE.relative_to(ROOT).as_posix(),
         "degrees": degrees,
         "families": [{"family": family, "label": label, "legend": legend, "points": [
             {"degree": int(row["degree"]), "run_id": row["run_id"],
-             "perplexity": float(row["terminal_validation_perplexity"])}
+             "perplexity": float(row["best_validation_perplexity"])}
             for row in sorted((row for row in primary if row["family"] == family), key=lambda row: int(row["degree"]))]}
             for family, label, legend in FAMILIES],
         "references": [{"family": family, "label": label, "line": line, "run_id": references[family]["run_id"],
-                        "perplexity": float(references[family]["terminal_validation_perplexity"])}
+                        "perplexity": float(references[family]["best_validation_perplexity"])}
                        for family, label, line in REFERENCES],
     }
 
