@@ -79,9 +79,7 @@ def _load(root: Path, entry: dict, settings: dict) -> dict:
     # Executed query SoS expansion splits [U_0,...,U_d,V_0,...,V_{d-1}].
     coordinates = [("U", j) for j in range(half + 1)] + [("V", j) for j in range(half)]
     return dict(entry=entry, degree=degree, steps=steps, layer=layer, head=head,
-                coordinates=coordinates, input_dimension=model["hidden_size"],
-                best_ppl=json.loads((run / "best_validation.json").read_text())["validation_perplexity"],
-                **parameters)
+                coordinates=coordinates, **parameters)
 
 
 
@@ -90,16 +88,15 @@ def _combined_figure(datasets: list[dict], out: Path) -> None:
     datasets = sorted(datasets, key=lambda data: data["degree"])
     assert [data["degree"] for data in datasets] == [8, 12]
     assert len({(data["layer"], data["head"]) for data in datasets}) == 1
-    fig = plt.figure(figsize=(20, 13.8))
+    fig = plt.figure(figsize=(20, 12.5))
     row_settings = (("a", 0., "Amplitude a"), ("b", 1., "Bias b"),
-                    ("w_l2", None, r"$\|W_j\|_2$"))
-    for data, (bottom, top, heading) in zip(datasets, ((.555, .835, .865), (.13, .445, .475))):
+                    ("w_l2", None, r"$\|W_r\|_2$"))
+    for data, (bottom, top, heading) in zip(datasets, ((.545, .855, .887), (.07, .43, .462))):
         degree, steps = data["degree"], data["steps"]
         half = degree // 2
         grid = fig.add_gridspec(3, half + 1, left=.065, right=.985,
                                bottom=bottom, top=top, hspace=.22, wspace=.16)
         fig.text(.055, heading, rf"$m={degree}$", fontsize=21, fontweight="bold", color=INK)
-        fig.text(.145, heading, f"U degree {half} · V degree {half - 1} · Total degree {degree + 1} · Best PPL {data['best_ppl']:.4f}", fontsize=13, color="#5a6672")
         for row, (name, initial, label) in enumerate(row_settings):
             low, high = data[name].min(), data[name].max()
             if initial is not None:
@@ -126,36 +123,24 @@ def _combined_figure(datasets: list[dict], out: Path) -> None:
                 ax.tick_params(colors="#4d5965", labelsize=9,
                                labelbottom=row == 2, labelleft=power == 0)
                 if row == 0:
-                    suffix = " · U only" if power == half else ""
-                    ax.set_title(rf"Factor power $j={power}$" + suffix, loc="left",
+                    suffix = r" · $q_1$ only" if power == half else ""
+                    ax.set_title(rf"$r={power}$" + suffix, loc="left",
                                  fontsize=12, color=INK, pad=9)
                 if power == 0:
                     ax.set_ylabel(label, fontsize=13, color=INK, labelpad=12)
                 if row == 2:
                     ax.set_xlabel("Training update", fontsize=10)
-    fig.add_artist(Line2D([.055, .985], [.505, .505], transform=fig.transFigure,
+    fig.add_artist(Line2D([.055, .985], [.495, .495], transform=fig.transFigure,
                           color="#dbe2e8", lw=1.2))
     fig.suptitle(r"Transformer++ · SoS + softplus + prefactor · learned $a$, $b$, and $W$ norms",
                  x=.055, y=.98, ha="left", color=INK, fontsize=23, fontweight="bold")
-    data = datasets[0]
-    fig.text(.055, .94,
-             rf"Layer {data['layer'] + 1}, head {data['head'] + 1} · $z=\mathrm{{softplus}}(s)$ · $w_t(s)=z[U_t(z)^2+V_t(z)^2]$"
-             rf" · $F_j(x)=f_j[1+b_j+a_j\tanh(W_j^\top x)]/2$",
-             fontsize=13, color="#5a6672")
+    factor_labels = (("U", r"$q_1$ (degree $m/2$)"), ("V", r"$q_2$ (degree $m/2-1$)"))
     handles = [Line2D([], [], color=COLORS[factor], lw=2, marker="o", markersize=4,
-                      label=f"{factor} factor") for factor in ("U", "V")]
+                      label=label) for factor, label in factor_labels]
     handles.append(Line2D([], [], color="#929ba5", ls="--", marker="D", markersize=4,
                            label="Analytic initialization: a = 0, b = 1"))
-    fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(.05, .923),
+    fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(.05, .945),
                frameon=False, ncol=3, fontsize=12, columnspacing=2.6)
-    fig.text(.055, .035,
-             "Original coefficient input (no L2). Raw SoS factor-generator parameters; no factorial or Taylor-factor rescaling. "
-             "W norms over 896 input channels.\n"
-             "m is the SoS core degree; total degree is m + 1. Shared linear y-scale within each section's row. "
-             "28 snapshots, updates 100–7,570.\n"
-             "Step-zero a/b diamonds are analytic; "
-             "no step-zero W norm was saved. Lines connect recorded snapshots.",
-             color="#687583", fontsize=11, linespacing=1.7)
     _save(fig, out, "head_parameters_combined")
 
 
