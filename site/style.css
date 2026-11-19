@@ -718,3 +718,23 @@ var { font-style: italic; }
 .editing-text .text-block.page:not(.open) { margin-bottom: 14px; }
 .text-block.open { margin-top: 12px; margin-bottom: 16px; }
 .text-block .editor-input { min-height: 140px; }
+.editing-text :is([data-title], .subpage-title) {
+  border-radius: 4px;
+  outline: 1px dashed #d4d4d8;
+  outline-offset: 4px;
+  cursor: pointer;
+}
+.editing-text :is([data-title], .subpage-title):hover { outline-color: #71717a; }
+.editing-text :is([data-title], .subpage-title).renaming { outline: none; cursor: auto; }
+.title-input {
+  width: 100%;
+  min-width: 10em;
+  padding: 0;
+  border: none;
+  border-bottom: 1.5px solid var(--text);
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+}

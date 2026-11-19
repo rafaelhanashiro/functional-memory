@@ -8,9 +8,12 @@ accepts:
     PUT    /literature/<id>.md      replace an existing write-up with the request body
     PUT    /meeting/<date>-agenda.md, /meeting/<date>-notes.md
                                     likewise a meeting's agenda or notes (dates as YYYY-MM-DD)
-    GET    /api/text/<page>         {"blocks": {name: Markdown}}: the texts of <page>.html, each
-                                    kept in text/<page>/<name>.md
+    GET    /api/text/<page>         {"blocks": {name: Markdown}, "titles": {page: {key: title}}}:
+                                    the texts of <page>.html, each kept in text/<page>/<name>.md,
+                                    and every page's renamed titles, kept in text/<page>/titles.json
     PUT    /text/<page>/<name>.md   save one of those texts; an empty body deletes it
+    PUT    /api/titles/<page>       {"key": ..., "title": ...}: rename a title of <page>.html (the
+                                    key "title" is the page's own); an empty title restores it
     GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first
     POST   /api/meetings            {"date": ..., "title": ...}: add a meeting, with an empty
                                     agenda and notes (the title, its name, is optional)
@@ -65,6 +68,9 @@ AGENT = "Mozilla/5.0 (functional-memory literature list)"
 TEXT = SITE / "text"
 TEXT_API = re.compile(r"/api/text/([a-z0-9-]+)")
 TEXT_FILE = re.compile(r"/text/([a-z0-9-]+)/([a-z0-9-]+)\.md")
+TITLES_API = re.compile(r"/api/titles/([a-z0-9-]+)")
+TITLE_KEY = re.compile(r"[a-z0-9-]+")
+MAX_TITLE = 200
 MEDIA = SITE / "media"
 IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
@@ -112,6 +118,11 @@ def prune_media() -> list[str]:
                 image.unlink(missing_ok=True)
                 removed.append(image.name)
     return removed
+
+
+def load_titles() -> dict[str, dict[str, str]]:
+    """The renamed titles of every page, by page and key."""
+    return {path.parent.name: json.loads(path.read_text()) for path in sorted(TEXT.glob("*/titles.json"))}
 
 
 def meeting_files(day: str) -> list[Path]:
@@ -303,7 +314,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404)
                 return
             texts = sorted((TEXT / page.group(1)).glob("*.md"))
-            self._json(200, {"blocks": {path.stem: path.read_text(errors="replace") for path in texts}})
+            self._json(200, {"blocks": {path.stem: path.read_text(errors="replace") for path in texts},
+                             "titles": load_titles()})
             return
         super().do_GET()
 
@@ -316,6 +328,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if self._route() == "/api/literature":
             self._reorder()
+            return
+        titles = TITLES_API.fullmatch(self._route())
+        if titles:
+            self._rename_title(titles.group(1))
             return
         match = DOCUMENT.fullmatch(self._route())
         block = TEXT_FILE.fullmatch(self._route())
@@ -345,6 +361,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         for name in prune_media():
             print(f"removed unlinked image media/{name}", file=sys.stderr, flush=True)
+
+    def _rename_title(self, page: str):
+        if not (SITE / f"{page}.html").is_file():
+            self.send_error(404)
+            return
+        body = self._body()
+        if body is None:
+            return
+        try:
+            change = json.loads(body)
+            key, title = change["key"], " ".join(change["title"].split())
+        except (ValueError, KeyError, TypeError, AttributeError):
+            key = title = None
+        if not isinstance(key, str) or not TITLE_KEY.fullmatch(key) or title is None or len(title) > MAX_TITLE:
+            self._json(400, {"error": f'Expected {{"key": ..., "title": ...}}, a title of at most {MAX_TITLE} characters'})
+            return
+        target = TEXT / page / "titles.json"
+        with LOCK:
+            titles = json.loads(target.read_text()) if target.is_file() else {}
+            if title:
+                titles[key] = title
+            else:
+                titles.pop(key, None)
+            if titles:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                write_atomic(target, json.dumps(titles, indent=2, ensure_ascii=False) + "\n")
+            else:
+                target.unlink(missing_ok=True)
+        self._json(200, {"titles": titles})
 
     def _reorder(self):
         body = self._body()

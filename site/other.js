@@ -8,6 +8,7 @@ import {mountText, slot} from "./text.js";
 function around(host, title, content) {
   const key = host.dataset.result;
   section(host, title).append(slot(key, "intro"), content, slot(`${key}-notes`));
+  host.querySelector("h2").dataset.title = key;
 }
 
 const value = (cell) => cell ? {text: cell.perplexity.toFixed(4)} : {text: "—"};
@@ -46,10 +47,12 @@ function zeroConstant(data, host) {
 // Subsections of one heading, each a table whose cells are text or a run's perplexity, with its
 // own text and notes.
 function parts(data, host) {
-  section(host, data.title);
+  section(host, data.title).querySelector("h2").dataset.title = host.dataset.result;
   for (const part of data.parts) {
     const rows = part.rows.map((row) => row.map((entry) => typeof entry === "string" ? {text: entry} : value(entry)));
-    host.append(html("h3", "", part.title), slot(part.key, "intro"),
+    const heading = html("h3", "", part.title);
+    heading.dataset.title = part.key;
+    host.append(heading, slot(part.key, "intro"),
       table(part.head, rows, {compact: Boolean(part.compact)}), slot(`${part.key}-notes`));
   }
 }

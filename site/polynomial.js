@@ -149,10 +149,12 @@ function degreeChart(data) {
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }
-  // Each section's text sits under its heading and its notes under its content (text.js).
+  // Each section's text sits under its heading and its notes under its content, and its heading
+  // is renamable (text.js).
   for (const host of document.querySelectorAll(".result[data-result]")) {
     const heading = host.querySelector("h2");
     if (!heading) continue;
+    heading.dataset.title = host.dataset.result;
     heading.after(slot(host.dataset.result, "intro"));
     host.append(slot(`${host.dataset.result}-notes`));
   }
