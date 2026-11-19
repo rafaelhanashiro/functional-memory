@@ -15,7 +15,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
+from scaffolds.transformer.attention.backends.reference import blocked_backend_attention, blocked_dot_product_attention
 from scaffolds.transformer.attention.pieces import (
     FUSED_EXPONENTIAL_PREFACTORS, FUSED_EXPONENTIAL_TRANSFORMS, ScoreFunction, fused_exponential_problem,
 )
@@ -182,8 +182,10 @@ def test_fused_fp32_matches_blocked_and_fp64(transform, prefactor, shape):
 
     operands, cotangent, _ = _inputs(shape, seed=91)
     fused = partial(fused_unnormalized_attention, score_transform=transform, score_prefactor=prefactor)
-    blocked = partial(blocked_backend_attention, attention_normalization=False, score_transform=transform,
-                      score_prefactor=prefactor)
+    # As test_unnormalized_fused_attention: 32-query blocks (XLA's GPU layout pass rejects this scan's
+    # 128-query blocks at full precision past 128 tokens).
+    blocked = partial(blocked_dot_product_attention, attention_normalization=False, score_transform=transform,
+                      score_prefactor=prefactor, query_block_size=32)
     with jax.default_matmul_precision("highest"):
         # The blocked reference's FP32 dot products at full precision, not TF32.
         actual = jax.jit(partial(_forward_and_vjp, fused))(operands, cotangent)
