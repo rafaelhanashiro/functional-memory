@@ -197,7 +197,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     exponential = attention_degree is None and quadratic_mode == "fixed"
     # Endpoint operands, like a log decay, apply to query coefficients alone, softmax, or the
     # unnormalized exponential; only query coefficients take per-order gates (above).
-    if decayed and (key_conditioned or not (query_conditioned or exponential)
+    if decayed and (not (query_conditioned or exponential)
                     or (not endpoint and query_log_decay.shape != gate_shape)):
         raise ValueError("A forget gate's log decay [batch,time,heads] requires query coefficients alone, "
                          "softmax, or the unnormalized exponential")
@@ -208,10 +208,10 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     bias_operands = dict(row_shift=score_bias_row_shift, query_input=score_bias_query_input,
                          key_input=score_bias_key_input, offset=score_bias_offset, amplitude=score_bias_amplitude)
     if any(value is not None for value in bias_operands.values()):
-        if not query_conditioned or key_conditioned:
+        if not query_conditioned:
+            # Any decay and key factors compose: each order's term c_r G_r (z + beta_r)^r takes its key factor and
+            # per-order decay, and a shared decay multiplies the sum.
             raise ValueError("Per-degree score biases apply to query-coefficient polynomial attention alone")
-        if decayed and not (endpoint and per_order):
-            raise ValueError("Per-degree score biases take no forget gate or the per-order endpoint gate")
         score_bias = operand_kind(query_polynomial_coefficients.shape, **bias_operands)
     validate_prefactor(score_prefactor)
     # The exponential (softmax or unnormalized) reads phi(s) under any decay; polynomials, as qualified so far,

@@ -308,12 +308,19 @@ class MultiHeadAttention(nnx.Module):
                                   and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
                                   and attention_fixed_coefficients is None and attention_fixed_square_factors is None
                                   and attention_coefficient_orders is None and attention_kernel_basis == "polynomial")
+        # On the blocked backend every unnormalized static or fixed direct polynomial takes every gate: its
+        # coefficients run per query (_coefficients_per_query).
+        composed_static = (attention_coefficient_conditioning == "static" and not attention_normalization
+                           and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
+                           and attention_fixed_square_factors is None and attention_kernel_basis == "polynomial"
+                           and attention_coefficient_parameterization == "direct" and score_mlp_width is None
+                           and positional_encoding in ("rope", "none") and backend == "blocked")
         polynomial_gate = (static_gate_polynomial if input_free_gate else
                            (attention_coefficient_conditioning == "query" and attention_coefficient_activation != "identity")
                            or (static_gate_polynomial and attention_forget_gate_conditioning == "query_key")
                            or (static_gate_polynomial and attention_forget_gate_conditioning == "query"
                                and attention_forget_gate_mode == "cumulative" and attention_forget_gate_form == "input"
-                               and backend == "blocked"))
+                               and backend == "blocked")) or composed_static
         forget_backend_supported = (
             positional_encoding == "path" and backend in ("auto", "blocked", "fused")
             or positional_encoding in ("rope", "none") and (
@@ -495,7 +502,17 @@ class MultiHeadAttention(nnx.Module):
 
         if not isinstance(attention_score_bias, str) or attention_score_bias not in SCORE_BIAS_MODES:
             raise ValueError(f"Unknown attention score bias: {attention_score_bias!r}")
-        if attention_score_bias != "none":
+        # Composition on the blocked backend (attention/pieces.py): every unnormalized polynomial with RoPE or no
+        # positional encoding, its static or fixed direct coefficients run per query (_coefficients_per_query),
+        # takes any forget gate, score transform, score biases and prefactor. Fast kernels keep their declarations.
+        blocked_polynomial = (
+            backend == "blocked" and positional_encoding in ("rope", "none") and not attention_normalization
+            and attention_degree is not None and attention_degree >= 1 and quadratic_mode == "fixed"
+            and attention_kernel_basis == "polynomial" and score_mlp_width is None
+            and attention_fixed_square_factors is None
+            and (attention_coefficient_conditioning in ("query", "query_key") and attention_coefficient_activation != "identity"
+                 or attention_coefficient_conditioning == "static" and attention_coefficient_parameterization == "direct"))
+        if attention_score_bias != "none" and not blocked_polynomial:
             from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE
 
             if (attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
@@ -563,10 +580,11 @@ class MultiHeadAttention(nnx.Module):
                     problem = "the fused kernel is the unnormalized exponential without a forget gate"
                 if problem is not None:
                     raise ValueError(f"The fused backend cannot run these score functions: {problem}")
-        elif attention_score_prefactor != "none":
-            raise ValueError("A score prefactor applies so far to the exponential (softmax or unnormalized)")
+        elif attention_score_prefactor != "none" and not blocked_polynomial:
+            raise ValueError("A score prefactor applies to the exponential (softmax or unnormalized), or on the "
+                             "blocked backend to any unnormalized polynomial")
         self.attention_score_prefactor = attention_score_prefactor
-        if validate_transform(attention_score_transform) != "identity" and not exponential_kernel and (
+        if validate_transform(attention_score_transform) != "identity" and not exponential_kernel and not blocked_polynomial and (
                 not (fixed_pointwise or (attention_score_transform != "sigmoid"
                                         and (static_sos or static_transformed
                                              or (attention_coefficient_conditioning == "query"
@@ -861,24 +879,15 @@ class MultiHeadAttention(nnx.Module):
                 value is not None for name, value in score_bias.items() if name not in bias_names):
             raise ValueError("Score biases require exactly their model-owned parameters for their mode")
         if bias_names:
-            if self.attention_forget_gate and getattr(parameters.get("query_gate_input"), "ndim", None) != 4:
+            if (self.attention_forget_gate and self.backend != "blocked"
+                    and getattr(parameters.get("query_gate_input"), "ndim", None) != 4):
+                # The Mosaic score-bias kernels take only this gate; the blocked backend composes every gate.
                 raise ValueError("Per-degree score biases take only the per-order query-key endpoint gate")
             # From the same FP32 activation as the coefficient generator: row shifts beta_r(t) for static
             # and query biases, or the query-key inputs x u, x v with b and a; pairs combine in the kernel.
             parameters.update(attention_operands(
                 self.attention_score_bias, x, {name: score_bias[name] for name in bias_names}))
         kernel_coefficient_activation = self.attention_coefficient_activation
-        if (self.attention_score_transform != "identity" and self.attention_coefficient_conditioning == "static"
-                and self.attention_coefficient_zero_constant):
-            # Static zero-constant coefficients use the native transformed-query kernel with a
-            # broadcast operand. Its VJP sums back over queries into the stored
-            # per-head coefficients; no activation or query generator is applied.
-            represented = parameters.pop("polynomial_coefficients", None)
-            if represented is None:
-                raise ValueError("Transformed static attention requires learned direct coefficients")
-            parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
-                represented.astype(jnp.float32), (batch, seq_len, self.num_heads, self.attention_degree + 1))
-            kernel_coefficient_activation = "tanh"
         if self.attention_coefficient_conditioning == "static" and (
                 query_coefficients is not None or return_coefficients):
             if (self.attention_fixed_square_factors is not None
@@ -906,15 +915,17 @@ class MultiHeadAttention(nnx.Module):
                 kernel_coefficient_activation = "tanh"
                 if key_factors is not None:
                     parameters["key_polynomial_factors"] = key_factors
-        if (self.attention_forget_gate and query_coefficients is None and self.attention_degree is not None
-                and self.attention_coefficient_conditioning == "static"
-                and self.attention_forget_gate_conditioning in ("none", "query_key", "query")):
-            # Static coefficients under the input-free, query-key or cumulative input gate run the query-coefficient
-            # decay operation with every query's coefficients equal; broadcasting sums the per-query gradients back to
-            # the per-head coefficients, as the log decay's broadcast does to A_log and dt_bias.
+        if self._coefficients_per_query(parameters, query_coefficients):
+            # Coefficients per query (attention/pieces.py): static or fixed coefficients meet a forget gate, a score
+            # transform, score biases or a prefactor as every query's equal coefficients on the general polynomial
+            # kernel; broadcasting sums the per-query gradients back to the stored coefficients, as the log decay's
+            # broadcast does to A_log and dt_bias. No activation, generator or factorial scale is applied again.
             represented = parameters.pop("polynomial_coefficients", None)
             if represented is None:
-                raise ValueError("A static-coefficient gate requires learned static coefficients")
+                # Fixed coefficients: the recipe's table, or the Taylor kernel's 1/r!.
+                represented = jnp.asarray(
+                    self.attention_fixed_coefficients if self.attention_fixed_coefficients is not None
+                    else [1 / math.factorial(order) for order in range(self.attention_degree + 1)], dtype=jnp.float32)
             parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
                 represented.astype(jnp.float32), (batch, seq_len, self.num_heads, self.attention_degree + 1))
             kernel_coefficient_activation = "tanh"
@@ -957,7 +968,8 @@ class MultiHeadAttention(nnx.Module):
             if "coefficients" in parameters:
                 raise ValueError("Coefficients were supplied twice")
             parameters = {**parameters, "coefficients": coefficients}
-        if self.attention_fixed_coefficients is not None and query_coefficients is None:
+        if (self.attention_fixed_coefficients is not None and query_coefficients is None
+                and "query_polynomial_coefficients" not in parameters):
             if any(name in parameters for name in ("coefficients", "polynomial_coefficients", "polynomial_square_factors",
                                                 *DENOMINATOR_KINDS)):
                 raise ValueError("Fixed polynomial coefficients cannot be combined with supplied attention coefficients")
@@ -991,14 +1003,6 @@ class MultiHeadAttention(nnx.Module):
                 coefficient_gate_logits(x, gate_kernel, gate_bias), ungated,
                 parameters["query_polynomial_coefficients"], q, k, gate_log_rate=gate_log_rate)
         if self.attention_score_transform != "identity":
-            if self.attention_coefficient_conditioning == "static" and self.attention_fixed_coefficients is not None:
-                # Fixed [0, 1] makes the transformed polynomial exactly phi(s). Static SoS keeps its own
-                # factors, and static zero-constant coefficients were routed above.
-                # This is a constant FP32 table, not a learned query generator.
-                represented = parameters.pop("polynomial_coefficients")
-                parameters["query_polynomial_coefficients"] = jnp.broadcast_to(
-                    represented, (batch, seq_len, self.num_heads, 2))
-                kernel_coefficient_activation = "tanh"  # Select the general polynomial kernel only.
             # Only transformed recipes pass it, so every other recipe's call is unchanged.
             parameters["score_transform"] = self.attention_score_transform
         if self.attention_score_prefactor != "none":
@@ -1037,6 +1041,16 @@ class MultiHeadAttention(nnx.Module):
         if return_coefficients:
             return output, effective_coefficients
         return (output, diagnostics) if return_diagnostics else output
+
+    def _coefficients_per_query(self, parameters, query_coefficients) -> bool:
+        """Whether static or fixed polynomial coefficients run per query: when a forget gate, a score transform,
+        score biases or a prefactor meets them (static SoS factors keep their own kernel)."""
+        return (query_coefficients is None and self.attention_coefficient_conditioning == "static"
+                and self.attention_degree is not None and not self.attention_normalization
+                and "polynomial_square_factors" not in parameters and self.attention_fixed_square_factors is None
+                and self.score_mlp_width is None and self.attention_kernel_basis == "polynomial"
+                and (self.attention_forget_gate or self.attention_score_transform != "identity"
+                     or self.attention_score_bias != "none" or self.attention_score_prefactor != "none"))
 
     def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics,
                         log_alpha=None):

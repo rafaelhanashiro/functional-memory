@@ -724,7 +724,10 @@ class ModelConfig:
                              and self.attention_forget_gate_per_order is False
                              and self.attention_forget_gate_rate_activation == "softplus"
                              and self.positional_encoding in ("rope", "none") and self.attention_backend == "blocked")
-        gated_polynomial = static_polynomial if input_free else polynomial or query_key_static or cumulative_static
+        # On the blocked backend every static or fixed direct polynomial takes every gate (_blocked_polynomial).
+        blocked_static = _blocked_polynomial(self) and self.attention_coefficient_conditioning == "static"
+        gated_polynomial = (static_polynomial if input_free else polynomial or query_key_static or cumulative_static
+                            ) or blocked_static
         if not isinstance(self.attention_forget_gate_per_order, bool):
             raise ValueError("model.attention_forget_gate_per_order must be a boolean")
         if self.attention_forget_gate_per_order and (
@@ -748,7 +751,7 @@ class ModelConfig:
                              "positional encoding on the blocked backend")
         if self.attention_forget_gate_form == "constant" and (
                 self.attention_forget_gate_mode != "cumulative" or self.positional_encoding not in ("rope", "none")
-                or not (polynomial or exponential)):
+                or not (polynomial or exponential or blocked_static)):
             raise ValueError("The constant forget gate form is qualified only as cumulative decay of softmax, the "
                              "unnormalized exponential, and nonlinear query-coefficient polynomials with RoPE or no "
                              "positional encoding on the blocked backend")
@@ -762,7 +765,8 @@ class ModelConfig:
         if self.attention_forget_gate_rate_activation not in ("softplus", "sigmoid"):
             raise ValueError("Unknown forget gate rate activation")
         if input_free and not (
-                self.attention_forget_gate and static_polynomial and self.attention_forget_gate_form == "input"
+                self.attention_forget_gate and (static_polynomial or blocked_static)
+                and self.attention_forget_gate_form == "input"
                 and self.attention_forget_gate_mode == "query_distance"
                 and self.attention_forget_gate_rate_activation == "softplus"
                 and self.positional_encoding in ("rope", "none")
@@ -1050,6 +1054,24 @@ def _validate_kernel_basis(model: ModelConfig) -> None:
         raise ValueError("B-spline coefficients are static or query-conditioned (no key factors)")
 
 
+def _blocked_polynomial(model) -> bool:
+    """Composition on the blocked backend (attention/pieces.py): an unnormalized dot-product polynomial with RoPE or
+    no positional encoding, its coefficients generated per query (nonlinear query or query-key conditioning) or
+    static or fixed direct ones, which the layer runs per query. It takes any forget gate, score transform, score
+    biases and prefactor together; the fast kernels implement what their declarations name."""
+    degree = model.attention_degree
+    return (model.attention_mechanism == "dot_product" and model.attention_backend == "blocked"
+            and model.positional_encoding in ("rope", "none") and not model.attention_normalization
+            and isinstance(degree, int) and not isinstance(degree, bool) and degree >= 1
+            and model.quadratic_mode == "fixed" and model.attention_fixed_square_factors is None
+            and getattr(model, "attention_kernel_basis", "polynomial") == "polynomial"
+            and getattr(model, "attention_score_mlp_width", None) is None
+            and (model.attention_coefficient_conditioning in ("query", "query_key")
+                 and model.attention_coefficient_activation != "identity"
+                 or model.attention_coefficient_conditioning == "static"
+                 and model.attention_coefficient_parameterization == "direct"))
+
+
 def _score_bias_problem(model) -> str | None:
     """Why per-degree score biases do not apply to this recipe's attention, or None."""
     from scaffolds.transformer.attention.backends.mosaic.api import MAX_QUERY_DEGREE
@@ -1093,7 +1115,7 @@ def _validate_score_bias(model: ModelConfig) -> None:
     mode = model.attention_score_bias
     if not isinstance(mode, str) or mode not in MODES:
         raise ValueError(f"Unknown attention score bias: {mode!r}")
-    if mode == "none":
+    if mode == "none" or _blocked_polynomial(model):
         return
     problem = _score_bias_problem(model)
     if problem is not None:
@@ -1281,9 +1303,12 @@ def _validate_score_transform(model: ModelConfig) -> None:
         if not score_function.identity:
             _validate_exponential_score_function(model, score_function)
         return
+    if _blocked_polynomial(model):
+        return
     if model.attention_score_prefactor != "none":
-        raise ValueError("A score prefactor applies so far to the exponential kernel (softmax or unnormalized "
-                         "dot-product attention without a degree, coefficients, a score MLP, or score biases)")
+        raise ValueError("A score prefactor applies to the exponential kernel (softmax or unnormalized dot-product "
+                         "attention without a degree, coefficients, a score MLP, or score biases), or on the blocked "
+                         "backend to any unnormalized polynomial")
     if transform == "identity":
         return
     problem = _transformed_coefficient_problem(model)
