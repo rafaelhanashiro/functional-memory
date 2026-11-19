@@ -1,4 +1,5 @@
-question: Does sigmoid or softplus improve on the exponential score function in Transformer++?
+question: Does sigmoid or softplus, alone or with the exponential, improve on the
+  exponential score function in Transformer++?
 settings:
   metric: validation perplexity
   report:
@@ -70,3 +71,63 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r266c5dd1f935/best_validation.json
       sha256: 8a90023495f8c53fb60bb415b0f3b56f7589566a99802dc9bde10403cf3da9f0
+- study: transformer_pp
+  run_id: rbd24b948a240
+  role: softplus_prefactor_exp
+  label: softplus(s) exp(s)
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rbd24b948a240/config.yaml
+      sha256: 73cfbeb535da1ed1aa95e8642ad7df6d298bda6a19db9ecc8de97e4863daac0f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rbd24b948a240/metrics.jsonl
+      sha256: ffddf0f4c5a1d677f857baced93df66c66d56b89027b0b855059acd57ca91865
+    completion.json:
+      path: experiments/transformer_pp/runs/rbd24b948a240/completion.json
+      sha256: 798fb095217c608a41dc6890a9356ff392d8e354ab0d6eec1f24b79367861089
+    metadata.json:
+      path: experiments/transformer_pp/runs/rbd24b948a240/metadata.json
+      sha256: 7b5faceca1ea6e709b5308a75b16398e8377120c0a51fef6518c9fd55e7ebb3f
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rbd24b948a240/best_validation.json
+      sha256: f50c25bdab025c2b9560876d2cc590062e78c627ca8150184296e3b6a5742473
+- study: transformer_pp
+  run_id: rd7c9f610e9dc
+  role: sigmoid_prefactor_exp
+  label: sigmoid(s) exp(s)
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd7c9f610e9dc/config.yaml
+      sha256: 180902859ae93e7f3dd4aaff1c7d8232d4b1338a556477efe7ce7b91bbf1713a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rd7c9f610e9dc/metrics.jsonl
+      sha256: 7cea85a5821ba3b8c116cddae4b28d4f4c0942b7c75827b4850ad210b811d65b
+    completion.json:
+      path: experiments/transformer_pp/runs/rd7c9f610e9dc/completion.json
+      sha256: f191b0be2d02176a0610eb8fd6280bf84b8e05dd805075f0ab644fd24532064c
+    metadata.json:
+      path: experiments/transformer_pp/runs/rd7c9f610e9dc/metadata.json
+      sha256: 14714bbd87821fed6db24fb5b888d5170005e97142c634b33692a96787db470c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rd7c9f610e9dc/best_validation.json
+      sha256: 2b561dab4e62094050611b6fa9f7696ff7bab96278a4becd5eab4b029d2e0b25
+- study: transformer_pp
+  run_id: r0dd96f88d9f8
+  role: softplus_input_exp
+  label: exp(softplus(s))
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0dd96f88d9f8/config.yaml
+      sha256: 26bc14b11b278762547f798b09982e3444c3f83ec0b49b7baa546fcf296f7c16
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0dd96f88d9f8/metrics.jsonl
+      sha256: 0ef759de218f99b6f7d594ba32deb308ff765bc9441aed21bc6fe343da7151e3
+    completion.json:
+      path: experiments/transformer_pp/runs/r0dd96f88d9f8/completion.json
+      sha256: 365d5df5cb8f2886d9dc424a68020cf41aa6e13bc9fa77102810a060c6cf96e6
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0dd96f88d9f8/metadata.json
+      sha256: 5bf861998fa2b70f93fccac049ee3f7898ebfdd05372c80993d447eda92771a1
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0dd96f88d9f8/best_validation.json
+      sha256: b407cbc12cdbe7c2b7c45a9f016709fb00bb767e635680215f9a1620768f4a6f

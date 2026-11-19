@@ -63,7 +63,21 @@ only exp's weight `exp(s)`, keeping everything else of `r6a76e7fbde45`:
 
 They train on the fused unnormalized kernel, which evaluates these functions in its forward and backward
 passes (errors against FP64 about 3e-7 in FP32). The embedding-gradient caveat above applies to them too.
-Results follow at close-out.
+The softplus prefactor and input trained on one B300, the sigmoid prefactor on one H100.
+
+| Run | Weight | Best (terminal) | vs exp |
+| --- | --- | ---: | ---: |
+| `rbd24b948a240` | softplus(s) exp(s) | 14.132 (14.136) | −0.88% |
+| `rd7c9f610e9dc` | sigmoid(s) exp(s) | 14.186 (14.190) | −0.50% |
+| `r0dd96f88d9f8` | exp(softplus(s)) | 14.329 (14.332) | +0.51% |
+| `r6a76e7fbde45` | exp(s) | 14.257 (14.262) | – |
+
+- **Both prefactors improve on exp**, softplus by 0.88% and sigmoid by 0.50%. Both damp keys with
+  negative scores to about exp(2s); softplus also grows like s exp(s) for large scores. Without learned
+  coefficients, softplus(s) exp(s) comes within 0.3% of the learned softplus SoS polynomials (14.095–14.128).
+- **The softplus input hurts** by 0.51%: exp(softplus(s)) adds a uniform causal average to exp.
+- Limits: one seed. The margins are below 1%, comparable to what the FP32 embedding-gradient sums may
+  change; an exp control with current code would isolate the score function.
 
 ## Open decision
 

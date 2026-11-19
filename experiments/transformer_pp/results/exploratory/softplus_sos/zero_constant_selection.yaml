@@ -1,8 +1,9 @@
-question: Does removing the constant throughout training improve softplus-input query,
-  static, and SoS polynomials at degree eight?
+question: Does removing the constant throughout training improve query, static, and
+  SoS polynomials at degree eight, on softplus inputs and on raw scores?
 settings:
   degree: 8
-  score_transform: softplus
+  score_transform: softplus (zero_constant_*), identity (zero_constant_*_raw and the
+    raw-score controls)
   coefficient_input_normalization: none
   positional_encoding: rope
   weight_decay: 0.1
@@ -166,3 +167,103 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r841f35a24241/best_validation.json
       sha256: bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495
+- study: transformer_pp
+  run_id: r81b5ebb23a51
+  role: zero_constant_query_raw
+  label: Query, raw scores
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r81b5ebb23a51/config.yaml
+      sha256: 203d81f745e608f6e496ae24c7fea84b285dfbbcfc8a707fcc96bcd81abe15d8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r81b5ebb23a51/metrics.jsonl
+      sha256: 31a622b533f48b56dd5ac8a5cc2211298f2d91b67c98df66af4daa29bec284a2
+    completion.json:
+      path: experiments/transformer_pp/runs/r81b5ebb23a51/completion.json
+      sha256: 27ea3749d6efdb6c9d207588da71fbd03a51be45198a7342da886fa5fd0b5b36
+    metadata.json:
+      path: experiments/transformer_pp/runs/r81b5ebb23a51/metadata.json
+      sha256: 45faebeeae8db0fbf0166b9a834d6c0b6683471bca43cf1a8a90de6db6becfb7
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r81b5ebb23a51/best_validation.json
+      sha256: 36e9ffa00cc8be3ca6df40b41ca33b8d6d7d2769c1838f3189ad15df37fce50f
+- study: transformer_pp
+  run_id: r37fb1c7bb6db
+  role: zero_constant_static_raw
+  label: Static, raw scores
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r37fb1c7bb6db/config.yaml
+      sha256: ce974b8ec43d87bcd3b32f7edb3db605b294c3e9a0aad4a77f76e410fb519c38
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r37fb1c7bb6db/metrics.jsonl
+      sha256: cc2bf7d9a467fce66621c16a455162856145da1ff6567520c92ce0f130238bac
+    completion.json:
+      path: experiments/transformer_pp/runs/r37fb1c7bb6db/completion.json
+      sha256: 28fd7dd199797b3d291b91618f1f0a0b284f578bb35ce26a71471af88ce3fd6f
+    metadata.json:
+      path: experiments/transformer_pp/runs/r37fb1c7bb6db/metadata.json
+      sha256: 0390114a550ed556ac54463e1c786a0da4402f58b57a85b0d2ff479a95f07f52
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r37fb1c7bb6db/best_validation.json
+      sha256: 54c31c6c97b5fab8ff41b3b62b3e57e445f940b11e37dd607ceac61e632944bd
+- study: transformer_pp
+  run_id: rc379a8f30f5b
+  role: zero_constant_sos_raw
+  label: Query SoS, raw scores
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc379a8f30f5b/config.yaml
+      sha256: 03156f5f38b6baec49468d466963bb5607b64d02154ddb56da8dd9fd7d20caf9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rc379a8f30f5b/metrics.jsonl
+      sha256: 6d878a8cb9522eb743bddda9c85d7e2bdc350e2a8e8296a7089d9a515f3a4740
+    completion.json:
+      path: experiments/transformer_pp/runs/rc379a8f30f5b/completion.json
+      sha256: 5c4936d4886f621fa68a07ff07c9d062e6927b7b13b14220f5d6d1badfe4fe89
+    metadata.json:
+      path: experiments/transformer_pp/runs/rc379a8f30f5b/metadata.json
+      sha256: 279e17fba30ba8d515fd18887d1fc2beb913e3af902b5335b65725a9850bd389
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rc379a8f30f5b/best_validation.json
+      sha256: 8699898e7bef097b2da9dca72202ced86bbddca77c57b84966b1b2e8b276b565
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: query_raw_score_control
+  label: Query, raw scores, learned constant
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: reeefbcc19abf
+  role: sos_raw_score_control
+  label: Query SoS, raw scores, learned constant
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/config.yaml
+      sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metrics.jsonl
+      sha256: d647b2f1e82f45fbd72d0e68be0d03897f7427477fcbb68ab78d7524b0085ffb
+    completion.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/completion.json
+      sha256: e3fae2b3368b9bf83a8ecaf40eba19c127dc51556d4d0802f2bc11600923c0c0
+    metadata.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metadata.json
+      sha256: 622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
+      sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2

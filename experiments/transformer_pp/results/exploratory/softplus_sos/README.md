@@ -302,7 +302,20 @@ its raw-score control, whose constant is learnable, and with its softplus versio
 | Query SoS | `rc379a8f30f5b` | `reeefbcc19abf` 14.196 | `r7d5baf55104e` 14.128 |
 
 On raw scores the direct polynomials are signed, as their controls are; the SoS polynomial
-s²(U(s)² + V(s)²) stays nonnegative. Results follow at close-out.
+s²(U(s)² + V(s)²) stays nonnegative. Query trained on one B300, static on one H100 PCIe, SoS on one B200.
+
+| Variant | Run | Best (terminal) | vs raw control | vs softplus version |
+| --- | --- | ---: | ---: | ---: |
+| Query | `r81b5ebb23a51` | 16.960 (16.966) | +18.41% | +19.02% |
+| Static | `r37fb1c7bb6db` | 17.359 (17.365) | +21.44% | +22.32% |
+| Query SoS | `rc379a8f30f5b` | 14.726 (14.732) | +3.74% | +4.24% |
+
+- **On raw scores the zero constant hurts every form**: the direct forms by 18–21%, SoS by 3.7%.
+- The direct forms start at T_8(s) − 1, about s near zero: negative for every key with a negative score,
+  with no constant to keep small scores' weights positive. Their gap is largest early (about +200% at
+  update 500, +33% for query at update 1,500) and narrows without closing. SoS stays nonnegative.
+- The zero constant pays off only on softplus inputs, where z ≥ 0 keeps T_8(z) − 1 nonnegative.
+- Limits: one seed; the three ran on different GPU types.
 
 The comparisons and their limits: Query is matched to the existing softplus Query control
 `ra3b54e2489f8`, whose constant starts at zero but is learnable. Static's parent
