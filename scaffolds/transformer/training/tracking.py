@@ -72,6 +72,8 @@ def run_tags(config: Config, runtime: dict) -> list[str]:
         tags.append(f"score_bias_{config.model.attention_score_bias}")
     if getattr(config.model, "attention_score_transform", "identity") != "identity":
         tags.append(f"score_transform_{config.model.attention_score_transform}")
+    if getattr(config.model, "attention_score_prefactor", "none") != "none":
+        tags.append(f"score_prefactor_{config.model.attention_score_prefactor}")
     if getattr(config.model, "attention_coefficient_constant_initial", None) is not None:
         tags.append("coefficient_constant_start")
     if getattr(config.model, "attention_forget_gate", False):

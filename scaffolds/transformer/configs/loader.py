@@ -183,6 +183,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
             value["train"].setdefault(key, default)
         value["model"].setdefault("attention_score_bias", "none")
         value["model"].setdefault("attention_score_transform", "identity")
+        value["model"].setdefault("attention_score_prefactor", "none")
         value["model"].setdefault("attention_coefficient_constant_initial", None)
         value["model"].setdefault("attention_coefficient_zero_constant", False)
         # The W&B mirror mode is an execution setting; wandb_run.json pins the run's identity.
