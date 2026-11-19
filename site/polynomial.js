@@ -59,6 +59,25 @@ function initializations(data, host) {
   section(host, data.title).append(grid);
 }
 
+function otherRuns(data, host) {
+  const part = (title, intro, content) => {
+    const heading = html("h3", "", title);
+    const text = html("p", "intro", intro);
+    host.append(heading, text, content);
+  };
+  section(host, data.title);
+  const powers = data.powers;
+  part(powers.title, powers.intro, table(
+    ["Attention", ...powers.columns.map((column) => `${column.label} ${degreeLabel(column.degree)}`)],
+    powers.rows.map((row) => [{text: row.label}, ...row.cells.map((cell) => cell
+      ? {text: cell.perplexity.toFixed(4)} : {text: "—"})]),
+  ));
+  const gates = table(["Degree", "Gate", "PPL"], data.gates.rows.map((row) => [
+    {text: degreeLabel(row.degree)}, {text: row.gate}, {text: row.perplexity.toFixed(4)}]));
+  gates.classList.add("compact");
+  part(data.gates.title, data.gates.intro, gates);
+}
+
 function widthDegree(data, host) {
   const values = data.rows.flatMap((row) => row.cells.filter(Boolean).map((cell) => cell.perplexity));
   const best = Math.min(...values).toFixed(4);
@@ -176,6 +195,7 @@ function degreeChart(data) {
     section(document.querySelector('[data-result="degree-scaling"]'), data.degree_scaling.title)
       .append(degreeTable(data.degree_scaling), degreeChart(data.degree_scaling));
     initializations(data.initializations, document.querySelector('[data-result="initializations"]'));
+    otherRuns(data.other_runs, document.querySelector('[data-result="other-runs"]'));
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }
