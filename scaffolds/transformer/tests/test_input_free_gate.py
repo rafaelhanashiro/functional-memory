@@ -29,6 +29,7 @@ from scaffolds.transformer.training import loop
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, forget_gate_report
 from scaffolds.transformer.training.optim import attention_weight_decay_mask, make_optimizer
 from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 GATE = ("forget_gate_log_rate", "forget_gate_dt_bias")
 
@@ -400,14 +401,13 @@ def test_mosaic_accepts_the_gate_on_its_decay_kernels_only():
      "attention_coefficient_scale": "none"},
 ))
 def test_unqualified_input_free_recipes_are_rejected(changes):
-    with pytest.raises(ValueError):
-        _config(**changes)
+    refused_unless_composed(_config, changes)
 
 
 @pytest.mark.parametrize("conditioning", ("query", "query_key"))
 def test_static_coefficients_reject_gates_that_read_tokens(conditioning):
-    with pytest.raises(ValueError):
-        _config(attention_forget_gate_conditioning=conditioning)
+    # On the blocked backend static coefficients take them per query; the Mosaic decay kernels do not.
+    refused_unless_composed(_config, {"attention_forget_gate_conditioning": conditioning})
 
 
 @pytest.mark.parametrize("changes", (

@@ -132,6 +132,27 @@ RECIPES = {
     "static + sigmoid prefactor + FoX": dict(STATIC, attention_score_prefactor="sigmoid", attention_forget_gate=True),
     "query + softplus + FoX": dict(QUERY, attention_score_transform="softplus", attention_forget_gate=True),
     "query + score bias + FoX": dict(QUERY, attention_score_bias="query", attention_forget_gate=True),
+    # Combinations the refusal tests listed before the refactor, now composed on the blocked backend.
+    "pure sigmoid query + softplus input": dict(QUERY, attention_coefficient_activation="sigmoid",
+                                                attention_score_transform="softplus"),
+    "affine sigmoid query + score bias": dict(QUERY, attention_coefficient_activation="affine_sigmoid",
+                                              attention_score_bias="query"),
+    "coefficient gate + softplus input": dict(QUERY, attention_coefficient_gate="sigmoid",
+                                              attention_score_transform="softplus"),
+    "query orders + score bias": dict(QUERY, attention_coefficient_orders=(0, 2, 4), attention_score_bias="static"),
+    "query-key coefficients + score bias": dict(QUERY, attention_coefficient_conditioning="query_key",
+                                                attention_score_bias="static"),
+    "degree 13 query + score bias": dict(QUERY, attention_degree=13, attention_score_bias="static"),
+    "static + per-order cumulative gate": dict(STATIC, attention_forget_gate=True, attention_forget_gate_per_order=True),
+    "fixed Taylor + input-free gate": dict(attention_forget_gate=True, attention_forget_gate_conditioning="none",
+                                           attention_forget_gate_mode="query_distance"),
+    "global static + input-free gate": dict(attention_coefficients="learned", attention_coefficient_sharing="global",
+                                            attention_forget_gate=True, attention_forget_gate_conditioning="none",
+                                            attention_forget_gate_mode="query_distance"),
+    "static + shared query-key gate": dict(STATIC, attention_forget_gate=True, attention_forget_gate_mode="query_distance",
+                                           attention_forget_gate_conditioning="query_key"),
+    "pointwise sigmoid + FoX": dict(attention_degree=1, attention_fixed_coefficients=(0.0, 1.0),
+                                    attention_score_transform="sigmoid", attention_forget_gate=True),
 }
 
 

@@ -89,8 +89,11 @@ def attention_core(
         ("score_bias_row_shift", score_bias_row_shift), ("score_bias_query_input", score_bias_query_input),
         ("score_bias_key_input", score_bias_key_input), ("score_bias_offset", score_bias_offset),
         ("score_bias_amplitude", score_bias_amplitude)) if value is not None}
-    if score_bias and (query_polynomial_coefficients is None or attention_coefficient_activation != "tanh"
-                       or key_polynomial_factors is not None and backend != "blocked"):
+    # On the blocked backend a per-query polynomial from any nonlinear generator composes with score biases (below).
+    blocked_query = (backend == "blocked" and query_polynomial_coefficients is not None
+                     and attention_coefficient_activation != "identity")
+    if score_bias and not blocked_query and (query_polynomial_coefficients is None or key_polynomial_factors is not None
+                                             or attention_coefficient_activation != "tanh"):
         # No other kernel may ignore them: it would silently train the unshifted polynomial.
         raise ValueError("Per-degree score biases apply only to tanh query-coefficient polynomial attention")
     from scaffolds.transformer.attention.pieces import ScoreFunction
@@ -114,6 +117,7 @@ def attention_core(
     # arrive broadcast per query) takes key factors, any decay, score biases, a transform and a prefactor together.
     # Only combinations no specialized route below implements take this route, so every other call is unchanged.
     combined = (score_prefactor != "none"
+                or (score_transform != "identity" or score_bias) and attention_coefficient_activation != "tanh"
                 or score_transform != "identity" and (key_polynomial_factors is not None or score_bias or decay)
                 or score_bias and (key_polynomial_factors is not None or decay and not (endpoint_operands and per_order))
                 or decay and key_polynomial_factors is not None)

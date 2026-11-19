@@ -16,6 +16,7 @@ from scaffolds.transformer.models import build_model, model_parameter_count
 from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity, fixed_diagnostic_sample
 from scaffolds.transformer.training.optim import attention_weight_decay_mask
 from scaffolds.transformer.training.state import create_state
+from scaffolds.transformer.tests.composition_checks import refused_unless_composed
 
 
 def _config(transform="softplus", **changes):
@@ -64,18 +65,20 @@ def test_pointwise_recipe_roundtrip_and_mosaic_dispatch(tmp_path, transform):
     {"attention_score_bias": "static"}, {"attention_coefficient_input_power": 1},
 ))
 def test_pointwise_refuses_other_mechanisms(changes):
-    with pytest.raises(ValueError):
-        _config(**changes)
+    refused_unless_composed(_config, changes)
 
 
 def test_sigmoid_transform_is_qualified_only_for_the_fixed_baseline():
+    """On Mosaic; the blocked backend composes the sigmoid transform with any polynomial (attention/pieces.py)."""
+    query = dict(attention_coefficients="learned", attention_fixed_coefficients=None,
+                 attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
+                 attention_coefficient_sharing="per_head")
+    _config("sigmoid", **query)
     with pytest.raises(ValueError, match="sigmoid score transform is qualified only"):
-        _config("sigmoid", attention_coefficients="learned", attention_fixed_coefficients=None,
-                attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",
-                attention_coefficient_sharing="per_head")
+        _config("sigmoid", **query, attention_backend="mosaic")
     with pytest.raises(ValueError, match="fixed static linear"):
         multihead.MultiHeadAttention(
-            hidden_size=8, num_heads=2, num_kv_heads=2, qk_head_dim=4, value_head_dim=4,
+            hidden_size=8, num_heads=2, num_kv_heads=2, qk_head_dim=4, value_head_dim=4, backend="mosaic",
             attention_degree=1, attention_normalization=False, attention_score_transform="sigmoid",
             attention_coefficient_conditioning="query", attention_coefficient_activation="tanh", rngs=nnx.Rngs(0))
 

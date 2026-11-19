@@ -436,11 +436,25 @@ INVALID = (
     ({"attention_forget_gate_mode": "query_distance"}, "constant forget gate form"),
     (PATH, "constant forget gate form"),
     ({**PATH, "attention_backend": "fused"}, "constant forget gate form"),
-    ({"attention_degree": 2}, "constant forget gate form"),
     ({"attention_backend": "fused", "positional_encoding": "rope"}, None),
     ({"attention_backend": "mosaic", "positional_encoding": "rope"}, None),
     ({"attention_backend": "cudnn", "positional_encoding": "rope"}, None),
 )
+
+
+@pytest.mark.parametrize("kernel", KERNELS)
+def test_a_degree_composes_with_the_gate_only_unnormalized(kernel):
+    """Normalized Taylor attention takes no gate; unnormalized fixed Taylor coefficients take ALiBi's on the
+    blocked backend, per query (attention/pieces.py), in the configuration and in the module alike."""
+    if kernel == "softmax":
+        with pytest.raises(ValueError, match="constant forget gate form"):
+            _exponential_config(kernel, "fixed", attention_degree=2)
+        model = _exponential_config(kernel, "fixed").model
+        model.attention_degree = 2  # bypass config validation
+        with pytest.raises(ValueError):
+            attention_from_config(model, rngs=nnx.Rngs(0))
+    else:
+        attention_from_config(_exponential_config(kernel, "fixed", attention_degree=2).model, rngs=nnx.Rngs(0))
 
 
 @pytest.mark.parametrize("change,message", INVALID, ids=[",".join(f"{k}={v}" for k, v in c.items()) for c, _ in INVALID])
