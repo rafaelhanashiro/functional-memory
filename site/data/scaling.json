@@ -1,0 +1,285 @@
+{
+  "chinchilla": [
+    {
+      "title": "Softmax, exp and GDN",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "12.7687",
+                "value": 12.768680746457555,
+                "run_id": "r8ccda981be2b"
+              }
+            ],
+            [
+              {
+                "text": "Exp"
+              },
+              {
+                "text": "12.4487",
+                "value": 12.44868748730511,
+                "run_id": "rfe12e5c36e94"
+              }
+            ],
+            [
+              {
+                "text": "GDN"
+              },
+              {
+                "text": "13.7985",
+                "value": 13.798484699012322,
+                "run_id": "r2ebc05346f44"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Polynomial attention",
+      "intro": "<var>W</var> decay applies weight decay to the coefficient generator's projection <var>W</var>; fixed Taylor and static have no <var>W</var>.",
+      "layout": "pair",
+      "tables": [
+        {
+          "title": "<var>m</var> = 4",
+          "head": [
+            "Attention",
+            "<var>W</var> decay",
+            "No <var>W</var> decay"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Fixed Taylor"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "12.7101",
+                "value": 12.710060399573647,
+                "run_id": "r4f1682c1b54d"
+              }
+            ],
+            [
+              {
+                "text": "Static"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "12.7182",
+                "value": 12.718157326474735,
+                "run_id": "raa81f92b6aaf"
+              }
+            ],
+            [
+              {
+                "text": "Query"
+              },
+              {
+                "text": "12.6890",
+                "value": 12.689001429180545,
+                "run_id": "r77b617af91db",
+                "best": true
+              },
+              {
+                "text": "12.7238",
+                "value": 12.723783245259234,
+                "run_id": "reb9b5be4ff1b"
+              }
+            ],
+            [
+              {
+                "text": "Query-key"
+              },
+              {
+                "text": "12.6739",
+                "value": 12.673930223045843,
+                "run_id": "rb6313357059e"
+              },
+              {
+                "text": "12.6645",
+                "value": 12.664493359472502,
+                "run_id": "r751984d1ca00",
+                "best": true
+              }
+            ]
+          ]
+        },
+        {
+          "title": "<var>m</var> = 8",
+          "head": [
+            "Attention",
+            "<var>W</var> decay",
+            "No <var>W</var> decay"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Fixed Taylor"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "12.4752",
+                "value": 12.475190586041947,
+                "run_id": "r0ea4c732c5ac"
+              }
+            ],
+            [
+              {
+                "text": "Static"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "12.4710",
+                "value": 12.471034318024767,
+                "run_id": "r6c9bcd661078"
+              }
+            ],
+            [
+              {
+                "text": "Query"
+              },
+              {
+                "text": "12.4617",
+                "value": 12.461679635945261,
+                "run_id": "ra15cbb16beb7",
+                "best": true
+              },
+              {
+                "text": "12.4751",
+                "value": 12.475081740204288,
+                "run_id": "r77bca86ef253"
+              }
+            ],
+            [
+              {
+                "text": "Query-key"
+              },
+              {
+                "text": "12.4337",
+                "value": 12.433672073829785,
+                "run_id": "r5bd803b3e562",
+                "best": true
+              },
+              {
+                "text": "12.4492",
+                "value": 12.449163596544707,
+                "run_id": "rb7e83a4b653f"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "sequences": [
+    {
+      "intro": "Each model trained on 2,048-token and on 4,096-token sequences with the same budget of 4B tokens: 128 sequences per update at 4k instead of 256.",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "2k",
+            "4k"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Exp"
+              },
+              {
+                "text": "14.2572",
+                "value": 14.257176394334465,
+                "run_id": "r6a76e7fbde45"
+              },
+              {
+                "text": "14.0981",
+                "value": 14.098122953230884,
+                "run_id": "r2047d29a0d9f"
+              }
+            ],
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "14.5428",
+                "value": 14.542792482957227,
+                "run_id": "r9040f12f3d80"
+              },
+              {
+                "text": "14.4982",
+                "value": 14.498209364855864,
+                "run_id": "r636f433be44f"
+              }
+            ],
+            [
+              {
+                "text": "Query + W decay, <var>m</var> = 4"
+              },
+              {
+                "text": "14.7085",
+                "value": 14.708538612353673,
+                "run_id": "rca97cc9db8f2"
+              },
+              {
+                "text": "14.5564",
+                "value": 14.556409219129202,
+                "run_id": "r738b35a8e314"
+              }
+            ],
+            [
+              {
+                "text": "Fixed Taylor, <var>m</var> = 4"
+              },
+              {
+                "text": "14.7218",
+                "value": 14.721778104249449,
+                "run_id": "r816ab0fbe119"
+              },
+              {
+                "text": "14.5809",
+                "value": 14.58088729675477,
+                "run_id": "r339a31ad8d4b"
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE + W decay, <var>m</var> = 4"
+              },
+              {
+                "text": "13.8734",
+                "value": 13.873434004016213,
+                "run_id": "r4a80e28ce0a7",
+                "best": true
+              },
+              {
+                "text": "13.4843",
+                "value": 13.484305675869086,
+                "run_id": "r58efc973ff28",
+                "best": true
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

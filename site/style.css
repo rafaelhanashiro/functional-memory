@@ -449,6 +449,23 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .results-table.grouped tbody tr.shade { background: #f8fafc; }
 .results-table.grouped td:first-child { text-align: center; }
 .results-table.grouped td.group-label { font-weight: 600; text-align: left; }
+.results-table .muted { color: var(--muted); }
+.table-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 18px 24px;
+}
+.table-pair h3 { margin: 0 0 8px; }
+.figure {
+  display: block;
+  margin: 0 0 16px;
+  padding: 10px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: #fff;
+}
+.figure img { display: block; width: 100%; height: auto; }
+.result .writeup-view { margin: 0 0 28px; }
 var { font-style: italic; }
 .chart { display: block; width: 100%; min-width: 640px; height: auto; }
 .chart text { fill: #27272a; font-size: 14px; }

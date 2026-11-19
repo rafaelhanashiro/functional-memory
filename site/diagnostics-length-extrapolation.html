@@ -20,6 +20,36 @@
   <main>
     <a class="back" href="diagnostics.html">← Diagnostics</a>
     <h1 class="page-title">Length extrapolation</h1>
+    <section class="result">
+      <a class="figure" href="figures/length-extrapolation/long_documents_16k.png"><img src="figures/length-extrapolation/long_documents_16k.png" alt="Per-position perplexity on 608 long documents for exp, query + W decay and FoX no RoPE + W decay, log scale" loading="lazy"></a>
+      <a class="figure" href="figures/length-extrapolation/long_documents_16k_zoom.png"><img src="figures/length-extrapolation/long_documents_16k_zoom.png" alt="The same per-position perplexity on a linear axis from 10 to 30" loading="lazy"></a>
+    </section>
+    <section class="result">
+      <h2>Diagnostics</h2>
+      <a class="figure" href="figures/length-extrapolation/long_documents_16k_ablations.png"><img src="figures/length-extrapolation/long_documents_16k_ablations.png" alt="Per-position perplexity with query + W decay limited to a 2,048-key sliding window or with RoPE clamped at 2,047" loading="lazy"></a>
+      <div class="writeup-view">
+        <div class="callout" data-callout="tip">
+          <div class="callout-title">Notes</div>
+          <div class="callout-content">
+            <ul>
+              <li>Attending only to the last 2k tokens greatly improves performance.</li>
+              <li>Clamping RoPE at distance 2k keeps PPL stable from lengths 2k–4k, but then blows up past that.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <a class="figure" href="figures/length-extrapolation/position_weights_long_documents.png"><img src="figures/length-extrapolation/position_weights_long_documents.png" alt="Where the query at position 4,095 puts its weight over 128 long documents, for models trained at 2,048 and 4,096 tokens" loading="lazy"></a>
+      <div class="writeup-view">
+        <div class="callout" data-callout="tip">
+          <div class="callout-title">Notes</div>
+          <div class="callout-content">
+            <ul>
+              <li>The 4k run places less weight on far away tokens, unlike the 2k run.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 </body>

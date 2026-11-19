@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Continued pretraining · Functional Memory</title>
 <link rel="stylesheet" href="style.css">
+<script type="module" src="results.js"></script>
 </head>
 <body>
 <div class="page">
@@ -20,6 +21,19 @@
   <main>
     <a class="back" href="diagnostics.html">← Diagnostics</a>
     <h1 class="page-title">Continued pretraining</h1>
+    <section class="result">
+      <div class="writeup-view">
+        <div class="callout" data-callout="info">
+          <div class="callout-title">Models</div>
+          <div class="callout-content">
+            <ul>
+              <li>Query temperature: QK RMSNorm's per-head query scale exp(<var>γ</var><sub><var>h</var></sub>) becomes exp(<var>γ</var><sub><var>h</var></sub> + <var>a</var><sub><var>h</var></sub>&#8239;cos(<var>w</var><sub><var>h</var></sub>, <var>x</var><sub><var>t</var></sub>)), a bounded temperature for each token and head read from the attention input <var>x</var><sub><var>t</var></sub>; <var>W</var> decay is weight decay on <var>w</var><sub><var>h</var></sub>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div data-source="data/diagnostics.json" data-key="continued_pretraining"></div>
   </main>
 </div>
 </body>
