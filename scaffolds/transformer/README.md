@@ -121,6 +121,15 @@ kernel implements the transforms `identity`, `softplus`, `sigmoid` with every pr
 (`pieces.fused_exponential_problem`). `exp(softplus(s)) = 1 + e^s` exactly. Kernel names record the
 functions, e.g. `softplus_times_exp_unnormalized` or `exp_softplus_unnormalized`.
 
+On the blocked backend the pieces compose: every unnormalized polynomial with RoPE or no positional
+encoding takes any forget gate, score transform, per-degree score biases and prefactor together. Static
+and fixed coefficients (a learned array, a fixed table, or the fixed Taylor kernel's `1/r!`) then run as
+every query's equal coefficients on the per-query polynomial kernel, whose gradients sum back to the stored
+coefficients; score biases shift each order's base, `(phi(s) + beta_r)^r`. Fast kernels implement what
+their declarations in `attention/pieces.py` name (`mosaic_supported`, `mosaic_decay_supported`,
+`mosaic_score_bias_problem`, `mosaic_score_transform_problem`, `path_fused_supported`,
+`fused_exponential_problem`); `ModelConfig`'s methods of the same names delegate there.
+
 A recipe receipt (`receipt.py`) builds the recipe's model at a tiny shape (2 layers, width 128, 2 heads,
 64 tokens, vocabulary 256) on the CPU, single-threaded, on the blocked backend, and hashes its parameter
 names and initial values, the loss on fixed tokens and every gradient. `python -m scaffolds.records
