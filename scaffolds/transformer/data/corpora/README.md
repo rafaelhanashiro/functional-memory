@@ -39,10 +39,13 @@ Its manifests' `metadata` records the build:
   `ofm-packed-sequences` version 1, listing the shards in order with their first row, row count
   and SHA256; `corpus.json`, naming both manifests with their SHA256s.
 
-The builder that produced it is not in this repository: `scripts/materialize_fineweb/materialize_fineweb.py`
-with the configuration `configs/data/fineweb_12b.yaml` and the Slurm launcher
-`materialize_fineweb.sbatch`, in the `ofm` project. The facts above do not determine the build
-alone. The rule that maps a text's hash to the 1% eval split, the shuffle implementation and
+The builder that produced it is in [`fineweb_12b/ofm/`](fineweb_12b/ofm/), copied unchanged from
+the `ofm` project at commit `712d451`: the Slurm launcher `scripts/fineweb_12b/materialize.sbatch`,
+which runs `scripts/materialize_fineweb/materialize_fineweb.py` with `data/packed.py`, and its
+locked environment, `pyproject.toml` and `uv.lock`. [`PROVENANCE.md`](fineweb_12b/ofm/PROVENANCE.md)
+records the build. [`fineweb_12b/ofm-8977f529/`](fineweb_12b/ofm-8977f529/) holds later ofm
+versions of the materializer, its launcher and the configuration `configs/data/fineweb_12b.yaml`,
+which did not build it. The facts above do not determine the build alone. The rule that maps a text's hash to the 1% eval split, the shuffle implementation and
 its library version, the tokenizer call, and what ended the eval split at 4,888 rows belong to
 the builder and its environment.
 
