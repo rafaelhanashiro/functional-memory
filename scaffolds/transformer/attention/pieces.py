@@ -13,6 +13,12 @@ reference composition. A fast kernel implements some combinations and declares w
 recipe on a fast backend must lie inside its kernel's declaration, and its acceptance qualifies
 that kernel against the blocked backend. The exponential applies the decay inside the exponent,
 exp(phi(s) + log D), which is the same weight.
+
+Coefficients per query: on the blocked backend, static and fixed polynomial coefficients that meet a
+forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients
+(MultiHeadAttention._coefficients_per_query), so every unnormalized polynomial with RoPE or no positional
+encoding takes any of those pieces together (configs.base._blocked_polynomial; attention_core's
+composition route). Per-degree score biases shift each order's base, (phi(s) + beta_r)^r.
 """
 
 from dataclasses import dataclass
