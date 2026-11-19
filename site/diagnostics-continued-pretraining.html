@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Continued pretraining · Functional Memory</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="style.css">
+<script defer src="vendor/katex/katex.min.js"></script>
 <script type="module" src="results.js"></script>
 </head>
 <body>
@@ -27,7 +29,7 @@
           <div class="callout-title">Models</div>
           <div class="callout-content">
             <ul>
-              <li>Query temperature: QK RMSNorm's per-head query scale exp(<var>γ</var><sub><var>h</var></sub>) becomes exp(<var>γ</var><sub><var>h</var></sub> + <var>a</var><sub><var>h</var></sub>&#8239;cos(<var>w</var><sub><var>h</var></sub>, <var>x</var><sub><var>t</var></sub>)), a bounded temperature for each token and head read from the attention input <var>x</var><sub><var>t</var></sub>; <var>W</var> decay is weight decay on <var>w</var><sub><var>h</var></sub>.</li>
+              <li>Query temperature: QK RMSNorm's per-head query scale <span class="tex">\exp(\gamma_h)</span> becomes <span class="tex">\exp(\gamma_h + a_h \cos(w_h, x_t))</span>, a bounded temperature for each token and head read from the attention input <span class="tex">x_t</span>; <span class="tex">W</span> decay is weight decay on <span class="tex">w_h</span>.</li>
             </ul>
           </div>
         </div>

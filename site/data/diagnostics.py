@@ -95,8 +95,9 @@ def continued_pretraining() -> list[dict]:
     return [{
         "title": "Validation perplexity · 2k additional steps",
         "intro": "Each model trains for 2,000 more updates from a 1× checkpoint, fixed Taylor's or exp's, with "
-                 "the parameters it adds at learning rate 10<sup>−3</sup>; or from its own, keeping its "
-                 "coefficient optimizer state, at 10<sup>−4</sup>. Fixed Taylor's own start is its Taylor start.",
+                 "the parameters it adds at learning rate <span class=\"tex\">10^{-3}</span>; or from its own, keeping "
+                 "its coefficient optimizer state, at <span class=\"tex\">10^{-4}</span>. Fixed Taylor's own start "
+                 "is its Taylor start.",
         "tables": [{"head": ["Attention during CPT", "Taylor start", "Exp start", "Same-model start"],
                     "rows": [[text(label), *(cell(run_id) for run_id in runs)] for label, *runs in CONTINUATIONS]}],
     }]
