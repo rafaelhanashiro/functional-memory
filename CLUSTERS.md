@@ -16,7 +16,8 @@ See [AGENTS.md](AGENTS.md) for retention and migration rules.
 - **Datasets:** `/data/cl/u/rafah/home/datasets` (alongside `projects`);
   packed FineWeb is in `fineweb_12b`, and the first appearance of each of its documents of at
   least 16,384 tokens, one per row with its stream position, is in
-  `fineweb_12b_long_documents_seq16385` (see its README).
+  `fineweb_12b_long_documents_seq16385` (see its README). Their manifests and construction are
+  in [`scaffolds/transformer/data/corpora/`](scaffolds/transformer/data/corpora/README.md).
 - **Storage:** keep persistent files on NFS under `/data/cl/u/rafah`.
 - **Artifact root:** the primary checkout; retained checkpoints and logs live in
   `experiments/<study>/runs/<run_id>/` there.

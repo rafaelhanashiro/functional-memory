@@ -1,0 +1,9 @@
+{
+  "epochs_scanned": 1,
+  "eval_manifest": "eval/manifest.json",
+  "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+  "format": "ofm-packed-corpus",
+  "train_manifest": "train/manifest.json",
+  "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+  "version": 1
+}

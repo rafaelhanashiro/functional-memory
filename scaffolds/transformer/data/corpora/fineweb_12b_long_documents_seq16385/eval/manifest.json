@@ -1,0 +1,50 @@
+{
+  "dtype": "uint16",
+  "format": "ofm-packed-sequences",
+  "metadata": {
+    "dataset_config": "sample-100BT",
+    "dataset_name": "HuggingFaceFW/fineweb-edu",
+    "dataset_revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "dataset_split": "train",
+    "eos_token_id": 2,
+    "long_documents_from": {
+      "documents": 8589,
+      "documents_file": "documents.npy",
+      "documents_sha256": "993650e9eb1e647238aa73dcd7db13f54e00f4ab4c17cba867827ad40df36082",
+      "manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+      "manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+      "minimum_document_tokens": 16384,
+      "num_sequences": 4888,
+      "opening_tokens": 1024,
+      "repeated_long_documents": 0,
+      "row": "end-of-document token, then the first 16384 tokens of a document whose first 1024 tokens no earlier document begins with",
+      "rows_file": "rows.npy",
+      "rows_sha256": "2449af4c2280e6f23690f52b4714fcffe8827941aa8a418ac29f1f09dfc583dd",
+      "sequence_length": 2049,
+      "stream_tokens": 10015512,
+      "unindexed_tail_tokens": 4142
+    },
+    "partition": {
+      "algorithm": "sha256-text",
+      "validation_fraction": 0.01
+    },
+    "shuffle_buffer_size": 10000,
+    "shuffle_seed": 0,
+    "source_epochs_scanned": 1,
+    "split": "eval",
+    "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+    "tokenizer_revision": "8efe6c9b93655b934e27bd9981e3ec13e55aee9d"
+  },
+  "num_sequences": 18,
+  "num_tokens": 294930,
+  "sequence_length": 16385,
+  "shards": [
+    {
+      "num_sequences": 18,
+      "path": "shard-00000.npy",
+      "sequence_start": 0,
+      "sha256": "1e94d5ccceb7f0c8f3d2a02efa10403dc194af613079a6eeb34ed3eef6d649ad"
+    }
+  ],
+  "version": 1
+}

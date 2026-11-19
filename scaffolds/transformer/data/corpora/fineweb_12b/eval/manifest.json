@@ -1,0 +1,33 @@
+{
+  "dtype": "uint16",
+  "format": "ofm-packed-sequences",
+  "metadata": {
+    "dataset_config": "sample-100BT",
+    "dataset_name": "HuggingFaceFW/fineweb-edu",
+    "dataset_revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "dataset_split": "train",
+    "eos_token_id": 2,
+    "partition": {
+      "algorithm": "sha256-text",
+      "validation_fraction": 0.01
+    },
+    "shuffle_buffer_size": 10000,
+    "shuffle_seed": 0,
+    "source_epochs_scanned": 1,
+    "split": "eval",
+    "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+    "tokenizer_revision": "8efe6c9b93655b934e27bd9981e3ec13e55aee9d"
+  },
+  "num_sequences": 4888,
+  "num_tokens": 10015512,
+  "sequence_length": 2049,
+  "shards": [
+    {
+      "num_sequences": 4888,
+      "path": "shard-00000.npy",
+      "sequence_start": 0,
+      "sha256": "3e19cea9c1cfe9ca02e78436ed3defb319354ffd3e0c2cade0ce2924f502928a"
+    }
+  ],
+  "version": 1
+}

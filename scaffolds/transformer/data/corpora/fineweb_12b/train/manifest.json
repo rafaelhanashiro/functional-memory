@@ -1,0 +1,567 @@
+{
+  "dtype": "uint16",
+  "format": "ofm-packed-sequences",
+  "metadata": {
+    "dataset_config": "sample-100BT",
+    "dataset_name": "HuggingFaceFW/fineweb-edu",
+    "dataset_revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+    "dataset_split": "train",
+    "eos_token_id": 2,
+    "partition": {
+      "algorithm": "sha256-text",
+      "validation_fraction": 0.01
+    },
+    "shuffle_buffer_size": 10000,
+    "shuffle_seed": 0,
+    "source_epochs_scanned": 1,
+    "split": "train",
+    "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+    "tokenizer_revision": "8efe6c9b93655b934e27bd9981e3ec13e55aee9d"
+  },
+  "num_sequences": 5859375,
+  "num_tokens": 12005859375,
+  "sequence_length": 2049,
+  "shards": [
+    {
+      "num_sequences": 65536,
+      "path": "shard-00000.npy",
+      "sequence_start": 0,
+      "sha256": "9023a011e820edab0c2c9e3f5e21b4cfb998b7e74ead812b545a394f31e112d2"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00001.npy",
+      "sequence_start": 65536,
+      "sha256": "c1731b75726ad2a51c20908cda9b249015500dabd00e7df19d85982dfbf531ad"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00002.npy",
+      "sequence_start": 131072,
+      "sha256": "dabcfb310c2654955bf4c415997e6030a7ab7bab6bb6cd444c90a593c0cf967a"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00003.npy",
+      "sequence_start": 196608,
+      "sha256": "548453d2f8519eb5d716cee26981686e499b99f27078defab82a96d3f639de21"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00004.npy",
+      "sequence_start": 262144,
+      "sha256": "a25a8ac9667f5fea4e7f67911f22a20b2eda46bce4d93cae0c0142804efb4a6e"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00005.npy",
+      "sequence_start": 327680,
+      "sha256": "f2ba72f13c748c75aa63a780689c3dafd436b9455d4068df98200f761bcdeb9b"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00006.npy",
+      "sequence_start": 393216,
+      "sha256": "c5564ef3242350ea6883d18c27e48f018d75d1d19914326cda39beb15b8027a6"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00007.npy",
+      "sequence_start": 458752,
+      "sha256": "8adf97972472d353aacfb9e71afc8821da2a163c2992fc090ce9f81896c04db8"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00008.npy",
+      "sequence_start": 524288,
+      "sha256": "6447eeee387b600718e651b8858dfa23a62a42f6ae2c9a1fc78b85781543c3d0"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00009.npy",
+      "sequence_start": 589824,
+      "sha256": "4c63e878ad8c3e14c4e3e91b4bc7368ace583f10cabb9453b1d9f7ca9c554191"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00010.npy",
+      "sequence_start": 655360,
+      "sha256": "f1a1a72293e077ba1be59f2a949b30ddbd6f4b93912495573c4514e0a635769d"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00011.npy",
+      "sequence_start": 720896,
+      "sha256": "9221132a78c4c6764d2f261669e1b65147ac2260446b063d1b0a6e19d1b9bd97"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00012.npy",
+      "sequence_start": 786432,
+      "sha256": "e45d32593209764cdf996c9a41b0fa425398653ed2750e1639fd8848bf30605b"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00013.npy",
+      "sequence_start": 851968,
+      "sha256": "56a5492b685212a559d99b99972c8b177a043970c33fa2d36753a8d3aeb33019"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00014.npy",
+      "sequence_start": 917504,
+      "sha256": "7d44fd395396279a4c46cd1bcb92b859ca2f71ebe318c7ec8aaa9b37cb0d2be5"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00015.npy",
+      "sequence_start": 983040,
+      "sha256": "c0e7cc797c34a6b95c9b5d4b3f4558a825903bb8576dd2ed11d915d88c56044e"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00016.npy",
+      "sequence_start": 1048576,
+      "sha256": "48dee817df2ca0bb2c732291ef45e72994cfed31b3b609329e6987a8e4791a68"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00017.npy",
+      "sequence_start": 1114112,
+      "sha256": "0da05773487a531983d8a6bae9d90df4378908344e8a984e81bc61c5c01794bd"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00018.npy",
+      "sequence_start": 1179648,
+      "sha256": "fe6c7f87554710e4b6c5c416d6c127c4912801670dd03fa5f0c8d9c5ce9b9900"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00019.npy",
+      "sequence_start": 1245184,
+      "sha256": "67d29311c8bd4215524ca16bbde2b8a05d66a29caf208f33f7b998e8e5bd81aa"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00020.npy",
+      "sequence_start": 1310720,
+      "sha256": "11e773965257f9b1ab10814568fb9dbbce07d409f7f46d8898164a342c8cf302"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00021.npy",
+      "sequence_start": 1376256,
+      "sha256": "00ecc0834ce9f5745bef2c482a1ca190de835f9e5725c8ae32c5603cdc443b35"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00022.npy",
+      "sequence_start": 1441792,
+      "sha256": "2d57e60c26248a5e5be99d3dae2b001b1048c0146a0e1e475b77d72e747137c4"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00023.npy",
+      "sequence_start": 1507328,
+      "sha256": "9f9eeaa352180ba22f49ecc0fa9face43c8862e4bd91e305f294194be1a9b6e9"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00024.npy",
+      "sequence_start": 1572864,
+      "sha256": "80adf149624b34d5910651c94a1af152787f814f9f87e6a8644517057315c6d3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00025.npy",
+      "sequence_start": 1638400,
+      "sha256": "4dd91cb19c5c1d8f8d03b813bcb8496b0320e6dddd90bacf0329f46c2b24bdfc"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00026.npy",
+      "sequence_start": 1703936,
+      "sha256": "ef50a53f15b98f07a4bc4020eba91ac46482e490b009ff084e87328358498f41"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00027.npy",
+      "sequence_start": 1769472,
+      "sha256": "7409fed54c44710ea4999c71ba10ff91e89139d0514f73590746e912a5606562"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00028.npy",
+      "sequence_start": 1835008,
+      "sha256": "99e2d77eb6cfb3501f3e33192dc22051f1416e82700aab091382871dda8b33f1"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00029.npy",
+      "sequence_start": 1900544,
+      "sha256": "d5869584d61fc8a4c946898e2385b4481c091f911bdfa61fbc16936571a2efa3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00030.npy",
+      "sequence_start": 1966080,
+      "sha256": "d21a6498ad48bc1594f3abeee3f7b900e2b78487251d211ed112ea801fe24a44"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00031.npy",
+      "sequence_start": 2031616,
+      "sha256": "d522caa3313e778744c994f4a95e25e1d7ebe757e7be32a9b16dbc64c4e1ee6f"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00032.npy",
+      "sequence_start": 2097152,
+      "sha256": "145292a9826f1fc05007127e2b375948573d66222bc00475f0f0255575bd9754"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00033.npy",
+      "sequence_start": 2162688,
+      "sha256": "17866fbd16ae9ac4ec4a6143c0638e4f682bd275d42361e92ea9f95990a8582f"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00034.npy",
+      "sequence_start": 2228224,
+      "sha256": "c705de1d471138060420315be2d7d6e884f6b72802235fe0523b0663c2ccf8c3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00035.npy",
+      "sequence_start": 2293760,
+      "sha256": "91c70d1c74d42c36ebee937fb067e31a8e8a075d33ca9c56de5cb5449d5bde72"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00036.npy",
+      "sequence_start": 2359296,
+      "sha256": "70c550c649fceb5b23064161b81caeb9a1df49c9e5293351cfe8f2eb495e38b4"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00037.npy",
+      "sequence_start": 2424832,
+      "sha256": "523415e9a248b208c93fa12584d0eca9d149bb23153171d862f6d4a0d3fd90f7"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00038.npy",
+      "sequence_start": 2490368,
+      "sha256": "31333e82b7363c0c49a8a84ea81d35f47b7e2277a9b3e34d22592bc4af07af11"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00039.npy",
+      "sequence_start": 2555904,
+      "sha256": "7dbe2b0e540c7ad209fc03eb9692822519d3a5a770c7da3cdc3653a32fad6e6d"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00040.npy",
+      "sequence_start": 2621440,
+      "sha256": "7c52d6a29eab5c807eff1e88a60e48df271be47355a5af01a0d62a33c5ca84bc"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00041.npy",
+      "sequence_start": 2686976,
+      "sha256": "7bc74f1e22d683d38dd2d89bb998603b5dd395eda1ccd2da7959f173ab581573"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00042.npy",
+      "sequence_start": 2752512,
+      "sha256": "6f31e5919d7729d804f3037f45baff8d70e05061805314f5d0d85638f390cd5c"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00043.npy",
+      "sequence_start": 2818048,
+      "sha256": "40255b7174b148800fc6a443d8821241ab09991fa29b996326a78aa9c3b318c1"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00044.npy",
+      "sequence_start": 2883584,
+      "sha256": "990ee30b95b34cad3648d21d750c8150d83188802a5853d794369af34f96ba62"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00045.npy",
+      "sequence_start": 2949120,
+      "sha256": "e72308cf18e1c43ffee2b73070fdfe9918935923a38c279beffd7166de6cb1ba"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00046.npy",
+      "sequence_start": 3014656,
+      "sha256": "e67b02118a7c910656ba42bf429bdc7187f9bc4a39ffe8d77b95f95ffaad8fde"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00047.npy",
+      "sequence_start": 3080192,
+      "sha256": "7873b64f0f8e6d6a2ab7dd9f3cbd62d79ea62fed36385ec2b8395b5f00e814cb"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00048.npy",
+      "sequence_start": 3145728,
+      "sha256": "10f2456e51aad4cfeee4970aea0639b26fc717e49812229d6db6a432302adda8"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00049.npy",
+      "sequence_start": 3211264,
+      "sha256": "b638b0d99ed80f391520dee3b56d8c5e7685349e752f6217ed2c243d20ffba9f"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00050.npy",
+      "sequence_start": 3276800,
+      "sha256": "a35d41d17640bf11b26106efa6f00480419bf6c1687eae268d476ee59217ab92"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00051.npy",
+      "sequence_start": 3342336,
+      "sha256": "4f14b88c0756dd89fc54ff0fd245f32a7b0c11033f291b2ec65dedb586effaf0"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00052.npy",
+      "sequence_start": 3407872,
+      "sha256": "406ef7e8a961050e5413e3961c72077736b51779930c8f0bad234d759ba4efe3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00053.npy",
+      "sequence_start": 3473408,
+      "sha256": "45a8b64bbf6cb84065f18292c581e606dd2def7634cc0cb866251407db842fe8"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00054.npy",
+      "sequence_start": 3538944,
+      "sha256": "e2e7a2fccdb806e125ff4edea9b2a8c215b7069092617524c12f51f3a7b99d7a"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00055.npy",
+      "sequence_start": 3604480,
+      "sha256": "abff671e7b5778f4818a2d8031e67711e7ba7862d6ce674fc7d07d0e3fcf8a73"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00056.npy",
+      "sequence_start": 3670016,
+      "sha256": "7753d729a9f582712cef9924be27826dc610f8061f8a985511cfe94c4f180841"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00057.npy",
+      "sequence_start": 3735552,
+      "sha256": "303ddd042dfd34e35c8da9adfe6a5c3d5e86019b1e7a66692f141114b1d3f1fc"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00058.npy",
+      "sequence_start": 3801088,
+      "sha256": "b4f59f79b5f488e1413b2d93dfb7777f5977e781bf17cf1b1b0580eb8e03b527"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00059.npy",
+      "sequence_start": 3866624,
+      "sha256": "8fe58aa7df9176d5d284a504a33bf4ee8823eb9868852eb89b55d25494d2504c"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00060.npy",
+      "sequence_start": 3932160,
+      "sha256": "be31e3c7b166d4b0371209a2f91d7cbf498cb369dff8b41f51c4d7b7ceb194d7"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00061.npy",
+      "sequence_start": 3997696,
+      "sha256": "3a3a3378548be4c7544993be0b69ac94e3a510aa423d9a3a0f27e80d5c4082ef"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00062.npy",
+      "sequence_start": 4063232,
+      "sha256": "9060d8eb3c657a889eac03b8943a33a43375b79b074fc13f4188c89beb0ddce3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00063.npy",
+      "sequence_start": 4128768,
+      "sha256": "46c16e150d7f793a98e58312043bc6f93d44dfaa44d30344456dd6e5cfb4c0c2"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00064.npy",
+      "sequence_start": 4194304,
+      "sha256": "31d885303667ba59537c8ad3fdb5529dfefc79282f41086d2af843f4fa9235c3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00065.npy",
+      "sequence_start": 4259840,
+      "sha256": "633f499bd0f3fd68f3b69882b316f73286c7d4310ad8719763b27650f76f79f0"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00066.npy",
+      "sequence_start": 4325376,
+      "sha256": "e7c4fb01ce39df0125bc057ff16a619a84accce51fcd934cbdae24c85943808f"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00067.npy",
+      "sequence_start": 4390912,
+      "sha256": "b10f9507d442d7903a3d01ff6be7c3a89031e00c06ead75f902dfc0c4d8664a8"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00068.npy",
+      "sequence_start": 4456448,
+      "sha256": "0fda7beb3ab876aca4d8a1b92dc2f455de7aa2a77d79807a8851f68387d6ed56"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00069.npy",
+      "sequence_start": 4521984,
+      "sha256": "0f0d3208c81805fac215cd84556a982f20da8f6f9798e1c5e73178761bae1cc3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00070.npy",
+      "sequence_start": 4587520,
+      "sha256": "e05be4db07d0655cf8aefc231a1c0f8c1565e675105422b431504dc326d06cc5"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00071.npy",
+      "sequence_start": 4653056,
+      "sha256": "80efbb993a9eee2f7c1f3216ba9863a37e3abb72c05612ec502a545627cf0424"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00072.npy",
+      "sequence_start": 4718592,
+      "sha256": "69fae5d9c663e655b68304c1ab73455ff7592d1a25ae82136f490197e9e10012"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00073.npy",
+      "sequence_start": 4784128,
+      "sha256": "1359dc7be1c07ff97f2c5daec4588e3355f329fc7473fcaa41279bedc317207e"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00074.npy",
+      "sequence_start": 4849664,
+      "sha256": "c4cf082008d106f606304449d54f65476821acbbdda39f712a22b51206fe46cd"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00075.npy",
+      "sequence_start": 4915200,
+      "sha256": "0005f4874b9fc2984f2eb5809b79fcddb9c5599ba3a926b01d9ee432cbcab7fe"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00076.npy",
+      "sequence_start": 4980736,
+      "sha256": "689ad6d8703aea91e17c2e5721c15019fdc5faa657382b589757e94ef3493e2d"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00077.npy",
+      "sequence_start": 5046272,
+      "sha256": "364c9401d0d9932208446fcbbe3ef6d3331aa462a35caeb28924a60ac717e2e3"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00078.npy",
+      "sequence_start": 5111808,
+      "sha256": "d60ea5715daff5f161961a99b1ab0a4dd583d54ba3a5a11f2ab161c854f76506"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00079.npy",
+      "sequence_start": 5177344,
+      "sha256": "b342478b90dff890fc87c454c6c4380e7bc39fa9e81075c206e8c290920f14c7"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00080.npy",
+      "sequence_start": 5242880,
+      "sha256": "50aed0d585541bc30ff78ec9ef43360da1f9856a02516bfd6b1a527ecee7a17c"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00081.npy",
+      "sequence_start": 5308416,
+      "sha256": "2b816b29a79ad2682cce5f58f01df4eef242c2af3ea3853dcc3c6a750548b460"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00082.npy",
+      "sequence_start": 5373952,
+      "sha256": "7558b8a7ee16a683b5f485cc855d11457c857538c90a10ca6cb4604fa1977350"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00083.npy",
+      "sequence_start": 5439488,
+      "sha256": "6c42967f943bc1aa7d6b72e945ff55154c9ad1dee6609f76e18159de5816aa4d"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00084.npy",
+      "sequence_start": 5505024,
+      "sha256": "9edf8594f57d3136c850348e2c678fb329736001fc79ecdf9aebd58fb5cd95f6"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00085.npy",
+      "sequence_start": 5570560,
+      "sha256": "1bd40c38fb43c8e36fd504e4e0073eaa78565ee07c7033ecdb09b1a4723883af"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00086.npy",
+      "sequence_start": 5636096,
+      "sha256": "69750d5b6eb0325013b4623aa5d95c1eccbfb71d579ca2a67900049cc0b350f5"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00087.npy",
+      "sequence_start": 5701632,
+      "sha256": "b7d53623bf812920b76c937bf708f370f4c88bacfc287a94767865076b0a9cf0"
+    },
+    {
+      "num_sequences": 65536,
+      "path": "shard-00088.npy",
+      "sequence_start": 5767168,
+      "sha256": "a29200d72c133abdb150ea90a8f0459842dc1a3e76289ad5686cb1904e5024a1"
+    },
+    {
+      "num_sequences": 26671,
+      "path": "shard-00089.npy",
+      "sequence_start": 5832704,
+      "sha256": "cb3185497480b6027e513dac0a623a9621fa43cc824a0f1d757b919ffe159b42"
+    }
+  ],
+  "version": 1
+}
