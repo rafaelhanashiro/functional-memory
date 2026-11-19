@@ -380,7 +380,8 @@ def test_adapter_installs_its_guards_and_the_transform_checks(run_id):
         assert not any("mosaic" in path for path in cpu)
         # GPU: the strips at production precision, with the transform and with score biases, and nothing that
         # could skip or refuse there.
-        assert gpu == (acceptance.SCORE_BIAS_STRIPS_TESTS, acceptance.SCORE_TRANSFORM_STRIPS_TESTS)
+        assert gpu == (acceptance.SCORE_BIAS_STRIPS_TESTS, acceptance.SCORE_TRANSFORM_STRIPS_TESTS,
+                       acceptance.BLOCKED_COMPOSITION_TESTS)
         assert acceptance.mosaic_test_options(recipe, "blocked") == ()
     else:
         # CPU: the same references beside the transformed kernels' tile mathematics, shared memory and lowering,

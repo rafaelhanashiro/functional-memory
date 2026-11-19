@@ -199,9 +199,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # The recipe's settings over ModelConfig's defaults, without revalidating the recipe here.
         defaults = {field.name: field.default for field in fields(ModelConfig) if field.default is not MISSING}
         composed = _blocked_polynomial(SimpleNamespace(**{**defaults, **model}))
-    # Their GPU stage runs these beside the other strips gates, including where it returns early below.
+    # Their stages run these after the other gates, including where the GPU stage returns early below.
     composition = (BLOCKED_COMPOSITION_TESTS,) if composed else ()
-    paths.extend(composition)
     if model.get("attention_score_bias", "none") != "none" and resolved_backend == "blocked":
         implementation = model.get("attention_blocked_implementation", "scan")
         if implementation != "strips":
@@ -454,7 +453,7 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                  or model.get("attention_fixed_coefficients") is not None
                  or model.get("attention_fixed_square_factors") is not None)):
         paths.append(NORMALIZED_POLYNOMIAL_TESTS)
-    return tuple(dict.fromkeys(paths))
+    return tuple(dict.fromkeys((*paths, *composition)))
 
 
 def _runtime_test_paths(config, resolved_backend: str) -> tuple[str, ...]:
