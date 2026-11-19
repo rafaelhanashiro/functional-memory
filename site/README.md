@@ -12,6 +12,10 @@ at http://127.0.0.1:8765. Elsewhere, such as a laptop with Python 3.9 or later, 
 `python3 site/serve.py --port 8766` from the repository root and open http://127.0.0.1:8766
 (another port while a tunnel holds 8765); edits there are saved in that checkout.
 
+Everything the pages load is inside this folder: images in `media/`, result data in `data/`,
+and the Markdown and math libraries in `vendor/`. Only adding a literature link reaches the
+internet, to read the link's title.
+
 `literature/papers.json` lists the literature resources in the page's order (title,
 authors, year, link, and whether the user has seen it). On the page the user adds a
 resource from a link (it goes to the top, with metadata read from the link), reorders,
