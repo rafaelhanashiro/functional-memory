@@ -26,15 +26,6 @@ REFERENCES = (("softmax", "Softmax", "solid"), ("exp", "Exp", "dashed"))
 RUNS = ROOT / "experiments/transformer_pp/runs"
 # Query + W decay at m = 8, one run per starting point of the coefficients b_r.
 INITIALIZATIONS = (("Taylor", "r25fffc16c2f3"), ("Hermite", "r6adefb42f443"))
-EVEN = RESULTS / "exploratory/even_powers/summary.csv"
-# Selected powers: columns (label, degree) and each row's summary role per column (None: not run).
-POWER_COLUMNS = (("Full", 4), ("Even-only", 8), ("Odd + constant", 7), ("Full", 8))
-POWER_ROWS = (
-    ("Static", ("static_full_m4", "static_even_m8", None, "static_full_m8")),
-    ("Query + W decay", ("query_full_m4_w_decay", "query_even_m8_w_decay", "query_odd_m7_w_decay", "query_full_m8_w_decay")),
-)
-GATES = ("r1a5d217f030d", "r77698776d82c", "r8c4a6ecdf4d2")
-GATE_LABELS = {"gdn": "GDN-style", "sigmoid": "Sigmoid"}
 
 
 def rows(path: Path) -> list[dict]:
@@ -97,8 +88,7 @@ def initializations() -> dict:
         "title": "Initializations",
         "metric": "validation-best perplexity",
         "columns": [{"family": "Query + W decay", "degree": 8}],
-        "rows": [{"label": label, "cells": [{"run_id": run_id, "perplexity": float(
-            json.loads((RUNS / run_id / "best_validation.json").read_text())["validation_perplexity"])}]}
+        "rows": [{"label": label, "cells": [{"run_id": run_id, "perplexity": best(run_id)}]}
                  for label, run_id in INITIALIZATIONS],
     }
 
@@ -107,37 +97,9 @@ def best(run_id: str) -> float:
     return float(json.loads((RUNS / run_id / "best_validation.json").read_text())["validation_perplexity"])
 
 
-def other_runs() -> dict:
-    summary = {row["role"]: row for row in rows(EVEN)}
-    gates = []
-    for run_id in GATES:
-        model = json.loads((RUNS / run_id / "config.json").read_text())["model"]
-        gates.append({"degree": model["attention_degree"], "gate": GATE_LABELS[model["attention_coefficient_gate"]],
-                      "run_id": run_id, "perplexity": best(run_id)})
-    return {
-        "title": "Other runs",
-        "metric": "validation-best perplexity",
-        "powers": {
-            "title": "Selected powers",
-            "intro": "Polynomials restricted to the even powers 0, 2, 4, 6, 8 or to the constant and the odd "
-                     "powers 1, 3, 5, 7, beside full polynomials of degree 4 and 8.",
-            "columns": [{"label": label, "degree": degree} for label, degree in POWER_COLUMNS],
-            "rows": [{"label": label, "cells": [
-                {"run_id": summary[role]["run_id"], "perplexity": float(summary[role]["best_validation_perplexity"])}
-                if role else None for role in roles]} for label, roles in POWER_ROWS],
-        },
-        "gates": {
-            "title": "Per-degree coefficient gates",
-            "intro": "Query + W decay with RoPE, where a gate computed from each token scales every degree's "
-                     "coefficient: a sigmoid, or GDN-style at degree 4.",
-            "rows": gates,
-        },
-    }
-
-
 def main() -> None:
     data = {"baselines": baselines(), "width_degree": width_table(), "degree_scaling": degree_scaling(),
-            "initializations": initializations(), "other_runs": other_runs()}
+            "initializations": initializations()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

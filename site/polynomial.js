@@ -1,15 +1,10 @@
-// The Polynomial runs page: two tables and a chart drawn from data/polynomial.json, which
+// The Polynomial runs page: tables and a chart drawn from data/polynomial.json, which
 // data/polynomial.py writes from the Transformer++ result summaries.
+import {degreeLabel, html, section, table} from "./tables.js";
+
 const SVG = "http://www.w3.org/2000/svg";
 const COLORS = {taylor: "#2563eb", hermite: "#ea580c", static: "#059669", query_w_decay: "#d97706"};
 const MARKERS = {taylor: "circle", hermite: "triangle", static: "diamond", query_w_decay: "square"};
-
-function html(tag, className, content) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (content !== undefined) node.innerHTML = content;
-  return node;
-}
 
 function svg(tag, attributes = {}, text) {
   const node = document.createElementNS(SVG, tag);
@@ -18,64 +13,19 @@ function svg(tag, attributes = {}, text) {
   return node;
 }
 
-const degreeLabel = (degree) => `<var>m</var> = ${degree}`;
-
-function section(host, title) {
-  host.replaceChildren(html("h2", "", title));
-  return host;
-}
-
-function table(head, body) {
-  const wrap = html("div", "table-wrap");
-  const element = html("table", "results-table");
-  const header = html("tr");
-  for (const cell of head) header.append(html("th", "", cell));
-  element.append(html("thead"), html("tbody"));
-  element.tHead.append(header);
-  for (const cells of body) {
-    const row = html("tr");
-    for (const {text, best} of cells) row.append(html("td", best ? "best" : "", text));
-    element.tBodies[0].append(row);
-  }
-  wrap.append(element);
-  return wrap;
-}
-
 // Bold marks the lowest value as shown, so values that tie at the shown precision are all bold.
 function baselines(data, host) {
   const best = Math.min(...data.rows.map((row) => row.perplexity)).toFixed(2);
-  const baseline = table(["Attention", "PPL"], data.rows.map((row) => [
-    {text: row.label}, {text: row.perplexity.toFixed(2), best: row.perplexity.toFixed(2) === best}]));
-  baseline.classList.add("compact");
-  section(host, data.title).append(baseline);
+  section(host, data.title).append(table(["Attention", "PPL"], data.rows.map((row) => [
+    {text: row.label}, {text: row.perplexity.toFixed(2), best: row.perplexity.toFixed(2) === best}]), {compact: true}));
 }
 
 function initializations(data, host) {
   const best = data.columns.map((column, index) => Math.min(...data.rows.map((row) => row.cells[index].perplexity)).toFixed(2));
   const grid = table(["Initialization", ...data.columns.map((column) => `${column.family}, ${degreeLabel(column.degree)}`)],
     data.rows.map((row) => [{text: row.label}, ...row.cells.map((cell, index) => ({
-      text: cell.perplexity.toFixed(2), best: cell.perplexity.toFixed(2) === best[index]}))]));
-  grid.classList.add("compact");
+      text: cell.perplexity.toFixed(2), best: cell.perplexity.toFixed(2) === best[index]}))]), {compact: true});
   section(host, data.title).append(grid);
-}
-
-function otherRuns(data, host) {
-  const part = (title, intro, content) => {
-    const heading = html("h3", "", title);
-    const text = html("p", "intro", intro);
-    host.append(heading, text, content);
-  };
-  section(host, data.title);
-  const powers = data.powers;
-  part(powers.title, powers.intro, table(
-    ["Attention", ...powers.columns.map((column) => `${column.label} ${degreeLabel(column.degree)}`)],
-    powers.rows.map((row) => [{text: row.label}, ...row.cells.map((cell) => cell
-      ? {text: cell.perplexity.toFixed(4)} : {text: "—"})]),
-  ));
-  const gates = table(["Degree", "Gate", "PPL"], data.gates.rows.map((row) => [
-    {text: degreeLabel(row.degree)}, {text: row.gate}, {text: row.perplexity.toFixed(4)}]));
-  gates.classList.add("compact");
-  part(data.gates.title, data.gates.intro, gates);
 }
 
 function widthDegree(data, host) {
@@ -195,7 +145,6 @@ function degreeChart(data) {
     section(document.querySelector('[data-result="degree-scaling"]'), data.degree_scaling.title)
       .append(degreeTable(data.degree_scaling), degreeChart(data.degree_scaling));
     initializations(data.initializations, document.querySelector('[data-result="initializations"]'));
-    otherRuns(data.other_runs, document.querySelector('[data-result="other-runs"]'));
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }

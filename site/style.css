@@ -445,6 +445,10 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .results-table tbody tr:nth-child(even) { background: #f8fafc; }
 .results-table tbody tr + tr td { border-top: 1px solid #eef0f3; }
 .results-table .best { font-weight: 700; }
+.results-table.grouped tbody tr:nth-child(even) { background: none; }
+.results-table.grouped tbody tr.shade { background: #f8fafc; }
+.results-table.grouped td:first-child { text-align: center; }
+.results-table.grouped td.group-label { font-weight: 600; text-align: left; }
 var { font-style: italic; }
 .chart { display: block; width: 100%; min-width: 640px; height: auto; }
 .chart text { fill: #27272a; font-size: 14px; }
