@@ -289,6 +289,21 @@ All three trained on one B200. Validation perplexity, best with terminal in pare
 - **Static** is 0.71% below its raw-score parent, a comparison that changes both the input
   and the constant.
 
+### Raw scores
+
+Added 2026-11-19. The same three structural zero constants on raw scores (`attention_score_transform:
+identity`, every other setting of the softplus run), on the plain Mosaic query kernels. Each is compared with
+its raw-score control, whose constant is learnable, and with its softplus version:
+
+| Variant | Run | Raw control, best | Softplus version, best |
+| --- | --- | --- | --- |
+| Query | `r81b5ebb23a51` | `r25fffc16c2f3` 14.323 | `rb5b604ae829a` 14.250 |
+| Static | `r37fb1c7bb6db` | `r9c69dd7cfc8d` 14.294 | `rc28ef4dbe26d` 14.192 |
+| Query SoS | `rc379a8f30f5b` | `reeefbcc19abf` 14.196 | `r7d5baf55104e` 14.128 |
+
+On raw scores the direct polynomials are signed, as their controls are; the SoS polynomial
+s²(U(s)² + V(s)²) stays nonnegative. Results follow at close-out.
+
 The comparisons and their limits: Query is matched to the existing softplus Query control
 `ra3b54e2489f8`, whose constant starts at zero but is learnable. Static's parent
 `r9c69dd7cfc8d` has raw-score inputs, so that comparison changes both the transform

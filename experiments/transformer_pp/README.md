@@ -986,6 +986,54 @@ for run in r88d8654a8a1d r266c5dd1f935; do
 done
 ```
 
+## Score functions of the exponential and raw-score zero constants
+
+Six runs at the reference shape and 1x budget, opened 2026-11-19 on Kennel (branch
+`claude/score-function-runs`, worktree `worktrees/score-function-runs`). The first three change
+only the exp control `r6a76e7fbde45`'s weight `exp(s)`
+([scaffold](../../scaffolds/transformer/README.md#attention-pieces-and-recipe-receipts)); results go
+to the [pointwise attention topic](results/exploratory/pointwise_attention/README.md). The other three
+repeat the softplus zero-constant runs with raw scores; results go to the
+[softplus_sos topic](results/exploratory/softplus_sos/README.md#structural-zero-constants).
+
+| Run | Label | Weight or change | Partner |
+| --- | --- | --- | --- |
+| `rbd24b948a240` | `exp-softplus-prefactor` | `softplus(s) exp(s)` | exp `r6a76e7fbde45` |
+| `rd7c9f610e9dc` | `exp-sigmoid-prefactor` | `sigmoid(s) exp(s)` | exp `r6a76e7fbde45` |
+| `r0dd96f88d9f8` | `exp-softplus-input` | `exp(softplus(s)) = 1 + exp(s)` | exp `r6a76e7fbde45` |
+| `r81b5ebb23a51` | `query-m8-zero-constant-w-decay` | query, c_0 = 0, raw scores | softplus `rb5b604ae829a` |
+| `r37fb1c7bb6db` | `static-m8-zero-constant` | static, c_0 = 0, raw scores | softplus `rc28ef4dbe26d` |
+| `rc379a8f30f5b` | `sos-m8-zero-constant-w-decay` | query SoS, U_0 = V_0 = 0, raw scores | softplus `r7d5baf55104e` |
+
+Each recipe is its partner's (`derive_recipe.py --partner`) with only the named setting changed: the
+exp variants set `attention_score_prefactor` or `attention_score_transform` on the fused kernel and
+add the current gradient-event capture, which the October exp control predates; the zero-constant
+variants set `attention_score_transform: identity` on the Mosaic kernels. Like the sigmoid and softplus
+runs, all six sum repeated-token embedding gradients in FP32, unlike the historical exp control. The
+exp variants' acceptance is the generic one, with the fused score-function GPU gates; the zero-constant
+variants use [their adapter](softplus_zero_constant_acceptance.py), which pins the same parents as the
+softplus runs. Submitted from the worktree on one GPU each:
+
+```bash
+for run in rbd24b948a240 rd7c9f610e9dc r0dd96f88d9f8 r81b5ebb23a51; do
+  case $run in r81b5ebb23a51) adapter=softplus_zero_constant_acceptance ;; *) adapter=acceptance ;; esac
+  sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$adapter" \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+done
+for run in r37fb1c7bb6db rc379a8f30f5b; do
+  sbatch --parsable --partition=long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --exclude=collie,samoyed,doodle,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.softplus_zero_constant_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```
+
 ## ALiBi-style constant decay without RoPE
 
 The [alibi_decay topic](results/exploratory/alibi_decay/README.md) pretrains

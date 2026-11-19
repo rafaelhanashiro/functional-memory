@@ -50,10 +50,25 @@ Validation perplexity, best with terminal in parentheses. Both runs trained on o
 - Limits: one seed. The comparison with exp also includes the embedding-gradient precision change described
   above.
 
+## The exponential with score functions
+
+Added 2026-11-19. Does a parameter-free function of the score help the exponential? Three runs change
+only exp's weight `exp(s)`, keeping everything else of `r6a76e7fbde45`:
+
+| Run | Weight | Behaviour |
+| --- | --- | --- |
+| `rbd24b948a240` | softplus(s) exp(s) | ≈ exp(2s) for very negative s, ≈ s exp(s) for large s |
+| `rd7c9f610e9dc` | sigmoid(s) exp(s) | ≈ exp(2s) for very negative s, ≈ exp(s) for large s |
+| `r0dd96f88d9f8` | exp(softplus(s)) | exactly 1 + exp(s): exp plus a uniform causal average |
+
+They train on the fused unnormalized kernel, which evaluates these functions in its forward and backward
+passes (errors against FP64 about 3e-7 in FP32). The embedding-gradient caveat above applies to them too.
+Results follow at close-out.
+
 ## Open decision
 
-Whether either fixed function merits further comparison with exp and learned SoS attention: promote the topic
-or discard it with its runs and their artifacts.
+Whether any fixed function, alone or multiplying the exponential, merits further comparison with exp and learned
+SoS attention: promote the topic or discard it with its runs and their artifacts.
 
 Canonical measurements remain with the runs. Refresh the explicit source pins
 when updating this comparison:
