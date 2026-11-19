@@ -66,13 +66,18 @@ export function showView(host, text, {empty, onEdit}) {
   host.replaceChildren(button("Edit", "edit", onEdit), view);
 }
 
-// Markdown keys in the editor's text box, as in Obsidian: Tab and Shift+Tab move a list item,
-// or the selected lines starting at one, a level in or out of its list, and indent or outdent
-// other lines; Enter continues a list and ends it on an empty item; Cmd+B, I and K (Ctrl off a
-// Mac) toggle bold, italics and a link; and typing a bracket, $ or ` with text selected wraps
-// it. Edits go through the browser's undo history.
-const LIST_ITEM = /^( *)([-*+]|(\d+)([.)]))( +)(\[[ xX]\] +)?/;
+// Markdown keys in the editor's text box, as in Obsidian: Tab and Shift+Tab move list items a
+// level in or out of their list, with the lines under them, and indent or outdent other lines;
+// Enter continues a list and ends it on an empty item; Cmd+B, I and K (Ctrl off a Mac) toggle
+// bold, italics and a link; and typing a bracket, $ or ` with text selected wraps it. Edits go
+// through the browser's undo history. Indents count in columns, a tab reaching the next
+// multiple of four as in Markdown, so lists indented with tabs or spaces both work.
+const LIST_ITEM = /^([ \t]*)([-*+]|(\d+)([.)]))( +)(\[[ xX]\] +)?/;
 const INDENT = "    ";  // four spaces nest a list item under any marker (-, 1., 10.)
+const TAB = INDENT.length;  // columns to a tab stop, and the nesting step while nothing is nested
+const FENCE = /^[ \t]*(```|~~~)/;
+// Unindented lines that start a new block, so end a list even right after one of its lines.
+const BLOCK = /^(#{1,6}(\s|$)|>|```|~~~|([-*_])(\s*\3){2,}\s*$)/;
 const PAIRS = {"(": ")", "[": "]", "{": "}", "$": "$", "`": "`"};
 // On a Mac, Ctrl+B and Ctrl+K already edit text (back a character, delete to the end of the
 // line), so the shortcuts take Cmd there.
@@ -93,47 +98,82 @@ function selectedLines(input) {
   const {value, selectionStart: start} = input;
   let end = input.selectionEnd;
   if (end > start && value[end - 1] === "\n") end -= 1;  // whole lines selected with their newline
-  const first = value.lastIndexOf("\n", start - 1) + 1;
+  const first = start && value.lastIndexOf("\n", start - 1) + 1;
   const last = value.indexOf("\n", end);
   return [first, last === -1 ? value.length : last];
 }
 
-// A level of nesting, as the text's lists already nest: the smallest step from a list item to
-// its parent (two spaces in lists typed that way), or four (INDENT) while nothing is nested.
-// Fenced code doesn't count, nor an item indented so far that Markdown reads it as text.
-function nesting(lines) {
-  let step;
-  let fenced = false;
-  const open = [];  // [indent, content column] of the items a later line can nest under
-  for (const line of lines) {
-    if (/^ *(```|~~~)/.test(line)) fenced = !fenced;
-    const match = !fenced && line.match(LIST_ITEM);
-    if (!match) {
-      if (/^\S/.test(line)) open.length = 0;  // unindented text ends the list
-      continue;
-    }
-    const margin = match[1].length;
-    while (open.length && margin < open.at(-1)[1]) open.pop();
-    if (margin >= (open.at(-1)?.[1] ?? 0) + INDENT.length) continue;
-    if (open.length) step = Math.min(step ?? Infinity, margin - open.at(-1)[0]);
-    open.push([margin, margin + match[2].length + match[5].length]);
-  }
-  return step ?? INDENT.length;
+// The column that leading whitespace reaches, a tab advancing to the next multiple of four.
+function columns(space) {
+  let column = 0;
+  for (const char of space) column = char === "\t" ? column - column % TAB + TAB : column + 1;
+  return column;
 }
 
-// The list around the item indented by `depth` on line `row` of `lines`, from the lines above
-// it: its parent (its row, indent and content column), its previous sibling's content column,
-// and the indent of the items nested under that sibling.
-function relatives(lines, row, depth) {
+// Leading whitespace changed to reach `column`: with `tabs` (the text's lists indent with tabs)
+// tabs then spaces, otherwise the tabs and spaces of `space` that still fit, then spaces.
+function reach(space, column, tabs) {
+  if (tabs) return "\t".repeat(Math.floor(column / TAB)) + " ".repeat(column % TAB);
+  let kept = "";
+  for (const char of space) {
+    if (columns(kept + char) > column) break;
+    kept += char;
+  }
+  return kept + " ".repeat(column - columns(kept));
+}
+
+// The lines of `text`, each with its leading whitespace and indent and, outside fenced code, its
+// list item match and content column (where its text, and an item nested under it, starts).
+function parse(text) {
+  let fenced = false;
+  return text.split("\n").map((line) => {
+    const space = line.match(/^[ \t]*/)[0];
+    const fence = FENCE.test(line);
+    const match = fenced || fence ? null : line.match(LIST_ITEM);
+    if (fence) fenced = !fenced;
+    const margin = columns(space);
+    return {line, space, margin, match, content: match && margin + match[2].length + match[5].length};
+  });
+}
+
+// Whether the text's lists indent with tabs, as Markdown pasted from Obsidian does.
+function tabbed(rows) {
+  return rows.some(({match, space}) => match && space.includes("\t"));
+}
+
+// Whether row `row` is unindented text that ends the list above it: a new block, or a paragraph
+// after a blank line. Unindented text right after a list line continues that item's text.
+function ends(rows, row) {
+  const {line, match, margin} = rows[row];
+  if (match || margin || !line.trim()) return false;
+  return BLOCK.test(line) || !row || !rows[row - 1].line.trim();
+}
+
+// A level of nesting, as the text's lists already nest: the smallest step from a list item to
+// its parent (two spaces in lists typed that way), or four (TAB) while nothing is nested. An
+// item indented so far that Markdown reads it as text doesn't count.
+function nesting(rows) {
+  let step;
+  const open = [];  // [indent, content column] of the items a later line can nest under
+  rows.forEach(({match, margin, content}, row) => {
+    if (ends(rows, row)) open.length = 0;
+    if (!match) return;
+    while (open.length && margin < open.at(-1)[1]) open.pop();
+    if (margin >= (open.at(-1)?.[1] ?? 0) + TAB) return;
+    if (open.length) step = Math.min(step ?? Infinity, margin - open.at(-1)[0]);
+    open.push([margin, content]);
+  });
+  return step ?? TAB;
+}
+
+// The list around the item indented by `depth` on row `row`, from the rows above it: its parent
+// (its row, indent and content column), its previous sibling's content column, and the indent
+// of the items nested under that sibling.
+function relatives(rows, row, depth) {
   const found = {};
-  for (let above = row - 1; above >= 0; above -= 1) {
-    const match = lines[above].match(LIST_ITEM);
-    if (!match) {
-      if (/^\S/.test(lines[above])) break;  // unindented text ends the list
-      continue;
-    }
-    const margin = match[1].length;
-    const content = margin + match[2].length + match[5].length;
+  for (let above = row - 1; above >= 0 && !ends(rows, above); above -= 1) {
+    const {match, margin, content} = rows[above];
+    if (!match) continue;
     if (margin < depth) return {...found, parent: {row: above, margin, content}};
     if (margin === depth) {
       found.sibling ??= content;
@@ -143,86 +183,104 @@ function relatives(lines, row, depth) {
   return found;
 }
 
-// Where Tab moves the list item indented by `depth` on line `row`: in under its previous
-// sibling (or under the item above, if not nested in it yet), level with the items already
-// nested there, else a nesting step in, at a column where Markdown nests it. With nothing above
-// to nest under, it stays put.
-function level(lines, row, depth) {
-  const {parent, sibling, children} = relatives(lines, row, depth);
+// Where Tab moves the list item indented by `depth` on row `row`: in under its previous sibling
+// (or under the item above, if not nested in it yet), level with the items nested there, else a
+// nesting step in, at a column where Markdown nests it. With nothing above to nest under, it
+// stays put.
+function level(rows, row, depth) {
+  const {parent, sibling, children} = relatives(rows, row, depth);
   const under = sibling ?? (parent && depth < parent.content ? parent.content : undefined);
   if (under === undefined) return depth;
-  // An item nests at the content column of the item above and up to three spaces past it.
-  const target = children < under + INDENT.length ? children : depth + nesting(lines);
-  return target >= under && target < under + INDENT.length ? target : under;
+  // An item nests at the content column of the item above and up to three columns past it.
+  const target = children < under + TAB ? children : depth + nesting(rows);
+  return target >= under && target < under + TAB ? target : under;
 }
 
-// Where Shift+Tab, or Enter on an empty item, moves a nested list item: out to its parent's indent.
-function outer(lines, row, depth) {
-  const {parent} = relatives(lines, row, depth);
-  return parent ? parent.margin : Math.max(0, depth - INDENT.length);
+// Where Shift+Tab, or Enter on an empty item, moves a nested list item, given its parent from
+// relatives(): out to the parent's indent.
+function outer(parent, depth) {
+  return parent ? parent.margin : Math.max(0, depth - TAB);
 }
 
 function indent(input, outdent) {
   const {value, selectionStart: start, selectionEnd: end} = input;
   const [first, last] = selectedLines(input);
-  const block = value.slice(first, last);
-  const item = block.match(LIST_ITEM);  // the first line, if it's a list item
-  if (!outdent && start === end && !item) {
+  const rows = parse(value);
+  const top = value.slice(0, first).split("\n").length - 1;
+  const selected = rows.slice(top, top + value.slice(first, last).split("\n").length);
+  if (!outdent && start === end && !selected[0].match && !LIST_ITEM.test(selected[0].line)) {
     edit(input, start, end, INDENT, start + INDENT.length);
     return;
   }
-  const all = value.split("\n");
-  const row = value.slice(0, first).split("\n").length - 1;
-  const lines = block.split("\n");
-  const shifts = [];
-  if (!outdent) {
-    // The lines move with their first list item, a level in; lines outside a list by INDENT.
-    const move = item ? level(all, row, item[1].length) - item[1].length : INDENT.length;
-    for (const line of lines) shifts.push(lines.length > 1 && !line.trim() ? 0 : move);
-  } else {
-    // Each list item moves out a level: along with its parent when that moves too, else to its
-    // parent's indent. Other lines move with the item above them, or out by INDENT.
-    let move = -INDENT.length;
-    lines.forEach((line, index) => {
-      const match = line.match(LIST_ITEM);
-      if (match) {
-        const depth = match[1].length;
-        const {parent} = relatives(all, row + index, depth);
-        const along = parent && parent.row >= row ? shifts[parent.row - row] : 0;
-        move = along || outer(all, row + index, depth) - depth;
+  // Each list item moves a level, with the lines under it. Tab moves an item and the deeper
+  // lines after it together, in under its previous sibling; Shift+Tab moves each item out, along
+  // with its parent when that moves too, else to its parent's indent. Lines before the first item
+  // move with it; with no item at all, every line moves by INDENT, as before.
+  const moves = [];
+  let move, anchor;
+  selected.forEach(({match, margin}, index) => {
+    if (match && outdent) {
+      const {parent} = relatives(rows, top + index, margin);
+      const along = parent && parent.row >= top ? moves[parent.row - top] : 0;
+      move = along || outer(parent, margin) - margin;
+    } else if (match && (anchor === undefined || margin < anchor)) {
+      anchor = margin;
+      move = level(rows, top + index, margin) - margin;
+    }
+    moves.push(move);
+  });
+  // Tab moves every selected item or, if one has nothing to nest under, none of them.
+  if (!outdent && moves.some((shift, index) => shift === 0 && selected[index].match)) moves.fill(0);
+  const lead = moves.find((shift) => shift !== undefined) ?? (outdent ? -TAB : TAB);
+  const tabs = tabbed(rows);
+  const lines = selected.map(({line, space, margin}, index) => {
+    const shift = moves[index] ?? lead;
+    if (!shift || (selected.length > 1 && !line.trim())) return line;
+    return reach(space, Math.max(0, margin + shift), tabs) + line.slice(space.length);
+  });
+  const changed = lines.join("\n");
+  if (changed === value.slice(first, last)) return;
+  // A position in a line's indent stays within the new indent; past it, it moves with the text.
+  const map = (position) => {
+    let from = first, to = first;
+    for (let index = 0; index < selected.length; index += 1) {
+      const {line, space} = selected[index];
+      const indented = lines[index].length - (line.length - space.length);
+      if (position <= from + line.length) {
+        const column = position - from;
+        return to + (column < space.length ? Math.min(column, indented) : column - space.length + indented);
       }
-      shifts.push(-(line.startsWith("\t") ? 1 : Math.min(-move, line.match(/^ */)[0].length)));
-    });
-  }
-  const changed = lines.map((line, index) => shifts[index] < 0 ? line.slice(-shifts[index])
-    : " ".repeat(shifts[index]) + line).join("\n");
-  if (changed === block) return;
-  const total = shifts.reduce((sum, shift) => sum + shift, 0);
-  const newStart = Math.max(first, start + shifts[0]);
-  edit(input, first, last, changed, newStart, Math.max(newStart, end + (start === end ? shifts[0] : total)));
+      from += line.length + 1;
+      to += lines[index].length + 1;
+    }
+    return position + to - from;
+  };
+  edit(input, first, last, changed, map(start), map(end));
 }
 
 function continueList(input) {
   const {value, selectionStart: start, selectionEnd: end} = input;
   if (start !== end) return false;
-  const first = value.lastIndexOf("\n", start - 1) + 1;
+  const first = start && value.lastIndexOf("\n", start - 1) + 1;
   const next = value.indexOf("\n", start);
   const last = next === -1 ? value.length : next;
   const match = value.slice(first, last).match(LIST_ITEM);
   if (!match || start < first + match[0].length) return false;
-  const [marker, spaces, bullet, number, delimiter, gap, task] = match;
+  const [marker, space, bullet, number, delimiter, gap, task] = match;
   if (!value.slice(first + marker.length, last).trim()) {
     // Enter on an empty item: move a nested item out a level, otherwise end the list.
-    if (spaces) {
-      const above = value.slice(0, first).split("\n");
-      const removed = spaces.length - outer(above, above.length - 1, spaces.length);
-      edit(input, first, first + removed, "", last - removed);
+    const margin = columns(space);
+    if (margin) {
+      const rows = parse(value);
+      const row = value.slice(0, first).split("\n").length - 1;
+      const out = reach(space, outer(relatives(rows, row, margin).parent, margin), tabbed(rows));
+      edit(input, first, first + space.length, out, last - space.length + out.length);
     } else {
       edit(input, first, last, "", first);
     }
     return true;
   }
-  const insertion = `\n${spaces}${number === undefined ? bullet : `${Number(number) + 1}${delimiter}`}${gap}${task ? "[ ] " : ""}`;
+  const insertion = `\n${space}${number === undefined ? bullet : `${Number(number) + 1}${delimiter}`}${gap}${task ? "[ ] " : ""}`;
   edit(input, start, end, insertion, start + insertion.length);
   return true;
 }
