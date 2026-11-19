@@ -218,10 +218,10 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     # take a transform with query coefficients alone (static ones arrive broadcast per query).
     exponential_kernel = (exponential and not score_mlp and spline is None and polynomial_coefficients is None
                           and polynomial_square_factors is None and not query_conditioned and not rational)
-    if validate_transform(score_transform) != "identity" and not exponential_kernel and (
-            not query_conditioned or key_conditioned or decayed or score_bias is not None):
-        raise ValueError("A score transform applies to query-coefficient polynomial attention alone, without key "
-                         "factors, decay, or score biases")
+    if validate_transform(score_transform) != "identity" and not exponential_kernel and not query_conditioned:
+        # Composition (attention/pieces.py): the per-query polynomial reads z = phi(s) under any key factors, decay
+        # and score biases; static and fixed coefficients arrive here broadcast per query.
+        raise ValueError("A score transform applies to the exponential or query-coefficient polynomial attention")
     if score_mlp:
         width = score_mlp_slope.shape[-1] if score_mlp_slope.ndim == 2 else 0
         if (width < 1 or score_mlp_slope.shape != (heads, width)
@@ -400,6 +400,10 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
                     coefficient = jnp.where(valid, coefficient * factor, jnp.nan)
                 return coefficient
 
+            # The polynomial's input z = phi(s) per pair (attention/score_transform.py), at the masked entries'
+            # zero score too (finite), whose weights are zeroed below as for every kernel. The identity is
+            # safe_scores itself, so untransformed recipes trace exactly as before.
+            inputs = transform_scores(safe_scores, m.score_transform)
             if m.score_bias is not None:
                 # Slice the query-side shift operand once for every order, as the gate operands above.
                 block_shift = rows(score_bias_rows)
@@ -418,10 +422,10 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
                     return jnp.where(causal, beta, 0.0)
 
                 def order_term(order):
-                    """c_r G_r (s + beta_r)^r [b, h, q, k], an explicit power; order zero is c_0 G_0, unshifted."""
+                    """c_r G_r (z + beta_r)^r [b, h, q, k], an explicit power; order zero is c_0 G_0, unshifted."""
                     if order == 0:
                         return jnp.broadcast_to(pair_coefficient(0), safe_scores.shape)
-                    return pair_coefficient(order) * (safe_scores + order_shift(order)) ** order
+                    return pair_coefficient(order) * (inputs + order_shift(order)) ** order
 
                 # Every order has its own base, so no Horner recurrence and no expansion into unshifted
                 # powers: one [B,H,Q,K] block per order, never a pair-by-order tensor.
@@ -429,10 +433,6 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
                 for order in range(1, m.attention_degree + 1):
                     kernel = kernel + order_term(order)
             else:
-                # The polynomial's input z = phi(s) per pair (attention/score_transform.py), at the masked
-                # entries' zero score too (finite), whose weights are zeroed below as for every kernel. The
-                # identity is safe_scores itself, so untransformed recipes trace exactly as before.
-                inputs = transform_scores(safe_scores, m.score_transform)
                 kernel = jnp.broadcast_to(pair_coefficient(m.attention_degree), safe_scores.shape)
                 for order in range(m.attention_degree - 1, -1, -1):
                     kernel = kernel * inputs + pair_coefficient(order)
