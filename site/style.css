@@ -70,6 +70,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  min-height: 118px;
   padding: 26px 28px;
   border: 1px solid rgba(79, 70, 229, 0.14);
   border-radius: 16px;
