@@ -128,6 +128,7 @@ main {
   text-decoration: none;
 }
 .back:hover { color: var(--text); }
+.page-title + .subpages { margin-top: 28px; }
 .page-title {
   margin: 0;
   font-size: 1.5rem;
