@@ -23,6 +23,9 @@ FAMILIES = (  # summary family, table label, chart legend
     ("query_w_decay", "Query + W decay", "Query, W decay"),
 )
 REFERENCES = (("softmax", "Softmax", "solid"), ("exp", "Exp", "dashed"))
+RUNS = ROOT / "experiments/transformer_pp/runs"
+# Query + W decay at m = 8, one run per starting point of the coefficients b_r.
+INITIALIZATIONS = (("Taylor", "r25fffc16c2f3"), ("Hermite", "r6adefb42f443"))
 
 
 def rows(path: Path) -> list[dict]:
@@ -80,8 +83,20 @@ def baselines() -> dict:
     }
 
 
+def initializations() -> dict:
+    return {
+        "title": "Initializations",
+        "metric": "validation-best perplexity",
+        "columns": [{"family": "Query + W decay", "degree": 8}],
+        "rows": [{"label": label, "cells": [{"run_id": run_id, "perplexity": float(
+            json.loads((RUNS / run_id / "best_validation.json").read_text())["validation_perplexity"])}]}
+                 for label, run_id in INITIALIZATIONS],
+    }
+
+
 def main() -> None:
-    data = {"baselines": baselines(), "width_degree": width_table(), "degree_scaling": degree_scaling()}
+    data = {"baselines": baselines(), "width_degree": width_table(), "degree_scaling": degree_scaling(),
+            "initializations": initializations()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

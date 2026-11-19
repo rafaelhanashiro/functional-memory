@@ -360,5 +360,35 @@
         "perplexity": 14.257176394334465
       }
     ]
+  },
+  "initializations": {
+    "title": "Initializations",
+    "metric": "validation-best perplexity",
+    "columns": [
+      {
+        "family": "Query + W decay",
+        "degree": 8
+      }
+    ],
+    "rows": [
+      {
+        "label": "Taylor",
+        "cells": [
+          {
+            "run_id": "r25fffc16c2f3",
+            "perplexity": 14.322804520454994
+          }
+        ]
+      },
+      {
+        "label": "Hermite",
+        "cells": [
+          {
+            "run_id": "r6adefb42f443",
+            "perplexity": 14.371392947094554
+          }
+        ]
+      }
+    ]
   }
 }

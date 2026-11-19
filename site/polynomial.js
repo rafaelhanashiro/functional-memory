@@ -50,6 +50,15 @@ function baselines(data, host) {
   section(host, data.title).append(baseline);
 }
 
+function initializations(data, host) {
+  const best = data.columns.map((column, index) => Math.min(...data.rows.map((row) => row.cells[index].perplexity)).toFixed(2));
+  const grid = table(["Initialization", ...data.columns.map((column) => `${column.family}, ${degreeLabel(column.degree)}`)],
+    data.rows.map((row) => [{text: row.label}, ...row.cells.map((cell, index) => ({
+      text: cell.perplexity.toFixed(2), best: cell.perplexity.toFixed(2) === best[index]}))]));
+  grid.classList.add("compact");
+  section(host, data.title).append(grid);
+}
+
 function widthDegree(data, host) {
   const values = data.rows.flatMap((row) => row.cells.filter(Boolean).map((cell) => cell.perplexity));
   const best = Math.min(...values).toFixed(4);
@@ -166,6 +175,7 @@ function degreeChart(data) {
     widthDegree(data.width_degree, document.querySelector('[data-result="width-degree"]'));
     section(document.querySelector('[data-result="degree-scaling"]'), data.degree_scaling.title)
       .append(degreeTable(data.degree_scaling), degreeChart(data.degree_scaling));
+    initializations(data.initializations, document.querySelector('[data-result="initializations"]'));
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }
