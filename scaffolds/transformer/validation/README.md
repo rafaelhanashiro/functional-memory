@@ -4288,3 +4288,46 @@ Q/K/V/coefficient gradients are compared against FP64 at the production context
 and head width. These allocation checks, the actual-recipe pilot and its observed
 coefficient movement, and exact checkpoint resumption remain required before
 training. No production arithmetic or normalization setting changed.
+
+## Static relative-Taylor SoS on Mosaic (2026-11-17)
+
+The [qualification record](static_sos.json) pins source, lock, test evidence and
+full-size initialization for static SoS cores 8 and 12 on raw scores, softplus
+scores, and softplus scores with a multiplicative prefactor (total degrees 9/13).
+Shared static factors use the query generator's relative-Taylor bias scaling;
+no input-dependent projection or factor decay is introduced.
+
+H100 job 4702 and B200 job 4703 each passed all **22 GPU checks**, without skips,
+against independent host-FP64 direct-square references. Coverage includes outputs,
+Q/K/V and individual factor gradients, reductions into shared factors, causality,
+BF16/BF16X3 arithmetic, and 512/2,048-token shapes. H100 used the locked CUDA 12
+environment; B200 used CUDA 13. CPU acceptance passed **573 tests** plus **11
+distributed tests**; the focused diagnostics/backend checks also passed.
+
+Actual full-size initialization matches every shared backbone array and initial
+effective factor of the query controls, with 198,455,476 parameters for core 8 and
+198,456,316 for core 12. Static factors are excluded from decay. This qualifies
+kernel behavior and initialization; each production allocation still runs its full
+acceptance, timing pilot and fresh-process checkpoint-resume check before training.
+
+Reproduce GPU qualification from the frozen worktree with
+`scaffolds/transformer/validation/qualify_static_sos.sbatch`, passing the worktree
+root and launch commit, on one H100 or B200. The qualification record contains
+the CPU commands and hashes of the retained ignored GPU logs and JUnit reports.
+
+The degree-four extension uses unchanged production arithmetic (source
+`31f1b784`): total degrees four/five for softplus without/with prefactor. Its
+30 recipe/initialization tests and 10 focused CPU numerical tests pass. Eight
+additional GPU cases cover both transformed forms, BF16/BF16X3, 2,048-token
+production dispatch, shared-factor reductions and causal gradients. GPU execution
+and full-model pilot/resume remain required inside each allocation; the launch
+alone is not a completed hardware qualification.
+
+```bash
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml \
+  experiments/transformer_pp/tests/test_static_sos_acceptance.py
+JAX_PLATFORMS=cpu scaffolds/transformer/.venv/bin/python -m pytest -q \
+  -c scaffolds/transformer/pyproject.toml \
+  scaffolds/transformer/tests/test_static_sos.py -k m4
+```

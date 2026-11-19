@@ -136,7 +136,10 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         elif parameterization == "sum_of_squares":
             from scaffolds.transformer.attention.nonnegative_polynomial import parameter_specs
 
-            specs = parameter_specs(degree=config.attention_degree, sharing=config.attention_coefficient_sharing)
+            specs = parameter_specs(
+                degree=config.attention_degree - getattr(config, "attention_coefficient_input_power", 0),
+                sharing=config.attention_coefficient_sharing,
+                parameterization=getattr(config, "attention_static_sos_parameterization", "direct"))
         else:
             initialization = getattr(config, "attention_coefficient_initialization", "taylor")
             if parameterization == "rational":

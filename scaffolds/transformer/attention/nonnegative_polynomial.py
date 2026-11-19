@@ -8,14 +8,14 @@ coefficients of q1 and q2 are the learned parameters, one set per layer and head
 the same count as learning c_0..c_m directly; the scale is redundant under row
 normalization, as it is for the direct coefficients.
 
-The static kernel is evaluated as q1(s)^2 + q2(s)^2, never through the expanded
+The normalized static kernel is evaluated as q1(s)^2 + q2(s)^2, never through the expanded
 coefficients: expanding a polynomial whose minimum is near zero cancels in
 floating point and can produce small negative values, which would break the
 nonnegativity the parameterization exists to guarantee. Individual kernel values
 may be exactly zero (at a common real root of q1 and q2); only a row sum of zero
 is invalid.
 
-The query-conditioned path instead expands generated factors into FP32 coefficients
+The unnormalized static and query-conditioned paths expand their factors into FP32 coefficients
 for the query-polynomial kernels. It can therefore round slightly negative near roots;
 its numerical diagnostics treat it as signed. With input_power=1 the expansion is
 multiplied by z through a structural leading zero, representing z h(z), z=softplus(s).
@@ -91,6 +91,66 @@ def effective_coefficients_numpy(factors, degree: int | None = None) -> np.ndarr
     return out
 
 
+def static_square_factors(stored: jax.Array, degree: int, *, parameterization: str = "direct") -> jax.Array:
+    """Resolve stored static factors, retaining the historical direct parameterization.
+
+    ``relative_taylor`` stores b initialized to one and represents F_j=f_j(1+b_j)/2,
+    exactly the query generator's factor map with its input-dependent branch removed.
+    This preserves the query bias's optimizer scale even for tiny high-order factors.
+    """
+    _validate_degree(degree)
+    if stored.shape[-1] != degree + 1:
+        raise ValueError("Static square factors must have core_degree + 1 entries")
+    if parameterization == "direct":
+        return stored
+    if parameterization != "relative_taylor":
+        raise ValueError(f"Unknown static SoS parameterization: {parameterization}")
+    return jnp.asarray(taylor_square_factors(degree), jnp.float32) * (1 + stored.astype(jnp.float32)) / 2
+
+
+def static_square_coefficients(factors: jax.Array, degree: int, *, input_power: int = 0) -> jax.Array:
+    """Expand actual static factors of z^input_power (q1(z)^2+q2(z)^2) in FP32.
+
+    ``degree`` is the total degree, including the structural prefactor. Broadcasting
+    the resulting per-head coefficients over query tokens sums their gradients back
+    to the same static factor parameters; no token-dependent parameters are created.
+    """
+    if type(input_power) is not int or input_power not in (0, 1):
+        raise ValueError("input_power must be the integer 0 or 1")
+    core_degree = degree - input_power
+    _validate_degree(core_degree)
+    if factors.shape[-1] != core_degree + 1:
+        raise ValueError("Static square factors must have core_degree + 1 entries")
+    factors = factors.astype(jnp.float32)
+    terms = [jnp.zeros(factors.shape[:-1], jnp.float32) for _ in range(core_degree + 1)]
+    for part in split_factors(factors, core_degree):
+        for i in range(part.shape[-1]):
+            for j in range(part.shape[-1]):
+                terms[i + j] = terms[i + j] + part[..., i] * part[..., j]
+    if input_power:
+        terms.insert(0, jnp.zeros_like(terms[0]))
+    return jnp.stack(terms, axis=-1)
+
+
+def unnormalized_square_attention(q, k, v, factors, *, attention_degree: int, input_power: int = 0,
+                                  score_transform: str = "identity", backend: str = "blocked",
+                                  return_diagnostics: bool = False, blocked_implementation: str = "scan"):
+    """Static SoS on the existing unnormalized query-polynomial kernels with equal rows."""
+    from scaffolds.transformer.attention.input_dependent import query_polynomial_attention
+
+    if backend not in ("blocked", "mosaic"):
+        raise ValueError("Unnormalized static SoS uses backend='blocked' or 'mosaic'")
+    if score_transform not in ("identity", "softplus") or input_power and score_transform != "softplus":
+        raise ValueError("Static SoS takes identity or softplus scores, with its prefactor on softplus only")
+    validate_factors(factors, attention_degree - input_power, q.shape[2])
+    coefficients = static_square_coefficients(factors, attention_degree, input_power=input_power)
+    coefficients = jnp.broadcast_to(coefficients, (q.shape[2], attention_degree + 1))
+    coefficients = jnp.broadcast_to(coefficients[None, None], (*q.shape[:3], attention_degree + 1))
+    return query_polynomial_attention(q, k, v, coefficients, backend=backend,
+                                      score_transform=score_transform, return_diagnostics=return_diagnostics,
+                                      blocked_implementation=blocked_implementation)
+
+
 def query_square_coefficients(generated: jax.Array, degree: int, *, input_power: int = 0) -> jax.Array:
     """Actual coefficients of z^input_power (q1(z)^2 + q2(z)^2), of TOTAL degree ``degree``.
 
@@ -140,13 +200,18 @@ def validate_factors(factors, degree, heads) -> None:
         raise ValueError("Square factors must have shape (m+1,) or (heads, m+1)")
 
 
-def parameter_specs(*, degree: int, sharing: str):
+def parameter_specs(*, degree: int, sharing: str, parameterization: str = "direct"):
     """One factor set per layer and head (or shared), initialized to reproduce T_m."""
     from scaffolds.transformer.attention.parameters import AttentionParameterSpec
 
+    initial = taylor_square_factors(degree)
+    if parameterization == "relative_taylor":
+        initial = (1.0,) * len(initial)
+    elif parameterization != "direct":
+        raise ValueError(f"Unknown static SoS parameterization: {parameterization}")
     return (AttentionParameterSpec(
         name="polynomial_square_factors", argument="polynomial_square_factors",
-        initial=taylor_square_factors(degree), sharing=sharing, weight_decay=False,
+        initial=initial, sharing=sharing, weight_decay=False,
     ),)
 
 

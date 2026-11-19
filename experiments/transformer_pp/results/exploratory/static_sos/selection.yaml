@@ -1,0 +1,340 @@
+question: Do SoS and softplus-prefactor improvements persist with static factors?
+study: transformer_pp
+settings:
+  metric: validation perplexity
+  report:
+  - validation-best
+  - terminal
+  sos_core_degrees:
+  - 4
+  - 8
+  - 12
+  shape:
+    num_layers: 15
+    hidden_size: 896
+  training_updates: 7570
+  context_length: 2048
+  seed: 42
+  positional_encoding: rope
+  static_factor_parameterization: relative_taylor
+runs:
+- study: transformer_pp
+  run_id: r0e32dd2bd3f7
+  role: static_raw_m8
+  label: static-sos-core-m8-raw-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0e32dd2bd3f7/config.yaml
+      sha256: 2083c10b1e7b612384959146cf1da5a4080cde79b8cb75e69f373e703a3cfb82
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0e32dd2bd3f7/metrics.jsonl
+      sha256: 4a24c538d1d304e7bb327a2bf62a842f8c8e83529c0a94fac4cc0803abb57b3b
+    completion.json:
+      path: experiments/transformer_pp/runs/r0e32dd2bd3f7/completion.json
+      sha256: 45a1eca2f949d567f2b2cd7b6d79cf5491be19cc075928f3914eed8981bb7249
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0e32dd2bd3f7/metadata.json
+      sha256: 2a8ad1f07486516f78321e5c5a215fd6182ab572f4b31016a3956d11c617c5db
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0e32dd2bd3f7/best_validation.json
+      sha256: 6293ab4756f7e1782d93a6a994611664ccb24e417f4e6b4331350fcf3c4ef82a
+- study: transformer_pp
+  run_id: reeefbcc19abf
+  role: query_control_raw_m8
+  label: 'Query control: raw, core 8'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/config.yaml
+      sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metrics.jsonl
+      sha256: d647b2f1e82f45fbd72d0e68be0d03897f7427477fcbb68ab78d7524b0085ffb
+    completion.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/completion.json
+      sha256: e3fae2b3368b9bf83a8ecaf40eba19c127dc51556d4d0802f2bc11600923c0c0
+    metadata.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metadata.json
+      sha256: 622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
+      sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2
+- study: transformer_pp
+  run_id: rdc8b04b223af
+  role: static_raw_m12
+  label: static-sos-core-m12-raw-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rdc8b04b223af/config.yaml
+      sha256: 299c9582132c25b29cf45efe353e142f3a7064fed99bf88875f30ba73d511d95
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rdc8b04b223af/metrics.jsonl
+      sha256: 182e61f8da4e0dedc225d468d6d9f6b72965d37ed82b4766d32711edfaaef0b9
+    completion.json:
+      path: experiments/transformer_pp/runs/rdc8b04b223af/completion.json
+      sha256: 533e53fc62ee549387c3a0d299f77b687cae1a80a910867c6a6f24368ea6b94b
+    metadata.json:
+      path: experiments/transformer_pp/runs/rdc8b04b223af/metadata.json
+      sha256: 1a56c2ffe3e8f1a0cdaada7f6e3e64fe54d21bdeef673a9118a269e048970a2a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rdc8b04b223af/best_validation.json
+      sha256: e28992668e9b33cbe97377730a0524f279cc187082b899d77b5ff0645a337578
+- study: transformer_pp
+  run_id: r3d52b7ab43d1
+  role: query_control_raw_m12
+  label: 'Query control: raw, core 12'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/config.yaml
+      sha256: 9b76b2bf414442b851519a08f5bcf193598d96381f055bb1de31dbd238f6c0fa
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metrics.jsonl
+      sha256: 894f20027b79ef78b636a615fbdf19db223e12bb91c027a9c055fe0e7587088a
+    completion.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/completion.json
+      sha256: 68f9ccb5f5fde1a03a2bc47172122866eacdce1aa0f17a253db685f10ca4ee51
+    metadata.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/metadata.json
+      sha256: 427c3d0111ef74fb313369aae5dd6bca63cb96ec131c6c104f45a1b5cdf60bac
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r3d52b7ab43d1/best_validation.json
+      sha256: 3b7db607a97f8d8ff8f3447e2a6aed04f54477288fac17b15da4d1ded34bb839
+- study: transformer_pp
+  run_id: r54f771e54722
+  role: static_softplus_m8
+  label: static-sos-core-m8-softplus-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r54f771e54722/config.yaml
+      sha256: 630076396eda28feac207dbb3d37b37ed2d07d0f93b1d80072ce96a5db6b0ba2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r54f771e54722/metrics.jsonl
+      sha256: a01769c26163683b65ab917de0c9cdf3564bbe81397b7b28641c67d3cb2a29a8
+    completion.json:
+      path: experiments/transformer_pp/runs/r54f771e54722/completion.json
+      sha256: 94b1d81b3fd8080cb9608915848d728be0a2edcc19b2abcf3c00dfe357f3fa64
+    metadata.json:
+      path: experiments/transformer_pp/runs/r54f771e54722/metadata.json
+      sha256: c328e2636844bfdb9e0a9db95a38590a1d278689d88cafa0fad729d2a36cac48
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r54f771e54722/best_validation.json
+      sha256: 0c966922503faeb4a50faeaa3ecc7ca9a015d253d31aa2b869f2e992ae6017de
+- study: transformer_pp
+  run_id: r41a4c74c5f58
+  role: query_control_softplus_m8
+  label: 'Query control: softplus, core 8'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml
+      sha256: 851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metrics.jsonl
+      sha256: 49be5d0bf16b835e95bfc69231d9aeb46d194a4fb7c1a8fe2073e9e6207db3bb
+    completion.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/completion.json
+      sha256: 1e2abce0eec8e98379b06a89664e0d6cb70e526eb895dc6404d9d75607cdc328
+    metadata.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metadata.json
+      sha256: 42b7fbbd934fa9a59985bb3e030d3f6ccba4e62c592eb7b7e86b1f9066809f02
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/best_validation.json
+      sha256: ff78b0bb95d83d8297a3448a51c7cbcdee95b35e7e9d9f32c70c77b3e5088e24
+- study: transformer_pp
+  run_id: r1b9e2e69f7f0
+  role: static_softplus_m12
+  label: static-sos-core-m12-softplus-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1b9e2e69f7f0/config.yaml
+      sha256: a610a21be997808f3369c6c4a8f7f1a5a18c150c2d9fce939dc1f8138a93f9c4
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1b9e2e69f7f0/metrics.jsonl
+      sha256: 71cb1fc3a633ffaad2686d294e6ec3f6534a007ee198947688117366571e5dd2
+    completion.json:
+      path: experiments/transformer_pp/runs/r1b9e2e69f7f0/completion.json
+      sha256: 17dde6cabb7282ab31c4b9762b66f0ecba2627a893e852e6b2af0777d1613919
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1b9e2e69f7f0/metadata.json
+      sha256: 02c7e384c7bd9a0130568cbb9e945c8ac5c8cf52ede20bbf803ebec93120a46f
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1b9e2e69f7f0/best_validation.json
+      sha256: 85dbd1147159ca94df9ce96c467d6d490209e8bfb3eafad5c9d363a0eae4ee2d
+- study: transformer_pp
+  run_id: rc5aac8f37a2e
+  role: query_control_softplus_m12
+  label: 'Query control: softplus, core 12'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc5aac8f37a2e/config.yaml
+      sha256: 4801b17dd1823c665595e42b0c7bd8dcf03385d6b6ca4de6a27fa7419afb7944
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rc5aac8f37a2e/metrics.jsonl
+      sha256: f16ca09157ffa44a8475643992ed5fbaabcd46cf68110ebb649d85cf225d932f
+    completion.json:
+      path: experiments/transformer_pp/runs/rc5aac8f37a2e/completion.json
+      sha256: 18682a75bdf40e830087e1ce2ffff37a973b58604489e66d523cf272ddd4bce6
+    metadata.json:
+      path: experiments/transformer_pp/runs/rc5aac8f37a2e/metadata.json
+      sha256: 4b2a8fc77fa41495e31e6a30063c9d773f116088e8355bff190c6583f5ec3955
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rc5aac8f37a2e/best_validation.json
+      sha256: 020f0078760c054342d613c595ceb1c31e428dc8769d0b0cd2f895eeaa369143
+- study: transformer_pp
+  run_id: ra3bffee9a528
+  role: static_prefactor_m8
+  label: static-sos-core-m8-prefactor-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra3bffee9a528/config.yaml
+      sha256: 31bbe5c6395ed452617c8524c8b6bfe1f883f673b4fbdfe65fd9dd4af2f845eb
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra3bffee9a528/metrics.jsonl
+      sha256: f673657718c054becb3d6660a7cb6ad3673592df75ffd6b47c4e50f11db992ee
+    completion.json:
+      path: experiments/transformer_pp/runs/ra3bffee9a528/completion.json
+      sha256: 6cf607e73b5ec4e67479183d4f6972d8fc2d8a5e7e1af6b52521a846dcb6adb6
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra3bffee9a528/metadata.json
+      sha256: 722f9b06ff7b07667c54a194a5a469b47d1d5352d28380848ac1ad79f14a7f9e
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra3bffee9a528/best_validation.json
+      sha256: e035187af686889794320536b049bd9d7156b817733639ae80661445473aaee6
+- study: transformer_pp
+  run_id: r841f35a24241
+  role: query_control_prefactor_m8
+  label: 'Query control: prefactor, core 8'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r841f35a24241/config.yaml
+      sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r841f35a24241/metrics.jsonl
+      sha256: 556a1734b7f5a781101261fe4cf9724190a09006d431609c5b4be3c56fada92e
+    completion.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/completion.json
+      sha256: 11a1e0bd2b6ccb1f1b8aa7fd705d1c045e36d1eceef1011c6fd73a57535d2c37
+    metadata.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/metadata.json
+      sha256: db3053fda571a2f2da9e34bffc5d537c7e9b8dbdc619d5c2e7d6800b95f5e29a
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r841f35a24241/best_validation.json
+      sha256: bd2e20b625d2369d4a4425db193f1ba59b2ebdbc8ed26a178d26d0104af51495
+- study: transformer_pp
+  run_id: r28a991faed4f
+  role: static_prefactor_m12
+  label: static-sos-core-m12-prefactor-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r28a991faed4f/config.yaml
+      sha256: 01b87571d7c8a31be0174d4636446b1504617c78e2be092953da9bf153537c26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r28a991faed4f/metrics.jsonl
+      sha256: 9538966569076a4e65d9411c6176dd6a73e618a3fd458a1a0d44b0a0084b3cee
+    completion.json:
+      path: experiments/transformer_pp/runs/r28a991faed4f/completion.json
+      sha256: 491cc4901faa8a06a5b7e2e25d8d9d0967164651276b881e204ce4b7a867f214
+    metadata.json:
+      path: experiments/transformer_pp/runs/r28a991faed4f/metadata.json
+      sha256: cfef4c1e4978d67f9da54b1fcc800626580c12483d7aff7f05cabbd993264705
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r28a991faed4f/best_validation.json
+      sha256: f727a63328b88982d711530b5eed176e77c7bce97c016ee0c99f7c238612a24e
+- study: transformer_pp
+  run_id: rf637de9b65b1
+  role: query_control_prefactor_m12
+  label: 'Query control: prefactor, core 12'
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/config.yaml
+      sha256: 22a94ee8cc46fa053cfe2d7789567552888882038d0eb666c705a2762a762903
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metrics.jsonl
+      sha256: adc50bbe174a6978c513dea4891a08d31458dc6593c282362b0b877887f43bad
+    completion.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/completion.json
+      sha256: 87dc6b38845536d252820339fb2b030d8e01c0fbbc31dbeaae248f2f66249754
+    metadata.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/metadata.json
+      sha256: ea3ca1077248ad8f4338a3663db0b8bc2ca7fa07894c1febcc158a156f1f576b
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rf637de9b65b1/best_validation.json
+      sha256: 59b90f08f1824108981c5817467d077ef304629ea6cd9fc83da55885513a6a36
+- study: transformer_pp
+  run_id: r6a76e7fbde45
+  role: reference_exp
+  label: exp
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metrics.jsonl
+      sha256: adcc711574d95b506246b762fef2fdb724ab1aa00f618c0546cb3f47c4ce165d
+    completion.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/completion.json
+      sha256: 8b7e7bf2d3124fe5dff032355b96a42f3982166f58978f998b47b3415ae4298e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metadata.json
+      sha256: 7fa4b1ed64bf0e895b67d2db757a580599e831500a0757ad7787ed7d7a4c92ae
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
+      sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r6d4217061453
+  role: static_softplus_m4
+  label: static-sos-core-m4-softplus-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6d4217061453/config.yaml
+      sha256: 19d1d2779b7132df7b30ec027eaab4c51dfac715a658aa28a76b1058008fd305
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6d4217061453/metrics.jsonl
+      sha256: cc6bcfff9e57c04ad9a06d922d913491ae9c69ce58e2763e9939ba1434209176
+    completion.json:
+      path: experiments/transformer_pp/runs/r6d4217061453/completion.json
+      sha256: e452f071e95b33f9380c044887f4fdaae39edebaeeca9c84184fc7d409d627b0
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6d4217061453/metadata.json
+      sha256: 84ca40aa8456291640ee41bff6f5f1ef2e5d24c92880423b9c8b745a0f3adf1d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6d4217061453/best_validation.json
+      sha256: 589b2e4393ac8b280a4ba83921a584af9e52b7a28ef2376a1c0f609e3f66129e
+- study: transformer_pp
+  run_id: r91e0c1bb8458
+  role: static_prefactor_m4
+  label: static-sos-core-m4-prefactor-rope
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/config.yaml
+      sha256: f0546b480d708ba6037a89acfeb7b05a4c87d12dfc5633a88ff75cbdb2e09f52
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/metrics.jsonl
+      sha256: e2f20e67ce64315f6470c030a38d69a0a292fe4e2fbee047b9bebca6174ee993
+    completion.json:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/completion.json
+      sha256: e5a1f07f64218ad4bfc769a7ff4d4de3cfe80120ca147eaaffb3eaf6d1728a8d
+    metadata.json:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/metadata.json
+      sha256: 8f205ab5fe73f209e0b1ac7534cc087f133d11aefcc8eb64e96a12b195055a49
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r91e0c1bb8458/best_validation.json
+      sha256: dab7ae9c61774e0e128df871e6a4f263e0f15da3a0dd77b5ef819dd19907f732
+- study: transformer_pp
+  run_id: r4339a245820e
+  role: reference_static_m4
+  label: Ordinary static m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4339a245820e/config.yaml
+      sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4339a245820e/metrics.jsonl
+      sha256: aac549c56baf062d85bf3a4026d92a81ea0181671127c7cfd89b75fbdd849fd4
+    completion.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/completion.json
+      sha256: afb56b2641f922fef2a15097909d892309d9814cf091d88d9fecc9b88743dc27
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/metadata.json
+      sha256: e365b09aa102c907956d144ffcb066ee4bb78cfc52c554abce53013ffaa152f8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4339a245820e/best_validation.json
+      sha256: d487f8d386c07df16a7e5f8b7d6f6ff756be16fe0abc1b1d57829813167a5514

@@ -227,7 +227,6 @@ def test_configuration_validation_backend_selection_and_legacy_equality():
     assert config.attention_coefficient_parameterization == "sum_of_squares"
     for updates, message in ((dict(attention_degree=3), "even core degree"),
                              (dict(attention_degree=1), "even core degree"),
-                             (dict(attention_normalization=False), "normalized static"),
                              (dict(attention_coefficients="fixed"), "learned polynomial"),
                              (dict(attention_coefficient_parameterization="softplus"), "Unknown coefficient")):
         with pytest.raises(ValueError, match=message):
@@ -251,9 +250,9 @@ def test_configuration_validation_backend_selection_and_legacy_equality():
     with pytest.raises(ValueError, match="exactly one"):
         attention_core(*_operands()[0], backend="blocked", attention_degree=2, attention_normalization=True,
                        polynomial_coefficients=jnp.ones((3,)), polynomial_square_factors=jnp.ones((3,)))
-    with pytest.raises(ValueError, match="row-normalized"):
-        attention_core(*_operands()[0], backend="blocked", attention_degree=2, attention_normalization=False,
-                       polynomial_square_factors=jnp.ones((3,)))
+    output = attention_core(*_operands()[0], backend="blocked", attention_degree=2, attention_normalization=False,
+                            polynomial_square_factors=jnp.ones((3,)))
+    assert np.isfinite(np.asarray(output)).all()
 
 
 @pytest.mark.parametrize("qk_norm", (False, True))

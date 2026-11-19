@@ -246,13 +246,16 @@ class ModelConfig:
     # of degree <= attention_degree. These initialize the full learned B-spline basis.
     attention_spline_initial_power_coefficients: tuple[float, ...] | None = None
     # "direct" learns c_0..c_m; "sum_of_squares" learns q1, q2 with p = q1^2 + q2^2
-    # (even core degree; normalized static or unnormalized diagonal tanh query coefficients).
+    # (even core degree; normalized static or unnormalized static/diagonal tanh query coefficients).
     # Query factors are generated relative to fixed Taylor square factors and expanded in FP32;
     # algebraic nonnegativity does not exclude small negative values from cancellation near roots.
     # "rational" (row-normalized only) learns a numerator a_0..a_m and a denominator
     # 1 + b_1 s + ... + b_m s^m, so the weights are p_a(s) / sum_j p_b(s_j).
     attention_coefficient_parameterization: Literal["direct", "sum_of_squares", "rational"] = "direct"
-    # Query SoS only: p(z) = z^power h(z), h a sum of two squares, z=softplus(s) for power 1.
+    # Static SoS can store actual factors (historical default) or b with F=f*(1+b)/2,
+    # matching the query factor generator after removing its input-dependent branch.
+    attention_static_sos_parameterization: Literal["direct", "relative_taylor"] = "direct"
+    # SoS: p(z) = z^power h(z), h a sum of two squares, z=softplus(s) for power 1.
     # attention_degree ALWAYS denotes p's total degree. The generator and Taylor square factors
     # have core degree attention_degree - power, which must be even. Power 1 fixes c_0 exactly at zero.
     attention_coefficient_input_power: Literal[0, 1] = 0
@@ -329,7 +332,8 @@ class ModelConfig:
         # Static coefficients run on the query-coefficient kernel with every query's coefficients equal;
         # with a distance gate they run on the decay kernels instead (mosaic_decay_supported).
         static = (not self.attention_normalization and self.attention_coefficient_conditioning == "static"
-                  and self.quadratic_mode == "fixed" and self.attention_coefficient_parameterization == "direct"
+                  and self.quadratic_mode == "fixed"
+                  and self.attention_coefficient_parameterization in ("direct", "sum_of_squares")
                   and self.attention_fixed_square_factors is None and integer_degree
                   and not self.attention_forget_gate
                   and query_degree_supported(degree, self.qk_head_dim, self.max_seq_len))
@@ -430,7 +434,8 @@ class ModelConfig:
         transform = getattr(self, "attention_score_transform", "identity")
         if transform == "identity":
             return "the recipe has no score transform"
-        problem = _query_coefficient_problem(self)
+        problem = (_static_sos_problem(self) if self.attention_coefficient_conditioning == "static"
+                   else _query_coefficient_problem(self))
         if problem is None and self.positional_encoding != "rope":
             problem = "the Mosaic query-polynomial kernels run RoPE recipes"
         if problem is None and (self.attention_forget_gate or self.attention_score_bias != "none"):
@@ -944,9 +949,18 @@ class ModelConfig:
         if type(power) is not int or power not in (0, 1):
             raise ValueError("model.attention_coefficient_input_power must be the integer 0 or 1")
         if power and (self.attention_coefficient_parameterization != "sum_of_squares"
-                      or self.attention_coefficient_conditioning != "query"
+                      or self.attention_coefficient_conditioning not in ("static", "query")
+                      or self.attention_normalization
                       or self.attention_score_transform != "softplus"):
-            raise ValueError("An input power requires query sum-of-squares coefficients with softplus scores")
+            raise ValueError("An input power requires unnormalized static or query sum-of-squares coefficients "
+                             "with softplus scores")
+        if self.attention_static_sos_parameterization not in ("direct", "relative_taylor"):
+            raise ValueError("Unknown static SoS parameterization")
+        if self.attention_static_sos_parameterization != "direct" and (
+                self.attention_coefficients != "learned"
+                or self.attention_coefficient_parameterization != "sum_of_squares"
+                or self.attention_coefficient_conditioning != "static" or self.attention_normalization):
+            raise ValueError("The relative Taylor factor map applies only to unnormalized learned static SoS coefficients")
         if self.attention_coefficient_initialization not in ("taylor", "linear", "hermite", "affine", "polynomial"):
             raise ValueError(f"Unknown coefficient initialization: {self.attention_coefficient_initialization}")
         if self.attention_coefficient_initialization != "taylor":
@@ -1017,8 +1031,14 @@ class ModelConfig:
             if core_degree is None or core_degree < 2 or core_degree % 2:
                 raise ValueError("A sum-of-squares kernel requires even core degree attention_degree - "
                                  "attention_coefficient_input_power >= 2")
-            if not self.attention_normalization and self.attention_coefficient_conditioning != "query":
-                raise ValueError("A sum-of-squares kernel requires normalized static or unnormalized query attention")
+            if not self.attention_normalization and self.attention_coefficient_conditioning == "static":
+                problem = _static_sos_problem(self)
+                if problem is not None:
+                    raise ValueError(f"Unnormalized static SoS does not fit this recipe: {problem}")
+                if self.attention_backend not in ("blocked", "mosaic", "auto"):
+                    raise ValueError("Unnormalized static SoS uses blocked, mosaic, or auto attention")
+            elif not self.attention_normalization and self.attention_coefficient_conditioning != "query":
+                raise ValueError("A sum-of-squares kernel requires normalized static or unnormalized static/query attention")
         _validate_score_bias(self)
         _validate_score_transform(self)
         if self.qk_norm is None:
@@ -1208,6 +1228,29 @@ def _query_coefficient_problem(model) -> str | None:
     return None
 
 
+def _static_sos_problem(model) -> str | None:
+    """Why this is not the unnormalized static SoS extension, or None."""
+    if (model.attention_mechanism != "dot_product" or model.attention_normalization
+            or model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
+            or model.attention_coefficient_parameterization != "sum_of_squares"
+            or model.attention_coefficient_conditioning != "static"
+            or model.attention_coefficient_activation != "identity"
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_readout != "diagonal"
+            or model.attention_coefficient_orders is not None
+            or model.attention_coefficient_gate != "none"
+            or model.attention_coefficient_scale != "none"
+            or model.attention_coefficient_amplitude_scale != "none"
+            or model.attention_forget_gate or model.attention_score_bias != "none"
+            or model.attention_score_transform not in ("identity", "softplus")
+            or model.positional_encoding not in ("rope", "none")
+            or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
+        return ("it requires learned static Taylor-initialized SoS factors for unnormalized dot-product "
+                "attention, identity coefficient activation, identity or softplus scores, RoPE or no "
+                "positional encoding, without coefficient scales, selected orders, gates, or score biases")
+    return None
+
+
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
     coefficients with RoPE or no positional encoding, without a forget gate or score biases (allocation and
@@ -1232,7 +1275,8 @@ def _validate_score_transform(model: ModelConfig) -> None:
         model.attention_coefficient_constant_initial = float(start)
     if transform == "identity":
         return
-    problem = _query_coefficient_problem(model)
+    problem = (_static_sos_problem(model) if model.attention_coefficient_conditioning == "static"
+               else _query_coefficient_problem(model))
     if problem is None and model.positional_encoding not in ("rope", "none"):
         problem = "it applies with RoPE or no positional encoding, not PaTH"
     if problem is None and model.attention_forget_gate:

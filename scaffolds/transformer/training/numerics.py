@@ -42,7 +42,7 @@ def has_score_mlp(model) -> bool:
 def is_signed_kernel(model) -> bool:
     """Kernels whose weights may be negative or zero by design or expanded-polynomial rounding.
 
-    Unnormalized query SoS expands factors before evaluation. Cancellation near a root
+    Unnormalized static and query SoS expand factors before evaluation. Cancellation near a root
     can round negative; this does not waive the checks for nonfinite losses or gradients.
     """
     return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"

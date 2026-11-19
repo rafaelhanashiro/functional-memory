@@ -2588,3 +2588,64 @@ done
 
 The launcher qualifies the conventional outputs and gradients, a full-model pilot, and a
 fresh-process checkpoint resume in each allocation before production.
+
+## Static sum-of-squares comparison
+
+Six runs opened on 2026-11-17 compare static SoS with the corresponding query SoS
+models on Kennel. The [exploratory comparison](results/exploratory/static_sos/README.md)
+records the question, all run/control IDs, parameterization and open decision.
+Each recipe preserves its query partner's model, data, seed and 7,570-update budget.
+Only the coefficient generator is replaced by per-layer/head static factors:
+`attention_static_sos_parameterization: relative_taylor` learns b=1 with
+F_j=f_j(1+b_j)/2. W and a are absent, factors receive no weight decay, and their
+initial effective values reproduce the same Taylor core. Core degrees 8/12 use
+9/13 factor coordinates; the softplus prefactor changes total degree to 9/13.
+Gradient-event capture is enabled for all six runs.
+
+The [acceptance adapter](static_sos_acceptance.py) pins the six query recipes,
+checks actual initialized backbone arrays, factor values and optimizer decay
+masks, and runs independent FP64 direct-square forward/gradient references,
+a full-shape pilot and fresh-process resume. Production reuses Mosaic kernels;
+GPU admission is H100 or B200. Each run uses one GPU with independent scheduling.
+
+From the isolated worktree, sync both locked environments as documented in
+[CLUSTERS.md](../../CLUSTERS.md), inspect live standard/long allocations, then:
+
+```bash
+launch_commit=$(git rev-parse HEAD)
+for run in r0e32dd2bd3f7 rdc8b04b223af r54f771e54722 r1b9e2e69f7f0 ra3bffee9a528 r28a991faed4f; do
+  sbatch --partition=standard,long --exclude=akita,mastiff,collie,samoyed,doodle,terrier \
+    --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_sos_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$launch_commit" 1 H100,B200
+done
+```
+
+Keep the execution source, lock, recipes and study membership frozen while any
+job can run or requeue. Records contain the granted partition, GPU and job ID.
+
+The same comparison includes two core-degree-four static runs:
+`r6d4217061453` uses SoS on softplus scores, and `r91e0c1bb8458` adds the
+softplus prefactor. Their recipes differ from the corresponding static core-eight
+runs only in degree and run identity. They use five relative-Taylor factors per
+layer/head, initialized to T4(z), with total degrees four/five respectively.
+The adapter derives a degree-four initialization reference from the pinned
+degree-eight query recipe; this does not imply an existing degree-four query run.
+
+These two execute from the separate `static-sos-m4` worktree. After syncing its
+own locked CUDA 12/13 environments and checking the live allowances, submit only
+these IDs from that worktree:
+
+```bash
+launch_commit=$(git rev-parse HEAD)
+for run in r6d4217061453 r91e0c1bb8458; do
+  sbatch --partition=standard,long --exclude=akita,mastiff,collie,samoyed,doodle,terrier \
+    --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_sos_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$launch_commit" 1 H100,B200
+done
+```

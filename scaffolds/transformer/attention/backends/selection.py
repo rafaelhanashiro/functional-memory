@@ -165,6 +165,11 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     if request == "auto":
         if not gpu:
             return "blocked"
+        if (unnormalized and model_config.attention_coefficient_conditioning == "static"
+                and model_config.attention_coefficient_parameterization == "sum_of_squares"):
+            # Static SoS expands its factors through the qualified Mosaic query kernel;
+            # no static-factor Triton entry point exists for the fallback allocation.
+            return "blocked"
         if not custom_kernel:
             return "cudnn" if dtype == "bfloat16" and fits_fused and supports_triton else "xla"
         return "fused" if fits_fused and supports_triton else "blocked"
