@@ -45,9 +45,10 @@ which runs `scripts/materialize_fineweb/materialize_fineweb.py` with `data/packe
 locked environment, `pyproject.toml` and `uv.lock`. [`PROVENANCE.md`](fineweb_12b/ofm/PROVENANCE.md)
 records the build. [`fineweb_12b/ofm-8977f529/`](fineweb_12b/ofm-8977f529/) holds later ofm
 versions of the materializer, its launcher and the configuration `configs/data/fineweb_12b.yaml`,
-which did not build it. The facts above do not determine the build alone. The rule that maps a text's hash to the 1% eval split, the shuffle implementation and
-its library version, the tokenizer call, and what ended the eval split at 4,888 rows belong to
-the builder and its environment.
+which did not build it. The facts above do not determine the build alone: the rule that maps a
+text's hash to the 1% eval split, the shuffle and the tokenizer call belong to the builder, their
+exact behavior to its environment's library versions, and the row counts (5,859,375 train, 4,888
+eval) to its launcher's flags.
 
 ## Derived corpora
 
@@ -88,11 +89,27 @@ SHA256.
 
 ## Reproducing a corpus elsewhere
 
-1. Build `fineweb_12b` with its builder at the pinned dataset and tokenizer revisions, in the
-   builder's locked environment.
-2. Compare: `sha256sum train/manifest.json eval/manifest.json` must give the SHA256s of this
-   directory's copies. The base manifests hold no cluster paths, so a faithful rebuild matches
-   byte for byte, as ORCD's copy does. On a mismatch, the first differing shard locates it:
+1. Build `fineweb_12b` with [`fineweb_12b/rebuild.sh`](fineweb_12b/rebuild.sh) on a CPU node that
+   reaches huggingface.co, not a login node: 16 CPUs, 64 GB, about 40 GB of expendable storage
+   outside the repository, and about 2 hours.
+
+   ```bash
+   scaffolds/transformer/data/corpora/fineweb_12b/rebuild.sh WORK                  # the build's environment
+   scaffolds/transformer/data/corpora/fineweb_12b/rebuild.sh WORK --python PYTHON  # an existing one
+   ```
+
+   It runs the builder in [`fineweb_12b/ofm/`](fineweb_12b/ofm/) from a copy under `WORK`, with its
+   launcher's flags and exports, and writes the corpus to `WORK/data`. By default it installs the
+   build's environment under `WORK`: uv 0.10.10, CPython 3.11.15 and the 134 distributions of
+   `ofm/uv.lock`, which must equal the freeze in [`PROVENANCE.md`](fineweb_12b/ofm/PROVENANCE.md).
+   That needs PyPI and uv's Python downloads. `--python` uses an existing interpreter and its
+   packages instead, and reports how `datasets`, `pyarrow`, `fsspec`, `huggingface-hub`,
+   `tokenizers`, `transformers` and `numpy` differ from the build's; other versions may change the
+   bytes. Either way the script ends by comparing the manifests and `corpus.json` with this
+   directory's byte for byte and the downloaded tokenizer files with their recorded SHA256s.
+2. Check early: each finished shard's entry appears in `WORK/data/<split>/progress.json`, the
+   eval shard and train shard 0 within about 10 minutes, and must equal the same shard in this
+   directory's manifest. On a mismatch, the first differing shard locates it:
 
    ```bash
    python -c 'import json, sys; a, b = (json.load(open(p))["shards"] for p in sys.argv[1:]); \
@@ -105,3 +122,8 @@ SHA256.
 4. Point new recipes' `train_manifest` and `eval_manifest` at the new cluster's paths and record
    them in [CLUSTERS.md](../../../../CLUSTERS.md). The manifests' SHA256s, not the paths,
    identify the data.
+
+Verified on Kennel on 2026-11-19: Slurm job 7262 (`mastiff`, 16 CPUs and 64 GB, 2 h 10 min, peak
+RSS 30.0 GiB) ran `rebuild.sh` in the build's environment, equal to the freeze, and reproduced
+`fineweb_12b` byte for byte: all 91 shards, both manifests (`9de775ed`, `0e861553`), `corpus.json`
+(`540b7448`) and the five tokenizer files.
