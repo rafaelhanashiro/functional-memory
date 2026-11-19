@@ -42,6 +42,14 @@ function table(head, body) {
 }
 
 // Bold marks the lowest value as shown, so values that tie at the shown precision are all bold.
+function baselines(data, host) {
+  const best = Math.min(...data.rows.map((row) => row.perplexity)).toFixed(2);
+  const baseline = table(["Attention", "PPL"], data.rows.map((row) => [
+    {text: row.label}, {text: row.perplexity.toFixed(2), best: row.perplexity.toFixed(2) === best}]));
+  baseline.classList.add("compact");
+  section(host, data.title).append(baseline);
+}
+
 function widthDegree(data, host) {
   const values = data.rows.flatMap((row) => row.cells.filter(Boolean).map((cell) => cell.perplexity));
   const best = Math.min(...values).toFixed(4);
@@ -154,6 +162,7 @@ function degreeChart(data) {
     const response = await fetch("data/polynomial.json", {cache: "no-store"});
     if (!response.ok) throw new Error(response.statusText);
     const data = await response.json();
+    baselines(data.baselines, document.querySelector('[data-result="baselines"]'));
     widthDegree(data.width_degree, document.querySelector('[data-result="width-degree"]'));
     section(document.querySelector('[data-result="degree-scaling"]'), data.degree_scaling.title)
       .append(degreeTable(data.degree_scaling), degreeChart(data.degree_scaling));

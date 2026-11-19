@@ -1,4 +1,21 @@
 {
+  "baselines": {
+    "title": "Baselines",
+    "metric": "validation-best perplexity",
+    "source": "experiments/transformer_pp/results/degree_scaling/summary.csv",
+    "rows": [
+      {
+        "label": "Exp",
+        "run_id": "r6a76e7fbde45",
+        "perplexity": 14.257176394334465
+      },
+      {
+        "label": "Softmax",
+        "run_id": "r9040f12f3d80",
+        "perplexity": 14.542792482957227
+      }
+    ]
+  },
   "width_degree": {
     "title": "Scaling Query Attention + WD",
     "metric": "validation-best perplexity",

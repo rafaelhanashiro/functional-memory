@@ -68,8 +68,20 @@ def degree_scaling() -> dict:
     }
 
 
+def baselines() -> dict:
+    references = {row["family"]: row for row in rows(DEGREE) if row["role"] == "reference"}
+    return {
+        "title": "Baselines",
+        "metric": "validation-best perplexity",
+        "source": DEGREE.relative_to(ROOT).as_posix(),
+        "rows": [{"label": label, "run_id": references[family]["run_id"],
+                  "perplexity": float(references[family]["best_validation_perplexity"])}
+                 for family, label in (("exp", "Exp"), ("softmax", "Softmax"))],
+    }
+
+
 def main() -> None:
-    data = {"width_degree": width_table(), "degree_scaling": degree_scaling()}
+    data = {"baselines": baselines(), "width_degree": width_table(), "degree_scaling": degree_scaling()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

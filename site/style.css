@@ -412,6 +412,7 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   background: #fff;
 }
 .chart-wrap { margin-top: 16px; padding: 12px 6px 4px; }
+.table-wrap.compact { max-width: 420px; }
 .results-table {
   width: 100%;
   border-collapse: collapse;
