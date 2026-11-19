@@ -633,7 +633,6 @@ INVALID = (
     ({"attention_forget_gate_form": "constant"}, "constant forget gate form"),
     ({"attention_forget_gate_form": "sigmoid"}, "sigmoid forget gate form"),
     (PATH, "query-distance decay mode requires RoPE"),
-    ({"attention_degree": 2}, "forget gate applies to softmax"),
     ({"attention_backend": "fused"}, "Endpoint gate variants"),
     ({"attention_backend": "auto"}, "Endpoint gate variants"),
     ({"attention_backend": "mosaic"}, None),
@@ -662,6 +661,19 @@ def test_unqualified_recipes_are_rejected(kernel, change, message):
         return
     with pytest.raises(ValueError):
         attention_from_config(model, rngs=nnx.Rngs(0))
+
+
+def test_a_degree_composes_with_the_gate_only_unnormalized():
+    """Normalized Taylor attention takes no gate; unnormalized fixed Taylor coefficients take this one on the
+    blocked backend, per query (attention/pieces.py), in the configuration and in the module alike."""
+    with pytest.raises(ValueError, match="forget gate applies to softmax"):
+        _config("softmax", attention_degree=2)
+    model = _config("softmax").model
+    model.attention_degree = 2  # bypass config validation
+    with pytest.raises(ValueError):
+        attention_from_config(model, rngs=nnx.Rngs(0))
+    composed = _config("exp", attention_degree=2).model
+    attention_from_config(composed, rngs=nnx.Rngs(0))
 
 
 @pytest.mark.parametrize("kernel", KERNELS)
