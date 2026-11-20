@@ -380,7 +380,8 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   [data-callout="danger"], [data-callout="error"], [data-callout="bug"]) { --callout: 220 38 38; }
 .writeup-view .callout[data-callout="example"] { --callout: 124 58 237; }
 .writeup-view .callout:is([data-callout="quote"], [data-callout="cite"]) { --callout: 113 113 122; }
-.writeup-view table { border-collapse: collapse; }
+/* Tables and images in the Markdown (agendas, notes, write-ups, page texts) stand centered. */
+.writeup-view table { margin-inline: auto; border-collapse: collapse; }
 .writeup-view th, .writeup-view td {
   padding: 6px 14px 6px 0;
   border-bottom: 1px solid var(--rule);
@@ -390,10 +391,12 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .writeup-view img {
   display: block;
   max-width: 100%;
+  margin-inline: auto;
   border: 1px solid var(--rule);
   border-radius: 8px;
 }
 .writeup-view p:has(> img:only-child) { max-width: none; }
+.writeup-view p:has(> img):not(:has(> :not(img, br))) { margin-inline: auto; }  /* several images in a row */
 .writeup-view .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 .writeup-view .empty { color: var(--muted); font-style: italic; }
 
@@ -424,7 +427,8 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   background: #fff;
 }
 .chart-wrap { margin-top: 16px; padding: 12px 6px 4px; }
-.table-wrap.compact { width: fit-content; min-width: min(420px, 100%); max-width: 100%; }
+/* A narrow table stands centered in the column; a wide one spans it. */
+.table-wrap.compact { width: fit-content; min-width: min(420px, 100%); max-width: 100%; margin-inline: auto; }
 .results-table {
   width: 100%;
   border-collapse: collapse;
@@ -454,6 +458,7 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .results-table .change { margin-left: 6px; color: var(--muted); font-size: 0.85em; }
 .results-table tbody tr.divider td { border-top: 1px solid #cbd5e1; }
 .table-caption { margin: 8px 2px 0; color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
+.table-wrap.compact + .table-caption { text-align: center; }  /* under a centered table */
 .table-pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
