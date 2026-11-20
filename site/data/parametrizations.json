@@ -335,5 +335,217 @@
         }
       ]
     }
+  ],
+  "sos": [
+    {
+      "key": "sos",
+      "title": "SoS and softplus",
+      "tables": [
+        {
+          "head": [
+            "Variant",
+            "<var>m</var> = 4",
+            "<var>m</var> = 8",
+            "<var>m</var> = 12"
+          ],
+          "rows": [
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Query coefficients · <var>W</var> decay",
+                  "colspan": 4
+                }
+              ]
+            },
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "14.6424 <span class=\"change\">(+2.70%)</span>",
+                "value": 14.642439540322796,
+                "run_id": "r016b914d927a"
+              },
+              {
+                "text": "14.1955 <span class=\"change\">(−0.43%)</span>",
+                "value": 14.19554178201557,
+                "run_id": "reeefbcc19abf"
+              },
+              {
+                "text": "14.1649 <span class=\"change\">(−0.65%)</span>",
+                "value": 14.164902702578718,
+                "run_id": "r3d52b7ab43d1"
+              }
+            ],
+            [
+              {
+                "text": "Softplus input"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.2624 <span class=\"change\">(+0.04%)</span>",
+                "value": 14.262351191786944,
+                "run_id": "ra3b54e2489f8"
+              },
+              {
+                "text": "14.2223 <span class=\"change\">(−0.24%)</span>",
+                "value": 14.222309318277276,
+                "run_id": "r9eb845aae5bb"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.3388 <span class=\"change\">(+0.57%)</span>",
+                "value": 14.338780359544664,
+                "run_id": "r41a4c74c5f58"
+              },
+              {
+                "text": "14.3270 <span class=\"change\">(+0.49%)</span>",
+                "value": 14.32704504361169,
+                "run_id": "rc5aac8f37a2e"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor*"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.0953 <span class=\"change\">(−1.14%)</span>",
+                "value": 14.09530748722832,
+                "run_id": "r841f35a24241"
+              },
+              {
+                "text": "14.0934 <span class=\"change\">(−1.15%)</span>",
+                "value": 14.093399457351905,
+                "run_id": "rf637de9b65b1",
+                "best": true
+              }
+            ],
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Static coefficients",
+                  "colspan": 4
+                }
+              ]
+            },
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.3044 <span class=\"change\">(+0.33%)</span>",
+                "value": 14.30436294827776,
+                "run_id": "r0e32dd2bd3f7"
+              },
+              {
+                "text": "14.1674 <span class=\"change\">(−0.63%)</span>",
+                "value": 14.16738038888221,
+                "run_id": "rdc8b04b223af"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input"
+              },
+              {
+                "text": "14.7571 <span class=\"change\">(+3.51%)</span>",
+                "value": 14.757118683081853,
+                "run_id": "r6d4217061453"
+              },
+              {
+                "text": "14.3540 <span class=\"change\">(+0.68%)</span>",
+                "value": 14.353954107235383,
+                "run_id": "r54f771e54722"
+              },
+              {
+                "text": "14.3668 <span class=\"change\">(+0.77%)</span>",
+                "value": 14.366767478493491,
+                "run_id": "r1b9e2e69f7f0"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor*"
+              },
+              {
+                "text": "14.2971 <span class=\"change\">(+0.28%)</span>",
+                "value": 14.297129009821694,
+                "run_id": "r91e0c1bb8458"
+              },
+              {
+                "text": "14.1477 <span class=\"change\">(−0.77%)</span>",
+                "value": 14.147689084038568,
+                "run_id": "ra3bffee9a528"
+              },
+              {
+                "text": "14.1211 <span class=\"change\">(−0.95%)</span>",
+                "value": 14.12113583570795,
+                "run_id": "r28a991faed4f"
+              }
+            ],
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Fixed kernels",
+                  "colspan": 4
+                }
+              ]
+            },
+            [
+              {
+                "text": "Exp (baseline)"
+              },
+              {
+                "text": "14.2572 <span class=\"change\">(0.00%)</span>",
+                "value": 14.257176394334465,
+                "run_id": "r6a76e7fbde45",
+                "colspan": 3
+              }
+            ],
+            [
+              {
+                "text": "Sigmoid"
+              },
+              {
+                "text": "16.1352 <span class=\"change\">(+13.17%)</span>",
+                "value": 16.135168064320403,
+                "run_id": "r88d8654a8a1d",
+                "colspan": 3
+              }
+            ],
+            [
+              {
+                "text": "Softplus"
+              },
+              {
+                "text": "15.7443 <span class=\"change\">(+10.43%)</span>",
+                "value": 15.744321437549862,
+                "run_id": "r266c5dd1f935",
+                "colspan": 3
+              }
+            ]
+          ],
+          "caption": "Core degree <var>m</var>, with the change from exp in parentheses. * Total degree <var>m</var> + 1."
+        }
+      ]
+    }
   ]
 }

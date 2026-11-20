@@ -15,7 +15,7 @@ export function section(host, title) {
 }
 
 // A results table. Each body row is a list of cells, or {cells, className}; a cell is
-// {text, best, muted, rowspan, label}, where best bolds it, muted grays it, and label marks a
+// {text, best, muted, rowspan, colspan, label}, where best bolds it, muted grays it, and label marks a
 // row-group name.
 export function table(head, body, {compact = false, grouped = false} = {}) {
   const wrap = html("div", compact ? "table-wrap compact" : "table-wrap");
@@ -27,9 +27,10 @@ export function table(head, body, {compact = false, grouped = false} = {}) {
   for (const entry of body) {
     const {cells, className} = Array.isArray(entry) ? {cells: entry} : entry;
     const row = html("tr", className);
-    for (const {text, best, muted, rowspan, label} of cells) {
+    for (const {text, best, muted, rowspan, colspan, label} of cells) {
       const cell = html("td", [best && "best", muted && "muted", label && "group-label"].filter(Boolean).join(" "), text);
       if (rowspan) cell.rowSpan = rowspan;
+      if (colspan) cell.colSpan = colspan;
       row.append(cell);
     }
     element.tBodies[0].append(row);

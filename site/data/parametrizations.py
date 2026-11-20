@@ -1,4 +1,5 @@
-"""Write parametrizations.json, the tables of the Activations and Dense pages, from the runs' records.
+"""Write parametrizations.json, the tables of the Activations, Dense and SoS / Softplus pages, from the
+runs' records.
 
     python3 site/data/parametrizations.py
 
@@ -11,6 +12,7 @@ from pathlib import Path
 
 from cells import bold_lowest, number, text
 from polynomial import ROOT, best
+from scaling import change
 
 
 def indexed(name: str, index: str) -> str:
@@ -67,6 +69,25 @@ def pure_sigmoid() -> dict:
                                    f"= σ({FEATURE}), divided by <var>r</var>! or not, from <var>W</var> = 0."}]}
 
 
+# SoS and softplus: per coefficient group, (variant, runs at core degree 4, 8 and 12; None: not run). A
+# prefactor (*) raises the total degree to m + 1.
+SOS = (
+    ("Query coefficients · <var>W</var> decay", (
+        ("SoS", ("r016b914d927a", "reeefbcc19abf", "r3d52b7ab43d1")),
+        ("Softplus input", (None, "ra3b54e2489f8", "r9eb845aae5bb")),
+        ("SoS + softplus input", (None, "r41a4c74c5f58", "rc5aac8f37a2e")),
+        ("SoS + softplus input + prefactor*", (None, "r841f35a24241", "rf637de9b65b1")),
+    )),
+    ("Static coefficients", (
+        ("SoS", (None, "r0e32dd2bd3f7", "rdc8b04b223af")),
+        ("SoS + softplus input", ("r6d4217061453", "r54f771e54722", "r1b9e2e69f7f0")),
+        ("SoS + softplus input + prefactor*", ("r91e0c1bb8458", "ra3bffee9a528", "r28a991faed4f")),
+    )),
+)
+EXP = "r6a76e7fbde45"
+FIXED_KERNELS = (("Exp (baseline)", EXP), ("Sigmoid", "r88d8654a8a1d"), ("Softplus", "r266c5dd1f935"))
+
+
 def perplexity(run_id: str | None) -> dict:
     return number(best(run_id), 4, run_id) if run_id else text("—")
 
@@ -88,8 +109,31 @@ def dense() -> list[dict]:
     ]
 
 
+def sos() -> list[dict]:
+    """Bold marks the lowest polynomial perplexity; every value shows its change from exp."""
+    band = lambda label: {"className": "band", "cells": [{"text": label, "colspan": 4}]}
+    rows, polynomials = [], []
+    for group, variants in SOS:
+        rows.append(band(group))
+        for variant, runs in variants:
+            cells = [perplexity(run_id) for run_id in runs]
+            polynomials += cells
+            rows.append([text(variant), *cells])
+    bold_lowest(polynomials)
+    rows.append(band("Fixed kernels"))
+    rows += [[text(label), {**perplexity(run_id), "colspan": 3}] for label, run_id in FIXED_KERNELS]
+    for row in rows:
+        for cell in row if isinstance(row, list) else []:
+            if "value" in cell:
+                cell["text"] += f' <span class="change">({change(cell["value"], best(EXP))})</span>'
+    return [{"key": "sos", "title": "SoS and softplus",
+             "tables": [{"head": ["Variant", *(f"<var>m</var> = {degree}" for degree in (4, 8, 12))], "rows": rows,
+                         "caption": "Core degree <var>m</var>, with the change from exp in parentheses. "
+                                    "* Total degree <var>m</var> + 1."}]}]
+
+
 def main() -> None:
-    data = {"activations": [forms(), pure_sigmoid()], "dense": dense()}
+    data = {"activations": [forms(), pure_sigmoid()], "dense": dense(), "sos": sos()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")
