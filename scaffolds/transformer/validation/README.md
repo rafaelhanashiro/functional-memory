@@ -24,22 +24,24 @@ The probe is 2,048 tokens of two heads with 64 channels, unit-RMS random directi
 of scale 1e-4 and gains near one, against host FP64; the error is the relative L2 of the gradient in the rows, and
 the radial fraction is the share of that component the gradient keeps (zero for the exact Jacobian).
 
-| Output RMS | Plain, B200 | Its radial fraction | Plain, CPU | Prescaled, B200 | Prescaled, CPU |
+| Output RMS | Plain, GPU | Its radial fraction | Plain, CPU | Prescaled, GPU | Prescaled, CPU |
 | --- | --- | --- | --- | --- | --- |
-| 1e-25 to 3e12 | at most 7.1e-8 | at most 1e-6 (from RMS 1) | at most 7.5e-8 | at most 1.2e-7 | at most 1.7e-7 |
-| 4.4e12 to 1e13 | at most 5.7e-8 | at most 2.5e-7 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 3e13 | 7.0e-6 | 5.6e-5 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 1e14 | 6.6e-5 | 5.3e-4 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 2e14, 3e14, 4.5e14 | 0.0017, 0.0020, 0.0027 | 0.013, 0.016, 0.022 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 6e14 | 0.026 | 0.21 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 9e14 to 1e18 | 0.125 | 1.0 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
-| 1e19 to 1e30 (the mean square overflows and the plain evaluation's guard rescales the row) | at most 6.7e-8 | 1e-7 | 6.8e-8, and 7.3e-7 at 1e30 | at most 1.2e-7 | 1.7e-7, and 7.3e-7 at 1e30 |
+| 1e-25 to 3e12 | at most 7.1e-8 | at most 1e-6 (from RMS 1) | at most 7.5e-8 | at most 1.8e-7 | at most 1.7e-7 |
+| 4.4e12 to 1e13 | at most 5.7e-8 | at most 2.5e-7 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 3e13 | 7.0e-6 | 5.6e-5 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 1e14 | 6.6e-5 | 5.3e-4 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 2e14, 3e14, 4.5e14 | 0.0017, 0.0020, 0.0027 | 0.013, 0.016, 0.022 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 6e14 | 0.026 | 0.21 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 9e14 to 1e18 | 0.125 | 1.0 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 1e19 to 1e30 (the mean square overflows and the plain evaluation's guard rescales the row) | at most 6.7e-8 | 1e-7 | 6.8e-8, and 7.3e-7 at 1e30 | at most 1.8e-7 | 1.7e-7, and 7.3e-7 at 1e30 |
 
-Prescaled errors are the largest of the output, the row gradient and the gain gradient; its radial fraction is at
-most 1e-6 from RMS 1 to 1e25. XLA's GPU code keeps subnormal numbers, so the plain gradient degrades gradually
-there; its CPU code flushes them, so the whole term is lost from 4.4e12 (and at 1e30 the gradient's smallest
-elements, below FP32's normal range, are flushed with either evaluation). With a random cotangent the lost term is
-12.5% of the gradient (`1 / sqrt(64)`); through a model it is most of the Q/K gradient (below).
+The GPU columns are B200's and B300's: their plain errors agree to every recorded digit, and the prescaled ones
+are at most 1.2e-7 on B200 and 1.8e-7 on B300. Prescaled errors are the largest of the output, the row gradient
+and the gain gradient; its radial fraction is at most 1e-6 from RMS 1 to 1e25. XLA's GPU code keeps subnormal
+numbers, so the plain gradient degrades gradually there; its CPU code flushes them, so the whole term is lost from
+4.4e12 (and at 1e30 the gradient's smallest elements, below FP32's normal range, are flushed with either
+evaluation). With a random cotangent the lost term is 12.5% of the gradient (`1 / sqrt(64)`); through a model it is
+most of the Q/K gradient (below).
 
 **CPU** (`JAX_PLATFORMS=cpu`, at `520f5293`): 1,430 tests in 27 modules passed (10 skipped): the new module
 `tests/test_head_rms_prescale.py` (73 CPU cases) and the output-scaling, row-maximum-shift, unnormalized (attention,
@@ -76,10 +78,18 @@ existing Mosaic case of the unprescaled head RMSNorm):
 | GPU | Job | Source | Result | JUnit seconds |
 | --- | --- | --- | --- | --- |
 | B200 (`shiba`, long) | 9250 | `520f5293` | 19 passed: probe, shifted composition, 8 kernel cases, 8 model cases, the control | 314 |
-| H100 SXM (`dogo`, long) | 9291 | `370afb2e` | pending at 18:35: `dogo` full since the first submission at 18:06 | |
-| B300 SXM6 (`akita`, long) | 9292 | `370afb2e` | pending at 18:35: `akita` full since the first submission at 18:06 | |
+| B300 SXM6 (`akita`, long) | 9292 | `370afb2e` | 9 passed: probe, shifted composition, 3 kernel cases and 3 model cases at Q/K width 64, the control; 10 skipped as not admitted | 128 |
+| H100 SXM (`dogo`, long) | 9291 | `370afb2e` | pending at 18:40: `dogo` full since the first submission at 18:06 | |
 
-`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical).
+`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical). Neither
+job preempted another: 9250 took the B200 our own completed run freed, and 9292 a B300 freed when another user's
+standard jobs preempted a long job on `akita`.
+
+B300 (CUDA 13 environment), [record](runs/head-rms-prescale-b300/record.json): the probe and the shifted
+composition as on B200 (prescaled at most 1.8e-7 and 1.3e-7); fixed Taylor, static and query at Q/K width 64 give
+B200's kernel and model errors (Q/K 0.011 prescaled against 0.81 plain with every head output above 1e15). B300 does
+not admit the transformed kernels and its query kernel is not qualified at Q/K width 4, so its job skips the
+softplus-SoS cases and the width-4 cases (10 of 19), which its final check allows.
 
 B200 (CUDA 13 environment), [record](runs/head-rms-prescale-b200/record.json):
 
@@ -109,9 +119,8 @@ B200 (CUDA 13 environment), [record](runs/head-rms-prescale-b200/record.json):
   V, O, gain and the other groups: 0.007 to 0.015 with the prescale, 0.32 to 0.55 without. The loss is the FP64
   model's to 3e-5 either way: the defect is in the backward alone.
 
-B300 does not admit the transformed kernels and its query kernel is not qualified at Q/K width 4, so its job skips
-the softplus-SoS cases and the width-4 cases (10 of 19), which its final check allows. Record a finished job with
-`python3 scaffolds/transformer/validation/record_head_rms_prescale_qualification.py <job> head-rms-prescale-<gpu>`.
+Record the H100 job when it finishes with
+`python3 scaffolds/transformer/validation/record_head_rms_prescale_qualification.py 9291 head-rms-prescale-h100`.
 
 This qualifies the normalization's arithmetic on the device and its composition with the Mosaic kernels, not a
 training run: each production allocation still runs its adapter's CPU and GPU suites (for a prescaled recipe the
