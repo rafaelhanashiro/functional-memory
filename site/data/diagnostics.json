@@ -193,7 +193,7 @@
   "continued_pretraining": [
     {
       "key": "cpt",
-      "title": "Validation perplexity · 2k additional steps",
+      "title": "2k additional steps",
       "tables": [
         {
           "head": [

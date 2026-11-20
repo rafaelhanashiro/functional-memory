@@ -88,7 +88,7 @@ def continued_pretraining() -> list[dict]:
 
     return [{
         "key": "cpt",
-        "title": "Validation perplexity · 2k additional steps",
+        "title": "2k additional steps",
         "tables": [{"head": ["Attention during CPT", "Taylor start", "Exp start", "Same-model start"],
                     "rows": [[text(label), *(cell(run_id) for run_id in runs)] for label, *runs in CONTINUATIONS]}],
     }]

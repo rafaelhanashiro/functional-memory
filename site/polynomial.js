@@ -110,7 +110,7 @@ function degreeChart(data) {
   }
   chart.append(svg("text", {x: margin.left + plotWidth / 2, y: height - 10, class: "axis-title", "text-anchor": "middle"}, "Polynomial degree"));
   chart.append(svg("text", {x: 0, y: 0, class: "axis-title", "text-anchor": "middle",
-    transform: `translate(22 ${margin.top + plotHeight / 2}) rotate(-90)`}, "Best validation perplexity (lower is better)"));
+    transform: `translate(22 ${margin.top + plotHeight / 2}) rotate(-90)`}, "Perplexity (lower is better)"));
 
   for (const reference of data.references) {
     const level = y(reference.perplexity);

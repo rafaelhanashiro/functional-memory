@@ -76,7 +76,7 @@ OTHER = (
     ("Exp (baseline)", None, "r3e2fa2532c23"),
 )
 FOX = "FoX uses shared cumulative gates and no positional encoding."
-VERSUS_EXP = "Validation-best perplexity; in parentheses, the difference from exp in the same column."
+VERSUS_EXP = "PPL (% vs exp)."
 
 
 def perplexity(run_id: str | None) -> dict:
@@ -166,7 +166,7 @@ def hundred_m() -> list[dict]:
          "tables": [{"head": ["Attention variant", "Degree",
                               *(f'{name}<span class="sub">{shape}</span>' for name, shape in SHAPES)],
                      "grouped": True, "rows": grouped(SHAPE_PAIRS, SHAPE_BASELINES, SHAPE_BASELINES[0][1]),
-                     "caption": f"Each shape at its 1× Chinchilla budget. {VERSUS_EXP} {FOX}"}]},
+                     "caption": f"{VERSUS_EXP} Each shape at its 1× Chinchilla budget. {FOX}"}]},
         {"key": "scalings", "title": "Chinchilla scalings",
          "tables": [{"head": budgets, "grouped": True, "rows": grouped(BUDGET_POLYNOMIALS, BUDGET_BASELINES, exp),
                      "caption": f"{VERSUS_EXP} —: no run. Unsubmitted: a planned FoX run. {FOX}"}]},
@@ -177,7 +177,7 @@ def hundred_m() -> list[dict]:
         {"key": "other", "title": "Other runs",
          "tables": [{"head": ["Attention variant", "Degree", budget_head(1), "vs control"], "compact": True,
                      "rows": other(),
-                     "caption": "Validation-best perplexity. Each run changes the control, query tanh + W decay "
+                     "caption": "Each run changes the control, query tanh + W decay "
                                 "at degree 8, in one way. Per-degree biases shift each order <var>r</var>'s "
                                 "score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)<sup><var>r</var></sup>, "
                                 "by a learned constant (static) or by an amount that depends on the query token; "

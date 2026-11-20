@@ -7,7 +7,7 @@
         {
           "head": [
             "Score weight",
-            "PPL"
+            "PPL (% vs exp)"
           ],
           "compact": true,
           "rows": [
@@ -41,8 +41,7 @@
                 "run_id": "r0dd96f88d9f8"
               }
             ]
-          ],
-          "caption": "With the change from exp, 14.2572, in parentheses."
+          ]
         }
       ]
     }

@@ -53,7 +53,7 @@ def forms() -> dict:
     return {"key": "forms", "title": "Affine and pure generators",
             "tables": [{"head": ["Generator", f"Coefficients {indexed('c', 'r')}", "PPL"], "compact": True,
                         "rows": rows,
-                        "caption": "Validation-best perplexity at degree <var>m</var> = 4. The affine forms start "
+                        "caption": "Degree <var>m</var> = 4. The affine forms start "
                                    "at fixed Taylor (<var>a</var> = 0); pure tanh starts from a random polynomial, "
                                    "<var>W</var> ∼ N(0, 1/<var>d</var>)."}]}
 
@@ -65,7 +65,7 @@ def pure_sigmoid() -> dict:
     return {"key": "pure-sigmoid", "title": "Pure sigmoid, per degree",
             "tables": [{"head": ["Order scaling", "No <var>W</var> decay", "<var>W</var> decay 0.1"], "compact": True,
                         "rows": rows,
-                        "caption": f"Validation-best perplexity at degree <var>m</var> = 4, with {indexed('c', 'r')} "
+                        "caption": f"Degree <var>m</var> = 4, with {indexed('c', 'r')} "
                                    f"= σ({FEATURE}), divided by <var>r</var>! or not, from <var>W</var> = 0."}]}
 
 
@@ -128,8 +128,7 @@ def sos() -> list[dict]:
                 cell["text"] += f' <span class="change">({change(cell["value"], best(EXP))})</span>'
     return [{"key": "sos", "title": "SoS and softplus",
              "tables": [{"head": ["Variant", *(f"<var>m</var> = {degree}" for degree in (4, 8, 12))], "rows": rows,
-                         "caption": "Core degree <var>m</var>, with the change from exp in parentheses. "
-                                    "* Total degree <var>m</var> + 1."}]}]
+                         "caption": "PPL (% vs exp) at core degree <var>m</var>. * Total degree <var>m</var> + 1."}]}]
 
 
 def main() -> None:

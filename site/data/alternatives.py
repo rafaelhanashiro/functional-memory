@@ -31,8 +31,7 @@ def exp_variants() -> dict:
         cell["text"] += f' <span class="change">({change(cell["value"], best(EXP))})</span>'
         rows.append([text(weight), cell])
     return {"key": "exp-variants", "title": "Exponential score variants",
-            "tables": [{"head": ["Score weight", "PPL"], "compact": True, "rows": rows,
-                        "caption": f"With the change from exp, {best(EXP):.4f}, in parentheses."}]}
+            "tables": [{"head": ["Score weight", "PPL (% vs exp)"], "compact": True, "rows": rows}]}
 
 
 def main() -> None:

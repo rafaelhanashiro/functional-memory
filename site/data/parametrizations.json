@@ -94,7 +94,7 @@
               "className": ""
             }
           ],
-          "caption": "Validation-best perplexity at degree <var>m</var> = 4. The affine forms start at fixed Taylor (<var>a</var> = 0); pure tanh starts from a random polynomial, <var>W</var> ∼ N(0, 1/<var>d</var>)."
+          "caption": "Degree <var>m</var> = 4. The affine forms start at fixed Taylor (<var>a</var> = 0); pure tanh starts from a random polynomial, <var>W</var> ∼ N(0, 1/<var>d</var>)."
         }
       ]
     },
@@ -142,7 +142,7 @@
               }
             ]
           ],
-          "caption": "Validation-best perplexity at degree <var>m</var> = 4, with <var>c</var><sub><var>r</var></sub> = σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>), divided by <var>r</var>! or not, from <var>W</var> = 0."
+          "caption": "Degree <var>m</var> = 4, with <var>c</var><sub><var>r</var></sub> = σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>), divided by <var>r</var>! or not, from <var>W</var> = 0."
         }
       ]
     }
@@ -543,7 +543,7 @@
               }
             ]
           ],
-          "caption": "Core degree <var>m</var>, with the change from exp in parentheses. * Total degree <var>m</var> + 1."
+          "caption": "PPL (% vs exp) at core degree <var>m</var>. * Total degree <var>m</var> + 1."
         }
       ]
     }
