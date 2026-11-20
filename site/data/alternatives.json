@@ -1,0 +1,50 @@
+{
+  "fixed-kernels": [
+    {
+      "key": "exp-variants",
+      "title": "Exponential score variants",
+      "tables": [
+        {
+          "head": [
+            "Score weight",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "<var>σ</var>(<var>s</var>)&#8239;<var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.1857 <span class=\"change\">(−0.50%)</span>",
+                "value": 14.18570968663845,
+                "run_id": "rd7c9f610e9dc"
+              }
+            ],
+            [
+              {
+                "text": "softplus(<var>s</var>)&#8239;<var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.1323 <span class=\"change\">(−0.88%)</span>",
+                "value": 14.13227194425537,
+                "run_id": "rbd24b948a240"
+              }
+            ],
+            [
+              {
+                "text": "<var>e</var><sup>softplus(<var>s</var>)</sup> = 1 + <var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.3292 <span class=\"change\">(+0.51%)</span>",
+                "value": 14.329238862221548,
+                "run_id": "r0dd96f88d9f8"
+              }
+            ]
+          ],
+          "caption": "With the change from exp, 14.2572, in parentheses."
+        }
+      ]
+    }
+  ]
+}
