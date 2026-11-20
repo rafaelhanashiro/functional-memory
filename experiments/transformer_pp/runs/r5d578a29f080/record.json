@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r5d578a29f080/config.yaml",
     "sha256": "c127b0f3d79625d844d8b0e1c8ddec7028cf3cb703d393e038516e9d2266f9c7"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay",
   "name": "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay",
   "receipt": {

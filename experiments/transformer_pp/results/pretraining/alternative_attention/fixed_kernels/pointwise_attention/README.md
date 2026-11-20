@@ -81,6 +81,26 @@ The softplus prefactor and input trained on one B300, the sigmoid prefactor on o
 - Limits: one seed. The margins are below 1%, comparable to what the FP32 embedding-gradient sums may
   change; an exp control with current code would isolate the score function.
 
+## Swish
+
+Planned; no results. Added 2026-11-20. Does swish, `phi(s) = s sigmoid(s)`, beat sigmoid and softplus? Like
+softplus it grows as `s` for large scores, but its weights are signed: they dip to −0.2785 at `s = −1.28` before
+returning to 0. `r8a9fd53dacfd` (`swish-head-rmsnorm-rope`) is the softplus run's recipe with the swish transform:
+fixed `[0, 1]` coefficients, exp's 198,453,586 initial parameters and decay mask, FP32 embedding-gradient sums,
+and the Mosaic `query_swish` kernel on one B200 or H100
+([methods and launch](../../../../../README.md#score-prefactors-swish-and-narrow-keys)).
+
+| Run | Weight | Validation-best PPL |
+| --- | --- | ---: |
+| `r8a9fd53dacfd` | swish(s) | planned |
+| `r266c5dd1f935` | softplus(s) | 15.744 |
+| `r88d8654a8a1d` | sigmoid(s) | 16.135 |
+| `r6a76e7fbde45` | exp(s) | 14.257 |
+
+Swish, softplus, sigmoid and exp also multiply a query sum-of-squares polynomial in
+[softplus_sos](../../../parametrizations/sos/softplus_sos/README.md#score-prefactors-on-query-sos), beside this
+topic's softplus(s) exp(s) and sigmoid(s) exp(s).
+
 ## Open question
 
 Whether any fixed function, alone or multiplying the exponential, merits further comparison with exp and learned

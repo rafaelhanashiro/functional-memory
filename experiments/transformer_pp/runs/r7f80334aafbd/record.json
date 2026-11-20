@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r7f80334aafbd/config.yaml",
     "sha256": "233b6145f8ae39a735d8d99db39120cfdf58e8498a1c76823257c6dfc6599468"
   },
+  "home_cluster": "kennel",
   "label": "query-m8-dk64-w-decay-softplus-input-times-input",
   "name": "query-m8-dk64-w-decay-softplus-input-times-input",
   "receipt": {

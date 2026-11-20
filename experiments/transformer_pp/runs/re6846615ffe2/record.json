@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/re6846615ffe2/config.yaml",
     "sha256": "32a7373eae61ca28c7be0c63dcd2a349c809f62c38a3eb4c10e77b5f26d355cb"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-m8-swish-prefactor-raw-input-w-decay",
   "name": "query-sos-m8-swish-prefactor-raw-input-w-decay",
   "receipt": {

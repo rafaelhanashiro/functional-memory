@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r41662adb22fa/config.yaml",
     "sha256": "cdbb147dcb8b3b591a75590da398cfa3805880e770866471b45f6dadaa01599c"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-m8-softplus-prefactor-raw-input-w-decay",
   "name": "query-sos-m8-softplus-prefactor-raw-input-w-decay",
   "receipt": {

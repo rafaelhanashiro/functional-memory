@@ -15,7 +15,7 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | [degree_scaling](pretraining/polynomial/degree_scaling/README.md) | Validation perplexity against degree `m = 1-8` and 12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with projection weight decay (Taylor and query only at 12), with softmax as the reference level. |
-| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? |
+| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? Exp and `z h_t(z)` at `d_K` 4, 8 and 16 are planned. |
 
 ### Scalings
 
@@ -46,15 +46,15 @@ README says otherwise.
 | Activations: [coefficient_forms](pretraining/parametrizations/activations/coefficient_forms/README.md) | Does the query generator's form matter at m = 4? Affine sigmoid (14.756) ties affine tanh (14.774); pure tanh is 53% worse and per-degree pure sigmoid 8–12% worse; none beats fixed Taylor (14.722). |
 | SoS / Softplus: [sum_of_squares](pretraining/parametrizations/sos/sum_of_squares/README.md) | Do nonnegative sum-of-squares query coefficients beat fixed Taylor and exp as the degree grows? 14.196, 14.165 and 14.168 at m = 8, 12 and 16: 0.43–0.65% below exp. |
 | SoS / Softplus: [static_sos](pretraining/parametrizations/sos/static_sos/README.md) | Do static SoS coefficients match query-conditioned SoS, with raw scores, softplus inputs, and the softplus prefactor? |
-| SoS / Softplus: [softplus_sos](pretraining/parametrizations/sos/softplus_sos/README.md) | Does composing softplus inputs with query SoS help, and should the negative-score tail vanish? The degree-twelve prefactor form reaches 14.093 (−1.15% against exp). |
-| SoS / Softplus: [softplus_inputs](pretraining/parametrizations/sos/softplus_inputs/README.md) | Does the query polynomial improve at softplus(s) in place of s? 14.262 at m = 8 (−0.42% against its control, level with exp) and 14.222 at m = 12 (−0.02%). |
+| SoS / Softplus: [softplus_sos](pretraining/parametrizations/sos/softplus_sos/README.md) | Does composing softplus inputs with query SoS help, and should the negative-score tail vanish? The degree-twelve prefactor form reaches 14.093 (−1.15% against exp). Seven other prefactors `f(s) h_t(g(s))` are planned. |
+| SoS / Softplus: [softplus_inputs](pretraining/parametrizations/sos/softplus_inputs/README.md) | Does the query polynomial improve at softplus(s) in place of s? 14.262 at m = 8 (−0.42% against its control, level with exp) and 14.222 at m = 12 (−0.02%). Static `p(z)`, static `z p(z)` and query `z p_t(z)` are planned. |
 
 ### Alternative attention mechanisms
 
 | Folder | Question and findings |
 | --- | --- |
 | Fixed kernels: [fixed_linear](pretraining/alternative_attention/fixed_kernels/fixed_linear/README.md) | How much does the exponential kernel contribute beyond QK and attention-output RMSNorm? |
-| Fixed kernels: [pointwise_attention](pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md) | Can a fixed function of the score replace or multiply exp? Alone, softplus (15.744) and sigmoid (16.135) trail exp (14.257) by 10% and 13%; as prefactors, softplus(s) exp(s) 14.132 (−0.88%) and sigmoid(s) exp(s) 14.186 (−0.50%) beat it, and exp(softplus(s)) 14.329 (+0.51%) does not. |
+| Fixed kernels: [pointwise_attention](pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md) | Can a fixed function of the score replace or multiply exp? Alone, softplus (15.744) and sigmoid (16.135) trail exp (14.257) by 10% and 13%; as prefactors, softplus(s) exp(s) 14.132 (−0.88%) and sigmoid(s) exp(s) 14.186 (−0.50%) beat it, and exp(softplus(s)) 14.329 (+0.51%) does not. Swish is planned. |
 | MLP: [score_mlp](pretraining/alternative_attention/mlp/score_mlp/README.md) | A conventional SiLU MLP of the score and the query token in place of exp, at widths `J = 4` and 8, against exp, query `m = 4` and fixed Taylor `m = 4`. |
 | Splines: [spline_attention](pretraining/alternative_attention/splines/spline_attention/README.md) | A learned quartic B-spline of the score, static or query-dependent, in place of the degree-four polynomial, from four initial functions: started at Taylor it ties the polynomial; every other start is 6–22% behind. |
 

@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r6f84b1db6de6/config.yaml",
     "sha256": "95a0cd304fb8857a628959a44365d73799efb1f205d4ec82ed5659e57dfcead7"
   },
+  "home_cluster": "kennel",
   "label": "exp-head-scale-dk16",
   "name": "exp-head-scale-dk16",
   "receipt": {

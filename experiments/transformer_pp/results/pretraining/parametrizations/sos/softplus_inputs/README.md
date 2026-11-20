@@ -1,7 +1,8 @@
 # Softplus inputs
 
 Opened: 2026-11-12. Both runs are complete and fell short of the bar, each against the control at its degree:
-0.42% below it at degree eight, 0.02% at degree twelve. Each run's status is in its record and the study's
+0.42% below it at degree eight, 0.02% at degree twelve. Three direct-coefficient runs on `z`, static and times `z`,
+are [planned](#direct-polynomials-of-z-static-and-times-z). Each run's status is in its record and the study's
 `runs.csv`.
 
 With a very negative score `s`, the query polynomial gives a large weight: odd orders a large negative one
@@ -129,6 +130,27 @@ listed in their records.
   the controls on B300; exp trained on B300's fused Triton kernels, fixed Taylor at degree eight on H100's
   Mosaic query-polynomial kernels and at degree twelve on B300's to update 1,500, then H100's.
 - The kernel and coefficient statistics come from one held-out sequence at the final validation.
+
+## Direct polynomials of z: static, and times z
+
+Planned; no results. Added 2026-11-20. At degree eight, do static coefficients or a factor `z` help the direct
+(not sum-of-squares) polynomial of `z = softplus(s)`? Three runs, each its partner's recipe with the listed score
+functions and gradient-event capture, from the partner's exact initial parameters. Validation-best perplexity of the
+existing runs:
+
+| Run | Weight | Start | Partner | Comparisons |
+| --- | --- | --- | --- | --- |
+| `r2026eaa99f9a` | static `p(z)` | `T_8(z)`, about `1 + e^s` | static `p(s)`, `r9c69dd7cfc8d`, 14.294 | static `p(z)` with `c_0 = 0`, `rc28ef4dbe26d`, 14.192; query `p_t(z)`, `ra3b54e2489f8`, 14.262 |
+| `rd00848e00f1d` | static `z p(z)` | `z T_8(z)` | `r9c69dd7cfc8d` | static `p(z)`, `r2026eaa99f9a`; `rc28ef4dbe26d`, which also vanishes at very negative scores |
+| `r7f80334aafbd` | `z p_t(z)` | `z (T_8(z) − 1)`, about `softplus(s) e^s` | `ra3b54e2489f8` | query `p_t(z)` with `c_0 = 0`, `rb5b604ae829a`, 14.250; `z h_t(z)`, `r841f35a24241`, 14.095; softplus(s) exp(s), `rbd24b948a240`, 14.132; exp, 14.257 |
+
+- The factor `z` is the parameter-free score prefactor `f = softplus` on the Mosaic transformed kernels
+  (`query_softplus` for `p(z)`, `query_softplus_times_softplus` for `z p(z)`; static coefficients are broadcast
+  over queries), on one B200 or H100
+  ([methods and launch](../../../../../README.md#score-prefactors-swish-and-narrow-keys)).
+- The static constant `c_0` stays learnable from its Taylor start of 1: no scaffold option starts a learnable
+  static constant at zero (`rc28ef4dbe26d` removes it), so `p(z)` starts near `1 + e^s`, where the query runs and
+  `rc28ef4dbe26d` start near `e^s`.
 
 ## Open question
 

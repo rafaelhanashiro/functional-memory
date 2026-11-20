@@ -70,3 +70,25 @@ Regenerate the heatmap and `summary.csv` from the pinned selection:
 ```bash
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.pretraining.polynomial.query_width_degree.plot
 ```
+
+## Narrow keys for exp and softplus–SoS
+
+Planned; no results. Added 2026-11-20. Does the key-width penalty above hold for the exponential and for the best
+sum-of-squares kernel? Six runs change only `qk_head_dim` (value width 64) of exp `r6a76e7fbde45` and of
+`r841f35a24241`, `z h_t(z)` with `z = softplus(s)` and a query sum-of-squares core of degree eight (total degree
+nine). Each width is also compared with the grid's degree-eight query polynomial. Validation-best perplexity of
+the existing runs:
+
+| `d_K` | `z h_t(z)` | exp | query, `m = 8` |
+| ---: | --- | --- | --- |
+| 4 | `r5a25f500bfa8` | `ra28b295d81e6` | – |
+| 8 | `r8d6683db38a8` | `r535bc84a7772` | `r16b23893884d`, 16.854 |
+| 16 | `r79abb4d7292c` | `r6f84b1db6de6` | `rd10c2ebe1181`, 15.413 |
+| 64 | `r841f35a24241`, 14.095 | `r6a76e7fbde45`, 14.257 | `r25fffc16c2f3`, 14.323 |
+
+- Narrower keys remove 18–23 M Q/K parameters and run QK RMSNorm over 4–16 channels; every other initial array is
+  the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100) and exp on the fused kernel
+  (B300 or H100); the exp runs add gradient-event capture to their October control
+  ([methods and launch](../../../../README.md#score-prefactors-swish-and-narrow-keys)).
+- When these runs join the selection, `plot.py` keeps to the `query_decay_*` roles, so the heatmap and
+  `summary.csv` stay as they are.

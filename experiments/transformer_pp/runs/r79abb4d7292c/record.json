@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r79abb4d7292c/config.yaml",
     "sha256": "7f3f9bcaf84bdacf954774b138f397c3359a766d2c082641c2442725c774a145"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk16",
   "name": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk16",
   "receipt": {

@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/rd00848e00f1d/config.yaml",
     "sha256": "1e2ea5ee84f63e955eea3c918cddccc0a1c9a90c4cc53b82b5f82cd9515e86b9"
   },
+  "home_cluster": "kennel",
   "label": "static-m8-softplus-input-times-input",
   "name": "static-m8-softplus-input-times-input",
   "receipt": {

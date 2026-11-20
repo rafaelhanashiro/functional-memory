@@ -2854,41 +2854,71 @@ decay are the partner's.
   [softplus SoS topic](results/pretraining/parametrizations/sos/softplus_sos/README.md), beside softplus(s) exp(s)
   (`rbd24b948a240`, 14.132) and sigmoid(s) exp(s) (`rd7c9f610e9dc`, 14.186).
 
-The polynomials run on the Mosaic transformed query-polynomial kernels
-([scaffold](../../scaffolds/transformer/README.md#score-prefactors-on-polynomials)), admitted on H100 and B200
-(B300 is not qualified for them); the narrow-key exponential runs on the fused kernel on B300 or H100. Their
-qualification is in the [validation record](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20).
-The adapters ([pointwise](pointwise_attention_acceptance.py), [softplus SoS](softplus_sos_acceptance.py),
-[key width](key_width_acceptance.py), [direct softplus](softplus_direct_acceptance.py)) pin each partner's recipe
-and initial parameters (count and SHA256; for narrow keys also every unchanged array) and select the kernels' CPU
-and GPU suites; every allocation also runs the full-recipe pilot, whose projection must fit the allocation less two
-hours, and a fresh-process resume. Projected wall clock on one GPU: about 3.6-5.5 h on B200, 6-6.5 h on H100 SXM
-and up to 9 h on H100 PCIe (`mastiff`); exp at narrow keys at most 5.3 h on B300. The exp prefactor's weight
-`e^s h_t(s)` overflows FP32 near `s = 60` (recorded score maxima are 23-31), which would make its rows NaN: a
-numerical failure, not a fallback.
-Margins near 0.5-1% are within the single seed's noise.
+Home cluster: Kennel; every record states it.
+
+- **Kernels and GPUs.** The polynomials run on the Mosaic transformed query-polynomial kernels
+  ([scaffold](../../scaffolds/transformer/README.md#score-prefactors-on-polynomials)): `query_swish` (A1),
+  `query_softplus` at degree nine (B1-B3) and with static coefficients broadcast over queries (C1),
+  `query_softplus_times_softplus` (C2, C3), `query_times_<f>` (D1, D2, D4, D6) and `query_softplus_times_<f>` (D3,
+  D5, D7). They are admitted on H100 and B200 (B300 is not qualified for them); B200 jobs use the worktree's
+  `.venv-cuda13`. The narrow-key exponential runs on the fused Pallas-Triton kernel on B300 or H100 (Triton is not
+  qualified on B200). Qualification: the [validation record](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20).
+- **Acceptance.** The adapters ([pointwise](pointwise_attention_acceptance.py), [softplus SoS](softplus_sos_acceptance.py),
+  [key width](key_width_acceptance.py), [direct softplus](softplus_direct_acceptance.py)) pin each partner's recipe
+  and initial parameters (count and SHA256; for narrow keys also every unchanged array) and select the kernels' CPU
+  and GPU suites; every allocation also runs the full-recipe pilot, whose projection must fit the allocation less
+  two hours, and a fresh-process resume. Each of the 17 recipes passes its adapter's recipe and full-shape
+  initialization checks on CPU.
+- **Numerics.** The exp prefactor's weight `e^s h_t(s)` overflows FP32 near `s = 60` (recorded score maxima are
+  23-31), which would make its rows NaN: a numerical failure, not a fallback. Margins near 0.5-1% are within the
+  single seed's noise.
+- **Time limits.** 1.4 times the upper projection on the slowest GPU the submission admits (H100 SXM), plus
+  acceptance's two-hour reserve, rounded up to whole hours, as for the 12-layer width-640 runs above. A projection
+  is the wall clock of 7,570 updates and their 28 validations (`metrics.jsonl` timestamps) of the nearest measured
+  run on B200 (B300 for exp), times 1.25 on `dogo`'s H100 SXM (softplus SoS at degree twelve: `rc5aac8f37a2e`,
+  7.39 h on `dogo`; `rf637de9b65b1`, 6.32 h on `shiba` with one more order) and 1.8 more on `mastiff`'s H100 PCIe
+  (one run's attempts on both: `rccd2cb5e8bab` 1.80, `r08be7093202a` 1.77, `r53d5bbcac16f` 1.44).
+
+  | Runs | Basis, hours on B200 (B300 for exp) | B200 or B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | A1 | sigmoid `r88d8654a8a1d` 3.75; softplus `r266c5dd1f935` 3.20-3.79 | 3.8 | 4.8 | 8.6 | 9 |
+  | B1-B3 | `r841f35a24241` 5.25-5.58; narrower keys are not slower | 5.6 | 7.0 | 12.6 | 12 |
+  | B4-B6 | `r6a76e7fbde45` 5.46; on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 6.00 | 5.5 | 6.0 | 10.8 | 11 |
+  | C1 | `rc28ef4dbe26d` 4.89, the same kernel with `c_0 = 0` | 4.9 | 6.1 | 11.0 | 11 |
+  | C2 | C1 with the prefactor's +7% (`r841f35a24241` over `r41a4c74c5f58`) | 5.3 | 6.6 | 11.9 | 12 |
+  | C3 | `rb5b604ae829a` 5.18 (`c_0 = 0`), +7% | 5.6 | 7.0 | 12.6 | 12 |
+  | D1-D7 | `r841f35a24241` 5.25-5.58, the same tile work with `f = z`, +7% | 6.0 | 7.5 | 13.5 | 13 |
+
+  `mastiff` is excluded: its projections are about twice B200's, and CLUSTERS.md excludes it for one-GPU jobs until
+  its failing H100 is reset. Admitting it would take limits from its column by the same rule (15-21 h).
 
 Submit from the worktree after committing the frozen execution set and checking the live standard and long
-allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor; avoid `dogo` for one-GPU jobs while
-its H100 at Slurm index 4 fails CUDA initialization, unless a placeholder holds it):
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The four-GPU standard lane takes
+A1 and B1-B3, the rest go to long:
 
 ```bash
-submit() {  # partition, adapter, GPU types, excluded nodes, run
-  sbatch --parsable --partition="$1" --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
-    --exclude="$4" --job-name="$5" \
-    --output="experiments/transformer_pp/runs/$5/training.log" --error="experiments/transformer_pp/runs/$5/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
-    "experiments/transformer_pp/runs/$5/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
+submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude="$5" --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-mosaic=akita,dogo,collie,samoyed,doodle,terrier  # B200 (shiba) or H100 (mastiff)
-fused=shiba,dogo,collie,samoyed,doodle,terrier   # B300 (akita) or H100 (mastiff)
-submit standard pointwise_attention_acceptance B200,H100 "$mosaic" r8a9fd53dacfd
-for run in r5a25f500bfa8 r8d6683db38a8 r79abb4d7292c; do submit standard key_width_acceptance B200,H100 "$mosaic" "$run"; done
-for run in ra28b295d81e6 r535bc84a7772 r6f84b1db6de6; do submit long key_width_acceptance B300,H100 "$fused" "$run"; done
-for run in r2026eaa99f9a rd00848e00f1d r7f80334aafbd; do submit long softplus_direct_acceptance B200,H100 "$mosaic" "$run"; done
-for run in r41662adb22fa r6525664e6696 raeaa47865867 r8f56a5b7e525 r5d578a29f080 re6846615ffe2 r50c893fe159c; do
-  submit long softplus_sos_acceptance B200,H100 "$mosaic" "$run"
+# Add dogo to both lists unless a placeholder job holds its failing H100 (Slurm index 4; CLUSTERS.md).
+mosaic=akita,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba) or H100 SXM (dogo)
+fused=shiba,mastiff,collie,samoyed,doodle,terrier   # B300 (akita) or H100 SXM (dogo)
+submit standard 9:00:00 pointwise_attention_acceptance B200,H100 "$mosaic" r8a9fd53dacfd       # A1
+for run in r5a25f500bfa8 r8d6683db38a8 r79abb4d7292c; do                                          # B1-B3
+  submit standard 12:00:00 key_width_acceptance B200,H100 "$mosaic" "$run"
+done
+for run in ra28b295d81e6 r535bc84a7772 r6f84b1db6de6; do                                          # B4-B6
+  submit long 11:00:00 key_width_acceptance B300,H100 "$fused" "$run"
+done
+submit long 11:00:00 softplus_direct_acceptance B200,H100 "$mosaic" r2026eaa99f9a               # C1
+submit long 12:00:00 softplus_direct_acceptance B200,H100 "$mosaic" rd00848e00f1d               # C2
+submit long 12:00:00 softplus_direct_acceptance B200,H100 "$mosaic" r7f80334aafbd               # C3
+for run in r41662adb22fa r6525664e6696 raeaa47865867 r8f56a5b7e525 r5d578a29f080 re6846615ffe2 \
+    r50c893fe159c; do                                                                             # D1-D7
+  submit long 13:00:00 softplus_sos_acceptance B200,H100 "$mosaic" "$run"
 done
 ```
-
-Choose each run's partition at submission: the four-GPU standard lane first, the rest on long.

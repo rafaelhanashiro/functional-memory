@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/raeaa47865867/config.yaml",
     "sha256": "6225bc0496c3da72aa51b4be41540cd0f88219f1622364dad16b972058102a9c"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-m8-exp-prefactor-softplus-input-w-decay",
   "name": "query-sos-m8-exp-prefactor-softplus-input-w-decay",
   "receipt": {

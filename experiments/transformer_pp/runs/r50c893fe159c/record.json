@@ -3,6 +3,7 @@
     "path": "experiments/transformer_pp/runs/r50c893fe159c/config.yaml",
     "sha256": "1693a8a721815ef117fbad3d5a6ced0bd02c61847194b15f8c0b16d170b2ebac"
   },
+  "home_cluster": "kennel",
   "label": "query-sos-m8-swish-prefactor-softplus-input-w-decay",
   "name": "query-sos-m8-swish-prefactor-softplus-input-w-decay",
   "receipt": {
