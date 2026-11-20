@@ -61,9 +61,8 @@ one, which the Runs page says once (its text) rather than every table or plot; a
 change is labeled minimally, as (% vs exp); RoPE is assumed and never named, while runs without
 it say NoPE; the overfitting fits report perplexity on the batch they fit. Every figure in
 `figures/` is copied byte for byte, by a generator here, from the result collection that draws
-it, except the Learned polynomials figure, a copy with no generator yet; the Other runs page's
-saturation figure is shown by that page's L2 notes text. The Input dependence page reads its
-table from the [calibration-mean diagnostic](../
+it; the Other runs page's saturation figure is shown by that page's L2 notes text. The Input
+dependence page reads its table from the [calibration-mean diagnostic](../
 experiments/transformer_pp/results/diagnostics/input_dependence/calibration_mean/README.md).
 
 The Queue tab lists the runs the user plans and the runs in progress, each list a sequence of runs

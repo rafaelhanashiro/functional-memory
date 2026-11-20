@@ -231,3 +231,20 @@ runs:
     metadata.json:
       path: experiments/transformer_pp/runs/r043b150cde03/metadata.json
       sha256: b803b594340fd87ed5dd02bbfd1aeda4095aee7f06f1a68d93eb3d19336f7d47
+- study: transformer_pp
+  run_id: r0daad8989288
+  role: learned_polynomial_operands
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0daad8989288/config.yaml
+      sha256: 1834adbe9240514912e684637126eb68b2ba51244cc98103c144054f72eca6e9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0daad8989288/metrics.jsonl
+      sha256: 8d39ac808fb316bce4e8b01c9f4344a97955be32e9b3f860473d646210e42c68
+    completion.json:
+      path: experiments/transformer_pp/runs/r0daad8989288/completion.json
+      sha256: cd4a64edd458fab9d075d3523da90fc1454d635629e2700b2ca12207cf9accff
+  diagnostics:
+    learned_polynomials:
+      path: experiments/transformer_pp/runs/r0daad8989288/learned_polynomials.json
+      sha256: 1ce8632e36323ad8d03163d3041ce6be01900333b9e34258c26e25db99afaf0e

@@ -43,6 +43,9 @@ FIGURES = {
     "length-extrapolation": tuple((EXTRAPOLATION / name, name) for name in (
         "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
         "position_weights_long_documents.png")),
+    "learned-polynomials": (
+        (RESULTS / "diagnostics/overfitting/coefficient_oracle/learned_polynomials.png", "layer8.png"),
+    ),
     "learning-dynamics": (
         (LEARNING / "query_parameter_dynamics/head_parameters_combined.png", "query.png"),
         (LEARNING / "sos_training_dynamics/head_parameters_combined.png", "sos.png"),

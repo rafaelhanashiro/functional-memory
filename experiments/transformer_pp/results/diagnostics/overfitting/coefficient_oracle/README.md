@@ -312,6 +312,20 @@ this does not establish that such variation is necessary for low loss.
 
 ![Free coefficient directions](free_coefficient_shape.png)
 
+### Learned polynomials at layer 8
+
+Capture `r0daad8989288` replays the static (`rceea84f19f6b`) and free (`rda6029c3286f`)
+fits on their frozen parents and keeps layer 8's queries, keys and coefficients on the first
+fitting sequence. Each polynomial is divided by its RMS over both fits' pooled scores; the
+free band spans the 10–90% range across query positions, and the histograms show each
+model's scores.
+
+![Learned degree-four polynomials at layer 8](learned_polynomials.png)
+
+`learned_polynomials.py measure --run experiments/transformer_pp/runs/r0daad8989288` derives
+the plotted curves from the capture's archive on Kennel; `plot` draws them from that
+committed measurement.
+
 ### Functional reconstruction of the free coefficients
 
 The GPU probe replays every prediction position in all 256 fitting sequences.
@@ -476,6 +490,7 @@ Regenerate compact-data analyses from the repository root:
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/audit_optimization.py
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/plot_optimization.py
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/free_coefficient_shape.py plot
+PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/learned_polynomials.py plot
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/plot_batch_functional.py
 PYTHONPATH=. scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/overfitting/coefficient_oracle/summarize_precision.py
 ```
