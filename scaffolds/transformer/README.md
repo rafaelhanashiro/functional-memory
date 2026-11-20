@@ -876,7 +876,8 @@ qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_po
 `W(t,i) = f(s_ti) p_t(phi(s_ti))`: `softplus`, `sigmoid`, `exp` (`e^s`) or `swish` (`s sigmoid(s)`), with the
 same values and derivative rules as the transforms (exp's is JAX's exact `e^s`). It adds no parameter. On the
 blocked backend every unnormalized polynomial takes it with any other piece. An explicit `mosaic` backend runs it
-for diagonal tanh query coefficients (direct or sum-of-squares, every start) and learned static direct
+for diagonal tanh query coefficients (direct or sum-of-squares, the Taylor start with or without
+`attention_coefficient_constant_initial`; not the Hermite start) and learned static direct
 coefficients (broadcast per query) with the `identity` or `softplus` transform, RoPE, and no forget gate, score
 biases or key factors (`mosaic_score_transform_problem`); static SoS factors refuse it. With `f = phi = softplus`,
 `z p(z)` is the SoS input power's kernel (`attention_coefficient_input_power: 1`) for any coefficients, without a
