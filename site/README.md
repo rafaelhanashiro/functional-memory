@@ -25,7 +25,8 @@ beside the link, with metadata read from the link), reorders resources and drags
 another category or half, renames them and switches them between seen and not seen, makes,
 renames, moves, and deletes categories (a deleted category's resources stay, under no
 category), and edits each resource's write-up, their own Markdown file `literature/<id>.md`
-(math in `$...$` and `$$...$$`).
+(math in `$...$` and `$$...$$`). The chevron before a category's name hides it down to its
+heading, in that browser only (its local storage).
 The Meetings page lists the meetings by date, newest first, and adds one for a chosen date,
 optionally named. A meeting's page (`meeting.html?date=YYYY-MM-DD`) shows its agenda and
 notes, `meeting/<date>-agenda.md` and `meeting/<date>-notes.md`, edited the same way; the
@@ -40,10 +41,14 @@ The result pages draw their tables from `data/*.json`, each written by the gener
 from the Transformer++ runs' records and result summaries: `polynomial.py` (Polynomial, with its
 chart), `other.py` (Other runs), `scaling.py` (2.5× Chinchilla, 4k sequences and 100M),
 `parametrizations.py` (Activations, Dense, and SoS / Softplus), `alternatives.py` (Fixed
-kernels, MLP and Splines), `fox.py` (FoX / ALiBi / PaTH), and `diagnostics.py` (Overfitting and
-Continued pretraining; it also copies the Length extrapolation figures from their result
-collection into `figures/`). `results.js` draws the tables of all but the first two from cells
-the generators format.
+kernels, MLP and Splines), `fox.py` (FoX / ALiBi / PaTH), `diagnostics.py` (the Diagnostics
+pages; it also copies their figures from the result collections that draw them into `figures/`),
+and `home.py` (the home page's reference model, from `experiments/transformer_pp/recipe.yaml`
+and the softmax reference run's parameter count). `results.js` draws the tables of all but the
+first two from cells the generators format.
+
+The home page, `index.html`, which the site's name in every header links to, introduces the
+project in its text and shows the reference model under it.
 
 The result pages' text and titles are the user's, edited on the page: the pencil in the header
 switches a page to editing, where clicking a text, or an empty place for one, opens the shared

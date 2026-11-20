@@ -1,0 +1,155 @@
+{
+  "model": [
+    {
+      "key": "reference",
+      "title": "Reference model",
+      "layout": "pair",
+      "tables": [
+        {
+          "head": [
+            "Model",
+            ""
+          ],
+          "rows": [
+            [
+              {
+                "text": "Layers × width"
+              },
+              {
+                "text": "15 × 896"
+              }
+            ],
+            [
+              {
+                "text": "Heads"
+              },
+              {
+                "text": "14, of width 64"
+              }
+            ],
+            [
+              {
+                "text": "Feed-forward"
+              },
+              {
+                "text": "SwiGLU, width 2,304"
+              }
+            ],
+            [
+              {
+                "text": "Vocabulary"
+              },
+              {
+                "text": "32,000"
+              }
+            ],
+            [
+              {
+                "text": "Parameters"
+              },
+              {
+                "text": "198,440,146 (softmax)"
+              }
+            ]
+          ]
+        },
+        {
+          "head": [
+            "Attention",
+            ""
+          ],
+          "rows": [
+            [
+              {
+                "text": "Queries and keys"
+              },
+              {
+                "text": "RMSNorm"
+              }
+            ],
+            [
+              {
+                "text": "Score scale"
+              },
+              {
+                "text": "learned per head, starts at 1"
+              }
+            ],
+            [
+              {
+                "text": "Positions"
+              },
+              {
+                "text": "RoPE, θ = 10,000"
+              }
+            ]
+          ]
+        },
+        {
+          "head": [
+            "Data and budget",
+            ""
+          ],
+          "rows": [
+            [
+              {
+                "text": "Data"
+              },
+              {
+                "text": "FineWeb-Edu, Llama 2 tokenizer"
+              }
+            ],
+            [
+              {
+                "text": "Batch"
+              },
+              {
+                "text": "256 sequences of 2,048 tokens"
+              }
+            ],
+            [
+              {
+                "text": "Budget"
+              },
+              {
+                "text": "1× Chinchilla: 7,570 updates, 3.97B tokens"
+              }
+            ]
+          ]
+        },
+        {
+          "head": [
+            "Optimizer",
+            ""
+          ],
+          "rows": [
+            [
+              {
+                "text": "AdamW"
+              },
+              {
+                "text": "β = (0.9, 0.95), weight decay 0.1"
+              }
+            ],
+            [
+              {
+                "text": "Learning rate"
+              },
+              {
+                "text": "10<sup>−3</sup>, 455 warmup updates, cosine to 10<sup>−4</sup>"
+              }
+            ],
+            [
+              {
+                "text": "Gradient clipping"
+              },
+              {
+                "text": "global norm 1"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

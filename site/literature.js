@@ -4,7 +4,8 @@
 // link goes to the top of the category picked beside it. The grip on each card drags it within its
 // list, into the other half, or into another category (the arrow keys move it within its list). A
 // category's name renames in place, its arrows move it, and deleting it leaves its resources under
-// no category. Adding, moving, renaming, and saving a write-up (literature/<id>.md, shown when its
+// no category. The chevron before a name hides that category down to its heading, in this browser
+// only. Adding, moving, renaming, and saving a write-up (literature/<id>.md, shown when its
 // card opens) all go through serve.py.
 import {dirty, element, failure, saveText, showEditor, showView} from "./editor.js";
 
@@ -19,12 +20,16 @@ const DOWN = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5v10M5.5 
 const CROSS = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg>';
 const HALVES = [["seen", "Seen"], ["unseen", "Not seen yet"]];
 const PICKED = "literature-category";  // this browser's last pick for new links
+const FOLDED = "literature-hidden";  // the categories this browser hides
 const container = document.querySelector(".categories");
 const form = document.querySelector(".add-resource");
 const picker = form.elements.category;
 const status = document.querySelector(".literature-status");
 const cards = new Map();
 const sections = new Map();  // by category id, "" for the resources under none
+const folded = new Set((() => {
+  try { return JSON.parse(localStorage.getItem(FOLDED) ?? "[]"); } catch { return []; }
+})());
 let papers = [];
 let categories = [];
 let saving = Promise.resolve();
@@ -145,7 +150,7 @@ function createSection(id) {
   section.dataset.category = id;
   const head = element("div", "category-head");
   const name = element("h2", "category-name", id ? "" : "No category");
-  head.append(name, element("span", "category-count"));
+  head.append(icon("", CHEVRON, () => fold(id, !folded.has(id)), "fold"), name, element("span", "category-count"));
   if (id) {
     name.tabIndex = 0;
     name.title = "Rename";
@@ -173,12 +178,32 @@ function createSection(id) {
   return section;
 }
 
+// A hidden category folds to its heading, which keeps its count; the choice stays in this browser.
+function showFold(id) {
+  const section = sections.get(id);
+  const hidden = folded.has(id);
+  const button = section.querySelector(".category-icon.fold");
+  const label = hidden ? "Show this category" : "Hide this category";
+  section.classList.toggle("folded", hidden);
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-expanded", String(!hidden));
+}
+
+function fold(id, hidden) {
+  if (hidden) folded.add(id);
+  else folded.delete(id);
+  try { localStorage.setItem(FOLDED, JSON.stringify([...folded])); } catch { /* hiding is only a convenience */ }
+  showFold(id);
+}
+
 function render() {
   const ids = [...categories.map((category) => category.id), ""];
   for (const id of [...sections.keys()]) if (!ids.includes(id)) sections.delete(id);
   container.replaceChildren(...ids.map((id, index) => {
     if (!sections.has(id)) sections.set(id, createSection(id));
     const section = sections.get(id);
+    showFold(id);
     if (id) {
       const name = section.querySelector(".category-name");
       if (!name.querySelector("input")) name.textContent = categories[index].name;

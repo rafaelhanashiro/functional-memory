@@ -224,6 +224,10 @@ body:not(.has-categories) .uncategorized > .category-head { display: none; }
 .category-icon.delete:hover { color: #dc2626; background: #fef2f2; }
 .category-icon:disabled { opacity: 0.3; cursor: default; }
 .category-icon:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+/* The chevron that hides a category (literature.js) points down, or right once it is hidden. */
+.category-icon.fold { margin-left: -6px; }
+.category.folded .category-icon.fold .chevron { transform: rotate(-90deg); }
+.category.folded > .resource-group { display: none; }
 .category-input {
   width: 100%;
   padding: 0;
@@ -463,7 +467,7 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .writeup-view p:has(> img:only-child) { max-width: none; }
 .writeup-view p:has(> img):not(:has(> :not(img, br))) { margin-inline: auto; }  /* several images in a row */
-.writeup-view .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+:is(.writeup-view, .text-block) .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 .writeup-view .empty { color: var(--muted); font-style: italic; }
 
 /* Result pages: tables and charts */
@@ -532,6 +536,8 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   gap: 18px 24px;
 }
 .table-pair h3 { margin: 0 0 8px; }
+/* The home page's reference-model tables: each value reads left to right after its setting. */
+.recipe .results-table td + td { text-align: left; white-space: normal; }
 .figure {
   display: block;
   margin: 0 0 16px;
