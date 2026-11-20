@@ -273,11 +273,13 @@ def test_an_overflowing_score_poisons_its_row_as_in_the_strips(transform, prefac
 @pytest.mark.parametrize("transform,prefactor", FAMILIES, ids=IDS)
 def test_extreme_and_zero_scores(transform, prefactor):
     """Rows of exactly zero scores (every f finite there; swish zero), and rows of scores of standard deviation 12
-    (beyond 50 at the largest, where exp's prefactor exceeds e^50, still finite in FP32), against FP64 at degree
-    eight."""
+    (beyond 50 at the largest), against FP64 at degree eight. For exp the wide rows have standard deviation 6
+    (scores near 30, the largest the production runs record): near s = 50 the order-eight coefficient gradient
+    sum_i dP e^s s^8 overflows FP32 (about 1e40), a numerical failure the run would report, not a kernel error."""
     (q, k, v, c), cotangent = _inputs(8, 64, "unit")
     rng = np.random.default_rng(5)
-    scale = jnp.asarray(rng.choice([0., 1., 12., -12.], size=(1, q.shape[1], q.shape[2], 1)), jnp.bfloat16)
+    wide = 6. if prefactor == "exp" else 12.
+    scale = jnp.asarray(rng.choice([0., 1., wide, -wide], size=(1, q.shape[1], q.shape[2], 1)), jnp.bfloat16)
     operands = (q * scale, k, v, c)
     mosaic = jax.jit(partial(_vjp, _mosaic(transform, prefactor)))(operands, cotangent)
     expected = _numpy_fp64(transform, prefactor, operands, cotangent)
