@@ -318,5 +318,52 @@
         }
       ]
     }
+  ],
+  "input_dependence": [
+    {
+      "key": "calibration-means",
+      "tables": [
+        {
+          "head": [
+            "Model",
+            "Calibration means (% vs native)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Query"
+              },
+              {
+                "text": "15.736 <span class=\"change\">(+1.37%)</span>",
+                "value": 15.736311359729665,
+                "run_id": "r50200ac83292"
+              }
+            ],
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "15.602 <span class=\"change\">(+1.25%)</span>",
+                "value": 15.601988377359552,
+                "run_id": "r850466844aff"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor"
+              },
+              {
+                "text": "15.463 <span class=\"change\">(+1.21%)</span>",
+                "value": 15.462857238162549,
+                "run_id": "r2384d21a3134"
+              }
+            ]
+          ],
+          "caption": "PPL on 256 validation sequences at update 7,500 of the degree-8 runs (prefactor: core degree 8); native: the unchanged model."
+        }
+      ]
+    }
   ]
 }
