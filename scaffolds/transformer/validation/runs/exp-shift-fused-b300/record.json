@@ -1,0 +1,114 @@
+{
+  "asserted_relative_l2_bounds": {
+    "bf16": {
+      "dK": 0.025,
+      "dQ": 0.025,
+      "dV": 0.015,
+      "output": 0.006,
+      "row_maximum": "1e-5 relative, and 1e-5 times max(1, |m|) absolute"
+    },
+    "fp32": {
+      "dQ, dK, dV": "1e-4 times max(1, largest row maximum / 30)",
+      "output": "3e-5 times max(1, largest row maximum / 30)"
+    }
+  },
+  "date": "2026-11-20",
+  "format": "fused-exponential-row-max-shift-qualification",
+  "gpu": "NVIDIA B300 SXM6 AC (akita)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/exp-shift-8461/gpu-tests.xml",
+          "sha256": "6ba59790f3f46070e47084f3483580019be0cb633116c9fbd3468b9e4a91fb69",
+          "size_bytes": 12248
+        },
+        "log": {
+          "path": "logs/exp-shift-8461.log",
+          "sha256": "704bb3281f2d95ececd551b4865064000127680f911dedce4814bce03f308679",
+          "size_bytes": 4851
+        },
+        "throughput": {
+          "path": "logs/exp-shift-8461/throughput.json",
+          "sha256": "d1f675b3b150c2d634ba7484744204d01048f5f4431a4a9275ba7681e422da4c",
+          "size_bytes": 12040
+        }
+      },
+      "elapsed_seconds": 165,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T09:51:10",
+      "forward_and_vjp_median_ms": {
+        "d_K=16, none": 4.035,
+        "d_K=16, row_max": 4.02,
+        "d_K=4, none": 3.981,
+        "d_K=4, row_max": 3.909,
+        "d_K=64, none": 5.691,
+        "d_K=64, row_max": 5.655,
+        "d_K=8, none": 4.027,
+        "d_K=8, row_max": 4.062
+      },
+      "forward_median_ms": {
+        "d_K=16, none": 1.831,
+        "d_K=16, row_max": 1.734,
+        "d_K=4, none": 1.821,
+        "d_K=4, row_max": 1.78,
+        "d_K=64, none": 1.913,
+        "d_K=64, row_max": 1.699,
+        "d_K=8, none": 1.876,
+        "d_K=8, row_max": 1.826
+      },
+      "gpu": {
+        "bus_id": "00000000:1A:00.0",
+        "compute_capability": "10.3",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B300 SXM6 AC",
+        "uuid": "GPU-6dca32fa-0314-7849-907a-031e3d449ddf"
+      },
+      "junit_seconds": 119.236,
+      "node": "akita",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_exp_row_max_shift": 4,
+        "test_unnormalized_fused_attention": 76
+      },
+      "row_max_shift_cases_passed": 29,
+      "slurm_job_id": "8461",
+      "slurm_state": "COMPLETED",
+      "source_commit": "62c95e0f820c2b0501df69c4dabbb3ea66e34ef7",
+      "started_at": "2026-11-20T09:48:25",
+      "tests": {
+        "passed": 80
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_exp_shift.sbatch",
+  "launcher_sha256": "5122f799b43d975391d486e90fb734d8b591ce06ca77f73e00ee42dc2fffeaf9",
+  "maximum_element_error_bound": "3 times the relative-L2 bound times the largest absolute reference element, per batch and head",
+  "precisions": [
+    "bf16 Q/K/V and gradients (training)",
+    "fp32 Q/K/V (TF32x3 products)"
+  ],
+  "schema_version": 1,
+  "scope": "The fused Pallas-Triton unnormalized exponential shifted by its causal row maximum (fused_unnormalized_attention, exp_shift='row_max'): outputs, row maxima and VJPs at Q/K widths 4, 8, 16 and 64 with value width 64 at 2,048 tokens, at ordinary scores and at row maxima of 180-280, beyond FP32's e^88.7, against the shifted blocked scan and dense FP64 (129-token, one-head prefix); with head RMSNorm's offset against the FP64 function at row maxima of 135-210; FP32 inputs at row maxima up to 190; future-token invariance, nonfinite and extreme scores, underflow, repeatability, and a two-layer model on the fused kernel against the blocked scan; the blocked strips and scan at production precision against FP64 with and without a cumulative decay; and every unshifted case of the fused module.",
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "62c95e0f820c2b0501df69c4dabbb3ea66e34ef7": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "de82d0fb0a5e11999453b2141f246dc9c931acf7b4fdd1dd45f1aeb55a8b5fac"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_exp_row_max_shift.py@62c95e0f": "3ab749a93024ebeb640884feaa41cf67ffebd9f5b20d3a5635be553ad99dce32",
+    "test_unnormalized_fused_attention.py@62c95e0f": "5ff5b7113b205b529a04a439c06c76a3de5e3e22260c0ea47c2c84c12bc33dba"
+  },
+  "tests": {
+    "passed": 80
+  }
+}

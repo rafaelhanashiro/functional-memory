@@ -11,6 +11,55 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Row-maximum-shifted exponential (2026-11-20)
+
+`model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the
+unnormalized exponential with head RMSNorm as `y_t = sum_i e^(z_ti - m_t) v_i`, `m_t` the largest causal logit of
+row `t`, and the RMSNorm as `y_t / sqrt(mean(y_t^2) + eps e^(-2 m_t))`: the unshifted function and gradient in real
+arithmetic, `m_t` held constant to differentiation. The fused Pallas-Triton exponential has its own forward (a
+running row maximum, as in flash attention), dQ and dK/dV kernels for it, the blocked scan and strips their own
+branch; the unshifted kernels and calls are unchanged.
+
+**CPU** (`JAX_PLATFORMS=cpu`, at `62573dde`): 1,020 tests in 18 modules passed (66 skipped): the output-scaling,
+unnormalized, configuration, telemetry, acceptance, strips, exponential score-function, composition, attention,
+QK-norm, unnormalized-training, initialization, model, continuation, key-width adapter and records modules, and
+`tests/test_exp_row_max_shift.py` (72 CPU cases). In FP64 the unshifted function and the shifted one, with `m_t`
+held constant or differentiated, agree to 1e-11 in output and VJP at row maxima of 4.5, 18 and 28. The FP32 scan and
+strips match the FP64 function at row maxima of 5.5, 50, 198 and 446 (output relative L2 at most 8e-7, Q/K/V and
+gain gradients 5e-6); there the unshifted output overflows from 89 on, and below that its Q/K gradients already
+depart from FP64 by 0.088 (row maximum 34), 0.42 (50) and 1.7 (88) relative L2 while its output stays within 4e-7:
+the head RMSNorm backward's `rsqrt` derivative flushes to zero (on CPU) once a head's output RMS passes about 5e12.
+Shifted and unshifted agree in FP32 (1e-5) and, with BF16 layers, within BF16 rounding, for the attention and a
+two-layer model (QK RMSNorm with head scales, RoPE); a layer at row maxima past 150 trains on finite values that
+match FP64; the strips equal the scan in FP64 with every decay form and score function; refusals, the allocation
+default, diagnostics, telemetry and an exact training resume (scan and strips) pass. `records receipts` over
+transformer_pp, attention_scaling and state_rank: all 573 unchanged (516 `same`, 57 `same rejection`).
+
+**GPU** (`qualify_exp_shift.sbatch`, one GPU, `-m gpu` over `test_unnormalized_fused_attention.py` and
+`test_exp_row_max_shift.py`):
+
+| GPU | Job | Source | Result | JUnit seconds |
+| --- | --- | --- | --- | --- |
+| B300 SXM6 (`akita`, standard) | 8461 | `62c95e0f` | 80 passed: 25 shifted fused cases, 4 shifted strips cases, the module's 51 unshifted cases | 119 |
+| H100 SXM (`dogo`, long) | 8464 | `bbe4f532` | pending: no H100 was free (`dogo` fully allocated, `mastiff`'s idle GPU fails CUDA initialization, [CLUSTERS.md](../../../CLUSTERS.md)) | |
+
+The shifted fused cases: outputs, row maxima and VJPs at Q/K widths 4, 8, 16 and 64 (value width 64, 2,048 tokens,
+BF16) against the shifted scan and dense FP64 at row maxima of 3-4 and of 180-280; head RMSNorm with the offset
+against the FP64 function at row maxima of 135-210 (output and the Q/K/V and gain gradients); FP32 inputs at row
+maxima up to 190; future-token invariance; finite scores up to 1e30 kept finite and nonfinite ones poisoning their
+rows alone; underflow and zero scores; bitwise repeatability; a two-layer model on the fused kernel against the
+scan. Bounds: relative L2 0.006 (output), 0.025 (dQ, dK), 0.015 (dV) in BF16, FP32 ones scaled by the row maximum,
+row maxima within 1e-5; [record](runs/exp-shift-fused-b300/record.json).
+
+Per layer and micro-batch (16 x 2,048 tokens, 14 heads, BF16), the forward with its VJP takes on B300, unshifted
+and shifted: 3.98 and 3.91 ms at Q/K width 4, 4.03 and 4.06 at 8, 4.04 and 4.02 at 16, 5.69 and 5.66 at 64
+(`benchmarks/benchmark_exp_shift.py`, 0.9-1.4 s of attention per 15-layer, 16-micro-batch update): the shift
+costs no time.
+
+Record the H100 job once it has run (`python3 scaffolds/transformer/validation/record_exp_shift_qualification.py
+8464 exp-shift-fused-h100`). This qualifies the kernels, not a training run: each production allocation still runs
+its adapter's CPU and GPU suites, the initialization check, the pilot and a fresh-process resume.
+
 ### Score prefactors, swish and Q/K width 4 on Mosaic (2026-11-20)
 
 The Mosaic transformed query-polynomial kernels evaluate `W = f(s) p(phi(s))` in their causal tiles
