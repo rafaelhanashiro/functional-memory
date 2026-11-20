@@ -1,0 +1,569 @@
+{
+  "fox-alibi": [
+    {
+      "key": "comparison",
+      "title": "FoX, ALiBi and PaTH",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "Without <var>W</var> decay",
+            "With <var>W</var> decay (0.1)"
+          ],
+          "rows": [
+            [
+              {
+                "text": "FoX NoPE"
+              },
+              {
+                "text": "13.9059",
+                "value": 13.905889325846989,
+                "run_id": "r82a80d3091e2"
+              },
+              {
+                "text": "13.8734",
+                "value": 13.873434004016213,
+                "run_id": "r4a80e28ce0a7",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE (static coefficients)"
+              },
+              {
+                "text": "13.7590",
+                "value": 13.758956017312103,
+                "run_id": "r17fd7f040bff",
+                "best": true
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE (query–key gate)"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.0265",
+                "value": 14.026484577005725,
+                "run_id": "r02f984133092"
+              }
+            ],
+            [
+              {
+                "text": "FoX–PaTH"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.0937",
+                "value": 14.093674272101183,
+                "run_id": "r74495b47d226"
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE (query gate)"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.1977",
+                "value": 14.19769818298085,
+                "run_id": "r3e26412b2811"
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE (query gate, sigmoid)"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.1969",
+                "value": 14.196879516586726,
+                "run_id": "r4f169e5370da"
+              }
+            ],
+            [
+              {
+                "text": "FoX"
+              },
+              {
+                "text": "14.3179",
+                "value": 14.31786479799696,
+                "run_id": "r111843b4c7cc"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "ALiBi NoPE"
+              },
+              {
+                "text": "14.4820",
+                "value": 14.48201628992566,
+                "run_id": "r8d4fc24ef537"
+              },
+              {
+                "text": "14.4340",
+                "value": 14.433996036679739,
+                "run_id": "r69076c8f91c1"
+              }
+            ],
+            [
+              {
+                "text": "PaTH"
+              },
+              {
+                "text": "14.5277",
+                "value": 14.527681402629945,
+                "run_id": "r74a50aca921e"
+              },
+              {
+                "text": "14.3975",
+                "value": 14.397490840133015,
+                "run_id": "r1f2c24c109f9"
+              }
+            ]
+          ],
+          "caption": "—: not run. Static coefficients have no <var>W</var>; their gate projection keeps weight decay 0.1."
+        }
+      ]
+    },
+    {
+      "key": "query-gates",
+      "title": "Query, query–key and FoX gates · NoPE",
+      "tables": [
+        {
+          "head": [
+            "Gate",
+            "Sharing",
+            "<var>m</var> = 4",
+            "<var>m</var> = 8",
+            "<var>m</var> = 12",
+            "Exp",
+            "Softmax"
+          ],
+          "grouped": true,
+          "rows": [
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "Query",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "Shared"
+                },
+                {
+                  "text": "14.1977",
+                  "value": 14.19769818298085,
+                  "run_id": "r3e26412b2811"
+                },
+                {
+                  "text": "13.9388",
+                  "value": 13.93880286422221,
+                  "run_id": "r9320e5cd3071"
+                },
+                {
+                  "text": "13.8512",
+                  "value": 13.851217578400854,
+                  "run_id": "r47bfe39ce9b4"
+                },
+                {
+                  "text": "13.6380",
+                  "value": 13.638042319383363,
+                  "run_id": "r17444ad0f60e",
+                  "rowspan": 2
+                },
+                {
+                  "text": "13.7010",
+                  "value": 13.70100174173386,
+                  "run_id": "r208110a25271",
+                  "rowspan": 2
+                }
+              ]
+            },
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "Per degree"
+                },
+                {
+                  "text": "13.8918",
+                  "value": 13.891816114848853,
+                  "run_id": "r507193d47450"
+                },
+                {
+                  "text": "13.7796",
+                  "value": 13.779566076599409,
+                  "run_id": "r20fe6fe864bc"
+                },
+                {
+                  "text": "13.7499",
+                  "value": 13.74985407812109,
+                  "run_id": "rfe140c073b2f"
+                }
+              ]
+            },
+            {
+              "className": "shade",
+              "cells": [
+                {
+                  "text": "Query–key",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "Shared"
+                },
+                {
+                  "text": "14.0265",
+                  "value": 14.026484577005725,
+                  "run_id": "r02f984133092"
+                },
+                {
+                  "text": "—"
+                },
+                {
+                  "text": "—"
+                },
+                {
+                  "text": "13.6036",
+                  "value": 13.603568252245417,
+                  "run_id": "rd3501a40e020",
+                  "rowspan": 2
+                },
+                {
+                  "text": "—",
+                  "rowspan": 2
+                }
+              ]
+            },
+            {
+              "className": "shade",
+              "cells": [
+                {
+                  "text": "Per degree"
+                },
+                {
+                  "text": "13.7084",
+                  "value": 13.708437587929778,
+                  "run_id": "r03be769d2069"
+                },
+                {
+                  "text": "13.7121",
+                  "value": 13.712118616185275,
+                  "run_id": "r227b0ed7c605"
+                },
+                {
+                  "text": "13.6814",
+                  "value": 13.68140631315172,
+                  "run_id": "rc2f9273c49cc"
+                }
+              ]
+            },
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "FoX (cumulative)",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "Shared"
+                },
+                {
+                  "text": "13.8734",
+                  "value": 13.873434004016213,
+                  "run_id": "r4a80e28ce0a7"
+                },
+                {
+                  "text": "13.9068",
+                  "value": 13.906782588215664,
+                  "run_id": "r9353f554b917"
+                },
+                {
+                  "text": "—"
+                },
+                {
+                  "text": "13.6280",
+                  "value": 13.627967054220683,
+                  "run_id": "r183f08346ddc",
+                  "rowspan": 2
+                },
+                {
+                  "text": "13.6800",
+                  "value": 13.680023755264207,
+                  "run_id": "r5adc29a91e3b",
+                  "rowspan": 2
+                }
+              ]
+            },
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "Per degree"
+                },
+                {
+                  "text": "13.7669",
+                  "value": 13.76693184659382,
+                  "run_id": "r319b83140040"
+                },
+                {
+                  "text": "13.6328",
+                  "value": 13.632785128237556,
+                  "run_id": "rf8fc9ab2cecc"
+                },
+                {
+                  "text": "13.6654",
+                  "value": 13.665371979051002,
+                  "run_id": "r95bfff096cd4"
+                }
+              ]
+            }
+          ],
+          "caption": "—: not run. Exp and softmax have no degree; each spans both sharing rows."
+        }
+      ]
+    },
+    {
+      "key": "static-gates",
+      "title": "Static coefficients · distance gates · NoPE",
+      "tables": [
+        {
+          "head": [
+            "Gate",
+            "Sharing",
+            "<var>m</var> = 4",
+            "<var>m</var> = 8"
+          ],
+          "grouped": true,
+          "rows": [
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "Static",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "Shared"
+                },
+                {
+                  "text": "14.3035",
+                  "value": 14.303538445489604,
+                  "run_id": "r0e76396bdee5"
+                },
+                {
+                  "text": "14.1352",
+                  "value": 14.135157262082107,
+                  "run_id": "rc60345dfcff7"
+                }
+              ]
+            },
+            {
+              "className": "",
+              "cells": [
+                {
+                  "text": "Per degree"
+                },
+                {
+                  "text": "14.2853",
+                  "value": 14.285324552571499,
+                  "run_id": "r527a30ff7ed1"
+                },
+                {
+                  "text": "14.2608",
+                  "value": 14.260793542545796,
+                  "run_id": "re253a5f1b03e"
+                }
+              ]
+            },
+            {
+              "className": "shade",
+              "cells": [
+                {
+                  "text": "Query–key",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "Shared"
+                },
+                {
+                  "text": "—"
+                },
+                {
+                  "text": "—"
+                }
+              ]
+            },
+            {
+              "className": "shade",
+              "cells": [
+                {
+                  "text": "Per degree"
+                },
+                {
+                  "text": "13.5500",
+                  "value": 13.549997126679823,
+                  "run_id": "ra0f402ff6758"
+                },
+                {
+                  "text": "13.6737",
+                  "value": 13.673715377664895,
+                  "run_id": "r2e25140c75db"
+                }
+              ]
+            }
+          ],
+          "caption": "—: not run. The static gate reads no token: <var>G</var><sub><var>t</var>,<var>i</var></sub> = (<var>t</var> − <var>i</var>) softplus(<var>β</var>)."
+        }
+      ]
+    },
+    {
+      "key": "reference",
+      "title": "Reference FoX / PaTH",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "Softmax",
+            "Exp"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "FoX NoPE"
+              },
+              {
+                "text": "13.6800",
+                "value": 13.680023755264207,
+                "run_id": "r5adc29a91e3b"
+              },
+              {
+                "text": "13.6280",
+                "value": 13.627967054220683,
+                "run_id": "r183f08346ddc"
+              }
+            ],
+            [
+              {
+                "text": "FoX–PaTH"
+              },
+              {
+                "text": "13.3540",
+                "value": 13.354023903848505,
+                "run_id": "r14db6f0e8592"
+              },
+              {
+                "text": "13.3211",
+                "value": 13.321144094399378,
+                "run_id": "rafcf22b799ed",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "ALiBi NoPE (fixed slopes)"
+              },
+              {
+                "text": "13.8991",
+                "value": 13.899146890165671,
+                "run_id": "ref652c257797"
+              },
+              {
+                "text": "13.9011",
+                "value": 13.901147052140729,
+                "run_id": "r7820049184ef"
+              }
+            ]
+          ]
+        },
+        {
+          "title": "Original FoX sigmoid gate · NoPE",
+          "head": [
+            "Attention",
+            "QK normalization",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "14.0135",
+                "value": 14.013507859938473,
+                "run_id": "reeb92d46a95d"
+              }
+            ],
+            [
+              {
+                "text": "Exp + RMSNorm"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "14.0049",
+                "value": 14.004941827196461,
+                "run_id": "rdd3e9cb3bb80"
+              }
+            ],
+            [
+              {
+                "text": "Query (<var>m</var> = 4) + <var>W</var> decay + RMSNorm"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "14.3716",
+                "value": 14.371596098403161,
+                "run_id": "rfa9636279199"
+              }
+            ],
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "13.9854",
+                "value": 13.985443413168339,
+                "run_id": "rac200ce11221",
+                "best": true
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

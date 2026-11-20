@@ -1,0 +1,575 @@
+{
+  "activations": [
+    {
+      "key": "forms",
+      "title": "Affine and pure generators",
+      "tables": [
+        {
+          "head": [
+            "Generator",
+            "Coefficients <var>c</var><sub><var>r</var></sub>",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Affine tanh (query)"
+                },
+                {
+                  "text": "(<var>b</var><sub><var>r</var></sub> + <var>a</var><sub><var>r</var></sub> tanh(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)) / <var>r</var>!"
+                },
+                {
+                  "text": "14.7738",
+                  "value": 14.7737535481344,
+                  "run_id": "r2b22f2ff6461"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Affine sigmoid"
+                },
+                {
+                  "text": "(<var>b</var><sub><var>r</var></sub> + <var>a</var><sub><var>r</var></sub> σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)) / <var>r</var>!"
+                },
+                {
+                  "text": "14.7562",
+                  "value": 14.756176021162979,
+                  "run_id": "r917f3650296e"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Pure tanh"
+                },
+                {
+                  "text": "tanh(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)"
+                },
+                {
+                  "text": "22.6277",
+                  "value": 22.627666294465378,
+                  "run_id": "r1d578d107115"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Learned static"
+                },
+                {
+                  "text": "<var>c</var><sub><var>r</var></sub> learned"
+                },
+                {
+                  "text": "14.7667",
+                  "value": 14.76671666761948,
+                  "run_id": "r4339a245820e"
+                }
+              ],
+              "className": "divider"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Fixed Taylor"
+                },
+                {
+                  "text": "1 / <var>r</var>!"
+                },
+                {
+                  "text": "14.7218",
+                  "value": 14.721778104249449,
+                  "run_id": "r816ab0fbe119",
+                  "best": true
+                }
+              ],
+              "className": ""
+            }
+          ],
+          "caption": "Degree <var>m</var> = 4. The affine forms start at fixed Taylor (<var>a</var> = 0); pure tanh starts from a random polynomial, <var>W</var> ∼ N(0, 1/<var>d</var>)."
+        }
+      ]
+    },
+    {
+      "key": "pure-sigmoid",
+      "title": "Pure sigmoid, per degree",
+      "tables": [
+        {
+          "head": [
+            "Order scaling",
+            "No <var>W</var> decay",
+            "<var>W</var> decay 0.1"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.1034",
+                "value": 16.103391877182744,
+                "run_id": "rd5550f8db5e4"
+              },
+              {
+                "text": "15.9193",
+                "value": 15.919304822677798,
+                "run_id": "re6d4c820a132",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "1 / <var>r</var>!"
+              },
+              {
+                "text": "16.6050",
+                "value": 16.605029501874565,
+                "run_id": "r8b4e2a0603aa"
+              },
+              {
+                "text": "16.4056",
+                "value": 16.4055580733773,
+                "run_id": "r343fff99fa9e"
+              }
+            ]
+          ],
+          "caption": "Degree <var>m</var> = 4, with <var>c</var><sub><var>r</var></sub> = σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>), divided by <var>r</var>! or not, from <var>W</var> = 0."
+        }
+      ]
+    }
+  ],
+  "dense": [
+    {
+      "key": "dense",
+      "title": "Dense polynomial parametrizations · query coefficients",
+      "tables": [
+        {
+          "head": [
+            "Parametrization",
+            "Degree",
+            "Readout scale",
+            "Without <var>W</var> decay",
+            "With <var>W</var> decay (0.1)"
+          ],
+          "caption": "— Not run.",
+          "rows": [
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1"
+              },
+              {
+                "text": "14.8181",
+                "value": 14.818141702962876,
+                "run_id": "r0c0f3634685c"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1 / √5"
+              },
+              {
+                "text": "14.7104",
+                "value": 14.710406165195586,
+                "run_id": "rcaff0dfb095f"
+              },
+              {
+                "text": "14.7386",
+                "value": 14.738594601826602,
+                "run_id": "rdacb58b7981c"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 9)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1 / 3"
+              },
+              {
+                "text": "14.7822",
+                "value": 14.782189821867252,
+                "run_id": "r04a5b2a3e8dd"
+              },
+              {
+                "text": "14.7980",
+                "value": 14.798016365034693,
+                "run_id": "r753a7e8d3212"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 9)"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "1 / 3"
+              },
+              {
+                "text": "14.3995",
+                "value": 14.399458390567679,
+                "run_id": "rfccffdd239dd"
+              },
+              {
+                "text": "—"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sigmoid",
+      "title": "Sigmoid coefficients · <var>m</var> = 4",
+      "tables": [
+        {
+          "head": [
+            "Readout",
+            "Scaling",
+            "Without <var>W</var> decay",
+            "With <var>W</var> decay (0.1)"
+          ],
+          "caption": "Per degree: fixed <var>V</var> = <var>I</var>. Dense: learned <var>V</var>.",
+          "rows": [
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.3248",
+                "value": 16.324831561050132,
+                "run_id": "ra6ae537a5e37"
+              },
+              {
+                "text": "16.0432",
+                "value": 16.043249678062942,
+                "run_id": "r331b5fd5bebc"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "1 / <var>r</var>! and 1 / √<var>K</var>"
+              },
+              {
+                "text": "16.3459",
+                "value": 16.345887372867445,
+                "run_id": "r239ea241c978"
+              },
+              {
+                "text": "16.4665",
+                "value": 16.46646773350398,
+                "run_id": "rf7e1a83e2e23"
+              }
+            ],
+            [
+              {
+                "text": "Per degree"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.1034",
+                "value": 16.103391877182744,
+                "run_id": "rd5550f8db5e4"
+              },
+              {
+                "text": "15.9193",
+                "value": 15.919304822677798,
+                "run_id": "re6d4c820a132"
+              }
+            ],
+            [
+              {
+                "text": "Per degree"
+              },
+              {
+                "text": "1 / <var>r</var>!"
+              },
+              {
+                "text": "16.6050",
+                "value": 16.605029501874565,
+                "run_id": "r8b4e2a0603aa"
+              },
+              {
+                "text": "16.4056",
+                "value": 16.4055580733773,
+                "run_id": "r343fff99fa9e"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "sos": [
+    {
+      "key": "sos",
+      "title": "SoS and softplus",
+      "tables": [
+        {
+          "head": [
+            "Variant",
+            "<var>m</var> = 4",
+            "<var>m</var> = 8",
+            "<var>m</var> = 12",
+            "<var>m</var> = 16"
+          ],
+          "rows": [
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Query coefficients · <var>W</var> decay",
+                  "colspan": 5
+                }
+              ]
+            },
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "14.6424 <span class=\"change\">(+2.70%)</span>",
+                "value": 14.642439540322796,
+                "run_id": "r016b914d927a"
+              },
+              {
+                "text": "14.1955 <span class=\"change\">(−0.43%)</span>",
+                "value": 14.19554178201557,
+                "run_id": "reeefbcc19abf"
+              },
+              {
+                "text": "14.1649 <span class=\"change\">(−0.65%)</span>",
+                "value": 14.164902702578718,
+                "run_id": "r3d52b7ab43d1"
+              },
+              {
+                "text": "14.1678 <span class=\"change\">(−0.63%)</span>",
+                "value": 14.167844817193743,
+                "run_id": "rdfc61c988309"
+              }
+            ],
+            [
+              {
+                "text": "Softplus input"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.2624 <span class=\"change\">(+0.04%)</span>",
+                "value": 14.262351191786944,
+                "run_id": "ra3b54e2489f8"
+              },
+              {
+                "text": "14.2223 <span class=\"change\">(−0.24%)</span>",
+                "value": 14.222309318277276,
+                "run_id": "r9eb845aae5bb"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.3388 <span class=\"change\">(+0.57%)</span>",
+                "value": 14.338780359544664,
+                "run_id": "r41a4c74c5f58"
+              },
+              {
+                "text": "14.3270 <span class=\"change\">(+0.49%)</span>",
+                "value": 14.32704504361169,
+                "run_id": "rc5aac8f37a2e"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor*"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.0953 <span class=\"change\">(−1.14%)</span>",
+                "value": 14.09530748722832,
+                "run_id": "r841f35a24241"
+              },
+              {
+                "text": "14.0934 <span class=\"change\">(−1.15%)</span>",
+                "value": 14.093399457351905,
+                "run_id": "rf637de9b65b1",
+                "best": true
+              },
+              {
+                "text": "—"
+              }
+            ],
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Static coefficients",
+                  "colspan": 5
+                }
+              ]
+            },
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "14.3044 <span class=\"change\">(+0.33%)</span>",
+                "value": 14.30436294827776,
+                "run_id": "r0e32dd2bd3f7"
+              },
+              {
+                "text": "14.1674 <span class=\"change\">(−0.63%)</span>",
+                "value": 14.16738038888221,
+                "run_id": "rdc8b04b223af"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input"
+              },
+              {
+                "text": "14.7571 <span class=\"change\">(+3.51%)</span>",
+                "value": 14.757118683081853,
+                "run_id": "r6d4217061453"
+              },
+              {
+                "text": "14.3540 <span class=\"change\">(+0.68%)</span>",
+                "value": 14.353954107235383,
+                "run_id": "r54f771e54722"
+              },
+              {
+                "text": "14.3668 <span class=\"change\">(+0.77%)</span>",
+                "value": 14.366767478493491,
+                "run_id": "r1b9e2e69f7f0"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor*"
+              },
+              {
+                "text": "14.2971 <span class=\"change\">(+0.28%)</span>",
+                "value": 14.297129009821694,
+                "run_id": "r91e0c1bb8458"
+              },
+              {
+                "text": "14.1477 <span class=\"change\">(−0.77%)</span>",
+                "value": 14.147689084038568,
+                "run_id": "ra3bffee9a528"
+              },
+              {
+                "text": "14.1211 <span class=\"change\">(−0.95%)</span>",
+                "value": 14.12113583570795,
+                "run_id": "r28a991faed4f"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            {
+              "className": "band",
+              "cells": [
+                {
+                  "text": "Fixed kernels",
+                  "colspan": 5
+                }
+              ]
+            },
+            [
+              {
+                "text": "Exp (baseline)"
+              },
+              {
+                "text": "14.2572 <span class=\"change\">(0.00%)</span>",
+                "value": 14.257176394334465,
+                "run_id": "r6a76e7fbde45",
+                "colspan": 4
+              }
+            ],
+            [
+              {
+                "text": "Sigmoid"
+              },
+              {
+                "text": "16.1352 <span class=\"change\">(+13.17%)</span>",
+                "value": 16.135168064320403,
+                "run_id": "r88d8654a8a1d",
+                "colspan": 4
+              }
+            ],
+            [
+              {
+                "text": "Softplus"
+              },
+              {
+                "text": "15.7443 <span class=\"change\">(+10.43%)</span>",
+                "value": 15.744321437549862,
+                "run_id": "r266c5dd1f935",
+                "colspan": 4
+              }
+            ]
+          ],
+          "caption": "PPL (% vs exp) at core degree <var>m</var>. * Total degree <var>m</var> + 1. <var>m</var> = 16 ran on the blocked kernel."
+        }
+      ]
+    }
+  ]
+}

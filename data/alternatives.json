@@ -1,0 +1,278 @@
+{
+  "fixed-kernels": [
+    {
+      "key": "alternatives",
+      "title": "Alternatives to exp",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "Score weight",
+            "Layers × width",
+            "PPL"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Linear"
+              },
+              {
+                "text": "<var>s</var>"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "20.7170",
+                "value": 20.71704131235611,
+                "run_id": "rd434701f3492"
+              }
+            ],
+            [
+              {
+                "text": "GDN"
+              },
+              {
+                "text": "Native FLA Gated DeltaNet"
+              },
+              {
+                "text": "9 × 1024"
+              },
+              {
+                "text": "16.1844",
+                "value": 16.184398712179412,
+                "run_id": "r6b38709ed8d3"
+              }
+            ],
+            [
+              {
+                "text": "Sigmoid"
+              },
+              {
+                "text": "<var>σ</var>(<var>s</var>)"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "16.1352",
+                "value": 16.135168064320403,
+                "run_id": "r88d8654a8a1d"
+              }
+            ],
+            [
+              {
+                "text": "Softplus"
+              },
+              {
+                "text": "log(1 + <var>e</var><sup><var>s</var></sup>)"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "15.7443",
+                "value": 15.744321437549862,
+                "run_id": "r266c5dd1f935"
+              }
+            ]
+          ],
+          "caption": "<var>s</var> is the attention score. Linear, sigmoid, and softplus use per-head output RMSNorm."
+        }
+      ]
+    },
+    {
+      "key": "prefactors",
+      "title": "Exp with prefactors",
+      "tables": [
+        {
+          "head": [
+            "Score weight",
+            "PPL (% vs exp)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "<var>σ</var>(<var>s</var>)&#8239;<var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.1857 <span class=\"change\">(−0.50%)</span>",
+                "value": 14.18570968663845,
+                "run_id": "rd7c9f610e9dc"
+              }
+            ],
+            [
+              {
+                "text": "softplus(<var>s</var>)&#8239;<var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.1323 <span class=\"change\">(−0.88%)</span>",
+                "value": 14.13227194425537,
+                "run_id": "rbd24b948a240"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "misc",
+      "title": "Misc",
+      "tables": [
+        {
+          "head": [
+            "Score weight",
+            "PPL (% vs exp)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "<var>e</var><sup>softplus(<var>s</var>)</sup> = 1 + <var>e</var><sup><var>s</var></sup>"
+              },
+              {
+                "text": "14.3292 <span class=\"change\">(+0.51%)</span>",
+                "value": 14.329238862221548,
+                "run_id": "r0dd96f88d9f8"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "mlp": [
+    {
+      "key": "score-mlp",
+      "title": "Score MLP",
+      "tables": [
+        {
+          "head": [
+            "Width",
+            "PPL (% vs exp)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "<var>J</var> = 4"
+              },
+              {
+                "text": "20.3206 <span class=\"change\">(+42.53%)</span>",
+                "value": 20.320645498731935,
+                "run_id": "rea8b942672f4"
+              }
+            ],
+            [
+              {
+                "text": "<var>J</var> = 8"
+              },
+              {
+                "text": "20.9757 <span class=\"change\">(+47.12%)</span>",
+                "value": 20.975673555106496,
+                "run_id": "rfc68c6d26f40"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "splines": [
+    {
+      "key": "splines",
+      "title": "Degree-4 splines",
+      "tables": [
+        {
+          "head": [
+            "Initialization",
+            "Static",
+            "Query + <var>W</var> decay"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Taylor: <var>T</var><sub>4</sub>(<var>z</var>)"
+              },
+              {
+                "text": "14.7454 <span class=\"change\">(−0.14%)</span>",
+                "value": 14.745418755565684,
+                "run_id": "r7e4193fcafbd"
+              },
+              {
+                "text": "14.7463 <span class=\"change\">(+0.26%)</span>",
+                "value": 14.74631858692753,
+                "run_id": "rf303a5f94487"
+              }
+            ],
+            [
+              {
+                "text": "Affine: 1 + <var>z</var>/4"
+              },
+              {
+                "text": "17.9328 <span class=\"change\">(+21.44%)</span>",
+                "value": 17.932806714468292,
+                "run_id": "r325f7d64b940"
+              },
+              {
+                "text": "16.9676 <span class=\"change\">(+15.36%)</span>",
+                "value": 16.967592405777236,
+                "run_id": "r2de7f1f4c9ce"
+              }
+            ],
+            [
+              {
+                "text": "Quadratic: 1 + <var>z</var> + <var>z</var><sup>2</sup>/2"
+              },
+              {
+                "text": "15.7690 <span class=\"change\">(+6.79%)</span>",
+                "value": 15.76897647221076,
+                "run_id": "r3ba9a42b7abd"
+              },
+              {
+                "text": "15.6748 <span class=\"change\">(+6.57%)</span>",
+                "value": 15.674801477480402,
+                "run_id": "r2c5883395415"
+              }
+            ],
+            [
+              {
+                "text": "Binomial: (1/2 + <var>z</var>/8)<sup>4</sup>"
+              },
+              {
+                "text": "16.2902 <span class=\"change\">(+10.32%)</span>",
+                "value": 16.290210875931475,
+                "run_id": "ra4c3ada624af"
+              },
+              {
+                "text": "16.3599 <span class=\"change\">(+11.23%)</span>",
+                "value": 16.359880085183203,
+                "run_id": "r78fa0d682f44"
+              }
+            ],
+            {
+              "className": "divider",
+              "cells": [
+                {
+                  "text": "Polynomial baseline"
+                },
+                {
+                  "text": "14.7667",
+                  "value": 14.76671666761948,
+                  "run_id": "r4339a245820e"
+                },
+                {
+                  "text": "14.7085",
+                  "value": 14.708538612353673,
+                  "run_id": "rca97cc9db8f2"
+                }
+              ]
+            }
+          ],
+          "caption": "PPL (% vs polynomial baseline)."
+        }
+      ]
+    }
+  ]
+}

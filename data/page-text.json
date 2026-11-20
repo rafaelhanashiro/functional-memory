@@ -1,0 +1,75 @@
+{
+  "pages": {
+    "index": {
+      "page": "This project asks whether polynomial attention can match or beat exp and softmax attention when the rest of the Transformer stays the same. Each head scores query $t$ against key $s$ with $z_{ts}=q_t^\\top k_s/\\sqrt{d_K}$ and weights the values by a polynomial of degree $m$ instead of $e^{z}$:\n\n$$o_t=\\operatorname{RMSNorm}\\Big(\\sum_{s\\le t}p(z_{ts})\\,v_s\\Big),\\qquad p(z)=\\sum_{r=0}^{m}c_r z^r.$$\n\nExp is the same with $p(z)=e^z$; softmax instead divides by the causal row sum. The coefficients $c_r$ are fixed at Taylor's $1/r!$, learned per head (static), or computed from each query (query).\n",
+      "reference": "Every run follows this recipe unless its page says otherwise.\n"
+    },
+    "runs-100m": {},
+    "runs-2p5x-chinchilla": {
+      "polynomials": "$W$ decay applies weight decay to the coefficient generator's projection $W$; fixed Taylor and static have no $W$.\n"
+    },
+    "runs-4k-sequences": {
+      "sequences": "Each model trained on 2,048-token and on 4,096-token sequences with the same budget of 4B tokens: 128 sequences per update at 4k instead of 256.\n"
+    },
+    "runs-activations": {},
+    "runs-alternative-attention": {},
+    "runs-dense": {
+      "page": "> [!info] Dense model\n> $$c_r(x_t) = \\frac{1}{r!}\\left[b_r + \\frac{1}{\\sqrt{K}} \\sum_{j=1}^{K} V_{rj} \\tanh(w_j^\\top x_t)\\right]$$\n>\n> We also test a sigmoid variant:\n>\n> $$c_r(x_t) = \\frac{1}{r!\\sqrt{K}} \\sum_{j=1}^{K} V_{rj}\\, \\sigma(w_j^\\top x_t)$$\n"
+    },
+    "runs-fixed-kernels": {
+      "prefactors-notes": "> [!tip] Observations:\n> - Prefactors helped exp.\n"
+    },
+    "runs-fox-alibi": {
+      "comparison": "Every polynomial is the query-dependent $p_t$ at $m = 4$, except the static row's learned static coefficients. PaTH and FoX–PaTH use PaTH in place of RoPE.\n",
+      "page": "> [!info] Models\n> Suppressing layer and head indices, let $x_t$ be the pre-attention RMSNorm activation and $s_{t,i} = q_t^\\top k_i/\\sqrt{d_K}$ the score of key $i \\le t$. The query-dependent polynomial is\n> $$p_t(s) = \\sum_{r=0}^{4} \\frac{b_r + a_r \\tanh(W_r^\\top x_t)}{r!}\\, s^r.$$\n> Each gate decays a key's weight with its distance,\n> $$\\omega_{t,i} = p_t(s_{t,i})\\, e^{-\\gamma G_{t,i}}, \\qquad \\gamma = e^{A_{\\log}} > 0,$$\n> and the output is $o_t = \\mathrm{RMSNorm}_{\\mathrm{head}}\\big(\\sum_{i \\le t} \\omega_{t,i} v_i\\big)$.\n>\n> | Gate | $G_{t,i}$ |\n> |---|---|\n> | FoX | $\\sum_{j=i+1}^{t} \\mathrm{softplus}(w_q^\\top x_j + \\beta)$ |\n> | Query gate | $(t-i)\\, \\mathrm{softplus}(w_q^\\top x_t + \\beta)$ |\n> | Query gate, sigmoid | $(t-i)\\, \\sigma(w_q^\\top x_t + \\beta)$ |\n> | Query–key gate | $(t-i)\\, \\mathrm{softplus}(w_q^\\top x_t + w_k^\\top x_i + \\beta)$ |\n> | ALiBi | $t-i$ |\n>\n> - FoX multiplies GDN-style per-token gates $\\alpha_j = e^{-\\gamma\\, \\mathrm{softplus}(w_q^\\top x_j + \\beta)}$ along the sequence; the other gates apply one rate, from the query or the query–key pair, across the whole distance. With $A_{\\log} = 0$, $\\alpha_j = \\sigma(-w_q^\\top x_j - \\beta)$: the original FoX sigmoid gate, up to the sign of $w_q$ and $\\beta$.\n> - ALiBi learns its rate $\\gamma = e^{A}$ per layer and head, from ALiBi's slopes and without weight decay; it reads no token. The original ALiBi keeps the slopes fixed.\n> - The query–key gate reads the key; the polynomial coefficients read the query only.\n> - Per degree: each degree $r$ has its own gate, $\\omega_{t,i} = \\sum_r c_{t,r}\\, s_{t,i}^r\\, e^{-\\gamma_r G^{(r)}_{t,i}}$.\n",
+      "query-gates": "The polynomials use query + $W$ decay coefficients, which read the query only; exp and softmax use the gate of their row.\n",
+      "reference": "None of these runs use RoPE. The ALiBi runs use fixed slopes (not learned), unlike the polynomial ALiBi above.\n"
+    },
+    "runs-mlp": {},
+    "runs-other": {
+      "gates": "Query + W decay, where a gate computed from each token scales every degree's coefficient: a sigmoid, or GDN-style at degree 4.\n",
+      "input-norm-notes": "![tanh saturation of the coefficient generator by direction, layer 8, head 1, without L2, with L2 after RMSNorm, and with L2 on the raw input](figures/other-runs/saturation-layer8-head1.png)\n",
+      "input-norm": "The coefficient generator's input scaled to unit L2 norm, after the block's RMSNorm or on the raw input before it; the last variant multiplies a softplus-input SoS polynomial by its input, which adds one to the total degree.\n",
+      "learning-rate": "Degree-4 query coefficients with the learning rate of $a$ and $b$ tripled; $W$ and the backbone keep theirs, and neither run decays $W$.\n",
+      "powers": "Polynomials restricted to the even powers 0, 2, 4, 6, 8 or to the constant and the odd powers 1, 3, 5, 7, beside full polynomials of degree 4 and 8.\n",
+      "release": "Degree-8 query + W decay or static coefficients, held at Taylor for the first 455 updates while the backbone trains, then released all at once or one degree at a time.\n",
+      "weight-decay": "Degree-4 query and query-key coefficients with weight decay 0.1 on the tanh projection $W$ (both query and key $W$ for query-key), or on $a$, $b$ and $W$; backbone decay is unchanged. The query-key runs also differ in kernel: fused without $W$ decay, Mosaic with it.\n",
+      "zero-constant": "Degree-8 polynomials, of the softplus of the score or of the raw score, with the constant coefficient fixed at $c_0 = 0$; query variants use W decay.\n"
+    },
+    "runs-poly-parametrizations": {},
+    "runs-polynomial": {
+      "query-key": "The $W$-decay run used the Mosaic kernel; the others used the fused kernel.\n"
+    },
+    "runs-scalings": {},
+    "runs-sos": {
+      "page": "> [!note] SoS model\n>\n> Let $s$ be the attention score. The SoS model is given by\n> $$h(s;x) = q_1^2(s;x)+q_2^2(s;x)$$\n> where $\\text{deg}(q_1)=m/2$ and $\\text{deg}(q_2)=m/2-1$.\n\nLet $z=\\text{softplus}(s)$. We consider three models:\n\n| Variant | Attention weight | Note |\n|---|---|---|\n| SoS | $h(s)$ | |\n| SoS + softplus | $h(z)$ | |\n| SoS + softplus prefactor | $z h(z)$ | Raises degree by 1 |\n\nIntuition:\n- Softplus: negative scores are first transformed into a small number *and then* fed into $h$. E.g., without it, $x^2$ would treat $-100$ and $100$ equally.\n- Softplus prefactor: we additionally get the property that $\\text{weight}\\to0$ as $s\\to-\\infty$.\n",
+      "sos-notes": "> [!tip] Observations:\n> - Query SoS + softplus prefactor performed best.\n> - Sigmoid and Softplus baselines performed poorly.\n"
+    },
+    "runs-splines": {
+      "page": "Knots were chosen based on calibration data.\n"
+    },
+    "runs": {
+      "page": "Reported PPL are validation best.\n"
+    },
+    "diagnostics-continued-pretraining": {
+      "cpt": "Each model trains for 2,000 more updates from a 1× checkpoint, fixed Taylor's or exp's, with the parameters it adds at learning rate $10^{-3}$; or from its own, keeping its coefficient optimizer state, at $10^{-4}$. Fixed Taylor's own start is its Taylor start.\n",
+      "page": "> [!info] Models\n> - Query temperature: QK RMSNorm's per-head query scale $\\exp(\\gamma_h)$ becomes $\\exp(\\gamma_h + a_h \\cos(w_h, x_t))$, a bounded temperature for each token and head read from the attention input $x_t$; $W$ decay is weight decay on $w_h$.\n"
+    },
+    "diagnostics-input-dependence": {
+      "calibration-means-notes": "> [!tip] Observations:\n> - Removing input dependence clearly degraded performance.\n",
+      "page": "> [!note] Calibration-mean intervention\n> - Compute each head's average coefficients over a calibration set (64 validation sequences).\n> - Fix every head's polynomial, in all layers at once, to these coefficients.\n> - Evaluate the model on 256 other validation sequences.\n"
+    },
+    "diagnostics-learned-polynomials": {},
+    "diagnostics-learning-dynamics": {},
+    "diagnostics-length-extrapolation": {
+      "ablations-notes": "> [!tip] Notes\n> - Attending only to the last 2k tokens greatly improves performance.\n> - Clamping RoPE at distance 2k keeps PPL stable from lengths 2k–4k, but then blows up past that.\n",
+      "position-weights-notes": "> [!tip] Notes\n> - The 4k run places less weight on far away tokens, unlike the 2k run.\n"
+    },
+    "diagnostics-overfitting": {
+      "fits": "Each fit freezes a pretrained degree-4 model and trains only its coefficients on one batch of $B$ sequences: free coefficients for every sequence and query (on the fixed-Taylor model), the model's own coefficient generators, or its static coefficients. Perplexity is on that batch.\n",
+      "regression": "Coefficient generators regressed onto a free fit's coefficients (the teacher) on the frozen Taylor model. MSE runs from the Taylor start to the selected snapshot; perplexity is on the fitted batch and on 256 held-out sequences.\n"
+    },
+    "diagnostics": {}
+  },
+  "titles": {}
+}

@@ -1,0 +1,350 @@
+{
+  "powers": {
+    "title": "Selected powers",
+    "columns": [
+      {
+        "label": "Full",
+        "degree": 4
+      },
+      {
+        "label": "Even-only",
+        "degree": 8
+      },
+      {
+        "label": "Odd + constant",
+        "degree": 7
+      },
+      {
+        "label": "Full",
+        "degree": 8
+      }
+    ],
+    "rows": [
+      {
+        "label": "Static",
+        "cells": [
+          {
+            "run_id": "r4339a245820e",
+            "perplexity": 14.766716668
+          },
+          {
+            "run_id": "r45831d718944",
+            "perplexity": 14.616102352
+          },
+          null,
+          {
+            "run_id": "r9c69dd7cfc8d",
+            "perplexity": 14.294211762
+          }
+        ]
+      },
+      {
+        "label": "Query + W decay",
+        "cells": [
+          {
+            "run_id": "rca97cc9db8f2",
+            "perplexity": 14.708538612
+          },
+          {
+            "run_id": "r698f9a157a94",
+            "perplexity": 14.615045697
+          },
+          {
+            "run_id": "r0bdac8e1b97b",
+            "perplexity": 16.04357068
+          },
+          {
+            "run_id": "r25fffc16c2f3",
+            "perplexity": 14.32280452
+          }
+        ]
+      }
+    ]
+  },
+  "gates": {
+    "title": "Per-degree coefficient gates",
+    "rows": [
+      {
+        "degree": 4,
+        "gate": "GDN-style",
+        "run_id": "r1a5d217f030d",
+        "perplexity": 15.981136329288733
+      },
+      {
+        "degree": 8,
+        "gate": "Sigmoid",
+        "run_id": "r77698776d82c",
+        "perplexity": 15.525570629668591
+      },
+      {
+        "degree": 10,
+        "gate": "Sigmoid",
+        "run_id": "r8c4a6ecdf4d2",
+        "perplexity": 15.344428088080155
+      }
+    ]
+  },
+  "input_norm": {
+    "title": "Coefficient input L2",
+    "columns": [
+      "L2 after RMSNorm",
+      "L2 on raw input"
+    ],
+    "groups": [
+      {
+        "label": "Query",
+        "rows": [
+          {
+            "degree": 8,
+            "cells": [
+              {
+                "run_id": "r25a5f78841b2",
+                "perplexity": 14.260423491223017
+              },
+              null
+            ]
+          },
+          {
+            "degree": 12,
+            "cells": [
+              {
+                "run_id": "r7e34dec9dbd5",
+                "perplexity": 14.259206718959646
+              },
+              {
+                "run_id": "r1f30febd7de5",
+                "perplexity": 14.244048105659983
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "SoS",
+        "rows": [
+          {
+            "degree": 8,
+            "cells": [
+              {
+                "run_id": "r717267afcb78",
+                "perplexity": 14.270693783861004
+              },
+              null
+            ]
+          },
+          {
+            "degree": 12,
+            "cells": [
+              {
+                "run_id": "r6b17c3463a60",
+                "perplexity": 14.281486353797396
+              },
+              {
+                "run_id": "r2bf71d7b4831",
+                "perplexity": 14.20890757390879
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "SoS + softplus input + prefactor",
+        "rows": [
+          {
+            "degree": 9,
+            "cells": [
+              null,
+              {
+                "run_id": "r35805940a380",
+                "perplexity": 14.13128820347479
+              }
+            ]
+          },
+          {
+            "degree": 13,
+            "cells": [
+              null,
+              {
+                "run_id": "r5198d688e9d4",
+                "perplexity": 14.09672057273904
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "zero_constant": {
+    "title": "Zero constant",
+    "columns": [
+      "Softplus input",
+      "Raw score"
+    ],
+    "rows": [
+      {
+        "label": "Query",
+        "cells": [
+          {
+            "run_id": "rb5b604ae829a",
+            "perplexity": 14.24972539203284
+          },
+          {
+            "run_id": "r81b5ebb23a51",
+            "perplexity": 16.95989537711045
+          }
+        ]
+      },
+      {
+        "label": "Query SoS",
+        "cells": [
+          {
+            "run_id": "r7d5baf55104e",
+            "perplexity": 14.127645091073603
+          },
+          {
+            "run_id": "rc379a8f30f5b",
+            "perplexity": 14.726116955218954
+          }
+        ]
+      },
+      {
+        "label": "Static",
+        "cells": [
+          {
+            "run_id": "rc28ef4dbe26d",
+            "perplexity": 14.192018540499317
+          },
+          {
+            "run_id": "r37fb1c7bb6db",
+            "perplexity": 17.359314254400807
+          }
+        ]
+      }
+    ]
+  },
+  "decay_and_lr": {
+    "title": "Decay and LR experiments",
+    "parts": [
+      {
+        "key": "weight-decay",
+        "title": "Coefficient weight decay",
+        "head": [
+          "Attention",
+          "Without <var>W</var> decay",
+          "With <var>W</var> decay (0.1)",
+          "With <var>a</var>, <var>b</var>, <var>W</var> decay (0.1)"
+        ],
+        "rows": [
+          [
+            "Query",
+            {
+              "run_id": "r2b22f2ff6461",
+              "perplexity": 14.7737535481344
+            },
+            {
+              "run_id": "rca97cc9db8f2",
+              "perplexity": 14.708538612353673
+            },
+            {
+              "run_id": "r68cac6f03d77",
+              "perplexity": 14.750169869768488
+            }
+          ],
+          [
+            "Query-key",
+            {
+              "run_id": "r501f5cca0d4c",
+              "perplexity": 14.72171710752831
+            },
+            {
+              "run_id": "r79d829a16029",
+              "perplexity": 14.818336444852049
+            },
+            null
+          ]
+        ]
+      },
+      {
+        "key": "learning-rate",
+        "title": "Coefficient learning rate",
+        "head": [
+          "Attention",
+          "Coefficient LR \u00d71",
+          "Coefficient LR \u00d73"
+        ],
+        "rows": [
+          [
+            "Query",
+            {
+              "run_id": "r2b22f2ff6461",
+              "perplexity": 14.7737535481344
+            },
+            {
+              "run_id": "rb74fa2ebede6",
+              "perplexity": 14.919761055551355
+            }
+          ]
+        ],
+        "compact": true
+      },
+      {
+        "key": "release",
+        "title": "Taylor warmup, then learned coefficients",
+        "head": [
+          "Run",
+          "Release update",
+          "Query + <var>W</var> decay",
+          "Static"
+        ],
+        "rows": [
+          [
+            "All degrees at once",
+            "456",
+            {
+              "run_id": "rd40b46f5dc9b",
+              "perplexity": 14.229060298544688
+            },
+            {
+              "run_id": "r1c72e8860ade",
+              "perplexity": 14.3434640874133
+            }
+          ],
+          [
+            "One degree at a time (0 \u2192 8)",
+            "456\u20131,501",
+            {
+              "run_id": "rcc4f4e5d7abb",
+              "perplexity": 14.242058150718305
+            },
+            {
+              "run_id": "r991a756da7a9",
+              "perplexity": 14.242631991483552
+            }
+          ],
+          [
+            "No freeze",
+            "1",
+            {
+              "run_id": "r25fffc16c2f3",
+              "perplexity": 14.322804520454994
+            },
+            {
+              "run_id": "r9c69dd7cfc8d",
+              "perplexity": 14.294211762019286
+            }
+          ],
+          [
+            "Exp baseline",
+            "\u2014",
+            {
+              "run_id": "r6a76e7fbde45",
+              "perplexity": 14.257176394334465,
+              "colspan": 2
+            }
+          ]
+        ],
+        "compact": true
+      }
+    ]
+  }
+}

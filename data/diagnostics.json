@@ -1,0 +1,369 @@
+{
+  "overfitting": [
+    {
+      "key": "fits",
+      "tables": [
+        {
+          "head": [
+            "Fit",
+            "Start checkpoint",
+            "Start PPL",
+            "Best fitted PPL"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Free (<var>B</var> = 256)"
+              },
+              {
+                "text": "Taylor"
+              },
+              {
+                "text": "15.600",
+                "value": 15.60003948168285,
+                "run_id": "rda6029c3286f"
+              },
+              {
+                "text": "1.003",
+                "value": 1.0029790477271927,
+                "run_id": "rda6029c3286f",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "Query-key (<var>B</var> = 256)"
+              },
+              {
+                "text": "Query-key"
+              },
+              {
+                "text": "15.622",
+                "value": 15.622490676142268,
+                "run_id": "r043b150cde03"
+              },
+              {
+                "text": "4.470",
+                "value": 4.469748290097738,
+                "run_id": "r043b150cde03"
+              }
+            ],
+            [
+              {
+                "text": "Query-only (<var>B</var> = 256)"
+              },
+              {
+                "text": "Query-only"
+              },
+              {
+                "text": "15.663",
+                "value": 15.662907354314001,
+                "run_id": "rc95f2055e96d"
+              },
+              {
+                "text": "8.016",
+                "value": 8.016347444420843,
+                "run_id": "rc95f2055e96d"
+              }
+            ],
+            [
+              {
+                "text": "Query-only (<var>B</var> = 1,024)"
+              },
+              {
+                "text": "Query-only"
+              },
+              {
+                "text": "14.737",
+                "value": 14.737304551402204,
+                "run_id": "r84e37a39e2a0"
+              },
+              {
+                "text": "11.256",
+                "value": 11.255908516997323,
+                "run_id": "r84e37a39e2a0"
+              }
+            ],
+            [
+              {
+                "text": "Static (<var>B</var> = 256)"
+              },
+              {
+                "text": "Static"
+              },
+              {
+                "text": "15.649",
+                "value": 15.648622598509931,
+                "run_id": "rceea84f19f6b"
+              },
+              {
+                "text": "15.618",
+                "value": 15.617530174063406,
+                "run_id": "rceea84f19f6b"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "regression",
+      "title": "Regression",
+      "tables": [
+        {
+          "head": [
+            "Model",
+            "MSE",
+            "Fitted-batch PPL",
+            "Held-out PPL"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Taylor (no fitting)"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "15.600",
+                "value": 15.599915385550736
+              },
+              {
+                "text": "15.072",
+                "value": 15.071809912109673
+              }
+            ],
+            [
+              {
+                "text": "Free (teacher)"
+              },
+              {
+                "text": "—"
+              },
+              {
+                "text": "1.003",
+                "value": 1.0029790477271927
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 9)"
+              },
+              {
+                "text": "0.550 → 0.496"
+              },
+              {
+                "text": "15.625",
+                "value": 15.624967894570961,
+                "run_id": "rec777591a61b"
+              },
+              {
+                "text": "15.220",
+                "value": 15.220032795210313,
+                "run_id": "rec777591a61b"
+              }
+            ],
+            [
+              {
+                "text": "Query-key"
+              },
+              {
+                "text": "0.415 → 0.356"
+              },
+              {
+                "text": "17.465",
+                "value": 17.46479676242928,
+                "run_id": "r594b3706ecd7"
+              },
+              {
+                "text": "16.977",
+                "value": 16.976660963608627,
+                "run_id": "r594b3706ecd7"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "continued_pretraining": [
+    {
+      "key": "cpt",
+      "title": "2k additional steps",
+      "tables": [
+        {
+          "head": [
+            "Attention during CPT",
+            "Taylor start",
+            "Exp start",
+            "Same-model start"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Static"
+              },
+              {
+                "text": "14.4964",
+                "value": 14.4964319409061,
+                "run_id": "r2e081e09c19a"
+              },
+              {
+                "text": "14.4483",
+                "value": 14.448312414480716,
+                "run_id": "r7e6a68545d4f"
+              },
+              {
+                "text": "14.5559",
+                "value": 14.555901733156412,
+                "run_id": "r1522cd56901a"
+              }
+            ],
+            [
+              {
+                "text": "Query + W decay"
+              },
+              {
+                "text": "14.4869",
+                "value": 14.486880196293644,
+                "run_id": "rae91f24b06b4"
+              },
+              {
+                "text": "14.4026",
+                "value": 14.402598199693934,
+                "run_id": "r673e14eab803"
+              },
+              {
+                "text": "14.4986",
+                "value": 14.49864013826815,
+                "run_id": "rdfc42659424f"
+              }
+            ],
+            [
+              {
+                "text": "Fixed Taylor"
+              },
+              {
+                "text": "14.5064",
+                "value": 14.506423468114894,
+                "run_id": "r82203a85ef8e"
+              },
+              {
+                "text": "14.5606",
+                "value": 14.560643033794825,
+                "run_id": "rddcbe6dfb1eb"
+              },
+              {
+                "text": "14.5064",
+                "value": 14.506423468114894,
+                "run_id": "r82203a85ef8e"
+              }
+            ],
+            [
+              {
+                "text": "Query temperature + W decay"
+              },
+              {
+                "text": "14.5056",
+                "value": 14.505602045222888,
+                "run_id": "re563830cf150"
+              },
+              {
+                "text": "Not run",
+                "muted": true
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "FoX, without W decay"
+              },
+              {
+                "text": "14.4417",
+                "value": 14.441711336068064,
+                "run_id": "rd5ea49c1fde6"
+              },
+              {
+                "text": "Not run",
+                "muted": true
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "FoX NoPE, with W decay"
+              },
+              {
+                "text": "14.7630",
+                "value": 14.76302258546843,
+                "run_id": "r554ce7da6a8a"
+              },
+              {
+                "text": "Not run",
+                "muted": true
+              },
+              {
+                "text": "—"
+              }
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "input_dependence": [
+    {
+      "key": "calibration-means",
+      "tables": [
+        {
+          "head": [
+            "Model",
+            "Calibration means (% vs native)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Query"
+              },
+              {
+                "text": "15.736 <span class=\"change\">(+1.37%)</span>",
+                "value": 15.736311359729665,
+                "run_id": "r50200ac83292"
+              }
+            ],
+            [
+              {
+                "text": "SoS"
+              },
+              {
+                "text": "15.602 <span class=\"change\">(+1.25%)</span>",
+                "value": 15.601988377359552,
+                "run_id": "r850466844aff"
+              }
+            ],
+            [
+              {
+                "text": "SoS + softplus input + prefactor"
+              },
+              {
+                "text": "15.463 <span class=\"change\">(+1.21%)</span>",
+                "value": 15.462857238162549,
+                "run_id": "r2384d21a3134"
+              }
+            ]
+          ],
+          "caption": "PPL on 256 validation sequences at update 7,500 of the degree-8 runs (prefactor: core degree 8); native: the unchanged model."
+        }
+      ]
+    }
+  ]
+}
