@@ -11,6 +11,111 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Head RMSNorm max-abs prescale (2026-11-20)
+
+`model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head
+RMSNorm on each token and head's output divided by its largest magnitude `c` (at least one), with `eps / c²`: the
+plain function and gradient in real arithmetic, `c` held constant to differentiation. `none`, every historical
+recipe, computes as before, bit for bit.
+
+**The defect it removes.** The plain FP32 backward forms `(mean(y²) + eps)^(-3/2)`: a subnormal number once a head's
+output RMS passes 4.4e12, zero past 1.1e15. It scales the term that removes the gradient's component along `y`.
+The probe is 2,048 tokens of two heads with 64 channels, unit-RMS random directions times the scale, a cotangent
+of scale 1e-4 and gains near one, against host FP64; the error is the relative L2 of the gradient in the rows, and
+the radial fraction is the share of that component the gradient keeps (zero for the exact Jacobian).
+
+| Output RMS | Plain, B200 | Its radial fraction | Plain, CPU | Prescaled, B200 | Prescaled, CPU |
+| --- | --- | --- | --- | --- | --- |
+| 1e-25 to 3e12 | at most 7.1e-8 | at most 1e-6 (from RMS 1) | at most 7.5e-8 | at most 1.2e-7 | at most 1.7e-7 |
+| 4.4e12 to 1e13 | at most 5.7e-8 | at most 2.5e-7 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 3e13 | 7.0e-6 | 5.6e-5 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 1e14 | 6.6e-5 | 5.3e-4 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 2e14, 3e14, 4.5e14 | 0.0017, 0.0020, 0.0027 | 0.013, 0.016, 0.022 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 6e14 | 0.026 | 0.21 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 9e14 to 1e18 | 0.125 | 1.0 | 0.125 | at most 1.2e-7 | at most 1.7e-7 |
+| 1e19 to 1e30 (the mean square overflows and the plain evaluation's guard rescales the row) | at most 6.7e-8 | 1e-7 | 6.8e-8, and 7.3e-7 at 1e30 | at most 1.2e-7 | 1.7e-7, and 7.3e-7 at 1e30 |
+
+Prescaled errors are the largest of the output, the row gradient and the gain gradient; its radial fraction is at
+most 1e-6 from RMS 1 to 1e25. XLA's GPU code keeps subnormal numbers, so the plain gradient degrades gradually
+there; its CPU code flushes them, so the whole term is lost from 4.4e12 (and at 1e30 the gradient's smallest
+elements, below FP32's normal range, are flushed with either evaluation). With a random cotangent the lost term is
+12.5% of the gradient (`1 / sqrt(64)`); through a model it is most of the Q/K gradient (below).
+
+**CPU** (`JAX_PLATFORMS=cpu`, at `520f5293`): 1,430 tests in 27 modules passed (10 skipped): the new module
+`tests/test_head_rms_prescale.py` (73 CPU cases) and the output-scaling, row-maximum-shift, unnormalized (attention,
+configuration, training), configuration, fixed-polynomial configuration, telemetry, acceptance (three modules),
+continuation (two), model, training, initialization, composition, strips, exponential score-function, attention,
+QK-norm, PaTH (two), key-width adapter and records (two) modules. In FP64 the production arithmetic equals the plain
+function to 1e-12 of each row in value and VJP at RMS 1e-25 to 1e30 (eps 1e-12, 1e-6 and 1; a zero row and a row of
+mixed channel scales with them), also when the divisor is differentiated, and the shifted form to 1e-11 on both sides
+of its linear range's boundary at shifts of -60 to 150. In FP32 "none" is the pre-existing function bit for bit
+(output and VJP, with and without a row shift, compiled or not), and rows of at most one are the plain arithmetic bit
+for bit. The composition with the row shift matches FP64 to 1.5e-7 in 32 cases (shifts of -60 to 2,000, rows of 1e-30
+to 1e25), nine of which the shifted arithmetic alone gets wrong or nonfinite; the shifted scan and strips with the
+prescale match the FP64 function at row maxima of 5 to 440. Two-layer models (QK RMSNorm with head scales, RoPE,
+Q/K width 4) whose value projections are scaled by 1e16, so that every head output is above 1e15, against the same
+models in FP64:
+
+| Kernel | Q/K gradient, prescaled, FP32 layers | BF16 layers | Q/K gradient, plain |
+| --- | --- | --- | --- |
+| Fixed Taylor `T_8(s)` | 8.9e-7 | 0.022 | 0.95 |
+| Static `p(s)` | 8.0e-7 | 0.022 | 0.95 |
+| Query `p_t(s)` | 8.0e-7 | 0.022 | 0.95 |
+| Softplus SoS `z h_t(z)` | 1.5e-6 | 0.024 | 1.02 |
+| Exponential with the row shift | 9.0e-7 | 0.020 | 0.95 |
+
+Every other parameter group is within 1.2e-6 (FP32) with the prescale; BF16 layers keep the unscaled BF16 model's
+distance from FP64 (0.019 to 0.028 in Q/K). The plain evaluation's coefficient gradients are off by 2.3 to 6.9 times
+their norm. Refusals, the allocation default and flag, identity, telemetry (unchanged), continuation and exact
+training resumes pass. `records receipts` over transformer_pp, attention_scaling and state_rank at `520f5293`: all 586
+unchanged (529 `same`, 57 `same rejection`).
+
+**GPU** (`qualify_head_rms_prescale.sbatch`, one GPU on `long`, `-m gpu` over `test_head_rms_prescale.py` and the
+existing Mosaic case of the unprescaled head RMSNorm):
+
+| GPU | Job | Source | Result | JUnit seconds |
+| --- | --- | --- | --- | --- |
+| B200 (`shiba`, long) | 9250 | `520f5293` | 19 passed: probe, shifted composition, 8 kernel cases, 8 model cases, the control | 314 |
+| H100 SXM (`dogo`, long) | 9249 | `520f5293` | pending at 18:35 (submitted 18:06): `dogo` full | |
+| B300 SXM6 (`akita`, long) | 9251 | `520f5293` | pending at 18:35 (submitted 18:06): `akita` full | |
+
+B200 (CUDA 13 environment), [record](runs/head-rms-prescale-b200/record.json):
+
+- Probe: the table above. Shifted composition: at most 1.3e-7 over the 32 cases; zero rows stay zero with finite
+  gradients at every shift.
+- Mosaic kernels at 2,048 tokens into the prescaled normalization, against dense FP64 of the same BF16 operands, at
+  Q/K widths 4 and 64 (fixed Taylor, static and query at degree eight, softplus SoS with its input power at degree
+  nine). Relative L2 over the eight cases, with the values at their own scale and scaled by 1e16 (head outputs
+  above 1e15) alike: output 0.0028 to 0.0029, dQ 0.0030 to 0.0044, dK 0.0029 to 0.0034, dV 0.0029 to 0.0030, gain
+  0.0020 to 0.0029, coefficients 0.0010 to 0.0045 (0.0086 for static at width 4 with the scaled values). Plain at
+  the scaled values: dQ 0.20 to 0.90, dK 0.16 to 0.32, dV 0.10 to 0.14, coefficients 0.13 to 0.89, and its output
+  0.0028 to 0.0029, as prescaled.
+- One training gradient of two-layer BF16 models on those kernels (width 128, two heads, 512 tokens), every head
+  output above 1e15, against the same models in FP64 on the blocked backend:
+
+| Kernel, Q/K width | Q/K, prescaled | Unscaled model | Coefficients, prescaled | Q/K, plain | Coefficients, plain |
+| --- | --- | --- | --- | --- | --- |
+| Fixed Taylor, 4 | 0.014 | 0.014 | | 0.61 | |
+| Fixed Taylor, 64 | 0.011 | 0.011 | | 0.81 | |
+| Static, 4 | 0.014 | 0.014 | 0.013 | 0.61 | 0.99 |
+| Static, 64 | 0.011 | 0.011 | 0.009 | 0.81 | 1.2 |
+| Query, 4 | 0.014 | 0.014 | 0.013 | 0.61 | 1.0 |
+| Query, 64 | 0.011 | 0.011 | 0.010 | 0.81 | 1.3 |
+| Softplus SoS, 4 | 0.020 | 0.018 | 0.018 | 0.62 | 9.6 |
+| Softplus SoS, 64 | 0.014 | 0.013 | 0.011 | 0.86 | 5.4 |
+
+  V, O, gain and the other groups: 0.007 to 0.015 with the prescale, 0.32 to 0.55 without. The loss is the FP64
+  model's to 3e-5 either way: the defect is in the backward alone.
+
+B300 does not admit the transformed kernels and its query kernel is not qualified at Q/K width 4, so its job skips
+the softplus-SoS cases and the width-4 cases (10 of 19), which its final check allows. Record a finished job with
+`python3 scaffolds/transformer/validation/record_head_rms_prescale_qualification.py <job> head-rms-prescale-<gpu>`.
+
+This qualifies the normalization's arithmetic on the device and its composition with the Mosaic kernels, not a
+training run: each production allocation still runs its adapter's CPU and GPU suites (for a prescaled recipe the
+module's CPU cases and its probe and composition cases on the run's GPU), the initialization check, the pilot and a
+fresh-process resume.
+
 ### Row-maximum-shifted exponential (2026-11-20)
 
 `model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the
