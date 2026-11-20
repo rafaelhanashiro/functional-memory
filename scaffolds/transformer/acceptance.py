@@ -556,6 +556,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                          (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
+        if model.get("attention_exp_shift", "none") != "none":
+            # The row-maximum shift: CPU, against the unshifted exponential and FP64, scan and strips; GPU, the strips'
+            # production precision. The fused kernel's GPU cases are in unnormalized_fused_attention, selected above.
+            tests.append("exp_row_max_shift")
         if resolved_backend == "mosaic" and not cpu:
             if _pointwise_score_transform(model):
                 tests.extend(["pointwise_attention", "pointwise_score_transform"])
@@ -903,7 +907,7 @@ def matches_softmax_initialization(config) -> dict:
     # backend, and an explicit kernel request (mosaic) need not support exact softmax.
     control = replace(config, model=replace(config.model, attention_backend="blocked",
                                            attention_degree=None, attention_normalization=True,
-                                           attention_output_scaling="none",
+                                           attention_output_scaling="none", attention_exp_shift="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_static_sos_parameterization="direct",
@@ -975,6 +979,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     control = replace(config, model=replace(
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
+        attention_exp_shift="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",

@@ -12,7 +12,9 @@ Each piece checks only its own settings. The blocked backend (backends/reference
 reference composition. A fast kernel implements some combinations and declares which, here; a
 recipe on a fast backend must lie inside its kernel's declaration, and its acceptance qualifies
 that kernel against the blocked backend. The exponential applies the decay inside the exponent,
-exp(phi(s) + log D), which is the same weight.
+exp(phi(s) + log D), which is the same weight. Unnormalized and followed by head RMSNorm, it may
+subtract each row's largest logit m_t first (EXP_SHIFTS, exp_shift_problem): y_t e^(-m_t) goes to the
+RMSNorm with the offset m_t, which keeps the function.
 
 Coefficients per query: on the blocked backend, static and fixed polynomial coefficients that meet a
 forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients
@@ -62,6 +64,34 @@ def fused_exponential_problem(score_function: ScoreFunction, *, attention_degree
         return f"the fused exponential implements the transforms {', '.join(FUSED_EXPONENTIAL_TRANSFORMS)}"
     if score_function.prefactor not in FUSED_EXPONENTIAL_PREFACTORS:
         return f"the fused exponential implements the prefactors {', '.join(FUSED_EXPONENTIAL_PREFACTORS)}"
+    return None
+
+
+# How the unnormalized exponential is evaluated before head RMSNorm (attention/output_scaling.py): "none" (every
+# historical recipe) as e^s; "row_max" as e^(s - m_t), m_t its causal row maximum, with RMSNorm's epsilon scaled by
+# e^(-2 m_t) — the same function, finite where e^s overflows FP32.
+EXP_SHIFTS = ("none", "row_max")
+
+
+def exp_shift_problem(model) -> str | None:
+    """Why the row-maximum shift cannot evaluate this recipe's attention, or None. It shifts the unnormalized
+    exponential (decay and score functions included: the shift is over the logits phi(s) + log D, which the prefactor
+    then multiplies) whose output goes straight into head RMSNorm, the one output scaling a positive factor per row
+    leaves unchanged; with RoPE or no positional encoding on the blocked backend, or ungated and without score
+    functions on the fused kernel (auto resolves to one of the two). PaTH runs its own kernels."""
+    if model.attention_mechanism != "dot_product" or model.attention_normalization or not _base()._exponential_kernel(model):
+        return "it applies to the unnormalized exponential alone"
+    if model.attention_output_scaling != "head_rms_norm":
+        return ("it changes the output by a positive factor per row, which only head RMSNorm output scaling leaves "
+                "unchanged")
+    if model.positional_encoding not in ("rope", "none"):
+        return "PaTH runs its own kernels, which do not shift"
+    if model.attention_backend not in ("blocked", "fused", "auto"):
+        return f"backend {model.attention_backend!r} does not implement it; blocked and fused do"
+    if model.attention_backend != "blocked" and (
+            model.attention_forget_gate
+            or not ScoreFunction(model.attention_score_transform, model.attention_score_prefactor).identity):
+        return "the fused kernel shifts the plain exponential, without a forget gate or score functions"
     return None
 
 

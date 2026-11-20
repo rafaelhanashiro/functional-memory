@@ -40,6 +40,11 @@ def main() -> None:
         help="explicitly keep the historical blocked scan for a fresh dot-product recipe on the blocked "
              "(or auto) backend instead of causal strips",
     )
+    create.add_argument(
+        "--allow-unshifted-exp", action="store_true",
+        help="explicitly keep the unshifted exponential (model.attention_exp_shift: none) for a fresh unnormalized "
+             "exponential recipe with head RMSNorm, instead of its row-maximum shift",
+    )
     receipts = commands.add_parser(
         "receipts", help="recompute runs' recipe receipts with this checkout and compare them with their records "
                          "(or, for runs that predate receipts, the scaffold's baseline)")
@@ -73,8 +78,8 @@ def main() -> None:
         if not isinstance(recipe, dict):
             parser.error("--config must contain a YAML mapping")
         if isinstance(recipe.get("model"), dict):
-            from scaffolds.transformer.configs import Config, config_to_dict, load_config
-            from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips
+            from scaffolds.transformer.configs import Config, config_to_dict, load_config, validate_config
+            from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips, fresh_recipe_uses_exp_shift
             from scaffolds.transformer.models.initialization import REFERENCE
             supplied_model = recipe["model"]
             unset = "initialization" not in supplied_model
@@ -111,6 +116,12 @@ def main() -> None:
                 return config
 
             config = load_config(args.config, config_factory=fresh_config)
+            # The unnormalized exponential with head RMSNorm evaluates its row-maximum shift wherever the shift
+            # applies (configs.base.fresh_recipe_uses_exp_shift), unless the recipe names its setting.
+            use_exp_shift = fresh_recipe_uses_exp_shift(config.model)
+            if use_exp_shift and "attention_exp_shift" not in supplied_model:
+                config.model.attention_exp_shift = "row_max"
+                validate_config(config)
             recipe = config_to_dict(config)
             model = recipe["model"]
             if unset:
@@ -166,6 +177,12 @@ def main() -> None:
                     "new dot-product runs on the blocked backend train on its causal strips; this recipe sets "
                     "model.attention_blocked_implementation: scan. Use strips (or leave it unset), or "
                     "--allow-scan-blocked-attention only when the scan was explicitly requested."
+                )
+            if use_exp_shift and model["attention_exp_shift"] == "none" and not args.allow_unshifted_exp:
+                parser.error(
+                    "new unnormalized exponential runs with head RMSNorm shift the exponential by its row maximum; "
+                    "this recipe sets model.attention_exp_shift: none. Use row_max (or leave it unset), or "
+                    "--allow-unshifted-exp only when the unshifted exponential was explicitly requested."
                 )
             recipe["train"]["source_commit"] = "auto"
             study = args.study.parent if args.study.name == "sweep.yaml" else args.study

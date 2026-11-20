@@ -1062,3 +1062,58 @@ def test_rename_study_moves_retained_locations_and_keeps_execution_history(tmp_p
     assert rename_study(study, "old_name", "new_name", ("/orcd/artifacts",)) == ["r0123456789ab: 1 locations"]
     assert json.loads((run / "record.json").read_text())["artifacts"][0]["path"] == \
         "/orcd/artifacts/experiments/new_name/runs/r0123456789ab/metrics.jsonl"
+
+
+HEAD_RMS_EXP = {"attention_normalization": False, "attention_output_scaling": "head_rms_norm"}
+
+
+@pytest.mark.parametrize("model", [
+    {**HEAD_RMS_EXP, "attention_backend": "fused", "qk_head_dim": 4, "value_head_dim": 64},
+    {**HEAD_RMS_EXP, "attention_backend": "blocked"},
+    {**HEAD_RMS_EXP, "attention_backend": "blocked", "attention_forget_gate": True},
+    {**HEAD_RMS_EXP},
+])
+def test_cli_shifts_fresh_unnormalized_exponentials_with_head_rms_norm(tmp_path, monkeypatch, capsys, model):
+    """The row-maximum shift wherever it applies (configs.base.fresh_recipe_uses_exp_shift); an explicit
+    unshifted exponential there needs --allow-unshifted-exp."""
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    train = {"dtype": "bfloat16"} if model.get("attention_backend") == "fused" else {}
+    source.write_text(yaml.safe_dump({"model": model, "train": train}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_exp_shift"] == "row_max"
+    validate_record(run)
+    explicit = tmp_path / "explicit.yaml"
+    explicit.write_text(yaml.safe_dump({"model": {**model, "attention_exp_shift": "none"}, "train": train}))
+    arguments = ["records", "create", "--study", str(tmp_path / "other"), "--config", str(explicit)]
+    monkeypatch.setattr("sys.argv", arguments)
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-unshifted-exp" in capsys.readouterr().err
+    assert not (tmp_path / "other").exists()
+    monkeypatch.setattr("sys.argv", arguments + ["--allow-unshifted-exp"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_exp_shift"] == "none"
+
+
+@pytest.mark.parametrize("model", [
+    {}, {"attention_normalization": False}, {"attention_normalization": False, "attention_degree": 2},
+    {**HEAD_RMS_EXP, "positional_encoding": "path"},
+    {**HEAD_RMS_EXP, "attention_backend": "fused", "attention_score_prefactor": "sigmoid"},
+    {"attention_normalization": False, "attention_output_scaling": "head_rms_norm", "attention_exp_shift": "none",
+     "attention_degree": 2},
+])
+def test_cli_keeps_the_unshifted_exponential_where_the_shift_does_not_apply(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_exp_shift"] == "none"

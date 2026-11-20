@@ -1326,6 +1326,36 @@ divided by its largest magnitude first, and `rms_norm_eps` by its square: the sa
 by RMSNorm's scale invariance. Rows whose mean square is finite keep the plain arithmetic bit
 for bit, and an infinite or NaN entry makes its row NaN.
 
+The unnormalized exponential with `head_rms_norm` fails earlier: `e^s` passes FP32's maximum at
+`s` about 88.7, and before that the RMSNorm backward's derivative of `rsqrt` (the mean square's
+-3/2 power) leaves FP32's normal range once a head's output RMS passes about 5e12, at row maxima
+near 29; on CPU it flushes to zero, and the gradient loses its projection term (Q/K gradients off
+by O(1) in an FP32 check against FP64). `model.attention_exp_shift: row_max` evaluates the same
+function shifted by each row's causal maximum `m_t` (`attention/output_scaling.py`,
+`attention/pieces.py` `exp_shift_problem`):
+
+| `attention_exp_shift` | Kernel output | Head RMSNorm |
+|---|---|---|
+| `none` (default; every historical recipe) | `o_t = sum_i e^(z_ti) v_i` | `w ⊙ o_t / sqrt(mean(o_t²) + eps)` |
+| `row_max` | `o'_t = sum_i e^(z_ti - m_t) v_i`, `m_t = max_(i<=t) z_ti` | `w ⊙ o'_t / sqrt(mean(o'_t²) + eps e^(-2 m_t))` |
+
+`z` is the score, or with a forget gate or score function the exponent `phi(s) + log D` (a
+prefactor multiplies after). The two rows are equal in real arithmetic, and so is the gradient:
+the result does not depend on `m_t`, which every path holds constant to differentiation. Every
+weight `e^(z - m)` is at most one, so `o'_t` stays near the values' scale at any score. It
+requires `head_rms_norm` (no other scaling is invariant to a positive factor per row) and RoPE or
+no positional encoding: on the blocked backend (scan and strips, any forget gate or score
+function) or the fused kernel (`attention_backend: fused` or `auto`; the plain exponential), whose
+own Pallas-Triton kernels track the running row maximum as flash attention does and return `m_t`
+`[batch, time, heads]` in FP32. Its custom VJP keeps `m_t` with Q/K/V and recomputes
+`e^(S - m)`. Other recipes reject it. `scaffolds.records create` writes `row_max` into fresh
+recipes it applies to (`configs.base.fresh_recipe_uses_exp_shift`); a fresh recipe there that sets
+`none` needs `--allow-unshifted-exp`. Run metadata records `attention_exp_shift`, a formula clause,
+`attention_implementation: pallas_triton_row_max_shifted` on the fused kernel, and the diagnostics'
+`kernel_values: row_max_shifted_exp`: their kernel and weight-sum statistics describe
+`e^(z - m)`, and `exp_shift_min`/`exp_shift_max` the shifts. Continuations may change it with
+the backend. Qualification: [validation](validation/README.md#row-maximum-shifted-exponential-2026-11-20).
+
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy; `repeat_initial_axis` makes a named random draw once without that
 axis and repeats it along the axis, the copies training independently afterwards. The model registers each array once and selects the
@@ -1796,7 +1826,12 @@ in one packed vector:
 | `layer_<i>/attention_output_rms`: dot-product attention output before output scaling | RMS |
 | `layer_<i>/attention_output_head_rms_min`: smallest RMS of one head at one position | minimum |
 | `layer_<i>/head_rms_norm_gain_max` (head RMSNorm): largest `1/sqrt(mean(y^2) + eps)` | maximum |
+| `layer_<i>/attention_exp_shift_max` (`attention_exp_shift: row_max`): largest row shift `m_t` | maximum |
 | `update/<group>/{gradient_norm,parameter_norm,update_norm}` | computed on the averaged gradient |
+
+With `attention_exp_shift: row_max` the attention output before output scaling is the shifted
+`e^(-m_t) o_t`, which the two RMS statistics describe; `head_rms_norm_gain_max` stays the factor
+for `o_t` itself, `1/sqrt(e^(log mean(y^2) + 2 m_t) + eps)`.
 
 Parameter groups are embedding, output head, attention Q/K/V, attention output
 projection, MLP, norm scales, QK-norm scales, attention-output norm scales,

@@ -16,6 +16,13 @@ would silently zero that output and its gradient. Such a row is first divided by
 largest magnitude, ``eps`` with it: RMSNorm is scale-invariant, so it is the same function.
 A row whose mean square is finite keeps scale one, which leaves its arithmetic and gradient
 unchanged bit for bit, and a row with an infinite or NaN entry is NaN, a numerical failure.
+
+The unnormalized exponential may arrive shifted by its causal row maximum (``model.attention_exp_shift:
+row_max``): ``y_t = e^(-m_t) o_t`` with ``m_t = max_(i<=t)`` of the row's logits, whose terms
+``e^(s_ti - m_t)`` never exceed one, so ``y_t`` stays finite where ``e^(s_ti)`` overflows FP32 (s above about
+88.7). Head RMSNorm then takes the offset ``m_t`` and scales its epsilon by ``e^(-2 m_t)``:
+``y_t / sqrt(mean(y_t^2) + eps e^(-2 m_t))`` equals ``o_t / sqrt(mean(o_t^2) + eps)`` in real arithmetic.
+That result does not depend on ``m_t``, so ``m_t`` is a constant to differentiation, in the kernel as here.
 """
 
 import jax
@@ -35,12 +42,20 @@ def parameter_specs(*, value_head_dim: int):
 
 
 def scale_attention_output(y: jax.Array, scaling: str, *, output_norm_scale: jax.Array | None = None,
-                           eps: float = 1e-6) -> jax.Array:
-    """Rescale ``[batch, queries, heads, value_dim]`` outputs; query ``t`` (0-based) sees ``t + 1`` keys."""
+                           eps: float = 1e-6, output_shift: jax.Array | None = None) -> jax.Array:
+    """Rescale ``[batch, queries, heads, value_dim]`` outputs; query ``t`` (0-based) sees ``t + 1`` keys.
+
+    ``output_shift`` (head RMSNorm only) is the row offset ``m`` [batch, queries, heads] of an output that holds
+    ``e^(-m)`` times the attention output (module docstring); None, every other recipe, leaves the arithmetic as it
+    was."""
     if scaling not in OUTPUT_SCALINGS:
         raise ValueError(f"Unknown attention output scaling: {scaling}")
     if (scaling == "head_rms_norm") != (output_norm_scale is not None):
         raise ValueError("Head RMSNorm output scaling requires exactly its output_norm_scale parameter")
+    if output_shift is not None and scaling != "head_rms_norm":
+        raise ValueError("Only head RMSNorm takes a row-shifted output: other scalings would change its function")
+    if output_shift is not None and output_shift.shape != y.shape[:-1]:
+        raise ValueError("output_shift must have shape (batch, queries, heads)")
     if scaling == "none":
         return y
     value = y.astype(jnp.float32)
@@ -54,6 +69,17 @@ def scale_attention_output(y: jax.Array, scaling: str, *, output_norm_scale: jax
         overflow = ~jnp.isfinite(jnp.mean(jnp.square(value), axis=-1, keepdims=True))
         divisor = jax.lax.stop_gradient(jnp.where(overflow, jnp.max(jnp.abs(value), axis=-1, keepdims=True), 1.0))
         value = value / divisor
-        value = value * jax.lax.rsqrt(jnp.mean(jnp.square(value), axis=-1, keepdims=True) + eps / jnp.square(divisor))
+        if output_shift is None:
+            value = value * jax.lax.rsqrt(jnp.mean(jnp.square(value), axis=-1, keepdims=True)
+                                          + eps / jnp.square(divisor))
+        else:
+            # eps e^(-2m), the offset a constant to differentiation (module docstring). Past m of about 45 it
+            # underflows to zero; a row that is then exactly zero stays zero, as unshifted, with scale and
+            # gradient zero instead of 0 * rsqrt(0). A NaN denominator still makes its row NaN.
+            shift = jax.lax.stop_gradient(output_shift.astype(jnp.float32))[..., None]
+            denominator = (jnp.mean(jnp.square(value), axis=-1, keepdims=True)
+                           + eps * jnp.exp(-2.0 * shift) / jnp.square(divisor))
+            zero = denominator == 0
+            value = value * jnp.where(zero, 0.0, jax.lax.rsqrt(jnp.where(zero, 1.0, denominator)))
         value = value * output_norm_scale.astype(jnp.float32)[None, None]
     return value.astype(y.dtype)

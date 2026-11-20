@@ -58,15 +58,17 @@ def _validate_coefficients(coefficients, attention_degree, heads):
 
 def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked", return_diagnostics=False,
                            polynomial_coefficients=None, blocked_implementation="scan", score_transform="identity",
-                           score_prefactor="none"):
+                           score_prefactor="none", exp_shift="none"):
     """``attention_degree=None`` selects unshifted exp; an integer m selects p_m.
 
     ``polynomial_coefficients`` replaces the Taylor coefficients of p_m by learned
     values, shared ([m+1]) or per head ([heads, m+1]); the kernel may be signed.
     ``score_transform`` and ``score_prefactor`` (attention/pieces.py) give the exponential
-    f(s) exp(phi(s)), on the blocked backend or the fused kernel.
+    f(s) exp(phi(s)), on the blocked backend or the fused kernel. ``exp_shift="row_max"`` shifts the
+    exponential by its causal row maximum m and returns ``(output, m)`` for head RMSNorm
+    (attention/output_scaling.py): on the blocked backend, or plain on the fused kernel.
     """
-    from scaffolds.transformer.attention.pieces import ScoreFunction
+    from scaffolds.transformer.attention.pieces import EXP_SHIFTS, ScoreFunction
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
     )
@@ -81,10 +83,16 @@ def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked",
         score_transform=score_transform, score_prefactor=score_prefactor)
     if functions and (attention_degree is not None or polynomial_coefficients is not None):
         raise ValueError("Here the transform and prefactor apply to the exponential alone")
+    if exp_shift not in EXP_SHIFTS:
+        raise ValueError(f"Unknown exponential shift: {exp_shift!r}")
+    # Likewise only a shift is passed on.
+    shift = {} if exp_shift == "none" else {"exp_shift": exp_shift}
+    if shift and (attention_degree is not None or polynomial_coefficients is not None or backend == "mosaic"):
+        raise ValueError("The row-maximum shift applies to the exponential, on the blocked backend or fused kernel")
     if backend == "blocked":
         return blocked_backend_attention(
             q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
-            attention_normalization=False, return_diagnostics=return_diagnostics, **learned, **functions,
+            attention_normalization=False, return_diagnostics=return_diagnostics, **learned, **functions, **shift,
         )
     if backend not in ("fused", "mosaic"):
         raise ValueError("Unnormalized attention requires backend='blocked', 'fused' or 'mosaic'")
@@ -105,7 +113,7 @@ def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked",
     elif polynomial_coefficients is None:
         from scaffolds.transformer.attention.backends.fused_unnormalized import fused_unnormalized_attention
 
-        output = fused_unnormalized_attention(q, k, v, attention_degree=attention_degree, **functions)
+        output = fused_unnormalized_attention(q, k, v, attention_degree=attention_degree, **functions, **shift)
     else:
         from scaffolds.transformer.attention.backends.fused_learned_polynomial import (
             fused_learned_polynomial_attention,
@@ -118,6 +126,6 @@ def unnormalized_attention(q, k, v, *, attention_degree=None, backend="blocked",
         return output
     _, diagnostics = blocked_dot_product_attention(
         q, k, v, attention_degree=attention_degree, attention_normalization=False,
-        return_diagnostics=True, **learned, **functions,
+        return_diagnostics=True, **learned, **functions, **shift,
     )
     return output, diagnostics

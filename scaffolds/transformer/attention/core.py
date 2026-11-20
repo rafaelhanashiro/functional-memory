@@ -51,6 +51,7 @@ def attention_core(
     blocked_implementation: str = "scan",
     score_transform: str = "identity",
     score_prefactor: str = "none",
+    exp_shift: str = "none",
     **denominators,
 ):
     """Apply the mechanism selected by the existing flat model configuration.
@@ -77,6 +78,9 @@ def attention_core(
     backend rejects a transform other than "identity" and a prefactor other than "none".
     The ``score_mlp_*`` arrays (projected unit
     amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
+    ``exp_shift="row_max"`` (the unnormalized exponential, with or without decay or score functions) shifts every
+    logit by its causal row maximum m and returns ``(output, m)`` in place of the output, for head RMSNorm
+    (attention/output_scaling.py); every other mechanism rejects it.
     """
     from scaffolds.transformer.attention.backends.reference import BLOCKED_IMPLEMENTATIONS
     from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
@@ -111,6 +115,14 @@ def attention_core(
                                                        score_mlp_output_bias)))
     functions = {} if ScoreFunction(score_transform, score_prefactor).identity else dict(
         score_transform=score_transform, score_prefactor=score_prefactor)
+    from scaffolds.transformer.attention.pieces import EXP_SHIFTS
+
+    if exp_shift not in EXP_SHIFTS:
+        raise ValueError(f"Unknown exponential shift: {exp_shift!r}")
+    # Only a shift is passed on, to the two routes of the unnormalized exponential below.
+    shift = {} if exp_shift == "none" else {"exp_shift": exp_shift}
+    if shift and (attention_normalization or not exponential):
+        raise ValueError("The row-maximum shift applies to the unnormalized exponential alone")
     endpoint_operands = any(value is not None for value in (query_gate_input, key_gate_input, gate_log_rate))
     decay = query_log_decay is not None or endpoint_operands
     per_order = ((query_log_decay is not None and query_log_decay.ndim == 4)
@@ -228,7 +240,7 @@ def attention_core(
         return blocked_backend_attention(q, k, v, implementation=blocked_implementation,
                                          attention_normalization=attention_normalization,
                                          query_decay_mode=query_decay_mode, return_diagnostics=return_diagnostics,
-                                         **decay, **functions)
+                                         **decay, **functions, **shift)
     if (query_log_decay is not None or endpoint) and key_polynomial_factors is not None:
         raise ValueError("The forget gate requires query coefficients without key factors")
     if query_polynomial_coefficients is not None:
@@ -280,7 +292,7 @@ def attention_core(
         return unnormalized_attention(
             q, k, v, attention_degree=attention_degree, backend=backend,
             return_diagnostics=return_diagnostics, polynomial_coefficients=polynomial_coefficients, **strips,
-            **functions,
+            **functions, **shift,
         )
     if polynomial_coefficients is not None or polynomial_square_factors is not None or denominators:
         from scaffolds.transformer.attention.learned_polynomial import normalized_learned_polynomial_attention

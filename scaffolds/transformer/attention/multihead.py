@@ -92,6 +92,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         score_mlp_architecture=getattr(config, "attention_score_mlp_architecture", "dynamic_readout"),
         score_mlp_form=getattr(config, "attention_score_mlp_form", "kernel"),
         score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
+        attention_exp_shift=getattr(config, "attention_exp_shift", "none"),
         rngs=rngs,
     )
 
@@ -149,6 +150,7 @@ class MultiHeadAttention(nnx.Module):
         score_mlp_architecture: str = "dynamic_readout",
         score_mlp_form: str = "kernel",
         score_mlp_activation: str = "silu",
+        attention_exp_shift: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -610,6 +612,20 @@ class MultiHeadAttention(nnx.Module):
                              "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend, or "
                              "with RoPE on the mosaic backend")
         self.attention_score_transform = attention_score_transform
+        # The unnormalized exponential shifted by its causal row maximum (attention/pieces.py exp_shift_problem, which
+        # ModelConfig states for recipes): exact only where head RMSNorm takes the output with its shift.
+        from scaffolds.transformer.attention.pieces import EXP_SHIFTS
+
+        if attention_exp_shift not in EXP_SHIFTS:
+            raise ValueError(f"Unknown exponential shift: {attention_exp_shift!r}")
+        if attention_exp_shift != "none" and (
+                attention_normalization or not exponential_kernel or attention_output_scaling != "head_rms_norm"
+                or positional_encoding not in ("rope", "none") or backend not in ("blocked", "fused")
+                or backend == "fused" and (attention_forget_gate or not score_function.identity)):
+            raise ValueError("The row-maximum shift applies to the unnormalized exponential with head RMSNorm output "
+                             "scaling and RoPE or no positional encoding, on the blocked backend or, plain and "
+                             "ungated, the fused kernel")
+        self.attention_exp_shift = attention_exp_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
             # while the public recipe records the structural constraint separately.
@@ -1016,6 +1032,9 @@ class MultiHeadAttention(nnx.Module):
             parameters["score_transform"] = self.attention_score_transform
         if self.attention_score_prefactor != "none":
             parameters["score_prefactor"] = self.attention_score_prefactor
+        if self.attention_exp_shift != "none":
+            # Only a shifted recipe passes it, so every other recipe's call is unchanged.
+            parameters["exp_shift"] = self.attention_exp_shift
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,
@@ -1026,6 +1045,8 @@ class MultiHeadAttention(nnx.Module):
             blocked_implementation=self.attention_blocked_implementation,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
+        # The shifted exponential's output e^(-m) o and its row shifts m [batch, time, heads], which head RMSNorm takes.
+        y, output_shift = y if self.attention_exp_shift != "none" else (y, None)
         if (return_diagnostics and self.attention_coefficient_input_normalization == "l2"
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
@@ -1042,10 +1063,12 @@ class MultiHeadAttention(nnx.Module):
                 "token_scale_log_delta_min": jnp.min(token_log_scales, axis=(0, 1)),
                 "token_scale_log_delta_max": jnp.max(token_log_scales, axis=(0, 1)),
             }))
+        shifted = {} if output_shift is None else {"output_shift": output_shift}
         telemetry.record_attention_output(
-            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
+            y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None,
+            **shifted)
         y = scale_attention_output(y, self.attention_output_scaling,
-                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps, **shifted)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         if return_coefficients:
             return output, effective_coefficients

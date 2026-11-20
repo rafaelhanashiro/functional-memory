@@ -13,6 +13,12 @@ FP32/FP32 products use TF32x3. Weights are never rounded to a single BF16 value.
 For Y = k(S)V, dS = k'(S) * (dY V^T). There is no softmax derivative term,
 row denominator, or max shift. The backward recomputes weights from Q and K;
 only Q/K/V are retained by the custom VJP.
+
+With ``exp_shift="row_max"`` the exponential is shifted by its causal row maximum instead, for head RMSNorm
+(attention/output_scaling.py): the forward tracks each row's running maximum m_t over its key tiles as flash
+attention does (rescaling the accumulator by e^(m_old - m_new), with no denominator) and returns Y'_t =
+sum_i e^(s_ti - m_t) v_i with m_t [batch, time, heads] in FP32. The custom VJP keeps m_t with Q/K/V and treats it
+as a constant: dS = e^(S - m) * (dY' V^T), dV = e^(S - m)^T dY'. Its own kernels; the unshifted ones are unchanged.
 """
 
 from functools import partial
@@ -278,19 +284,179 @@ def _attention_bwd(degree, residuals, do):
 _attention.defvjp(_attention_fwd, _attention_bwd)
 
 
+def _shift_spec(tile):
+    return pl.BlockSpec((None, tile, None), lambda i, b, h: (b, i, h))
+
+
+def _full_shift_spec(time):
+    return pl.BlockSpec((None, time, None), lambda i, b, h: (b, 0, h))
+
+
+def _shifted_forward_kernel(q_ref, k_ref, v_ref, out_ref, shift_ref, *, time, dq, dv, block_q, block_k):
+    """sum_i e^(s_ti - m_t) v_i and m_t: the running causal maximum rescales the accumulator, flash attention's
+    online softmax without its denominator. Masked entries are e^(-inf) = 0; a nonfinite causal score or weight
+    poisons its row, as in the unshifted kernel."""
+    qi = pl.program_id(0) * block_q + jnp.arange(block_q)
+    q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
+    initial = (jnp.zeros((block_q, v_ref.shape[-1]), jnp.float32),
+               jnp.full((block_q,), -jnp.inf, jnp.float32),
+               jnp.zeros((block_q,), jnp.bool_))
+
+    def body(tile, carry):
+        output, maximum, invalid = carry
+        ki = tile * block_k + jnp.arange(block_k)
+        k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
+        scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
+        causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
+        current = jnp.maximum(maximum, jnp.max(jnp.where(causal, scores, -jnp.inf), axis=1))
+        # Every row's first tile holds its key 0, so the maximum is finite from there on for finite scores; a row
+        # with no finite maximum yet shifts by zero, as its weights are all e^(-inf) = 0.
+        shift = jnp.where(current == -jnp.inf, 0.0, current)
+        values = jnp.exp(jnp.where(causal, scores - shift[:, None], -jnp.inf))
+        invalid_entries = causal & (~jnp.isfinite(scores) | ~jnp.isfinite(values))
+        invalid |= jnp.max(invalid_entries.astype(jnp.int32), axis=1) != 0
+        output = output * jnp.exp(maximum - shift)[:, None] + _dot(values, v)
+        return output, current, invalid
+
+    end = lax.div((pl.program_id(0) + 1) * block_q + block_k - 1, block_k)
+    output, maximum, invalid = lax.fori_loop(0, end, body, initial)
+    output = jnp.where(invalid[:, None], jnp.nan, output)
+    plt.store(out_ref, output, mask=(qi[:, None] < time) & (jnp.arange(out_ref.shape[-1])[None, :] < dv))
+    plt.store(shift_ref, jnp.where(maximum == -jnp.inf, 0.0, maximum), mask=qi < time)
+
+
+def _shifted_dq_kernel(q_ref, k_ref, v_ref, do_ref, shift_ref, dq_ref, *, time, dq, dv, block_q, block_k):
+    qi = pl.program_id(0) * block_q + jnp.arange(block_q)
+    qmask = (qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq)
+    vmask = (qi[:, None] < time) & (jnp.arange(do_ref.shape[-1])[None, :] < dv)
+    q = plt.load(q_ref, mask=qmask, other=0)
+    do = plt.load(do_ref, mask=vmask, other=0)
+    shift = plt.load(shift_ref, mask=qi < time, other=0)
+
+    def body(tile, grad_q):
+        ki = tile * block_k + jnp.arange(block_k)
+        k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
+        scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
+        causal = (qi[:, None] >= ki[None, :]) & (ki[None, :] < time)
+        # e^(s - m) is the weight and, the shift held constant, its derivative.
+        values = jnp.exp(jnp.where(causal, scores - shift[:, None], -jnp.inf))
+        dp = _dot(do, v.T)
+        ds = jnp.where(causal, dp * values, 0.0)
+        return grad_q + _dot(ds, k) * (1.0 / math.sqrt(dq))
+
+    end = lax.div((pl.program_id(0) + 1) * block_q + block_k - 1, block_k)
+    grad_q = lax.fori_loop(0, end, body, jnp.zeros(q_ref.shape, jnp.float32))
+    plt.store(dq_ref, grad_q.astype(dq_ref.dtype), mask=qmask)
+
+
+def _shifted_dkv_kernel(q_ref, k_ref, v_ref, do_ref, shift_ref, dk_ref, dv_ref, *, time, dq, dv, block_q, block_k):
+    ki = pl.program_id(0) * block_k + jnp.arange(block_k)
+    kmask = (ki[:, None] < time) & (jnp.arange(k_ref.shape[-1])[None, :] < dq)
+    vmask = (ki[:, None] < time) & (jnp.arange(v_ref.shape[-1])[None, :] < dv)
+    k = plt.load(k_ref, mask=kmask, other=0)
+    v = plt.load(v_ref, mask=vmask, other=0)
+    initial = (jnp.zeros(k_ref.shape, jnp.float32), jnp.zeros(v_ref.shape, jnp.float32))
+
+    def body(tile, carry):
+        grad_k, grad_v = carry
+        qi = tile * block_q + jnp.arange(block_q)
+        q = _load(q_ref, qi, dq, time)
+        do = _load(do_ref, qi, dv, time)
+        shift = plt.load(shift_ref.at[qi], mask=qi < time, other=0)
+        scores = _dot(q, k.T) * (1.0 / math.sqrt(dq))
+        causal = (qi[:, None] >= ki[None, :]) & (qi[:, None] < time) & (ki[None, :] < time)
+        values = jnp.exp(jnp.where(causal, scores - shift[:, None], -jnp.inf))
+        grad_v += _dot(values.T, do)
+        dp = _dot(do, v.T)
+        ds = jnp.where(causal, dp * values, 0.0)
+        grad_k += _dot(ds.T, q) * (1.0 / math.sqrt(dq))
+        return grad_k, grad_v
+
+    start = lax.div(pl.program_id(0) * block_k, block_q)
+    grad_k, grad_v = lax.fori_loop(start, pl.cdiv(time, block_q), body, initial)
+    plt.store(dk_ref, grad_k.astype(dk_ref.dtype), mask=kmask)
+    plt.store(dv_ref, grad_v.astype(dv_ref.dtype), mask=vmask)
+
+
+SHIFTED_KERNEL_NAME = "exp_unnormalized_row_max_shifted"
+
+
+def _shifted_forward(q, k, v):
+    batch, time, heads, dq = q.shape
+    dv = v.shape[-1]
+    block_q, block_k = _tile_sizes(dq, dv)
+    return pl.pallas_call(
+        partial(_shifted_forward_kernel, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
+        out_shape=(jax.ShapeDtypeStruct(v.shape, jnp.float32), jax.ShapeDtypeStruct(q.shape[:3], jnp.float32)),
+        grid=(pl.cdiv(time, block_q), batch, heads),
+        in_specs=(_spec(block_q, dq), _full_spec(time, dq), _full_spec(time, dv)),
+        out_specs=(_spec(block_q, dv), _shift_spec(block_q)),
+        compiler_params=plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES),
+        name=f"{SHIFTED_KERNEL_NAME}_forward",
+    )(q, k, v)
+
+
+@jax.custom_vjp
+def _shifted_attention(q, k, v):
+    output, shift = _shifted_forward(q, k, v)
+    return output.astype(v.dtype), shift
+
+
+def _shifted_attention_fwd(q, k, v):
+    output, shift = _shifted_forward(q, k, v)
+    return (output.astype(v.dtype), shift), (q, k, v, shift)
+
+
+def _shifted_attention_bwd(residuals, cotangents):
+    q, k, v, shift = residuals
+    do, _ = cotangents  # The shift is a constant to differentiation (attention/output_scaling.py).
+    batch, time, heads, dq = q.shape
+    dv = v.shape[-1]
+    block_q, block_k = _tile_sizes(dq, dv)
+    params = plt.CompilerParams(num_warps=NUM_WARPS, num_stages=NUM_STAGES)
+    grad_q = pl.pallas_call(
+        partial(_shifted_dq_kernel, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
+        out_shape=jax.ShapeDtypeStruct(q.shape, q.dtype),
+        grid=(pl.cdiv(time, block_q), batch, heads),
+        in_specs=(_spec(block_q, dq), _full_spec(time, dq), _full_spec(time, dv), _spec(block_q, dv),
+                  _shift_spec(block_q)),
+        out_specs=_spec(block_q, dq), compiler_params=params,
+        name=f"{SHIFTED_KERNEL_NAME}_dq",
+    )(q, k, v, do, shift)
+    grad_k, grad_v = pl.pallas_call(
+        partial(_shifted_dkv_kernel, time=time, dq=dq, dv=dv, block_q=block_q, block_k=block_k),
+        out_shape=(jax.ShapeDtypeStruct(k.shape, k.dtype), jax.ShapeDtypeStruct(v.shape, v.dtype)),
+        grid=(pl.cdiv(time, block_k), batch, heads),
+        in_specs=(_full_spec(time, dq), _spec(block_k, dq), _spec(block_k, dv), _full_spec(time, dv),
+                  _full_shift_spec(time)),
+        out_specs=(_spec(block_k, dq), _spec(block_k, dv)), compiler_params=params,
+        name=f"{SHIFTED_KERNEL_NAME}_dkv",
+    )(q, k, v, do, shift)
+    return grad_q, grad_k, grad_v
+
+
+_shifted_attention.defvjp(_shifted_attention_fwd, _shifted_attention_bwd)
+
+
 def fused_unnormalized_attention(q, k, v, *, attention_degree: int | None = None, score_transform: str = "identity",
-                                 score_prefactor: str = "none"):
+                                 score_prefactor: str = "none", exp_shift: str = "none"):
     """Causal k(QK^T / sqrt(d_k))V, without a row denominator.
 
     ``attention_degree=None`` selects the exponential; a nonnegative integer m
     selects its unshifted degree-m Taylor truncation. ``score_transform`` and
     ``score_prefactor`` give the exponential k(S) = f(S) exp(phi(S))
-    (attention/pieces.py ``fused_exponential_problem``).
+    (attention/pieces.py ``fused_exponential_problem``). ``exp_shift="row_max"`` returns the plain exponential
+    shifted by its causal row maximum and that maximum, ``(Y', m)`` (module docstring), for head RMSNorm alone;
+    the shift is a constant to differentiation.
 
     Supports BF16 and FP32 Q/K/V with one common dtype, positive dimensions, and head widths up to 128.
     GPU execution requires an Ampere-or-newer NVIDIA device (TF32x3 support).
     The blocked implementation remains the scalar-diagnostics reference.
     """
+    from scaffolds.transformer.attention.pieces import EXP_SHIFTS
+
+    if exp_shift not in EXP_SHIFTS:
+        raise ValueError(f"Unknown exponential shift: {exp_shift!r}")
     if attention_degree is not None and (
             not isinstance(attention_degree, int) or isinstance(attention_degree, bool) or attention_degree < 0):
         raise ValueError("attention_degree must be None or a nonnegative integer")
@@ -310,6 +476,12 @@ def fused_unnormalized_attention(q, k, v, *, attention_degree: int | None = None
     problem = fused_exponential_problem(score_function, attention_degree=attention_degree)
     if problem is not None:
         raise ValueError(f"Fused unnormalized attention cannot evaluate this score function: {problem}")
+    if exp_shift == "row_max":
+        if attention_degree is not None or not score_function.identity:
+            raise ValueError("The fused kernel shifts the plain exponential alone: no Taylor degree, score transform "
+                             "or prefactor")
+        output, shift = _shifted_attention(q, k, v)
+        return output, lax.stop_gradient(shift)
     if score_function.identity:
         # Every historical recipe: the same static argument, kernels and names as before.
         return _attention(q, k, v, attention_degree)

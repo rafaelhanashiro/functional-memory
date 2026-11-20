@@ -79,6 +79,9 @@ class _Mechanism(NamedTuple):
     score_mlp_form: str = "kernel"
     score_mlp_slope: jax.Array | None = None
     score_mlp_output_bias: jax.Array | None = None
+    # "row_max" evaluates the unnormalized exponential as e^(logit - m_t) and returns m_t beside the output
+    # (attention/output_scaling.py); "none" is e^logit, as every historical call.
+    exp_shift: str = "none"
 
 
 def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, attention_normalization,
@@ -88,7 +91,8 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                query_spline_coefficients=None, score_bias_row_shift=None, score_bias_query_input=None,
                score_bias_key_input=None, score_bias_offset=None, score_bias_amplitude=None,
                score_transform="identity", score_prefactor="none", score_mlp_amplitude=None, score_mlp_offset=None,
-               score_mlp_slope=None, score_mlp_form="kernel", score_mlp_output_bias=None, **denominators) -> _Mechanism:
+               score_mlp_slope=None, score_mlp_form="kernel", score_mlp_output_bias=None, exp_shift="none",
+               **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
     _validate_degree(attention_degree)
     if not isinstance(attention_normalization, bool):
@@ -222,6 +226,12 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         # Composition (attention/pieces.py): the per-query polynomial reads z = phi(s) under any key factors, decay
         # and score biases; static and fixed coefficients arrive here broadcast per query.
         raise ValueError("A score transform applies to the exponential or query-coefficient polynomial attention")
+    from scaffolds.transformer.attention.pieces import EXP_SHIFTS
+
+    if exp_shift not in EXP_SHIFTS:
+        raise ValueError(f"Unknown exponential shift: {exp_shift!r}")
+    if exp_shift != "none" and (attention_normalization or not exponential_kernel):
+        raise ValueError("The row-maximum shift applies to the unnormalized exponential alone")
     if score_mlp:
         width = score_mlp_slope.shape[-1] if score_mlp_slope.ndim == 2 else 0
         if (width < 1 or score_mlp_slope.shape != (heads, width)
@@ -253,6 +263,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         score_mlp_form=score_mlp_form,
         score_mlp_slope=None if score_mlp_slope is None else score_mlp_slope.astype(compute),
         score_mlp_output_bias=None if score_mlp_output_bias is None else score_mlp_output_bias.astype(compute),
+        exp_shift=exp_shift,
     )
 
 
@@ -327,7 +338,16 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     elif not m.attention_normalization and m.attention_degree is None:
         # A row shift changes the unnormalized operator. Underflow to zero
         # is allowed; a nonfinite causal exponential poisons the output.
-        kernel = jnp.exp(jnp.where(causal, logits, 0.0))
+        if m.exp_shift == "row_max":
+            # Unless head RMSNorm takes the shift with the output (attention/output_scaling.py), which keeps the
+            # function: e^(logit - m_t), m_t the row's largest causal (decayed, transformed) logit, a constant to
+            # differentiation. A row without a finite maximum shifts by zero, as its weights are all e^(-inf) = 0;
+            # a NaN or infinite one poisons the row as unshifted.
+            shift = jax.lax.stop_gradient(jnp.max(jnp.where(causal, logits, -jnp.inf), axis=-1, keepdims=True))
+            shift = jnp.where(shift == -jnp.inf, 0.0, shift)
+            kernel = jnp.exp(jnp.where(causal, logits - shift, 0.0))
+        else:
+            kernel = jnp.exp(jnp.where(causal, logits, 0.0))
         if poison_invalid_rate:
             kernel = jnp.where(valid_decay, kernel, jnp.nan)
         invalid_kernel = ~jnp.isfinite(kernel)
@@ -487,8 +507,10 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     output = output.astype(output_dtype)
     if m.signed:
         output = jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)
+    # A shifted exponential returns its rows' shifts [b, q, h] beside the output, in the compute dtype.
+    result = (output, jnp.swapaxes(shift[..., 0], 1, 2)) if m.exp_shift == "row_max" else output
     if not return_diagnostics:
-        return output
+        return result
     diagnostics = {
         "score_min": jnp.min(jnp.where(measured, scores, jnp.inf)),
         "score_max": jnp.max(jnp.where(measured, scores, -jnp.inf)),
@@ -551,7 +573,12 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
     if m.score_transform != "identity" and m.query_conditioned:
         diagnostics.update(_score_transform_statistics(safe_scores, inputs, measured, pair_coefficient,
                                                        m.attention_degree))
-    return output, jax.lax.stop_gradient(diagnostics)
+    if m.exp_shift == "row_max":
+        # The kernel and weight-sum diagnostics above describe the shifted weights e^(logit - m_t); these, the shifts.
+        actual = actual_rows[None, None, :, None]
+        diagnostics.update({"exp_shift_min": jnp.min(jnp.where(actual, shift, jnp.inf)),
+                            "exp_shift_max": jnp.max(jnp.where(actual, shift, -jnp.inf))})
+    return result, jax.lax.stop_gradient(diagnostics)
 
 
 def _score_transform_statistics(scores, inputs, measured, pair_coefficient, degree):
@@ -712,6 +739,7 @@ def blocked_dot_product_attention(
     score_mlp_output_bias: jax.Array | None = None,
     query_block_size: int = QUERY_BLOCK_SIZE,
     return_diagnostics: bool = False,
+    exp_shift: str = "none",
     **denominators,
 ) -> jax.Array | tuple[jax.Array, dict[str, jax.Array]]:
     """Attend to the full causal prefix using bounded, recomputed score blocks.
@@ -791,6 +819,11 @@ def blocked_dot_product_attention(
     A per-head output bias [heads,1] adds to the kernel before weighting V and diagnostics;
     this bias requires the pure kernel form without decay. The caller supplies any width
     scaling in the amplitudes. Historical unbiased MLPs may use cumulative decay.
+    ``exp_shift="row_max"`` (the unnormalized exponential, with any decay or score functions) evaluates
+    e^(logit - m_t), m_t the largest causal logit of row t, a constant to differentiation, and returns
+    ``(output, m)`` with m [batch, time, heads] in FP32 in place of the output: head RMSNorm takes both
+    (attention/output_scaling.py). Its kernel and weight-sum diagnostics describe the shifted weights, and
+    ``exp_shift_min``/``exp_shift_max`` the shifts.
     Diagnostics exclude padded queries and masked future entries.
     """
     return _blocked_scan(
@@ -807,7 +840,8 @@ def blocked_dot_product_attention(
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
         score_mlp_output_bias=score_mlp_output_bias,
-        query_block_size=query_block_size, return_diagnostics=return_diagnostics, **denominators,
+        query_block_size=query_block_size, return_diagnostics=return_diagnostics, exp_shift=exp_shift,
+        **denominators,
     )
 
 
@@ -820,7 +854,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   score_bias_offset=None, score_bias_amplitude=None, score_transform="identity", score_prefactor="none",
                   score_mlp_amplitude=None, score_mlp_offset=None, score_mlp_slope=None,
                   score_mlp_form="kernel", score_mlp_output_bias=None,
-                  query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, **denominators):
+                  query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, exp_shift="none", **denominators):
     """blocked_dot_product_attention with its arithmetic in ``compute``: FP32 there, FP64 only
     in exact-arithmetic tests of the strips against the scan."""
     m = _mechanism(
@@ -836,7 +870,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor,
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
-        score_mlp_output_bias=score_mlp_output_bias, **denominators,
+        score_mlp_output_bias=score_mlp_output_bias, exp_shift=exp_shift, **denominators,
     )
     batch, time, heads, qk_dim = q.shape
     # Avoid excessive padding for short CPU/reference checks; production uses 128.
@@ -919,8 +953,14 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
             diagnostics["cancellation_ratio_mean"] = diagnostics.pop("cancellation_sum") / diagnostics["row_count"]
     else:
         output_blocks = result
+    if m.exp_shift == "row_max":
+        output_blocks, shift_blocks = output_blocks
     output = jnp.swapaxes(output_blocks, 0, 1).reshape(batch, block_count * block_size, heads, v.shape[-1])
     output = output[:, :time]
+    if m.exp_shift == "row_max":
+        # The rows' shifts [batch, time, heads] beside the output.
+        shift = jnp.swapaxes(shift_blocks, 0, 1).reshape(batch, block_count * block_size, heads)[:, :time]
+        output = (output, shift)
     return (output, diagnostics) if return_diagnostics else output
 
 
@@ -987,6 +1027,7 @@ def strip_dot_product_attention(
     score_mlp_form: str = "kernel",
     score_mlp_output_bias: jax.Array | None = None,
     strip_size: int = STRIP_SIZE,
+    exp_shift: str = "none",
     **denominators,
 ) -> jax.Array:
     """blocked_dot_product_attention's mathematics over causal query strips, for training.
@@ -1011,6 +1052,7 @@ def strip_dot_product_attention(
     each block's weights, and a masked zero weight times NaN or inf poisons every row.
     Sequence lengths are static. There are no diagnostics: ``blocked_backend_attention``
     takes them from blocked_dot_product_attention (forward only), as the fused kernels do.
+    ``exp_shift="row_max"`` returns ``(output, m)`` as the scan does, the shifts in the compute dtype.
     """
     compute = _compute_dtype(q, k, v)
     m = _mechanism(
@@ -1026,7 +1068,7 @@ def strip_dot_product_attention(
         score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor,
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
-        score_mlp_output_bias=score_mlp_output_bias, **denominators,
+        score_mlp_output_bias=score_mlp_output_bias, exp_shift=exp_shift, **denominators,
     )
     time = q.shape[1]
     # The strips slice these full arrays inside their checkpoints, so the residuals each layer
@@ -1076,18 +1118,23 @@ def strip_dot_product_attention(
             score_bias_key=prefix("score_bias_key", axis=3), score_bias_head=arrays.get("score_bias_head"),
             score_mlp_amplitude=arrays.get("score_mlp_amplitude"), score_mlp_offset=arrays.get("score_mlp_offset"),
         )
+        shift = None
+        if m.exp_shift == "row_max":
+            output, shift = output
         # The block's conversion to V's dtype, rounded explicitly: a consumer that upcasts the
         # output (head RMSNorm) would otherwise let XLA drop it. A signed kernel's row with an
         # entry that overflows V's dtype is then poisoned, as in the block.
         output = _rounded_to(output, v.dtype).astype(v.dtype)
         if m.signed:
             output = jnp.where(jnp.all(jnp.isfinite(output), axis=-1, keepdims=True), output, jnp.nan)
-        return output
+        return output if shift is None else (output, shift)
 
     # prevent_cse stays True: unlike the scan's loop body, unrolled strips would otherwise let
     # XLA merge each recomputation with its forward and keep every strip's scores alive.
     outputs = [jax.checkpoint(partial(attend_strip, start=start, end=min(start + strip_size, time)))(operands)
                for start in range(0, time, strip_size)]
+    if m.exp_shift == "row_max":
+        return tuple(jnp.concatenate(parts, axis=1) for parts in zip(*outputs, strict=True))
     return jnp.concatenate(outputs, axis=1)
 
 

@@ -95,12 +95,18 @@ def record_residual(x: jax.Array) -> None:
     record("residual_max_abs", jnp.max(jnp.abs(value)), "max")
 
 
-def record_attention_output(y: jax.Array, *, head_rms_norm_eps: float | None = None) -> None:
+def record_attention_output(y: jax.Array, *, head_rms_norm_eps: float | None = None,
+                            output_shift: jax.Array | None = None) -> None:
     """Attention output ``[batch, positions, heads, value_dim]`` before output scaling.
 
     ``attention_output_head_rms_min`` is the smallest RMS of any single head at any
     single position. With head RMSNorm, ``head_rms_norm_gain_max`` is the largest
     factor ``1/sqrt(mean(y^2) + eps)`` that the normalization applies.
+
+    A row-shifted exponential (``output_shift`` m [batch, positions, heads]; attention/output_scaling.py) passes
+    ``y = e^(-m) o``: the two RMS statistics then describe that shifted output, whose rows stay finite where o's
+    overflow, ``head_rms_norm_gain_max`` remains the factor for o itself, ``1/sqrt(mean(o^2) + eps)`` with
+    ``mean(o^2) = e^(log mean(y^2) + 2m)``, and ``attention_exp_shift_max`` is the largest shift m.
     """
     if not active():
         return
@@ -108,7 +114,14 @@ def record_attention_output(y: jax.Array, *, head_rms_norm_eps: float | None = N
     smallest = jnp.min(head_mean_square)
     record("attention_output_rms", jnp.mean(head_mean_square), "rms")
     record("attention_output_head_rms_min", jnp.sqrt(smallest), "min")
-    if head_rms_norm_eps is not None:
+    if output_shift is not None:
+        shift = output_shift.astype(jnp.float32)
+        record("attention_exp_shift_max", jnp.max(shift), "max")
+        if head_rms_norm_eps is not None:
+            # In logarithms, so that mean(o^2) overflows to inf (factor zero) rather than to inf * 0.
+            unshifted = jnp.exp(jnp.log(head_mean_square) + 2.0 * shift)
+            record("head_rms_norm_gain_max", jax.lax.rsqrt(jnp.min(unshifted) + head_rms_norm_eps), "max")
+    elif head_rms_norm_eps is not None:
         record("head_rms_norm_gain_max", jax.lax.rsqrt(smallest + head_rms_norm_eps), "max")
 
 

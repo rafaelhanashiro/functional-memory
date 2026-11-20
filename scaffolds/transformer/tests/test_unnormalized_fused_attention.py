@@ -338,3 +338,208 @@ def test_invalid_taylor_scores_or_kernel_poison_only_affected_rows(degree, bad_s
     np.testing.assert_array_equal(jnp.isnan(output), jnp.isnan(reference))
     np.testing.assert_array_equal(output[:, :2].reshape(-1), [3.0, 10.0])
     assert bool(jnp.all(jnp.isnan(output[:, 2:])))
+
+
+# The exponential shifted by its causal row maximum (exp_shift="row_max", attention/output_scaling.py): the kernel
+# returns (Y', m) with Y'_t = sum_i e^(s_ti - m_t) v_i and m_t = max_(i<=t) s_ti, and its VJP holds m constant.
+SHIFTED_WIDTHS = (4, 8, 16, 64)
+_shifted_fused = partial(fused_unnormalized_attention, exp_shift="row_max")
+_shifted_blocked = partial(blocked_dot_product_attention, exp_shift="row_max")
+
+
+def _compiled_shifted_forward_and_vjp(attend):
+    """jit(operands, cotangent) -> ((Y', m), gradients): the cotangent on Y', the shift held constant."""
+    def run(operands, cotangent):
+        (output, shift), pullback = jax.vjp(attend, *operands)
+        return (output, shift), pullback((cotangent, jnp.zeros_like(shift)))
+
+    return jax.jit(run)
+
+
+def _dense_shifted(q, k, v):
+    """Independent dense (Y', m), the shift held constant; callers execute it in FP64."""
+    scores = jnp.einsum("bthd,bshd->bhts", q, k) / math.sqrt(q.shape[-1])
+    causal = jnp.tril(jnp.ones(scores.shape[-2:], dtype=bool))
+    shift = jax.lax.stop_gradient(jnp.max(jnp.where(causal, scores, -jnp.inf), axis=-1, keepdims=True))
+    weights = jnp.where(causal, jnp.exp(jnp.where(causal, scores - shift, 0.0)), 0.0)
+    return jnp.einsum("bhts,bshd->bthd", weights, v), jnp.swapaxes(shift[..., 0], 1, 2)
+
+
+def _fp64_shifted_forward_and_vjp(operands, cotangent):
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        operands64 = tuple(jnp.asarray(np.asarray(x, np.float64)) for x in operands)
+        result = _compiled_shifted_forward_and_vjp(_dense_shifted)(operands64, jnp.asarray(np.asarray(cotangent,
+                                                                                                    np.float64)))
+        return jax.tree.map(lambda x: np.asarray(x, dtype=np.float64), result)
+
+
+def _assert_shifted_result(actual, expected, *, output_rtol, gradient_rtols, label):
+    (output, shift), gradients = actual
+    (expected_output, expected_shift), expected_gradients = expected
+    assert np.asarray(shift).dtype == np.float32 and np.asarray(shift).shape == np.asarray(output).shape[:3], label
+    reference = np.asarray(expected_shift, np.float64)
+    np.testing.assert_allclose(np.asarray(shift, np.float64), reference, rtol=1e-5,
+                               atol=1e-5 * max(1.0, float(np.max(np.abs(reference)))), err_msg=f"{label} shift")
+    _assert_result((output, gradients), (expected_output, expected_gradients), output_rtol=output_rtol,
+                   gradient_rtols=gradient_rtols, label=label)
+
+
+@pytest.mark.parametrize("scale", (1.0, 10.0))
+@pytest.mark.parametrize("shape", [(2, 17, 3, 7, 5), (1, 131, 2, 33, 65)])
+def test_shifted_fp32_outputs_shifts_and_vjp_match_blocked_and_fp64(shape, scale):
+    """Odd widths and 131 tokens cross every tile boundary; at scale 10 the row maxima pass 120, where the
+    unshifted kernel's e^s overflows and the shifted one stays finite and exact."""
+    operands, cotangent = _inputs(shape, seed=301)
+    operands = (scale * operands[0], scale * operands[1], operands[2])
+    fused = _compiled_shifted_forward_and_vjp(_shifted_fused)
+    blocked = _compiled_shifted_forward_and_vjp(partial(_shifted_blocked, query_block_size=32))
+    with jax.default_matmul_precision("highest"):
+        actual = fused(operands, cotangent)
+        reference = blocked(operands, cotangent)
+        unshifted = jax.jit(fused_unnormalized_attention)(*operands)
+    dense64 = _fp64_shifted_forward_and_vjp(operands, cotangent)
+    largest = float(np.max(dense64[0][1]))
+    assert (largest > 120) == (scale > 1)
+    assert actual[0][0].dtype == jnp.float32 and all(grad.dtype == jnp.float32 for grad in actual[1])
+    for label, expected in (("blocked", reference), ("dense FP64", dense64)):
+        _assert_shifted_result(actual, expected, output_rtol=3e-5 * max(1.0, largest / 30),
+                               gradient_rtols=(1e-4 * max(1.0, largest / 30),) * 3, label=f"{label}, scale={scale}")
+    if scale == 1:
+        # The shifted output times e^m is the unshifted output, where that is finite.
+        _assert_relative(actual[0][0] * jnp.exp(actual[0][1])[..., None], unshifted, rtol=3e-5,
+                         name="unshifted from shifted")
+    else:
+        assert not bool(jnp.all(jnp.isfinite(unshifted)))
+
+
+@pytest.mark.parametrize("scale", (1.0, 8.0))
+@pytest.mark.parametrize("width", SHIFTED_WIDTHS)
+def test_shifted_bf16_production_context_matches_blocked_and_fp64(width, scale):
+    """Q/K widths 4, 8, 16 and 64 with value width 64 at 2,048 tokens in BF16, at ordinary scores and at row maxima
+    beyond FP32's e^88.7 (scale 8): against the blocked backend at full context and dense FP64 on a 129-token,
+    one-head prefix, and bitwise repeatable."""
+    operands, cotangent = _inputs((1, 2048, 4, width, 64), dtype=jnp.bfloat16, seed=310 + width)
+    operands = (operands[0] * scale, operands[1] * scale, operands[2])
+    fused = _compiled_shifted_forward_and_vjp(_shifted_fused)
+    actual = fused(operands, cotangent)
+    reference = _compiled_shifted_forward_and_vjp(_shifted_blocked)(operands, cotangent)
+    assert actual[0][0].dtype == jnp.bfloat16 and all(grad.dtype == jnp.bfloat16 for grad in actual[1])
+    largest = float(jnp.max(actual[0][1]))
+    assert (largest > 89) == (scale > 1)
+    tolerances = dict(output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015))
+    _assert_shifted_result(actual, reference, **tolerances, label=f"BF16 production context, d_K={width}, x{scale}")
+    prefix = tuple(x[:, :129, :1] for x in operands)
+    prefix_cotangent = cotangent[:, :129, :1]
+    _assert_shifted_result(fused(prefix, prefix_cotangent), _fp64_shifted_forward_and_vjp(prefix, prefix_cotangent),
+                           **tolerances, label=f"BF16 prefix, d_K={width}, x{scale}")
+    again = fused(operands, cotangent)
+    for first, second in zip(jax.tree.leaves(actual), jax.tree.leaves(again), strict=True):
+        np.testing.assert_array_equal(np.asarray(first, np.float32), np.asarray(second, np.float32))
+
+
+@pytest.mark.parametrize("width", SHIFTED_WIDTHS)
+def test_shifted_head_rms_norm_at_extreme_scores_matches_fp64(width):
+    """The kernel with head RMSNorm and its offset, BF16 at 2,048 tokens with row maxima in the hundreds: output and
+    VJP of o / sqrt(mean(o^2) + eps) g against the FP64 function of the same inputs on a 129-token prefix."""
+    from scaffolds.transformer.attention.output_scaling import scale_attention_output
+
+    operands, cotangent = _inputs((1, 2048, 2, width, 64), dtype=jnp.bfloat16, seed=330 + width)
+    operands = (operands[0] * 9, operands[1] * 9, operands[2])
+    gain = jnp.asarray(np.random.default_rng(width).uniform(0.5, 2.0, (2, 64)), jnp.float32)
+
+    def normalized(q, k, v, gain):
+        output, shift = _shifted_fused(q, k, v)
+        return scale_attention_output(output, "head_rms_norm", output_norm_scale=gain, output_shift=shift)
+
+    def dense(q, k, v, gain, eps=1e-6):
+        output, shift = _dense_shifted(q, k, v)
+        return output * jax.lax.rsqrt(jnp.mean(output * output, -1, keepdims=True)
+                                      + eps * jnp.exp(-2 * shift)[..., None]) * gain
+
+    run = jax.jit(lambda *a: _forward_and_vjp(normalized, a[:4], a[4]))
+    output, gradients = run(*operands, gain, cotangent)
+    assert all(bool(jnp.all(jnp.isfinite(leaf))) for leaf in jax.tree.leaves((output, gradients)))
+    prefix = tuple(x[:, :129, :1] for x in operands) + (gain[:1],)
+    actual = run(*prefix, cotangent[:, :129, :1])
+    with jax.enable_x64(), jax.default_matmul_precision("highest"):
+        prefix64 = tuple(jnp.asarray(np.asarray(x, np.float64)) for x in prefix)
+        assert float(jnp.max(_dense_shifted(*prefix64[:3])[1])) > 100
+        expected = _forward_and_vjp(dense, prefix64, jnp.asarray(np.asarray(cotangent[:, :129, :1], np.float64)))
+        expected = jax.tree.map(lambda x: np.asarray(x, np.float64), expected)
+    _assert_relative(actual[0], expected[0], rtol=0.006, name=f"d_K={width} normalized output")
+    for name, observed, wanted, rtol in zip(("dq", "dk", "dv"), actual[1][:3], expected[1][:3], (0.025, 0.025, 0.015)):
+        _assert_relative(observed, wanted, rtol=rtol, name=f"d_K={width} normalized {name}")
+    np.testing.assert_allclose(np.asarray(actual[1][3], np.float64), expected[1][3], rtol=0.02,
+                               atol=0.02 * np.max(np.abs(expected[1][3])))
+
+
+def test_shifted_causal_outputs_and_vjp_ignore_future_tokens():
+    operands, cotangent = _inputs((1, 131, 2, 33, 5), dtype=jnp.bfloat16, seed=93)
+    prefix = 65
+    fused = _compiled_shifted_forward_and_vjp(_shifted_fused)
+    restricted_cotangent = cotangent.at[:, prefix:].set(0)
+    (output, shift), grads = fused(operands, restricted_cotangent)
+    q, k, v = operands
+    changed = (q.at[:, prefix:].multiply(-2), k.at[:, prefix:].multiply(3), v.at[:, prefix:].add(2))
+    (changed_output, changed_shift), _ = fused(changed, restricted_cotangent)
+    np.testing.assert_array_equal(changed_output[:, :prefix], output[:, :prefix])
+    np.testing.assert_array_equal(changed_shift[:, :prefix], shift[:, :prefix])
+    for name, grad in zip("qkv", grads, strict=True):
+        assert bool(jnp.all(jnp.isfinite(grad))), name
+        np.testing.assert_array_equal(grad[:, prefix:], jnp.zeros_like(grad[:, prefix:]), err_msg=f"future d{name}")
+
+
+@pytest.mark.parametrize("bad_score", [100.0, 1e30, np.inf, -np.inf, np.nan])
+def test_shifted_rows_are_finite_up_to_nonfinite_scores_which_poison_only_their_rows(bad_score):
+    """A finite score, however large, is the row's shift: its weight is one and the others e^(s - m); a nonfinite
+    score poisons its row alone, as on the blocked backend."""
+    q = jnp.ones((1, 3, 1, 1), dtype=jnp.float32)
+    k = jnp.asarray([0.0, 0.0, bad_score], dtype=jnp.float32).reshape(q.shape)
+    v = jnp.asarray([3.0, 7.0, 11.0], dtype=jnp.float32).reshape(q.shape)
+    output, shift = jax.jit(_shifted_fused)(q, k, v)
+    reference, reference_shift = _shifted_blocked(q, k, v)
+    np.testing.assert_array_equal(jnp.isnan(output), jnp.isnan(reference))
+    np.testing.assert_array_equal(output[:, :2].reshape(-1), [3.0, 10.0])
+    np.testing.assert_array_equal(shift[:, :2].reshape(-1), [0.0, 0.0])
+    if np.isfinite(bad_score):
+        np.testing.assert_allclose(np.asarray(output[:, 2:]).reshape(-1), [11.0], rtol=1e-6)
+        # The kernel's FP32 products are TF32x3: within a few FP32 ulps of the score.
+        np.testing.assert_allclose([float(shift[0, 2, 0]), float(reference_shift[0, 2, 0])], [bad_score] * 2,
+                                   rtol=1e-6)
+    else:
+        assert bool(jnp.all(jnp.isnan(output[:, 2:])))
+
+
+def test_shifted_underflow_and_zero_scores():
+    """Every weight but each row's largest may underflow to zero; equal scores are a prefix sum with zero shift."""
+    q = jnp.ones((1, 131, 1, 1), dtype=jnp.float32)
+    k = -1000 * jnp.arange(131, dtype=jnp.float32).reshape(q.shape)
+    v = jnp.cos(jnp.arange(131, dtype=jnp.float32)).reshape(q.shape)
+    output, shift = jax.jit(_shifted_fused)(q, k, v)
+    np.testing.assert_array_equal(output, jnp.broadcast_to(v[:, :1], output.shape))  # key 0 holds every row's max
+    np.testing.assert_array_equal(shift, jnp.zeros_like(shift))
+    (q, k, v), cotangent = _inputs((2, 131, 3, 7, 5))
+    (output, shift), grads = _compiled_shifted_forward_and_vjp(_shifted_fused)((jnp.zeros_like(q), k, v), cotangent)
+    np.testing.assert_array_equal(shift, jnp.zeros_like(shift))
+    _assert_relative(output, jnp.cumsum(v, axis=1), rtol=2e-6, name="zero-score prefix sum")
+    np.testing.assert_array_equal(grads[1], jnp.zeros_like(k))
+
+
+@pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16), ids=("fp32", "bf16"))
+def test_shifted_model_on_the_fused_kernel_matches_blocked(dtype):
+    """A two-layer model with head RMSNorm, QK RMSNorm and RoPE trains the same on the fused kernel as on the blocked
+    scan: loss and every parameter gradient, in FP32; with BF16 layers both lie within BF16 rounding of the FP32
+    blocked model (the fused within twice the blocked one's distance, or 1%)."""
+    from scaffolds.transformer.tests.test_exp_row_max_shift import _loss_and_gradients, _model, _relative
+
+    tokens = jnp.asarray(np.random.default_rng(5).integers(0, 64, (2, 33)), jnp.int32)
+    with jax.default_matmul_precision("highest"):
+        fused = _loss_and_gradients(*_model(exp_shift="row_max", dtype=dtype, backend="fused"), tokens)
+        blocked = _loss_and_gradients(*_model(exp_shift="row_max", dtype=dtype), tokens)
+        reference = blocked if dtype == jnp.float32 else _loss_and_gradients(*_model(exp_shift="row_max"), tokens)
+    np.testing.assert_allclose(fused[0], reference[0], rtol=1e-5 if dtype == jnp.float32 else 1e-3)
+    for observed, wanted, other in zip(jax.tree.leaves(fused[1]), jax.tree.leaves(reference[1]),
+                                       jax.tree.leaves(blocked[1]), strict=True):
+        assert np.isfinite(np.asarray(observed)).all()
+        tolerance = 1e-4 if dtype == jnp.float32 else max(2 * _relative(other, wanted), 1e-2)
+        assert _relative(observed, wanted) <= tolerance, (_relative(observed, wanted), tolerance)

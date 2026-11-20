@@ -65,6 +65,13 @@ class ModelConfig:
     # divides by the number of visible keys t; "head_rms_norm" applies an RMSNorm over
     # the head's value channels with a learned gain per layer, head, and channel.
     attention_output_scaling: Literal["none", "inverse_position", "head_rms_norm"] = "none"
+    # How the unnormalized exponential is evaluated before head RMSNorm: "none" (historical) as e^s; "row_max" as
+    # e^(s - m_t), m_t the largest logit of query t's causal row, with RMSNorm's epsilon scaled by e^(-2 m_t)
+    # (attention/output_scaling.py). The same function in real arithmetic, but finite where e^s overflows FP32
+    # (scores above about 88.7). Blocked backend (any forget gate or score function) or fused kernel (the plain
+    # exponential); attention/pieces.py exp_shift_problem. Fresh eligible recipes use it
+    # (fresh_recipe_uses_exp_shift).
+    attention_exp_shift: Literal["none", "row_max"] = "none"
     attention_mechanism: Literal["dot_product", "gla", "gated_deltanet"] = "dot_product"
     # Gated DeltaNet's causal depthwise short-convolution width (FLA and paper default 4).
     gdn_conv_size: int = 4
@@ -947,6 +954,7 @@ class ModelConfig:
         _validate_score_bias(self)
         _validate_zero_constant(self)
         _validate_score_transform(self)
+        _validate_exp_shift(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
         elif self.attention_degree == 0:
@@ -1306,6 +1314,19 @@ def _validate_exponential_score_function(model: ModelConfig, score_function) -> 
             raise ValueError(f"Backend 'fused' cannot run these score functions: {problem}")
 
 
+def _validate_exp_shift(model: ModelConfig) -> None:
+    """The row-maximum shift of the unnormalized exponential (attention/pieces.py exp_shift_problem): "none" leaves
+    every recipe as it was; "row_max" only where it evaluates the same function."""
+    from scaffolds.transformer.attention.pieces import EXP_SHIFTS, exp_shift_problem
+
+    if model.attention_exp_shift not in EXP_SHIFTS:
+        raise ValueError(f"Unknown model.attention_exp_shift: {model.attention_exp_shift!r}")
+    if model.attention_exp_shift != "none":
+        problem = exp_shift_problem(model)
+        if problem is not None:
+            raise ValueError(f"model.attention_exp_shift {model.attention_exp_shift} does not apply: {problem}")
+
+
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
     coefficients or fixed static degree-one (0, 1) sigmoid/softplus/swish kernels with RoPE or no positional
@@ -1478,6 +1499,16 @@ def fresh_recipe_uses_blocked_strips(model: dict) -> bool:
     return (model.get("attention_mechanism", "dot_product") == "dot_product"
             and model.get("positional_encoding", "rope") != "path"
             and model.get("attention_backend", "auto") in ("blocked", "auto"))
+
+
+def fresh_recipe_uses_exp_shift(model: ModelConfig) -> bool:
+    """Whether a fresh recipe evaluates the unnormalized exponential shifted by its row maximum unless it says
+    otherwise: wherever the shift applies (attention/pieces.py exp_shift_problem), that is the unnormalized
+    exponential with head RMSNorm output scaling on the blocked backend, or plain and ungated on the fused one.
+    Allocation (scaffolds.records create) applies this rule to the loaded recipe; others keep "none"."""
+    from scaffolds.transformer.attention.pieces import exp_shift_problem
+
+    return exp_shift_problem(model) is None
 
 
 def validate_config(config: Config) -> None:

@@ -773,6 +773,16 @@ def attention_identity(config) -> dict:
     if getattr(config.model, "attention_score_prefactor", "none") != "none" and not _exponential_kernel(config.model):
         # A final pass over the complete polynomial formula (the exponential records its own above).
         identity.update(_polynomial_prefactor_identity(config.model, identity["attention_formula"]))
+    if getattr(config.model, "attention_exp_shift", "none") != "none":
+        # How the complete formula is evaluated (attention/output_scaling.py); the fused kernels are their own.
+        identity.update(
+            attention_exp_shift=config.model.attention_exp_shift,
+            attention_formula=identity["attention_formula"] + (
+                "; each row evaluated with its exponents shifted by their causal maximum m_t, a constant to "
+                "differentiation, and the RMSNorm epsilon scaled by e^(-2 m_t): the same function, finite where the "
+                "unshifted exponential overflows FP32"))
+        if identity["attention_implementation"] == "pallas_triton":
+            identity["attention_implementation"] = "pallas_triton_row_max_shifted"
     return identity
 
 
@@ -2098,7 +2108,8 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
         "kernel_values": ("vector_gated_recurrence" if config.model.attention_mechanism == "gla" else
                           ("polynomial_gated_delta_rule_recurrence" if config.model.gdn_polynomial_degree > 1
                            else "gated_delta_rule_recurrence") if config.model.attention_mechanism == "gated_deltanet" else
-                          ("unshifted_exp" if config.model.attention_degree is None else
+                          (("row_max_shifted_exp" if getattr(config.model, "attention_exp_shift", "none") == "row_max"
+                            else "unshifted_exp") if config.model.attention_degree is None else
                            "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
