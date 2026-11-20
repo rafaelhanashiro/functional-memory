@@ -1,0 +1,80 @@
+{
+  "asserted_relative_l2_bounds": {
+    "dK": 0.025,
+    "dQ": 0.025,
+    "dV": 0.015,
+    "output": 0.006
+  },
+  "attention_and_config_code_identical_across_source_commits": true,
+  "date": "2026-11-20",
+  "format": "fused-exponential-narrow-key-qualification",
+  "gpu": "NVIDIA B300 SXM6 (akita)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-fused-8252/gpu-tests.xml",
+          "sha256": "902df0c709174d3e939e81c98a17215ecdc4ebe6112fca1378c695d99439b9cf",
+          "size_bytes": 875
+        },
+        "log": {
+          "path": "logs/score-prefactor-8252.log",
+          "sha256": "7462d5d6d09186269c762ac40c161ca1c5addde87878561a8dc38da9af309036",
+          "size_bytes": 1565
+        }
+      },
+      "elapsed_seconds": 62,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:46:22",
+      "gpu": {
+        "bus_id": "00000000:62:00.0",
+        "compute_capability": "10.3",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B300 SXM6 AC",
+        "uuid": "GPU-c5b148b2-d31d-e338-1f29-12c62adbc1fa"
+      },
+      "junit_seconds": 54.697,
+      "node": "akita",
+      "partition": "long",
+      "passed_by_module": {
+        "test_unnormalized_fused_attention": 4
+      },
+      "slurm_job_id": "8252",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T02:45:20",
+      "suite": "fused",
+      "tests": {
+        "passed": 4
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_score_prefactor.sbatch",
+  "launcher_sha256": "cc9e5cdafcc9405ccf35984a1388af6c834804702d9e95e02fbac7ec17ad3617",
+  "maximum_element_error_bound": "3 times the relative-L2 bound times the largest absolute reference element; exact reference zeros must remain exact",
+  "precisions": [
+    "bf16 Q/K/V and gradients (the fused kernel's)"
+  ],
+  "schema_version": 1,
+  "scope": "The fused Pallas-Triton unnormalized exponential (fused_unnormalized_attention) at Q/K widths 4, 8 and 16 with value width 64, 2,048 tokens and four heads, against the blocked backend at full context and dense FP64 on a 129-token, one-head prefix, and the existing width-64 production-context case.",
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "78b5c25e29708a6a1582182b38e1ba1c6568b672": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "9f5d31b11997b8091bedb73ce8dfdaaf6a8a433a5b0b3e9832f9e1c674863f62"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_unnormalized_fused_attention.py@78b5c25e": "fef8cefbd28d7afb29fcf1527569e2cdfb7ce309ab93fcb2074ce3f2585d5ff8"
+  },
+  "tests": {
+    "passed": 4
+  }
+}
