@@ -26,6 +26,8 @@ REFERENCES = (("softmax", "Softmax", "solid"), ("exp", "Exp", "dashed"))
 RUNS = ROOT / "experiments/transformer_pp/runs"
 # Query + W decay at m = 8, one run per starting point of the coefficients b_r.
 INITIALIZATIONS = (("Taylor", "r25fffc16c2f3"), ("Hermite", "r6adefb42f443"))
+# Query-key coefficients at 1×: (degree, run without W decay, run with it; None: not run).
+QUERY_KEY = ((4, "r501f5cca0d4c", "r79d829a16029"), (8, "r536dee0929d5", None), (12, "r2459b843ca81", None))
 
 
 def rows(path: Path) -> list[dict]:
@@ -93,13 +95,23 @@ def initializations() -> dict:
     }
 
 
+def query_key() -> dict:
+    return {
+        "title": "Query-key attention",
+        "metric": "validation-best perplexity",
+        "columns": ["No <var>W</var> decay", "<var>W</var> decay"],
+        "rows": [{"degree": degree, "cells": [{"run_id": run_id, "perplexity": best(run_id)} if run_id else None
+                                              for run_id in runs]} for degree, *runs in QUERY_KEY],
+    }
+
+
 def best(run_id: str) -> float:
     return float(json.loads((RUNS / run_id / "best_validation.json").read_text())["validation_perplexity"])
 
 
 def main() -> None:
     data = {"baselines": baselines(), "width_degree": width_table(), "degree_scaling": degree_scaling(),
-            "initializations": initializations()}
+            "initializations": initializations(), "query_key": query_key()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

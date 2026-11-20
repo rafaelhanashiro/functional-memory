@@ -29,6 +29,19 @@ function initializations(data, host) {
   section(host, data.title).append(grid);
 }
 
+// Bold marks each column's lowest value as shown, in columns with more than one value.
+function queryKey(data, host) {
+  const shown = (cell) => cell && cell.perplexity.toFixed(4);
+  const best = data.columns.map((column, index) => {
+    const values = data.rows.map((row) => shown(row.cells[index])).filter(Boolean);
+    return values.length > 1 ? Math.min(...values.map(Number)).toFixed(4) : null;
+  });
+  section(host, data.title).append(table(["Degree", ...data.columns], data.rows.map((row) => [
+    {text: degreeLabel(row.degree)},
+    ...row.cells.map((cell, index) => cell ? {text: shown(cell), best: shown(cell) === best[index]} : {text: "—"}),
+  ]), {compact: true}));
+}
+
 function widthDegree(data, host) {
   const values = data.rows.flatMap((row) => row.cells.filter(Boolean).map((cell) => cell.perplexity));
   const best = Math.min(...values).toFixed(4);
@@ -146,6 +159,7 @@ function degreeChart(data) {
     section(document.querySelector('[data-result="degree-scaling"]'), data.degree_scaling.title)
       .append(degreeTable(data.degree_scaling), degreeChart(data.degree_scaling));
     initializations(data.initializations, document.querySelector('[data-result="initializations"]'));
+    queryKey(data.query_key, document.querySelector('[data-result="query-key"]'));
   } catch {
     main.append(html("p", "empty", "Could not load the results."));
   }

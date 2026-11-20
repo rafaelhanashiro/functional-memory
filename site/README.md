@@ -57,5 +57,9 @@ The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits
 them live: never write, reset, regenerate, or stage them; commit them only when the user asks.
 
+A run at another model size or token budget belongs on that scaling's page under Other scalings
+(100M, 2.5× Chinchilla, 4k sequences), whatever its mechanism; the reference shape's 1× runs go on
+their mechanism's page (user, 2026-11-19).
+
 Its content changes only on the user's explicit instruction: do not add, update, or
 refresh anything here otherwise, even when newer results exist.

@@ -2,7 +2,7 @@
   "baselines": {
     "title": "Baselines",
     "metric": "validation-best perplexity",
-    "source": "experiments/transformer_pp/results/degree_scaling/summary.csv",
+    "source": "experiments/transformer_pp/results/pretraining/polynomial/degree_scaling/summary.csv",
     "rows": [
       {
         "label": "Exp",
@@ -19,7 +19,7 @@
   "width_degree": {
     "title": "Scaling Query Attention + WD",
     "metric": "validation-best perplexity",
-    "source": "experiments/transformer_pp/results/exploratory/query_width_degree/summary.csv",
+    "source": "experiments/transformer_pp/results/pretraining/polynomial/query_width_degree/summary.csv",
     "degrees": [
       2,
       4,
@@ -132,7 +132,7 @@
   "degree_scaling": {
     "title": "Degree scaling of unnormalized polynomial attention",
     "metric": "validation-best perplexity",
-    "source": "experiments/transformer_pp/results/degree_scaling/summary.csv",
+    "source": "experiments/transformer_pp/results/pretraining/polynomial/degree_scaling/summary.csv",
     "degrees": [
       1,
       2,
@@ -387,6 +387,49 @@
             "run_id": "r6adefb42f443",
             "perplexity": 14.371392947094554
           }
+        ]
+      }
+    ]
+  },
+  "query_key": {
+    "title": "Query-key attention",
+    "metric": "validation-best perplexity",
+    "columns": [
+      "No <var>W</var> decay",
+      "<var>W</var> decay"
+    ],
+    "rows": [
+      {
+        "degree": 4,
+        "cells": [
+          {
+            "run_id": "r501f5cca0d4c",
+            "perplexity": 14.72171710752831
+          },
+          {
+            "run_id": "r79d829a16029",
+            "perplexity": 14.818336444852049
+          }
+        ]
+      },
+      {
+        "degree": 8,
+        "cells": [
+          {
+            "run_id": "r536dee0929d5",
+            "perplexity": 14.36107714712899
+          },
+          null
+        ]
+      },
+      {
+        "degree": 12,
+        "cells": [
+          {
+            "run_id": "r2459b843ca81",
+            "perplexity": 14.231692687646802
+          },
+          null
         ]
       }
     ]
