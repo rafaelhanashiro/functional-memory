@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r576bb8758634/config.yaml",
+    "sha256": "c7d5cb9d3c24c2e456217cd2cf1fe299c7dc82feb7c0da996fb31763d8633ef1"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8-head-scale-dk16",
+  "name": "static-m8-head-scale-dk16",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "c4701856126a0ecd4acd3737f13d20210836591bc353f911cb4d95986ba4c2f6",
+    "loss": 5.604786396026611,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r576bb8758634",
+  "status": "planned"
+}

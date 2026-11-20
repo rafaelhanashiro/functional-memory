@@ -2956,7 +2956,7 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
   198,440,146); every other initial array is the partner's, bit for bit. Results: the
   [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside B1-B6.
 - **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461;
-  the H100 job 8464 is pending;
+  on H100, job 8464 passed the same 80 cases on `dogo` and awaits its validation record;
   [validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
   S1-S3 train on cuDNN, as their partner: it zero-pads Q and K to the value width 64, so the scores are the narrow
   key's exactly, at width 64's cost. `tests/test_softmax_backends.py`'s cuDNN cases at widths 2-128 pass on B300
@@ -2972,29 +2972,106 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
 
   | Runs | Basis, hours | B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
   | --- | --- | ---: | ---: | ---: | ---: |
-  | E1 | B5, B6 (`r535bc84a7772`, `r6f84b1db6de6`) 3.06-3.09 on B300; the shift costs nothing (fused kernel at `d_K` 4: 3.91 ms per layer, unshifted 3.98); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 6.00 | 3.1 | 6.0 | 10.8 | 11 |
+  | E1 | B5, B6 (`r535bc84a7772`, `r6f84b1db6de6`) 3.06-3.09 on B300; the shift costs nothing (fused kernel at `d_K` 4: 3.91 ms per layer, unshifted 3.98); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | 3.1 | 6.0 | 10.8 | 11 |
   | S1-S3 | `r9040f12f3d80` 2.27 on B300; padding keeps width 64's attention cost; Attention Scaling's cuDNN softmax took 1.88 times as long on `dogo` as on `akita` (`rf7277f076b8f` 2.09, `rbde7fc4c2135` 1.11, four GPUs each) | 2.3 | 4.3 | 7.7 | 9 |
 
   `mastiff` is excluded: its projections exceed the limits less acceptance's two-hour reserve. `dogo` joins only
-  while a placeholder holds its failing H100, as above, and E1 only once the H100 qualification passes.
+  while a placeholder holds its failing H100, as above.
+
+E1 and S1-S3 are launched with the ladder's runs, in the next subsection's order.
+
+### Degree-eight ladder and shifted exp at narrow keys
+
+Nine more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel (same branch and
+worktree). Each recipe is its partner's (`derive_recipe.py --partner`, same shape and budget) with only `qk_head_dim`
+changed; `value_head_dim` stays 64, and seed (42), data order, QK RMSNorm with per-head scale, reference
+initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds.records create` changed no setting.
+
+| Group | Run | Label | Weight | Partner | Change | Adapter |
+| --- | --- | --- | --- | --- | --- | --- |
+| X8 | `r2a45c9e3d452` | `exp-head-scale-row-max-dk8` | `exp(s)`, row-maximum shift, `d_K` 8 | `r2739c80cc032` (E1) | `qk_head_dim: 8` | key width |
+| X16 | `rfdc104924c7c` | `exp-head-scale-row-max-dk16` | `exp(s)`, row-maximum shift, `d_K` 16 | `r2739c80cc032` (E1) | `qk_head_dim: 16` | key width |
+| T4 | `re3515eed3576` | `fixed-m8-head-scale-dk4` | `T_8(s)`, `d_K` 4 | `ra7ee8a4b2544` | `qk_head_dim: 4` | key width |
+| T8 | `r858c094cb85f` | `fixed-m8-head-scale-dk8` | `T_8(s)`, `d_K` 8 | `ra7ee8a4b2544` | `qk_head_dim: 8` | key width |
+| T16 | `rcc9e0b03e692` | `fixed-m8-head-scale-dk16` | `T_8(s)`, `d_K` 16 | `ra7ee8a4b2544` | `qk_head_dim: 16` | key width |
+| P4 | `r0f5e38b0d934` | `static-m8-head-scale-dk4` | `p(s)`, `d_K` 4 | `r9c69dd7cfc8d` | `qk_head_dim: 4` | key width |
+| P8 | `r161f07127f20` | `static-m8-head-scale-dk8` | `p(s)`, `d_K` 8 | `r9c69dd7cfc8d` | `qk_head_dim: 8` | key width |
+| P16 | `r576bb8758634` | `static-m8-head-scale-dk16` | `p(s)`, `d_K` 16 | `r9c69dd7cfc8d` | `qk_head_dim: 16` | key width |
+| Q4 | `rd5e3ec5a4f02` | `query-m8-dk4-w-decay` | `p_t(s)`, `d_K` 4 | `r16b23893884d` | `qk_head_dim: 8 -> 4` | key width |
+
+- **Question.** Does the polynomial form, learned coefficients or their input dependence explain why polynomial
+  attention keeps its quality at narrow keys while exp collapses? Each width climbs a degree-eight ladder on the
+  raw score, one ingredient per step: `T_8(s) = sum_(r<=8) s^r / r!`, exp's truncation with nothing learned
+  (`ra7ee8a4b2544`, the degree-scaling collection's Taylor `m = 8`, best 14.218); static learned `p(s)` from that
+  start (`r9c69dd7cfc8d`, 14.294); and tanh query coefficients `p_t(s)` with W decay, the
+  [key-width grid](#query-coefficients-across-key-width-and-degree)'s degree-eight column (`r16b23893884d` at
+  `d_K` 8, 16.854), which Q4 extends to `d_K` 4. The partners use the current canonical settings for their
+  mechanism. Results: the [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md).
+- **X, shifted exp.** B5 and B6 trained on the unshifted kernel with scores up to 67 and 54, past the row maxima
+  (about 34) beyond which FP32 head RMSNorm's backward departs from FP64 in the Q/K gradients
+  ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)). X8 and
+  X16 are E1 at widths 8 and 16, that is B5 and B6 with the shift, so the shifted exp control spans `d_K` 4-16.
+- **Kernels and GPUs.** The ladder trains on the Mosaic query-coefficient kernel, fixed and static coefficients as
+  every query's equal coefficients
+  ([validation](../../scaffolds/transformer/validation/README.md#mosaic-gpu-polynomial-attention-kernels-on-h100-and-b300)).
+  Widths 8 and 16 are qualified on H100 and B300; width 4, added on 2026-11-20, on H100 (job 8217) and B200 (job
+  8251) only
+  ([validation](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20)).
+  The adapter admits exactly those: B300 has no width-4 qualification and B200 none of this kernel at widths 8 and
+  16. X8 and X16 train on the shifted fused kernel, on B300 (job 8461) or H100 (job 8464, as for E1).
+- **Acceptance.** The [key-width adapter](key_width_acceptance.py) pins the three ladder partners' recipes and
+  initial parameters at each width (counts and SHA256 from CPU; fixed Taylor's equal the exponential's, and Q4's
+  equal `z h_t(z)`'s at width 4) and requires each width's qualified GPUs. Fixed and static runs add the Mosaic query
+  kernel's degree-eight cases at their own width to their GPU stage, since their shared Mosaic suite takes widths 16
+  and 64; the query run's shared stage runs that kernel's whole suite. All 13 recipes of this worktree (E1, S1-S3
+  and these nine) pass the adapter's recipe and full-shape initialization checks on CPU: every partner array of
+  unchanged shape is bit-identical, and only `q_proj`, `k_proj` and the Q/K RMSNorm gains change. Every allocation
+  also runs the full-recipe pilot and a fresh-process resume.
+- **Time limits.** By the rule above: 1.4 times the upper H100 SXM projection plus two hours, rounded up. Before
+  training, acceptance takes another 20-50 minutes (B5 21, B1 50).
+
+  | Runs | Basis, hours | B200 or B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | X8, X16 | B5, B6 3.06-3.09 on B300, these recipes without the shift, which costs no time (H100 job 8464: 2.96-2.99 ms per layer shifted at widths 8 and 16, 2.96-3.02 unshifted); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | B300 3.1 | 6.0 | 10.8 | 11 |
+  | T4, P4 | static `m = 8` on `dogo` (`r45831d718944`, `r991a756da7a9`) 4.81; on B200, the transformed static `p(z)` `r2026eaa99f9a` 4.60 and B1, B3 4.68-4.71 | B200 4.7 | 4.8 | 9.7 | 9 |
+  | Q4 | query `m = 8` on `dogo`: `d_K` 16 `rd10c2ebe1181` 4.67 (5.16 at 64, `r698f9a157a94`); on B200, B1 (`z h_t(z)` at `d_K` 4) 4.68 | B200 4.7 | 4.7 | 8.5 | 9 |
+  | T8, T16, P8, P16 | on B300, static `m = 8` `r1c72e8860ade` 3.41 and query `m = 8` at `d_K` 8 and 32 3.21-3.29; on `dogo`, static 4.81 | B300 3.4 | 4.8 | 9.7 | 9 |
+
+  This Mosaic kernel has not trained on B200 yet; its B200 projections take the transformed kernels', whose tiles do
+  more work. H100 PCIe projections are the partners' own 8.26-9.71 h on `mastiff` (T and P) or 1.8 times H100 SXM;
+  `mastiff` stays excluded, and `dogo` joins only while a placeholder holds its failing H100.
 
 Submit from `worktrees/shifted-exp-dk` after committing the frozen execution set and checking the live standard and
-long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). E1 takes a standard slot and
-S1-S3 go to long. While the `dogo` placeholder (`hold-dogo-badgpu`) waits on standard, one of our four standard GPUs
-stays free for it ([CLUSTERS.md](../../CLUSTERS.md#kennel-csail)); an S run moves to standard only if that still
-holds:
+long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). **The five `d_K` 4 runs (T4,
+P4, Q4, E1, S1) are the user's top priority, ahead of every other job of ours:** submit them first, at the default
+nice, three on the standard GPUs that leave one free for the waiting `dogo` placeholder (`hold-dogo-badgpu`,
+[CLUSTERS.md](../../CLUSTERS.md#kennel-csail)) and two on long, and lower every other pending job of ours, here
+(`--nice=1000` below) and in other worktrees (`scontrol update jobid=<id> nice=1000`), until they have started:
 
 ```bash
-submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
-  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --exclude="$5" --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
-    --error="experiments/transformer_pp/runs/$6/training.log" \
+submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --nice="${7:?nice}" --gres=gpu:1 \
+    --cpus-per-task=16 --mem=128G --exclude="$5" --job-name="$6" \
+    --output="experiments/transformer_pp/runs/$6/training.log" --error="experiments/transformer_pp/runs/$6/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita); drop dogo as above
-submit standard 11:00:00 key_width_acceptance B300,H100 "$b300" r2739c80cc032                    # E1
-for run in reaca8ac9420c r6f65dc73550a r328466965c2b; do                                         # S1-S3
-  submit long 9:00:00 key_width_acceptance B300,H100 "$b300" "$run"
+# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md): drop dogo from a list only while a placeholder
+# job of ours holds that GPU.
+b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba): the Mosaic kernel at d_K 4
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita): fused exp, cuDNN softmax, Mosaic at d_K 8, 16
+# First, the d_K 4 runs.
+for run in re3515eed3576 r0f5e38b0d934 rd5e3ec5a4f02; do                        # T4, P4, Q4
+  submit standard 9:00:00 key_width_acceptance B200,H100 "$b200" "$run" 0
+done
+submit long 11:00:00 key_width_acceptance B300,H100 "$b300" r2739c80cc032 0     # E1
+submit long 9:00:00 key_width_acceptance B300,H100 "$b300" reaca8ac9420c 0      # S1
+# Then the rest, behind every d_K 4 run.
+for run in r2a45c9e3d452 rfdc104924c7c; do                                      # X8, X16
+  submit long 11:00:00 key_width_acceptance B300,H100 "$b300" "$run" 1000
+done
+for run in r858c094cb85f rcc9e0b03e692 r161f07127f20 r576bb8758634 \
+    r6f65dc73550a r328466965c2b; do                                             # T8, T16, P8, P16, S2, S3
+  submit long 9:00:00 key_width_acceptance B300,H100 "$b300" "$run" 1000
 done
 ```

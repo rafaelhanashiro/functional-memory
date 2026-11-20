@@ -71,30 +71,46 @@ Regenerate the heatmap and `summary.csv` from the pinned selection:
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.pretraining.polynomial.query_width_degree.plot
 ```
 
-## Narrow keys for exp, softmax and softplus–SoS
+## Narrow keys for exp, softmax, softplus–SoS and a degree-eight ladder
 
 Planned; no results. Added 2026-11-20. Does the key-width penalty above hold for the exponential, for softmax and
-for the best sum-of-squares kernel? Nine runs change only `qk_head_dim` (value width 64) of exp `r6a76e7fbde45`, of
-softmax `r9040f12f3d80` and of `r841f35a24241`, `z h_t(z)` with `z = softplus(s)` and a query sum-of-squares core
-of degree eight (total degree nine); a tenth repeats the exp run at `d_K` 4 with the exponential shifted by its row
-maximum. Each width is also compared with the grid's degree-eight query polynomial. Validation-best perplexity of
-the existing runs:
+for the best sum-of-squares kernel, and which ingredient lets polynomial attention keep its quality at narrow keys
+while exp collapses: the polynomial form, learned coefficients or their input dependence? Every run changes only
+`qk_head_dim` (value width 64) of a partner: exp `r6a76e7fbde45`, unshifted and shifted by its row maximum; softmax
+`r9040f12f3d80`; `r841f35a24241`, `z h_t(z)` with `z = softplus(s)` and a query sum-of-squares core of degree eight
+(total degree nine); and a degree-eight ladder on the raw score that adds one ingredient per step:
 
-| `d_K` | `z h_t(z)` | exp | exp, row-maximum shift | softmax | query, `m = 8` |
-| ---: | --- | --- | --- | --- | --- |
-| 4 | `r5a25f500bfa8` | `ra28b295d81e6`, numerical failure | `r2739c80cc032` | `reaca8ac9420c` | – |
-| 8 | `r8d6683db38a8` | `r535bc84a7772` | – | `r6f65dc73550a` | `r16b23893884d`, 16.854 |
-| 16 | `r79abb4d7292c` | `r6f84b1db6de6` | – | `r328466965c2b` | `rd10c2ebe1181`, 15.413 |
-| 64 | `r841f35a24241`, 14.095 | `r6a76e7fbde45`, 14.257 | – | `r9040f12f3d80`, 14.543 | `r25fffc16c2f3`, 14.323 |
+- fixed Taylor `T_8(s) = sum_(r<=8) s^r / r!`, exp's truncation with nothing learned (`ra7ee8a4b2544`);
+- static learned `p(s)`, from that start (`r9c69dd7cfc8d`);
+- tanh query coefficients `p_t(s)` with W decay, the grid's degree-eight column, which gains `d_K` 4 (from
+  `r16b23893884d` at `d_K` 8).
 
+Validation-best perplexity of the existing runs:
+
+| `d_K` | `z h_t(z)` | exp | exp, row-maximum shift | softmax | `T_8(s)` | static `p(s)` | query `p_t(s)` |
+| ---: | --- | --- | --- | --- | --- | --- | --- |
+| 4 | `r5a25f500bfa8` | `ra28b295d81e6`, numerical failure | `r2739c80cc032` | `reaca8ac9420c` | `re3515eed3576` | `r0f5e38b0d934` | `rd5e3ec5a4f02` |
+| 8 | `r8d6683db38a8` | `r535bc84a7772` | `r2a45c9e3d452` | `r6f65dc73550a` | `r858c094cb85f` | `r161f07127f20` | `r16b23893884d`, 16.854 |
+| 16 | `r79abb4d7292c` | `r6f84b1db6de6` | `rfdc104924c7c` | `r328466965c2b` | `rcc9e0b03e692` | `r576bb8758634` | `rd10c2ebe1181`, 15.413 |
+| 64 | `r841f35a24241`, 14.095 | `r6a76e7fbde45`, 14.257 | – | `r9040f12f3d80`, 14.543 | `ra7ee8a4b2544`, 14.218 | `r9c69dd7cfc8d`, 14.294 | `r25fffc16c2f3`, 14.323 |
+
+- Read along a row, the ladder separates the ingredients: `T_8(s)` against the shifted exp is the polynomial form
+  alone (a truncation of the same function, nothing learned), static `p(s)` against `T_8(s)` adds learned
+  coefficients, and `p_t(s)` against `p(s)` makes them input-dependent. Margins near 0.5–1% are within one seed's
+  noise.
 - `ra28b295d81e6`, exp at `d_K` 4 on the unshifted fused kernel, ended in a numerical failure at update 3,954: its
   scores reached 74 by update 3,500 and `e^s` overflowed FP32. `r2739c80cc032` is its recipe with
-  `attention_exp_shift: row_max`: the same function under head RMSNorm, finite at any score.
+  `attention_exp_shift: row_max`: the same function under head RMSNorm, finite at any score. `r535bc84a7772` and
+  `r6f84b1db6de6` reached scores of 67 and 54, past the row maxima (about 34) beyond which FP32 head RMSNorm's
+  backward departs from FP64 in the Q/K gradients; `r2a45c9e3d452` and `rfdc104924c7c` rerun them with the shift,
+  so the shifted column is the exp control at every narrow width.
 - Narrower keys remove 18–23 M Q/K parameters and run QK RMSNorm over 4–16 channels; every other initial array is
-  the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100), exp on the fused kernel and
-  softmax on cuDNN, which zero-pads Q and K to width 64 (both B300 or H100); the exp runs add gradient-event capture
-  to their October control (methods and launch:
+  the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100), the ladder on the Mosaic
+  query-coefficient kernel (`d_K` 4 on B200 or H100, 8 and 16 on B300 or H100), exp on the fused kernel and softmax
+  on cuDNN, which zero-pads Q and K to width 64 (both B300 or H100); the exp runs add gradient-event capture to their
+  October control (methods and launch:
   [B1-B6](../../../../README.md#score-prefactors-swish-and-narrow-keys),
-  [shifted exp and softmax](../../../../README.md#shifted-exp-and-softmax-at-narrow-keys)).
-- When these runs join the selection, `plot.py` keeps to the `query_decay_*` roles, so the heatmap and
-  `summary.csv` stay as they are.
+  [shifted exp and softmax](../../../../README.md#shifted-exp-and-softmax-at-narrow-keys),
+  [the ladder and shifted exp at `d_K` 8 and 16](../../../../README.md#degree-eight-ladder-and-shifted-exp-at-narrow-keys)).
+- When these runs join the selection (`rd5e3ec5a4f02` among them), `plot.py` keeps to the `query_decay_*` roles, so
+  the heatmap and `summary.csv` stay as they are.

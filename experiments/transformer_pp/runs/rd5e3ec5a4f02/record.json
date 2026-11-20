@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd5e3ec5a4f02/config.yaml",
+    "sha256": "f0126846c2326b3e3c4cc74ef4c9151f442ef39452e950d41f3d82dcacb7a34d"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-dk4-w-decay",
+  "name": "query-m8-dk4-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "b4e968be9b8d0dafa2395d457fc99e0cac71582c2a876ae724238fc1519eb0d2",
+    "loss": 5.6005859375,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rd5e3ec5a4f02",
+  "status": "planned"
+}

@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rfdc104924c7c/config.yaml",
+    "sha256": "161f23a0227c77213596444ed2a6b9ddeb3917986c751d2e9d570aa8fae6166f"
+  },
+  "home_cluster": "kennel",
+  "label": "exp-head-scale-row-max-dk16",
+  "name": "exp-head-scale-row-max-dk16",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "e3212b9ed90e9ad2dac93d362d634c094987bc341c548d3dc2bff83605d38df0",
+    "loss": 5.604794025421143,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rfdc104924c7c",
+  "status": "planned"
+}
