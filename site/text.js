@@ -168,7 +168,7 @@ toggle.addEventListener("click", () => {
   document.body.classList.toggle("editing-text", editing);
   mountText();
 });
-document.querySelector("header nav")?.append(toggle);
+document.querySelector("header")?.append(toggle);
 
 document.addEventListener("click", (event) => {
   if (!editing) return;
