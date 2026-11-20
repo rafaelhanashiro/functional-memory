@@ -1,8 +1,89 @@
 {
   "fixed-kernels": [
     {
-      "key": "exp-variants",
-      "title": "Exponential score variants",
+      "key": "alternatives",
+      "title": "Alternatives to exp",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "Score weight",
+            "Layers × width",
+            "PPL"
+          ],
+          "rows": [
+            [
+              {
+                "text": "Linear"
+              },
+              {
+                "text": "<var>s</var>"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "20.7170",
+                "value": 20.71704131235611,
+                "run_id": "rd434701f3492"
+              }
+            ],
+            [
+              {
+                "text": "GDN"
+              },
+              {
+                "text": "Native FLA Gated DeltaNet"
+              },
+              {
+                "text": "9 × 1024"
+              },
+              {
+                "text": "16.1844",
+                "value": 16.184398712179412,
+                "run_id": "r6b38709ed8d3"
+              }
+            ],
+            [
+              {
+                "text": "Sigmoid"
+              },
+              {
+                "text": "<var>σ</var>(<var>s</var>)"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "16.1352",
+                "value": 16.135168064320403,
+                "run_id": "r88d8654a8a1d"
+              }
+            ],
+            [
+              {
+                "text": "Softplus"
+              },
+              {
+                "text": "log(1 + <var>e</var><sup><var>s</var></sup>)"
+              },
+              {
+                "text": "15 × 896"
+              },
+              {
+                "text": "15.7443",
+                "value": 15.744321437549862,
+                "run_id": "r266c5dd1f935"
+              }
+            ]
+          ],
+          "caption": "<var>s</var> is the attention score. Linear, sigmoid, and softplus use RoPE and per-head output RMSNorm."
+        }
+      ]
+    },
+    {
+      "key": "prefactors",
+      "title": "Exp with prefactors",
       "tables": [
         {
           "head": [
@@ -30,7 +111,22 @@
                 "value": 14.13227194425537,
                 "run_id": "rbd24b948a240"
               }
-            ],
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "misc",
+      "title": "Misc",
+      "tables": [
+        {
+          "head": [
+            "Score weight",
+            "PPL (% vs exp)"
+          ],
+          "compact": true,
+          "rows": [
             [
               {
                 "text": "<var>e</var><sup>softplus(<var>s</var>)</sup> = 1 + <var>e</var><sup><var>s</var></sup>"
