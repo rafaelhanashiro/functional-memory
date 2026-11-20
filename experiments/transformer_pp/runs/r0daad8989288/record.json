@@ -1,0 +1,19 @@
+{
+  "checkpoint_retention": "none; reads the fits' selected and parent checkpoints without optimizer updates",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0daad8989288/config.yaml",
+    "sha256": "1834adbe9240514912e684637126eb68b2ba51244cc98103c144054f72eca6e9"
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "home_cluster": "kennel",
+  "label": "learned-polynomials-layer8-operands",
+  "name": "learned-polynomials-layer8-operands",
+  "optimizer_updates": 0,
+  "parent_run_ids": [
+    "rceea84f19f6b",
+    "rda6029c3286f"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r0daad8989288",
+  "status": "planned"
+}

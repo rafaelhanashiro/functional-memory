@@ -511,6 +511,19 @@ The shared fitting runtime qualifies the frozen-backbone update and checkpoint
 resume before production. The launcher checks frozen inputs at each start and
 requeue and selects the locked CUDA environment for its GPU.
 
+The topic's learned-polynomials figure reads `r0daad8989288`, a forward-only capture of
+layer 8's queries, keys and coefficients on the first fitting sequence, from the static
+(`rceea84f19f6b`) and free (`rda6029c3286f`) fits. Each fit replays on its frozen parent
+over the first eight fitting sequences and must match its recorded per-sequence NLL within
+0.002. Submit a registered capture from its worktree after committing its recipe:
+
+```bash
+study=experiments/transformer_pp
+sbatch --partition=standard --gres=gpu:1 --cpus-per-task=8 --mem=96G --time=00:30:00 \
+  --output="$study/runs/${run_id:?registered run ID}/training.log" \
+  "$study/diagnose_learned_polynomials.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
+```
+
 ## Matched Taylor continuations
 
 Continuations start from a pretrained checkpoint and train a fixed number of further

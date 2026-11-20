@@ -1,0 +1,34 @@
+schema_version: 1
+experiment_kind: learned_polynomial_diagnostic
+condition: diagnostics/overfitting/coefficient_oracle
+output_directory: experiments/transformer_pp/runs/r0daad8989288
+diagnostic:
+  kind: learned_polynomial_operands
+  layer: 7
+  replay_sequences: 8
+  replay_nll_tolerance: 0.002
+  data:
+    manifest: /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json
+    manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+    batch_size: 256
+    sequence_length: 2049
+    batch_sha256: f2b3cfea843fb2ab2bd366e2590a6fea79ca08aee82339f37db484a4dbff170a
+  fits:
+  - role: static
+    run_id: rceea84f19f6b
+    config_sha256: 35f16b059ff9b42f8e08f526f5a2cb1bc8c4bff77d1cd01b2e48fa909e96c5b1
+    replay_sha256: 372eeb485938d405f85cf29682f7ea68f00d7afc4f900397736248de3e1db520
+    checkpoint_step: 2394
+    checkpoint_sha256: 17bc6d03f7c2347b80521ad2f981c748852decbc03f8cde9d56896c19f964983
+    parent_run_id: r4339a245820e
+    parent_config_sha256: 231679d1be72a9b3524f3ee5d7ac71931aa05d00d83ac50919e853196ed8bf9d
+    parent_checkpoint_sha256: e2b6079d8008d18405dd2a1ff2c313754ee712dacac652873f6b5d349293cc7c
+  - role: free
+    run_id: rda6029c3286f
+    config_sha256: 01d002eba9db2b6d753ab2e7f87f8c3e0e1fe983a4d2e3f5fc8ab57c3f141a27
+    replay_sha256: 362e76f4e725a5f952b9a615d6d3eb58784ee591c6d842be4b4fb9385f0611ed
+    checkpoint_step: 2453
+    checkpoint_sha256: 484cc39563b5da3c47b5fddf6fcd9e594de018e93c5991aaed609aee015a7ab0
+    parent_run_id: r816ab0fbe119
+    parent_config_sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    parent_checkpoint_sha256: 5c8d1f360da2a9c19217fba41521f0dd1ba148d73e42ff6634ca8c6fa79b74c1
