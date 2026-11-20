@@ -1,0 +1,128 @@
+{
+  "revision": 67,
+  "lists": {
+    "planned": [],
+    "active": [
+      {
+        "id": "5332a27e-2b5a-436e-b2ff-c6737cb47cf8",
+        "type": "group",
+        "name": "Fixed kernels",
+        "runs": [
+          {
+            "id": "ee90d28b-9446-496f-8333-eaac0e16ccb4",
+            "type": "run",
+            "text": "Swish"
+          }
+        ]
+      },
+      {
+        "id": "fc04119b-3977-4da5-a180-9cd8c4f4f4f8",
+        "type": "group",
+        "name": "Scaling $d_k=4,8,16$",
+        "runs": [
+          {
+            "id": "996b6165-9390-4a2b-a13f-17c53f6dba1a",
+            "type": "run",
+            "text": "Query"
+          },
+          {
+            "id": "a9c891f0-0724-42a0-a746-2ec49b5f601a",
+            "type": "run",
+            "text": "Static"
+          },
+          {
+            "id": "b2480ec0-f36e-4d30-89a5-73e7958c9342",
+            "type": "run",
+            "text": "Taylor"
+          },
+          {
+            "id": "4bfc9eae-52aa-40e8-a30d-7bff1aeac488",
+            "type": "run",
+            "text": "SoS + prefactor"
+          },
+          {
+            "id": "0dc6b97a-aeb5-4546-bdae-488c3b2144d5",
+            "type": "run",
+            "text": "Exp"
+          },
+          {
+            "id": "4237f5bb-e4b8-4d2f-9d5b-8bef23b8c2c0",
+            "type": "run",
+            "text": "Softmax"
+          }
+        ]
+      },
+      {
+        "id": "df7d6826-79a2-4988-9f96-bb584e734651",
+        "type": "group",
+        "name": "Query",
+        "runs": [
+          {
+            "id": "b44edc21-db5a-4719-b1c3-4a7056b8749c",
+            "type": "run",
+            "text": "Softplus + prefactor"
+          }
+        ]
+      },
+      {
+        "id": "c864d82b-60d5-4f7f-b190-290793abbd3c",
+        "type": "group",
+        "name": "Static",
+        "runs": [
+          {
+            "id": "66757c90-4ae6-45e9-ac70-8424e416d7ec",
+            "type": "run",
+            "text": "Softplus + prefactor"
+          },
+          {
+            "id": "fe7039a7-4d0f-4941-981b-664faec4a7b1",
+            "type": "run",
+            "text": "Softplus"
+          }
+        ]
+      },
+      {
+        "id": "173affeb-e356-40af-91a7-e1e05176ab5e",
+        "type": "group",
+        "name": "Prefactor",
+        "runs": [
+          {
+            "id": "3bc94a61-32cc-462b-9422-bb0ae3b21647",
+            "type": "run",
+            "text": "softplus * SoS(score)"
+          },
+          {
+            "id": "98bb548c-b92c-437d-bf21-d150e21725dd",
+            "type": "run",
+            "text": "exp * SoS(score)"
+          },
+          {
+            "id": "0a5c7ff8-3340-4891-8b50-d26162781b94",
+            "type": "run",
+            "text": "exp * SoS(softplus)"
+          },
+          {
+            "id": "28cf5487-568c-4856-919d-6649aae23edc",
+            "type": "run",
+            "text": "sigmoid * SoS(score)"
+          },
+          {
+            "id": "408016a5-300c-4d52-bd90-ceeaf2b466a7",
+            "type": "run",
+            "text": "sigmoid * SoS(softplus)"
+          },
+          {
+            "id": "2fb2bcbd-f2d4-4b2f-83b2-6400ed0e4082",
+            "type": "run",
+            "text": "swish * SoS(score)"
+          },
+          {
+            "id": "561c9631-6a90-4449-be4c-07160ec8a070",
+            "type": "run",
+            "text": "swish * SoS(softplus)"
+          }
+        ]
+      }
+    ]
+  }
+}
