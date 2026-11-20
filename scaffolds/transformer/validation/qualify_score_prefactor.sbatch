@@ -5,11 +5,13 @@
 # --nodelist or --exclude, for example:
 # sbatch --nodelist=shiba --output=scaffolds/transformer/validation/logs/score-prefactor-%j.log \
 #   scaffolds/transformer/validation/qualify_score_prefactor.sbatch <source-commit> <suite>
-# Suites: prefactor (test_mosaic_score_prefactor.py), transforms (test_mosaic_score_transform.py), sos
-# (test_mosaic_softplus_sos.py and test_mosaic_softplus_zero_constant.py), pointwise (the pointwise GPU suites, the
-# strips' composition, and the query and Taylor kernels' width-4 cases), fused (the fused exponential at Q/K widths
-# 4, 8 and 16, and at 64); several suites join with commas, e.g. pointwise,fused. With --gres=gpu:2 the job runs
-# on the first granted GPU not listed in FAULTY_GPUS.
+# Suites, each well inside 30 minutes on one GPU: prefactor1 and prefactor2 (test_mosaic_score_prefactor.py: the
+# FP64 grid and narrow keys; then the production context, input power, prefix, overflow, extremes and
+# repeatability), transforms1 and transforms2 (test_mosaic_score_transform.py: its FP64 grid; then the rest), sos1
+# (test_mosaic_softplus_sos.py), sos2 (test_mosaic_softplus_zero_constant.py), pointwise (the pointwise GPU suites,
+# the strips' composition, and the query and Taylor kernels' width-4 cases), fused (the fused exponential at Q/K
+# widths 4, 8 and 16, and at 64); several suites join with commas, e.g. pointwise,fused. With --gres=gpu:2 the job
+# runs on the first granted GPU not listed in FAULTY_GPUS.
 #SBATCH --job-name=qualify-score-prefactor
 #SBATCH --partition=standard
 #SBATCH --nodes=1
@@ -21,7 +23,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the worktree}"
 LAUNCH_COMMIT="${1:?Supply the frozen source commit}"
-SUITES="${2:?Supply the suites: prefactor, transforms, sos, pointwise or fused, joined with commas}"
+SUITES="${2:?Supply the suites (prefactor1, prefactor2, transforms1, transforms2, sos1, sos2, pointwise, fused), joined with commas}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_pp --scaffold transformer
 # GPUs that fail CUDA initialization (CLUSTERS.md): dogo's H100 at Slurm index 4 and mastiff's at index 1.
 FAULTY_GPUS="GPU-355f34a2-be0c-ba44-022b-1a056f643b80 GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5"
@@ -52,9 +54,26 @@ SELECTION=()
 IFS=, read -ra SUITE_LIST <<< "$SUITES"
 for SUITE in "${SUITE_LIST[@]}"; do
   case "$SUITE" in
-    prefactor) SELECTION+=("$TESTS/test_mosaic_score_prefactor.py") ;;
-    transforms) SELECTION+=("$TESTS/test_mosaic_score_transform.py") ;;
-    sos) SELECTION+=("$TESTS/test_mosaic_softplus_sos.py" "$TESTS/test_mosaic_softplus_zero_constant.py") ;;
+    prefactor1) SELECTION+=("$TESTS/test_mosaic_score_prefactor.py::test_outputs_and_vjp_match_fp64"
+                            "$TESTS/test_mosaic_score_prefactor.py::test_narrow_key_widths_match_fp64") ;;
+    prefactor2) for test in test_production_context_matches_fp64_and_the_strips test_softplus_prefactor_matches_the_input_power_kernel \
+                            test_outputs_and_vjp_ignore_future_tokens test_an_overflowing_score_poisons_its_row_as_in_the_strips \
+                            test_extreme_and_zero_scores test_repeated_calls_are_bitwise_identical; do
+                  SELECTION+=("$TESTS/test_mosaic_score_prefactor.py::$test")
+                done ;;
+    transforms1) SELECTION+=("$TESTS/test_mosaic_score_transform.py::test_outputs_and_vjp_match_fp64") ;;
+    transforms2) for test in test_every_key_width_matches_fp64 test_production_context_matches_fp64_and_the_strips \
+                             test_largest_degree_fits_the_production_context test_outputs_and_vjp_ignore_future_tokens \
+                             test_future_nonfinite_keys_and_coefficients_do_not_poison_the_prefix \
+                             test_nonfinite_weight_poisons_its_row_even_with_zero_values \
+                             test_an_overflowing_score_poisons_its_row_as_in_the_strips test_extreme_and_zero_scores \
+                             test_repeated_calls_are_bitwise_identical \
+                             test_model_dispatch_uses_the_kernel_and_reports_transform_diagnostics \
+                             test_softplus_degree_nine_at_narrow_key_widths; do
+                   SELECTION+=("$TESTS/test_mosaic_score_transform.py::$test")
+                 done ;;
+    sos1) SELECTION+=("$TESTS/test_mosaic_softplus_sos.py") ;;
+    sos2) SELECTION+=("$TESTS/test_mosaic_softplus_zero_constant.py") ;;
     pointwise)
       # Every width-4 case of the query and Taylor kernels' width grids, then the pointwise and composition suites.
       mapfile -t WIDTH4 < <("$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu \
