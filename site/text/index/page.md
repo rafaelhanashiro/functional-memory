@@ -1,5 +1,9 @@
-This project asks whether polynomial attention can match or beat exp and softmax attention when the rest of the Transformer stays the same. Each head scores query $t$ against key $s$ with $z_{ts}=q_t^\top k_s/\sqrt{d_K}$ and weights the values by a polynomial of degree $m$ instead of $e^{z}$:
+This project asks whether we can learn a better kernel, potentially input-dependent, other than exp.
 
-$$o_t=\operatorname{RMSNorm}\Big(\sum_{s\le t}p(z_{ts})\,v_s\Big),\qquad p(z)=\sum_{r=0}^{m}c_r z^r.$$
+Concretely, an attention output is given by
+$$
+o_t=\sum_{s\le t}p(z_{ts})\,v_s
+$$
+where $z_{ts} \sim q_t^\top k_s$ is the attention score. In a standard transformer, we have $p=\text{softmax}$.
 
-Exp is the same with $p(z)=e^z$; softmax instead divides by the causal row sum. The coefficients $c_r$ are fixed at Taylor's $1/r!$, learned per head (static), or computed from each query (query).
+Our goal is to learn a function $p$ based on the data, which can potentially depend on the activation that goes into the attention layer. We will primarily focus on polynomials, but also test out different function classes.
