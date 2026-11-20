@@ -9,7 +9,7 @@ along y that the exact Jacobian does not have.
 For each run (its recipe, a checkpoint directory, and the commit it trained at) the gradient with respect to every
 parameter is evaluated on the first held-out sequences of the run's own eval manifest, one sequence at a time, at the
 run's precision (train.dtype) and with its recipe unchanged except ``model.attention_backend: blocked``, so every
-kernel runs on any GPU. One compiled program evaluates the same model with three head RMSNorms, chosen at run time:
+kernel runs on any GPU. One compiled program evaluates the same model with five head RMSNorms, chosen at run time:
 
 - ``production``: ``scale_attention_output`` exactly as committed at the run's source commit (read with ``git show``).
 - ``stable``: the same function evaluated stably in FP32. For any constant c > 0,
@@ -18,8 +18,12 @@ kernel runs on any GPU. One compiled program evaluates the same model with three
   which keeps mean((y / c)^2) between 1/channels and 1 and every factor of the backward in FP32's normal range.
 - ``fp64_head``: the head RMSNorm and its VJP in NumPy FP64 on the host (a callback), everything else as the run:
   the reference that tells which of the two FP32 evaluations is right.
+- ``stable_backward`` and ``fp64_backward``: production's forward, bit for bit, with the stable evaluation's VJP or
+  the host FP64 VJP. A BF16 model's rounding changes with any last-bit change of an activation, so two evaluations
+  whose forwards differ in the last FP32 bit differ by the model's rounding noise (about 1% of the gradient); with
+  one forward, these two and ``production`` differ by the backward arithmetic of this operation alone.
 
-``--fp64-model`` adds, once every run has its three evaluations, the whole model in FP64 on the first sequence
+``--fp64-model`` adds, once every run has these evaluations, the whole model in FP64 on the first sequence
 (parameters upcast, every layer computing in FP64, the blocked attention's arithmetic included; the scaffold's
 explicit FP32 steps, QK RMSNorm, RoPE tables and coefficient generators, keep their FP32 rounding): the gradient
 without BF16 rounding or any FP32 range limit, and each evaluation's distance from it.
@@ -27,7 +31,7 @@ without BF16 rounding or any FP32 range limit, and each evaluation's distance fr
 ``--probe`` first measures the VJP of each production version and of the stable evaluation on synthetic FP32 rows of
 given RMS against FP64, which gives the device's own threshold. The model and training code are only read: the script
 replaces ``attention.multihead.scale_attention_output`` inside its own process. If the backend cannot run the host
-callback, the measurement keeps its two FP32 evaluations and says so.
+callback, the measurement keeps its FP32 evaluations (production, stable, stable_backward) and says so.
 
     python -m scaffolds.transformer.validation.measure_head_rms_backward --runs runs.json --output result.json
 
@@ -58,7 +62,11 @@ SCALING_SOURCE = "scaffolds/transformer/attention/output_scaling.py"
 # mean(y^2) past which FP32's m^(-3/2) is subnormal, and past which it is below the smallest subnormal.
 SUBNORMAL_MEAN_SQUARE = float(np.finfo(np.float32).tiny) ** (-2.0 / 3.0)
 VANISHING_MEAN_SQUARE = float(np.finfo(np.float32).smallest_subnormal) ** (-2.0 / 3.0)
-VARIANTS = ("production", "stable", "fp64_head")
+VARIANTS = ("production", "stable", "fp64_head", "stable_backward", "fp64_backward")
+HOST_VARIANTS = ("fp64_head", "fp64_backward")
+# The gradient comparisons reported per run, each ||left - right|| / ||right||.
+PAIRS = (("production", "stable"), ("production", "fp64_head"), ("stable", "fp64_head"),
+         ("production", "stable_backward"), ("production", "fp64_backward"), ("stable_backward", "fp64_backward"))
 GROUPS = (
     ("qk", "Q and K projections, QK gains and head scales", re.compile(r"/(q_proj|k_proj)/|/qk_norm_")),
     ("v", "V projections", re.compile(r"/v_proj/")),
@@ -160,6 +168,34 @@ def host_fp64_head_rms_norm(y, gain, eps):
     return normalize(y.astype(jnp.float32), gain.astype(jnp.float32)).astype(y.dtype)
 
 
+def production_forward(production, y, gain, eps, backward: str):
+    """Production's head RMSNorm forward, bit for bit, with another VJP: ``"stable"`` pulls the cotangent back
+    through the stable evaluation at the same input, ``"fp64"`` through the host FP64 VJP. The activations, and so
+    the loss, are the production evaluation's own; only the backward arithmetic of this one operation differs."""
+    import jax
+    import jax.numpy as jnp
+
+    @jax.custom_vjp
+    def normalize(y, gain):
+        return production(y, "head_rms_norm", output_norm_scale=gain, eps=eps)
+
+    def forward(y, gain):
+        return normalize(y, gain), (y, gain)
+
+    def pull_back(residual, cotangent):
+        y, gain = residual
+        if backward == "stable":
+            return jax.vjp(lambda y, gain: stable_head_rms_norm(y, gain, eps), y, gain)[1](cotangent)
+        value, scale = jax.pure_callback(
+            functools.partial(_host_vjp, eps=eps),
+            (jax.ShapeDtypeStruct(y.shape, jnp.float32), jax.ShapeDtypeStruct(gain.shape, jnp.float32)),
+            y.astype(jnp.float32), gain.astype(jnp.float32), cotangent.astype(jnp.float32))
+        return value.astype(y.dtype), scale.astype(gain.dtype)
+
+    normalize.defvjp(forward, pull_back)
+    return normalize(y, gain)
+
+
 def row_statistics(y):
     """Counts over one layer's (token, head) rows of [batch, tokens, heads, channels], and their largest RMS.
 
@@ -222,6 +258,8 @@ class HeadNorm:
             "production": lambda y, gain: self.production(y, scaling, output_norm_scale=gain, eps=eps),
             "stable": lambda y, gain: stable_head_rms_norm(y, gain, eps),
             "fp64_head": lambda y, gain: host_fp64_head_rms_norm(y, gain, eps),
+            "stable_backward": lambda y, gain: production_forward(self.production, y, gain, eps, "stable"),
+            "fp64_backward": lambda y, gain: production_forward(self.production, y, gain, eps, "fp64"),
             "fp64_model": lambda y, gain: plain_head_rms_norm(y, gain, eps),
         }
         if isinstance(variant, str):
@@ -447,7 +485,7 @@ def host_callback_problem() -> str | None:
         gradient = jax.jit(jax.grad(total))
         difference = float(jnp.max(jnp.abs(gradient(y, jnp.asarray(0)) - gradient(y, jnp.asarray(1)))))
         return None if difference < 1e-5 else f"host FP64 gradient differs from the stable one by {difference}"
-    except Exception as error:  # the measurement then keeps its two FP32 evaluations
+    except Exception as error:  # the measurement then keeps its FP32 evaluations
         return f"{type(error).__name__}: {error}"[:1000]
 
 
@@ -498,55 +536,68 @@ def measure_run(spec: dict, *, sequences: int, variants: tuple, direct_check: bo
 
     evaluate = gradient_function(graphdef, head_norm)
     compare = jax.jit(leaf_sums)
-    zeros = jax.tree.map(jnp.zeros_like, params)
-    totals = {name: zeros for name in variants}
+
+    def device(tree):
+        return jax.tree.map(jnp.asarray, tree)
+
+    def summary(left, right):
+        metrics = group_metrics(groups, sizes, compare(left, right))
+        return {group: metrics[group] and {key: metrics[group][key] for key in ("relative_l2", "cosine")}
+                for group in GROUP_NAMES}
+
+    # Gradients accumulate on the host, so the device holds two at a time whatever the number of evaluations.
+    totals = {name: None for name in variants}
     losses = {name: [] for name in variants}
     statistics = {name: [] for name in variants}
     per_sequence = []
     first = {}
     for index in range(tokens.shape[0]):
         batch = jnp.asarray(tokens[index:index + 1])
-        gradients = {}
+        entry = {"sequence": index}
+        reference = None
         for number, name in enumerate(variants):
             clock = time.time()
             (nll, rows), gradient = evaluate(params, batch, jnp.asarray(number, jnp.int32))
             losses[name].append(float(nll))
             statistics[name].append(jax.device_get(rows))
-            gradients[name] = gradient
-            totals[name] = jax.tree.map(jnp.add, totals[name], gradient)
+            if name == "production":
+                reference = gradient
+            else:
+                entry[f"production_vs_{name}"] = summary(reference, gradient)
             if index == 0:
+                first[name] = jax.tree.map(np.array, gradient)
+                totals[name] = jax.tree.map(np.array, gradient)
                 log(f"{spec['run_id']}: {name} on sequence 0 in {time.time() - clock:.0f} s, NLL {float(nll):.6f}")
-        metrics = group_metrics(groups, sizes, compare(gradients["production"], gradients["stable"]))
-        per_sequence.append({"sequence": index,
-                             "loss": {name: _number(losses[name][-1]) for name in variants},
-                             "largest_rms": _number(max(float(layer["largest_rms"])
-                                                        for layer in statistics["production"][-1])),
-                             "production_vs_stable": {group: metrics[group] and {
-                                 key: metrics[group][key] for key in ("relative_l2", "cosine")}
-                                 for group in GROUP_NAMES}})
-        if index == 0:
-            first = gradients
-        del gradients
+            else:
+                jax.tree.map(lambda total, leaf: np.add(total, np.asarray(leaf), out=total), totals[name], gradient)
+            del gradient
+        del reference
+        entry["loss"] = {name: _number(losses[name][-1]) for name in variants}
+        entry["largest_rms"] = _number(max(float(layer["largest_rms"]) for layer in statistics["production"][-1]))
+        per_sequence.append(entry)
     count = tokens.shape[0]
-    means = {name: jax.tree.map(lambda leaf: leaf / count, total) for name, total in totals.items()}
+    for total in totals.values():
+        jax.tree.map(lambda leaf: np.divide(leaf, count, out=leaf), total)
     result["loss"] = {name: _number(float(np.mean(losses[name]))) for name in variants}
     result["layers"] = layer_statistics(statistics["production"])
     result["layers_stable"] = [{key: layer[key] for key in ("layer", "fraction_subnormal", "fraction_vanishing",
                                                             "fraction_mean_square_overflow", "largest_rms")}
                                for layer in layer_statistics(statistics["stable"])]
     result["gradients"] = {
-        f"{left}_vs_{right}": group_metrics(groups, sizes, compare(means[left], means[right]))
-        for left, right in (("production", "stable"), ("production", "fp64_head"), ("stable", "fp64_head"))
-        if left in variants and right in variants}
+        f"{left}_vs_{right}": group_metrics(groups, sizes, compare(device(totals[left]), device(totals[right])))
+        for left, right in PAIRS if left in variants and right in variants}
     result["per_sequence"] = per_sequence
-    result["nonfinite_gradient"] = {name: bool(any(not bool(jnp.all(jnp.isfinite(leaf)))
-                                                   for leaf in jax.tree.leaves(means[name]))) for name in variants}
+    result["nonfinite_gradient"] = {name: bool(any(not np.isfinite(leaf).all() for leaf in jax.tree.leaves(total)))
+                                    for name, total in totals.items()}
     result["seconds"] = round(time.time() - started, 1)
     log(f"{spec['run_id']}: {len(variants)} evaluations of {count} sequences in {result['seconds']:.0f} s; "
         f"largest RMS {max(float(layer['largest_rms']) for layer in result['layers']):.3g}; production against stable "
         f"Q/K {result['gradients']['production_vs_stable']['qk']['relative_l2']}, "
-        f"all {result['gradients']['production_vs_stable']['all']['relative_l2']}")
-    del totals, means, zeros
+        f"all {result['gradients']['production_vs_stable']['all']['relative_l2']}"
+        + (f"; against stable_backward Q/K {result['gradients']['production_vs_stable_backward']['qk']['relative_l2']}"
+           f", all {result['gradients']['production_vs_stable_backward']['all']['relative_l2']}"
+           if "production_vs_stable_backward" in result["gradients"] else ""))
+    del totals
 
     if direct_check:
         # The run-time selection must leave the production evaluation as it is without it: the same model traced
@@ -554,23 +605,24 @@ def measure_run(spec: dict, *, sequences: int, variants: tuple, direct_check: bo
         clock = time.time()
         (nll, _), gradient = gradient_function(graphdef, head_norm, variant="production")(
             params, jnp.asarray(tokens[:1]))
+        selected = device(first["production"])
         largest = max(float(jnp.max(jnp.abs(a.astype(jnp.float32) - b.astype(jnp.float32))))
-                      for a, b in zip(jax.tree.leaves(gradient), jax.tree.leaves(first["production"]), strict=True))
+                      for a, b in zip(jax.tree.leaves(gradient), jax.tree.leaves(selected), strict=True))
         result["direct_check"] = {
             "loss_equal": float(nll) == losses["production"][0],
             "gradient_bitwise_equal": bool(all(bool(jnp.array_equal(a, b)) for a, b in zip(
-                jax.tree.leaves(gradient), jax.tree.leaves(first["production"]), strict=True))),
+                jax.tree.leaves(gradient), jax.tree.leaves(selected), strict=True))),
             "largest_absolute_difference": _number(largest),
-            "all": group_metrics(groups, sizes, compare(gradient, first["production"]))["all"],
+            "all": group_metrics(groups, sizes, compare(gradient, selected))["all"],
             "seconds": round(time.time() - clock, 1)}
         log(f"{spec['run_id']}: direct check {result['direct_check']}")
-        del gradient
+        del gradient, selected
     result["seconds_total"] = round(time.time() - started, 1)
     state = None
     if keep_state:
         state = {"graphdef": graphdef, "params": jax.device_get(params), "tokens": tokens[:1], "groups": groups,
-                 "sizes": sizes, "first": {name: jax.device_get(gradient) for name, gradient in first.items()},
-                 "losses": {name: losses[name][0] for name in variants}, "production": production}
+                 "sizes": sizes, "first": first, "losses": {name: losses[name][0] for name in variants},
+                 "production": production}
     return result, state
 
 
@@ -621,9 +673,12 @@ def environment() -> dict:
 
     gpu = command("nvidia-smi", "--query-gpu=name,uuid,pci.bus_id,driver_version,compute_cap",
                   "--format=csv,noheader")
+    # Of the job's GPUs, the one this process computes on, when CUDA_VISIBLE_DEVICES names it by UUID.
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    lines = [line for line in (gpu.splitlines() if gpu else []) if not visible.startswith("GPU-") or visible in line]
     return {
         "backend": jax.default_backend(), "devices": [str(device) for device in jax.devices()],
-        "gpu": gpu.splitlines() if gpu else None, "jax": jax.__version__, "numpy": np.__version__,
+        "gpu": lines or None, "jax": jax.__version__, "numpy": np.__version__,
         "host": os.uname().nodename, "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "cuda_environment": os.environ.get("TRANSFORMER_CUDA_ENVIRONMENT"),
         "xla_flags": os.environ.get("XLA_FLAGS", ""), "source_commit": command("git", "rev-parse", "HEAD"),
@@ -640,7 +695,7 @@ def main() -> None:
     parser.add_argument("--direct-check", type=int, default=1,
                         help="number of leading runs whose production evaluation is also traced without selection")
     parser.add_argument("--fp64-model", action="store_true",
-                        help="after every run's three evaluations, evaluate the whole model in FP64 on the first "
+                        help="after every run's evaluations, evaluate the whole model in FP64 on the first "
                              "sequence of each run (those whose entry does not set fp64_model false), in order")
     parser.add_argument("--time-budget", type=float, default=None,
                         help="seconds from start after which no further run or FP64 model begins")
@@ -664,7 +719,7 @@ def main() -> None:
 
     specs = json.loads(arguments.runs.read_text())
     problem = host_callback_problem()
-    variants = VARIANTS if problem is None else VARIANTS[:2]
+    variants = tuple(name for name in VARIANTS if problem is None or name not in HOST_VARIANTS)
     productions, sources = {}, {}
     for spec in specs:
         function, digest = production_scaling(spec["source_commit"])
