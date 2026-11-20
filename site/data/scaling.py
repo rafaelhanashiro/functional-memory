@@ -67,11 +67,12 @@ SOS_SOFTPLUS = (
     ("Query SoS + softplus input", ((12, ("r5a18841b21b5", "r83fa09df3931", "r0623d3020268")),)),
     ("Query SoS + softplus input + prefactor", ((13, ("r3b9c8cc6fab8", "re7593f1d0a4c", "r4589172dcd8b")),)),
 )
-# Per-degree score biases at 1×: (attention, degree, run); the first has no biases.
-SCORE_BIASES = (
+# Other runs at 1×, each changing the first, query tanh + W decay, in one way: (attention, degree, run).
+OTHER = (
     ("Query tanh + W decay", 8, "r95a5691d293f"),
-    ("+ static biases", 8, "rb4e5457ef2a0"),
-    ("+ query-dependent biases", 8, "r8dc6e147601c"),
+    ("+ static per-degree biases", 8, "rb4e5457ef2a0"),
+    ("+ query-dependent per-degree biases", 8, "r8dc6e147601c"),
+    ("+ |<var>s</var>| input", 8, "r17a1290cb4ac"),
     ("Exp (baseline)", None, "r3e2fa2532c23"),
 )
 FOX = "FoX uses shared cumulative gates and no positional encoding."
@@ -173,20 +174,22 @@ def hundred_m() -> list[dict]:
          "tables": [{"head": budgets, "grouped": True, "rows": grouped(SOS_SOFTPLUS, BUDGET_BASELINES[:1], exp),
                      "caption": f"{VERSUS_EXP} —: no run. The SoS + softplus runs use a degree-12 core; the "
                                 "prefactor raises the total degree to 13."}]},
-        {"key": "score-biases", "title": "Per-degree score biases",
-         "tables": [{"head": ["Attention variant", "Degree", budget_head(1), "vs no biases"], "compact": True,
-                     "rows": score_biases(),
-                     "caption": "Validation-best perplexity. Each order <var>r</var> of the query polynomial "
-                                "shifts its score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)"
-                                "<sup><var>r</var></sup>, by a learned constant (static) or by an amount that "
-                                "depends on the query token."}]},
+        {"key": "other", "title": "Other runs",
+         "tables": [{"head": ["Attention variant", "Degree", budget_head(1), "vs control"], "compact": True,
+                     "rows": other(),
+                     "caption": "Validation-best perplexity. Each run changes the control, query tanh + W decay "
+                                "at degree 8, in one way. Per-degree biases shift each order <var>r</var>'s "
+                                "score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)<sup><var>r</var></sup>, "
+                                "by a learned constant (static) or by an amount that depends on the query token; "
+                                "|<var>s</var>| input evaluates the polynomial at |<var>s</var>| in place of "
+                                "<var>s</var>."}]},
     ]
 
 
-def score_biases() -> list[list[dict]]:
-    control = best(SCORE_BIASES[0][2])
+def other() -> list[list[dict]]:
+    control = best(OTHER[0][2])
     rows = []
-    for position, (label, value, run_id) in enumerate(SCORE_BIASES):
+    for position, (label, value, run_id) in enumerate(OTHER):
         versus = text("—", muted=True) if position == 0 else text(change(best(run_id), control))
         rows.append([text(label), degree(value), number(best(run_id), 4, run_id), versus])
     return rows

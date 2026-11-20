@@ -976,15 +976,15 @@
       ]
     },
     {
-      "key": "score-biases",
-      "title": "Per-degree score biases",
+      "key": "other",
+      "title": "Other runs",
       "tables": [
         {
           "head": [
             "Attention variant",
             "Degree",
             "1×<span class=\"sub\">1.98B tokens</span>",
-            "vs no biases"
+            "vs control"
           ],
           "compact": true,
           "rows": [
@@ -1007,7 +1007,7 @@
             ],
             [
               {
-                "text": "+ static biases"
+                "text": "+ static per-degree biases"
               },
               {
                 "text": "<var>m</var> = 8"
@@ -1023,7 +1023,7 @@
             ],
             [
               {
-                "text": "+ query-dependent biases"
+                "text": "+ query-dependent per-degree biases"
               },
               {
                 "text": "<var>m</var> = 8"
@@ -1035,6 +1035,22 @@
               },
               {
                 "text": "+3.55%"
+              }
+            ],
+            [
+              {
+                "text": "+ |<var>s</var>| input"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "17.9406",
+                "value": 17.94056055873719,
+                "run_id": "r17a1290cb4ac"
+              },
+              {
+                "text": "+1.98%"
               }
             ],
             [
@@ -1055,7 +1071,7 @@
               }
             ]
           ],
-          "caption": "Validation-best perplexity. Each order <var>r</var> of the query polynomial shifts its score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)<sup><var>r</var></sup>, by a learned constant (static) or by an amount that depends on the query token."
+          "caption": "Validation-best perplexity. Each run changes the control, query tanh + W decay at degree 8, in one way. Per-degree biases shift each order <var>r</var>'s score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)<sup><var>r</var></sup>, by a learned constant (static) or by an amount that depends on the query token; |<var>s</var>| input evaluates the polynomial at |<var>s</var>| in place of <var>s</var>."
         }
       ]
     }
