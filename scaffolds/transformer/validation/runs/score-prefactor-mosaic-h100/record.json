@@ -1,0 +1,423 @@
+{
+  "asserted_relative_l2_bounds": {
+    "coefficient_per_order": 0.01,
+    "dK": 0.025,
+    "dQ": 0.025,
+    "dV": 0.015,
+    "output": 0.006,
+    "sos_generator_x_W_a_b": 0.02
+  },
+  "attention_and_config_code_identical_across_source_commits": true,
+  "cpu_preflight": {
+    "deselected": 1651,
+    "environment": "scaffolds/transformer/.venv",
+    "errors": 0,
+    "existing_family_programs_identical_to_main": "forward, dV, dQ and dK tile jaxprs of query, query_softplus, query_abs and query_sigmoid at degrees 1, 4, 8, 9 and 12",
+    "failed": 0,
+    "host": "kennel login node",
+    "jax_platforms": "cpu",
+    "log": {
+      "path": "logs/score-prefactor-cpu-78b5c25e.log",
+      "sha256": "130ca87cddddded97a22b18f557ce8542faf707868be13633727aab8eea0c244",
+      "size_bytes": 17564
+    },
+    "modules": 192,
+    "passed": 6448,
+    "recipe_receipts": {
+      "differs": 0,
+      "runs": 276,
+      "same": 245,
+      "same_rejection": 31
+    },
+    "scope": "every test module of scaffolds/transformer/tests, experiments/transformer_pp/tests and scaffolds/records/tests, one process per module",
+    "selection": [
+      "-m",
+      "not gpu",
+      "-k",
+      "not distributed"
+    ],
+    "skipped": 0
+  },
+  "date": "2026-11-20",
+  "format": "mosaic-score-prefactor-qualification",
+  "gpu": "NVIDIA H100 PCIe (mastiff)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-prefactor1-8214/gpu-tests.xml",
+          "sha256": "2408ade7d9ac1cb932683cf9da8e8d6e2d8acc139a38bb694c08fcfe771ae2eb",
+          "size_bytes": 11982
+        },
+        "log": {
+          "path": "logs/score-prefactor-8214.log",
+          "sha256": "547b9130704605eb67b6c4dcf027e5d456705c0ffcce3205cf6fca9ee3ef405d",
+          "size_bytes": 2577
+        }
+      },
+      "elapsed_seconds": 241,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:21:04",
+      "gpu": {
+        "bus_id": "00000000:21:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
+      },
+      "junit_seconds": 238.758,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_prefactor": 84
+      },
+      "slurm_job_id": "8214",
+      "slurm_state": "COMPLETED",
+      "source_commit": "6aefb8f872d068a0ae546d83c5059216c8ec494a",
+      "started_at": "2026-11-20T02:17:03",
+      "suite": "prefactor1",
+      "tests": {
+        "passed": 84
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-prefactor2-8218/gpu-tests.xml",
+          "sha256": "695c7f4b7ab48b98452419ca36229ec96a8fab4779398c9d85df28dde423ad0b",
+          "size_bytes": 8240
+        },
+        "log": {
+          "path": "logs/score-prefactor-8218.log",
+          "sha256": "aafe1a0353a943322b901ec4402eda33ea10442035542b6c12fcf734f5b5962c",
+          "size_bytes": 3152
+        }
+      },
+      "elapsed_seconds": 553,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:26:19",
+      "gpu": {
+        "bus_id": "00000000:61:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356"
+      },
+      "junit_seconds": 551.379,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_prefactor": 56
+      },
+      "slurm_job_id": "8218",
+      "slurm_state": "COMPLETED",
+      "source_commit": "6aefb8f872d068a0ae546d83c5059216c8ec494a",
+      "started_at": "2026-11-20T02:17:06",
+      "suite": "prefactor2",
+      "tests": {
+        "passed": 56
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-transforms1-8215/gpu-tests.xml",
+          "sha256": "8e9c5609723df3f339980917af2d8ccd362af897e3a6d38fc4df39af37b10314",
+          "size_bytes": 5487
+        },
+        "log": {
+          "path": "logs/score-prefactor-8215.log",
+          "sha256": "0afc81cb163e5a9aed027361529772cb5a4c6970d601733ab3fbe6be264a6489",
+          "size_bytes": 2270
+        }
+      },
+      "elapsed_seconds": 79,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:22:23",
+      "gpu": {
+        "bus_id": "00000000:21:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
+      },
+      "junit_seconds": 76.912,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_transform": 40
+      },
+      "slurm_job_id": "8215",
+      "slurm_state": "COMPLETED",
+      "source_commit": "6aefb8f872d068a0ae546d83c5059216c8ec494a",
+      "started_at": "2026-11-20T02:21:04",
+      "suite": "transforms1",
+      "tests": {
+        "passed": 40
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-transforms2-8219/gpu-tests.xml",
+          "sha256": "cc88929339d701cb58b46271f32aa48c89b1bd17864670ca7cb215fcc14ad096",
+          "size_bytes": 8194
+        },
+        "log": {
+          "path": "logs/score-prefactor-8219.log",
+          "sha256": "6c9aaba75285e5720e4bd2c66f4aae005aba56c55d64e05eb221b71e53c584e0",
+          "size_bytes": 3639
+        }
+      },
+      "elapsed_seconds": 343,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:32:02",
+      "gpu": {
+        "bus_id": "00000000:61:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356"
+      },
+      "junit_seconds": 340.731,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_transform": 58
+      },
+      "slurm_job_id": "8219",
+      "slurm_state": "COMPLETED",
+      "source_commit": "6aefb8f872d068a0ae546d83c5059216c8ec494a",
+      "started_at": "2026-11-20T02:26:19",
+      "suite": "transforms2",
+      "tests": {
+        "passed": 58
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-sos1-8233/gpu-tests.xml",
+          "sha256": "7787f7b5f458deafb59340fbc2e6fe43ed52f4f6fe8789b290d9506ba40d02ce",
+          "size_bytes": 5867
+        },
+        "log": {
+          "path": "logs/score-prefactor-8233.log",
+          "sha256": "9689d4df08c393d9842792eee34f10f365cd8a8d7f7fd19fee01e4554a8495e4",
+          "size_bytes": 2278
+        }
+      },
+      "elapsed_seconds": 171,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:32:30",
+      "gpu": {
+        "bus_id": "00000000:21:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
+      },
+      "junit_seconds": 166.489,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_softplus_sos": 41
+      },
+      "slurm_job_id": "8233",
+      "slurm_state": "COMPLETED",
+      "source_commit": "4159732ccb825d9594904bc4d193c40eb07ad1a3",
+      "started_at": "2026-11-20T02:29:39",
+      "suite": "sos1",
+      "tests": {
+        "passed": 41
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-sos2-8243/gpu-tests.xml",
+          "sha256": "2aa3835f717fc27eb73d099251a69993ad10953f7e98c8c58b54c793102ae11b",
+          "size_bytes": 2227
+        },
+        "log": {
+          "path": "logs/score-prefactor-8243.log",
+          "sha256": "7895e5a56487ec832a0613a0677549cefd03cc7203415b146ae6bd601601fe6a",
+          "size_bytes": 2540
+        }
+      },
+      "elapsed_seconds": 46,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:32:48",
+      "gpu": {
+        "bus_id": "00000000:61:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-b1e23521-cb68-0807-c0f2-228326c90356"
+      },
+      "junit_seconds": 43.826,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_softplus_zero_constant": 13
+      },
+      "slurm_job_id": "8243",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T02:32:02",
+      "suite": "sos2",
+      "tests": {
+        "passed": 13
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-pointwise-fused-8217/gpu-tests.xml",
+          "sha256": "04822232976001fb636920abcc62682fd8e7669c6912b9046505fce801f19e47",
+          "size_bytes": 20750
+        },
+        "log": {
+          "path": "logs/score-prefactor-8217.log",
+          "sha256": "8ce2a854632a2fd2251b9d5934d301882f6c0f63e9d5fbd0a2b8526ed293a26f",
+          "size_bytes": 19692
+        }
+      },
+      "elapsed_seconds": 235,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "1:0",
+      "failed_cases": [
+        "test_unnormalized_fused_attention::test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64[4]",
+        "test_unnormalized_fused_attention::test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64[8]",
+        "test_unnormalized_fused_attention::test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64[16]"
+      ],
+      "failures_superseded_by_job": "8244",
+      "finished_at": "2026-11-20T02:29:18",
+      "gpu": {
+        "bus_id": "00000000:21:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
+      },
+      "junit_seconds": 231.057,
+      "node": "mastiff",
+      "note": "its three fused narrow-key cases matched the blocked backend at 2,048 tokens, then failed compiling the dense FP64 reference (an XLA GPU layout RET_CHECK at a 257-token, two-head prefix); with the width-64 case's 129-token, one-head prefix they passed in job 8244",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_blocked_composition": 4,
+        "test_mosaic_query": 12,
+        "test_mosaic_taylor": 12,
+        "test_pointwise_attention": 6,
+        "test_pointwise_score_transform": 30,
+        "test_unnormalized_fused_attention": 1
+      },
+      "slurm_job_id": "8217",
+      "slurm_state": "FAILED",
+      "source_commit": "6aefb8f872d068a0ae546d83c5059216c8ec494a",
+      "started_at": "2026-11-20T02:25:23",
+      "suite": "pointwise,fused",
+      "tests": {
+        "failure": 3,
+        "passed": 65
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-fused-8244/gpu-tests.xml",
+          "sha256": "3a564811ba44038ca736289894a8dfe65350e47e3b72a3114c7f87e0d3dacbc3",
+          "size_bytes": 876
+        },
+        "log": {
+          "path": "logs/score-prefactor-8244.log",
+          "sha256": "e6ad02a1cfca58782532dcdaf9ba50fec26eded6d1c2969f49d6891e24d3a922",
+          "size_bytes": 1552
+        }
+      },
+      "elapsed_seconds": 13,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:32:43",
+      "gpu": {
+        "bus_id": "00000000:21:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 PCIe",
+        "uuid": "GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
+      },
+      "junit_seconds": 12.013,
+      "node": "mastiff",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_unnormalized_fused_attention": 4
+      },
+      "slurm_job_id": "8244",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T02:32:30",
+      "suite": "fused",
+      "tests": {
+        "passed": 4
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_score_prefactor.sbatch",
+  "launcher_sha256": "cc9e5cdafcc9405ccf35984a1388af6c834804702d9e95e02fbac7ec17ad3617",
+  "maximum_element_error_bound": "3 times the relative-L2 bound times the largest absolute reference element; exact reference zeros must remain exact",
+  "precisions": [
+    "bf16",
+    "bf16x3"
+  ],
+  "schema_version": 1,
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "4159732ccb825d9594904bc4d193c40eb07ad1a3": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "e3ccb3396186236af9ff17a156c130b7739a7b389429393e1aa6836223df072f"
+    },
+    "6aefb8f872d068a0ae546d83c5059216c8ec494a": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "faed6df839d14b8421ddf43eb00df28dee9f2358b5962d6b4b5f58b23f3e80d0"
+    },
+    "78b5c25e29708a6a1582182b38e1ba1c6568b672": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "9f5d31b11997b8091bedb73ce8dfdaaf6a8a433a5b0b3e9832f9e1c674863f62"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_blocked_composition.py@6aefb8f8": "9166a48cc7af9338d6a83cad0842c2be83b9882f2835dba975f59dfa825d87d6",
+    "test_mosaic_query.py@6aefb8f8": "2b75c989cc01151a0795fbb8ced61923093e6f32eaa1dac5902c8ef32731d93e",
+    "test_mosaic_score_prefactor.py@6aefb8f8": "3df3d1ef318962b35b37feefeffa09a6f306b80907e43716a539ce2f87f7fe9d",
+    "test_mosaic_score_transform.py@6aefb8f8": "032de9e8b571e4165130630c5f22298fd25a1c20b15975ca939206b6111509f2",
+    "test_mosaic_softplus_sos.py@4159732c": "99c752310103713825de23e223ce8ad830f57e457e95aa9488dc421a04342692",
+    "test_mosaic_softplus_zero_constant.py@78b5c25e": "25618c0190ea1694d0205c2a990559a37f0b098647be75e55391ae0917036282",
+    "test_mosaic_taylor.py@6aefb8f8": "216dfb7842fac8e143d7a273e3fd57fc164f4477e34d5d94e18b7cea8083b427",
+    "test_pointwise_attention.py@6aefb8f8": "81f032deab1d1b0560a625310c6b3a4e1a350fe87f8e51d0d1339f6431cbf6a2",
+    "test_pointwise_score_transform.py@6aefb8f8": "1175ed4a216f974e02bbe1dff3974b2f3bbf599880db11602d9f0cd50a4ab7ee",
+    "test_unnormalized_fused_attention.py@6aefb8f8": "ef13c67b065e766f415ba3f64e8a1fba1bba2b790318c2c1a1d037ef99ab3e67",
+    "test_unnormalized_fused_attention.py@78b5c25e": "fef8cefbd28d7afb29fcf1527569e2cdfb7ce309ab93fcb2074ce3f2585d5ff8"
+  },
+  "tests": {
+    "failure": 3,
+    "passed": 361
+  }
+}

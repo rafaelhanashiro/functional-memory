@@ -11,6 +11,83 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Score prefactors, swish and Q/K width 4 on Mosaic (2026-11-20)
+
+The Mosaic transformed query-polynomial kernels evaluate `W = f(s) p(phi(s))` in their causal tiles
+([README](../README.md#score-prefactors-on-polynomials)): the families `query_times_<f>` and
+`query_softplus_times_<f>` for the prefactors `f` = softplus, sigmoid, exp and swish of the raw score, and
+`query_swish` for the swish transform alone (`common.score_function_family`). Each tile forms `f` and `f'` beside
+`z = phi(s)` and `phi'`, sharing `y = 2^(-abs(s) log2(e))`; the weight is `f p(z)`, the dQ pass sums
+`dc_r = sum_i dP f z^r`, and `dS = p'(z) (dP f) phi'(s) + dP f'(s) p(z)`. Vectors, shared memory, precision and
+failure rows are the query family's. Q/K width 4 joins every Mosaic family, zero-padded to 16 like width 8.
+Admission stays H100 (sm90) and B200 (sm100); B300 is refused before tracing. The kernels and configuration code
+are identical at every commit below (`7f03ebda` to `78b5c25e` changed only GPU test modules).
+
+**CPU** (`JAX_PLATFORMS=cpu`, the branch's final scaffold code): every test module of the scaffold, the
+Transformer++ study and the records passed, 6,448 tests in 192 modules (1,651 GPU or distributed cases deselected; the ignored summary log `logs/score-prefactor-cpu-78b5c25e.log`, SHA256 in the H100 record). Among them `tests/test_score_prefactor.py` (243):
+swish's and exp's values and JVPs against FP64 autodiff; the family registry; every new family's H100 forward, dQ
+and dK/dV kernels lowering in exactly `hopper_smem_bytes` and failing one byte below at degrees 1, 8, 9 and 12;
+the B200 kernels and both entry points lowering with every gradient at 2,048 tokens and Q/K widths 4-64; the tile
+mathematics against explicit FP64 `f(s) p(phi(s))` and its product rule (unit, wide, zero and extreme scores,
+masked entries at +-1e15); nonfinite causal scores giving NaN rows; `softplus(s) p(softplus(s))` equal to the
+degree-nine input power on the scan and strips and through two SoS models with equal parameters; dispatch,
+admission, the planned recipes, refusals and provenance. The jaxprs of the existing transformed families' tile
+functions (forward, dV, dQ and dK at degrees 1, 4, 8, 9 and 12) equal `main`'s, and `records receipts
+experiments/transformer_pp` recomputed every run's receipt with this code: 276 runs, 245 `same` and 31 `same
+rejection`, none different. The full-shape initial parameters of every planned recipe match its pinned partner's
+count and SHA256 (the [study README](../../../experiments/transformer_pp/README.md#score-prefactors-swish-and-narrow-keys)
+lists the runs by adapter).
+
+**GPU** (`qualify_score_prefactor.sbatch`, one GPU per job on the standard partition, both weight precisions, the
+CUDA 12 environment on H100 and CUDA 13 on B200):
+
+| GPU | Job | Suites | Source | Result | JUnit seconds |
+| --- | --- | --- | --- | --- | --- |
+| H100 PCIe (`mastiff`) | 8214 | prefactor1: every family against FP64 at degrees 1, 4, 8 (unit and wide scores), Q/K widths 4 and 16 | `6aefb8f8` | 84 passed | 239 |
+| H100 PCIe | 8218 | prefactor2: production context against FP64 and the strips, input-power kernel, prefix, overflow, extremes, repeatability | `6aefb8f8` | 56 passed | 551 |
+| H100 PCIe | 8215 | transforms1: softplus and abs at degrees 1-12 | `6aefb8f8` | 40 passed | 77 |
+| H100 PCIe | 8219 | transforms2: widths 4-128, degree nine at widths 4, 8, 16, production context, failures, repeatability | `6aefb8f8` | 58 passed | 341 |
+| H100 PCIe | 8233 | sos1: softplus SoS, `f(s) h_t(g(s))` at the production context, the input-power route, widths 4, 8, 16 | `4159732c` | 41 passed | 166 |
+| H100 PCIe | 8243 | sos2: zero constants and static coefficients with a learnable `c_0`, with and without the softplus prefactor | `78b5c25e` | 13 passed | 44 |
+| H100 PCIe | 8217 | pointwise (sigmoid, softplus, swish), strips composition, query and Taylor kernels at width 4; fused | `6aefb8f8` | 65 passed; 3 fused cases superseded | 231 |
+| H100 PCIe | 8244 | fused: exp at Q/K widths 4, 8, 16 and 64, 2,048 tokens | `78b5c25e` | 4 passed | 12 |
+| B200 (`shiba`) | 8200 | the whole prefactor suite, before its split | `7f03ebda` | 138 passed; 2 exp extreme-score cases superseded (below) | 1,663 |
+
+B200 jobs 8245-8251 (the seven suites but fused, `78b5c25e`) and the B300 fused job 8252 (`akita`, long partition, so as not to preempt) were queued behind full nodes when this record was written; their outcomes go in [B200](runs/score-prefactor-mosaic-b200/record.json) and this table.
+
+Bounds are the query kernels': relative L2 0.006 (output), 0.025 (dQ, dK), 0.015 (dV), 0.01 per coefficient
+order and 0.02 for SoS generator gradients, each with its largest element error within three times the bound
+times the largest reference element. Records: [H100](runs/score-prefactor-mosaic-h100/record.json).
+
+Three test corrections, none of them in kernel code:
+
+- The first prefactor runs (H100 job 8196 and B200 job 8200, `7f03ebda`) each passed 138 of 140: the two exp
+  families' extreme-score case reached scores beyond 50, where the order-eight coefficient gradient
+  `sum_i dP e^s s^8` is about 1e40 and overflows FP32 in any implementation (the FP64 reference agrees). Exp's wide
+  rows now have standard deviation 6, scores near 30, the largest the runs record (`6aefb8f8`).
+- H100 job 8216 (`6aefb8f8`) failed one coordinate of the narrow-key SoS case: at width 8 the amplitude gradient of
+  square factor 4, a sum over 2,048 tokens whose terms cancel to 1/1111 of their magnitude, erred 2.8% (the kernels'
+  transcendental error of about 1e-5 in its terms, amplified by the cancellation; the FP32 strips, with exact
+  transcendentals, match FP64 there within 5e-5). The narrow-key case checks each generator gradient as one array;
+  the reference-width cases keep the per-coordinate checks (`4159732c`).
+- In job 8217 the fused exponential matched the blocked backend at 2,048 tokens for every narrow width, then XLA
+  failed to compile the dense FP64 reference at a 257-token, two-head prefix (a layout RET_CHECK). The case now uses
+  the width-64 case's 129-token, one-head prefix (`78b5c25e`), and passed in job 8244.
+
+This qualifies the kernels, not a training run: each production allocation still runs its adapter's CPU and GPU
+suites, the initialization check, the 20-update full-shape pilot and a fresh-process resume.
+
+Reproduce from a checkout at the recorded source with its locked environments (B200: `--nodelist=shiba` without
+the fused suite; B300: `--nodelist=akita` with the fused suite alone):
+
+```bash
+for suite in prefactor1 prefactor2 transforms1 transforms2 sos1 sos2 pointwise,fused; do
+  sbatch --exclude=shiba,akita,dogo,collie,samoyed,doodle,terrier \
+    --output=scaffolds/transformer/validation/logs/score-prefactor-%j.log \
+    scaffolds/transformer/validation/qualify_score_prefactor.sbatch 78b5c25e29708a6a1582182b38e1ba1c6568b672 "$suite"
+done
+```
+
 ### Fixed sigmoid and softplus attention (2026-11-18)
 
 The fixed degree-one `[0, 1]` route evaluates sigmoid or softplus inside the shared
