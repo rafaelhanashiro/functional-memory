@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2026eaa99f9a/config.yaml",
+    "sha256": "543780135f62eb4d38d65577fc8919acff02100a2a8e84c6f074ab84466d3983"
+  },
+  "label": "static-m8-softplus-input",
+  "name": "static-m8-softplus-input",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "21d4012e40b5a6d62fa9b1138f52bc265e9d8991eef28b153bccea95b4594777",
+    "loss": 5.580821990966797,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r2026eaa99f9a",
+  "status": "planned"
+}

@@ -124,3 +124,21 @@ def test_other_gpu_types_are_rejected_before_acceptance():
     with pytest.raises(ValueError, match="only on H100, B200"):
         adapter.require_gpu_type(["--gpu-type", "B300"])
     adapter.require_gpu_type(["--runtime-env"])
+
+
+SWISH_RUN = "r8a9fd53dacfd"
+
+
+def test_allocated_swish_run_is_the_pointwise_recipe():
+    import hashlib
+
+    from scaffolds.transformer.configs import load_config
+
+    path = adapter.RUNS / SWISH_RUN / "config.yaml"
+    config = load_config(path)
+    adapter.check_recipe(config)
+    assert config.model.attention_score_transform == "swish"
+    assert not config.train.gradient_event_capture  # as the sigmoid and softplus baselines
+    record = json.loads((adapter.RUNS / SWISH_RUN / "record.json").read_text())
+    assert record["label"] == "swish-head-rmsnorm-rope" == config.train.wandb_run_name
+    assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()

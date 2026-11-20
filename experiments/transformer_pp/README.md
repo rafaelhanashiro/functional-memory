@@ -2799,3 +2799,96 @@ four-GPU user allowance; the independent SoS submission uses long.
 Every allocation qualifies before production. Check each run's authoritative
 `record.json` for its submission, acceptance, and current outcome. Code, lock,
 recipes, and study membership remain frozen while any of these jobs can run or requeue.
+
+## Score prefactors, swish and narrow keys
+
+Seventeen runs at the 15-layer width-896 reference shape and 1x budget (7,570 updates), requested 2026-11-20 on
+Kennel (branch `claude/prefactor-kernels-m8`, worktree `worktrees/prefactor-kernels-m8`). Notation: `s` is the
+score, `z = softplus(s)`, `h_t` a query-conditioned sum-of-squares polynomial of core degree eight (as in
+`r841f35a24241`, `z h_t(z)`: best 14.095), `p` a degree-eight polynomial with direct coefficients and `p_t` its
+query-conditioned form. Each recipe is its partner's (`derive_recipe.py --partner`, same shape and budget) with only
+the listed settings changed, plus gradient-event capture where the partner lacks it; seed (42), data order, QK
+RMSNorm with per-head scale, reference initialization, per-head output RMSNorm, RoPE and the query coefficients' W
+decay are the partner's.
+
+| Group | Run | Label | Weight | Partner | Adapter |
+| --- | --- | --- | --- | --- | --- |
+| A1 | `r8a9fd53dacfd` | `swish-head-rmsnorm-rope` | `swish(s) = s sigmoid(s)` | `r266c5dd1f935` | pointwise |
+| B1 | `r5a25f500bfa8` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4` | `z h_t(z)`, `d_K` 4 | `r841f35a24241` | key width |
+| B2 | `r8d6683db38a8` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk8` | `z h_t(z)`, `d_K` 8 | `r841f35a24241` | key width |
+| B3 | `r79abb4d7292c` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk16` | `z h_t(z)`, `d_K` 16 | `r841f35a24241` | key width |
+| B4 | `ra28b295d81e6` | `exp-head-scale-dk4` | `exp(s)`, `d_K` 4 | `r6a76e7fbde45` | key width |
+| B5 | `r535bc84a7772` | `exp-head-scale-dk8` | `exp(s)`, `d_K` 8 | `r6a76e7fbde45` | key width |
+| B6 | `r6f84b1db6de6` | `exp-head-scale-dk16` | `exp(s)`, `d_K` 16 | `r6a76e7fbde45` | key width |
+| C1 | `r2026eaa99f9a` | `static-m8-softplus-input` | `p(z)`, static | `r9c69dd7cfc8d` | direct softplus |
+| C2 | `rd00848e00f1d` | `static-m8-softplus-input-times-input` | `z p(z)`, static | `r9c69dd7cfc8d` | direct softplus |
+| C3 | `r7f80334aafbd` | `query-m8-dk64-w-decay-softplus-input-times-input` | `z p_t(z)` | `ra3b54e2489f8` | direct softplus |
+| D1 | `r41662adb22fa` | `query-sos-m8-softplus-prefactor-raw-input-w-decay` | `softplus(s) h_t(s)` | `reeefbcc19abf` | softplus SoS |
+| D2 | `r6525664e6696` | `query-sos-m8-exp-prefactor-raw-input-w-decay` | `exp(s) h_t(s)` | `reeefbcc19abf` | softplus SoS |
+| D3 | `raeaa47865867` | `query-sos-m8-exp-prefactor-softplus-input-w-decay` | `exp(s) h_t(z)` | `reeefbcc19abf` | softplus SoS |
+| D4 | `r8f56a5b7e525` | `query-sos-m8-sigmoid-prefactor-raw-input-w-decay` | `sigmoid(s) h_t(s)` | `reeefbcc19abf` | softplus SoS |
+| D5 | `r5d578a29f080` | `query-sos-m8-sigmoid-prefactor-softplus-input-w-decay` | `sigmoid(s) h_t(z)` | `reeefbcc19abf` | softplus SoS |
+| D6 | `re6846615ffe2` | `query-sos-m8-swish-prefactor-raw-input-w-decay` | `swish(s) h_t(s)` | `reeefbcc19abf` | softplus SoS |
+| D7 | `r50c893fe159c` | `query-sos-m8-swish-prefactor-softplus-input-w-decay` | `swish(s) h_t(z)` | `reeefbcc19abf` | softplus SoS |
+
+- **A, fixed kernel.** `swish(s) = s sigmoid(s)` after the new swish transform on the fixed degree-one coefficients
+  `[0, 1]`, as the sigmoid (`r88d8654a8a1d`, 16.135) and softplus (`r266c5dd1f935`, 15.744) baselines; its weights
+  are signed (minimum -0.2785). Initialization and decay mask are the exp control `r6a76e7fbde45`'s (198,453,586
+  parameters). Results: the [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md).
+- **B, key width.** `qk_head_dim` 4, 8 or 16 (`value_head_dim` stays 64) for `z h_t(z)` (`r841f35a24241`, the
+  Mosaic `query_softplus` kernel at degree nine) and for exp (`r6a76e7fbde45`, the fused Pallas-Triton kernel,
+  which adds the capture its October recipe predates). Narrower keys drop 18-23 M Q/K parameters and run QK RMSNorm
+  over 4-16 channels; every other initial array is the partner's, bit for bit. Results: the
+  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside the query
+  polynomial at `d_K` 8 and 16 (`r16b23893884d`, 16.854; `rd10c2ebe1181`, 15.413).
+- **C, direct coefficients of z.** Static `p(z)` keeps a learnable constant (`r9c69dd7cfc8d`'s Taylor start
+  `c_r = 1/r!` including `c_0 = 1`, so `p` starts at `T_8(z)`, about `1 + e^s`; a zero-start static control would
+  need a new scaffold option); static `z p(z)` and query `z p_t(z)` multiply by the prefactor `f = softplus` on
+  `phi = softplus`, the latter from `ra3b54e2489f8`'s exact start `z (T_8(z) - 1)`, about `softplus(s) e^s`.
+  Results: the [softplus inputs topic](results/pretraining/parametrizations/sos/softplus_inputs/README.md).
+- **D, prefactor times SoS.** `W = f(s) h_t(g(s))` with input power zero, `f` a parameter-free prefactor of the raw
+  score and `g` the identity or softplus, from `reeefbcc19abf`'s recipe and exact initial parameters (`h_t(s)`,
+  14.196). The control `softplus(s) h_t(softplus(s))` is `r841f35a24241` itself, trained through the input power
+  (degree nine with a structural zero); the general prefactor computes the same function in exact arithmetic and
+  differs only by FP32 rounding (`tests/test_mosaic_score_prefactor.py` compares the two kernels). Results: the
+  [softplus SoS topic](results/pretraining/parametrizations/sos/softplus_sos/README.md), beside softplus(s) exp(s)
+  (`rbd24b948a240`, 14.132) and sigmoid(s) exp(s) (`rd7c9f610e9dc`, 14.186).
+
+The polynomials run on the Mosaic transformed query-polynomial kernels
+([scaffold](../../scaffolds/transformer/README.md#score-prefactors-on-polynomials)), admitted on H100 and B200
+(B300 is not qualified for them); the narrow-key exponential runs on the fused kernel on B300 or H100. Their
+qualification is in the [validation record](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20).
+The adapters ([pointwise](pointwise_attention_acceptance.py), [softplus SoS](softplus_sos_acceptance.py),
+[key width](key_width_acceptance.py), [direct softplus](softplus_direct_acceptance.py)) pin each partner's recipe
+and initial parameters (count and SHA256; for narrow keys also every unchanged array) and select the kernels' CPU
+and GPU suites; every allocation also runs the full-recipe pilot, whose projection must fit the allocation less two
+hours, and a fresh-process resume. Projected wall clock on one GPU: about 3.6-5.5 h on B200, 6-6.5 h on H100 SXM
+and up to 9 h on H100 PCIe (`mastiff`); exp at narrow keys at most 5.3 h on B300. The exp prefactor's weight
+`e^s h_t(s)` overflows FP32 near `s = 60` (recorded score maxima are 23-31), which would make its rows NaN: a
+numerical failure, not a fallback.
+Margins near 0.5-1% are within the single seed's noise.
+
+Submit from the worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor; avoid `dogo` for one-GPU jobs while
+its H100 at Slurm index 4 fails CUDA initialization, unless a placeholder holds it):
+
+```bash
+submit() {  # partition, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="$1" --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=24:00:00 \
+    --exclude="$4" --job-name="$5" \
+    --output="experiments/transformer_pp/runs/$5/training.log" --error="experiments/transformer_pp/runs/$5/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$2" \
+    "experiments/transformer_pp/runs/$5/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
+}
+mosaic=akita,dogo,collie,samoyed,doodle,terrier  # B200 (shiba) or H100 (mastiff)
+fused=shiba,dogo,collie,samoyed,doodle,terrier   # B300 (akita) or H100 (mastiff)
+submit standard pointwise_attention_acceptance B200,H100 "$mosaic" r8a9fd53dacfd
+for run in r5a25f500bfa8 r8d6683db38a8 r79abb4d7292c; do submit standard key_width_acceptance B200,H100 "$mosaic" "$run"; done
+for run in ra28b295d81e6 r535bc84a7772 r6f84b1db6de6; do submit long key_width_acceptance B300,H100 "$fused" "$run"; done
+for run in r2026eaa99f9a rd00848e00f1d r7f80334aafbd; do submit long softplus_direct_acceptance B200,H100 "$mosaic" "$run"; done
+for run in r41662adb22fa r6525664e6696 raeaa47865867 r8f56a5b7e525 r5d578a29f080 re6846615ffe2 r50c893fe159c; do
+  submit long softplus_sos_acceptance B200,H100 "$mosaic" "$run"
+done
+```
+
+Choose each run's partition at submission: the four-GPU standard lane first, the rest on long.

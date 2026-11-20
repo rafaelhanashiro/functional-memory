@@ -376,3 +376,34 @@ def test_prefactor_runs_take_only_the_degree_eight_reference_control():
         setattr(config.train, name, value)
     with pytest.raises(ValueError, match="degree-eight reference control"):
         adapter.check_recipe(config)
+
+
+# The allocated prefactor runs: label, transform g and prefactor f.
+PREFACTOR_RUNS = {
+    "r41662adb22fa": ("query-sos-m8-softplus-prefactor-raw-input-w-decay", "identity", "softplus"),
+    "r6525664e6696": ("query-sos-m8-exp-prefactor-raw-input-w-decay", "identity", "exp"),
+    "raeaa47865867": ("query-sos-m8-exp-prefactor-softplus-input-w-decay", "softplus", "exp"),
+    "r8f56a5b7e525": ("query-sos-m8-sigmoid-prefactor-raw-input-w-decay", "identity", "sigmoid"),
+    "r5d578a29f080": ("query-sos-m8-sigmoid-prefactor-softplus-input-w-decay", "softplus", "sigmoid"),
+    "re6846615ffe2": ("query-sos-m8-swish-prefactor-raw-input-w-decay", "identity", "swish"),
+    "r50c893fe159c": ("query-sos-m8-swish-prefactor-softplus-input-w-decay", "softplus", "swish"),
+}
+
+
+def test_the_allocated_prefactor_runs_cover_every_pair_once():
+    assert sorted((g, f) for _, g, f in PREFACTOR_RUNS.values()) == sorted(PREFACTOR_PAIRS)
+
+
+@pytest.mark.parametrize("run_id", PREFACTOR_RUNS)
+def test_allocated_prefactor_runs_are_the_control_with_g_f_and_capture(run_id):
+    label, transform, prefactor = PREFACTOR_RUNS[run_id]
+    config = run_config(run_id)
+    adapter.check_recipe(config)
+    assert adapter.control_key(config) == REFERENCE_M8
+    model = config.model
+    assert (model.attention_score_transform, model.attention_score_prefactor) == (transform, prefactor)
+    assert (model.attention_degree, model.attention_coefficient_input_power) == (8, 0)
+    assert scientific_differences(config, prefactor_variant(transform, prefactor)) == set()
+    record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
+    assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
+    assert record["config"]["sha256"] == hashlib.sha256((adapter.RUNS / run_id / "config.yaml").read_bytes()).hexdigest()

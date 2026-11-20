@@ -485,7 +485,7 @@ class ModelConfig:
             # _validate_score_transform).
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
-                             "degree 1-12, with qk_head_dim 8, 16, 32, 64, or 128 and value_head_dim 64; "
+                             "degree 1-12, with qk_head_dim 4, 8, 16, 32, 64, or 128 and value_head_dim 64; "
                              "query-conditioned attention may add a query-distance forget gate or per-order "
                              "cumulative query gates (H100 only), and learned static coefficients the input-free "
                              "one (attention_forget_gate_conditioning: none), where the decay kernels fit the "

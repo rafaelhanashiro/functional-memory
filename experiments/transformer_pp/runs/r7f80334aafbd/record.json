@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7f80334aafbd/config.yaml",
+    "sha256": "233b6145f8ae39a735d8d99db39120cfdf58e8498a1c76823257c6dfc6599468"
+  },
+  "label": "query-m8-dk64-w-decay-softplus-input-times-input",
+  "name": "query-m8-dk64-w-decay-softplus-input-times-input",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "688f44a22be93df39168cbd6386b516d071d3a656684e9c4548a0cf526df19bd",
+    "loss": 5.562875270843506,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r7f80334aafbd",
+  "status": "planned"
+}

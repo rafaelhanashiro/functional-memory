@@ -173,7 +173,7 @@ def mosaic_score_bias_supported(model) -> bool:
 
 
 def mosaic_score_bias_problem(model) -> str | None:
-    """Why the Mosaic score-bias kernels cannot run this recipe, or None. They take Q/K widths 8-128,
+    """Why the Mosaic score-bias kernels cannot run this recipe, or None. They take Q/K widths 4-128,
     value width 64, and degree 1-12 on H100, where their forward, dQ and dK/dV kernels must fit in
     shared memory (``score_bias_supported``); their entry points refuse other GPUs before tracing.
     Backend resolution checks the sequence length (a multiple of 128 rows)."""

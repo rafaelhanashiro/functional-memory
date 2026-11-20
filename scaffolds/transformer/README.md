@@ -114,8 +114,8 @@ normalization. The blocked backend is the reference composition; each fast kerne
 combinations it implements, and acceptance qualifies it against the blocked backend.
 
 The exponential takes any score function, `w = f(s) exp(phi(s))`: `attention_score_transform`
-(`identity`, `softplus`, `sigmoid`, `abs`) and `attention_score_prefactor` (`none`, `softplus`,
-`sigmoid`; default `none`, every historical recipe). Softmax or unnormalized, with or without a forget
+(`identity`, `softplus`, `sigmoid`, `abs`, `swish`) and `attention_score_prefactor` (`none`, `softplus`,
+`sigmoid`, `exp`, `swish`; default `none`, every historical recipe). Softmax or unnormalized, with or without a forget
 gate (whose log decay stays in the exponent), it runs on the blocked backend; the fused unnormalized
 kernel implements the transforms `identity`, `softplus`, `sigmoid` with every prefactor, ungated
 (`pieces.fused_exponential_problem`). `exp(softplus(s)) = 1 + e^s` exactly. Kernel names record the
@@ -125,7 +125,8 @@ On the blocked backend the pieces compose: every unnormalized polynomial with Ro
 encoding takes any forget gate, score transform, per-degree score biases and prefactor together. Static
 and fixed coefficients (a learned array, a fixed table, or the fixed Taylor kernel's `1/r!`) then run as
 every query's equal coefficients on the per-query polynomial kernel, whose gradients sum back to the stored
-coefficients; score biases shift each order's base, `(phi(s) + beta_r)^r`. Fast kernels implement what
+coefficients; score biases shift each order's base, `(phi(s) + beta_r)^r`. The Mosaic transformed kernels
+also take a prefactor on a polynomial ([score prefactors](#score-prefactors-on-polynomials)). Fast kernels implement what
 their declarations in `attention/pieces.py` name (`mosaic_supported`, `mosaic_decay_supported`,
 `mosaic_score_bias_problem`, `mosaic_score_transform_problem`, `path_fused_supported`,
 `fused_exponential_problem`); `ModelConfig`'s methods of the same names delegate there.
@@ -788,11 +789,13 @@ linear pointwise kernel below, at a parameter-free function of the score (`atten
 | `softplus` | `log(1 + exp(s))`, as `max(s, 0) + log1p(exp(-abs(s)))` | `z -> 0`, so `W -> c_0` |
 | `abs` | `abs(s)` | the weight of `-s` |
 | `sigmoid` | `1 / (1 + exp(-s))`, evaluated using `exp(-abs(s))` | `z -> 0`, so `W -> c_0` |
+| `swish` | `s sigmoid(s)`, signed (minimum `-0.2785` at `s = -1.2785`) | `z -> 0`, so `W -> c_0` |
 
-Fixed sigmoid and softplus attention use `attention_degree: 1`, `attention_coefficients: fixed`,
+Fixed sigmoid, softplus and swish attention use `attention_degree: 1`, `attention_coefficients: fixed`,
 `attention_fixed_coefficients: [0, 1]`, static conditioning, direct parameterization, identity coefficient
 activation, and coefficient/amplitude scales `none`. This represents exactly `W(t,i) = phi(s_ti)` with no
-coefficient parameters or additional gate. Attention is unnormalized; `attention_output_scaling:
+coefficient parameters or additional gate (swish's weights are signed, and the attention identity records
+`attention_signed: true`). Attention is unnormalized; `attention_output_scaling:
 head_rms_norm` applies after the weighted value sum. The supported backends are explicit `mosaic` with
 RoPE or `blocked` with RoPE or no positional encoding, without forget gates or score biases. Focused
 qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_pointwise_attention.py`.
@@ -800,7 +803,9 @@ qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_po
 - Derivatives: `sigmoid(s)` for softplus and `sign(s)` (zero at `s = 0`) for abs, given as JVP rules;
   autodiff of the softplus formula would give 0 at `s = 0`, since JAX takes `|s|`'s derivative there as 1.
   Sigmoid uses `y / (1 + y)^2`, `y = exp(-abs(s))`, so positive-tail gradients survive after its value
-  rounds to one; its derivative at zero is `1/4`.
+  rounds to one; its derivative at zero is `1/4`. Swish's JVP rule is `sigmoid(s) + s y / (1 + y)^2` (`1/2`
+  at zero); a nonfinite score is NaN, value and derivative, as for sigmoid. Swish and sigmoid transform only
+  the fixed pointwise kernel.
   Masked entries evaluate `phi` at their zero score and are zeroed as for every kernel; a nonfinite score
   poisons its row as before.
 - `attention_coefficient_constant_initial` (default null) starts the order-0 offset `b_0` of the same
@@ -837,6 +842,8 @@ qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_po
   they apply). The fused kernels, `auto`, every other backend, and every other attention path raise on a
   transform rather than computing the untransformed polynomial. The constant start alone runs on any
   backend.
+- Learned static direct coefficients (per-head, Taylor start, factorial storage and the structural zero constant
+  optional) take the softplus transform on Mosaic too, run as every query's equal coefficients.
 - Records: the attention identity records `attention_score_transform` and `attention_coefficient_constant_initial`
   when set, and the formula reads `z_ti^r` with `phi`'s definition and `b_0`'s start; on Mosaic the
   implementation is `pallas_mosaic_gpu_query_polynomial_<name>_scores`; W&B tags the run
@@ -862,6 +869,42 @@ qualification is in `tests/test_pointwise_score_transform.py` and `tests/test_po
   GPU stage (degrees 1-12, every Q/K width, unit and wide scores, the production context against host FP64
   and the strips, future-token invariance, NaN rows, repeatability, dispatch), beside the query kernels' own
   GPU cases. A recipe with only the constant start adds `tests/test_score_transform.py` on CPU.
+
+### Score prefactors on polynomials
+
+`attention_score_prefactor` multiplies every weight of a polynomial by a parameter-free function of the raw score,
+`W(t,i) = f(s_ti) p_t(phi(s_ti))`: `softplus`, `sigmoid`, `exp` (`e^s`) or `swish` (`s sigmoid(s)`), with the
+same values and derivative rules as the transforms (exp's is JAX's exact `e^s`). It adds no parameter. On the
+blocked backend every unnormalized polynomial takes it with any other piece. An explicit `mosaic` backend runs it
+for diagonal tanh query coefficients (direct or sum-of-squares, every start) and learned static direct
+coefficients (broadcast per query) with the `identity` or `softplus` transform, RoPE, and no forget gate, score
+biases or key factors (`mosaic_score_transform_problem`); static SoS factors refuse it. With `f = phi = softplus`,
+`z p(z)` is the SoS input power's kernel (`attention_coefficient_input_power: 1`) for any coefficients, without a
+structural zero coefficient.
+
+- Kernels: `mosaic.api.transformed_query_polynomial_attention(q, k, v, c, transform=..., prefactor=...)`, the
+  families `common.score_function_family(transform, prefactor)`: `query_times_<f>` and `query_softplus_times_<f>`,
+  and `query_swish` for the swish transform alone. Each tile forms `f` and `f'` beside `z` and `phi'`, sharing
+  `y = e^-abs(s)`: with `phi = softplus`, `f = softplus` is `z` and sigmoid and swish reuse `phi' = sigmoid(s)`;
+  exp is `2^(s log2(e))` with `f' = f`. The weight is `f p(z)`; the dQ pass sums `dc_r = sum_i dP f z^r`, and
+  `dS = p'(z) (dP f) phi'(s) + dP f'(s) p(z)`. Vectors, shared memory, precision, shapes and failure rows are the
+  query family's; a nonfinite causal score makes its row NaN (exp at `-inf` gives `0` times a nonfinite
+  polynomial). Families without a prefactor trace their former programs. Admission is H100 and B200, as for the
+  transforms.
+- Q/K width 4 joins the Mosaic widths (every family), zero-padded to the tensor cores' 16 like width 8, with the
+  unpadded width's scale.
+- Recipes refuse a polynomial prefactor with coefficient release, a query-coefficient learning-rate scale or a
+  continuation, and the model refuses coefficient capture and override with one.
+- Records: the attention identity adds `attention_score_prefactor` and `f`'s definition to the formula (before
+  the output-scaling clause), and swish records `attention_signed: true`; on Mosaic the implementation is
+  `pallas_mosaic_gpu_query_polynomial[_<phi>_scores]_times_<f>`. The run index has `attention_score_prefactor`.
+- Acceptance adds `tests/test_score_prefactor.py` (values and JVPs against FP64 autodiff, the family registry,
+  exact shared memory and lowering of every family on both architectures at Q/K widths 4-64, tile mathematics
+  against explicit FP64, NaN rows, the input-power identity on the blocked backend and through two models,
+  dispatch, admission, recipes and provenance) and `tests/test_blocked_composition.py` on CPU, and
+  `tests/test_mosaic_score_prefactor.py` to the GPU stage (every family against host FP64 at degrees 1, 4 and 8
+  with unit and wide scores and both precisions, narrow keys, the production context against FP64 and the
+  strips, the input-power kernel, future-token invariance, overflowing scores, extremes and repeatability).
 
 ### Structural zero constants
 
@@ -1515,8 +1558,8 @@ tanh query-conditioned polynomial attention, and unnormalized polynomials with s
 or learned coefficients (on the query-coefficient kernel with every query's coefficients
 equal), both at degrees 1-12 where B300's dK/dV kernel holds every query's coefficients in
 shared memory (`api.query_degree_supported`: 12 at `d_K <= 64` and 9 at `d_K = 128`, with
-2,048 tokens), with Q/K width 8, 16, 32, 64, or
-128, value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
+2,048 tokens), with Q/K width 4, 8, 16, 32, 64, or
+128 (4 and 8 zero-padded to 16), value width 64, `train.dtype: bfloat16`, and a prediction length divisible by 128
 (H100) or 256 (B300). An explicit `mosaic` request raises for other recipes, GPUs, or
 shapes; `auto` then uses the fused kernels. Query-distance forget gates of tanh or
 sigmoid query polynomials, their per-order cumulative query gates, and the input-free gate of

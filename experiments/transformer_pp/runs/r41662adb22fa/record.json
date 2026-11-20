@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r41662adb22fa/config.yaml",
+    "sha256": "cdbb147dcb8b3b591a75590da398cfa3805880e770866471b45f6dadaa01599c"
+  },
+  "label": "query-sos-m8-softplus-prefactor-raw-input-w-decay",
+  "name": "query-sos-m8-softplus-prefactor-raw-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "fd8d28aacf948678fcbe44720b4cc378cd40b4eab2e31a0c15cb6e5479bf9716",
+    "loss": 5.562883377075195,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r41662adb22fa",
+  "status": "planned"
+}

@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/re6846615ffe2/config.yaml",
+    "sha256": "32a7373eae61ca28c7be0c63dcd2a349c809f62c38a3eb4c10e77b5f26d355cb"
+  },
+  "label": "query-sos-m8-swish-prefactor-raw-input-w-decay",
+  "name": "query-sos-m8-swish-prefactor-raw-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "e76c37aabf0fdca68f88fe56f18a6fcb0b733843c911541c298eb92f2076369f",
+    "loss": 5.551918983459473,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "re6846615ffe2",
+  "status": "planned"
+}

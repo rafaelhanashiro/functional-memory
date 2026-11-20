@@ -131,3 +131,25 @@ def test_other_gpu_types_are_refused(gpu_type):
         adapter.require_gpu_type(["--gpu-type", gpu_type])
     adapter.require_gpu_type(["--gpu-type", "B200"])
     adapter.require_gpu_type(["--runtime-env"])
+
+
+# The allocated runs: label and kind.
+RUNS = {
+    "r2026eaa99f9a": ("static-m8-softplus-input", "static p(z)"),
+    "rd00848e00f1d": ("static-m8-softplus-input-times-input", "static z p(z)"),
+    "r7f80334aafbd": ("query-m8-dk64-w-decay-softplus-input-times-input", "query z p_t(z)"),
+}
+
+
+@pytest.mark.parametrize("run_id", RUNS)
+def test_allocated_runs_are_their_partner_with_the_score_functions(run_id):
+    from scaffolds.transformer.configs import load_config
+
+    label, kind = RUNS[run_id]
+    path = adapter.RUNS / run_id / "config.yaml"
+    config = load_config(path)
+    adapter.check_recipe(config)
+    assert scientific_differences(config, variant(kind)) == set()
+    record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
+    assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
+    assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()

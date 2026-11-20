@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8f56a5b7e525/config.yaml",
+    "sha256": "d0d05d4e9228f50190231025306db861cf0f9c5977a860aa299080d0396eb579"
+  },
+  "label": "query-sos-m8-sigmoid-prefactor-raw-input-w-decay",
+  "name": "query-sos-m8-sigmoid-prefactor-raw-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "01e0c3786c4297001d3d700f9d19ec6afb555952ddd899931477ed7152af55bd",
+    "loss": 5.56656551361084,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r8f56a5b7e525",
+  "status": "planned"
+}

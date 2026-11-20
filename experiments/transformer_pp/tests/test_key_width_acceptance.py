@@ -151,3 +151,30 @@ def test_an_edited_partner_recipe_is_refused(monkeypatch, tmp_path):
     monkeypatch.setattr(adapter, "RUNS", tmp_path)
     with pytest.raises(ValueError, match=f"Pinned key-width partner recipe {run} changed"):
         adapter.check_recipe(config)
+
+
+# The allocated runs: label, partner and width.
+SOS_LABEL = "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay"
+RUNS = {
+    "r5a25f500bfa8": (f"{SOS_LABEL}-dk4", "softplus_sos", 4),
+    "r8d6683db38a8": (f"{SOS_LABEL}-dk8", "softplus_sos", 8),
+    "r79abb4d7292c": (f"{SOS_LABEL}-dk16", "softplus_sos", 16),
+    "ra28b295d81e6": ("exp-head-scale-dk4", "exponential", 4),
+    "r535bc84a7772": ("exp-head-scale-dk8", "exponential", 8),
+    "r6f84b1db6de6": ("exp-head-scale-dk16", "exponential", 16),
+}
+
+
+@pytest.mark.parametrize("run_id", RUNS)
+def test_allocated_runs_are_their_partner_at_the_key_width(run_id):
+    from scaffolds.transformer.configs import load_config
+
+    label, key, width = RUNS[run_id]
+    path = adapter.RUNS / run_id / "config.yaml"
+    config = load_config(path)
+    adapter.check_recipe(config)
+    assert adapter.partner_key(config) == key and config.model.qk_head_dim == width
+    assert scientific_differences(config, variant(key, width)) == set()
+    record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
+    assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
+    assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()

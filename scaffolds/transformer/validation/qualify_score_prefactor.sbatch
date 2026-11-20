@@ -8,7 +8,8 @@
 # Suites: prefactor (test_mosaic_score_prefactor.py), transforms (test_mosaic_score_transform.py), sos
 # (test_mosaic_softplus_sos.py and test_mosaic_softplus_zero_constant.py), pointwise (the pointwise GPU suites, the
 # strips' composition, and the query and Taylor kernels' width-4 cases), fused (the fused exponential at Q/K widths
-# 4, 8 and 16, and at 64). With --gres=gpu:2 the job runs on the first granted GPU not listed in FAULTY_GPUS.
+# 4, 8 and 16, and at 64); several suites join with commas, e.g. pointwise,fused. With --gres=gpu:2 the job runs
+# on the first granted GPU not listed in FAULTY_GPUS.
 #SBATCH --job-name=qualify-score-prefactor
 #SBATCH --partition=standard
 #SBATCH --nodes=1
@@ -20,7 +21,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the worktree}"
 LAUNCH_COMMIT="${1:?Supply the frozen source commit}"
-SUITE="${2:?Supply the suite: prefactor, transforms, sos, pointwise or fused}"
+SUITES="${2:?Supply the suites: prefactor, transforms, sos, pointwise or fused, joined with commas}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_pp --scaffold transformer
 # GPUs that fail CUDA initialization (CLUSTERS.md): dogo's H100 at Slurm index 4 and mastiff's at index 1.
 FAULTY_GPUS="GPU-355f34a2-be0c-ba44-022b-1a056f643b80 GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5"
@@ -42,27 +43,32 @@ TASK_TMP="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/score-prefactor-${SLURM_JOB_ID}.XXX
 trap 'rm -rf -- "$TASK_TMP"' EXIT
 export TMPDIR="$TASK_TMP"
 export JAX_COMPILATION_CACHE_DIR="$PWD/.cache/transformer_pp/jax"
-OUTPUT="scaffolds/transformer/validation/logs/score-prefactor-${SUITE}-${SLURM_JOB_ID}"
+OUTPUT="scaffolds/transformer/validation/logs/score-prefactor-${SUITES//,/-}-${SLURM_JOB_ID}"
 mkdir -p "$OUTPUT" "$JAX_COMPILATION_CACHE_DIR"
 nvidia-smi --id="$SELECTED" --query-gpu=name,uuid,pci.bus_id,driver_version,compute_cap --format=csv
 echo "Environment $TRANSFORMER_ENVIRONMENT_DIR, source $(git rev-parse HEAD), launch commit $LAUNCH_COMMIT"
 TESTS=scaffolds/transformer/tests
-case "$SUITE" in
-  prefactor) SELECTION=("$TESTS/test_mosaic_score_prefactor.py") ;;
-  transforms) SELECTION=("$TESTS/test_mosaic_score_transform.py") ;;
-  sos) SELECTION=("$TESTS/test_mosaic_softplus_sos.py" "$TESTS/test_mosaic_softplus_zero_constant.py") ;;
-  pointwise)
-    # The pointwise and composition suites, and every width-4 case of the query and Taylor kernels' width grids.
-    mapfile -t SELECTION < <("$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu \
-      -q --collect-only "$TESTS/test_mosaic_query.py" "$TESTS/test_mosaic_taylor.py" \
-      | grep -E '^scaffolds/.*::test_outputs_and_vjp_match_fp64_and_triton\[[0-9]+-4-bf16(x3)?\]$')
-    (( ${#SELECTION[@]} > 0 )) || { echo "No width-4 cases collected" >&2; exit 1; }
-    SELECTION+=("$TESTS/test_pointwise_score_transform.py" "$TESTS/test_pointwise_attention.py"
-                "$TESTS/test_blocked_composition.py") ;;
-  fused) SELECTION=("$TESTS/test_unnormalized_fused_attention.py::test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64"
-                    "$TESTS/test_unnormalized_fused_attention.py::test_bf16_production_context_outputs_and_vjp_match_blocked") ;;
-  *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
-esac
+SELECTION=()
+IFS=, read -ra SUITE_LIST <<< "$SUITES"
+for SUITE in "${SUITE_LIST[@]}"; do
+  case "$SUITE" in
+    prefactor) SELECTION+=("$TESTS/test_mosaic_score_prefactor.py") ;;
+    transforms) SELECTION+=("$TESTS/test_mosaic_score_transform.py") ;;
+    sos) SELECTION+=("$TESTS/test_mosaic_softplus_sos.py" "$TESTS/test_mosaic_softplus_zero_constant.py") ;;
+    pointwise)
+      # Every width-4 case of the query and Taylor kernels' width grids, then the pointwise and composition suites.
+      mapfile -t WIDTH4 < <("$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu \
+        -q --collect-only "$TESTS/test_mosaic_query.py" "$TESTS/test_mosaic_taylor.py" \
+        | grep -E '::test_outputs_and_vjp_match_fp64_and_triton\[[0-9]+-4-bf16(x3)?\]$' \
+        | sed -E 's#^(scaffolds/transformer/)?tests/#scaffolds/transformer/tests/#')
+      (( ${#WIDTH4[@]} > 0 )) || { echo "No width-4 cases collected" >&2; exit 1; }
+      SELECTION+=("${WIDTH4[@]}" "$TESTS/test_pointwise_score_transform.py" "$TESTS/test_pointwise_attention.py"
+                  "$TESTS/test_blocked_composition.py") ;;
+    fused) SELECTION+=("$TESTS/test_unnormalized_fused_attention.py::test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64"
+                       "$TESTS/test_unnormalized_fused_attention.py::test_bf16_production_context_outputs_and_vjp_match_blocked") ;;
+    *) echo "Unknown suite: $SUITE" >&2; exit 2 ;;
+  esac
+done
 printf 'Selection (%d):\n' "${#SELECTION[@]}"; printf '  %s\n' "${SELECTION[@]}"
 "$PYTHON" -m pytest -c scaffolds/transformer/pyproject.toml --import-mode=importlib -m gpu -q -rs --durations=15 \
   "${SELECTION[@]}" --junitxml="$OUTPUT/gpu-tests.xml"

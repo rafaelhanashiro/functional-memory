@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r50c893fe159c/config.yaml",
+    "sha256": "1693a8a721815ef117fbad3d5a6ced0bd02c61847194b15f8c0b16d170b2ebac"
+  },
+  "label": "query-sos-m8-swish-prefactor-softplus-input-w-decay",
+  "name": "query-sos-m8-swish-prefactor-softplus-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "d1c4afc64356a21124585aacc6eb3cd7c2b674bad6e0201fe2d9587e3bc95d86",
+    "loss": 5.551301002502441,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r50c893fe159c",
+  "status": "planned"
+}

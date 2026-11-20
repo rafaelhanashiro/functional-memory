@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/raeaa47865867/config.yaml",
+    "sha256": "6225bc0496c3da72aa51b4be41540cd0f88219f1622364dad16b972058102a9c"
+  },
+  "label": "query-sos-m8-exp-prefactor-softplus-input-w-decay",
+  "name": "query-sos-m8-exp-prefactor-softplus-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "b78cf916cf603e20d4e6068d7b310c853af0d49be778ed859c7e3c0cfb2f7a64",
+    "loss": 5.561884880065918,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "raeaa47865867",
+  "status": "planned"
+}

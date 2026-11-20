@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8a9fd53dacfd/config.yaml",
+    "sha256": "d239e76d4fc0a1fa0dd151d9d2125c2a00d1f178677767df96bd3ae32b3dff18"
+  },
+  "label": "swish-head-rmsnorm-rope",
+  "name": "swish-head-rmsnorm-rope",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "5995cd2a493d87d312cff0cd93ad4518231cb0776af6e60fb24abac8a2068434",
+    "loss": 5.556484222412109,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r8a9fd53dacfd",
+  "status": "planned"
+}
