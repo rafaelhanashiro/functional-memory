@@ -24,8 +24,9 @@ optimization differs.
 
 Controls in the [selection](selection.yaml), all with per-head QK scaling:
 `query-m4-head-scale` (14.779), `static-m4-head-scale` (14.773) and
-`fixed-m4-head-scale` (14.724). Pure sigmoid coefficients are in the
-[dense readout scale and sigmoid topic](../../dense/dense_readout_scale/README.md#sigmoid-coefficients).
+`fixed-m4-head-scale` (14.724). The per-degree pure sigmoid runs, which the
+[Dense folder](../../dense/dense_readout_scale/README.md#sigmoid-coefficients) also holds, are
+[below](#pure-sigmoid-per-degree).
 
 ## Findings
 
@@ -45,9 +46,22 @@ Validation perplexity (terminal, update 7,570; best at 7,500 in parentheses):
   polynomial with unit-scale coefficients, loses the first thousand updates (PPL 1,516 at
   update 100 against 27 for the affine runs) and never recovers; it was still improving
   at the end, so part of the gap is the start rather than the form.
-- With the pure sigmoid runs 8–12% worse in the [sigmoid topic](../../dense/dense_readout_scale/README.md#sigmoid-coefficients), every
+- With the per-degree pure sigmoid runs 8–12% worse ([below](#pure-sigmoid-per-degree)), every
   generator that removes the affine terms loses; none of the affine variants beats
   fixed Taylor.
+
+## Pure sigmoid, per degree
+
+The pure generator with sigmoid features, $c_r = \sigma(w_r^\top x_t)$, optionally divided by $r!$, from
+$W = 0$; the [Dense folder](../../dense/dense_readout_scale/README.md#sigmoid-coefficients) also holds these
+four runs, with their method and findings. Validation-best perplexity:
+
+| Order scaling | No W decay | W decay 0.1 |
+| --- | ---: | ---: |
+| none | 16.103 (`rd5550f8db5e4`) | 15.919 (`re6d4c820a132`) |
+| $1/r!$ | 16.605 (`r8b4e2a0603aa`) | 16.406 (`r343fff99fa9e`) |
+
+All four trail affine tanh (14.774) by 7.8–12.4%.
 
 ## Limits
 

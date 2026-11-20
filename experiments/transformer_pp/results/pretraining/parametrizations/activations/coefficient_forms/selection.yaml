@@ -107,3 +107,83 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r816ab0fbe119/best_validation.json
       sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914
+- study: transformer_pp
+  run_id: rd5550f8db5e4
+  label: sigmoid-m4-unscaled
+  role: pure_sigmoid
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd5550f8db5e4/config.yaml
+      sha256: c836b1bf6eefb949964e400102655f9857c9bdac8217994fc966fa8cd45add6c
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rd5550f8db5e4/metrics.jsonl
+      sha256: fb31a4b89541eb66e5ef523da3b35e1f58a281b5fe46646eda7eb27c4018bed2
+    completion.json:
+      path: experiments/transformer_pp/runs/rd5550f8db5e4/completion.json
+      sha256: 1760fd7c523be0113c9dc19363e866d45567534f1874eaabeb5e832804773f0b
+    metadata.json:
+      path: experiments/transformer_pp/runs/rd5550f8db5e4/metadata.json
+      sha256: 66b56084a203db6d14975ea12c31f506e7c5d4e799711499f7a013afb2959604
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rd5550f8db5e4/best_validation.json
+      sha256: 8409be351e1bcc6800c7696116c8815f02ecbe19fcdb80b26f48fa7decc9ea32
+- study: transformer_pp
+  run_id: re6d4c820a132
+  label: sigmoid-m4-unscaled-wdecay
+  role: pure_sigmoid_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/re6d4c820a132/config.yaml
+      sha256: 41d2ddbad65d049081cb910c74b4f894559a09c16846c3457e9f67dbef2f1593
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/re6d4c820a132/metrics.jsonl
+      sha256: 78cc5e996d3c732832e39f4980662a53f4d91c62bfa10661955901c52de444be
+    completion.json:
+      path: experiments/transformer_pp/runs/re6d4c820a132/completion.json
+      sha256: def8702e23839d86dcb841d97628eee3638f4163fe22d5c0678e0b5d5c646dad
+    metadata.json:
+      path: experiments/transformer_pp/runs/re6d4c820a132/metadata.json
+      sha256: d06bd6516013498f20351b1ee3f0e46662db0c260b81d14fa7999a6e5da52cdf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/re6d4c820a132/best_validation.json
+      sha256: 16720bbbfd687bafe9126f59ce38af35f34004e1d82fc23e1ad535cbbc9c2a05
+- study: transformer_pp
+  run_id: r8b4e2a0603aa
+  label: sigmoid-m4-scaled
+  role: pure_sigmoid_scaled
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r8b4e2a0603aa/config.yaml
+      sha256: 9484cae190edf1c51ccaf145b216e93f0230c2006cc5bb803817207fbb168818
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r8b4e2a0603aa/metrics.jsonl
+      sha256: 20f7c995d6f8938e35c19d1d012656e6bc94e8d43f2d9152cefc40ac923b369a
+    completion.json:
+      path: experiments/transformer_pp/runs/r8b4e2a0603aa/completion.json
+      sha256: e3c56db062d76943f09337935e6005ea20701bd88d947bf5edcd09df3940b12b
+    metadata.json:
+      path: experiments/transformer_pp/runs/r8b4e2a0603aa/metadata.json
+      sha256: 3d31ef77d3f92140c4dd97e039108e7838045d27166faa62cd761febd8c60bcf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r8b4e2a0603aa/best_validation.json
+      sha256: b507f6a0bfa0b267c21da8da2cac2a798bc3024e49b0dbdd3726b384937da4c9
+- study: transformer_pp
+  run_id: r343fff99fa9e
+  label: sigmoid-m4-scaled-wdecay
+  role: pure_sigmoid_scaled_w_decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r343fff99fa9e/config.yaml
+      sha256: 01693c42da03d4633da93262212e56c80c2526fe5602b6f9186b3ce282e7c77a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r343fff99fa9e/metrics.jsonl
+      sha256: acf0e0c53b4996079a2401b1abcb62a18d479695edf8c5949e2d4bdbc182443f
+    completion.json:
+      path: experiments/transformer_pp/runs/r343fff99fa9e/completion.json
+      sha256: dfa785f5b806002fdafe7a28c36ab8541d19d54907dd8edf32f1f53ade108a12
+    metadata.json:
+      path: experiments/transformer_pp/runs/r343fff99fa9e/metadata.json
+      sha256: 216f5d4ab3b31d5affc27608d90091db6fd29cd7f586c2a06d901bb5015365b2
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r343fff99fa9e/best_validation.json
+      sha256: ee5278bc77e898e27b30c2dfb393a6066fb59536010f01e01a5d030ab5a3b4bf

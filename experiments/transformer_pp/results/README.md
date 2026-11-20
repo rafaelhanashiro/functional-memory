@@ -43,7 +43,7 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | Dense: [dense_readout_scale](pretraining/parametrizations/dense/dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale, and does a pure sigmoid generator beat affine tanh? |
-| Activations: [coefficient_forms](pretraining/parametrizations/activations/coefficient_forms/README.md) | Does the query generator's form matter at m = 4? Affine sigmoid (14.756) ties affine tanh (14.774), pure tanh is 53% worse, and none beats fixed Taylor (14.722). |
+| Activations: [coefficient_forms](pretraining/parametrizations/activations/coefficient_forms/README.md) | Does the query generator's form matter at m = 4? Affine sigmoid (14.756) ties affine tanh (14.774); pure tanh is 53% worse and per-degree pure sigmoid 8–12% worse; none beats fixed Taylor (14.722). |
 | SoS / Softplus: [sum_of_squares](pretraining/parametrizations/sos/sum_of_squares/README.md) | Do nonnegative sum-of-squares query coefficients beat fixed Taylor and exp as the degree grows? 14.196, 14.165 and 14.168 at m = 8, 12 and 16: 0.43–0.65% below exp. |
 | SoS / Softplus: [static_sos](pretraining/parametrizations/sos/static_sos/README.md) | Do static SoS coefficients match query-conditioned SoS, with raw scores, softplus inputs, and the softplus prefactor? |
 | SoS / Softplus: [softplus_sos](pretraining/parametrizations/sos/softplus_sos/README.md) | Does composing softplus inputs with query SoS help, and should the negative-score tail vanish? The degree-twelve prefactor form reaches 14.093 (−1.15% against exp). |
