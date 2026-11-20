@@ -41,7 +41,7 @@ control's function. AdamW decays `u` (0.1), never `b` or `a`; the shifts are unc
   (`attention_diagnostics` in `metrics.jsonl` and `metadata.json`). The values below are from the final
   validation, update 7,551.
 
-Recipe, acceptance and launch: [study README](../../../README.md#per-degree-score-biases).
+Recipe, acceptance and launch: [study README](../../../../../README.md#per-degree-score-biases).
 
 ## Results
 
@@ -115,13 +115,13 @@ Learned shifts on the diagnostic sequence, by order `r`:
   clipped counts (100 updates to update 1,500, then 500).
 - The shift and weight statistics come from one held-out sequence at the final validation.
 
-## Open decision
+## Open question
 
-None pending: neither trial cleared the bar, so no reference-shape runs follow. The topic is kept as the
-record of this check.
+None: neither trial cleared the bar, so no reference-shape runs follow. The folder is kept as the record of
+this check.
 
 Refresh the selection after the runs' scientific files change:
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/exploratory/score_biases
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/pretraining/scalings/l12_d640/score_biases
 ```

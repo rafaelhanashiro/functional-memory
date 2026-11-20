@@ -65,8 +65,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   `scaffolds.records refresh`; a folder with figures or tables also holds the code that
   regenerates them byte-identically, with tests; the only other decision about a folder
   is deleting it with its runs and their artifacts. A new result goes into the group it
-  belongs to (ask the user when none fits); folders not yet grouped wait in
-  `results/exploratory/`. Old studies and result selections retain their recipes.
+  belongs to (ask the user when none fits), except that pretraining comparisons at the
+  12-layer width-640 shape go under `results/pretraining/scalings/l12_d640/` whatever their
+  mechanism; a comparison spanning shapes splits by shape, each part linking the other.
+  Folders not yet grouped wait in `results/exploratory/`. Old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
   degree, key width, model shape (depth and width), token budget, coefficient
   parameterization, sharing, and seed distinguish runs within this study; do not create

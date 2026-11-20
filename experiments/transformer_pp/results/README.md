@@ -21,7 +21,12 @@ README says otherwise.
 
 | Folder | Question and findings |
 | --- | --- |
-| [l12_d640](pretraining/scalings/l12_d640/README.md) | The 12-layer width-640 shape: eight attention variants against their reference-shape partners ([shape pairs](pretraining/scalings/l12_d640/shape_pairs/README.md)) and at 1×, 2× and 4× its budget ([budgets](pretraining/scalings/l12_d640/budgets/README.md)). |
+| [l12_d640](pretraining/scalings/l12_d640/README.md) | Every pretraining comparison at the 12-layer width-640 shape, indexed in its README. |
+| 12-layer width-640: [shape_pairs](pretraining/scalings/l12_d640/shape_pairs/README.md) | Do the attention-variant comparisons hold at this shape? Eight variants at 1×, each against its reference-shape partner. |
+| 12-layer width-640: [budgets](pretraining/scalings/l12_d640/budgets/README.md) | How do the variants compare at 2× and 4× this shape's budget, against exp and their runs at smaller budgets? |
+| 12-layer width-640: [softplus_sos](pretraining/scalings/l12_d640/softplus_sos/README.md) | The two degree-twelve softplus–SoS compositions at 1×, 2× and 4×: the prefactor form's lead over exp shrinks from 0.88% to 0.27%, and at 4× it ties raw-score SoS. |
+| 12-layer width-640: [score_transforms](pretraining/scalings/l12_d640/score_transforms/README.md) | The degree-eight query polynomial at softplus(s) reaches 17.488 (−0.59% against its control); at the score's absolute value 17.941 (+1.98%). |
+| 12-layer width-640: [score_biases](pretraining/scalings/l12_d640/score_biases/README.md) | A signed score shift per polynomial order: static shifts tie (+0.07%), query-dependent shifts lose 3.55%. |
 | [token_budget](pretraining/scalings/token_budget/README.md) | Do attention-variant comparisons change between 1× and 2.5× Chinchilla? |
 | [context_length](pretraining/scalings/context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? |
 
@@ -38,9 +43,11 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | Dense: [dense_readout_scale](pretraining/parametrizations/dense/dense_readout_scale/README.md) | Does the dense m = 4 readout need a 1/sqrt(K) scale, and does a pure sigmoid generator beat affine tanh? |
-| SoS: [sum_of_squares](pretraining/parametrizations/sos/sum_of_squares/README.md) | Do nonnegative sum-of-squares query coefficients beat fixed Taylor and exp as the degree grows? 14.196, 14.165 and 14.168 at m = 8, 12 and 16: 0.43–0.65% below exp. |
-| SoS: [static_sos](pretraining/parametrizations/sos/static_sos/README.md) | Do static SoS coefficients match query-conditioned SoS, with raw scores, softplus inputs, and the softplus prefactor? |
-| SoS: [softplus_sos](pretraining/parametrizations/sos/softplus_sos/README.md) | Does composing softplus inputs with query SoS help, and should the negative-score tail vanish? The degree-twelve prefactor form reaches 14.093 (−1.15% against exp); at the 12-layer width-640 shape its lead shrinks from 0.88% at 1× to 0.27% at 4×. |
+| Activations: [coefficient_forms](pretraining/parametrizations/activations/coefficient_forms/README.md) | Does the query generator's form matter at m = 4? Affine sigmoid (14.756) ties affine tanh (14.774), pure tanh is 53% worse, and none beats fixed Taylor (14.722). |
+| SoS / Softplus: [sum_of_squares](pretraining/parametrizations/sos/sum_of_squares/README.md) | Do nonnegative sum-of-squares query coefficients beat fixed Taylor and exp as the degree grows? 14.196, 14.165 and 14.168 at m = 8, 12 and 16: 0.43–0.65% below exp. |
+| SoS / Softplus: [static_sos](pretraining/parametrizations/sos/static_sos/README.md) | Do static SoS coefficients match query-conditioned SoS, with raw scores, softplus inputs, and the softplus prefactor? |
+| SoS / Softplus: [softplus_sos](pretraining/parametrizations/sos/softplus_sos/README.md) | Does composing softplus inputs with query SoS help, and should the negative-score tail vanish? The degree-twelve prefactor form reaches 14.093 (−1.15% against exp). |
+| SoS / Softplus: [softplus_inputs](pretraining/parametrizations/sos/softplus_inputs/README.md) | Does the query polynomial improve at softplus(s) in place of s? 14.262 at m = 8 (−0.42% against its control, level with exp) and 14.222 at m = 12 (−0.02%). |
 
 ### Alternative attention mechanisms
 
@@ -75,10 +82,3 @@ README says otherwise.
 | Learning dynamics | [query_parameter_dynamics](diagnostics/learning_dynamics/query_parameter_dynamics/README.md) | How do one middle-layer head's a, b, and W norms evolve in regular query polynomials at degrees 8 and 12, and do its coefficients vary across queries? |
 | Learning dynamics | [sos_training_dynamics](diagnostics/learning_dynamics/sos_training_dynamics/README.md) | Are the completed sum-of-squares query-polynomial runs stable, and how do their effective coefficients evolve? |
 | Learning dynamics | [gated_gradient_spikes](diagnostics/learning_dynamics/gated_gradient_spikes/README.md) | What causes rare gradient spikes in gated polynomial attention? The evidence and reproduction limits are established; the cause remains open. |
-
-## Not yet grouped
-
-[coefficient_forms](exploratory/coefficient_forms/README.md) (the query generator's form at m = 4),
-[score_biases](exploratory/score_biases/README.md) (a signed score shift per polynomial order) and
-[score_transforms](exploratory/score_transforms/README.md) (the query polynomial evaluated at softplus(s) or |s|)
-wait in `exploratory/` for a group.

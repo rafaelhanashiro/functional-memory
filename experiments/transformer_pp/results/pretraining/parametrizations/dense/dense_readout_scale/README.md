@@ -85,7 +85,7 @@ Controls: affine tanh query `r2b22f2ff6461`, 14.774; fixed Taylor `r816ab0fbe119
 - W decay helps three of the four by 1.1–1.7% and hurts scaled dense by 0.7%.
 - A pure sigmoid is affine tanh with $b_r = a_r = 1/2$ fixed, since
   $\sigma(z) = \tfrac12 + \tfrac12\tanh(z/2)$. The affine sigmoid in
-  [coefficient_forms](../../../../exploratory/coefficient_forms/README.md) frees both and ties affine tanh.
+  [coefficient_forms](../../activations/coefficient_forms/README.md) frees both and ties affine tanh.
 
 ## Open question
 

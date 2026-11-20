@@ -333,7 +333,7 @@ At m = 4 on the earlier QK setup:
 
 Per-degree score shifts `(s + beta_r)^r` on query m = 8 with RoPE and W decay, at the 12-layer
 width-640 shape: query-dependent shifts were 3.55% worse, with more gradient spikes; static shifts tied
-([score_biases](results/exploratory/score_biases/README.md)).
+([score_biases](results/pretraining/scalings/l12_d640/score_biases/README.md)).
 
 ## Further experiments
 
@@ -707,7 +707,7 @@ done
 ## Coefficient forms and forget gate
 
 Three degree-four runs copy `query-m4-head-scale` (`r2b22f2ff6461`) and change one part
-of its query attention; see the [coefficient forms](results/exploratory/coefficient_forms/README.md)
+of its query attention; see the [coefficient forms](results/pretraining/parametrizations/activations/coefficient_forms/README.md)
 and [forget gate](results/pretraining/fox_alibi/forget_gate/README.md) topics.
 
 | Run | Label | Change |
@@ -1724,7 +1724,7 @@ sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 
 Added 2026-11-11. Does giving each polynomial order its own signed shift of the score improve the
 degree-eight tanh query polynomial? Two trials at the 12-layer width-640 shape test it against the RoPE
 query control there, `r95a5691d293f`. Neither beat it, so no reference-shape runs follow. Findings and
-diagnostics: [score_biases topic](results/exploratory/score_biases/README.md).
+diagnostics: [score_biases topic](results/pretraining/scalings/l12_d640/score_biases/README.md).
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` and the control's coefficient generator `c_r(x_t)` (its factorial
 scales unchanged), every order `r = 1..8` reads its own shifted score; order zero is unchanged:
@@ -1808,8 +1808,9 @@ key. Does evaluating the polynomial at a transformed score fix this and improve 
 the 12-layer width-640 shape, and with softplus at the reference shape ([below](#reference-shape-softplus-run))?
 Softplus cleared the topic's 0.5% bar at the 12-layer width-640 shape; abs did not. At the reference shape
 softplus fell short of it at degree eight (0.42% below its control, level with exp) and at degree twelve
-(0.02% below its control). Question, roles, decision rule, findings and diagnostics: the
-[score_transforms topic](results/exploratory/score_transforms/README.md).
+(0.02% below its control). Question, roles, decision rule, findings and diagnostics:
+[score_transforms](results/pretraining/scalings/l12_d640/score_transforms/README.md) at the 12-layer width-640 shape and
+[softplus_inputs](results/pretraining/parametrizations/sos/softplus_inputs/README.md) at the reference shape.
 
 With `s_ti = Q_t K_i^T / sqrt(d_K)` (after QK RMSNorm, the head scale and RoPE) and the control's
 coefficient generator `c_r(x_t)` (factorial scales unchanged), every order reads `z_ti = phi(s_ti)`:
@@ -1969,7 +1970,7 @@ Added 2026-11-12 at the user's request: `r9eb845aae5bb` (`query-m12-dk64-w-decay
 run at degree twelve, against the RoPE query control at that degree, `r0fceea0627c8` (validation-best 14.226;
 exp 14.257, fixed Taylor at degree twelve 14.309, sum of squares at degree twelve 14.165). It reached
 validation-best 14.222 at update 7,500 (terminal 14.226), 0.02% below its control, short of the 0.5% bar
-(14.155); results in the [score_transforms topic](results/exploratory/score_transforms/README.md#reference-shape).
+(14.155); results in [softplus_inputs](results/pretraining/parametrizations/sos/softplus_inputs/README.md).
 
 - Recipe: `ra3b54e2489f8`'s with `attention_degree: 12`, so the control's with the transform, the zero
   constant start and gradient-event capture. 200,905,126 parameters; every initial array is the control's but
@@ -2540,7 +2541,7 @@ query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_
 Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.565 at
 1x, 2x and 4x, 0.88%, 0.63% and 0.27% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
 below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, findings and limits: the
-[topic](results/pretraining/parametrizations/sos/softplus_sos/README.md#the-12-layer-width-640-shape-at-1x-2x-and-4x).
+[results](results/pretraining/scalings/l12_d640/softplus_sos/README.md).
 
 | Run | Label | Updates | Warmup | Validation |
 | --- | --- | ---: | ---: | --- |

@@ -45,8 +45,10 @@ Validation perplexity, best with terminal in parentheses. Both runs trained on o
 | `r6a76e7fbde45` | exp(s) | 14.257 (14.262) | – |
 
 - Neither fixed function comes close to exp: softplus trails it by 10.4% and sigmoid by
-  13.2%. Learned polynomials of softplus(s), in the [softplus_sos](../../../parametrizations/sos/softplus_sos/README.md)
-  topic, reach 14.13–14.34.
+  13.2%. Learned polynomials of softplus(s) reach 14.09–14.34
+  ([softplus_inputs](../../../parametrizations/sos/softplus_inputs/README.md),
+  [softplus_sos](../../../parametrizations/sos/softplus_sos/README.md),
+  [zero_constant](../../../other/zero_constant/README.md)).
 - Limits: one seed. The comparison with exp also includes the embedding-gradient precision change described
   above.
 
