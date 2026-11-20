@@ -71,24 +71,30 @@ Regenerate the heatmap and `summary.csv` from the pinned selection:
 scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.results.pretraining.polynomial.query_width_degree.plot
 ```
 
-## Narrow keys for exp and softplus–SoS
+## Narrow keys for exp, softmax and softplus–SoS
 
-Planned; no results. Added 2026-11-20. Does the key-width penalty above hold for the exponential and for the best
-sum-of-squares kernel? Six runs change only `qk_head_dim` (value width 64) of exp `r6a76e7fbde45` and of
-`r841f35a24241`, `z h_t(z)` with `z = softplus(s)` and a query sum-of-squares core of degree eight (total degree
-nine). Each width is also compared with the grid's degree-eight query polynomial. Validation-best perplexity of
+Planned; no results. Added 2026-11-20. Does the key-width penalty above hold for the exponential, for softmax and
+for the best sum-of-squares kernel? Nine runs change only `qk_head_dim` (value width 64) of exp `r6a76e7fbde45`, of
+softmax `r9040f12f3d80` and of `r841f35a24241`, `z h_t(z)` with `z = softplus(s)` and a query sum-of-squares core
+of degree eight (total degree nine); a tenth repeats the exp run at `d_K` 4 with the exponential shifted by its row
+maximum. Each width is also compared with the grid's degree-eight query polynomial. Validation-best perplexity of
 the existing runs:
 
-| `d_K` | `z h_t(z)` | exp | query, `m = 8` |
-| ---: | --- | --- | --- |
-| 4 | `r5a25f500bfa8` | `ra28b295d81e6` | – |
-| 8 | `r8d6683db38a8` | `r535bc84a7772` | `r16b23893884d`, 16.854 |
-| 16 | `r79abb4d7292c` | `r6f84b1db6de6` | `rd10c2ebe1181`, 15.413 |
-| 64 | `r841f35a24241`, 14.095 | `r6a76e7fbde45`, 14.257 | `r25fffc16c2f3`, 14.323 |
+| `d_K` | `z h_t(z)` | exp | exp, row-maximum shift | softmax | query, `m = 8` |
+| ---: | --- | --- | --- | --- | --- |
+| 4 | `r5a25f500bfa8` | `ra28b295d81e6`, numerical failure | `r2739c80cc032` | `reaca8ac9420c` | – |
+| 8 | `r8d6683db38a8` | `r535bc84a7772` | – | `r6f65dc73550a` | `r16b23893884d`, 16.854 |
+| 16 | `r79abb4d7292c` | `r6f84b1db6de6` | – | `r328466965c2b` | `rd10c2ebe1181`, 15.413 |
+| 64 | `r841f35a24241`, 14.095 | `r6a76e7fbde45`, 14.257 | – | `r9040f12f3d80`, 14.543 | `r25fffc16c2f3`, 14.323 |
 
+- `ra28b295d81e6`, exp at `d_K` 4 on the unshifted fused kernel, ended in a numerical failure at update 3,954: its
+  scores reached 74 by update 3,500 and `e^s` overflowed FP32. `r2739c80cc032` is its recipe with
+  `attention_exp_shift: row_max`: the same function under head RMSNorm, finite at any score.
 - Narrower keys remove 18–23 M Q/K parameters and run QK RMSNorm over 4–16 channels; every other initial array is
-  the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100) and exp on the fused kernel
-  (B300 or H100); the exp runs add gradient-event capture to their October control
-  ([methods and launch](../../../../README.md#score-prefactors-swish-and-narrow-keys)).
+  the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100), exp on the fused kernel and
+  softmax on cuDNN, which zero-pads Q and K to width 64 (both B300 or H100); the exp runs add gradient-event capture
+  to their October control (methods and launch:
+  [B1-B6](../../../../README.md#score-prefactors-swish-and-narrow-keys),
+  [shifted exp and softmax](../../../../README.md#shifted-exp-and-softmax-at-narrow-keys)).
 - When these runs join the selection, `plot.py` keeps to the `query_decay_*` roles, so the heatmap and
   `summary.csv` stay as they are.

@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r328466965c2b/config.yaml",
+    "sha256": "69195714a81fe7008eb8857fba15cd58a637792aa36655f597b5cb7b4e5dce6c"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-head-scale-dk16",
+  "name": "softmax-head-scale-dk16",
+  "receipt": {
+    "arrays_count": 48,
+    "digest": "cc3455349d7ec39eec9f32585aa59806a580103f80714e3a97f26f8b075e4574",
+    "loss": 5.599272727966309,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r328466965c2b",
+  "status": "planned"
+}

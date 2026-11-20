@@ -2,7 +2,9 @@
 from copy import deepcopy
 from dataclasses import replace
 import hashlib
+import importlib.util
 import json
+from pathlib import Path
 
 import pytest
 
@@ -12,9 +14,11 @@ from scaffolds.transformer.configs import config_to_dict
 KEYS = tuple(adapter.PARTNERS)
 
 
-def variant(key, width):
+def variant(key, width, **model):
     config = adapter.partner_config(key)
     config.model.qk_head_dim = width
+    for name, value in model.items():
+        setattr(config.model, name, value)
     for name, value in adapter.PARTNERS[key]["train"].items():
         setattr(config.train, name, value)
     return config
@@ -74,6 +78,32 @@ def test_unrelated_changes_are_refused(key, section, name, value):
         adapter.check_recipe(config)
 
 
+@pytest.mark.parametrize("width", adapter.WIDTHS)
+def test_the_exponential_may_shift_by_its_row_maximum(width):
+    config = variant("exponential", width, attention_exp_shift="row_max")
+    adapter.check_recipe(config)
+    assert scientific_differences(config, adapter.partner_config("exponential")) == {
+        "model.qk_head_dim", "train.gradient_event_capture", "model.attention_exp_shift"}
+
+
+@pytest.mark.parametrize("key", ("softplus_sos", "softmax"))
+def test_only_the_exponential_takes_the_shift(key):
+    config = variant(key, 8)
+    config.model.attention_exp_shift = "row_max"
+    with pytest.raises(ValueError):
+        adapter.check_recipe(config)
+
+
+def test_softmax_is_the_normalized_partner_on_cudnn():
+    config = variant("softmax", 4)
+    assert adapter.partner_key(config) == "softmax" and config.model.attention_normalization
+    assert config.model.attention_backend == "cudnn" and config.model.attention_output_scaling == "none"
+    normalized_exponential = variant("exponential", 4)
+    normalized_exponential.model.attention_normalization = True
+    with pytest.raises(ValueError):
+        adapter.check_recipe(normalized_exponential)
+
+
 def test_the_exponential_runs_take_the_capture_policy():
     config = variant("exponential", 8)
     config.train.gradient_event_capture = False
@@ -130,7 +160,8 @@ def test_acceptance_selects_each_partners_kernels(key):
 
 
 def test_each_partners_gpus_are_required(tmp_path):
-    for key, allowed, refused in (("softplus_sos", ("H100", "B200"), "B300"), ("exponential", ("H100", "B300"), "B200")):
+    for key, allowed, refused in (("softplus_sos", ("H100", "B200"), "B300"), ("exponential", ("H100", "B300"), "B200"),
+                                  ("softmax", ("H100", "B300"), "B200")):
         path = tmp_path / f"{key}.yaml"
         from scaffolds.transformer.configs import save_config
 
@@ -140,6 +171,40 @@ def test_each_partners_gpus_are_required(tmp_path):
         with pytest.raises(ValueError, match="only"):
             adapter.require_gpu_type([str(path), "--gpu-type", refused])
         adapter.require_gpu_type([str(path), "--runtime-env"])
+
+
+def test_softmax_gpu_cases_exist_at_the_narrow_widths():
+    """The selected cuDNN cases are GPU tests of test_softmax_backends.py at widths 4, 8 and 16 only."""
+    path = Path(__file__).resolve().parents[3] / "scaffolds/transformer/tests/test_softmax_backends.py"
+    spec = importlib.util.spec_from_file_location("softmax_backend_cases", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    widths = set()
+    for test in adapter.GPU_TESTS["softmax"]:
+        file, case = test.split("::")
+        name, width = case.removesuffix("]").split("[")
+        assert Path(file).name == path.name and int(width) in module.ATTENTION_DIMENSIONS
+        assert any(mark.name == "gpu" for mark in getattr(module, name).pytestmark)
+        widths.add(int(width))
+    assert widths == set(adapter.WIDTHS)
+
+
+def test_acceptance_stages_take_each_partners_cases():
+    """The shift's own suite joins both stages of a shifted recipe; softmax's GPU stage takes the narrow widths only."""
+    from scaffolds.transformer.acceptance import test_paths as acceptance_test_paths
+
+    shift = "scaffolds/transformer/tests/test_exp_row_max_shift.py"
+    shifted = variant("exponential", 4, attention_exp_shift="row_max")
+    spec = adapter.experiment_spec(shifted, entry_module=adapter.__name__)
+    for cpu in (True, False):
+        assert shift in acceptance_test_paths(spec, config_to_dict(shifted), resolved_backend="fused", cpu=cpu)
+    assert "scaffolds/transformer/tests/test_unnormalized_fused_attention.py" in acceptance_test_paths(
+        spec, config_to_dict(shifted), resolved_backend="fused", cpu=False)
+    softmax = variant("softmax", 4)
+    spec = adapter.experiment_spec(softmax, entry_module=adapter.__name__)
+    gpu = acceptance_test_paths(spec, config_to_dict(softmax), resolved_backend="cudnn", cpu=False)
+    assert set(adapter.SOFTMAX_WIDTH_TESTS) <= set(gpu) and shift not in gpu
+    assert "scaffolds/transformer/tests/test_softmax_backends.py" not in gpu
 
 
 def test_an_edited_partner_recipe_is_refused(monkeypatch, tmp_path):
@@ -153,15 +218,20 @@ def test_an_edited_partner_recipe_is_refused(monkeypatch, tmp_path):
         adapter.check_recipe(config)
 
 
-# The allocated runs: label, partner and width.
+# The allocated runs: label, partner, width and the model settings the run chooses.
 SOS_LABEL = "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay"
+SHIFTED = {"attention_exp_shift": "row_max"}
 RUNS = {
-    "r5a25f500bfa8": (f"{SOS_LABEL}-dk4", "softplus_sos", 4),
-    "r8d6683db38a8": (f"{SOS_LABEL}-dk8", "softplus_sos", 8),
-    "r79abb4d7292c": (f"{SOS_LABEL}-dk16", "softplus_sos", 16),
-    "ra28b295d81e6": ("exp-head-scale-dk4", "exponential", 4),
-    "r535bc84a7772": ("exp-head-scale-dk8", "exponential", 8),
-    "r6f84b1db6de6": ("exp-head-scale-dk16", "exponential", 16),
+    "r5a25f500bfa8": (f"{SOS_LABEL}-dk4", "softplus_sos", 4, {}),
+    "r8d6683db38a8": (f"{SOS_LABEL}-dk8", "softplus_sos", 8, {}),
+    "r79abb4d7292c": (f"{SOS_LABEL}-dk16", "softplus_sos", 16, {}),
+    "ra28b295d81e6": ("exp-head-scale-dk4", "exponential", 4, {}),
+    "r535bc84a7772": ("exp-head-scale-dk8", "exponential", 8, {}),
+    "r6f84b1db6de6": ("exp-head-scale-dk16", "exponential", 16, {}),
+    "r2739c80cc032": ("exp-head-scale-row-max-dk4", "exponential", 4, SHIFTED),
+    "reaca8ac9420c": ("softmax-head-scale-dk4", "softmax", 4, {}),
+    "r6f65dc73550a": ("softmax-head-scale-dk8", "softmax", 8, {}),
+    "r328466965c2b": ("softmax-head-scale-dk16", "softmax", 16, {}),
 }
 
 
@@ -169,12 +239,22 @@ RUNS = {
 def test_allocated_runs_are_their_partner_at_the_key_width(run_id):
     from scaffolds.transformer.configs import load_config
 
-    label, key, width = RUNS[run_id]
+    label, key, width, model = RUNS[run_id]
     path = adapter.RUNS / run_id / "config.yaml"
     config = load_config(path)
     adapter.check_recipe(config)
     assert adapter.partner_key(config) == key and config.model.qk_head_dim == width
-    assert scientific_differences(config, variant(key, width)) == set()
+    assert scientific_differences(config, variant(key, width, **model)) == set()
     record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
     assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_the_shifted_width_4_exponential_changes_only_the_shift():
+    """r2739c80cc032 is ra28b295d81e6's recipe, which overflowed FP32 at update 3,954, with the row-maximum shift."""
+    from scaffolds.transformer.configs import load_config
+
+    shifted = load_config(adapter.RUNS / "r2739c80cc032" / "config.yaml")
+    unshifted = load_config(adapter.RUNS / "ra28b295d81e6" / "config.yaml")
+    assert scientific_differences(shifted, unshifted) == {"model.attention_exp_shift"}
+    assert (unshifted.model.attention_exp_shift, shifted.model.attention_exp_shift) == ("none", "row_max")

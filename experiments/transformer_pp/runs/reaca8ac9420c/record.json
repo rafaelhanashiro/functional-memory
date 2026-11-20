@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/reaca8ac9420c/config.yaml",
+    "sha256": "449d9bad722198f2e8c79c027c620379129423deec27571a349c6f8f4314580c"
+  },
+  "home_cluster": "kennel",
+  "label": "softmax-head-scale-dk4",
+  "name": "softmax-head-scale-dk4",
+  "receipt": {
+    "arrays_count": 48,
+    "digest": "848c1cbf38dd3b577ea522cd897705c1e4688121c53530921d0015aa411a8735",
+    "loss": 5.601000785827637,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "reaca8ac9420c",
+  "status": "planned"
+}

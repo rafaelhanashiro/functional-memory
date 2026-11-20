@@ -15,7 +15,7 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | [degree_scaling](pretraining/polynomial/degree_scaling/README.md) | Validation perplexity against degree `m = 1-8` and 12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with projection weight decay (Taylor and query only at 12), with softmax as the reference level. |
-| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? Exp and `z h_t(z)` at `d_K` 4, 8 and 16 are planned. |
+| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? Exp, softmax and `z h_t(z)` at `d_K` 4, 8 and 16 are planned. |
 
 ### Scalings
 

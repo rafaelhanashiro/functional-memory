@@ -1,14 +1,17 @@
-"""Qualify the narrow-key runs: the softplus-SoS input-power polynomial and the exponential at Q/K widths 4, 8, 16.
+"""Qualify the narrow-key runs: softplus-SoS, the exponential and softmax at Q/K widths 4, 8, 16.
 
-Each run is a completed partner's recipe with ``model.qk_head_dim`` alone changed (``value_head_dim`` stays 64), at
-the 15-layer width-896 reference shape and 1x budget: r841f35a24241, W = z h_t(z), z = softplus(s), with a query
-sum-of-squares core of degree eight on the Mosaic transformed kernels (H100 or B200), and r6a76e7fbde45, the
+Each run is a completed partner's recipe with ``model.qk_head_dim`` changed (``value_head_dim`` stays 64), at the
+15-layer width-896 reference shape and 1x budget: r841f35a24241, W = z h_t(z), z = softplus(s), with a query
+sum-of-squares core of degree eight on the Mosaic transformed kernels (H100 or B200); r6a76e7fbde45, the
 unnormalized exponential on the fused Pallas-Triton kernel (H100 or B300), which also takes the gradient-event
-capture the softplus-SoS run already has. A narrower key changes the shapes of the Q and K projections and of the
-QK RMSNorm gains alone, so initialization is checked three ways: the softmax backbone's draws at that width
+capture the softplus-SoS run already has and may shift the exponential by its causal row maximum
+(``model.attention_exp_shift: row_max``: the same function under head RMSNorm, finite where e^s overflows FP32);
+and r9040f12f3d80, normalized softmax on cuDNN (H100 or B300), which zero-pads Q and K to the value width 64, so the
+scores are the narrow key's exactly. A narrower key changes the shapes of the Q and K projections and of the QK
+RMSNorm gains alone, so initialization is checked three ways: the softmax backbone's draws at that width
 (``matches_softmax_backbone_initialization``); every partner array of unchanged shape bit-identical, with only
 q_proj, k_proj and the Q/K RMSNorm gains differing; and each (partner, width) parameter count and SHA256, pinned
-here from ``acceptance.initialization_facts`` on CPU.
+here from ``acceptance.initialization_facts`` on CPU. The row-maximum shift adds no parameter, so it keeps the pins.
 """
 import argparse
 from dataclasses import replace
@@ -31,13 +34,14 @@ CAPTURE_POLICY = {
     "gradient_event_min_history": 20, "gradient_event_max_states": 3,
 }
 # Each partner, selected by its kernel: recipe SHA256, backend, the GPUs its kernels are qualified on, the training
-# settings a run adds, and the seed-42 initial parameters (count, SHA256) at each width, computed on CPU with
-# acceptance.initialization_facts on the partner's recipe with qk_head_dim changed.
+# settings a run adds, the model settings a run may choose (each with its allowed values, the partner's first), and
+# the seed-42 initial parameters (count, SHA256) at each width, computed on CPU with acceptance.initialization_facts
+# on the partner's recipe with qk_head_dim changed.
 PARTNERS = {
     "softplus_sos": {
         "run_id": "r841f35a24241",
         "config_sha256": "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
-        "backend": "mosaic", "gpu_types": ("H100", "B200"), "train": {},
+        "backend": "mosaic", "gpu_types": ("H100", "B200"), "train": {}, "model_options": {},
         "initialization": {
             4: (177_569_806, "98062beda15b818e558372eebfd952763cef53134d9691a5b0193826ad2ef3a0"),
             8: (179_075_206, "c7ac75ba66434f7b21762fd61b0f3bd791e5880844b2a8c0eb13e9707914f53e"),
@@ -48,10 +52,21 @@ PARTNERS = {
         "run_id": "r6a76e7fbde45",
         "config_sha256": "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6",
         "backend": "fused", "gpu_types": ("H100", "B300"), "train": CAPTURE_POLICY,
+        "model_options": {"attention_exp_shift": ("none", "row_max")},
         "initialization": {
             4: (175_872_586, "43c380f796e3c44a63a20ca96c1afd41db919f071e81fb942d811b9773b7becf"),
             8: (177_377_986, "3ae84675c937f136528edf83920beb189c6e80d7c8e4e239a0888b9717af0e92"),
             16: (180_388_786, "dfd19a74f9ddbd2fc7d9ef4cc53dc46dc5f3acbaa3938b43e47b84a2cd170b43"),
+        },
+    },
+    "softmax": {
+        "run_id": "r9040f12f3d80",
+        "config_sha256": "92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897",
+        "backend": "cudnn", "gpu_types": ("H100", "B300"), "train": {}, "model_options": {},
+        "initialization": {
+            4: (175_859_146, "37c0f693729a83ea02b8c88b0e901340ee2f7586f53fa780fee52752c9bde031"),
+            8: (177_364_546, "4af23ea498e142b9ba3710e3f63c911f27f236f20055513ecc010ce9aa41e553"),
+            16: (180_375_346, "ea6990e908af9739d41b6eea2b886d0701bb5aed9c5430977d446dd7f254c7ef"),
         },
     },
 }
@@ -60,14 +75,25 @@ RESHAPED = ("q_proj", "k_proj", "qk_norm_q_gain", "qk_norm_k_gain")
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name",
                   "wandb_group", "wandb_dir", "wandb_mode")
 CPU_TESTS = ("experiments/transformer_pp/tests/test_key_width_acceptance.py",)
+# cuDNN softmax at the narrow widths, each zero-padded to the value width (the module's width-256 cases, which B300
+# refuses for unequal Q/K and value widths, are not selected): parity with the manual softmax's outputs and
+# gradients, and a finite forward and backward at the 2,048-token context. The shift's own GPU cases are among the
+# fused module's and in test_exp_row_max_shift.py, which shared acceptance selects for shifted recipes.
+SOFTMAX_WIDTH_TESTS = tuple(
+    f"scaffolds/transformer/tests/test_softmax_backends.py::{test}[{width}]"
+    for test in ("test_cudnn_matches_manual_outputs_input_and_parameter_gradients",
+                 "test_cudnn_production_context_forward_and_backward_are_finite") for width in WIDTHS)
 GPU_TESTS = {"softplus_sos": ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
                               "scaffolds/transformer/tests/test_mosaic_softplus_sos.py"),
-             "exponential": ("scaffolds/transformer/tests/test_unnormalized_fused_attention.py",)}
+             "exponential": ("scaffolds/transformer/tests/test_unnormalized_fused_attention.py",),
+             "softmax": SOFTMAX_WIDTH_TESTS}
 
 
 def partner_key(config) -> str:
-    """The partner of a recipe, by its kernel: the exponential has no degree."""
-    return "exponential" if config.model.attention_degree is None else "softplus_sos"
+    """The partner of a recipe, by its kernel: softmax and the exponential have no degree."""
+    if config.model.attention_degree is not None:
+        return "softplus_sos"
+    return "softmax" if config.model.attention_normalization else "exponential"
 
 
 def partner_config(key):
@@ -90,6 +116,9 @@ def check_recipe(config):
     actual, expected = config_to_dict(config), config_to_dict(partner_config(key))
     expected["model"]["qk_head_dim"] = width
     expected["train"].update(partner["train"])
+    for name, allowed in partner["model_options"].items():
+        if actual["model"][name] in allowed:
+            expected["model"][name] = actual["model"][name]
     for recipe in (actual, expected):
         for name in EXECUTION_KEYS:
             recipe["train"].pop(name, None)

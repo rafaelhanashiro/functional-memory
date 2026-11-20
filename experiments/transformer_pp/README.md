@@ -2930,3 +2930,69 @@ for run in r41662adb22fa r6525664e6696 raeaa47865867 r8f56a5b7e525 r5d578a29f080
   submit long 13:00:00 softplus_sos_acceptance B200,H100 "$mosaic" "$run"
 done
 ```
+
+### Shifted exp and softmax at narrow keys
+
+Four more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel (branch
+`claude/shifted-exp-dk`, worktree `worktrees/shifted-exp-dk`). Each recipe is its partner's (`derive_recipe.py
+--partner`, same shape and budget) with only the listed setting changed; `value_head_dim` stays 64 and seed (42),
+data order, QK RMSNorm with per-head scale, reference initialization and RoPE are the partner's.
+
+| Group | Run | Label | Weight | Partner | Change | Adapter |
+| --- | --- | --- | --- | --- | --- | --- |
+| E1 | `r2739c80cc032` | `exp-head-scale-row-max-dk4` | `exp(s)`, `d_K` 4 | `ra28b295d81e6` | `attention_exp_shift: row_max` | key width |
+| S1 | `reaca8ac9420c` | `softmax-head-scale-dk4` | softmax, `d_K` 4 | `r9040f12f3d80` | `qk_head_dim: 4` | key width |
+| S2 | `r6f65dc73550a` | `softmax-head-scale-dk8` | softmax, `d_K` 8 | `r9040f12f3d80` | `qk_head_dim: 8` | key width |
+| S3 | `r328466965c2b` | `softmax-head-scale-dk16` | softmax, `d_K` 16 | `r9040f12f3d80` | `qk_head_dim: 16` | key width |
+
+- **E, shifted exp.** B4 (`ra28b295d81e6`) ended in a numerical failure at update 3,954: its scores reached 74 by
+  update 3,500 and `e^s` overflowed FP32. E1 repeats its recipe with the exponential shifted by its causal row
+  maximum `m_t`: the fused kernel returns `y_t = sum_i e^(s_ti - m_t) v_i` and head RMSNorm divides it by
+  `sqrt(mean(y_t^2) + eps e^(-2 m_t))`, the unshifted output in exact arithmetic and finite at any score
+  ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). The shift adds no parameter: E1
+  starts from B4's initial parameters (175,872,586).
+- **S, softmax.** Normalized softmax (`r9040f12f3d80`, best 14.543) at the narrow widths, with no output scaling,
+  like its partner. Narrower keys drop 18.1-22.6 M Q/K parameters (175,859,146, 177,364,546 and 180,375,346 against
+  198,440,146); every other initial array is the partner's, bit for bit. Results: the
+  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside B1-B6.
+- **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461;
+  the H100 job 8464 is pending;
+  [validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
+  S1-S3 train on cuDNN, as their partner: it zero-pads Q and K to the value width 64, so the scores are the narrow
+  key's exactly, at width 64's cost. `tests/test_softmax_backends.py`'s cuDNN cases at widths 2-128 pass on B300
+  ([job 219252](../../scaffolds/transformer/validation/README.md#b300-cuda-13-environment)), and
+  [Attention Scaling](../attention_scaling/README.md) trained it at `d_K` 8-32 on H100 and B300. Both are admitted
+  on B300 and H100, not B200.
+- **Acceptance.** The [key-width adapter](key_width_acceptance.py) pins `r9040f12f3d80`'s recipe and initial
+  parameters at each width beside the other partners', admits `attention_exp_shift: row_max` for the exponential
+  alone, and selects the cuDNN GPU cases at widths 4, 8 and 16 for softmax; shared acceptance adds
+  `tests/test_exp_row_max_shift.py` to both test stages of E1. Each recipe passes the adapter's recipe and full-shape
+  initialization checks on CPU. Every allocation also runs the full-recipe pilot and a fresh-process resume.
+- **Time limits.** By the rule above: 1.4 times the upper H100 SXM projection plus two hours, rounded up.
+
+  | Runs | Basis, hours | B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
+  | --- | --- | ---: | ---: | ---: | ---: |
+  | E1 | B5, B6 (`r535bc84a7772`, `r6f84b1db6de6`) 3.06-3.09 on B300; the shift costs nothing (fused kernel at `d_K` 4: 3.91 ms per layer, unshifted 3.98); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 6.00 | 3.1 | 6.0 | 10.8 | 11 |
+  | S1-S3 | `r9040f12f3d80` 2.27 on B300; padding keeps width 64's attention cost; Attention Scaling's cuDNN softmax took 1.88 times as long on `dogo` as on `akita` (`rf7277f076b8f` 2.09, `rbde7fc4c2135` 1.11, four GPUs each) | 2.3 | 4.3 | 7.7 | 9 |
+
+  `mastiff` is excluded: its projections exceed the limits less acceptance's two-hour reserve. `dogo` joins only
+  while a placeholder holds its failing H100, as above, and E1 only once the H100 qualification passes.
+
+Submit from `worktrees/shifted-exp-dk` after committing the frozen execution set and checking the live standard and
+long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). E1 takes the standard slot
+B1-B3 leave free; S1-S3 go to long, or to standard as its slots free:
+
+```bash
+submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude="$5" --job-name="$6" --output="experiments/transformer_pp/runs/$6/training.log" \
+    --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita); drop dogo as above
+submit standard 11:00:00 key_width_acceptance B300,H100 "$b300" r2739c80cc032                    # E1
+for run in reaca8ac9420c r6f65dc73550a r328466965c2b; do                                         # S1-S3
+  submit long 9:00:00 key_width_acceptance B300,H100 "$b300" "$run"
+done
+```
