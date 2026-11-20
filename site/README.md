@@ -55,7 +55,8 @@ results. Every perplexity on the site is the run's validation-best value, never 
 one, which the Runs page says once (its text) rather than every table or plot; a percentage
 change is labeled minimally, as (% vs exp); RoPE is assumed and never named, while runs without
 it say NoPE; the overfitting fits report perplexity on the batch they fit. The Learned
-polynomials figure in `figures/` is a copy with no generator.
+polynomials figure and the Other runs page's saturation figure in `figures/` are copies with no
+generator; the latter is shown by that page's L2 notes text.
 
 The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits
