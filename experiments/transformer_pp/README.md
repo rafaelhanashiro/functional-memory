@@ -2979,8 +2979,10 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
   while a placeholder holds its failing H100, as above, and E1 only once the H100 qualification passes.
 
 Submit from `worktrees/shifted-exp-dk` after committing the frozen execution set and checking the live standard and
-long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). E1 takes the standard slot
-B1-B3 leave free; S1-S3 go to long, or to standard as its slots free:
+long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). E1 takes a standard slot and
+S1-S3 go to long. While the `dogo` placeholder (`hold-dogo-badgpu`) waits on standard, one of our four standard GPUs
+stays free for it ([CLUSTERS.md](../../CLUSTERS.md#kennel-csail)); an S run moves to standard only if that still
+holds:
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
