@@ -22,7 +22,9 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the worktree}"
 LAUNCH_COMMIT="${1:?Supply the frozen source commit}"
-python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_pp --scaffold transformer
+# The kernels under test are scaffold code: the check covers scaffolds/transformer outside validation/, scaffolds/records
+# and scaffolds/launch, and no study ("none"), so runs allocated meanwhile do not stop a pending job.
+python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment none --scaffold transformer
 # GPUs that fail CUDA initialization (CLUSTERS.md): dogo's H100 at Slurm index 4 and mastiff's at indices 1 and 7.
 FAULTY_GPUS="GPU-355f34a2-be0c-ba44-022b-1a056f643b80 GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5"
 FAULTY_GPUS+=" GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
