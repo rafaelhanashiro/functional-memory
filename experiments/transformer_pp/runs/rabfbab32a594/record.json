@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rabfbab32a594/config.yaml",
+    "sha256": "77f89f17c19a9f29d154807c3824586064d29491a6c9f814e7d973dbcadfd543"
+  },
+  "home_cluster": "kennel",
+  "label": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms",
+  "name": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "96db226687f3714bbdde90eaf22683a8160f73cd2d73eac0221c02f5369585c0",
+    "loss": 5.598795413970947,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rabfbab32a594",
+  "status": "planned"
+}

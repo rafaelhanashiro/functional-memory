@@ -3086,3 +3086,37 @@ for run in r858c094cb85f rcc9e0b03e692 r161f07127f20 r576bb8758634 \
   submit long 9:00:00 key_width_acceptance B300,H100 "$b300" "$run" 1000
 done
 ```
+
+### Max-abs head RMSNorm at Q/K width 4
+
+Two width-4 runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
+same function whose FP32 gradient is exact at any output scale. The plain arithmetic loses the term that removes the
+gradient's component along a head's output once that output's RMS passes about 9e14 on GPU
+([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)):
+at their final checkpoints the fixed Taylor run had 4.7% of its rows there (Q/K gradient 12% off) and the softplus-input
+SoS run 1.3% (2% off, concentrated in the head score scales).
+
+| Run | Label | Kernel | Rerun of | Recipe change | Adapter |
+| --- | --- | --- | --- | --- | --- |
+| `rabfbab32a594` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms` | `z h_t(z)`, `d_K` 4 | `r5a25f500bfa8` | `attention_head_rms_prescale: max_abs` | key width |
+| `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `re3515eed3576` | `attention_head_rms_prescale: max_abs` | key width |
+
+Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) lets the polynomial partners take the prescale and
+keeps their pins: the option adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
+trained at 1.3 to 1.6 s per update on B200 (2.7 to 3.4 h), so a 9-hour limit covers H100 SXM (4.8 h) with acceptance's
+two-hour reserve. Submit from `worktrees/sos-dk4-stable` after committing the frozen execution set, the SoS run first:
+
+```bash
+submit() {  # partition, time limit, excluded nodes, run, nice
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --nice="${5:?nice}" --gres=gpu:1 \
+    --cpus-per-task=16 --mem=128G --exclude="$3" --job-name="$4" \
+    --output="experiments/transformer_pp/runs/$4/training.log" --error="experiments/transformer_pp/runs/$4/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+    "experiments/transformer_pp/runs/$4/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+}
+# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md): drop dogo from the list only while a placeholder
+# job of ours holds that GPU.
+b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
+submit standard 9:00:00 "$b200" rabfbab32a594 0
+submit standard 9:00:00 "$b200" r1eaa4a4c3c77 0
+```

@@ -347,6 +347,7 @@ def test_an_edited_partner_recipe_is_refused(monkeypatch, tmp_path):
 # The allocated runs: label, partner, width and the model settings the run chooses.
 SOS_LABEL = "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay"
 SHIFTED = {"attention_exp_shift": "row_max"}
+PRESCALED = {"attention_head_rms_prescale": "max_abs"}
 RUNS = {
     "r5a25f500bfa8": (f"{SOS_LABEL}-dk4", "softplus_sos", 4, {}),
     "r8d6683db38a8": (f"{SOS_LABEL}-dk8", "softplus_sos", 8, {}),
@@ -367,7 +368,24 @@ RUNS = {
     "r161f07127f20": ("static-m8-head-scale-dk8", "static", 8, {}),
     "r576bb8758634": ("static-m8-head-scale-dk16", "static", 16, {}),
     "rd5e3ec5a4f02": ("query-m8-dk4-w-decay", "query", 4, {}),
+    "rabfbab32a594": (f"{SOS_LABEL}-dk4-max-abs-head-rms", "softplus_sos", 4, PRESCALED),
+    "r1eaa4a4c3c77": ("fixed-m8-head-scale-dk4-max-abs-head-rms", "taylor", 4, PRESCALED),
 }
+
+
+@pytest.mark.parametrize("run_id, plain", (("rabfbab32a594", "r5a25f500bfa8"), ("r1eaa4a4c3c77", "re3515eed3576")))
+def test_the_prescaled_width_4_runs_rerun_the_plain_ones(run_id, plain):
+    prescaled = run_config(run_id)
+    assert scientific_differences(prescaled, run_config(plain)) == {"model.attention_head_rms_prescale"}
+    assert prescaled.model.attention_head_rms_prescale == "max_abs"
+
+
+@pytest.mark.parametrize("key", ("exponential", "softmax"))
+def test_only_the_polynomial_partners_take_the_prescale(key):
+    config = variant(key, first_width(key))
+    config.model.attention_head_rms_prescale = "max_abs"
+    with pytest.raises(ValueError):
+        adapter.check_recipe(config)
 
 
 @pytest.mark.parametrize("run_id", RUNS)
