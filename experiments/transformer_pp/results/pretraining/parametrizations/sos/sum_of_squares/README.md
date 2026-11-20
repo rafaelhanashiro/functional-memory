@@ -81,7 +81,8 @@ Validation-best PPL, at update 7,500 in every run; terminal (update 7,570) in pa
   1.03% above fixed Hermite.
 
 The [SoS training-dynamics diagnostic](../../../../diagnostics/learning_dynamics/sos_training_dynamics/README.md) records
-the coefficient trajectories of the m = 8 and m = 12 runs.
+one middle-layer head's coefficient-generator parameters (a, b and W norms) over training in the
+m = 8 and m = 12 runs.
 
 ## Limits
 

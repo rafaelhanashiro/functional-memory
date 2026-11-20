@@ -3,8 +3,7 @@
 Closed diagnostic, recorded 2026-11-13. How do one middle-layer head's learned
 coefficient-generator parameters evolve in regular query polynomial attention,
 and do its recorded coefficients vary across queries? This analysis uses saved
-training measurements and a frozen-checkpoint activation probe. It introduces no
-mechanism ranking.
+training measurements. It introduces no mechanism ranking.
 
 ## Sources and method
 
@@ -50,29 +49,16 @@ the input-channel axis of each W vector, with no further scaling.
 
 ## Parameter histories
 
-Each panel shows one polynomial order. The a/b figures use blue for a and
-orange for b, with a shared linear y-axis across panels. Diamonds at update zero
-and dashed references indicate analytic a=0, b=1 initialization; step zero was
-not saved. The W figures contain only measured norms: each random initial
-vector has its own norm, so no exact step-zero value is inserted.
+![Amplitudes, biases and projection-vector norms at degrees 8 and 12](head_parameters_combined.png)
 
-![Degree-eight amplitudes and biases](head_parameters_m8.png)
-
-![Degree-eight projection-vector norms](head_w_norms_m8.png)
-
-[Degree-twelve a/b histories](head_parameters_m12.png) and
-[degree-twelve W norms](head_w_norms_m12.png) provide the same views. PDFs
-accompany every PNG. [parameter_summary.csv](parameter_summary.csv) contains
-first/terminal values, recorded extrema, and the terminal coefficient statistics.
-
-[Combined regular-query image](head_parameters_combined.png)
-([PDF](head_parameters_combined.pdf)) shows the same histories in two sections,
-for m=8 and m=12. Each has three rows (a, b, and W norm), with one column per
-actual polynomial order r=0,...,m. It follows the combined SoS figure's layout;
-these columns index direct polynomial coefficients. Blue denotes a and W norms,
-orange denotes b. Raw values and initialization markers match the separate
-figures, with a shared linear y-scale within each section's row. The standard
-`plot.py` regeneration command below also produces this image.
+The figure ([PDF](head_parameters_combined.pdf)) has one section per degree, m=8
+then m=12, each with three rows (a, b, and W norm) and one column per polynomial
+order r=0,...,m. Blue denotes a and W norms, orange b, on a shared linear y-scale
+within each section's row. Diamonds at update zero and dashed references mark the
+analytic a=0, b=1 initialization; step zero was not saved. The W rows contain only
+measured norms: each random initial vector has its own norm, so no step-zero value
+is inserted. [parameter_summary.csv](parameter_summary.csv) contains first/terminal
+values, recorded extrema, and the terminal coefficient statistics.
 
 | Range across saved snapshots and orders in this head | Degree 8 | Degree 12 |
 | --- | ---: | ---: |
@@ -127,7 +113,7 @@ scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagno
 
 The script verifies pinned scientific inputs, completed status, recipes, array
 shapes, finite values, factorial conventions, and the fixed diagnostic sample.
-All figures and summaries regenerate from committed run measurements without
+The figure and the summary regenerate from committed run measurements without
 a GPU, dataset, or checkpoint. To deliberately change the explicit inputs,
 edit the selection and refresh before regenerating:
 

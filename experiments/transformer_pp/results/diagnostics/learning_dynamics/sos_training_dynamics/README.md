@@ -1,10 +1,10 @@
 # Transformer++ sum-of-squares training dynamics
 
-Closed diagnostic, recorded 2026-11-13. Are the completed query-conditioned
-sum-of-squares (SoS) polynomial runs stable during training, and how do their
-actual polynomial coefficients evolve? This isolated analysis uses existing
-training measurements; it performs no optimizer updates or checkpoint replay and
-enters no mechanism comparison.
+Closed diagnostic, recorded 2026-11-13. How do one middle-layer head's
+coefficient-generator parameters (a, b, and W norms) evolve in the completed
+query-conditioned sum-of-squares (SoS) polynomial runs? This analysis uses
+existing training measurements; it performs no optimizer updates or checkpoint
+replay and enters no mechanism comparison.
 
 ## Sources and method
 
@@ -24,61 +24,6 @@ updates on Kennel using Mosaic. Their frozen recipes and execution records remai
 under the study's `runs/` directory. The source commits preserve the executed
 query-SoS implementation.
 
-The 28 gradient reporting windows cover **every training update**, with 100-update
-windows through 1,500, then 500-update windows and a final 70-update window. The
-gradient norm is measured before global clipping at 1. Window maxima are plotted
-as spans: their exact update is unknown unless a separate spike record supplies
-it. These are not every-10-update sampled logs. Recorded spikes exceed five times
-the preceding 100-update median after at least 20 history updates.
-
-Actual expanded coefficients are recorded at the same 28 evaluation steps on the
-same first held-out sequence (2,048 query tokens). Each order has token mean,
-standard deviation, minimum, and maximum for every layer/head. The sequence hash
-is `26d5803c7dc95fe7f5dd7015ae4195205246bda089792b2e0f478a29398df8a6`.
-
-## Findings
-
-| Recorded gradient statistic | Degree 8 | Degree 12 |
-| --- | ---: | ---: |
-| Clipped updates, entire run | 301 / 7,570 (3.976%) | 319 / 7,570 (4.214%) |
-| Clipped updates after update 1,500 | 1 / 6,070 (0.0165%) | 1 / 6,070 (0.0165%) |
-| Largest norm after update 1,500 | 1.6847 | 1.5031 |
-| Update of that spike | 6,376 | 6,376 |
-| Final-window mean norm | 0.1369 | 0.1349 |
-| Final-window maximum norm | 0.1853 | 0.1766 |
-
-These runs have an initial period of frequent clipping, followed by low, steady
-gradient norms and one isolated late clipped update. The coincidence at update
-6,376 is consistent with a shared minibatch effect, but does not establish its
-cause. Held-out perplexity continues improving at the subsequent scheduled
-evaluations (6,500, 7,000, and 7,500); the terminal evaluation is slightly worse
-than validation best. The figures use the full training history, and the final
-coefficient heatmaps explicitly use terminal update 7,570, not the retained
-validation-best checkpoint at 7,500.
-
-![Gradient windows and clipping](gradient_norms.png)
-
-The coefficient histories show gradual adaptation and substantial differences
-among heads. Many lower-order token-mean coefficients decrease from their Taylor
-initialization. The highest-order coefficients remain nonzero: the terminal
-pooled means of `8! c_8` and `12! c_12` are approximately 1.248 and 1.252,
-respectively, relative to initialization 1. Thus the observed stability does not
-come from uniformly removing the highest-order term. This does not measure its
-contribution to attention, which also depends on the score distribution and
-output normalization.
-
-Some expanded coefficients become negative. That is compatible with the SoS
-constraint: it constrains the complete polynomial, not each coefficient. All
-recorded coefficient diagnostics are finite and valid. Smooth histories at the
-evaluation cadence do not exclude changes between measurements.
-
-![Degree-eight effective coefficient histories](coefficients_m8.png)
-
-[Degree-twelve coefficient histories](coefficients_m12.png) and final heatmaps
-for [degree eight](coefficients_m8_final_taylor_relative.png) and
-[degree twelve](coefficients_m12_final_taylor_relative.png) provide the companion
-views. PDFs are saved alongside every PNG.
-
 ## One middle-layer head's amplitudes and biases
 
 The focused view uses **layer 8 of 15, head 1 of 14** (zero-based indices 7, 0)
@@ -88,15 +33,14 @@ these indices and the exact fields: `modulation_amplitude` for a and
 `projection_bias` for b. All 28 evaluations preserve the raw parameters for every
 generator coordinate; no token averaging or factorial rescaling is applied.
 
-![Degree-eight amplitudes and biases for layer eight, head one](head_parameters_m8.png)
+![Amplitudes, biases and projection norms for layer eight, head one](head_parameters_combined.png)
 
-![Degree-twelve amplitudes and biases for layer eight, head one](head_parameters_m12.png)
-
-Each column is a power in a **square factor**, with blue for U and orange for V;
-the top row shows a and the bottom row b, on a shared linear scale within each
-row. These are the parameters in `F_j(x)=f_j[1+b_j+a_j tanh(W_j^T x)]/2`, not
-parameters of the expanded `c_r`. Degree eight has factor coordinates
-`U_0,...,U_4,V_0,...,V_3`; degree twelve has
+The figure ([PDF](head_parameters_combined.pdf)) has one section per degree, m=8
+then m=12, each with three rows (a, b, and W norm). Each column is a power in a
+**square factor**, with blue for U and orange for V, on a shared linear scale
+within each section's row. These are the parameters in
+`F_j(x)=f_j[1+b_j+a_j tanh(W_j^T x)]/2`, not parameters of the expanded `c_r`.
+Degree eight has factor coordinates `U_0,...,U_4,V_0,...,V_3`; degree twelve has
 `U_0,...,U_6,V_0,...,V_5`. The highest factor power has U only. The generic
 `effective_coefficient_names` stored beside the arrays refer to expanded
 coefficients and must not be used to label the generator coordinates.
@@ -117,14 +61,7 @@ parameters are compatible with the sum-of-squares constraint.
 
 [head_parameter_summary.csv](head_parameter_summary.csv) gives each coordinate's
 analytic a/b initialization, first recorded values, terminal values, and recorded
-extrema for a, b, and the W norm. PDFs accompany all figures.
-
-[Combined SoS image](head_parameters_combined.png) ([PDF](head_parameters_combined.pdf))
-puts the same a, b, and W-norm histories into two sections, for m=8 and m=12.
-Each section has three rows and one column per factor power, retaining blue U
-and orange V curves. Its raw data, layer/head selection, initialization markers,
-and scaling are identical to the separate figures; axes are shared within each
-section's row. The standard regeneration command below also produces this image.
+extrema for a, b, and the W norm.
 
 ### Projection-vector norms
 
@@ -132,17 +69,13 @@ For these diagonal tanh generators, **a, b, and W are the only learned
 coefficient-generator parameters**. The Taylor square factors f are fixed;
 there is no extra inner tanh bias, dense mixing matrix, or coefficient gate.
 
-The same head's W figures read `projection_kernel_l2`. The executed diagnostic
+The figure's W rows read `projection_kernel_l2`. The executed diagnostic
 computes `np.linalg.norm(kernel, axis=-2)` for the
 `[layer, head, input_channel, factor_coordinate]` parameter array. Thus each
 curve is the Euclidean norm of one 896-dimensional projection vector in
 `tanh(W_j^T x)`, with the same U/V factor-power indexing as a and b. It is not a
 matrix spectral norm, a norm of all the head's projections combined, or an
 average over tokens. No factorial or Taylor-factor rescaling is applied.
-
-![Degree-eight projection norms for layer eight, head one](head_w_norms_m8.png)
-
-![Degree-twelve projection norms for layer eight, head one](head_w_norms_m12.png)
 
 All 28 norm snapshots are finite and nonnegative. Over the saved history, norms
 range from 0.9707 to 1.6091 at degree eight and 0.9517 to 1.8566 at degree twelve.
@@ -159,7 +92,7 @@ Norms alone cannot establish tanh saturation: that depends on the distribution
 of `W_j^T x`, including the direction of W and the input correlations. Changes
 in projection direction are also invisible to these norm histories.
 
-## What the coefficients mean
+## How the parameters form the polynomial
 
 Suppressing layer/head indices, the generator produces
 
@@ -180,30 +113,7 @@ p_t(s)=\left(\sum_{j=0}^{d}U_j(x_t)s^j\right)^2
 c_r=\sum_{i+j=r}U_iU_j+\sum_{i+j=r}V_iV_j.
 \]
 
-The initialization `b=1, a=0` reproduces `c_r=1/r!` up to rounding. The plotted
-`effective_summary` values are these expanded **actual `c_r`**, already including
-factorial order scaling. They are neither the generator parameters `a,b,W` nor
-the square factors. No further factorial division is applied.
-
-History panels show all 210 layer/head token means, their median, and their
-10th–90th percentiles across layer/head means. The bands are **not token
-quantiles or confidence intervals**. Each panel uses its own linear vertical
-axis. Final heatmaps separately display `r! mean_x c_r`, explicitly scaled
-relative to Taylor initialization, to make different orders comparable.
-[coefficient_summary.csv](coefficient_summary.csv) also preserves pooled token
-mean/std, observed extrema, and counts of heads with negative means or any
-negative token coefficient. Pooled variance includes both within-head token
-variance and between-head mean variation.
-
-The executed query implementation expands the squares in FP32 and evaluates the
-expanded polynomial with Mosaic. It does not evaluate two squares directly.
-Finite-precision cancellation can therefore yield small negative weights near
-zeros despite algebraic nonnegativity. These measurements establish stable
-training behavior for the two selected runs; they do not prove that SoS removes
-all cancellation, guarantees stability at larger degree, or explains the
-performance improvement. Token-level coefficient samples and inter-coefficient
-covariances were not saved, so polynomial uncertainty bands cannot be recovered
-from these marginal summaries.
+The initialization `b=1, a=0` reproduces `c_r=1/r!` up to rounding.
 
 ## Regeneration
 
@@ -214,12 +124,12 @@ uv sync --project scaffolds/transformer --locked --link-mode hardlink
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/learning_dynamics/sos_training_dynamics/plot.py
 ```
 
-The script checks scientific input hashes, complete status, model shape, gradient
-window coverage, and the coefficient sample/array invariants. It regenerates all
-PNG/PDF figures and the three summary CSVs from committed run measurements; no GPU,
-dataset, checkpoint, or training log is needed. Repeated regeneration is
-byte-identical in the locked environment. To deliberately change selected inputs,
-edit `selection.yaml`, refresh its pins, and regenerate:
+The script checks scientific input hashes, complete status, model shape, and the
+recorded parameter arrays. It regenerates the figure (PNG and PDF) and the summary
+CSV from committed run measurements; no GPU, dataset, checkpoint, or training log
+is needed. Repeated regeneration is byte-identical in the locked environment. To
+deliberately change selected inputs, edit `selection.yaml`, refresh its pins, and
+regenerate:
 
 ```bash
 scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/diagnostics/learning_dynamics/sos_training_dynamics

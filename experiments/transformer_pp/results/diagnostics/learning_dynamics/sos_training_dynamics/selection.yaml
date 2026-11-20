@@ -1,17 +1,10 @@
-question: Are the completed Transformer++ sum-of-squares query-polynomial runs stable
-  during training, and how do their effective coefficients evolve?
+question: How do one middle-layer head's coefficient-generator parameters (a, b and
+  W norms) evolve in the completed Transformer++ sum-of-squares query-polynomial runs?
 settings:
   model_shape:
     num_layers: 15
     hidden_size: 896
     num_heads: 14
-  gradient_scope: global norm before clipping; window statistics cover every optimizer
-    update
-  late_training_start_exclusive: 1500
-  coefficient_field: attention_diagnostics.coefficients.effective_summary
-  coefficient_sample: same first held-out sequence; 2048 query tokens per evaluation
-  coefficient_convention: p_t(s) = sum_r c_r(x_t) s^r; c_r already include factorial
-    order scaling
   terminal_step: 7570
   single_head_parameters:
     layer_index: 7

@@ -17,7 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.ticker import MaxNLocator, StrMethodFormatter
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 import yaml
 
@@ -114,70 +114,6 @@ def save(fig, out: Path, name: str) -> None:
     plt.close(fig)
 
 
-def figure(data: dict, out: Path, *, norms: bool) -> None:
-    degree, steps = data["degree"], data["steps"]
-    columns = 3 if degree == 8 else 4
-    rows = math.ceil((degree + 1) / columns)
-    fig, axes = plt.subplots(rows, columns, figsize=(15.2, 2.2 * rows + 2.1),
-                             sharex=True, sharey=True, squeeze=False)
-    values = data["w_l2"] if norms else np.concatenate((data["a"].ravel(), data["b"].ravel(), [0., 1.]))
-    low, high = float(np.min(values)), float(np.max(values))
-    padding = .07 * max(high - low, .1)
-    for order, ax in enumerate(axes.flat):
-        if order > degree:
-            ax.set_visible(False)
-            continue
-        if norms:
-            ax.plot(steps, data["w_l2"][:, order], color=BLUE, lw=2, marker="o", markersize=2.6,
-                    markeredgewidth=0)
-        else:
-            for name, color, initial in (("a", BLUE, 0.), ("b", ORANGE, 1.)):
-                ax.plot(steps, data[name][:, order], color=color, lw=2, marker="o", markersize=2.6,
-                        markeredgewidth=0)
-                ax.scatter([0], [initial], color=color, marker="D", s=22, zorder=4, clip_on=False)
-                ax.axhline(initial, color="#aeb6bf", lw=.65, ls=(0, (4, 3)), zorder=0)
-        ax.set_title(rf"Polynomial order $r={order}$", fontsize=12, loc="left", color=INK, pad=8)
-        ax.set_xlim(0, steps[-1])
-        ax.set_ylim(low - padding, high + padding)
-        ax.set_xticks([0, 2500, 5000, 7500])
-        ax.xaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
-        ax.yaxis.set_major_locator(MaxNLocator(5))
-        ax.grid(axis="y", color="#e4e8eb", linewidth=.65)
-        ax.spines[["top", "right"]].set_visible(False)
-        ax.spines[["bottom", "left"]].set_color("#b2bac3")
-        ax.tick_params(colors="#4d5965", labelsize=9)
-        if order % columns == 0:
-            ax.set_ylabel(r"$\|W_r\|_2$" if norms else "Stored parameter", fontsize=11)
-        if order + columns > degree:
-            ax.tick_params(labelbottom=True)
-            ax.set_xlabel("Training update", fontsize=10)
-    fig.suptitle(rf"Transformer++ · Query $m={degree}$ · layer {data['layer'] + 1}, head {data['head'] + 1}",
-                 x=.055, y=.98, ha="left", color=INK, fontsize=20, fontweight="bold")
-    subtitle = (f"Learned W norms · Euclidean norm over {data['input_dimension']} input channels"
-                if norms else r"Learned amplitudes and biases · $c_r(x)=[b_r+a_r\tanh(W_r^\top x)]/r!$")
-    fig.text(.055, .929, subtitle, fontsize=12, color="#5a6672")
-    if norms:
-        handles = [Line2D([], [], color=BLUE, lw=2, marker="o", markersize=4,
-                          label=r"Projection norm $\|W_r\|_2$")]
-    else:
-        handles = [Line2D([], [], color=color, lw=2, marker="o", markersize=4, label=label)
-                   for color, label in ((BLUE, "Amplitude a"), (ORANGE, "Bias b"))]
-        handles.append(Line2D([], [], color="#7a8591", linestyle="none", marker="D", markersize=4,
-                              label="Analytic initialization: a = 0, b = 1"))
-    fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(.05, .902),
-               frameon=False, ncol=len(handles), fontsize=10.5, columnspacing=2.5)
-    footer = ("Raw vector norms, no rescaling; no step-zero norm was saved. Norms alone do not determine tanh saturation."
-              if norms else "Raw learned a,b; no factorial rescaling in this plot. Step-zero diamonds are analytic; curves begin at update 100.")
-    fig.text(.055, .022,
-             f"Layer {data['layer'] + 1} of {data['layers']}; head {data['head'] + 1} of {data['heads']} "
-             f"(indices {data['layer']}, {data['head']}), fixed before inspecting the curves. "
-             f"{len(steps)} snapshots, updates {steps[0]:,}–{steps[-1]:,}.\n"
-             + footer + " Shared linear y-scale across panels; lines connect saved snapshots.",
-             fontsize=9.2, color="#687583", linespacing=1.6)
-    fig.subplots_adjust(left=.065, right=.985, bottom=.115, top=.825, hspace=.35, wspace=.18)
-    save(fig, out, f"head_{'w_norms' if norms else 'parameters'}_m{degree}")
-
-
 def combined_figure(datasets: list[dict], out: Path) -> None:
     """Match the combined SoS presentation, using direct polynomial orders here."""
     datasets = sorted(datasets, key=lambda data: data["degree"])
@@ -269,8 +205,6 @@ def main() -> None:
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 11, "pdf.fonttype": 42}):
         combined_figure(datasets, OUT)
         for data in datasets:
-            figure(data, OUT, norms=False)
-            figure(data, OUT, norms=True)
             summary.extend(summary_rows(data, selection["settings"]))
     with (OUT / "parameter_summary.csv").open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(summary[0]), lineterminator="\n")
