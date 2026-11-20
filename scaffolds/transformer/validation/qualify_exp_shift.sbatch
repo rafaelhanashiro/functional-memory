@@ -8,6 +8,8 @@
 # Submit from this checkout; outputs stay in ignored scaffold validation logs:
 # sbatch --partition=standard,long --nodelist=akita --output=scaffolds/transformer/validation/logs/exp-shift-%j.log \
 #   scaffolds/transformer/validation/qualify_exp_shift.sbatch <source-commit>
+# (H100: --partition=long --nodelist=dogo, so that it waits for a free GPU rather than preempting a long job.)
+# Then record it: python3 scaffolds/transformer/validation/record_exp_shift_qualification.py <job-id> <record-name>
 # With --gres=gpu:2 the job runs on the first granted GPU not listed in FAULTY_GPUS.
 #SBATCH --job-name=qualify-exp-shift
 #SBATCH --partition=standard
@@ -21,8 +23,9 @@ set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the worktree}"
 LAUNCH_COMMIT="${1:?Supply the frozen source commit}"
 python3 scaffolds/launch/frozen.py check --launch-commit "$LAUNCH_COMMIT" --experiment transformer_pp --scaffold transformer
-# GPUs that fail CUDA initialization (CLUSTERS.md): dogo's H100 at Slurm index 4 and mastiff's at index 1.
+# GPUs that fail CUDA initialization (CLUSTERS.md): dogo's H100 at Slurm index 4 and mastiff's at indices 1 and 7.
 FAULTY_GPUS="GPU-355f34a2-be0c-ba44-022b-1a056f643b80 GPU-86f64c73-c368-bcfb-49e5-6f24ab5eb7a5"
+FAULTY_GPUS+=" GPU-cea82b77-b090-2e61-f425-c4b1608e8739"
 mapfile -t GRANTED < <(nvidia-smi --query-gpu=uuid --format=csv,noheader)
 SELECTED=""
 for uuid in "${GRANTED[@]}"; do

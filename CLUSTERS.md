@@ -70,6 +70,9 @@ GPU index 4) failed CUDA initialization under JAX with `CUDA_ERROR_UNKNOWN`, alt
 no uncorrected ECC errors or pending remaps; one-GPU jobs granted it fail at acceptance within seconds,
 before any update (six did that day). Until the admins reset it, hold it with a one-GPU placeholder job on
 `dogo` that keeps its GPU only when JAX fails to initialize it, or exclude `dogo` for one-GPU jobs.
+On 2026-11-20 `mastiff`'s H100 at bus `21:00.0` (UUID `GPU-cea82b77-b090-2e61-f425-c4b1608e8739`, Slurm GPU
+index 7) failed the same way (`cuInit` `CUDA_ERROR_UNKNOWN`, with `nvidia-smi` answering); it was the node's only
+idle GPU, so a one-GPU job on `mastiff` lands on it while the other seven are busy.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity

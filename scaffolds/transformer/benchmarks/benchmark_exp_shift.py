@@ -36,11 +36,12 @@ def _inputs(width):
 
 
 def _forward_and_vjp(shifted, q, k, v, cotangent):
+    """The output with the gradients: the unshifted VJP keeps only Q/K/V, so XLA would drop an unused forward."""
     if shifted:
         (output, shift), pullback = jax.vjp(partial(fused_unnormalized_attention, exp_shift="row_max"), q, k, v)
-        return pullback((cotangent, jnp.zeros_like(shift)))
+        return output, shift, pullback((cotangent, jnp.zeros_like(shift)))
     output, pullback = jax.vjp(fused_unnormalized_attention, q, k, v)
-    return pullback(cotangent)
+    return output, pullback(cotangent)
 
 
 def _forward(shifted, q, k, v):
