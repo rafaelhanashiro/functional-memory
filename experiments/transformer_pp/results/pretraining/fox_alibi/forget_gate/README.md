@@ -359,7 +359,7 @@ separate the degree from the implementation; a best PPL at least
   stay at or below 12.2 (update 1,403), and after 4,000 at or below 4.4. The series' two other window
   maxima above 100 came earlier: m = 8 199.0 at updates 801–900 and m = 4 169.6 at 501–600. With one
   seed per degree, the spikes cannot be tied to the gap; other gated polynomial runs spiked as high
-  as 1,425 ([gated_gradient_spikes](../../../diagnostics/learning_dynamics/gated_gradient_spikes/README.md)).
+  as 1,425 after update 1,500 (per-order query gates, `r507193d47450`).
 - **The long ranges spread over the top orders.** At update 7,570 the median half-life over the 210
   layer-heads is 0.47–1.19 tokens for orders 0–6, 2.31–2.67 for orders 7–9 (13, 26 and 34 heads
   above 100 tokens) and 3.81–5.79 for orders 10–12 (43, 42 and 50 heads above 100).
