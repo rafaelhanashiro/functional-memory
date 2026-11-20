@@ -1329,12 +1329,12 @@ for bit, and an infinite or NaN entry makes its row NaN.
 Below that overflow the plain FP32 arithmetic still fails in the backward. With `x = mean(o_t²) + eps`, the
 gradient of `o_t / sqrt(x)` is `(g - o_t mean(g ⊙ o_t) / x) / sqrt(x)`, and FP32 forms the second term through
 `x^(-3/2)`: a subnormal number once the head's output RMS passes 4.4e12 and zero past 1.1e15. That term removes
-the gradient's component along `o_t`. On GPU the gradient of such a row is off by 1e-5 of its norm at an RMS of
+the gradient's component along `o_t`. On GPU the gradient of such a row is off by 7e-6 of its norm at an RMS of
 3e13, 0.2% at 2e14 and 2.6% at 6e14, and from 9e14 up to the mean square's overflow it keeps the whole component
 along `o_t` (12.5% of the gradient's norm for a random cotangent over 64 channels; in two-layer models with every
-head output above 1e15, Q/K gradients off by 60% to 140% of their norm). XLA's CPU code flushes subnormal numbers,
-so there the whole term is lost from 4.4e12. Any unnormalized kernel can reach such outputs: `T_8(s)` alone
-passes 1e15 at a score of 283.
+head output above 1e15, Q/K gradients off by 60% to 100% of their norm and coefficient gradients by one to ten
+times theirs). XLA's CPU code flushes subnormal numbers, so there the whole term is lost from 4.4e12. Any
+unnormalized kernel can reach such outputs: `T_8(s)` alone passes 1e15 at a score of 283.
 
 `model.attention_head_rms_prescale: max_abs` evaluates the same function in units of each row's size
 (`attention/output_scaling.py`, `attention/pieces.py` `head_rms_prescale_problem`). For any constant `c > 0`,
@@ -1354,8 +1354,10 @@ separate guard. With a row-shifted exponential the row holds `y = e^(-m) o`, so 
 `log max|o| = m + log max|y|`: above `e^-23 sqrt(eps)` it is divided by `max|y|` with
 `eps (e^(-m/2) / max|y| · e^(-m/2))²` as its epsilon, and below it the function is linear to FP64's rounding and is
 evaluated as `y e^m / sqrt(eps)` (the slope capped at `e^80.5`, which only an exactly zero row reaches). This also
-evaluates rows the shifted arithmetic alone cannot: a zero row at shifts of 22 to 37 (a NaN gradient without the
-prescale) and rows below 1e-13 at shifts above 22. A row with an infinite or NaN entry is NaN, as without it. It
+evaluates rows the shifted arithmetic alone cannot: a zero row at shifts above 22 (a NaN gradient without the
+prescale, until its shifted epsilon underflows: 37 on CPU) and rows below 1e-13 at shifts above 22 (an infinite
+gradient, or a zero output once the mean square underflows). A row with an infinite or NaN entry is NaN, as
+without it. It
 applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
 included); other recipes reject it. `scaffolds.records create` writes `max_abs` into fresh recipes with
 `head_rms_norm` (`configs.base.fresh_recipe_uses_head_rms_prescale`); a fresh recipe there that sets `none` needs
