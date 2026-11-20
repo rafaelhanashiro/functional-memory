@@ -76,8 +76,10 @@ existing Mosaic case of the unprescaled head RMSNorm):
 | GPU | Job | Source | Result | JUnit seconds |
 | --- | --- | --- | --- | --- |
 | B200 (`shiba`, long) | 9250 | `520f5293` | 19 passed: probe, shifted composition, 8 kernel cases, 8 model cases, the control | 314 |
-| H100 SXM (`dogo`, long) | 9249 | `520f5293` | pending at 18:35 (submitted 18:06): `dogo` full | |
-| B300 SXM6 (`akita`, long) | 9251 | `520f5293` | pending at 18:35 (submitted 18:06): `akita` full | |
+| H100 SXM (`dogo`, long) | 9291 | `370afb2e` | pending at 18:35: `dogo` full since the first submission at 18:06 | |
+| B300 SXM6 (`akita`, long) | 9292 | `370afb2e` | pending at 18:35: `akita` full since the first submission at 18:06 | |
+
+`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical).
 
 B200 (CUDA 13 environment), [record](runs/head-rms-prescale-b200/record.json):
 
