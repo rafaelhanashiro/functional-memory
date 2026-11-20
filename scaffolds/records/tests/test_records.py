@@ -1117,3 +1117,67 @@ def test_cli_keeps_the_unshifted_exponential_where_the_shift_does_not_apply(tmp_
     main()
     run = Path(capsys.readouterr().out.strip())
     assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_exp_shift"] == "none"
+
+
+HEAD_RMS = {"attention_normalization": False, "attention_output_scaling": "head_rms_norm"}
+
+
+@pytest.mark.parametrize("model", [
+    {**HEAD_RMS, "attention_degree": 8, "attention_backend": "mosaic", "qk_head_dim": 4, "value_head_dim": 64,
+     "hidden_size": 128, "num_heads": 2, "num_kv_heads": 2},
+    {**HEAD_RMS, "attention_degree": 4, "attention_coefficients": "learned"},
+    {**HEAD_RMS},
+    {"attention_normalization": True, "attention_output_scaling": "head_rms_norm"},
+])
+def test_cli_prescales_head_rms_norm_of_fresh_recipes(tmp_path, monkeypatch, capsys, model):
+    """The max-abs prescale wherever head RMSNorm output scaling runs
+    (configs.base.fresh_recipe_uses_head_rms_prescale), beside the exponential's row shift where that applies; an
+    explicit none there needs --allow-plain-head-rms."""
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    train = {"dtype": "bfloat16"} if model.get("attention_backend") == "mosaic" else {}
+    source.write_text(yaml.safe_dump({"model": model, "train": train}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    written = yaml.safe_load((run / "config.yaml").read_text())["model"]
+    assert written["attention_head_rms_prescale"] == "max_abs"
+    exponential = not model.get("attention_normalization") and "attention_degree" not in model
+    assert written["attention_exp_shift"] == ("row_max" if exponential else "none")
+    validate_record(run)
+    assert json.loads((run / "record.json").read_text())["receipt"]["digest"]
+    explicit = tmp_path / "explicit.yaml"
+    explicit.write_text(yaml.safe_dump({"model": {**model, "attention_head_rms_prescale": "none"}, "train": train}))
+    arguments = ["records", "create", "--study", str(tmp_path / "other"), "--config", str(explicit)]
+    monkeypatch.setattr("sys.argv", arguments)
+    with pytest.raises(SystemExit) as failure:
+        main()
+    assert failure.value.code == 2
+    assert "--allow-plain-head-rms" in capsys.readouterr().err
+    assert not (tmp_path / "other").exists()
+    monkeypatch.setattr("sys.argv", arguments + ["--allow-plain-head-rms"])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_head_rms_prescale"] == "none"
+
+
+@pytest.mark.parametrize("model", [
+    {}, {"attention_normalization": False, "attention_output_scaling": "inverse_position"},
+    {"attention_normalization": False, "attention_degree": 2, "attention_head_rms_prescale": "none"},
+])
+def test_cli_keeps_none_without_head_rms_norm(tmp_path, monkeypatch, capsys, model):
+    from scaffolds.records.__main__ import main
+
+    source = tmp_path / "recipe.yaml"
+    source.write_text(yaml.safe_dump({"model": model, "train": {}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
+    main()
+    run = Path(capsys.readouterr().out.strip())
+    assert yaml.safe_load((run / "config.yaml").read_text())["model"]["attention_head_rms_prescale"] == "none"
+    refused = tmp_path / "refused.yaml"
+    refused.write_text(yaml.safe_dump({"model": {**model, "attention_head_rms_prescale": "max_abs"}, "train": {}}))
+    monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "refused"), "--config",
+                                     str(refused)])
+    with pytest.raises(ValueError, match="does not apply"):
+        main()

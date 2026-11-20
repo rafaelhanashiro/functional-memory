@@ -54,6 +54,11 @@ trains on the blocked backend's causal strips: an omitted
 rejected unless `--allow-scan-blocked-attention` is supplied. Recipes on other backends keep
 the inert `scan`.
 
+A recipe with head RMSNorm output scaling (`model.attention_output_scaling: head_rms_norm`) evaluates it
+with the max-abs prescale: an omitted `model.attention_head_rms_prescale` resolves to `max_abs`, and an
+explicit `none` is rejected unless `--allow-plain-head-rms` is supplied. Recipes without head RMSNorm keep
+`none`, the only value they accept.
+
 Commit prepared recipes and study membership before production launch. A study’s
 frozen execution set includes all of its registered input recipes. Allocate the
 whole sweep before any jobs can run or requeue.

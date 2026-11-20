@@ -1326,6 +1326,45 @@ divided by its largest magnitude first, and `rms_norm_eps` by its square: the sa
 by RMSNorm's scale invariance. Rows whose mean square is finite keep the plain arithmetic bit
 for bit, and an infinite or NaN entry makes its row NaN.
 
+Below that overflow the plain FP32 arithmetic still fails in the backward. With `x = mean(o_t²) + eps`, the
+gradient of `o_t / sqrt(x)` is `(g - o_t mean(g ⊙ o_t) / x) / sqrt(x)`, and FP32 forms the second term through
+`x^(-3/2)`: a subnormal number once the head's output RMS passes 4.4e12 and zero past 1.1e15. That term removes
+the gradient's component along `o_t`. On GPU the gradient of such a row is off by 1e-5 of its norm at an RMS of
+3e13, 0.2% at 2e14 and 2.6% at 6e14, and from 9e14 up to the mean square's overflow it keeps the whole component
+along `o_t` (12.5% of the gradient's norm for a random cotangent over 64 channels; in two-layer models with every
+head output above 1e15, Q/K gradients off by 60% to 140% of their norm). XLA's CPU code flushes subnormal numbers,
+so there the whole term is lost from 4.4e12. Any unnormalized kernel can reach such outputs: `T_8(s)` alone
+passes 1e15 at a score of 283.
+
+`model.attention_head_rms_prescale: max_abs` evaluates the same function in units of each row's size
+(`attention/output_scaling.py`, `attention/pieces.py` `head_rms_prescale_problem`). For any constant `c > 0`,
+`o / sqrt(mean(o²) + eps) = (o / c) / sqrt(mean((o / c)²) + eps / c²)` identically in `o`, so with `c` taken from
+the row and held constant to differentiation the values and the gradients are the plain function's in real
+arithmetic (the total derivative through `c` vanishes):
+
+| `attention_head_rms_prescale` | Head RMSNorm of a head's output `y` (token and head) |
+|---|---|
+| `none` (default; every historical recipe) | `w ⊙ y / sqrt(mean(y²) + eps)`, a row whose FP32 mean square overflows divided by its largest magnitude first |
+| `max_abs` | `w ⊙ (y / c) / sqrt(mean((y / c)²) + eps / c²)`, `c = max(max_c \|y_c\|, 1)` |
+
+A row whose largest magnitude is at most one keeps `c = 1`, the plain arithmetic bit for bit, which is in range
+there; a larger row has `mean((y / c)²)` in `[1 / channels, 1]` and `eps / c²` at most `eps`, so every factor of
+the forward and the backward stays near one whatever the row's scale, and the mean square's overflow needs no
+separate guard. With a row-shifted exponential the row holds `y = e^(-m) o`, so it is classified by
+`log max|o| = m + log max|y|`: above `e^-23 sqrt(eps)` it is divided by `max|y|` with
+`eps (e^(-m/2) / max|y| · e^(-m/2))²` as its epsilon, and below it the function is linear to FP64's rounding and is
+evaluated as `y e^m / sqrt(eps)` (the slope capped at `e^80.5`, which only an exactly zero row reaches). This also
+evaluates rows the shifted arithmetic alone cannot: a zero row at shifts of 22 to 37 (a NaN gradient without the
+prescale) and rows below 1e-13 at shifts above 22. A row with an infinite or NaN entry is NaN, as without it. It
+applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
+included); other recipes reject it. `scaffolds.records create` writes `max_abs` into fresh recipes with
+`head_rms_norm` (`configs.base.fresh_recipe_uses_head_rms_prescale`); a fresh recipe there that sets `none` needs
+`--allow-plain-head-rms`. Run metadata records `attention_head_rms_prescale` and a formula clause. Continuations
+may change it with the backend: it changes no parameter and keeps the function. Telemetry is unchanged (it reads
+the output before its normalization). In FP32 the prescaled output and gradient match FP64 to 1e-6 at output RMS
+1e-25 to 1e30, and a two-layer model's gradients match its FP64 counterpart's to 1e-5 with every head output above
+1e15. Qualification: [validation](validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20).
+
 The unnormalized exponential with `head_rms_norm` fails earlier: `e^s` passes FP32's maximum at
 `s` about 88.7, and before that the RMSNorm backward's derivative of `rsqrt` (the mean square's
 -3/2 power) leaves FP32's normal range once a head's output RMS passes about 5e12, at row maxima
@@ -1831,7 +1870,10 @@ in one packed vector:
 
 With `attention_exp_shift: row_max` the attention output before output scaling is the shifted
 `e^(-m_t) o_t`, which the two RMS statistics describe; `head_rms_norm_gain_max` stays the factor
-for `o_t` itself, `1/sqrt(e^(log mean(y^2) + 2 m_t) + eps)`.
+for `o_t` itself, `1/sqrt(e^(log mean(y^2) + 2 m_t) + eps)`. `attention_head_rms_prescale: max_abs` changes
+none of these statistics: they describe the output before its normalization and the function's own factor. They
+are FP32 mean squares, so `attention_output_rms` reads infinite once a row's L2 norm passes 1.8e19, which the
+prescaled normalization still evaluates.
 
 Parameter groups are embedding, output head, attention Q/K/V, attention output
 projection, MLP, norm scales, QK-norm scales, attention-output norm scales,

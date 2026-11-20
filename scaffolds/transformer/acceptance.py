@@ -58,6 +58,9 @@ NO_TESTS_COLLECTED = 5
 RUNTIME_KEYS = ("NCCL_P2P_DISABLE", "XLA_PYTHON_CLIENT_MEM_FRACTION", "XLA_PYTHON_CLIENT_PREALLOCATE",
                 "XLA_PYTHON_CLIENT_ALLOCATOR", "XLA_FLAGS", "CUDA_HOME", "TRANSFORMER_CUDA_ENVIRONMENT")
 NORMALIZED_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_normalized_polynomial_fused_attention.py"
+# The device cases of head RMSNorm's max-abs prescale that every GPU runs (tests/test_head_rms_prescale.py).
+HEAD_RMS_GPU_TESTS = ("test_gpu_fp32_gradient_matches_fp64_at_every_scale_of_the_measured_probe",
+                      "test_gpu_composition_with_the_row_shift_matches_fp64")
 INPUT_DEPENDENT_COEFFICIENT_TESTS = "scaffolds/transformer/tests/test_input_dependent_coefficients.py"
 QUERY_TANH_POLYNOMIAL_TESTS = "scaffolds/transformer/tests/test_query_tanh_polynomial.py"
 DENSE_QUERY_READOUT_TESTS = "scaffolds/transformer/tests/test_dense_query_readout.py"
@@ -560,6 +563,14 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             # The row-maximum shift: CPU, against the unshifted exponential and FP64, scan and strips; GPU, the strips'
             # production precision. The fused kernel's GPU cases are in unnormalized_fused_attention, selected above.
             tests.append("exp_row_max_shift")
+        if model.get("attention_head_rms_prescale", "none") != "none":
+            # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at every output scale;
+            # GPU, the device's own FP32 arithmetic at the scales where the plain backward fails and through the
+            # row shift. The module's Mosaic cases belong to the scaffold's qualification
+            # (validation/qualify_head_rms_prescale.sbatch): they skip where a kernel is not admitted, and a
+            # run's kernels have their own suites below.
+            tests.extend(["head_rms_prescale"] if cpu
+                         else [f"head_rms_prescale.py::{test}" for test in HEAD_RMS_GPU_TESTS])
         if resolved_backend == "mosaic" and not cpu:
             if _pointwise_score_transform(model):
                 tests.extend(["pointwise_attention", "pointwise_score_transform"])
@@ -908,6 +919,7 @@ def matches_softmax_initialization(config) -> dict:
     control = replace(config, model=replace(config.model, attention_backend="blocked",
                                            attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none", attention_exp_shift="none",
+                                           attention_head_rms_prescale="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_static_sos_parameterization="direct",
@@ -979,7 +991,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     control = replace(config, model=replace(
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
-        attention_exp_shift="none",
+        attention_exp_shift="none", attention_head_rms_prescale="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",

@@ -33,6 +33,15 @@ resumptions retain their recorded normalization; changing the canonical recipe
 does not change those experiments. The architecture and optimizer below otherwise
 retain the established recipe, including its previously selected learning rate.
 
+Unnormalized kernels normalize each head's output with per-head RMSNorm
+(`model.attention_output_scaling: head_rms_norm`). New runs evaluate it with the max-abs prescale
+(`model.attention_head_rms_prescale: max_abs`, which `scaffolds.records create` writes): each token and
+head's output is divided by its largest magnitude, at least one, before the normalization. It is the same
+function, and its FP32 gradient is exact at any output scale; the plain evaluation's gradient degrades once a
+head's output RMS passes about 3e13 and loses its projection term from 9e14
+([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). Historical runs and their
+resumptions keep their recorded evaluation.
+
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
 and FFN down projections additionally scale by 1/sqrt(2 × layers), 1/sqrt(30) at the

@@ -9,7 +9,9 @@ import jax.numpy as jnp
 from flax import nnx
 
 from scaffolds.transformer.attention.core import attention_core
-from scaffolds.transformer.attention.output_scaling import OUTPUT_SCALINGS, scale_attention_output
+from scaffolds.transformer.attention.output_scaling import (
+    HEAD_RMS_PRESCALES, OUTPUT_SCALINGS, scale_attention_output,
+)
 from scaffolds.transformer.attention.qk_norm import (
     TOKEN_SCALE_PARAMETERS, cosine_score_operands, rms_score_operands, scale_rms_queries, token_log_scale,
 )
@@ -93,6 +95,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         score_mlp_form=getattr(config, "attention_score_mlp_form", "kernel"),
         score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
         attention_exp_shift=getattr(config, "attention_exp_shift", "none"),
+        attention_head_rms_prescale=getattr(config, "attention_head_rms_prescale", "none"),
         rngs=rngs,
     )
 
@@ -151,6 +154,7 @@ class MultiHeadAttention(nnx.Module):
         score_mlp_form: str = "kernel",
         score_mlp_activation: str = "silu",
         attention_exp_shift: str = "none",
+        attention_head_rms_prescale: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -626,6 +630,14 @@ class MultiHeadAttention(nnx.Module):
                              "scaling and RoPE or no positional encoding, on the blocked backend or, plain and "
                              "ungated, the fused kernel")
         self.attention_exp_shift = attention_exp_shift
+        # Head RMSNorm in units of each row's largest magnitude (attention/output_scaling.py): the normalization's
+        # own evaluation, so it needs that output scaling and nothing else.
+        if attention_head_rms_prescale not in HEAD_RMS_PRESCALES:
+            raise ValueError(f"Unknown head RMSNorm prescale: {attention_head_rms_prescale!r}")
+        if attention_head_rms_prescale != "none" and attention_output_scaling != "head_rms_norm":
+            raise ValueError("The max-abs prescale evaluates head RMSNorm output scaling, which this layer does "
+                             "not use")
+        self.attention_head_rms_prescale = attention_head_rms_prescale
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
             # while the public recipe records the structural constraint separately.
@@ -1068,11 +1080,18 @@ class MultiHeadAttention(nnx.Module):
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None,
             **shifted)
         y = scale_attention_output(y, self.attention_output_scaling,
-                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps, **shifted)
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps, **shifted,
+                                   **self._head_rms_prescale())
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         if return_coefficients:
             return output, effective_coefficients
         return (output, diagnostics) if return_diagnostics else output
+
+    def _head_rms_prescale(self) -> dict:
+        """Head RMSNorm's prescale as a keyword; only a prescaled recipe passes it, so every other call is
+        unchanged."""
+        prescale = self.attention_head_rms_prescale
+        return {} if prescale == "none" else {"head_rms_prescale": prescale}
 
     def _coefficients_per_query(self, parameters, query_coefficients) -> bool:
         """Whether static or fixed polynomial coefficients run per query: when a forget gate, a score transform,
@@ -1133,6 +1152,7 @@ class MultiHeadAttention(nnx.Module):
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None)
         y = scale_attention_output(y, self.attention_output_scaling,
-                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps)
+                                   output_norm_scale=output_norm_scale, eps=self.rms_norm_eps,
+                                   **self._head_rms_prescale())
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         return (output, diagnostics) if return_diagnostics else output

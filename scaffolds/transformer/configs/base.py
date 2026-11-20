@@ -72,6 +72,14 @@ class ModelConfig:
     # exponential); attention/pieces.py exp_shift_problem. Fresh eligible recipes use it
     # (fresh_recipe_uses_exp_shift).
     attention_exp_shift: Literal["none", "row_max"] = "none"
+    # How head RMSNorm output scaling is evaluated: "none" (historical) as y / sqrt(mean(y^2) + eps), whose FP32
+    # backward degrades once a head's output RMS passes about 3e13 and from 9e14 loses the term that removes the
+    # gradient's component along y; "max_abs" on each row (token and head) divided by its largest magnitude, at
+    # least one, a constant to differentiation, with eps divided by its square (attention/output_scaling.py). The
+    # same function in real arithmetic, with an FP32 gradient that is exact at any output scale; it applies
+    # wherever head RMSNorm does (attention/pieces.py head_rms_prescale_problem). Fresh recipes with head RMSNorm
+    # use it (fresh_recipe_uses_head_rms_prescale).
+    attention_head_rms_prescale: Literal["none", "max_abs"] = "none"
     attention_mechanism: Literal["dot_product", "gla", "gated_deltanet"] = "dot_product"
     # Gated DeltaNet's causal depthwise short-convolution width (FLA and paper default 4).
     gdn_conv_size: int = 4
@@ -955,6 +963,7 @@ class ModelConfig:
         _validate_zero_constant(self)
         _validate_score_transform(self)
         _validate_exp_shift(self)
+        _validate_head_rms_prescale(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
         elif self.attention_degree == 0:
@@ -1327,6 +1336,21 @@ def _validate_exp_shift(model: ModelConfig) -> None:
             raise ValueError(f"model.attention_exp_shift {model.attention_exp_shift} does not apply: {problem}")
 
 
+def _validate_head_rms_prescale(model: ModelConfig) -> None:
+    """The max-abs prescale of head RMSNorm (attention/pieces.py head_rms_prescale_problem): "none" leaves every
+    recipe as it was; "max_abs" only where head RMSNorm output scaling runs."""
+    from scaffolds.transformer.attention.output_scaling import HEAD_RMS_PRESCALES
+    from scaffolds.transformer.attention.pieces import head_rms_prescale_problem
+
+    if model.attention_head_rms_prescale not in HEAD_RMS_PRESCALES:
+        raise ValueError(f"Unknown model.attention_head_rms_prescale: {model.attention_head_rms_prescale!r}")
+    if model.attention_head_rms_prescale != "none":
+        problem = head_rms_prescale_problem(model)
+        if problem is not None:
+            raise ValueError(f"model.attention_head_rms_prescale {model.attention_head_rms_prescale} does not "
+                             f"apply: {problem}")
+
+
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
     coefficients or fixed static degree-one (0, 1) sigmoid/softplus/swish kernels with RoPE or no positional
@@ -1509,6 +1533,15 @@ def fresh_recipe_uses_exp_shift(model: ModelConfig) -> bool:
     from scaffolds.transformer.attention.pieces import exp_shift_problem
 
     return exp_shift_problem(model) is None
+
+
+def fresh_recipe_uses_head_rms_prescale(model: ModelConfig) -> bool:
+    """Whether a fresh recipe evaluates head RMSNorm with the max-abs prescale unless it says otherwise: wherever
+    it applies (attention/pieces.py head_rms_prescale_problem), that is every recipe with head RMSNorm output
+    scaling. Allocation (scaffolds.records create) applies this rule to the loaded recipe; others keep "none"."""
+    from scaffolds.transformer.attention.pieces import head_rms_prescale_problem
+
+    return head_rms_prescale_problem(model) is None
 
 
 def validate_config(config: Config) -> None:

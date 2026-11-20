@@ -783,6 +783,15 @@ def attention_identity(config) -> dict:
                 "unshifted exponential overflows FP32"))
         if identity["attention_implementation"] == "pallas_triton":
             identity["attention_implementation"] = "pallas_triton_row_max_shifted"
+    if getattr(config.model, "attention_head_rms_prescale", "none") != "none":
+        # How the formula's head RMSNorm is evaluated (attention/output_scaling.py), after every other clause.
+        identity.update(
+            attention_head_rms_prescale=config.model.attention_head_rms_prescale,
+            attention_formula=identity["attention_formula"] + (
+                "; head RMSNorm evaluated on each token and head's output divided by its largest magnitude, a "
+                "constant to differentiation, with its epsilon divided by that magnitude's square (an output too "
+                "small for that keeps its plain evaluation): the same function, with an FP32 gradient that is "
+                "exact at any output scale"))
     return identity
 
 

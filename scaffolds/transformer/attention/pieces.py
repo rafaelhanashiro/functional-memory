@@ -14,7 +14,9 @@ recipe on a fast backend must lie inside its kernel's declaration, and its accep
 that kernel against the blocked backend. The exponential applies the decay inside the exponent,
 exp(phi(s) + log D), which is the same weight. Unnormalized and followed by head RMSNorm, it may
 subtract each row's largest logit m_t first (EXP_SHIFTS, exp_shift_problem): y_t e^(-m_t) goes to the
-RMSNorm with the offset m_t, which keeps the function.
+RMSNorm with the offset m_t, which keeps the function. Head RMSNorm output scaling, after any kernel, may
+evaluate each row in units of its largest magnitude (output_scaling.HEAD_RMS_PRESCALES,
+head_rms_prescale_problem): the same function again, with an FP32 gradient that is exact at any output scale.
 
 Coefficients per query: on the blocked backend, static and fixed polynomial coefficients that meet a
 forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients
@@ -92,6 +94,15 @@ def exp_shift_problem(model) -> str | None:
             model.attention_forget_gate
             or not ScoreFunction(model.attention_score_transform, model.attention_score_prefactor).identity):
         return "the fused kernel shifts the plain exponential, without a forget gate or score functions"
+    return None
+
+
+def head_rms_prescale_problem(model) -> str | None:
+    """Why the max-abs prescale (attention/output_scaling.py) cannot evaluate this recipe's attention, or None. It
+    is head RMSNorm's own arithmetic, so it applies wherever head RMSNorm output scaling does: every kernel,
+    normalized or not, on every backend and positional encoding, with or without the exponential's row shift."""
+    if model.attention_output_scaling != "head_rms_norm":
+        return "it evaluates head RMSNorm output scaling, which this recipe does not use"
     return None
 
 

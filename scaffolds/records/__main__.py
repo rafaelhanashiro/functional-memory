@@ -45,6 +45,11 @@ def main() -> None:
         help="explicitly keep the unshifted exponential (model.attention_exp_shift: none) for a fresh unnormalized "
              "exponential recipe with head RMSNorm, instead of its row-maximum shift",
     )
+    create.add_argument(
+        "--allow-plain-head-rms", action="store_true",
+        help="explicitly keep the plain head RMSNorm arithmetic (model.attention_head_rms_prescale: none) for a "
+             "fresh recipe with head RMSNorm output scaling, instead of its max-abs prescale",
+    )
     receipts = commands.add_parser(
         "receipts", help="recompute runs' recipe receipts with this checkout and compare them with their records "
                          "(or, for runs that predate receipts, the scaffold's baseline)")
@@ -79,7 +84,9 @@ def main() -> None:
             parser.error("--config must contain a YAML mapping")
         if isinstance(recipe.get("model"), dict):
             from scaffolds.transformer.configs import Config, config_to_dict, load_config, validate_config
-            from scaffolds.transformer.configs.base import fresh_recipe_uses_blocked_strips, fresh_recipe_uses_exp_shift
+            from scaffolds.transformer.configs.base import (
+                fresh_recipe_uses_blocked_strips, fresh_recipe_uses_exp_shift, fresh_recipe_uses_head_rms_prescale,
+            )
             from scaffolds.transformer.models.initialization import REFERENCE
             supplied_model = recipe["model"]
             unset = "initialization" not in supplied_model
@@ -121,6 +128,12 @@ def main() -> None:
             use_exp_shift = fresh_recipe_uses_exp_shift(config.model)
             if use_exp_shift and "attention_exp_shift" not in supplied_model:
                 config.model.attention_exp_shift = "row_max"
+                validate_config(config)
+            # Head RMSNorm output scaling is evaluated with its max-abs prescale wherever it runs
+            # (configs.base.fresh_recipe_uses_head_rms_prescale), unless the recipe names its setting.
+            use_head_rms_prescale = fresh_recipe_uses_head_rms_prescale(config.model)
+            if use_head_rms_prescale and "attention_head_rms_prescale" not in supplied_model:
+                config.model.attention_head_rms_prescale = "max_abs"
                 validate_config(config)
             recipe = config_to_dict(config)
             model = recipe["model"]
@@ -183,6 +196,13 @@ def main() -> None:
                     "new unnormalized exponential runs with head RMSNorm shift the exponential by its row maximum; "
                     "this recipe sets model.attention_exp_shift: none. Use row_max (or leave it unset), or "
                     "--allow-unshifted-exp only when the unshifted exponential was explicitly requested."
+                )
+            if (use_head_rms_prescale and model["attention_head_rms_prescale"] == "none"
+                    and not args.allow_plain_head_rms):
+                parser.error(
+                    "new runs with head RMSNorm output scaling evaluate it with the max-abs prescale; this recipe "
+                    "sets model.attention_head_rms_prescale: none. Use max_abs (or leave it unset), or "
+                    "--allow-plain-head-rms only when the plain arithmetic was explicitly requested."
                 )
             recipe["train"]["source_commit"] = "auto"
             study = args.study.parent if args.study.name == "sweep.yaml" else args.study

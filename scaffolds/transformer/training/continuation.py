@@ -38,9 +38,11 @@ def _parent_config(config):
         # An unnormalized exp parent continues with a polynomial kernel of an integer degree:
         # fixed Taylor as the control, or Taylor-initialized learned coefficients.
         raise ValueError("Continuing an exp parent requires an unnormalized exp parent and a polynomial degree")
-    # The backend, the blocked backend's implementation (scan or causal strips) and the exponential's row-maximum
-    # shift are execution settings: none changes a parameter or optimizer shape (the shift keeps the function).
-    execution = {"attention_backend", "attention_blocked_implementation", "attention_exp_shift"}
+    # The backend, the blocked backend's implementation (scan or causal strips), the exponential's row-maximum
+    # shift and head RMSNorm's max-abs prescale are execution settings: none changes a parameter or optimizer
+    # shape (the shift and the prescale keep the function).
+    execution = {"attention_backend", "attention_blocked_implementation", "attention_exp_shift",
+                 "attention_head_rms_prescale"}
     allowed_model_changes = execution | {
         "attention_coefficients", "attention_coefficient_sharing", "attention_coefficient_scale",
         "attention_coefficient_conditioning", "attention_coefficient_activation",

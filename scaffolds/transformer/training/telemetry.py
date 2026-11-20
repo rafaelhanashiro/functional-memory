@@ -107,6 +107,11 @@ def record_attention_output(y: jax.Array, *, head_rms_norm_eps: float | None = N
     ``y = e^(-m) o``: the two RMS statistics then describe that shifted output, whose rows stay finite where o's
     overflow, ``head_rms_norm_gain_max`` remains the factor for o itself, ``1/sqrt(mean(o^2) + eps)`` with
     ``mean(o^2) = e^(log mean(y^2) + 2m)``, and ``attention_exp_shift_max`` is the largest shift m.
+
+    Head RMSNorm's max-abs prescale (``model.attention_head_rms_prescale``) changes none of these: they describe
+    the output before its normalization, and the factor is the function's, whatever units evaluate it. They are
+    FP32 mean squares, so a row whose mean square overflows (an L2 norm above 1.8e19) reads as an infinite
+    ``attention_output_rms`` although the prescaled normalization evaluates it.
     """
     if not active():
         return
