@@ -32,6 +32,16 @@ PREFACTORS = (
 MISC = ((f"<var>e</var><sup>softplus({SCORE})</sup> = 1 + {EXP_SCORE}", "r0dd96f88d9f8"),)
 # The score MLP, a learned SiLU MLP of the score and the query token in place of exp: (width J, run).
 SCORE_MLP = (("<var>J</var> = 4", "rea8b942672f4"), ("<var>J</var> = 8", "rfc68c6d26f40"))
+# Degree-4 splines of the score z: (initial function, static run, query + W decay run), against the
+# degree-4 polynomial controls in the same two columns.
+Z = "<var>z</var>"
+SPLINES = (
+    (f"Taylor: <var>T</var><sub>4</sub>({Z})", "r7e4193fcafbd", "rf303a5f94487"),
+    (f"Affine: 1 + {Z}/4", "r325f7d64b940", "r2de7f1f4c9ce"),
+    (f"Quadratic: 1 + {Z} + {Z}<sup>2</sup>/2", "r3ba9a42b7abd", "r2c5883395415"),
+    (f"Binomial: (1/2 + {Z}/8)<sup>4</sup>", "ra4c3ada624af", "r78fa0d682f44"),
+)
+SPLINE_CONTROLS = ("r4339a245820e", "rca97cc9db8f2")
 
 
 def shape(run_id: str) -> str:
@@ -68,8 +78,23 @@ def mlp() -> list[dict]:
              "tables": [{"head": ["Width", "PPL (% vs exp)"], "compact": True, "rows": versus_exp(SCORE_MLP)}]}]
 
 
+def splines() -> list[dict]:
+    controls = [best(run_id) for run_id in SPLINE_CONTROLS]
+    rows = []
+    for label, *runs in SPLINES:
+        cells = [number(best(run_id), 4, run_id) for run_id in runs]
+        for cell, control in zip(cells, controls):
+            cell["text"] += f' <span class="change">({change(cell["value"], control)})</span>'
+        rows.append([text(label), *cells])
+    rows.append({"className": "divider",
+                 "cells": [text("Polynomial baseline"), *(number(best(run_id), 4, run_id) for run_id in SPLINE_CONTROLS)]})
+    return [{"key": "splines", "title": "Degree-4 splines",
+             "tables": [{"head": ["Initialization", "Static", "Query + <var>W</var> decay"], "rows": rows,
+                         "caption": "PPL (% vs polynomial baseline)."}]}]
+
+
 def main() -> None:
-    data = {"fixed-kernels": fixed_kernels(), "mlp": mlp()}
+    data = {"fixed-kernels": fixed_kernels(), "mlp": mlp(), "splines": splines()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

@@ -34,8 +34,8 @@ without committing them.
 The result pages draw their tables from `data/*.json`, each written by the generator beside it
 from the Transformer++ runs' records and result summaries: `polynomial.py` (Polynomial, with its
 chart), `other.py` (Other runs), `scaling.py` (2.5× Chinchilla, 4k sequences and 100M),
-`parametrizations.py` (Activations, Dense, and SoS / Softplus), `alternatives.py` (Fixed kernels
-and MLP), and `diagnostics.py` (Overfitting and Continued pretraining; it also copies the Length
+`parametrizations.py` (Activations, Dense, and SoS / Softplus), `alternatives.py` (Fixed kernels,
+MLP and Splines), and `diagnostics.py` (Overfitting and Continued pretraining; it also copies the Length
 extrapolation figures from their result collection into `figures/`). `results.js` draws the
 tables of all but the first two from cells the generators format.
 
