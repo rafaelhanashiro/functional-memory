@@ -1,4 +1,4 @@
-"""Write parametrizations.json, the tables of the Activations page, from the runs' records.
+"""Write parametrizations.json, the tables of the Activations and Dense pages, from the runs' records.
 
     python3 site/data/parametrizations.py
 
@@ -30,6 +30,18 @@ FORMS = (
 )
 # Per-degree pure sigmoid, c_r = σ(w_r^T x_t) or that over r!: (scaling, run without W decay, run with).
 PURE_SIGMOID = (("None", "rd5550f8db5e4", "re6d4c820a132"), ("1 / <var>r</var>!", "r8b4e2a0603aa", "r343fff99fa9e"))
+# Dense tanh query coefficients with RoPE: (K, degree, readout scale, run without W decay, run with; None:
+# not run).
+DENSE = (
+    (5, 4, "1", "r0c0f3634685c", None),
+    (5, 4, "1 / √5", "rcaff0dfb095f", "rdacb58b7981c"),
+    (9, 4, "1 / 3", "r04a5b2a3e8dd", "r753a7e8d3212"),
+    (9, 8, "1 / 3", "rfccffdd239dd", None),
+)
+# Dense sigmoid coefficients at degree 4: (scaling, run without W decay, run with); the per-degree ones
+# are the pure sigmoid runs above.
+DENSE_SIGMOID = (("None", "ra6ae537a5e37", "r331b5fd5bebc"),
+                 ("1 / <var>r</var>! and 1 / √<var>K</var>", "r239ea241c978", "rf7e1a83e2e23"))
 
 
 def forms() -> dict:
@@ -55,8 +67,29 @@ def pure_sigmoid() -> dict:
                                    f"= σ({FEATURE}), divided by <var>r</var>! or not, from <var>W</var> = 0."}]}
 
 
+def perplexity(run_id: str | None) -> dict:
+    return number(best(run_id), 4, run_id) if run_id else text("—")
+
+
+def dense() -> list[dict]:
+    decay = ["Without <var>W</var> decay", "With <var>W</var> decay (0.1)"]
+    sigmoid = [("Dense (<var>K</var> = 5)", *row) for row in DENSE_SIGMOID] + [("Per degree", *row) for row in PURE_SIGMOID]
+    return [
+        {"key": "dense", "title": "Dense polynomial parametrizations · query coefficients · RoPE",
+         "tables": [{"head": ["Parametrization", "Degree", "Readout scale", *decay], "caption": "— Not run.",
+                     "rows": [[text(f"Dense (<var>K</var> = {features})"), text(f"<var>m</var> = {degree}"), text(scale),
+                               perplexity(plain), perplexity(decayed)]
+                              for features, degree, scale, plain, decayed in DENSE]}]},
+        {"key": "sigmoid", "title": "Sigmoid coefficients · <var>m</var> = 4 · RoPE",
+         "tables": [{"head": ["Readout", "Scaling", *decay],
+                     "caption": "Per degree: fixed <var>V</var> = <var>I</var>. Dense: learned <var>V</var>.",
+                     "rows": [[text(readout), text(scaling), perplexity(plain), perplexity(decayed)]
+                              for readout, scaling, plain, decayed in sigmoid]}]},
+    ]
+
+
 def main() -> None:
-    data = {"activations": [forms(), pure_sigmoid()]}
+    data = {"activations": [forms(), pure_sigmoid()], "dense": dense()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

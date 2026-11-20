@@ -26,7 +26,7 @@ let editing = false;
 document.querySelector("h1.page-title")?.setAttribute("data-title", "title");
 
 // A place for a text: an "intro" sits over a table or figure in the muted intro style, a "note"
-// under it, and a "page" text under the page's title.
+// under it, and a "page-text" one under the page's title.
 export function slot(name, kind = "note") {
   const node = element("div", `text-block ${kind}`);
   node.dataset.text = name;

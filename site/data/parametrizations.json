@@ -146,5 +146,194 @@
         }
       ]
     }
+  ],
+  "dense": [
+    {
+      "key": "dense",
+      "title": "Dense polynomial parametrizations · query coefficients · RoPE",
+      "tables": [
+        {
+          "head": [
+            "Parametrization",
+            "Degree",
+            "Readout scale",
+            "Without <var>W</var> decay",
+            "With <var>W</var> decay (0.1)"
+          ],
+          "caption": "— Not run.",
+          "rows": [
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1"
+              },
+              {
+                "text": "14.8181",
+                "value": 14.818141702962876,
+                "run_id": "r0c0f3634685c"
+              },
+              {
+                "text": "—"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1 / √5"
+              },
+              {
+                "text": "14.7104",
+                "value": 14.710406165195586,
+                "run_id": "rcaff0dfb095f"
+              },
+              {
+                "text": "14.7386",
+                "value": 14.738594601826602,
+                "run_id": "rdacb58b7981c"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 9)"
+              },
+              {
+                "text": "<var>m</var> = 4"
+              },
+              {
+                "text": "1 / 3"
+              },
+              {
+                "text": "14.7822",
+                "value": 14.782189821867252,
+                "run_id": "r04a5b2a3e8dd"
+              },
+              {
+                "text": "14.7980",
+                "value": 14.798016365034693,
+                "run_id": "r753a7e8d3212"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 9)"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "1 / 3"
+              },
+              {
+                "text": "14.3995",
+                "value": 14.399458390567679,
+                "run_id": "rfccffdd239dd"
+              },
+              {
+                "text": "—"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "sigmoid",
+      "title": "Sigmoid coefficients · <var>m</var> = 4 · RoPE",
+      "tables": [
+        {
+          "head": [
+            "Readout",
+            "Scaling",
+            "Without <var>W</var> decay",
+            "With <var>W</var> decay (0.1)"
+          ],
+          "caption": "Per degree: fixed <var>V</var> = <var>I</var>. Dense: learned <var>V</var>.",
+          "rows": [
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.3248",
+                "value": 16.324831561050132,
+                "run_id": "ra6ae537a5e37"
+              },
+              {
+                "text": "16.0432",
+                "value": 16.043249678062942,
+                "run_id": "r331b5fd5bebc"
+              }
+            ],
+            [
+              {
+                "text": "Dense (<var>K</var> = 5)"
+              },
+              {
+                "text": "1 / <var>r</var>! and 1 / √<var>K</var>"
+              },
+              {
+                "text": "16.3459",
+                "value": 16.345887372867445,
+                "run_id": "r239ea241c978"
+              },
+              {
+                "text": "16.4665",
+                "value": 16.46646773350398,
+                "run_id": "rf7e1a83e2e23"
+              }
+            ],
+            [
+              {
+                "text": "Per degree"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.1034",
+                "value": 16.103391877182744,
+                "run_id": "rd5550f8db5e4"
+              },
+              {
+                "text": "15.9193",
+                "value": 15.919304822677798,
+                "run_id": "re6d4c820a132"
+              }
+            ],
+            [
+              {
+                "text": "Per degree"
+              },
+              {
+                "text": "1 / <var>r</var>!"
+              },
+              {
+                "text": "16.6050",
+                "value": 16.605029501874565,
+                "run_id": "r8b4e2a0603aa"
+              },
+              {
+                "text": "16.4056",
+                "value": 16.4055580733773,
+                "run_id": "r343fff99fa9e"
+              }
+            ]
+          ]
+        }
+      ]
+    }
   ]
 }
