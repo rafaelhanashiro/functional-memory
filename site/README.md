@@ -60,6 +60,13 @@ in `figures/` are copies with no generator; the saturation figure is shown by th
 notes text. The Input dependence table reads its runs from Codex's branch `codex/layerwise-
 polynomial-swap` until that branch merges.
 
+The Queue tab lists the runs the user plans and the runs in progress, each list a sequence of runs
+and named groups of runs, in `queue/runs.json`. A planned run's checkbox moves it to In progress;
+an active run's checkbox closes it out after asking, and its arrow sends it back; a moved run joins
+the group of the same name on the other side. Every change saves both lists through `serve.py`
+(`/api/queue`), which refuses a save made against an older revision. The file is the user's, like
+the meetings' files below: never write, reset, or regenerate it, and commit it only when asked.
+
 The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits
 them live: never write, reset, regenerate, or stage them; commit them only when the user asks.

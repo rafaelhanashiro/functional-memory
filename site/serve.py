@@ -14,6 +14,10 @@ accepts:
     PUT    /text/<page>/<name>.md   save one of those texts; an empty body deletes it
     PUT    /api/titles/<page>       {"key": ..., "title": ...}: rename a title of <page>.html (the
                                     key "title" is the page's own); an empty title restores it
+    GET    /api/queue               {"revision": n, "lists": {"planned": [...], "active": [...]}}:
+                                    the Queue page's runs not queued yet and in progress
+    PUT    /api/queue               {"revision": n, "lists": ...}: replace both lists, refused (409)
+                                    unless n is the saved revision; the reply gives the new one
     GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first
     POST   /api/meetings            {"date": ..., "title": ...}: add a meeting, with an empty
                                     agenda and notes (the title, its name, is optional)
@@ -71,6 +75,10 @@ TEXT_FILE = re.compile(r"/text/([a-z0-9-]+)/([a-z0-9-]+)\.md")
 TITLES_API = re.compile(r"/api/titles/([a-z0-9-]+)")
 TITLE_KEY = re.compile(r"[a-z0-9-]+")
 MAX_TITLE = 200
+QUEUE = SITE / "queue" / "runs.json"
+QUEUE_LISTS = ("planned", "active")
+QUEUE_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
+MAX_QUEUE_TEXT = 500
 MEDIA = SITE / "media"
 IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
@@ -123,6 +131,38 @@ def prune_media() -> list[str]:
 def load_titles() -> dict[str, dict[str, str]]:
     """The renamed titles of every page, by page and key."""
     return {path.parent.name: json.loads(path.read_text()) for path in sorted(TEXT.glob("*/titles.json"))}
+
+
+def load_queue() -> dict:
+    if QUEUE.is_file():
+        return json.loads(QUEUE.read_text())
+    return {"revision": 0, "lists": {name: [] for name in QUEUE_LISTS}}
+
+
+def valid_queue(lists) -> bool:
+    """Each list holds runs and groups of runs, every id unique: a run is {"id", "type": "run",
+    "text"} and a group {"id", "type": "group", "name", "runs": [runs]}."""
+    seen = set()
+
+    def run(item) -> bool:
+        return (isinstance(item, dict) and set(item) == {"id", "type", "text"} and item["type"] == "run"
+                and isinstance(item["text"], str) and len(item["text"]) <= MAX_QUEUE_TEXT and identifier(item["id"]))
+
+    def identifier(value) -> bool:
+        if not isinstance(value, str) or not QUEUE_ID.fullmatch(value) or value in seen:
+            return False
+        seen.add(value)
+        return True
+
+    def entry(item) -> bool:
+        if isinstance(item, dict) and item.get("type") == "group":
+            return (set(item) == {"id", "type", "name", "runs"} and isinstance(item["name"], str)
+                    and len(item["name"]) <= MAX_TITLE and identifier(item["id"]) and isinstance(item["runs"], list)
+                    and all(run(member) for member in item["runs"]))
+        return run(item)
+
+    return (isinstance(lists, dict) and set(lists) == set(QUEUE_LISTS)
+            and all(isinstance(lists[name], list) and all(entry(item) for item in lists[name]) for name in QUEUE_LISTS))
 
 
 def meeting_files(day: str) -> list[Path]:
@@ -308,6 +348,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/meetings":
             self._json(200, {"meetings": list_meetings()})
             return
+        if self._route() == "/api/queue":
+            with LOCK:
+                self._json(200, load_queue())
+            return
         page = TEXT_API.fullmatch(self._route())
         if page:
             if not (SITE / f"{page.group(1)}.html").is_file():
@@ -332,6 +376,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         titles = TITLES_API.fullmatch(self._route())
         if titles:
             self._rename_title(titles.group(1))
+            return
+        if self._route() == "/api/queue":
+            self._save_queue()
             return
         match = DOCUMENT.fullmatch(self._route())
         block = TEXT_FILE.fullmatch(self._route())
@@ -361,6 +408,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         for name in prune_media():
             print(f"removed unlinked image media/{name}", file=sys.stderr, flush=True)
+
+    def _save_queue(self):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            change = json.loads(body)
+            revision, lists = change["revision"], change["lists"]
+        except (ValueError, KeyError, TypeError):
+            revision = lists = None
+        if not isinstance(revision, int) or not valid_queue(lists):
+            self._json(400, {"error": "Expected {\"revision\": n, \"lists\": ...} with valid runs and groups"})
+            return
+        with LOCK:
+            current = load_queue()["revision"]
+            if revision != current:
+                self._json(409, {"error": "The queue changed since the page loaded; reload it"})
+                return
+            QUEUE.parent.mkdir(parents=True, exist_ok=True)
+            write_atomic(QUEUE, json.dumps({"revision": current + 1, "lists": lists}, indent=2, ensure_ascii=False) + "\n")
+        self._json(200, {"revision": current + 1})
 
     def _rename_title(self, page: str):
         if not (SITE / f"{page}.html").is_file():

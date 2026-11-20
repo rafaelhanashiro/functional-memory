@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queue · Functional Memory</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="vendor/marked/marked.min.js"></script>
+<script defer src="vendor/katex/katex.min.js"></script>
+<script type="module" src="queue.js"></script>
+</head>
+<body>
+<div class="page">
+  <header>
+    <a class="brand" href="runs.html">Functional Memory</a>
+    <nav>
+      <a href="runs.html">Runs</a>
+      <a href="diagnostics.html">Diagnostics</a>
+      <a href="literature.html">Literature</a>
+      <a href="meeting.html">Meetings</a>
+      <a href="queue.html" aria-current="page">Queue</a>
+    </nav>
+  </header>
+  <main class="queue">
+    <section class="queue-panel" data-list="planned">
+      <div class="queue-head">
+        <h2>Not queued</h2>
+        <span class="queue-count"></span>
+        <span class="queue-head-actions">
+          <button type="button" class="button" data-action="add-run">+ Run</button>
+          <button type="button" class="button" data-action="add-group">+ Group</button>
+        </span>
+      </div>
+      <ul class="queue-items"></ul>
+      <p class="queue-empty" hidden>Nothing planned.</p>
+    </section>
+    <section class="queue-panel" data-list="active">
+      <div class="queue-head">
+        <h2>In progress</h2>
+        <span class="queue-count"></span>
+      </div>
+      <ul class="queue-items"></ul>
+      <p class="queue-empty" hidden>Nothing in progress.</p>
+    </section>
+  </main>
+</div>
+</body>
+</html>
