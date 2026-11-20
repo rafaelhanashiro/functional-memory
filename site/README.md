@@ -17,10 +17,15 @@ and the Markdown and math libraries in `vendor/`. Only adding a literature link 
 internet, to read the link's title.
 
 `literature/papers.json` lists the literature resources in the page's order (title,
-authors, year, link, and whether the user has seen it). On the page the user adds a
-resource from a link (it goes to the top, with metadata read from the link), reorders,
-renames, and switches resources between seen and not seen, and edits each resource's
-write-up, their own Markdown file `literature/<id>.md` (math in `$...$` and `$$...$$`).
+authors, year, link, whether the user has seen it, and the category it is filed under, if
+any), and `literature/categories.json` the user's own categories in theirs (an id and a name).
+The page shows each category's seen and not-seen-yet resources, then those under no category.
+On the page the user adds a resource from a link (it goes to the top of the category picked
+beside the link, with metadata read from the link), reorders resources and drags them into
+another category or half, renames them and switches them between seen and not seen, makes,
+renames, moves, and deletes categories (a deleted category's resources stay, under no
+category), and edits each resource's write-up, their own Markdown file `literature/<id>.md`
+(math in `$...$` and `$$...$$`).
 The Meetings page lists the meetings by date, newest first, and adds one for a chosen date,
 optionally named. A meeting's page (`meeting.html?date=YYYY-MM-DD`) shows its agenda and
 notes, `meeting/<date>-agenda.md` and `meeting/<date>-notes.md`, edited the same way; the

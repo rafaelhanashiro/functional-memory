@@ -25,17 +25,14 @@
   <main>
     <form class="add-resource" autocomplete="off">
       <input name="url" type="text" inputmode="url" placeholder="Paste a link" aria-label="Link to a paper or resource" required>
+      <select name="category" aria-label="Category for the new resource" hidden></select>
       <button class="button primary" type="submit">Add</button>
     </form>
-    <p class="literature-status" aria-live="polite"></p>
-    <section class="resource-group" data-group="seen" hidden>
-      <h2>Seen</h2>
-      <div class="papers"></div>
-    </section>
-    <section class="resource-group" data-group="unseen" hidden>
-      <h2>Not seen yet</h2>
-      <div class="papers"></div>
-    </section>
+    <div class="literature-bar">
+      <p class="literature-status" aria-live="polite"></p>
+      <button class="button" type="button" data-action="add-category">+ Category</button>
+    </div>
+    <div class="categories"></div>
   </main>
 </div>
 </body>

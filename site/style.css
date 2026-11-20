@@ -171,8 +171,74 @@ main {
   font-size: 0.85rem;
 }
 .literature-status:empty { display: none; }
+/* Categories, the user's own: each heads its seen and not-seen-yet halves, and the resources under
+   no category come last (under no heading while there are no categories). */
+.add-resource select {
+  flex: none;
+  max-width: 34%;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.literature-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.literature-bar .literature-status { flex: 1; margin: 0; }
+.literature-bar .button { margin-left: auto; padding: 4px 12px; color: var(--muted); }
+.literature-bar .button:hover { color: var(--text); }
+.category { margin-top: 40px; }
+body:not(.has-categories) .uncategorized { margin-top: 0; }
+body:not(.has-categories) .uncategorized > .category-head { display: none; }
+.category-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.category-name { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; cursor: text; }
+.category-name:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+.uncategorized .category-name { color: var(--muted); cursor: default; }
+.category-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.category-actions { display: flex; gap: 2px; margin-left: auto; opacity: 0; transition: opacity 0.15s; }
+.category-head:hover .category-actions, .category-head:focus-within .category-actions { opacity: 1; }
+@media (hover: none) { .category-actions { opacity: 1; } }
+.category-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.category-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.category-icon:hover:not(:disabled) { color: var(--text); background: rgba(24, 24, 27, 0.06); }
+.category-icon.delete:hover { color: #dc2626; background: #fef2f2; }
+.category-icon:disabled { opacity: 0.3; cursor: default; }
+.category-icon:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.category-input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 1.5px solid var(--text);
+  background: none;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.has-categories .category .resource-group { margin-top: 18px; }
+.has-categories .papers:empty::before { content: "None yet"; display: block; padding: 6px 2px; color: #a1a1aa; font-size: 0.88rem; }
+.has-categories.reordering .category[hidden], .has-categories.reordering .resource-group[hidden] { display: block; }
 .resource-group { margin-top: 36px; }
-.resource-group h2 {
+.resource-group h3 {
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.78rem;
