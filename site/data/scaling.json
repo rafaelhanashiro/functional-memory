@@ -282,5 +282,782 @@
         }
       ]
     }
+  ],
+  "100m": [
+    {
+      "key": "shape-pairs",
+      "title": "100M vs 200M",
+      "tables": [
+        {
+          "head": [
+            "Attention variant",
+            "Degree",
+            "100M<span class=\"sub\">12 layers × 640</span>",
+            "200M<span class=\"sub\">15 layers × 896</span>"
+          ],
+          "grouped": true,
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Query tanh + W decay",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 4"
+                },
+                {
+                  "text": "17.9442 <span class=\"change\">(+2.24%)</span>",
+                  "value": 17.94415761872768,
+                  "run_id": "r4cce9a985a70"
+                },
+                {
+                  "text": "14.7085 <span class=\"change\">(+3.17%)</span>",
+                  "value": 14.708538612353673,
+                  "run_id": "rca97cc9db8f2"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "17.5922 <span class=\"change\">(+0.24%)</span>",
+                  "value": 17.592154609327757,
+                  "run_id": "r95a5691d293f"
+                },
+                {
+                  "text": "14.3228 <span class=\"change\">(+0.46%)</span>",
+                  "value": 14.322804520454994,
+                  "run_id": "r25fffc16c2f3"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Learned static coefficients",
+                  "rowspan": 1,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 4"
+                },
+                {
+                  "text": "18.0105 <span class=\"change\">(+2.62%)</span>",
+                  "value": 18.010452058731424,
+                  "run_id": "r94e0f2b8cff9"
+                },
+                {
+                  "text": "14.7667 <span class=\"change\">(+3.57%)</span>",
+                  "value": 14.76671666761948,
+                  "run_id": "r4339a245820e"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Fixed Taylor",
+                  "rowspan": 1,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 4"
+                },
+                {
+                  "text": "18.0866 <span class=\"change\">(+3.06%)</span>",
+                  "value": 18.086639403933127,
+                  "run_id": "r2c432bd3a2a4"
+                },
+                {
+                  "text": "14.7218 <span class=\"change\">(+3.26%)</span>",
+                  "value": 14.721778104249449,
+                  "run_id": "r816ab0fbe119"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "FoX query",
+                  "rowspan": 1,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 4"
+                },
+                {
+                  "text": "16.9112 <span class=\"change\">(−3.64%)</span>",
+                  "value": 16.911186401190093,
+                  "run_id": "r3d14b598d88f"
+                },
+                {
+                  "text": "13.8734 <span class=\"change\">(−2.69%)</span>",
+                  "value": 13.873434004016213,
+                  "run_id": "r4a80e28ce0a7"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Exp (baseline)",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "17.5504 <span class=\"change\">(0.00%)</span>",
+                  "value": 17.550420498799237,
+                  "run_id": "r3e2fa2532c23"
+                },
+                {
+                  "text": "14.2572 <span class=\"change\">(0.00%)</span>",
+                  "value": 14.257176394334465,
+                  "run_id": "r6a76e7fbde45"
+                }
+              ],
+              "className": "divider"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Softmax",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "17.9636 <span class=\"change\">(+2.35%)</span>",
+                  "value": 17.963633675894144,
+                  "run_id": "rf81c96f76a1d"
+                },
+                {
+                  "text": "14.5428 <span class=\"change\">(+2.00%)</span>",
+                  "value": 14.542792482957227,
+                  "run_id": "r9040f12f3d80"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "FoX exp",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "16.7533 <span class=\"change\">(−4.54%)</span>",
+                  "value": 16.753344218551568,
+                  "run_id": "ra5dfd978d3bd"
+                },
+                {
+                  "text": "13.6280 <span class=\"change\">(−4.41%)</span>",
+                  "value": 13.627967054220683,
+                  "run_id": "r183f08346ddc"
+                }
+              ],
+              "className": ""
+            }
+          ],
+          "caption": "Each shape at its 1× Chinchilla budget. Validation-best perplexity; in parentheses, the difference from exp in the same column. FoX uses shared cumulative gates and no positional encoding."
+        }
+      ]
+    },
+    {
+      "key": "scalings",
+      "title": "Chinchilla scalings",
+      "tables": [
+        {
+          "head": [
+            "Attention variant",
+            "Degree",
+            "1×<span class=\"sub\">1.98B tokens</span>",
+            "2×<span class=\"sub\">3.96B tokens</span>",
+            "4×<span class=\"sub\">7.92B tokens</span>"
+          ],
+          "grouped": true,
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Query tanh + W decay",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "17.5922 <span class=\"change\">(+0.24%)</span>",
+                  "value": 17.592154609327757,
+                  "run_id": "r95a5691d293f"
+                },
+                {
+                  "text": "15.7799 <span class=\"change\">(+0.05%)</span>",
+                  "value": 15.779878750478344,
+                  "run_id": "r3759b2a57a54"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7419 <span class=\"change\">(−0.19%)</span>",
+                  "value": 15.741899178235938,
+                  "run_id": "r0f6d929e5992"
+                },
+                {
+                  "text": "14.6059 <span class=\"change\">(+0.01%)</span>",
+                  "value": 14.605906447226515,
+                  "run_id": "r2f41d054e944"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Learned static coefficients",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7780 <span class=\"change\">(+0.04%)</span>",
+                  "value": 15.777981618465876,
+                  "run_id": "r3cca4c13edab"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7777 <span class=\"change\">(+0.04%)</span>",
+                  "value": 15.77767394877139,
+                  "run_id": "r84f325593209"
+                },
+                {
+                  "text": "14.6238 <span class=\"change\">(+0.13%)</span>",
+                  "value": 14.623785494501933,
+                  "run_id": "r0f8122dd8439"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Fixed Taylor",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7826 <span class=\"change\">(+0.07%)</span>",
+                  "value": 15.782606729182254,
+                  "run_id": "rd77db79142e6"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7626 <span class=\"change\">(−0.06%)</span>",
+                  "value": 15.762580880198168,
+                  "run_id": "rffab7c4eeac5"
+                },
+                {
+                  "text": "14.6146 <span class=\"change\">(+0.07%)</span>",
+                  "value": 14.614593968952514,
+                  "run_id": "rcace22b32f93"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "FoX query",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.3144 <span class=\"change\">(−2.90%)</span>",
+                  "value": 15.314436860770185,
+                  "run_id": "r656e8e652b72"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.3352 <span class=\"change\">(−2.77%)</span>",
+                  "value": 15.335170240324686,
+                  "run_id": "rbf05f7baab5e"
+                },
+                {
+                  "text": "Unsubmitted",
+                  "muted": true
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Exp (baseline)",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "17.5504 <span class=\"change\">(0.00%)</span>",
+                  "value": 17.550420498799237,
+                  "run_id": "r3e2fa2532c23"
+                },
+                {
+                  "text": "15.7716 <span class=\"change\">(0.00%)</span>",
+                  "value": 15.771559392174266,
+                  "run_id": "rd920368a922e"
+                },
+                {
+                  "text": "14.6050 <span class=\"change\">(0.00%)</span>",
+                  "value": 14.60499587198244,
+                  "run_id": "r333444bd4304"
+                }
+              ],
+              "className": "divider"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Softmax",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "17.9636 <span class=\"change\">(+2.35%)</span>",
+                  "value": 17.963633675894144,
+                  "run_id": "rf81c96f76a1d"
+                },
+                {
+                  "text": "16.1917 <span class=\"change\">(+2.66%)</span>",
+                  "value": 16.191732597814894,
+                  "run_id": "r3bb5b8bd5c6a"
+                },
+                {
+                  "text": "15.0921 <span class=\"change\">(+3.34%)</span>",
+                  "value": 15.092106775232864,
+                  "run_id": "r93df1e48c8fd"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "FoX exp",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "16.7533 <span class=\"change\">(−4.54%)</span>",
+                  "value": 16.753344218551568,
+                  "run_id": "ra5dfd978d3bd"
+                },
+                {
+                  "text": "15.3196 <span class=\"change\">(−2.87%)</span>",
+                  "value": 15.319559707298552,
+                  "run_id": "re634d82ee479"
+                },
+                {
+                  "text": "Unsubmitted",
+                  "muted": true
+                }
+              ],
+              "className": ""
+            }
+          ],
+          "caption": "Validation-best perplexity; in parentheses, the difference from exp in the same column. —: no run. Unsubmitted: a planned FoX run. FoX uses shared cumulative gates and no positional encoding."
+        }
+      ]
+    },
+    {
+      "key": "sos-softplus",
+      "title": "SoS and softplus",
+      "tables": [
+        {
+          "head": [
+            "Attention variant",
+            "Degree",
+            "1×<span class=\"sub\">1.98B tokens</span>",
+            "2×<span class=\"sub\">3.96B tokens</span>",
+            "4×<span class=\"sub\">7.92B tokens</span>"
+          ],
+          "grouped": true,
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Query + softplus input",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "17.4878 <span class=\"change\">(−0.36%)</span>",
+                  "value": 17.48782072789507,
+                  "run_id": "r1d342ca6e58c"
+                },
+                {
+                  "text": "15.7402 <span class=\"change\">(−0.20%)</span>",
+                  "value": 15.740156746113477,
+                  "run_id": "rc6a7e50d27e1"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7242 <span class=\"change\">(−0.30%)</span>",
+                  "value": 15.724227012015485,
+                  "run_id": "r53d5bbcac16f"
+                },
+                {
+                  "text": "14.5815 <span class=\"change\">(−0.16%)</span>",
+                  "value": 14.58145409076763,
+                  "run_id": "rb74e8b994b74"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Query SoS",
+                  "rowspan": 2,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 8"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7397 <span class=\"change\">(−0.20%)</span>",
+                  "value": 15.739712508753124,
+                  "run_id": "rccd2cb5e8bab"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "15.7154 <span class=\"change\">(−0.36%)</span>",
+                  "value": 15.715353192228172,
+                  "run_id": "r08be7093202a"
+                },
+                {
+                  "text": "14.5645 <span class=\"change\">(−0.28%)</span>",
+                  "value": 14.564511788899571,
+                  "run_id": "r1f935f18fe21"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Query SoS + softplus input",
+                  "rowspan": 1,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 12"
+                },
+                {
+                  "text": "17.5235 <span class=\"change\">(−0.15%)</span>",
+                  "value": 17.523539145642168,
+                  "run_id": "r5a18841b21b5"
+                },
+                {
+                  "text": "15.7260 <span class=\"change\">(−0.29%)</span>",
+                  "value": 15.725973946103586,
+                  "run_id": "r83fa09df3931"
+                },
+                {
+                  "text": "14.5937 <span class=\"change\">(−0.08%)</span>",
+                  "value": 14.593734904205457,
+                  "run_id": "r0623d3020268"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Query SoS + softplus input + prefactor",
+                  "rowspan": 1,
+                  "label": true
+                },
+                {
+                  "text": "<var>m</var> = 13"
+                },
+                {
+                  "text": "17.3967 <span class=\"change\">(−0.88%)</span>",
+                  "value": 17.39672335888663,
+                  "run_id": "r3b9c8cc6fab8"
+                },
+                {
+                  "text": "15.6715 <span class=\"change\">(−0.63%)</span>",
+                  "value": 15.671467888430074,
+                  "run_id": "re7593f1d0a4c"
+                },
+                {
+                  "text": "14.5649 <span class=\"change\">(−0.27%)</span>",
+                  "value": 14.564851510432543,
+                  "run_id": "r4589172dcd8b"
+                }
+              ],
+              "className": "shade"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Exp (baseline)",
+                  "label": true
+                },
+                {
+                  "text": "—",
+                  "muted": true
+                },
+                {
+                  "text": "17.5504 <span class=\"change\">(0.00%)</span>",
+                  "value": 17.550420498799237,
+                  "run_id": "r3e2fa2532c23"
+                },
+                {
+                  "text": "15.7716 <span class=\"change\">(0.00%)</span>",
+                  "value": 15.771559392174266,
+                  "run_id": "rd920368a922e"
+                },
+                {
+                  "text": "14.6050 <span class=\"change\">(0.00%)</span>",
+                  "value": 14.60499587198244,
+                  "run_id": "r333444bd4304"
+                }
+              ],
+              "className": "divider"
+            }
+          ],
+          "caption": "Validation-best perplexity; in parentheses, the difference from exp in the same column. —: no run. The SoS + softplus runs use a degree-12 core; the prefactor raises the total degree to 13."
+        }
+      ]
+    },
+    {
+      "key": "score-biases",
+      "title": "Per-degree score biases",
+      "tables": [
+        {
+          "head": [
+            "Attention variant",
+            "Degree",
+            "1×<span class=\"sub\">1.98B tokens</span>",
+            "vs no biases"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Query tanh + W decay"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "17.5922",
+                "value": 17.592154609327757,
+                "run_id": "r95a5691d293f"
+              },
+              {
+                "text": "—",
+                "muted": true
+              }
+            ],
+            [
+              {
+                "text": "+ static biases"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "17.6038",
+                "value": 17.603789321978912,
+                "run_id": "rb4e5457ef2a0"
+              },
+              {
+                "text": "+0.07%"
+              }
+            ],
+            [
+              {
+                "text": "+ query-dependent biases"
+              },
+              {
+                "text": "<var>m</var> = 8"
+              },
+              {
+                "text": "18.2160",
+                "value": 18.215963456413647,
+                "run_id": "r8dc6e147601c"
+              },
+              {
+                "text": "+3.55%"
+              }
+            ],
+            [
+              {
+                "text": "Exp (baseline)"
+              },
+              {
+                "text": "—",
+                "muted": true
+              },
+              {
+                "text": "17.5504",
+                "value": 17.550420498799237,
+                "run_id": "r3e2fa2532c23"
+              },
+              {
+                "text": "−0.24%"
+              }
+            ]
+          ],
+          "caption": "Validation-best perplexity. Each order <var>r</var> of the query polynomial shifts its score, (<var>s</var> + <var>β</var><sub><var>r</var></sub>)<sup><var>r</var></sup>, by a learned constant (static) or by an amount that depends on the query token."
+        }
+      ]
+    }
   ]
 }

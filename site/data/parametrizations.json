@@ -1,0 +1,150 @@
+{
+  "activations": [
+    {
+      "key": "forms",
+      "title": "Affine and pure generators",
+      "tables": [
+        {
+          "head": [
+            "Generator",
+            "Coefficients <var>c</var><sub><var>r</var></sub>",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            {
+              "cells": [
+                {
+                  "text": "Affine tanh (query)"
+                },
+                {
+                  "text": "(<var>b</var><sub><var>r</var></sub> + <var>a</var><sub><var>r</var></sub> tanh(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)) / <var>r</var>!"
+                },
+                {
+                  "text": "14.7738",
+                  "value": 14.7737535481344,
+                  "run_id": "r2b22f2ff6461"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Affine sigmoid"
+                },
+                {
+                  "text": "(<var>b</var><sub><var>r</var></sub> + <var>a</var><sub><var>r</var></sub> σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)) / <var>r</var>!"
+                },
+                {
+                  "text": "14.7562",
+                  "value": 14.756176021162979,
+                  "run_id": "r917f3650296e"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Pure tanh"
+                },
+                {
+                  "text": "tanh(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>)"
+                },
+                {
+                  "text": "22.6277",
+                  "value": 22.627666294465378,
+                  "run_id": "r1d578d107115"
+                }
+              ],
+              "className": ""
+            },
+            {
+              "cells": [
+                {
+                  "text": "Learned static"
+                },
+                {
+                  "text": "<var>c</var><sub><var>r</var></sub> learned"
+                },
+                {
+                  "text": "14.7667",
+                  "value": 14.76671666761948,
+                  "run_id": "r4339a245820e"
+                }
+              ],
+              "className": "divider"
+            },
+            {
+              "cells": [
+                {
+                  "text": "Fixed Taylor"
+                },
+                {
+                  "text": "1 / <var>r</var>!"
+                },
+                {
+                  "text": "14.7218",
+                  "value": 14.721778104249449,
+                  "run_id": "r816ab0fbe119",
+                  "best": true
+                }
+              ],
+              "className": ""
+            }
+          ],
+          "caption": "Validation-best perplexity at degree <var>m</var> = 4. The affine forms start at fixed Taylor (<var>a</var> = 0); pure tanh starts from a random polynomial, <var>W</var> ∼ N(0, 1/<var>d</var>)."
+        }
+      ]
+    },
+    {
+      "key": "pure-sigmoid",
+      "title": "Pure sigmoid, per degree",
+      "tables": [
+        {
+          "head": [
+            "Order scaling",
+            "No <var>W</var> decay",
+            "<var>W</var> decay 0.1"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "None"
+              },
+              {
+                "text": "16.1034",
+                "value": 16.103391877182744,
+                "run_id": "rd5550f8db5e4"
+              },
+              {
+                "text": "15.9193",
+                "value": 15.919304822677798,
+                "run_id": "re6d4c820a132",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "1 / <var>r</var>!"
+              },
+              {
+                "text": "16.6050",
+                "value": 16.605029501874565,
+                "run_id": "r8b4e2a0603aa"
+              },
+              {
+                "text": "16.4056",
+                "value": 16.4055580733773,
+                "run_id": "r343fff99fa9e"
+              }
+            ]
+          ],
+          "caption": "Validation-best perplexity at degree <var>m</var> = 4, with <var>c</var><sub><var>r</var></sub> = σ(<var>w</var><sub><var>r</var></sub><sup>⊤</sup><var>x</var><sub><var>t</var></sub>), divided by <var>r</var>! or not, from <var>W</var> = 0."
+        }
+      ]
+    }
+  ]
+}

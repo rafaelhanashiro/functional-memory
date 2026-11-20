@@ -450,6 +450,10 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .results-table.grouped td:first-child { text-align: center; }
 .results-table.grouped td.group-label { font-weight: 600; text-align: left; }
 .results-table .muted { color: var(--muted); }
+.results-table th .sub { display: block; margin-top: 2px; color: var(--muted); font-size: 0.85em; }
+.results-table .change { margin-left: 6px; color: var(--muted); font-size: 0.85em; }
+.results-table tbody tr.divider td { border-top: 1px solid #cbd5e1; }
+.table-caption { margin: 8px 2px 0; color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
 .table-pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
