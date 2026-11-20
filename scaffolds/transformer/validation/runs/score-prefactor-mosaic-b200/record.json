@@ -1,0 +1,378 @@
+{
+  "asserted_relative_l2_bounds": {
+    "coefficient_per_order": 0.01,
+    "dK": 0.025,
+    "dQ": 0.025,
+    "dV": 0.015,
+    "output": 0.006,
+    "sos_generator_x_W_a_b": 0.02
+  },
+  "attention_and_config_code_identical_across_source_commits": true,
+  "cpu_preflight": {
+    "deselected": 1651,
+    "environment": "scaffolds/transformer/.venv",
+    "errors": 0,
+    "existing_family_programs_identical_to_main": "forward, dV, dQ and dK tile jaxprs of query, query_softplus, query_abs and query_sigmoid at degrees 1, 4, 8, 9 and 12",
+    "failed": 0,
+    "host": "kennel login node",
+    "jax_platforms": "cpu",
+    "log": {
+      "path": "logs/score-prefactor-cpu-78b5c25e.log",
+      "sha256": "130ca87cddddded97a22b18f557ce8542faf707868be13633727aab8eea0c244",
+      "size_bytes": 17564
+    },
+    "modules": 192,
+    "passed": 6448,
+    "recipe_receipts": {
+      "differs": 0,
+      "runs": 276,
+      "same": 245,
+      "same_rejection": 31
+    },
+    "scope": "every test module of scaffolds/transformer/tests, experiments/transformer_pp/tests and scaffolds/records/tests, one process per module",
+    "selection": [
+      "-m",
+      "not gpu",
+      "-k",
+      "not distributed"
+    ],
+    "skipped": 0
+  },
+  "date": "2026-11-20",
+  "format": "mosaic-score-prefactor-qualification",
+  "gpu": "NVIDIA B200 (shiba)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-prefactor1-8245/gpu-tests.xml",
+          "sha256": "9b2f48f44a240d1dd0b16152a6003b7a5c0d99de247cfc74a46680021a529678",
+          "size_bytes": 12008
+        },
+        "log": {
+          "path": "logs/score-prefactor-8245.log",
+          "sha256": "7f01c898c837575f8a5d4556e37a04e4e90afe85144d36dc31651a9cc8b7a119",
+          "size_bytes": 2613
+        }
+      },
+      "elapsed_seconds": 708,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T02:55:15",
+      "gpu": {
+        "bus_id": "00000000:9D:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-043030f8-8299-f929-44bb-cad48fcfea27"
+      },
+      "junit_seconds": 684.988,
+      "node": "shiba",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_prefactor": 84
+      },
+      "slurm_job_id": "8245",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T02:43:27",
+      "suite": "prefactor1",
+      "tests": {
+        "passed": 84
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-prefactor2-8246/gpu-tests.xml",
+          "sha256": "640363d6d0f3c42a88133783d8f63735687395cd9cd5fe2ee2276631b3727423",
+          "size_bytes": 8247
+        },
+        "log": {
+          "path": "logs/score-prefactor-8246.log",
+          "sha256": "fc29c51f2dffa388ffdef437a51b370b4ea9d77670563dfbe67848113d037d21",
+          "size_bytes": 3157
+        }
+      },
+      "elapsed_seconds": 926,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:29:15",
+      "gpu": {
+        "bus_id": "00000000:D1:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-dbfd571d-fcc7-1b5f-f0c9-b1d7ce24718e"
+      },
+      "junit_seconds": 922.621,
+      "node": "shiba",
+      "note": "A debug-partition job preempted the first attempt at 02:58-02:59; Slurm requeued it under the same ID, and the recorded attempt ran the whole suite again from the start.",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_prefactor": 56
+      },
+      "preempted_attempts": 1,
+      "slurm_job_id": "8246",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T03:13:49",
+      "suite": "prefactor2",
+      "tests": {
+        "passed": 56
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-transforms1-8247/gpu-tests.xml",
+          "sha256": "3e603afc14b29b8cecc863e6e3687ca60d6183da99819aec51c6b39d39e7d350",
+          "size_bytes": 5490
+        },
+        "log": {
+          "path": "logs/score-prefactor-8247.log",
+          "sha256": "e78aa6ae35612a1a9c4c6423a524cc04633cf8688cce1c74847808d8ff562461",
+          "size_bytes": 2283
+        }
+      },
+      "elapsed_seconds": 193,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:13:49",
+      "gpu": {
+        "bus_id": "00000000:D1:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-dbfd571d-fcc7-1b5f-f0c9-b1d7ce24718e"
+      },
+      "junit_seconds": 182.752,
+      "node": "shiba",
+      "note": "A debug-partition job preempted the first attempt at 02:58-02:59; Slurm requeued it under the same ID, and the recorded attempt ran the whole suite again from the start.",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_transform": 40
+      },
+      "preempted_attempts": 1,
+      "slurm_job_id": "8247",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T03:10:36",
+      "suite": "transforms1",
+      "tests": {
+        "passed": 40
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-transforms2-8248/gpu-tests.xml",
+          "sha256": "a164ffb81803930b4434119b06dcce3144484f14fc1c9829185e0c834c7575f3",
+          "size_bytes": 8208
+        },
+        "log": {
+          "path": "logs/score-prefactor-8248.log",
+          "sha256": "9db7c60510d208015ce978b1fee7b18ec5500c6c8287c36e0c19a4cc0419614d",
+          "size_bytes": 3627
+        }
+      },
+      "elapsed_seconds": 649,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:10:35",
+      "gpu": {
+        "bus_id": "00000000:D1:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-dbfd571d-fcc7-1b5f-f0c9-b1d7ce24718e"
+      },
+      "junit_seconds": 645.203,
+      "node": "shiba",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_score_transform": 58
+      },
+      "slurm_job_id": "8248",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T02:59:46",
+      "suite": "transforms2",
+      "tests": {
+        "passed": 58
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-sos1-8249/gpu-tests.xml",
+          "sha256": "fe6d868a01a505e758328708075fb659be4bd538a9eb94e3903eb4e520380b83",
+          "size_bytes": 5890
+        },
+        "log": {
+          "path": "logs/score-prefactor-8249.log",
+          "sha256": "9bd1db7e0125efe29a1ee9954bc5be56bb6ca66dbc2fc5434d6322f40d4ca893",
+          "size_bytes": 2360
+        }
+      },
+      "elapsed_seconds": 433,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:07:43",
+      "gpu": {
+        "bus_id": "00000000:52:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-76934d45-6d3c-be7d-24f8-786a322cf784"
+      },
+      "junit_seconds": 428.253,
+      "node": "shiba",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_softplus_sos": 41
+      },
+      "slurm_job_id": "8249",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T03:00:30",
+      "suite": "sos1",
+      "tests": {
+        "passed": 41
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-sos2-8250/gpu-tests.xml",
+          "sha256": "58c9b0563366f67465a79ffad226d9a55bb9ef08934fc8b14566ebd4bbf16e2c",
+          "size_bytes": 2229
+        },
+        "log": {
+          "path": "logs/score-prefactor-8250.log",
+          "sha256": "417c886ad6af1e95708076b5fb90b1737fc7ab06596c73c5036a52850f004ec2",
+          "size_bytes": 2552
+        }
+      },
+      "elapsed_seconds": 89,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:09:12",
+      "gpu": {
+        "bus_id": "00000000:52:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-76934d45-6d3c-be7d-24f8-786a322cf784"
+      },
+      "junit_seconds": 85.954,
+      "node": "shiba",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_mosaic_softplus_zero_constant": 13
+      },
+      "slurm_job_id": "8250",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T03:07:43",
+      "suite": "sos2",
+      "tests": {
+        "passed": 13
+      }
+    },
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/score-prefactor-pointwise-8251/gpu-tests.xml",
+          "sha256": "4552bd6b58235e67feb20fadfb70dc15a488935695b48b40b25e5fdc11e2fc52",
+          "size_bytes": 9609
+        },
+        "log": {
+          "path": "logs/score-prefactor-8251.log",
+          "sha256": "bfc519286feaa70533a85d315a7aca0fc7214c69d3bc9d40173ea6f59f54e17b",
+          "size_bytes": 5056
+        }
+      },
+      "elapsed_seconds": 397,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T03:15:49",
+      "gpu": {
+        "bus_id": "00000000:52:00.0",
+        "compute_capability": "10.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B200",
+        "uuid": "GPU-76934d45-6d3c-be7d-24f8-786a322cf784"
+      },
+      "junit_seconds": 390.145,
+      "node": "shiba",
+      "partition": "standard",
+      "passed_by_module": {
+        "test_blocked_composition": 4,
+        "test_mosaic_query": 12,
+        "test_mosaic_taylor": 12,
+        "test_pointwise_attention": 6,
+        "test_pointwise_score_transform": 30
+      },
+      "slurm_job_id": "8251",
+      "slurm_state": "COMPLETED",
+      "source_commit": "78b5c25e29708a6a1582182b38e1ba1c6568b672",
+      "started_at": "2026-11-20T03:09:12",
+      "suite": "pointwise",
+      "tests": {
+        "passed": 64
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_score_prefactor.sbatch",
+  "launcher_sha256": "cc9e5cdafcc9405ccf35984a1388af6c834804702d9e95e02fbac7ec17ad3617",
+  "maximum_element_error_bound": "3 times the relative-L2 bound times the largest absolute reference element; exact reference zeros must remain exact",
+  "precisions": [
+    "bf16",
+    "bf16x3"
+  ],
+  "prior_attempt": {
+    "note": "The two failures were the exp families' extreme-score case at score standard deviation 12, whose order-eight coefficient gradient overflows FP32 in any implementation; the case keeps exp's wide rows at standard deviation 6 since 6aefb8f8.",
+    "slurm_job_id": "8200",
+    "source_commit": "7f03ebdab3e5d6c8387efe1072ad60554f703705",
+    "suite": "the whole prefactor module before its split",
+    "tests": {
+      "failure": 2,
+      "passed": 138
+    }
+  },
+  "schema_version": 1,
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "78b5c25e29708a6a1582182b38e1ba1c6568b672": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "9f5d31b11997b8091bedb73ce8dfdaaf6a8a433a5b0b3e9832f9e1c674863f62"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_blocked_composition.py@78b5c25e": "9166a48cc7af9338d6a83cad0842c2be83b9882f2835dba975f59dfa825d87d6",
+    "test_mosaic_query.py@78b5c25e": "2b75c989cc01151a0795fbb8ced61923093e6f32eaa1dac5902c8ef32731d93e",
+    "test_mosaic_score_prefactor.py@78b5c25e": "3df3d1ef318962b35b37feefeffa09a6f306b80907e43716a539ce2f87f7fe9d",
+    "test_mosaic_score_transform.py@78b5c25e": "032de9e8b571e4165130630c5f22298fd25a1c20b15975ca939206b6111509f2",
+    "test_mosaic_softplus_sos.py@78b5c25e": "99c752310103713825de23e223ce8ad830f57e457e95aa9488dc421a04342692",
+    "test_mosaic_softplus_zero_constant.py@78b5c25e": "25618c0190ea1694d0205c2a990559a37f0b098647be75e55391ae0917036282",
+    "test_mosaic_taylor.py@78b5c25e": "216dfb7842fac8e143d7a273e3fd57fc164f4477e34d5d94e18b7cea8083b427",
+    "test_pointwise_attention.py@78b5c25e": "81f032deab1d1b0560a625310c6b3a4e1a350fe87f8e51d0d1339f6431cbf6a2",
+    "test_pointwise_score_transform.py@78b5c25e": "1175ed4a216f974e02bbe1dff3974b2f3bbf599880db11602d9f0cd50a4ab7ee"
+  },
+  "tests": {
+    "passed": 356
+  }
+}
