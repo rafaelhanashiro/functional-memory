@@ -15,8 +15,8 @@ at http://127.0.0.1:8765. Elsewhere, such as a laptop with Python 3.9 or later, 
 A read-only copy is public at https://rafaelhanashiro.github.io/functional-memory/, served by
 GitHub Pages from the `gh-pages` branch. Pushing `main` does not change it: after pushing, run
 `python3 site/publish.py` from any checkout to publish the committed site there (`--build DIR`
-only builds it, to look at first). It leaves out Meetings, the Queue and every editing control;
-`public/` holds the read-only modules it uses instead.
+only builds it, to look at first). It leaves out Literature, Meetings, the Queue and every
+editing control; `public/` holds the read-only modules it uses instead.
 
 Everything the pages load is inside this folder: images in `media/`, result figures in `figures/`, result data in `data/`,
 and the Markdown and math libraries in `vendor/`. Only adding a literature link reaches the

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Publish the read-only results snapshot that GitHub Pages serves from the gh-pages branch.
 
-The snapshot is the committed site/ without its private and editing parts: no meetings or queue
-(nor links to them), no serve.py, media, page-text sources, data generators or READMEs. Page texts
-and renamed titles are baked into data/page-text.json. public/ holds the modules that replace the
-editing ones: a read-only text.js and literature.js, and markdown.js, which re-exports editor.js's
-rendering. Literature's page loses its add form and + Category button.
+The snapshot is the committed site/ without its private and editing parts: no literature, meetings
+or queue (nor links to them), no serve.py, media, page-text sources, data generators or READMEs.
+Page texts and renamed titles are baked into data/page-text.json. public/ holds the modules that
+replace the editing ones: a read-only text.js, and markdown.js, which re-exports editor.js's
+rendering.
 
     python3 site/publish.py               build from HEAD and push it to gh-pages
     python3 site/publish.py --build DIR   only build the snapshot into DIR, to look at it
@@ -17,7 +17,6 @@ import argparse
 import io
 import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -27,12 +26,11 @@ from pathlib import Path
 
 SITE_URL = "https://rafaelhanashiro.github.io/functional-memory/"
 ROOT = Path(__file__).resolve().parent.parent
-PRIVATE_FILES = {"README.md", "serve.py", "publish.py", "text.js", "literature.js", "meeting.html", "meeting.js",
-                 "queue.html", "queue.js", "vendor/README.md"}
-PRIVATE_DIRS = {"meeting", "queue", "text", "media", "public", "__pycache__"}
-NAV = ['      <a href="meeting.html">Meetings</a>\n', '      <a href="queue.html">Queue</a>\n']
-ADD_FORM = re.compile(r'    <form class="add-resource".*?</form>\n', re.S)
-ADD_CATEGORY = '      <button class="button" type="button" data-action="add-category">+ Category</button>\n'
+PRIVATE_FILES = {"README.md", "serve.py", "publish.py", "text.js", "literature.html", "literature.js", "meeting.html",
+                 "meeting.js", "queue.html", "queue.js", "vendor/README.md"}
+PRIVATE_DIRS = {"literature", "meeting", "queue", "text", "media", "public", "__pycache__"}
+NAV = ['      <a href="literature.html">Literature</a>\n', '      <a href="meeting.html">Meetings</a>\n',
+       '      <a href="queue.html">Queue</a>\n']
 
 
 def git(*args, stdin=None, env=None):
@@ -60,11 +58,6 @@ def build(site, out):
             if html.count(line) != 1:
                 sys.exit(f"{rel}: expected one nav link {line.strip()!r}")
             html = html.replace(line, "")
-        if rel == "literature.html":
-            html, forms = ADD_FORM.subn("", html)
-            if forms != 1 or html.count(ADD_CATEGORY) != 1:
-                sys.exit("literature.html: expected one add form and one + Category button")
-            html = html.replace(ADD_CATEGORY, "")
         target.write_text(html, encoding="utf-8")
     for module in sorted((site / "public").glob("*.js")):
         shutil.copyfile(module, out / module.name)
