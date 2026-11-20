@@ -81,9 +81,7 @@ existing Mosaic case of the unprescaled head RMSNorm):
 | B300 SXM6 (`akita`, long) | 9292 | `370afb2e` | 9 passed: probe, shifted composition, 3 kernel cases and 3 model cases at Q/K width 64, the control; 10 skipped as not admitted | 128 |
 | H100 SXM (`dogo`, long) | 9291 | `370afb2e` | pending at 18:40: `dogo` full since the first submission at 18:06 | |
 
-`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical). Neither
-job preempted another: 9250 took the B200 our own completed run freed, and 9292 a B300 freed when another user's
-standard jobs preempted a long job on `akita`.
+`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical).
 
 B300 (CUDA 13 environment), [record](runs/head-rms-prescale-b300/record.json): the probe and the shifted
 composition as on B200 (prescaled at most 1.8e-7 and 1.3e-7); fixed Taylor, static and query at Q/K width 64 give
