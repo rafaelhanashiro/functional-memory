@@ -30,6 +30,8 @@ PREFACTORS = (
 )
 # A run that fits neither: exp of softplus(s).
 MISC = ((f"<var>e</var><sup>softplus({SCORE})</sup> = 1 + {EXP_SCORE}", "r0dd96f88d9f8"),)
+# The score MLP, a learned SiLU MLP of the score and the query token in place of exp: (width J, run).
+SCORE_MLP = (("<var>J</var> = 4", "rea8b942672f4"), ("<var>J</var> = 8", "rfc68c6d26f40"))
 
 
 def shape(run_id: str) -> str:
@@ -61,8 +63,13 @@ def fixed_kernels() -> list[dict]:
     ]
 
 
+def mlp() -> list[dict]:
+    return [{"key": "score-mlp", "title": "Score MLP",
+             "tables": [{"head": ["Width", "PPL (% vs exp)"], "compact": True, "rows": versus_exp(SCORE_MLP)}]}]
+
+
 def main() -> None:
-    data = {"fixed-kernels": fixed_kernels()}
+    data = {"fixed-kernels": fixed_kernels(), "mlp": mlp()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

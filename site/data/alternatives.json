@@ -141,5 +141,42 @@
         }
       ]
     }
+  ],
+  "mlp": [
+    {
+      "key": "score-mlp",
+      "title": "Score MLP",
+      "tables": [
+        {
+          "head": [
+            "Width",
+            "PPL (% vs exp)"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "<var>J</var> = 4"
+              },
+              {
+                "text": "20.3206 <span class=\"change\">(+42.53%)</span>",
+                "value": 20.320645498731935,
+                "run_id": "rea8b942672f4"
+              }
+            ],
+            [
+              {
+                "text": "<var>J</var> = 8"
+              },
+              {
+                "text": "20.9757 <span class=\"change\">(+47.12%)</span>",
+                "value": 20.975673555106496,
+                "run_id": "rfc68c6d26f40"
+              }
+            ]
+          ]
+        }
+      ]
+    }
   ]
 }
