@@ -38,6 +38,19 @@ STATIC_GATES = (
     ("Static", {"Shared": ("r0e76396bdee5", "rc60345dfcff7"), "Per degree": ("r527a30ff7ed1", "re253a5f1b03e")}),
     ("Query–key", {"Shared": (None, None), "Per degree": ("ra0f402ff6758", "r2e25140c75db")}),
 )
+# Reference runs without a polynomial, none with RoPE: (attention, softmax run, exp run).
+REFERENCES = (
+    ("FoX NoPE", "r5adc29a91e3b", "r183f08346ddc"),
+    ("FoX–PaTH", "r14db6f0e8592", "rafcf22b799ed"),
+    ("ALiBi NoPE (fixed slopes)", "ref652c257797", "r7820049184ef"),
+)
+# The original FoX sigmoid gate, NoPE: (attention, QK normalization, run).
+SIGMOID_GATE = (
+    ("Softmax", "None", "reeb92d46a95d"),
+    ("Exp + RMSNorm", "Per-head RMSNorm", "rdd3e9cb3bb80"),
+    ("Query (<var>m</var> = 4) + <var>W</var> decay + RMSNorm", "Per-head RMSNorm", "rfa9636279199"),
+    ("Softmax", "Per-head RMSNorm", "rac200ce11221"),
+)
 NOT_RUN = "—: not run."
 
 
@@ -85,8 +98,20 @@ def static_gates() -> dict:
                                    "= (<var>t</var> − <var>i</var>) softplus(<var>β</var>)."}]}
 
 
+def references() -> dict:
+    """Bold marks each table's lowest perplexity."""
+    kernels = [[text(label), perplexity(softmax), perplexity(exp)] for label, softmax, exp in REFERENCES]
+    bold_lowest([cell for row in kernels for cell in row[1:]])
+    sigmoid = [[text(label), text(qk), perplexity(run_id)] for label, qk, run_id in SIGMOID_GATE]
+    bold_lowest([row[2] for row in sigmoid])
+    return {"key": "reference", "title": "Reference FoX / PaTH",
+            "tables": [{"head": ["Attention", "Softmax", "Exp"], "compact": True, "rows": kernels},
+                       {"title": "Original FoX sigmoid gate · NoPE", "head": ["Attention", "QK normalization", "PPL"],
+                        "compact": True, "rows": sigmoid}]}
+
+
 def main() -> None:
-    data = {"fox-alibi": [comparison(), gates(), static_gates()]}
+    data = {"fox-alibi": [comparison(), gates(), static_gates(), references()]}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")

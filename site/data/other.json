@@ -176,21 +176,49 @@
   },
   "zero_constant": {
     "title": "Zero constant",
+    "columns": [
+      "Softplus input",
+      "Raw score"
+    ],
     "rows": [
       {
-        "label": "Query + softplus input",
-        "run_id": "rb5b604ae829a",
-        "perplexity": 14.24972539203284
+        "label": "Query",
+        "cells": [
+          {
+            "run_id": "rb5b604ae829a",
+            "perplexity": 14.24972539203284
+          },
+          {
+            "run_id": "r81b5ebb23a51",
+            "perplexity": 16.95989537711045
+          }
+        ]
       },
       {
-        "label": "Query SoS + softplus input",
-        "run_id": "r7d5baf55104e",
-        "perplexity": 14.127645091073603
+        "label": "Query SoS",
+        "cells": [
+          {
+            "run_id": "r7d5baf55104e",
+            "perplexity": 14.127645091073603
+          },
+          {
+            "run_id": "rc379a8f30f5b",
+            "perplexity": 14.726116955218954
+          }
+        ]
       },
       {
-        "label": "Static + softplus input",
-        "run_id": "rc28ef4dbe26d",
-        "perplexity": 14.192018540499317
+        "label": "Static",
+        "cells": [
+          {
+            "run_id": "rc28ef4dbe26d",
+            "perplexity": 14.192018540499317
+          },
+          {
+            "run_id": "r37fb1c7bb6db",
+            "perplexity": 17.359314254400807
+          }
+        ]
       }
     ]
   },
@@ -261,11 +289,12 @@
       },
       {
         "key": "release",
-        "title": "Taylor warmup, then query + W decay",
+        "title": "Taylor warmup, then learned coefficients",
         "head": [
           "Run",
           "Release update",
-          "PPL"
+          "Query + <var>W</var> decay",
+          "Static"
         ],
         "rows": [
           [
@@ -274,6 +303,10 @@
             {
               "run_id": "rd40b46f5dc9b",
               "perplexity": 14.229060298544688
+            },
+            {
+              "run_id": "r1c72e8860ade",
+              "perplexity": 14.3434640874133
             }
           ],
           [
@@ -282,14 +315,22 @@
             {
               "run_id": "rcc4f4e5d7abb",
               "perplexity": 14.242058150718305
+            },
+            {
+              "run_id": "r991a756da7a9",
+              "perplexity": 14.242631991483552
             }
           ],
           [
-            "Query + W decay, no freeze",
+            "No freeze",
             "1",
             {
               "run_id": "r25fffc16c2f3",
               "perplexity": 14.322804520454994
+            },
+            {
+              "run_id": "r9c69dd7cfc8d",
+              "perplexity": 14.294211762019286
             }
           ],
           [
@@ -297,7 +338,8 @@
             "\u2014",
             {
               "run_id": "r6a76e7fbde45",
-              "perplexity": 14.257176394334465
+              "perplexity": 14.257176394334465,
+              "colspan": 2
             }
           ]
         ],

@@ -40,7 +40,7 @@ function inputNorm(data, host) {
 
 function zeroConstant(data, host) {
   around(host, data.title, table(
-    ["Variant", "PPL"], data.rows.map((row) => [{text: row.label}, value(row)]), {compact: true},
+    ["Variant", ...data.columns], data.rows.map((row) => [{text: row.label}, ...row.cells.map(value)]), {compact: true},
   ));
 }
 
@@ -49,7 +49,8 @@ function zeroConstant(data, host) {
 function parts(data, host) {
   section(host, data.title).querySelector("h2").dataset.title = host.dataset.result;
   for (const part of data.parts) {
-    const rows = part.rows.map((row) => row.map((entry) => typeof entry === "string" ? {text: entry} : value(entry)));
+    const rows = part.rows.map((row) => row.map((entry) => typeof entry === "string" ? {text: entry}
+      : {...value(entry), colspan: entry?.colspan}));
     const heading = html("h3", "", part.title);
     heading.dataset.title = part.key;
     host.append(heading, slot(part.key, "intro"),
