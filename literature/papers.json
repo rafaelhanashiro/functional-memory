@@ -1,0 +1,243 @@
+[
+  {
+    "id": "2402.04347",
+    "title": "The Hedgehog & the Porcupine: Expressive Linear Attentions with Softmax Mimicry",
+    "authors": [
+      "Michael Zhang",
+      "Kush Bhatia",
+      "Hermann Kumbong",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2402.04347",
+    "arxiv": "2402.04347",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2402.18668",
+    "title": "Simple linear attention language models balance the recall-throughput tradeoff",
+    "authors": [
+      "Simran Arora",
+      "Sabri Eyuboglu",
+      "Michael Zhang",
+      "Aman Timalsina",
+      "Silas Alberti",
+      "Dylan Zinsley",
+      "James Zou",
+      "Atri Rudra",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2402.18668",
+    "arxiv": "2402.18668",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2402.10644",
+    "title": "Linear Transformers with Learnable Kernel Functions are Better In-Context Models",
+    "authors": [
+      "Yaroslav Aksenov",
+      "Nikita Balagansky",
+      "Sofia Maria Lo Cicero Vaina",
+      "Boris Shaposhnikov",
+      "Alexey Gorbatovski",
+      "Daniil Gavrilov"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2402.10644",
+    "arxiv": "2402.10644",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2403.02920",
+    "title": "TaylorShift: Shifting the Complexity of Self-Attention from Squared to Linear (and Back) using Taylor-Softmax",
+    "authors": [
+      "Tobias Christian Nauen",
+      "Sebastian Palacio",
+      "Andreas Dengel"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2403.02920",
+    "arxiv": "2403.02920",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2602.02422",
+    "title": "Poly-attention: a general scheme for higher-order self-attention",
+    "authors": [
+      "Sayak Chakrabarti",
+      "Toniann Pitassi",
+      "Josh Alman"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2602.02422",
+    "arxiv": "2602.02422",
+    "seen": false,
+    "added": "2026-11-18"
+  },
+  {
+    "id": "2310.01655",
+    "title": "PolySketchFormer: Fast Transformers via Sketching Polynomial Kernels",
+    "authors": [
+      "Praneeth Kacham",
+      "Vahab Mirrokni",
+      "Peilin Zhong"
+    ],
+    "year": 2023,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2310.01655",
+    "arxiv": "2310.01655",
+    "seen": true,
+    "added": "2026-11-17",
+    "category": "state-space"
+  },
+  {
+    "id": "2404.19756",
+    "title": "KAN: Kolmogorov-Arnold Networks",
+    "authors": [
+      "Ziming Liu",
+      "Yixuan Wang",
+      "Sachin Vaidya",
+      "Fabian Ruehle",
+      "James Halverson",
+      "Marin Soljačić",
+      "Thomas Y. Hou",
+      "Max Tegmark"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2404.19756",
+    "arxiv": "2404.19756",
+    "seen": true,
+    "added": "2026-11-18"
+  },
+  {
+    "id": "2610.14219",
+    "title": "Learnable Low-Rank Polynomial Sketch for Effective Linear Attention",
+    "authors": [
+      "Zongyue Qin",
+      "Haoran Deng",
+      "Jason Cong",
+      "Yizhou Sun"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2610.14219",
+    "arxiv": "2610.14219",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2410.10254",
+    "title": "LoLCATs: On Low-Rank Linearizing of Large Language Models",
+    "authors": [
+      "Michael Zhang",
+      "Simran Arora",
+      "Rahul Chalamala",
+      "Alan Wu",
+      "Benjamin Spector",
+      "Aaryan Singhal",
+      "Krithik Ramesh",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2410.10254",
+    "arxiv": "2410.10254",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2607.07386",
+    "title": "Sparse Delta Memory: Scaling the State of Linear RNNs through Sparsity",
+    "authors": [
+      "Loïc Cabannes",
+      "Pierre-Emmanuel Mazaré",
+      "Ilze Amanda Auzina",
+      "Théo Le Pendeven",
+      "Gergely Szilvasy",
+      "Matthijs Douze",
+      "Maria Lomeli",
+      "Justin Carpentier",
+      "Gabriel Synnaeve",
+      "Hervé Jégou"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2607.07386",
+    "arxiv": "2607.07386",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2605.29157",
+    "title": "Parallax: Parameterized Local Linear Attention for Language Modeling",
+    "authors": [
+      "Yifei Zuo",
+      "Dhruv Pai",
+      "Zhichen Zeng",
+      "Alec Dewulf",
+      "Shuming Hu",
+      "Zhaoran Wang"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2605.29157",
+    "arxiv": "2605.29157",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "github-tilde-research-wall-attention-release-attention",
+    "title": "Wall Attention",
+    "authors": [],
+    "year": null,
+    "source": "GitHub",
+    "url": "https://github.com/tilde-research/wall-attention-release",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2606.27748",
+    "title": "Flexformer: Flexible Linear Transformer with Learnable Attention Kernel",
+    "authors": [
+      "Haoran Zhang",
+      "Feng Zhou"
+    ],
+    "year": 2026,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2606.27748",
+    "arxiv": "2606.27748",
+    "seen": false,
+    "added": "2026-11-17"
+  },
+  {
+    "id": "2507.02754",
+    "title": "Fast and Simplex: 2-Simplicial Attention in Triton",
+    "authors": [
+      "Aurko Roy",
+      "Timothy Chou",
+      "Sai Surya Duvvuri",
+      "Sijia Chen",
+      "Jiecao Yu",
+      "Xiaodong Wang",
+      "Manzil Zaheer",
+      "Rohan Anil"
+    ],
+    "year": 2025,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2507.02754",
+    "arxiv": "2507.02754",
+    "seen": false,
+    "added": "2026-11-17"
+  }
+]
