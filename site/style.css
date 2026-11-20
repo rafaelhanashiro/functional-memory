@@ -200,7 +200,8 @@ body:not(.has-categories) .uncategorized > .category-head { display: none; }
   padding-bottom: 6px;
   border-bottom: 1px solid var(--rule);
 }
-.category-name { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; cursor: text; }
+.category-name { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.category-name[tabindex] { cursor: text; }  /* a name that renames in place */
 .category-name:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
 .uncategorized .category-name { color: var(--muted); cursor: default; }
 .category-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
