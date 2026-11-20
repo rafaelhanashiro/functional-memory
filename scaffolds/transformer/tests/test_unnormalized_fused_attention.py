@@ -121,7 +121,9 @@ def test_bf16_production_context_outputs_and_vjp_match_blocked():
 @pytest.mark.parametrize("width", (4, 8, 16))
 def test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64(width):
     """Q/K widths 4, 8 and 16 with value width 64 at 2,048 tokens in BF16 (the exponential's narrow-key runs): the
-    16-wide key blocks with masked loads against the blocked backend at full context and dense FP64 on a prefix."""
+    16-wide key blocks with masked loads against the blocked backend at full context and dense FP64 on a prefix of
+    129 tokens and one head (the shape the width-64 case uses: XLA's GPU compiler fails a layout check on the dense
+    FP64 reference at 257 tokens and two heads)."""
     operands, cotangent = _inputs((1, 2048, 4, width, 64), dtype=jnp.bfloat16, seed=94 + width)
     fused = _compiled_forward_and_vjp(fused_unnormalized_attention)
     actual = fused(operands, cotangent)
@@ -130,8 +132,8 @@ def test_bf16_narrow_keys_at_the_production_context_match_blocked_and_fp64(width
     assert actual[1][0].shape == operands[0].shape and actual[1][1].shape == operands[1].shape
     _assert_result(actual, reference, output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015),
                    label=f"BF16 production context, d_K={width}")
-    prefix = tuple(x[:, :257, :2] for x in operands)
-    prefix_cotangent = cotangent[:, :257, :2]
+    prefix = tuple(x[:, :129, :1] for x in operands)
+    prefix_cotangent = cotangent[:, :129, :1]
     _assert_result(fused(prefix, prefix_cotangent), _fp64_forward_and_vjp(prefix, prefix_cotangent),
                    output_rtol=0.006, gradient_rtols=(0.025, 0.025, 0.015), label=f"BF16 prefix, d_K={width}")
 
