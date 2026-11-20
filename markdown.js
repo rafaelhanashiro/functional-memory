@@ -7,8 +7,10 @@ const MARKERS = /^(?:[ \t]*(?:>|(?:[-*+]|\d{1,9}[.)])(?=[ \t])))*/;  // quote an
 const QUOTE = /[ \t]*>[ \t]?/y;
 
 // Callouts, as in Obsidian: a quote whose first line is [!type], then optionally - (folded) or
-// + (foldable, open) and a title, as in "> [!warning]- Careful". Without a title the type is
-// the title. style.css colours each type; a type it doesn't know looks like a note.
+// + (foldable, open) and a title, as in "> [!warning]- Careful". Without a title it is just the
+// coloured box (a foldable one keeps its type as the title, to click on). style.css colours each
+// type, and takes a colour's own name too, as in "> [!green]"; a type it doesn't know is blue, like
+// a note.
 const CALLOUT = /^<p>\[!([\w-]+)\]([+-]?)[ \t]*(.*?)[ \t]*(\n|<\/p>\n?)/;
 marked.use({renderer: {
   blockquote(quote) {
@@ -18,8 +20,9 @@ marked.use({renderer: {
     const type = name.toLowerCase();
     const body = (end === "\n" ? "<p>" : "") + quote.slice(head.length);
     const [box, top] = fold ? ["details", "summary"] : ["div", "div"];
+    const heading = title || (fold ? type[0].toUpperCase() + type.slice(1) : "");
     return `<${box} class="callout" data-callout="${type}"${fold === "+" ? " open" : ""}>\n`
-      + `<${top} class="callout-title">${title || type[0].toUpperCase() + type.slice(1)}</${top}>\n`
+      + (heading ? `<${top} class="callout-title">${heading}</${top}>\n` : "")
       + (body.trim() ? `<div class="callout-content">\n${body}</div>\n` : "")
       + `</${box}>\n`;
   },

@@ -1,7 +1,7 @@
 {
   "pages": {
     "index": {
-      "page": "This project asks whether polynomial attention can match or beat exp and softmax attention when the rest of the Transformer stays the same. Each head scores query $t$ against key $s$ with $z_{ts}=q_t^\\top k_s/\\sqrt{d_K}$ and weights the values by a polynomial of degree $m$ instead of $e^{z}$:\n\n$$o_t=\\operatorname{RMSNorm}\\Big(\\sum_{s\\le t}p(z_{ts})\\,v_s\\Big),\\qquad p(z)=\\sum_{r=0}^{m}c_r z^r.$$\n\nExp is the same with $p(z)=e^z$; softmax instead divides by the causal row sum. The coefficients $c_r$ are fixed at Taylor's $1/r!$, learned per head (static), or computed from each query (query).\n",
+      "page": "This project asks whether we can learn a better kernel, potentially input-dependent, other than exp.\n\nConcretely, an attention output is given by\n$$\no_t=\\sum_{s\\le t}p(z_{ts})\\,v_s\n$$\nwhere $z_{ts} \\sim q_t^\\top k_s$ is the attention score. In a standard transformer, we have $p=\\text{softmax}$.\n\nOur goal is to learn a function $p$ based on the data, which can potentially depend on the activation that goes into the attention layer. We will primarily focus on polynomials, but also test out different function classes.\n",
       "reference": "Every run follows this recipe unless its page says otherwise.\n"
     },
     "runs-100m": {},
@@ -38,6 +38,8 @@
     },
     "runs-poly-parametrizations": {},
     "runs-polynomial": {
+      "baselines": "Our reference model will be exp + head RMSNorm, since it's the best performing.\n",
+      "page": "> [!info] Models\n> All models compute \n> $$\n>     o_t=\\operatorname{RMSNorm}\\left(\\sum_{s\\le t}p(z_{ts})\\,v_s\\right)\n> $$\nand differ in $p$:\n>\n> - Exp: $p(z)=e^{z}$\n> - Taylor: $p(z)=\\sum_{r=0}^{m}z^r/r!$, exp's Taylor series to degree $m$\n> - Hermite: $p(z)=e^{1/2}\\sum_{r=0}^{m}\\mathrm{He}_r(z)/r!$, exp's Hermite series to degree $m$\n> - Static: $p(z)=\\sum_{r=0}^{m}c_r z^r$, with $c_r$ learned per head\n> - Query: $p(z)=\\sum_{r=0}^{m}c_r(x_t)\\,z^r$, with $c_r(x_t)=b_r+a_r\\tanh(w_r^\\top x_t)$ and $x_t$ the attention layer's input\n> \n> Unless otherwise stated, all applicable models use weight decay on $w_r$.\n",
       "query-key": "The $W$-decay run used the Mosaic kernel; the others used the fused kernel.\n"
     },
     "runs-scalings": {},
@@ -71,5 +73,10 @@
     },
     "diagnostics": {}
   },
-  "titles": {}
+  "titles": {
+    "runs-polynomial": {
+      "title": "Reference Polynomial",
+      "width-degree": "Scaling Query Attention"
+    }
+  }
 }

@@ -396,7 +396,6 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .writeup::after, .sheet::after { content: ""; display: block; clear: both; }
 .writeup-view { line-height: 1.65; }
-.writeup-view > * { max-width: 72ch; }
 .writeup-view > :first-child { margin-top: 0; }
 .writeup-view > :last-child { margin-bottom: 0; }
 .writeup-view p, .writeup-view ul, .writeup-view ol, .writeup-view blockquote, .writeup-view pre, .writeup-view table { margin: 0 0 1em; }
@@ -438,18 +437,20 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .writeup-view .callout-title { color: rgb(var(--callout)); font-weight: 600; }
 .writeup-view summary.callout-title { cursor: pointer; }
-.writeup-view .callout-content { margin-top: 6px; }
+.writeup-view .callout-title + .callout-content { margin-top: 6px; }
 .writeup-view .callout-content > :first-child { margin-top: 0; }
 .writeup-view .callout-content > :last-child { margin-bottom: 0; }
 .writeup-view .callout:is([data-callout="abstract"], [data-callout="summary"], [data-callout="tldr"],
-  [data-callout="tip"], [data-callout="hint"], [data-callout="important"]) { --callout: 13 148 136; }
-.writeup-view .callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"]) { --callout: 22 163 74; }
+  [data-callout="tip"], [data-callout="hint"], [data-callout="important"], [data-callout="teal"]) { --callout: 13 148 136; }
+.writeup-view .callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"],
+  [data-callout="green"]) { --callout: 22 163 74; }
 .writeup-view .callout:is([data-callout="question"], [data-callout="help"], [data-callout="faq"],
-  [data-callout="warning"], [data-callout="caution"], [data-callout="attention"]) { --callout: 234 88 12; }
+  [data-callout="warning"], [data-callout="caution"], [data-callout="attention"], [data-callout="orange"]) { --callout: 234 88 12; }
 .writeup-view .callout:is([data-callout="failure"], [data-callout="fail"], [data-callout="missing"],
-  [data-callout="danger"], [data-callout="error"], [data-callout="bug"]) { --callout: 220 38 38; }
-.writeup-view .callout[data-callout="example"] { --callout: 124 58 237; }
-.writeup-view .callout:is([data-callout="quote"], [data-callout="cite"]) { --callout: 113 113 122; }
+  [data-callout="danger"], [data-callout="error"], [data-callout="bug"], [data-callout="red"]) { --callout: 220 38 38; }
+.writeup-view .callout:is([data-callout="example"], [data-callout="purple"]) { --callout: 124 58 237; }
+.writeup-view .callout:is([data-callout="quote"], [data-callout="cite"], [data-callout="gray"],
+  [data-callout="grey"]) { --callout: 113 113 122; }
 /* Tables and images in the Markdown (agendas, notes, write-ups, page texts) stand centered. */
 .writeup-view table { margin-inline: auto; border-collapse: collapse; }
 .writeup-view th, .writeup-view td {
@@ -465,8 +466,6 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   border: 1px solid var(--rule);
   border-radius: 8px;
 }
-.writeup-view p:has(> img:only-child) { max-width: none; }
-.writeup-view p:has(> img):not(:has(> :not(img, br))) { margin-inline: auto; }  /* several images in a row */
 :is(.writeup-view, .text-block) .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 .writeup-view .empty { color: var(--muted); font-style: italic; }
 
@@ -485,7 +484,6 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .result h2 + h3 { margin-top: 4px; }
 .result .intro {
-  max-width: 72ch;
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.92rem;
