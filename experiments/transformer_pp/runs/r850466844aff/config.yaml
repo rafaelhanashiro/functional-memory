@@ -1,0 +1,15 @@
+schema_version: 1
+experiment_kind: layerwise_polynomial_intervention
+condition: exploratory/sum_of_squares/all_layer_swap
+output_directory: experiments/transformer_pp/runs/r850466844aff
+evaluation:
+  parent_run_id: reeefbcc19abf
+  parent_config_sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+  checkpoint_step: 7500
+  checkpoint_sha256: aab74c3943816022d2ae281d7db302ed2bde16b6b697b03db5d0db6b0679d19e
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+  calibration_sequences: 64
+  evaluation_sequences: 256
+  microbatch: 4
+  pairing_seed: 42
+  layer_scope: all_layers

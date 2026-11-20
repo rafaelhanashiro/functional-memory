@@ -79,10 +79,12 @@ class Block(nnx.Module):
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
+        coefficient_score_transform: str = "identity",
     ):
         extra = {}
         if query_coefficients is not None or return_coefficients:
-            extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients}
+            extra = {"query_coefficients": query_coefficients, "return_coefficients": return_coefficients,
+                     "coefficient_score_transform": coefficient_score_transform}
         if key_factors is not None:
             extra["key_factors"] = key_factors
         if self.coefficients_read_pre_norm:
@@ -138,12 +140,15 @@ class TransformerLM(nnx.Module):
         query_coefficients: jax.Array | None = None,
         return_coefficients: bool = False,
         key_factors: jax.Array | None = None,
+        coefficient_score_transform: str = "identity",
     ):
         """Optionally replace or return effective coefficients [L, B, T, H, m+1].
 
         Overrides replace static coefficients or bypass the query generator; all
         other operations remain differentiable. Capture returns coefficients from
         this same forward pass, after scaling. No scaling is applied to overrides.
+        The effective coefficients multiply powers of the declared score transform.
+        For query SoS they include the square expansion and its optional input power.
         ``key_factors`` [L, B, T, H, m+1], with replaced static coefficients, also
         multiplies key i's order-r term: the pair coefficient is c_r(t) * g_r(i).
         """
@@ -156,18 +161,20 @@ class TransformerLM(nnx.Module):
             if cfg.attention_score_bias != "none":
                 raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
                                  "shift every order's score")
-            if cfg.attention_score_transform != "identity":
-                raise ValueError("Coefficient override and capture assume sum_r c_r s^r; a score transform "
-                                 "evaluates the polynomial at z = phi(s)")
+            if cfg.attention_score_transform != coefficient_score_transform:
+                raise ValueError("Coefficient score transform must match the model's attention_score_transform")
             fixed_direct = (cfg.attention_coefficients == "fixed"
                             and cfg.attention_coefficient_conditioning == "static"
                             and cfg.attention_fixed_square_factors is None)
+            query_sos = (cfg.attention_coefficient_conditioning == "query"
+                         and cfg.attention_coefficient_parameterization == "sum_of_squares")
             if (cfg.attention_coefficient_conditioning not in ("static", "query")
                     or (cfg.attention_coefficients != "learned" and not fixed_direct)
                     or cfg.attention_normalization
-                    or cfg.attention_coefficient_parameterization != "direct"
+                    or (cfg.attention_coefficient_parameterization != "direct" and not query_sos)
                     or cfg.attention_degree is None or cfg.attention_degree < 1):
-                raise ValueError("Coefficient override and capture require unnormalized direct static or query coefficients")
+                raise ValueError("Coefficient override and capture require unnormalized direct static or query "
+                                 "coefficients, or query SoS")
             if cfg.remat:
                 raise ValueError("Coefficient override and capture require model.remat == False")
             if query_coefficients is not None:
@@ -201,6 +208,7 @@ class TransformerLM(nnx.Module):
                     result = layer(x, deterministic=deterministic, rngs=rngs,
                                    return_diagnostics=return_diagnostics, attention_parameters=parameters,
                                    query_coefficients=layer_coefficients, return_coefficients=return_coefficients,
+                                   coefficient_score_transform=coefficient_score_transform,
                                    **layer_key_factors)
             if return_diagnostics:
                 x, layer_diagnostics = result

@@ -62,8 +62,8 @@ change is labeled minimally, as (% vs exp); RoPE is assumed and never named, whi
 it say NoPE; the overfitting fits report perplexity on the batch they fit. The Learned
 polynomials and Polynomial learning dynamics figures and the Other runs page's saturation figure
 in `figures/` are copies with no generator; the saturation figure is shown by that page's L2
-notes text. The Input dependence table reads its runs from Codex's branch `codex/layerwise-
-polynomial-swap` until that branch merges.
+notes text. The Input dependence page reads its table from the
+[calibration-mean diagnostic](../experiments/transformer_pp/results/diagnostics/input_dependence/calibration_mean/README.md).
 
 The Queue tab lists the runs the user plans and the runs in progress, each list a sequence of runs
 and named groups of runs, in `queue/runs.json`. A planned run's checkbox moves it to In progress;

@@ -2221,6 +2221,25 @@ submit long 10:00:00 acceptance B300,H100 akita,$EXCL r0f8122dd8439             
 submit long 10:00:00 acceptance B300,H100 akita,$EXCL rcace22b32f93              # fixed Taylor, job 2884
 ```
 
+## Calibration-mean coefficient evaluation
+
+The [Input dependence result](results/diagnostics/input_dependence/calibration_mean/README.md)
+evaluates three frozen update-7,500 checkpoints on Kennel. The evaluation runs for Query
+(`r50200ac83292`) and SoS (`r850466844aff`) used one B300 each. Softplus-prefactor SoS
+(`r2384d21a3134`) used one B200. Their recipes identify the parent checkpoints and
+validation manifest. Their records give the executed source commits and verified log locations.
+
+The evaluator averages expanded coefficients on the first 64 validation sequences and
+scores the native and fixed-mean polynomials on the next 256. For an independently
+registered repetition, submit from its worktree with the GPU type of the parent evaluation:
+
+```bash
+study=experiments/transformer_pp
+sbatch --partition=standard --gres="gpu:${gpu_type:?b200 or b300}:1" --cpus-per-task=8 \
+  --mem=64G --time=03:00:00 --output="$study/runs/${run_id:?registered run ID}/training.log" \
+  "$study/evaluate_calibration_mean.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
+```
+
 ## Regular-query coefficient activation diagnostic
 
 `r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight

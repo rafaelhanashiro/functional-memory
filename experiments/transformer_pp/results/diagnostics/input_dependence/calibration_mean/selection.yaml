@@ -1,0 +1,61 @@
+question: How much does fixing each head's learned polynomial to its calibration mean
+  change held-out perplexity?
+settings:
+  checkpoint_step: 7500
+  calibration_sequences: 64
+  evaluation_sequences: 256
+  context_length: 2048
+  layer_scope: all_layers
+  metric: exp(mean held-out next-token NLL)
+runs:
+- study: transformer_pp
+  run_id: r50200ac83292
+  label: Query
+  parent_run_id: r25fffc16c2f3
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r50200ac83292/config.yaml
+      sha256: 51876e75a4f054a191970ec37912c708507b8f458e948fa338d37da658c6d757
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r50200ac83292/metrics.jsonl
+      sha256: 2d706a6dd1c4b41be7355dcab5727f929c01a7b1c8d70f9ce5dfbfaf05157ea2
+    completion.json:
+      path: experiments/transformer_pp/runs/r50200ac83292/completion.json
+      sha256: ed10afb157f68bd46ef6626c91477e0e81a17326da2453f8a613fd92d0d5f429
+    metadata.json:
+      path: experiments/transformer_pp/runs/r50200ac83292/metadata.json
+      sha256: 92887bb3a423bf92259d470b3e071536855f9fe84b2fe231a40c14b6c2d69fef
+- study: transformer_pp
+  run_id: r850466844aff
+  label: SoS
+  parent_run_id: reeefbcc19abf
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r850466844aff/config.yaml
+      sha256: 564d1d3a41ce6e0aa499916c1f3944193a8c450dd803aebf68c2e1ff11d86359
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r850466844aff/metrics.jsonl
+      sha256: 9f1eac66b4560014899152e4dfcddac3b403d0122401c58ab8ed4e6cb3d0de67
+    completion.json:
+      path: experiments/transformer_pp/runs/r850466844aff/completion.json
+      sha256: 6bc82880375ed742decdd31f14645b5f5f78e129aca5f85ed9e3df4de15a885b
+    metadata.json:
+      path: experiments/transformer_pp/runs/r850466844aff/metadata.json
+      sha256: 92887bb3a423bf92259d470b3e071536855f9fe84b2fe231a40c14b6c2d69fef
+- study: transformer_pp
+  run_id: r2384d21a3134
+  label: SoS + softplus input + prefactor
+  parent_run_id: r841f35a24241
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2384d21a3134/config.yaml
+      sha256: c302b538a651584d63c87ba38ba2b51769770d98933a04a1655f2d5b5eba4a5f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2384d21a3134/metrics.jsonl
+      sha256: 25b2e8429789dedcbe785901b0e675d06de29f090a73cb641862a0aec34ed57e
+    completion.json:
+      path: experiments/transformer_pp/runs/r2384d21a3134/completion.json
+      sha256: d1259f4472ded391e9bcb2900f1fc0d6567e0dd1e59c931c80be7af02f5b7c35
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2384d21a3134/metadata.json
+      sha256: 92887bb3a423bf92259d470b3e071536855f9fe84b2fe231a40c14b6c2d69fef
