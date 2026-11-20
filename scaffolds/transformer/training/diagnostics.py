@@ -560,9 +560,10 @@ def attention_identity(config) -> dict:
         cumulative = per_order and config.model.attention_forget_gate_mode == "cumulative"
         score_bias = getattr(config.model, "attention_score_bias", "none")
         transform = getattr(config.model, "attention_score_transform", "identity")
+        prefactor = getattr(config.model, "attention_score_prefactor", "none")
         identity.update({
-            # Score biases run their own kernels, which name themselves; a score transform runs the query
-            # polynomial's kernels with phi(s) in their tiles.
+            # Score biases run their own kernels, which name themselves; a score transform and a prefactor run
+            # the query polynomial's kernels with phi(s) and f(s) in their tiles.
             "attention_implementation": (implementation_name("endpoint" if endpoint and per_order else "none",
                                                              SHIFT_OF_MODE[score_bias])
                                          if score_bias != "none"
@@ -578,7 +579,8 @@ def attention_identity(config) -> dict:
                                          if transform != "identity"
                                          else "pallas_mosaic_gpu_query_polynomial" if query_tanh or query_sigmoid
                                          else "pallas_mosaic_gpu_query_polynomial_equal_coefficients"
-                                         if not normalized else "pallas_mosaic_gpu"),
+                                         if not normalized else "pallas_mosaic_gpu")
+            + ("" if prefactor == "none" else f"_times_{prefactor}"),
             # Unnormalized kernels share the query-coefficient family; only normalized ones divide by a row sum.
             "attention_weight_precision": default_precision("taylor" if normalized else "query", degree),
             "query_block_size": None,
@@ -766,6 +768,11 @@ def attention_identity(config) -> dict:
                 if square else "; c_0 = 0 structurally; only orders 1..m have learned parameters"))
         if square:
             identity["attention_coefficient_factor_count"] = len(coordinates)
+    from scaffolds.transformer.configs.base import _exponential_kernel
+
+    if getattr(config.model, "attention_score_prefactor", "none") != "none" and not _exponential_kernel(config.model):
+        # A final pass over the complete polynomial formula (the exponential records its own above).
+        identity.update(_polynomial_prefactor_identity(config.model, identity["attention_formula"]))
     return identity
 
 
@@ -783,6 +790,28 @@ SCORE_BIAS_FORMULAS = {
 }
 OUTPUT_SCALING_SUFFIXES = (", divided by the number of visible keys t",
                            ", then per-head RMSNorm over value channels with a learned gain")
+# The output-scaling clauses of the SoS formulas, which end their own formula with a semicolon.
+SOS_OUTPUT_SCALING_SUFFIXES = ("; then per-head RMSNorm over value channels with a learned gain",
+                               "; divided by the number of visible keys")
+
+
+def _polynomial_prefactor_identity(model, formula: str) -> dict:
+    """A polynomial's prefactor (attention/pieces.py): every weight is multiplied by f(s_ti) of the raw score,
+    recorded with f's definition before any trailing output-scaling clause; a signed prefactor (swish) makes
+    the weights signed."""
+    from scaffolds.transformer.attention.score_transform import PREFACTOR_FORMULAS, SIGNED_FUNCTIONS
+
+    prefactor = model.attention_score_prefactor
+    # Before the output-scaling clause wherever it stands (a static formula's transform definition follows it).
+    at = min((formula.index(suffix) for suffix in (*OUTPUT_SCALING_SUFFIXES, *SOS_OUTPUT_SCALING_SUFFIXES)
+              if suffix in formula), default=len(formula))
+    clause = (f"; every weight is multiplied by the prefactor f(s_ti) of the raw score s_ti = Q_t K_i^T / sqrt(d_k), "
+              f"{PREFACTOR_FORMULAS[prefactor]}")
+    identity = {"attention_score_transform": model.attention_score_transform, "attention_score_prefactor": prefactor,
+                "attention_formula": formula[:at] + clause + formula[at:]}
+    if prefactor in SIGNED_FUNCTIONS:
+        identity["attention_signed"] = True
+    return identity
 
 
 def _score_bias_identity(model, formula: str) -> dict:
@@ -829,8 +858,9 @@ def _exponential_score_function_identity(model, formula: str) -> dict:
 
 def _score_transform_identity(model, formula: str) -> dict:
     """A score transform (the polynomial reads z_ti = phi(s_ti)) and a constant-coefficient start (b_0's start
-    in place of Taylor's 1), each recorded only for recipes that set it, in the query polynomial's formula."""
-    from scaffolds.transformer.attention.score_transform import FORMULAS
+    in place of Taylor's 1), each recorded only for recipes that set it, in the query polynomial's formula. A
+    polynomial's prefactor is recorded by a final pass (``_polynomial_prefactor_identity``)."""
+    from scaffolds.transformer.attention.score_transform import FORMULAS, SIGNED_FUNCTIONS
 
     transform = getattr(model, "attention_score_transform", "identity")
     start = getattr(model, "attention_coefficient_constant_initial", None)
@@ -847,11 +877,11 @@ def _score_transform_identity(model, formula: str) -> dict:
             if prefix not in formula:
                 raise ValueError("Fixed pointwise attention requires its fixed linear polynomial formula")
             return {"attention_score_transform": transform, "attention_kernel": f"{transform}_unnormalized",
-                    "attention_signed": False,
+                    "attention_signed": transform in SIGNED_FUNCTIONS,
                     "attention_formula": formula.replace(
                         prefix, f"sum_(i<=t) {transform}(s_ti) v_i, s_ti = Q_t K_i^T / sqrt(d_k)", 1)}
-        if (getattr(model, "attention_coefficient_zero_constant", False)
-                and model.attention_coefficient_conditioning == "static"):
+        if model.attention_coefficient_conditioning == "static" and model.attention_fixed_coefficients is None:
+            # Learned static direct coefficients (the zero constant optional) at z = softplus(s).
             formula = formula.replace("QK^T / sqrt(d_k)", "softplus(QK^T / sqrt(d_k))")
             formula += "; " + FORMULAS[transform]
         else:

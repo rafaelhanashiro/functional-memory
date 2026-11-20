@@ -6,6 +6,12 @@ raw-score query-SoS control's exact parameters: h=T_m. The prefactor changes no 
 represented by a structural zero prepended to the expanded coefficients. Mosaic
 evaluates the resulting polynomial and differentiates through the full composition.
 
+Prefactor runs, W = f(s) h_t(g(s)) with input power zero, take a parameter-free prefactor f of the raw score
+(softplus, sigmoid, exp or swish) and g the identity or softplus, at the degree-eight reference control
+(reeefbcc19abf): its recipe with g, f and gradient-event capture, and its exact initial parameters. Their
+comparison is the input power's z h_t(z) (r841f35a24241), which is softplus(s) h_t(softplus(s)) itself, so that
+pair is refused here.
+
 The recipe's SoS core degree, depth, width and update count select its control: the degree-eight and
 degree-twelve controls at the 15-layer width-896 reference shape, and the degree-twelve controls at the 12-layer
 width-640 shape with twice and four times its 1x budget. No raw-score SoS run of core degree twelve exists at that
@@ -81,6 +87,14 @@ CPU_TESTS = ("scaffolds/transformer/tests/test_softplus_sos.py",
              "experiments/transformer_pp/tests/test_softplus_sos_acceptance.py")
 GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
              "scaffolds/transformer/tests/test_mosaic_softplus_sos.py")
+# Prefactor runs: at this control, input power zero, these prefactors f and transforms g (the pair f = g = softplus
+# is the input power's kernel, run r841f35a24241). Their own CPU and GPU suites.
+PREFACTOR_CONTROL = (8, 15, 896, 7570)
+PREFACTORS = ("softplus", "sigmoid", "exp", "swish")
+PREFACTOR_TRANSFORMS = ("identity", "softplus")
+INPUT_POWER_RUN = "r841f35a24241"
+PREFACTOR_CPU_TESTS = ("scaffolds/transformer/tests/test_score_prefactor.py",)
+PREFACTOR_GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_score_prefactor.py",)
 
 
 def control_key(config):
@@ -113,6 +127,24 @@ def control_recipe(key):
     return recipe
 
 
+def check_prefactor(config):
+    """A prefactor run's composition: input power zero at the degree-eight reference control, f in PREFACTORS and
+    g in PREFACTOR_TRANSFORMS, never f = g = softplus (the input power's z h_t(z), run INPUT_POWER_RUN)."""
+    model = config.model
+    prefactor, transform = model.attention_score_prefactor, model.attention_score_transform
+    if prefactor == "none":
+        return
+    if prefactor not in PREFACTORS or transform not in PREFACTOR_TRANSFORMS:
+        raise ValueError(f"Prefactor runs take 'model.attention_score_prefactor' in {PREFACTORS} and "
+                         f"'model.attention_score_transform' in {PREFACTOR_TRANSFORMS}, not {prefactor!r} and "
+                         f"{transform!r}")
+    if model.attention_coefficient_input_power or control_key(config) != PREFACTOR_CONTROL:
+        raise ValueError(f"Prefactor runs are the degree-eight reference control {CONTROLS[PREFACTOR_CONTROL]['run_id']} "
+                         f"{list(PREFACTOR_CONTROL)} with input power zero")
+    if (transform, prefactor) == ("softplus", "softplus"):
+        raise ValueError(f"softplus(s) h_t(softplus(s)) is the input power's z h_t(z): run {INPUT_POWER_RUN}")
+
+
 def check_recipe(config):
     validate_config(config)
     power = config.model.attention_coefficient_input_power
@@ -120,9 +152,13 @@ def check_recipe(config):
         raise ValueError("Runs require a degree-eight or degree-twelve SoS core: "
                          "(total degree, input power) = (8,0), (9,1), (12,0) or (13,1)")
     selected = control_key(config)
+    check_prefactor(config)
+    prefactor = config.model.attention_score_prefactor
     core_degree, control = selected[0], CONTROLS[selected]
     actual, expected = config_to_dict(config), control_recipe(selected)
-    expected["model"].update(attention_score_transform="softplus",
+    expected["model"].update(attention_score_transform=("softplus" if prefactor == "none"
+                                                        else config.model.attention_score_transform),
+                             attention_score_prefactor=prefactor,
                              attention_degree=core_degree + power,
                              attention_coefficient_input_power=power)
     expected["train"].update(CAPTURE_POLICY)
@@ -153,16 +189,28 @@ def check_initialization(config):
             "derived_1x_schedule": "schedule" in control,
             "sos_core_degree": core_degree, "polynomial_degree": config.model.attention_degree,
             "input_power": config.model.attention_coefficient_input_power,
-            "initial_kernel": ("z*" if config.model.attention_coefficient_input_power else "") + f"T_{core_degree}(z)",
-            "score_transform": "softplus", "all_initial_parameters_match_control": True}
+            "initial_kernel": initial_kernel(config, core_degree),
+            "score_transform": config.model.attention_score_transform,
+            "score_prefactor": config.model.attention_score_prefactor,
+            "all_initial_parameters_match_control": True}
+
+
+def initial_kernel(config, core_degree):
+    """The kernel the run starts at: z^power T_m(z) with z = softplus(s), or f(s) T_m(g(s)) with a prefactor."""
+    model = config.model
+    if model.attention_score_prefactor == "none":
+        return ("z*" if model.attention_coefficient_input_power else "") + f"T_{core_degree}(z)"
+    argument = "s" if model.attention_score_transform == "identity" else "z"
+    return f"{model.attention_score_prefactor}(s)*T_{core_degree}({argument})"
 
 
 def experiment_spec(config, *, entry_module):
     check_recipe(config)
     shared = attention_spec(config, entry_module=entry_module)
-    return replace(shared, cpu_tests=(*shared.cpu_tests, *CPU_TESTS),
-                   gpu_tests=(*shared.gpu_tests, *GPU_TESTS), required_backend="mosaic",
-                   check_config=check_recipe, check_initialization=check_initialization)
+    prefactor = config.model.attention_score_prefactor != "none"
+    return replace(shared, cpu_tests=(*shared.cpu_tests, *CPU_TESTS, *(PREFACTOR_CPU_TESTS if prefactor else ())),
+                   gpu_tests=(*shared.gpu_tests, *GPU_TESTS, *(PREFACTOR_GPU_TESTS if prefactor else ())),
+                   required_backend="mosaic", check_config=check_recipe, check_initialization=check_initialization)
 
 
 def main(argv=None):

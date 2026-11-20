@@ -1,6 +1,6 @@
-"""Qualify sigmoid and softplus attention against the pinned exponential control.
+"""Qualify sigmoid, softplus and swish attention against the pinned exponential control.
 
-The fixed degree-one polynomial [0, 1] returns its transformed score unchanged.
+The fixed degree-one polynomial [0, 1] returns its transformed score unchanged (swish, s sigmoid(s), is signed).
 It adds no parameters: the complete initialized model and AdamW decay mask must
 equal the exponential run's. Production uses Mosaic, qualified in the allocation
 before the full-recipe pilot and exact fresh-process resume.
@@ -25,7 +25,7 @@ CONTROL_INITIALIZATION = {
     "parameter_sha256": "637cb8beb5ce9275aa2b312964a68bc519efdeb4169bc7025ee914b38662f0b4",
     "weight_decay_mask_sha256": "d10a59d00d4f4b78b1bf8e994b91f0d5d4678a19d02b221227085932d5c8f23e",
 }
-TRANSFORMS = ("sigmoid", "softplus")
+TRANSFORMS = ("sigmoid", "softplus", "swish")
 MODEL_CHANGES = {"attention_backend": "mosaic", "attention_degree": 1,
                  "attention_fixed_coefficients": (0.0, 1.0)}
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name",

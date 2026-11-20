@@ -133,10 +133,10 @@ def test_outputs_and_vjp_match_fp64(transform, degree, precision, spread):
 
 
 @pytest.mark.parametrize("precision", PRECISIONS)
-@pytest.mark.parametrize("width", (8, 16, 32, 128))
+@pytest.mark.parametrize("width", (4, 8, 16, 32, 128))
 @pytest.mark.parametrize("transform", TRANSFORMS)
 def test_every_key_width_matches_fp64(transform, width, precision):
-    """Every Q/K width the query kernels take (8 zero-padded to 16, narrower swizzles), at degree eight."""
+    """Every Q/K width the query kernels take (4 and 8 zero-padded to 16, narrower swizzles), at degree eight."""
     operands, cotangent = _inputs(8, width, "unit")
     mosaic = jax.jit(partial(_vjp, _mosaic(transform, precision)))(operands, cotangent)
     _assert_all(mosaic, _numpy_fp64(transform, operands, cotangent), f"{transform}, width={width}, {precision}")
@@ -318,3 +318,14 @@ def test_model_dispatch_uses_the_kernel_and_reports_transform_diagnostics(transf
     assert {"score_transform_pair_count", "score_transform_input_sum", "score_transform_decreasing_count"} <= set(
         diagnostics)
     assert all(bool(jnp.all(jnp.isfinite(value))) for value in diagnostics.values())
+
+
+@pytest.mark.parametrize("precision", PRECISIONS)
+@pytest.mark.parametrize("width", (4, 8, 16))
+def test_softplus_degree_nine_at_narrow_key_widths(width, precision):
+    """The softplus-SoS input-power kernel's shape at narrow keys: degree nine, Q/K widths 4, 8 and 16, 2,048
+    tokens, against FP64."""
+    operands, cotangent = _inputs(9, width, "unit", time=2048, heads=2)
+    mosaic = jax.jit(partial(_vjp, _mosaic("softplus", precision)))(operands, cotangent)
+    _assert_all(mosaic, _numpy_fp64("softplus", operands, cotangent),
+                f"softplus, degree=9, width={width}, {precision}")

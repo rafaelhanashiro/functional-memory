@@ -147,12 +147,21 @@ def test_recipe_validation():
         _exp_model(attention_score_prefactor="softplus", attention_normalization=True)
     with pytest.raises(ValueError, match="blocked or fused"):
         _exp_model(attention_score_prefactor="sigmoid", attention_backend="auto")
-    # A polynomial takes a prefactor on the blocked backend (attention/pieces.py), on no fast kernel.
+    # A polynomial takes a prefactor on the blocked backend (attention/pieces.py), and on the Mosaic transformed
+    # kernels the tanh query polynomial (or learned static direct coefficients), not the fixed Taylor kernel.
     _exp_model(attention_score_prefactor="softplus", attention_backend="blocked", attention_degree=4,
                attention_blocked_implementation="strips")
-    with pytest.raises(ValueError, match="prefactor applies to the exponential"):
+    with pytest.raises(ValueError, match="learned per-head Taylor-initialized static direct coefficients"):
         _exp_model(attention_score_prefactor="softplus", attention_backend="mosaic", attention_degree=4,
                    qk_head_dim=64, value_head_dim=64)
+    _exp_model(attention_score_prefactor="softplus", attention_backend="mosaic", attention_degree=4,
+               qk_head_dim=64, value_head_dim=64, attention_coefficients="learned",
+               attention_coefficient_sharing="per_head", attention_coefficient_conditioning="query",
+               attention_coefficient_activation="tanh")
+    with pytest.raises(ValueError, match="prefactor applies to the exponential"):
+        _exp_model(attention_score_prefactor="softplus", attention_backend="fused", attention_degree=4,
+                   attention_coefficients="learned", attention_coefficient_sharing="per_head",
+                   attention_coefficient_conditioning="query", attention_coefficient_activation="tanh")
 
 
 def test_layers_build_and_differentiate():

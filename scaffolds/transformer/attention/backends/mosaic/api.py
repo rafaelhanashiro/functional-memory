@@ -16,9 +16,11 @@ defaults to ``default_precision``.
   sum_r c_(t,r) s^r with FP32 coefficients for every query and head. A row with a
   nonfinite score or weight, or whose BF16 output overflows, is NaN; coefficient
   gradients are FP32 and stay per query.
-- ``transformed_query_polynomial_attention`` (the blocked reference's ``score_transform``): the
-  same polynomial evaluated at z = phi(s) per causal pair, phi = softplus, abs or sigmoid, inside the tiles of
-  the same kernels, with the chain rule through phi in both gradient passes.
+- ``transformed_query_polynomial_attention`` (the blocked reference's ``score_transform`` and
+  ``score_prefactor``): the same polynomial evaluated at z = phi(s) per causal pair, phi = softplus, abs, sigmoid
+  or swish, and optionally multiplied by a prefactor f(s) = softplus, sigmoid, exp or swish of the raw score
+  (with phi the identity or softplus), inside the tiles of the same kernels, with the chain and product rules
+  through phi and f in both gradient passes.
 - ``query_decay_attention`` and ``endpoint_decay_attention`` (the blocked reference's
   query-distance forget gates): the query polynomial times exp((t-i) l), with a per-query
   log rate l_t <= 0 or the endpoint rate l_ti = -exp(A_h) softplus(u_t + v_i). Decay is
@@ -36,9 +38,9 @@ defaults to ``default_precision``.
   difference formed inside the causal tiles. A nonfinite L makes every causal pair it enters
   NaN. H100 only: B300 raises ValueError before tracing a kernel.
 
-Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 8, 16, 32, 64, or
-128 (width 8 is zero-padded to the tensor cores' minimum of 16, which leaves every score
-unchanged; narrower tiles use narrower shared-memory swizzles), value width 64, degree
+Supported: BF16 Q/K/V of shape [batch, time, heads, channels], Q/K width 4, 8, 16, 32, 64, or
+128 (widths 4 and 8 are zero-padded to the tensor cores' minimum of 16, which leaves every score
+unchanged; the scale is that of the unpadded width; narrower tiles use narrower shared-memory swizzles), value width 64, degree
 >= 1 (ordinary query coefficients: degree <= 12, subject to shared memory), and time a
 multiple of 128 (H100) or 256 (Blackwell). Softplus additionally admits degree 13 at width
 64 and 512/2,048 tokens; transformed kernels admit H100 and B200 only. Unsupported shapes
@@ -53,10 +55,11 @@ import jax.numpy as jnp
 from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import (
     BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY,
-    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SIGMOID, QUERY_SOFTPLUS, TAYLOR,
+    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SIGMOID, QUERY_SOFTPLUS, QUERY_SWISH, TAYLOR,
+    score_function_family,
 )
 
-WIDTHS = (8, 16, 32, 64, 128)
+WIDTHS = (4, 8, 16, 32, 64, 128)
 VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
 MAX_QUERY_DEGREE = 12  # ordinary query families; the GPUs must also fit them (query_degree_supported)
@@ -82,7 +85,7 @@ HOPPER_ONLY_FAMILIES = (PER_ORDER_CUMULATIVE_DECAY,)
 
 
 def query_degree_supported(degree, width, time, *, gate=None, per_order=False, mode="query_distance",
-                           transform="identity"):
+                           transform="identity", prefactor="none"):
     """Whether the query-coefficient kernels run degree m at this key width and sequence length.
     Shared coefficients and gates must fit B300 (``blackwell_supported``), and so H100: B300's
     dK/dV holds (m+1) FP32 coefficients (and a forget gate's vectors and buffers, for gate
@@ -91,9 +94,10 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
     that ``blackwell_supported`` accepts and refuses the others before building a kernel. A gate's
     decay ``mode`` is "query_distance" or "cumulative"; cumulative gates are supported per order
     with query conditioning alone (``CUMULATIVE_DECAY_FAMILY``), on H100 only. A score
-    ``transform`` other than the identity (``TRANSFORM_FAMILY``) takes no gate and holds the
-    coefficients alone, as the untransformed polynomial does. Softplus alone additionally
-    supports degree 13 at width 64 and 512/2,048 tokens for a degree-12 SoS prefactor."""
+    ``transform`` other than the identity (``TRANSFORM_FAMILY``) or a score ``prefactor`` other than
+    "none" (``common.score_function_family``) takes no gate and holds the coefficients alone, as the
+    untransformed polynomial does. Softplus alone additionally supports degree 13 at width 64 and
+    512/2,048 tokens for a degree-12 SoS prefactor; a prefactor keeps its transform's degree limit."""
     if mode not in ("query_distance", "cumulative"):
         raise ValueError(f"Unknown decay mode: {mode!r}")
     if gate is None:
@@ -104,10 +108,10 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
             return False
     else:
         family = DECAY_FAMILY[gate, per_order]
-    if transform != "identity":
-        if gate is not None or transform not in TRANSFORM_FAMILY:
+    if transform != "identity" or prefactor != "none":
+        family = score_function_family(transform, prefactor)
+        if gate is not None or family is None:
             return False
-        family = TRANSFORM_FAMILY[transform]
     if not (1 <= degree <= _query_degree_limit(width, time, transform) and time > 0):
         return False
     if family in common.PER_ORDER_FAMILIES:
@@ -335,8 +339,8 @@ def query_polynomial_attention(q, k, v, coefficients, *, precision: str | None =
 # The query polynomial at a transformed score: sum_r c_r z^r with z = phi(s) per causal pair.
 
 # The kernel family of each score transform (attention/score_transform.py) but the identity, which is
-# query_polynomial_attention itself.
-TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS, "sigmoid": QUERY_SIGMOID}
+# query_polynomial_attention itself; with a prefactor, ``common.score_function_family`` names the family.
+TRANSFORM_FAMILY = {"softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS, "sigmoid": QUERY_SIGMOID, "swish": QUERY_SWISH}
 # Device admission is narrower than the shared kernel architecture: B200 (sm100) uses the Blackwell
 # kernels, but admission does not imply qualification of B300 (sm103). Qualification tests can override
 # these allowlists while exercising a new device before its production runs are permitted.
@@ -375,23 +379,30 @@ def _transformed_query_bwd(family, precision, residuals, do):
 _transformed_query.defvjp(_transformed_query_fwd, _transformed_query_bwd)
 
 
-def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: str, precision: str | None = None):
-    """Unnormalized causal sum_i p_(b,t,h)(phi(s_ti)) v_i with FP32 coefficients c[B, T, H, m+1], where phi is the
-    score transform ``transform``: "softplus" (ln(1 + e^s)), "abs" (|s|), or "sigmoid" (1/(1+e^-s)), evaluated
-    per causal pair inside the tiles. Gradients follow the chain rule through phi, with stable sigmoid tail
-    gradients and sign(s) zero at s = 0, and the
-    coefficient gradients are dc_r = sum_i dP z^r. Failure behavior, shapes and precisions are those of
+def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: str, prefactor: str = "none",
+                                           precision: str | None = None):
+    """Unnormalized causal sum_i f(s_ti) p_(b,t,h)(phi(s_ti)) v_i with FP32 coefficients c[B, T, H, m+1], where phi
+    is the score transform ``transform``: "softplus" (ln(1 + e^s)), "abs" (|s|), "sigmoid" (1/(1+e^-s)), "swish"
+    (s sigmoid(s)), or with a prefactor also "identity" (z = s), and f is the score ``prefactor``: "none" (f = 1),
+    or with phi = identity or softplus "softplus", "sigmoid", "exp" (e^s) or "swish", all evaluated per causal pair
+    inside the tiles (``common.score_function_family``). Gradients follow the chain rule through phi and the
+    product rule through f, with stable sigmoid tail gradients and sign(s) zero at s = 0, and the coefficient
+    gradients are dc_r = sum_i dP f(s) z^r. Failure behavior, shapes and precisions are those of
     ``query_polynomial_attention``, on H100 (sm90) and B200 (sm100). B300 (sm103) remains unqualified despite
-    sharing the Blackwell kernels. The identity transform is that operation itself, so it is refused here."""
+    sharing the Blackwell kernels. The identity transform without a prefactor is that operation itself, so it
+    is refused here."""
     name = "Mosaic transformed query-polynomial attention"
-    if transform not in TRANSFORM_FAMILY:
-        raise ValueError(f"{name} takes transform in {tuple(TRANSFORM_FAMILY)}, got {transform!r}")
+    if transform not in (*TRANSFORM_FAMILY, "identity"):
+        raise ValueError(f"{name} takes transform in {('identity', *TRANSFORM_FAMILY)}, got {transform!r}")
+    family = score_function_family(transform, prefactor)
+    if family is None or family == QUERY:
+        raise ValueError(f"{name} has no kernel family for transform {transform!r} with prefactor {prefactor!r}: "
+                         f"it takes {sorted(common.SCORE_FUNCTION_FAMILIES)}")
     _check_query_operands(q, k, v, coefficients, name, transform=transform)
     architecture = _kernels()[0]
     if architecture not in TRANSFORM_ARCHITECTURES or (
             architecture == "blackwell" and not transformed_compute_capability_supported(_device_compute_capability())):
         raise ValueError(f"{name} admits H100 (sm90) and B200 (sm100) only; this {architecture} device is not admitted")
-    family = TRANSFORM_FAMILY[transform]
     precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
     return _transformed_query(q, k, v, coefficients, family, precision)

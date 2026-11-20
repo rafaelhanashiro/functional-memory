@@ -493,7 +493,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
                                query_gate_input=None, key_gate_input=None, gate_log_rate=None,
                                score_bias_row_shift=None, score_bias_query_input=None, score_bias_key_input=None,
                                score_bias_offset=None, score_bias_amplitude=None,
-                               blocked_implementation="scan", score_transform="identity"):
+                               blocked_implementation="scan", score_transform="identity", score_prefactor="none"):
     """Apply a per-query polynomial directly in one fused attention operation.
 
     ``log_decay`` [batch,time,heads] is the cumulative FP32 sum L_t of log alpha in
@@ -514,15 +514,18 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
     other backend raises, never falling back.
 
     ``score_transform`` (attention/score_transform.py) evaluates the polynomial at z = phi(s) in place of the
-    score s: "softplus" or "abs", without decay or score biases, on the blocked backend or the Mosaic transformed
-    query-polynomial kernels (``mosaic.transformed_query_polynomial_attention``); the fused kernels raise rather
-    than compute the untransformed polynomial. "identity" changes nothing.
+    score s, and ``score_prefactor`` multiplies every weight by f(s) of the raw score, W = f(s) p(phi(s)), without
+    decay or score biases, on the blocked backend or the Mosaic transformed query-polynomial kernels
+    (``mosaic.transformed_query_polynomial_attention``, the transform possibly the identity under a prefactor);
+    the fused kernels raise rather than compute the untransformed polynomial. "identity" and "none" change
+    nothing.
     """
     from scaffolds.transformer.attention.backends.reference import (
         blocked_backend_attention, blocked_dot_product_attention,
     )
     from scaffolds.transformer.attention.score_bias import operand_kind
     from scaffolds.transformer.attention.score_transform import validate as validate_transform
+    from scaffolds.transformer.attention.score_transform import validate_prefactor
 
     if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3]
             or coefficients.shape[-1] < 2):
@@ -554,14 +557,15 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
         if backend not in ("blocked", "mosaic"):
             raise ValueError("Per-degree score biases run on the Mosaic score-bias kernels or the blocked "
                              f"backend; {backend!r} has no score-bias kernel")
-    # The historical call is unchanged without a transform; a transform reaches the blocked backend or the Mosaic
-    # transformed query-polynomial kernels.
+    # The historical call is unchanged without a transform or prefactor; either reaches the blocked backend or the
+    # Mosaic transformed query-polynomial kernels.
     transform = {} if validate_transform(score_transform) == "identity" else {"score_transform": score_transform}
-    if transform:
+    prefactor = {} if validate_prefactor(score_prefactor) == "none" else {"score_prefactor": score_prefactor}
+    if transform or prefactor:
         if log_decay is not None or endpoint or bias_kind is not None:
-            raise ValueError("A score transform takes no forget gate or per-degree score biases")
+            raise ValueError("A score transform or prefactor takes no forget gate or per-degree score biases")
         if backend not in ("blocked", "mosaic"):
-            raise ValueError(f"A score transform runs on the blocked backend or the Mosaic transformed "
+            raise ValueError(f"A score transform or prefactor runs on the blocked backend or the Mosaic transformed "
                              f"query-polynomial kernels; {backend!r} has no kernel that evaluates it")
     degree = coefficients.shape[-1] - 1
     if backend == "blocked":
@@ -570,7 +574,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             attention_normalization=False, query_polynomial_coefficients=coefficients,
             query_log_decay=log_decay, query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
-            return_diagnostics=return_diagnostics, **score_bias, **transform,
+            return_diagnostics=return_diagnostics, **score_bias, **transform, **prefactor,
         )
         if not return_diagnostics:
             return result
@@ -606,8 +610,9 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             elif log_decay is not None:
                 attend = partial(mosaic.per_order_query_decay_attention if per_order
                                  else mosaic.query_decay_attention, log_decay=log_decay)
-            elif transform:  # phi(s) is evaluated inside the causal tiles
-                attend = partial(mosaic.transformed_query_polynomial_attention, transform=score_transform)
+            elif transform or prefactor:  # phi(s) and f(s) are evaluated inside the causal tiles
+                attend = partial(mosaic.transformed_query_polynomial_attention, transform=score_transform,
+                                 prefactor=score_prefactor)
 
         output = attend(q, k, v, coefficients)
         if not return_diagnostics:
@@ -619,7 +624,7 @@ def query_polynomial_attention(q, k, v, coefficients, *, backend="blocked", retu
             query_polynomial_coefficients=coefficients, query_log_decay=log_decay,
             query_decay_mode=decay_mode, query_gate_input=query_gate_input,
             key_gate_input=key_gate_input, gate_log_rate=gate_log_rate, return_diagnostics=True, **score_bias,
-            **transform,
+            **transform, **prefactor,
         )
     else:
         raise ValueError("Query-conditioned polynomial attention requires a blocked, fused or mosaic backend")

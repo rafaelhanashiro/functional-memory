@@ -494,11 +494,11 @@ def test_accepted_recipes_and_rejected_training_options():
         config = _config(transform, start)
         for optim in (dict(coefficient_release_schedule="all", coefficient_release_step=1),
                       dict(query_coefficient_learning_rate_scale=2.0)):
-            with pytest.raises(ValueError, match="score transform or a constant-coefficient start"):
+            with pytest.raises(ValueError, match="score transform, a polynomial prefactor or a constant-coefficient start"):
                 validate_config(replace(config, optim=replace(config.optim, **optim)))
         continuation = replace(config.continuation, parent_config="parent.yaml", parent_config_sha256="0" * 64,
                                parent_checkpoint="parent/7", parent_checkpoint_sha256="0" * 64, parent_step=1)
-        with pytest.raises(ValueError, match="score transform or a constant-coefficient start"):
+        with pytest.raises(ValueError, match="score transform, a polynomial prefactor or a constant-coefficient start"):
             validate_config(replace(config, continuation=continuation))
     arguments = dict(backend="blocked", attention_degree=4, attention_normalization=False,
                      attention_coefficient_conditioning="query", attention_coefficient_activation="tanh",

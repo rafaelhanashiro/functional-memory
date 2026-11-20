@@ -18,7 +18,9 @@ Coefficients per query: on the blocked backend, static and fixed polynomial coef
 forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients
 (MultiHeadAttention._coefficients_per_query), so every unnormalized polynomial with RoPE or no positional
 encoding takes any of those pieces together (configs.base._blocked_polynomial; attention_core's
-composition route). Per-degree score biases shift each order's base, (phi(s) + beta_r)^r.
+composition route). Per-degree score biases shift each order's base, (phi(s) + beta_r)^r. The Mosaic
+transformed query-polynomial kernels take a transform and a prefactor together, w = f(s) p(phi(s)), for the
+tanh query polynomial and learned static direct coefficients run per query (mosaic_score_transform_problem).
 """
 
 from dataclasses import dataclass
@@ -96,6 +98,8 @@ def mosaic_supported(model) -> bool:
         return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
     if getattr(model, "attention_score_transform", "identity") != "identity":
         return False  # Transforms run on their own kernels (mosaic_score_transform_supported).
+    if getattr(model, "attention_score_prefactor", "none") != "none":
+        return False  # Prefactors run on the transformed kernels too (mosaic_score_transform_supported).
     taylor = (model.attention_normalization and integer_degree and degree >= 1
               and model.attention_coefficients == "fixed" and model.quadratic_mode == "fixed"
               and model.attention_fixed_coefficients is None and model.attention_fixed_square_factors is None
@@ -137,6 +141,8 @@ def mosaic_decay_supported(model) -> bool:
         return False  # Score biases run on their own kernels (mosaic_score_bias_supported).
     if getattr(model, "attention_score_transform", "identity") != "identity":
         return False  # Transforms take no forget gate.
+    if getattr(model, "attention_score_prefactor", "none") != "none":
+        return False  # Nor do prefactors on these kernels.
     input_free = model.attention_forget_gate_conditioning == "none"
     static = (model.attention_coefficient_conditioning == "static" and model.attention_coefficients == "learned"
               and model.attention_coefficient_parameterization == "direct")
@@ -199,23 +205,31 @@ def mosaic_score_bias_problem(model) -> str | None:
 
 def mosaic_score_transform_supported(model) -> bool:
     """Whether the Mosaic transformed query-polynomial kernels implement this recipe: the tanh query
-    polynomial or fixed pointwise kernel evaluated at a transformed score (``mosaic_score_transform_problem``). Only an explicit
-    ``mosaic`` backend selects them; ``auto`` never does, and transformed recipes reject it."""
+    polynomial, a learned static direct polynomial or the fixed pointwise kernel evaluated at a transformed score
+    and optionally multiplied by a prefactor (``mosaic_score_transform_problem``). Only an explicit ``mosaic``
+    backend selects them; ``auto`` never does, and transformed or prefactored recipes reject it."""
     return mosaic_score_transform_problem(model) is None
 
 
 def mosaic_score_transform_problem(model) -> str | None:
     """Why the Mosaic transformed query-polynomial kernels cannot run this recipe, or None. They are the
-    query polynomial's kernels with phi(s) evaluated in their tiles, on H100 and B200, so they take
-    the recipes those kernels take (``mosaic_supported``'s query case: RoPE, Q/K widths 8-128, value width
-    64, the degrees ``query_degree_supported`` fits at the recipe's length) with diagonal tanh query
-    coefficients or fixed degree-one (0, 1) coefficients and no forget gate or score biases.
-    Backend resolution checks the GPU and length."""
+    query polynomial's kernels with phi(s) and f(s) evaluated in their tiles (W = f(s) p(phi(s)),
+    ``common.score_function_family``: any transform without a prefactor; a softplus, sigmoid, exp or swish
+    prefactor with the identity or softplus transform), on H100 and B200, so they take the recipes those kernels
+    take (``mosaic_supported``'s query case: RoPE, Q/K widths 4-128, value width 64, the degrees
+    ``query_degree_supported`` fits at the recipe's length) with diagonal tanh query coefficients, learned static
+    direct coefficients (every query's equal) or fixed degree-one (0, 1) coefficients and no forget gate, score
+    biases or key factors. Backend resolution checks the GPU and length."""
     from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, query_degree_supported
+    from scaffolds.transformer.attention.backends.mosaic.common import SCORE_FUNCTION_FAMILIES
 
     transform = getattr(model, "attention_score_transform", "identity")
-    if transform == "identity":
-        return "the recipe has no score transform"
+    prefactor = getattr(model, "attention_score_prefactor", "none")
+    if transform == "identity" and prefactor == "none":
+        return "the recipe has no score transform or prefactor"
+    if (transform, prefactor) not in SCORE_FUNCTION_FAMILIES:
+        return (f"no kernel family evaluates the {transform} transform with the {prefactor} prefactor; prefactors "
+                "take the identity or softplus transform")
     problem = _base()._transformed_coefficient_problem(model)
     if problem is None and model.positional_encoding != "rope":
         problem = "the Mosaic query-polynomial kernels run RoPE recipes"
@@ -226,7 +240,7 @@ def mosaic_score_transform_problem(model) -> str | None:
     if problem is None and model.value_head_dim != VALUE_WIDTH:
         problem = f"value width {model.value_head_dim} is not {VALUE_WIDTH}"
     if problem is None and not query_degree_supported(model.attention_degree, model.qk_head_dim, model.max_seq_len,
-                                                      transform=transform):
+                                                      transform=transform, prefactor=prefactor):
         problem = (f"the kernels do not hold degree {model.attention_degree} at Q/K width {model.qk_head_dim} "
                    f"and {model.max_seq_len} tokens in shared memory")
     return problem

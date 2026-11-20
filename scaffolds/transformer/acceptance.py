@@ -124,6 +124,13 @@ SCORE_TRANSFORM_LOWERING_TESTS = "scaffolds/transformer/tests/test_score_transfo
 MOSAIC_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_mosaic_score_transform.py"
 POINTWISE_ATTENTION_TESTS = "scaffolds/transformer/tests/test_pointwise_attention.py"
 POINTWISE_SCORE_TRANSFORM_TESTS = "scaffolds/transformer/tests/test_pointwise_score_transform.py"
+# A polynomial's prefactor on the Mosaic transformed kernels, w = f(s) p(phi(s)): the CPU stage adds the prefactor's
+# host checks (values, tile mathematics, lowering, dispatch, admission, recipes) and the blocked composition's FP64
+# references (scan and strips, every prefactor) beside the transform suites; the GPU stage runs the prefactor
+# kernels against host FP64 and the strips.
+MOSAIC_SCORE_PREFACTOR_TESTS = "scaffolds/transformer/tests/test_mosaic_score_prefactor.py"
+SCORE_PREFACTOR_TESTS = ("scaffolds/transformer/tests/test_score_prefactor.py",
+                         "scaffolds/transformer/tests/test_blocked_composition.py")
 # The exponential's score functions f(s) exp(phi(s)) (attention/pieces.py): the blocked scan and strips
 # against FP64 on the CPU; the fused kernel against the blocked backend and FP64 on the GPU.
 EXPONENTIAL_SCORE_FUNCTION_TESTS = "scaffolds/transformer/tests/test_exponential_score_functions.py"
@@ -160,7 +167,7 @@ class AcceptanceSpec:
 
 def _pointwise_score_transform(model: dict) -> bool:
     """Fixed [0, 1] on a transformed score runs the pointwise kernel, without learned coefficients."""
-    return (model.get("attention_score_transform", "identity") in ("sigmoid", "softplus")
+    return (model.get("attention_score_transform", "identity") in ("sigmoid", "softplus", "swish")
             and model.get("attention_degree") == 1
             and not model.get("attention_normalization", True)
             and model.get("attention_coefficients", "fixed") == "fixed"
@@ -216,6 +223,7 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             # on GPUs those kernels are not qualified on, which would fail acceptance.
             return tuple(dict.fromkeys((*paths, SCORE_BIAS_STRIPS_TESTS, *composition)))
     transform = model.get("attention_score_transform", "identity")
+    prefactor = model.get("attention_score_prefactor", "none")
     exponential_scores = (
         (transform != "identity" or model.get("attention_score_prefactor", "none") != "none")
         and model.get("attention_mechanism", "dot_product") == "dot_product" and model.get("attention_degree") is None
@@ -228,19 +236,24 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                              f"causal strips; this recipe resolves {resolved_backend!r} with "
                              f"attention_blocked_implementation: {implementation}")
         paths.append(EXPONENTIAL_SCORE_FUNCTION_TESTS)
-    elif transform != "identity" and resolved_backend == "mosaic":
+    elif (transform != "identity" or prefactor != "none") and resolved_backend == "mosaic":
         # The Mosaic transformed query-polynomial kernels. CPU: the FP64 references through the scan and the
         # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
         # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the
-        # strips at production precision, beside the query kernels' own cases, which the backbone adds.
+        # strips at production precision, beside the query kernels' own cases, which the backbone adds. A
+        # prefactor, with or without a transform, adds its own suites in both stages.
         if cpu:
             paths.extend((SCORE_TRANSFORM_TESTS, SCORE_TRANSFORM_LOWERING_TESTS))
-        elif _pointwise_score_transform(model):
+            if prefactor != "none":
+                paths.extend(SCORE_PREFACTOR_TESTS)
+        elif _pointwise_score_transform(model) and prefactor == "none":
             # Its fixed degree-one weights have a dedicated full-context forward/VJP, model and
             # repeatability qualification; unrelated high-degree query kernels need not run here.
             paths.extend((POINTWISE_ATTENTION_TESTS, POINTWISE_SCORE_TRANSFORM_TESTS))
         else:
             paths.append(MOSAIC_SCORE_TRANSFORM_TESTS)
+            if prefactor != "none":
+                paths.append(MOSAIC_SCORE_PREFACTOR_TESTS)
     elif transform != "identity":
         implementation = model.get("attention_blocked_implementation", "scan")
         if resolved_backend != "blocked" or implementation != "strips":

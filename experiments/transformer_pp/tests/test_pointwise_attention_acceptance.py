@@ -109,6 +109,17 @@ def test_qualified_gpu_candidates_are_admitted(gpu):
     adapter.require_gpu_type(["--gpu-type", gpu])
 
 
+def test_swish_is_a_pointwise_baseline():
+    """The swish run (W = s sigmoid(s)) is the softplus baseline's recipe with its transform alone changed."""
+    assert adapter.TRANSFORMS == ("sigmoid", "softplus", "swish")
+    softplus, swish = (config_to_dict(variant(transform)) for transform in ("softplus", "swish"))
+    assert {key for key in softplus["model"] if softplus["model"][key] != swish["model"][key]} == {
+        "attention_score_transform"}
+    for transform in ("abs", "identity"):
+        with pytest.raises(ValueError):
+            adapter.check_recipe(variant(transform))
+
+
 def test_other_gpu_types_are_rejected_before_acceptance():
     with pytest.raises(ValueError, match="only on H100, B200"):
         adapter.require_gpu_type(["--gpu-type", "B300"])

@@ -301,3 +301,78 @@ def test_other_gpu_types_are_refused_before_acceptance(monkeypatch, gpu_type):
     monkeypatch.setattr(adapter, "run_acceptance", lambda spec, argv: pytest.fail("acceptance must not start"))
     with pytest.raises(ValueError, match="H100 or B200 only"):
         adapter.main(["experiments/transformer_pp/runs/r3b9c8cc6fab8/config.yaml", "--gpu-type", gpu_type])
+
+
+# Prefactor runs: W = f(s) h_t(g(s)) at the degree-eight reference control, input power zero.
+PREFACTOR_PAIRS = [(transform, prefactor) for transform in adapter.PREFACTOR_TRANSFORMS
+                   for prefactor in adapter.PREFACTORS if (transform, prefactor) != ("softplus", "softplus")]
+
+
+def prefactor_variant(transform, prefactor):
+    config = adapter.control_config(REFERENCE_M8)
+    config.model.attention_score_transform = transform
+    config.model.attention_score_prefactor = prefactor
+    for name, value in adapter.CAPTURE_POLICY.items():
+        setattr(config.train, name, value)
+    return config
+
+
+@pytest.mark.parametrize("transform,prefactor", PREFACTOR_PAIRS)
+def test_prefactor_runs_are_the_control_with_g_f_and_capture(transform, prefactor, monkeypatch):
+    config = prefactor_variant(transform, prefactor)
+    adapter.check_recipe(config)
+    assert adapter.control_key(config) == REFERENCE_M8
+    assert scientific_differences(config, adapter.control_config(REFERENCE_M8)) == {
+        "model.attention_score_prefactor", "train.gradient_event_capture",
+        *(("model.attention_score_transform",) if transform != "identity" else ())}
+    control = adapter.CONTROLS[REFERENCE_M8]
+    monkeypatch.setattr(adapter, "initialization_facts", lambda _: {
+        "parameter_count": control["parameter_count"], "parameter_sha256": control["parameter_sha256"]})
+    monkeypatch.setattr(adapter, "matches_softmax_backbone_initialization", lambda _: {})
+    facts = adapter.check_initialization(config)
+    assert facts["control_run_id"] == "reeefbcc19abf" and facts["input_power"] == 0
+    assert facts["score_prefactor"] == prefactor and facts["score_transform"] == transform
+    assert facts["initial_kernel"] == f"{prefactor}(s)*T_8({'s' if transform == 'identity' else 'z'})"
+    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
+    assert set(adapter.PREFACTOR_GPU_TESTS) <= set(spec.gpu_tests)
+    assert set(adapter.PREFACTOR_CPU_TESTS) <= set(spec.cpu_tests)
+
+
+def test_prefactor_initialization_is_the_controls_on_the_host():
+    """The prefactor adds no parameter: the D recipes' initial arrays are the degree-eight control's, at a small
+    backbone built exactly as the full one (the full fingerprint is acceptance's)."""
+    from dataclasses import replace
+
+    from scaffolds.transformer.acceptance import initialization_facts
+
+    def small(config):
+        return replace(config, model=replace(config.model, attention_backend="blocked", num_layers=1, hidden_size=64,
+                                             num_heads=2, num_kv_heads=2, intermediate_size=128, vocab_size=64))
+
+    control = initialization_facts(small(adapter.control_config(REFERENCE_M8)))
+    for transform, prefactor in PREFACTOR_PAIRS:
+        assert initialization_facts(small(prefactor_variant(transform, prefactor))) == control
+
+
+@pytest.mark.parametrize("change,reason", (
+    ({"attention_score_transform": "softplus", "attention_score_prefactor": "softplus"}, "input power's z h_t"),
+    ({"attention_score_transform": "abs", "attention_score_prefactor": "exp"}, "attention_score_transform"),
+    ({"attention_score_prefactor": "exp", "attention_degree": 9, "attention_coefficient_input_power": 1,
+      "attention_score_transform": "softplus"}, "input power zero"),
+))
+def test_prefactor_runs_outside_the_composition_are_refused(change, reason, monkeypatch):
+    monkeypatch.setattr(adapter, "validate_config", lambda config: None)
+    config = prefactor_variant("identity", "exp")
+    for name, value in change.items():
+        setattr(config.model, name, value)
+    with pytest.raises(ValueError, match=reason):
+        adapter.check_recipe(config)
+
+
+def test_prefactor_runs_take_only_the_degree_eight_reference_control():
+    config = adapter.control_config(REFERENCE_M12)
+    config.model.attention_score_prefactor = "exp"
+    for name, value in adapter.CAPTURE_POLICY.items():
+        setattr(config.train, name, value)
+    with pytest.raises(ValueError, match="degree-eight reference control"):
+        adapter.check_recipe(config)

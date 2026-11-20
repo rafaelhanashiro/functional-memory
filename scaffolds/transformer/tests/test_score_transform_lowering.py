@@ -24,7 +24,8 @@ import pytest
 from scaffolds.transformer.attention.backends.mosaic import api, blackwell, common, hopper
 
 TRANSFORMS = ("softplus", "abs")
-FAMILIES = {"softplus": common.QUERY_SOFTPLUS, "abs": common.QUERY_ABS, "sigmoid": common.QUERY_SIGMOID}
+FAMILIES = {"softplus": common.QUERY_SOFTPLUS, "abs": common.QUERY_ABS, "sigmoid": common.QUERY_SIGMOID,
+            "swish": common.QUERY_SWISH}
 
 
 def _lowers_for_cuda(function, *operands):
@@ -37,7 +38,8 @@ def test_families_count_like_the_query_family():
     """Vectors, sums, keys and heads are the query family's for every degree; no Pair, no accumulating sums, no
     gate; approximate exp2/log2 only where a transcendental is evaluated (softplus)."""
     assert api.TRANSFORM_FAMILY == FAMILIES
-    assert set(common.TRANSFORMED_QUERY_FAMILIES) == set(FAMILIES.values())
+    # Without a prefactor; prefactor families (tests/test_score_prefactor.py) count alike.
+    assert set(common.TRANSFORMED_QUERY_FAMILIES) == set(FAMILIES.values()) | set(common.PREFACTOR_FAMILIES)
     for family in FAMILIES.values():
         for degree in range(1, 13):
             assert common.vector_counts(family, degree) == common.vector_counts(common.QUERY, degree)
@@ -48,7 +50,7 @@ def test_families_count_like_the_query_family():
         assert family not in (*common.DECAY_FAMILIES, *common.PER_ORDER_FAMILIES, *common.SCORE_BIAS_FAMILIES)
         assert api.default_precision(family, 8) == common.BF16
     assert common.approx_math(common.QUERY_SOFTPLUS) and not common.approx_math(common.QUERY_ABS)
-    assert common.approx_math(common.QUERY_SIGMOID)
+    assert common.approx_math(common.QUERY_SIGMOID) and common.approx_math(common.QUERY_SWISH)
     assert not common.approx_math(common.QUERY)
 
 

@@ -193,15 +193,17 @@ class ModelConfig:
     # backend (training on its causal strips) or on the Mosaic transformed query-polynomial kernels
     # (mosaic_score_transform_supported), without a forget gate or score biases; every other backend
     # rejects it, and auto never resolves it.
-    # Fixed static degree-one coefficients (0, 1) also implement the parameter-free
-    # sigmoid and softplus attention baselines: the resulting weight is exactly phi(s).
-    attention_score_transform: Literal["identity", "softplus", "abs", "sigmoid"] = "identity"
-    # The exponential's score functions (attention/pieces.py): its weight is f(s) exp(phi(s)) with the
-    # transform above and this prefactor f, "none" (f = 1, every historical recipe), "softplus" or
-    # "sigmoid". Softmax or unnormalized, with or without a forget gate, on the blocked backend; the
-    # unnormalized exponential without a forget gate also on the fused kernel. Polynomial kernels take
-    # no prefactor yet.
-    attention_score_prefactor: Literal["none", "softplus", "sigmoid"] = "none"
+    # Fixed static degree-one coefficients (0, 1) also implement the parameter-free sigmoid, softplus
+    # and swish (s sigmoid(s), signed) attention baselines: the resulting weight is exactly phi(s).
+    attention_score_transform: Literal["identity", "softplus", "abs", "sigmoid", "swish"] = "identity"
+    # The score prefactor f (attention/pieces.py): every weight is multiplied by f(s), "none" (f = 1, every
+    # historical recipe), "softplus", "sigmoid", "exp" (e^s) or "swish" (s sigmoid(s)), of the raw score s.
+    # The exponential's weight is f(s) exp(phi(s)): softmax or unnormalized, with or without a forget gate,
+    # on the blocked backend; the unnormalized exponential without a forget gate also on the fused kernel
+    # (softplus and sigmoid). A polynomial's weight is f(s) p(phi(s)): any unnormalized polynomial on the
+    # blocked backend, and on the Mosaic transformed query-polynomial kernels the diagonal tanh query and
+    # learned static direct polynomials with identity or softplus scores (mosaic_score_transform_problem).
+    attention_score_prefactor: Literal["none", "softplus", "sigmoid", "exp", "swish"] = "none"
     # The start of the order-0 offset b_0 of diagonal tanh query coefficients, c_0(x_t) = b_0 + a_0
     # tanh(x_t w_0), in place of Taylor's 1 (null). With attention_coefficient_amplitude_initial 0, c_0
     # starts at exactly this value: 0 with the softplus transform starts the kernel at
@@ -477,9 +479,9 @@ class ModelConfig:
                 raise ValueError("Fused PaTH needs equal qk_head_dim and value_head_dim in 16, 32, 64, 128 "
                                  "and polynomial degree 1-4")
         if (self.attention_backend == "mosaic" and self.attention_score_bias == "none"
-                and self.attention_score_transform == "identity"
+                and self.attention_score_transform == "identity" and self.attention_score_prefactor == "none"
                 and not (self.mosaic_supported() or self.mosaic_decay_supported())):
-            # Score-bias and score-transform recipes name their own reasons (_validate_score_bias,
+            # Score-bias, score-transform and prefactor recipes name their own reasons (_validate_score_bias,
             # _validate_score_transform).
             raise ValueError("Backend 'mosaic' supports normalized fixed Taylor attention, and tanh "
                              "query-conditioned or static-coefficient unnormalized polynomial attention of "
@@ -1165,17 +1167,53 @@ def _static_sos_problem(model) -> str | None:
             or model.attention_coefficient_amplitude_scale != "none"
             or model.attention_forget_gate or model.attention_score_bias != "none"
             or model.attention_score_transform not in ("identity", "softplus")
+            or getattr(model, "attention_score_prefactor", "none") != "none"
             or model.positional_encoding not in ("rope", "none")
             or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
         return ("it requires learned static Taylor-initialized SoS factors for unnormalized dot-product "
                 "attention, identity coefficient activation, identity or softplus scores, RoPE or no "
-                "positional encoding, without coefficient scales, selected orders, gates, or score biases")
+                "positional encoding, without coefficient scales, selected orders, gates, score biases, or a "
+                "prefactor")
+    return None
+
+
+def _static_direct_problem(model) -> str | None:
+    """Why this is not a learned static direct polynomial that the transformed query-polynomial kernels run with
+    every query's coefficients equal (MultiHeadAttention._coefficients_per_query), or None: learned per-head
+    Taylor-initialized coefficients, the factorial coefficient scale and the structural zero constant optional,
+    on identity or softplus scores."""
+    if (model.attention_mechanism != "dot_product" or model.attention_normalization
+            or model.quadratic_mode != "fixed" or model.attention_coefficients != "learned"
+            or model.attention_coefficient_parameterization != "direct"
+            or model.attention_coefficient_sharing != "per_head"
+            or model.attention_coefficient_conditioning != "static"
+            or model.attention_coefficient_activation != "identity"
+            or model.attention_coefficient_initialization != "taylor"
+            or model.attention_coefficient_readout != "diagonal"
+            or model.attention_coefficient_orders is not None
+            or model.attention_coefficient_gate != "none"
+            or model.attention_coefficient_amplitude_scale != "none"
+            or model.attention_coefficient_input_power != 0
+            or model.attention_coefficient_input_normalization != "none"
+            or model.attention_fixed_coefficients is not None or model.attention_fixed_square_factors is not None
+            or model.attention_forget_gate or model.attention_score_bias != "none"
+            or model.attention_score_transform not in ("identity", "softplus")
+            or model.positional_encoding not in ("rope", "none")
+            or getattr(model, "attention_kernel_basis", "polynomial") != "polynomial"):
+        return ("it requires learned per-head Taylor-initialized static direct coefficients of unnormalized "
+                "dot-product attention, identity coefficient activation, identity or softplus scores, RoPE or no "
+                "positional encoding, without selected orders, gates, score biases, an input power or L2 inputs")
+    if getattr(model, "attention_coefficient_zero_constant", False):
+        try:
+            _validate_zero_constant(model)
+        except ValueError as error:
+            return str(error)
     return None
 
 
 def _fixed_pointwise_attention(model) -> bool:
-    """The parameter-free sigmoid/softplus kernels represented as p(phi(s)) = phi(s)."""
-    return (model.attention_score_transform in ("sigmoid", "softplus")
+    """The parameter-free sigmoid/softplus/swish kernels represented as p(phi(s)) = phi(s)."""
+    return (model.attention_score_transform in ("sigmoid", "softplus", "swish")
             and model.attention_mechanism == "dot_product" and not model.attention_normalization
             and model.quadratic_mode == "fixed" and model.attention_degree == 1
             and model.attention_coefficients == "fixed"
@@ -1221,20 +1259,18 @@ def _validate_zero_constant(model: ModelConfig) -> None:
 
 
 def _transformed_coefficient_problem(model) -> str | None:
-    """Why a recipe with a score transform is none of the transformed coefficient families, or None: fixed
-    pointwise attention, static SoS, static zero-constant softplus, or tanh query coefficients."""
-    if model.attention_score_transform == "sigmoid" and not _fixed_pointwise_attention(model):
-        return "the sigmoid score transform is qualified only for fixed static degree-one (0, 1) coefficients"
+    """Why a recipe with a score transform or a polynomial prefactor is none of the transformed coefficient
+    families, or None: fixed pointwise attention, static SoS (no prefactor), learned static direct coefficients
+    (with or without the structural zero constant; broadcast per query), or tanh query coefficients."""
+    transform = model.attention_score_transform
+    if transform in ("sigmoid", "swish") and not _fixed_pointwise_attention(model):
+        return f"the {transform} score transform is qualified only for fixed static degree-one (0, 1) coefficients"
     if _fixed_pointwise_attention(model):
         return None
     if model.attention_coefficient_conditioning == "static":
-        if getattr(model, "attention_coefficient_zero_constant", False):
-            # Static zero-constant softplus uses broadcast coefficients on the transformed-query kernels.
-            try:
-                _validate_zero_constant(model)
-            except ValueError as error:
-                return str(error)
-            return None
+        if model.attention_coefficient_parameterization == "direct":
+            # Static direct coefficients run as every query's equal coefficients on the transformed-query kernels.
+            return _static_direct_problem(model)
         return _static_sos_problem(model)
     return _query_coefficient_problem(model)
 
@@ -1272,12 +1308,13 @@ def _validate_exponential_score_function(model: ModelConfig, score_function) -> 
 
 def _validate_score_transform(model: ModelConfig) -> None:
     """A score transform (attention/score_transform.py) runs on the blocked backend, for diagonal tanh query
-    coefficients or fixed static degree-one (0, 1) sigmoid/softplus kernels with RoPE or no positional
+    coefficients or fixed static degree-one (0, 1) sigmoid/softplus/swish kernels with RoPE or no positional
     encoding, without a forget gate or score biases (allocation and
     acceptance train it on the causal strips there), or on the Mosaic transformed query-polynomial kernels for
-    the recipes they take (``mosaic_score_transform_problem``). A constant-coefficient start sets b_0's
-    initial value of the same coefficients on any backend. The identity transform and a null start change
-    nothing."""
+    the recipes they take (``mosaic_score_transform_problem``). A prefactor f multiplies the exponential, any
+    blocked unnormalized polynomial, or on Mosaic the diagonal tanh query and learned static direct polynomials
+    at identity or softplus scores. A constant-coefficient start sets b_0's initial value of the same
+    coefficients on any backend. The identity transform, no prefactor and a null start change nothing."""
     from scaffolds.transformer.attention.score_transform import TRANSFORMS
 
     transform, start = model.attention_score_transform, model.attention_coefficient_constant_initial
@@ -1305,12 +1342,16 @@ def _validate_score_transform(model: ModelConfig) -> None:
         return
     if _blocked_polynomial(model):
         return
-    if model.attention_score_prefactor != "none":
+    prefactor = model.attention_score_prefactor
+    if prefactor != "none" and model.attention_backend != "mosaic":
         raise ValueError("A score prefactor applies to the exponential kernel (softmax or unnormalized dot-product "
-                         "attention without a degree, coefficients, a score MLP, or score biases), or on the blocked "
-                         "backend to any unnormalized polynomial")
-    if transform == "identity":
+                         "attention without a degree, coefficients, a score MLP, or score biases), on the blocked "
+                         "backend to any unnormalized polynomial, or on the Mosaic transformed query-polynomial "
+                         "kernels to the polynomials they declare (attention_backend mosaic)")
+    if score_function.identity:
         return
+    name = (f"{transform} score transform" if prefactor == "none" else
+            f"score functions (transform {transform}, prefactor {prefactor})")
     problem = _transformed_coefficient_problem(model)
     if problem is None and model.positional_encoding not in ("rope", "none"):
         problem = "it applies with RoPE or no positional encoding, not PaTH"
@@ -1319,14 +1360,15 @@ def _validate_score_transform(model: ModelConfig) -> None:
     if problem is None and model.attention_score_bias != "none":
         problem = "it does not combine with per-degree score biases"
     if problem is not None:
-        raise ValueError(f"The {transform} score transform does not fit this recipe: {problem}")
+        raise ValueError(f"The {name} do not fit this recipe: {problem}" if prefactor != "none"
+                         else f"The {name} does not fit this recipe: {problem}")
     if model.attention_backend not in ("blocked", "mosaic"):
         raise ValueError(f"A score transform runs on attention_backend blocked (its scan and causal strips) or mosaic "
                          f"(the transformed query-polynomial kernels); {model.attention_backend!r} never evaluates it")
     if model.attention_backend == "mosaic":
         problem = model.mosaic_score_transform_problem()
         if problem is not None:
-            raise ValueError(f"Backend 'mosaic' cannot run the {transform} score transform: {problem}")
+            raise ValueError(f"Backend 'mosaic' cannot run the {name}: {problem}")
 
 
 @dataclass
@@ -1470,18 +1512,19 @@ def validate_config(config: Config) -> None:
         if continuation.parent_checkpoint:
             raise ValueError("Checkpoint continuations are not qualified with per-degree score biases")
     if (config.model.attention_score_transform != "identity"
-            or config.model.attention_coefficient_constant_initial is not None):
-        # Both change the function or start of the coefficients that these schedules and continuations assume
-        # start at Taylor and read s^r: none is qualified with them.
+            or config.model.attention_coefficient_constant_initial is not None
+            or config.model.attention_score_prefactor != "none" and config.model.attention_degree is not None):
+        # Each changes the function or start of the coefficients that these schedules and continuations assume
+        # start at Taylor and read s^r (a polynomial prefactor multiplies every weight): none is qualified with them.
         if getattr(optim, "coefficient_release_schedule", None) is not None:
-            raise ValueError("A coefficient release schedule is not qualified with a score transform or a "
-                             "constant-coefficient start")
+            raise ValueError("A coefficient release schedule is not qualified with a score transform, a polynomial "
+                             "prefactor or a constant-coefficient start")
         if optim.query_coefficient_learning_rate_scale != 1.0:
-            raise ValueError("optim.query_coefficient_learning_rate_scale is not qualified with a score transform "
-                             "or a constant-coefficient start")
+            raise ValueError("optim.query_coefficient_learning_rate_scale is not qualified with a score transform, "
+                             "a polynomial prefactor or a constant-coefficient start")
         if continuation.parent_checkpoint:
-            raise ValueError("Checkpoint continuations are not qualified with a score transform or a "
-                             "constant-coefficient start")
+            raise ValueError("Checkpoint continuations are not qualified with a score transform, a polynomial "
+                             "prefactor or a constant-coefficient start")
     if not isinstance(train.gradient_event_capture, bool):
         raise ValueError("train.gradient_event_capture must be a boolean")
     if train.gradient_event_capture:

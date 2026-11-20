@@ -47,23 +47,27 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         # Nothing may resolve them to a kernel that ignores the biases.
         raise ValueError("Per-degree score biases run on an explicit mosaic (H100) or blocked backend; "
                          f"{request!r} never selects them")
-    transformed = getattr(model_config, "attention_score_transform", "identity") != "identity"
     from scaffolds.transformer.attention.pieces import ScoreFunction
     from scaffolds.transformer.configs.base import _exponential_kernel
 
     score_function = ScoreFunction(getattr(model_config, "attention_score_transform", "identity"),
                                    getattr(model_config, "attention_score_prefactor", "none"))
-    if (not score_function.identity and getattr(model_config, "attention_mechanism", None) == "dot_product"
-            and _exponential_kernel(model_config)):
+    exponential_functions = (not score_function.identity
+                             and getattr(model_config, "attention_mechanism", None) == "dot_product"
+                             and _exponential_kernel(model_config))
+    # A polynomial's transform or prefactor, w = f(s) p(phi(s)): the Mosaic transformed kernels or the blocked backend.
+    transformed = score_function.transform != "identity" or (score_function.prefactor != "none"
+                                                             and not exponential_functions)
+    if exponential_functions:
         # The exponential's score functions (attention/pieces.py): an explicit blocked backend, or the fused
         # kernel, whose declaration ModelConfig has checked; nothing selects them automatically.
         if request not in ("blocked", "fused"):
             raise ValueError(f"Score functions of the exponential run on an explicit blocked or fused backend; "
                              f"{request!r} never selects them")
     elif transformed and request not in ("blocked", "mosaic"):
-        # Nor may a transformed polynomial input reach a kernel that evaluates the untransformed polynomial.
-        raise ValueError(f"A score transform runs on an explicit blocked or mosaic backend; {request!r} never "
-                         "selects it")
+        # Nor may a transformed or prefactored polynomial reach a kernel that evaluates the plain polynomial.
+        raise ValueError(f"A score transform or polynomial prefactor runs on an explicit blocked or mosaic backend; "
+                         f"{request!r} never selects it")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
     if getattr(model_config, "positional_encoding", "rope") == "path":

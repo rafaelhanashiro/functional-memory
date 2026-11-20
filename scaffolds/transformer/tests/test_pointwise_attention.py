@@ -1,4 +1,4 @@
-"""Fixed sigmoid/softplus baselines: parameter identity, complete MHA math, and dispatch."""
+"""Fixed sigmoid/softplus/swish baselines: parameter identity, complete MHA math, and dispatch."""
 from dataclasses import replace
 import math
 
@@ -36,7 +36,7 @@ def _config(transform="softplus", **changes):
     return config
 
 
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 def test_pointwise_recipe_roundtrip_and_mosaic_dispatch(tmp_path, transform):
     config = _config(transform, max_seq_len=2048, qk_head_dim=64, value_head_dim=64,
                      attention_backend="mosaic")
@@ -49,7 +49,7 @@ def test_pointwise_recipe_roundtrip_and_mosaic_dispatch(tmp_path, transform):
     assert restored.model.attention_score_transform == transform
     identity = attention_identity(restored)
     assert identity["attention_kernel"] == f"{transform}_unnormalized"
-    assert not identity["attention_signed"]
+    assert identity["attention_signed"] == (transform == "swish")  # swish reaches -0.2785
     assert identity["attention_coefficient_count"] == 0
     assert f"{transform}(s_ti)" in identity["attention_formula"]
     assert "per-head RMSNorm" in identity["attention_formula"]
@@ -83,7 +83,7 @@ def test_sigmoid_transform_is_qualified_only_for_the_fixed_baseline():
             attention_coefficient_conditioning="query", attention_coefficient_activation="tanh", rngs=nnx.Rngs(0))
 
 
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 def test_pointwise_preserves_every_exp_parameter_and_decay_mask(transform):
     config = _config(transform)
     exp = replace(config.model, attention_degree=None, attention_fixed_coefficients=None,
@@ -103,7 +103,7 @@ def test_pointwise_preserves_every_exp_parameter_and_decay_mask(transform):
     assert all(a == b for a, b in zip(jax.tree.leaves(masks[0]), jax.tree.leaves(masks[1]), strict=True))
 
 
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 @pytest.mark.parametrize("implementation", ("scan", "strips"))
 def test_pointwise_complete_mha_matches_independent_dense_math_and_gradient(monkeypatch, transform, implementation):
     module = multihead.MultiHeadAttention(
@@ -122,7 +122,8 @@ def test_pointwise_complete_mha_matches_independent_dense_math_and_gradient(monk
         assert "polynomial_coefficients" not in arguments
         assert not arguments["attention_normalization"]
         scores = jnp.einsum("bthd,bihd->bhti", q, k) / math.sqrt(q.shape[-1])
-        weights = 1 / (1 + jnp.exp(-scores)) if transform == "sigmoid" else jnp.logaddexp(scores, 0.)
+        weights = {"sigmoid": 1 / (1 + jnp.exp(-scores)), "softplus": jnp.logaddexp(scores, 0.),
+                   "swish": scores / (1 + jnp.exp(-scores))}[transform]
         causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(k.shape[1])[None, :]
         return jnp.einsum("bhti,bihd->bthd", jnp.where(causal, weights, 0.), v)
 
@@ -134,7 +135,7 @@ def test_pointwise_complete_mha_matches_independent_dense_math_and_gradient(monk
     assert np.isfinite(gradient).all() and np.linalg.norm(gradient) > 0
 
 
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 def test_pointwise_diagnostics_measure_the_transformed_weights(transform):
     config = _config(transform)
     state = create_state(config, jax.random.PRNGKey(0))
@@ -147,7 +148,7 @@ def test_pointwise_diagnostics_measure_the_transformed_weights(transform):
 
 
 @pytest.mark.gpu
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 @pytest.mark.parametrize("unique_tokens", (True, False), ids=("unique", "repeated"))
 def test_pointwise_mosaic_full_model_bf16_gradients_and_repeatability(transform, unique_tokens):
     from scaffolds.transformer.attention.backends.mosaic.api import transformed_compute_capability_supported

@@ -868,7 +868,37 @@ def test_experiment_pilot_check_precedes_success_and_records_its_facts(tmp_path,
             assert "experiment_check" not in result["outcome"]
 
 
-@pytest.mark.parametrize("transform", ("sigmoid", "softplus"))
+@pytest.mark.parametrize("transform", ("identity", "softplus"))
+@pytest.mark.parametrize("prefactor", ("softplus", "sigmoid", "exp", "swish"))
+def test_mosaic_prefactor_recipes_qualify_the_prefactor_kernels(prefactor, transform):
+    """A polynomial prefactor on Mosaic, with or without a transform: CPU adds the prefactor's host checks and the
+    blocked composition's FP64 references beside the transform suites; GPU adds the prefactor kernels' suite beside
+    the transformed kernels' and the query kernels' own (the backbone's selection)."""
+    spec = preflight.AcceptanceSpec(entry_module="unused", cpu_tests=(), gpu_tests=("own_gpu_test.py",))
+    model = _score_transform_model(transform, attention_backend="mosaic", attention_blocked_implementation="scan",
+                                   attention_score_prefactor=prefactor)
+    config = {"model": model, "train": {"gradient_event_capture": True}}
+    cpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=True)
+    gpu = preflight.test_paths(spec, config, resolved_backend="mosaic", cpu=False)
+    assert {preflight.SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_LOWERING_TESTS,
+            *preflight.SCORE_PREFACTOR_TESTS} <= set(cpu)
+    assert preflight.MOSAIC_SCORE_PREFACTOR_TESTS not in cpu
+    assert gpu[0] == "own_gpu_test.py"
+    assert {preflight.MOSAIC_SCORE_TRANSFORM_TESTS, preflight.MOSAIC_SCORE_PREFACTOR_TESTS} <= set(gpu)
+    assert not {preflight.SCORE_TRANSFORM_TESTS, preflight.SCORE_TRANSFORM_STRIPS_TESTS,
+                *preflight.SCORE_PREFACTOR_TESTS} & set(gpu)
+    module = (preflight.ROOT / preflight.MOSAIC_SCORE_PREFACTOR_TESTS).read_text()
+    assert "pytestmark = pytest.mark.gpu" in module
+    for path in preflight.SCORE_PREFACTOR_TESTS:
+        assert "pytestmark = pytest.mark.gpu" not in (preflight.ROOT / path).read_text()
+    # Without the prefactor the selection is the transform's (none at all for the identity).
+    without = preflight.test_paths(spec, {**config, "model": {**model, "attention_score_prefactor": "none"}},
+                                   resolved_backend="mosaic", cpu=False)
+    assert preflight.MOSAIC_SCORE_PREFACTOR_TESTS not in without
+    assert (preflight.MOSAIC_SCORE_TRANSFORM_TESTS in without) is (transform != "identity")
+
+
+@pytest.mark.parametrize("transform", ("sigmoid", "softplus", "swish"))
 def test_fixed_pointwise_mosaic_selects_its_full_qualification_without_polynomial_grids(transform):
     model = {"attention_mechanism": "dot_product", "attention_backend": "mosaic",
              "attention_score_transform": transform, "attention_degree": 1,

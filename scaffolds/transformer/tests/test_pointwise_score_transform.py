@@ -1,6 +1,7 @@
 """Fixed p(z)=z attention: independent CPU oracles and H100/B200 Mosaic qualification.
 
-Only the score function changes: sigmoid(s) or softplus(s), no causal-sum division. The kernel's
+Only the score function changes: sigmoid(s), softplus(s) or swish(s) = s sigmoid(s) (signed), no causal-sum
+division. The kernel's
 coefficient operand is exactly [0, 1] at every query/head. GPU tests compare BF16 Q/K/V and FP32
 coefficients with explicit NumPy FP64 output and all four VJPs, including the production context.
 The oracle runs on the host and never compiles a dense attention reference on the allocated GPU.
@@ -17,7 +18,7 @@ from scaffolds.transformer.attention import score_transform
 from scaffolds.transformer.attention.backends import reference
 from scaffolds.transformer.attention.backends.mosaic import api, blackwell, common, hopper
 
-TRANSFORMS = ("sigmoid", "softplus")
+TRANSFORMS = ("sigmoid", "softplus", "swish")
 
 
 def _phi(transform, scores):
@@ -25,7 +26,10 @@ def _phi(transform, scores):
     if transform == "softplus":
         return np.logaddexp(0.0, scores), logistic
     # Separate log-domain formula: its positive-tail derivative does not subtract a rounded one.
-    return logistic, np.exp(-np.logaddexp(0.0, scores) - np.logaddexp(0.0, -scores))
+    slope = np.exp(-np.logaddexp(0.0, scores) - np.logaddexp(0.0, -scores))
+    if transform == "swish":
+        return scores * logistic, logistic + scores * slope
+    return logistic, slope
 
 
 def _numpy_oracle(transform, operands, cotangent):

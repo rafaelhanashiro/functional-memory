@@ -71,8 +71,10 @@ def attention_core(
     operation and applies no activation to these already-effective coefficients. The exponential
     (softmax, or unnormalized, with or without a forget gate) takes any transform, and with
     ``score_prefactor`` (attention/pieces.py) the weight f(s) exp(phi(s)): on the blocked backend, and
-    without decay on the fused unnormalized kernel. Every other mechanism and backend rejects a transform
-    other than "identity" and a prefactor other than "none".
+    without decay on the fused unnormalized kernel. A per-query polynomial takes the prefactor, w = f(s) p(phi(s)),
+    on the blocked backend (with anything else) and on the Mosaic transformed query-polynomial kernels (without
+    key factors, decay or score biases; the transform may be the identity there). Every other mechanism and
+    backend rejects a transform other than "identity" and a prefactor other than "none".
     The ``score_mlp_*`` arrays (projected unit
     amplitudes and offsets [batch,time,heads,J], slopes [heads,J]) select score-MLP attention.
     """
@@ -136,9 +138,17 @@ def attention_core(
             attention_normalization=False, query_polynomial_coefficients=query_polynomial_coefficients,
             query_decay_mode=query_decay_mode, score_transform=score_transform, score_prefactor=score_prefactor,
             return_diagnostics=return_diagnostics, **operands, **score_bias)
-    if score_prefactor != "none" and not exponential:
-        raise ValueError("A score prefactor applies to the exponential, or on the blocked backend to a per-query "
-                         "polynomial")
+    # The Mosaic transformed query-polynomial kernels evaluate f(s) p(phi(s)) for a per-query polynomial (static and
+    # fixed coefficients arrive broadcast per query) without key factors, decay or score biases.
+    mosaic_prefactor = (backend == "mosaic" and query_polynomial_coefficients is not None
+                        and key_polynomial_factors is None and not decay and not score_bias
+                        and attention_coefficient_activation == "tanh" and not attention_normalization)
+    if score_prefactor != "none" and not exponential and not mosaic_prefactor:
+        raise ValueError("A score prefactor applies to the exponential, on the blocked backend to a per-query "
+                         "polynomial, or on the Mosaic transformed kernels to a per-query polynomial without key "
+                         "factors, decay or score biases")
+    # Only a non-"none" prefactor is passed on, so every other call is unchanged.
+    prefactor = {} if score_prefactor == "none" or exponential else {"score_prefactor": score_prefactor}
     if exponential:
         transform = {}
     static_sos = polynomial_square_factors is not None and not attention_normalization
@@ -250,7 +260,7 @@ def attention_core(
                                           return_diagnostics=return_diagnostics, log_decay=query_log_decay,
                                           decay_mode=query_decay_mode, query_gate_input=query_gate_input,
                                           key_gate_input=key_gate_input, gate_log_rate=gate_log_rate,
-                                          **score_bias, **strips, **transform)
+                                          **score_bias, **strips, **transform, **prefactor)
     if not attention_normalization:
         from scaffolds.transformer.attention.unnormalized import unnormalized_attention
 

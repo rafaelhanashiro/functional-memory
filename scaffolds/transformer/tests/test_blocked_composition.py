@@ -24,11 +24,13 @@ from scaffolds.transformer.attention.core import attention_core
 
 
 def _phi(s, transform):
-    return {"identity": s, "softplus": jnp.logaddexp(s, 0.0), "sigmoid": jax.nn.sigmoid(s)}[transform]
+    return {"identity": s, "softplus": jnp.logaddexp(s, 0.0), "sigmoid": jax.nn.sigmoid(s),
+            "swish": s * jax.nn.sigmoid(s)}[transform]
 
 
 def _f(s, prefactor):
-    return {"none": jnp.ones_like(s), "softplus": jnp.logaddexp(s, 0.0), "sigmoid": jax.nn.sigmoid(s)}[prefactor]
+    return {"none": jnp.ones_like(s), "softplus": jnp.logaddexp(s, 0.0), "sigmoid": jax.nn.sigmoid(s),
+            "exp": jnp.exp(s), "swish": s * jax.nn.sigmoid(s)}[prefactor]
 
 
 def _dense(q, k, v, c, key_factors, log_decay, row_shift, *, transform, prefactor):
@@ -73,6 +75,14 @@ COMBINATIONS = {
     "prefactor+decay": dict(decay=True, prefactor="sigmoid"),
     "keys+decay+transform": dict(keys=True, decay=True, transform="sigmoid"),
     "everything": dict(keys=True, decay=True, bias=True, transform="softplus", prefactor="softplus"),
+    # The prefactors and the swish transform of the Mosaic transformed kernels, alone and composed.
+    "prefactor exp": dict(prefactor="exp"),
+    "prefactor swish": dict(prefactor="swish"),
+    "softplus+prefactor exp": dict(transform="softplus", prefactor="exp"),
+    "softplus+prefactor sigmoid": dict(transform="softplus", prefactor="sigmoid"),
+    "softplus+prefactor swish": dict(transform="softplus", prefactor="swish"),
+    "swish+decay": dict(decay=True, transform="swish"),
+    "everything exp": dict(keys=True, decay=True, bias=True, transform="softplus", prefactor="exp"),
 }
 
 
@@ -153,6 +163,11 @@ RECIPES = {
                                            attention_forget_gate_conditioning="query_key"),
     "pointwise sigmoid + FoX": dict(attention_degree=1, attention_fixed_coefficients=(0.0, 1.0),
                                     attention_score_transform="sigmoid", attention_forget_gate=True),
+    "pointwise swish + FoX": dict(attention_degree=1, attention_fixed_coefficients=(0.0, 1.0),
+                                  attention_score_transform="swish", attention_forget_gate=True),
+    "query + exp prefactor + FoX": dict(QUERY, attention_score_prefactor="exp", attention_forget_gate=True),
+    "static + softplus input + swish prefactor": dict(STATIC, attention_score_transform="softplus",
+                                                      attention_score_prefactor="swish"),
 }
 
 

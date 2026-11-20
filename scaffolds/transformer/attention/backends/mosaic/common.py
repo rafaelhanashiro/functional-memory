@@ -183,18 +183,55 @@ def polynomial_and_derivative(s, coefficients):
 #                 (row) or sum_i dbeta_r (1 - tau_r^2), sum_i dbeta_r tau_r, sum_i dbeta_r (pair); the dK
 #                 pass sums the gate's kind, then sum_t dbeta_r (1 - tau_r^2) per order (pair). Every
 #                 summand of a tile crossing the diagonal is selected with the causal mask first.
-#   query_softplus, query_abs, query_sigmoid: sum_r c_r z^r at the per-pair transform phi(s), with the
-#                 vectors of query (attention/score_transform.py); fixed vectors [0, 1] give phi(s) alone.
+#   query_softplus, query_abs, query_sigmoid, query_swish: sum_r c_r z^r at the per-pair transform phi(s), with
+#                 the vectors of query (attention/score_transform.py); fixed vectors [0, 1] give phi(s) alone.
 #                 dS = G p'(z) phi'(s): softplus uses sigmoid(s), abs uses sign(s), sigmoid uses its stable
-#                 logistic derivative (respectively 1/2, 0, 1/4 at s = 0). The dQ sums are dc_r = sum_i G z^r
-#                 (``transformed_score``). Masked entries
+#                 logistic derivative, swish sigmoid(s) + s sigmoid'(s) (respectively 1/2, 0, 1/4, 1/2 at s = 0).
+#                 The dQ sums are dc_r = sum_i G z^r (``transformed_score``). Masked entries
 #                 evaluate phi at their zero score, finite for finite coefficients, and the kernels zero their
 #                 weights and score gradients as for query, so these families need no ``Pair``. A nonfinite
 #                 causal score gives a nonfinite z (softplus's -inf too), so its row is NaN as for query.
+#   <base>_times_<f>: the score prefactor f (softplus, sigmoid, exp or swish of the raw score) times the
+#                 polynomial of the base family, query (z = s) or query_softplus: W = f(s) p(z), and
+#                 dS = G f(s) p'(z) phi'(s) + G f'(s) p(z), with dc_r = sum_i G f(s) z^r. f shares the transform's
+#                 e^-|s| (``score_prefactor``); with phi = softplus, f = softplus is z itself and the sigmoid
+#                 and swish prefactors reuse phi' = sigmoid(s). exp is 2^(s log2(e)) and overflows to +inf for
+#                 large scores, which makes the row NaN. Masked entries enter at s = 0, where every f is finite,
+#                 and are zeroed; a nonfinite causal score makes its row NaN, since p(z) is nonfinite there
+#                 (and f too, but for exp at -inf, whose zero times the nonfinite p is NaN).
 TAYLOR, QUERY = "taylor", "query"
 QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
-QUERY_SIGMOID = "query_sigmoid"
-TRANSFORMED_QUERY_FAMILIES = (QUERY_SOFTPLUS, QUERY_ABS, QUERY_SIGMOID)
+QUERY_SIGMOID, QUERY_SWISH = "query_sigmoid", "query_swish"
+# The kernel family of each parameter-free score transform (attention/score_transform.py); the identity is the
+# query family itself.
+TRANSFORM_BASES = {"identity": QUERY, "softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS, "sigmoid": QUERY_SIGMOID,
+                   "swish": QUERY_SWISH}
+# Score prefactors of the transformed families, and the transforms whose families take one (the qualified ones).
+SCORE_PREFACTORS = ("softplus", "sigmoid", "exp", "swish")
+PREFACTOR_TRANSFORMS = ("identity", "softplus")
+
+
+def score_function_family(transform, prefactor="none"):
+    """The kernel family of W = f(s) p(phi(s)) for a transform phi and prefactor f, or None when no family
+    evaluates them: ``query`` itself for the identity without a prefactor, a transform's family for prefactor
+    "none" (query_softplus, query_abs, query_sigmoid, query_swish), and "<base>_times_<f>" for a prefactor, e.g.
+    query_times_exp or query_softplus_times_sigmoid, whose base takes the identity or softplus transform."""
+    base = TRANSFORM_BASES.get(transform)
+    if base is None or prefactor == "none":
+        return base
+    if transform not in PREFACTOR_TRANSFORMS or prefactor not in SCORE_PREFACTORS:
+        return None
+    return f"{base}_times_{prefactor}"
+
+
+# Every transformed family by its (transform, prefactor): all but the plain query family.
+SCORE_FUNCTION_FAMILIES = {
+    (transform, prefactor): score_function_family(transform, prefactor)
+    for transform in TRANSFORM_BASES for prefactor in ("none", *SCORE_PREFACTORS)
+    if score_function_family(transform, prefactor) not in (None, QUERY)}
+FAMILY_SCORE_FUNCTIONS = {family: functions for functions, family in SCORE_FUNCTION_FAMILIES.items()}
+TRANSFORMED_QUERY_FAMILIES = tuple(SCORE_FUNCTION_FAMILIES.values())
+PREFACTOR_FAMILIES = tuple(family for (_, prefactor), family in SCORE_FUNCTION_FAMILIES.items() if prefactor != "none")
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
 PER_ORDER_CUMULATIVE_DECAY = "per_order_cumulative_decay"
@@ -281,16 +318,21 @@ def vector_counts(family, degree):
         orders = degree + 1
         sums = {PER_ORDER_QUERY_DECAY: 2, PER_ORDER_ENDPOINT_DECAY: 3, PER_ORDER_CUMULATIVE_DECAY: 1}[family]
         return 2 * orders, 2 * orders, sums * orders
-    extra = {QUERY: 0, QUERY_SOFTPLUS: 0, QUERY_ABS: 0, QUERY_SIGMOID: 0, QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
+    # Transformed families hold the query family's vectors: phi(s) and f(s) are evaluated in their tiles.
+    extra = 0 if family == QUERY or family in TRANSFORMED_QUERY_FAMILIES else {QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
     return degree + 1 + extra, degree + 1 + extra, degree + 1 + extra
 
 
 def approx_math(family):
     """Whether a family's kernels use the GPU's approximate exp2/log2 (ex2/lg2.approx: about
-    2^-22 relative and absolute error). Only decay families, pair shifts (tanh from exp2) and the
-    softplus/sigmoid transforms evaluate transcendentals; a row shift evaluates none, so the flag does not
-    change it, and the abs transform, which evaluates none either, keeps query's compiler settings."""
-    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES or family in (QUERY_SOFTPLUS, QUERY_SIGMOID)
+    2^-22 relative and absolute error). Only decay families, pair shifts (tanh from exp2), the
+    softplus/sigmoid/swish transforms and every prefactor evaluate transcendentals; a row shift evaluates none,
+    so the flag does not change it, and the abs transform, which evaluates none either, keeps query's compiler
+    settings."""
+    if family in FAMILY_SCORE_FUNCTIONS:
+        transform, prefactor = FAMILY_SCORE_FUNCTIONS[family]
+        return transform in ("softplus", "sigmoid", "swish") or prefactor != "none"
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES
 
 
 def key_counts(family, degree):
@@ -340,7 +382,8 @@ def log2_softplus(x):
 
 
 def transformed_score(family, s, *, slope=False):
-    """(z, phi'(s) or None) of a transformed query family's tile, as attention/score_transform.py defines them.
+    """(z, phi'(s) or None) of a transformed query family's tile, as attention/score_transform.py defines them;
+    for a prefactor family, its base transform's (the identity's z = s, with phi' None: one, never multiplied).
     Softplus: z = max(s, 0) + ln(1 + y) with y = e^-|s| in (0, 1], from one exp2 and one log (below y = 2^-6
     the cubic series of ln(1 + y), relative error < 1e-6, replaces the approximate log, whose absolute error
     would dominate small y), and sigmoid(s) = e^(min(s, 0) - ln(1 + y)) from one more exp2: 1/2 at s = 0, and
@@ -350,28 +393,108 @@ def transformed_score(family, s, *, slope=False):
     the pair the finite weight c_0, and both NaN at NaN. A causal score that overflowed therefore makes its row
     NaN, as for query and the blocked reference. Sigmoid uses y = e^-|s|, z = 1/(1+y) for s >= 0 and
     y/(1+y) otherwise, with slope y/(1+y)^2 so that a value rounded to one still has its positive-tail
-    gradient. Nonfinite sigmoid inputs explicitly become NaN rather than saturating to valid weights."""
-    if family == QUERY_ABS:
+    gradient. Nonfinite sigmoid inputs explicitly become NaN rather than saturating to valid weights. Swish is
+    s times that sigmoid, z = s/(1+y) for s >= 0 and s y/(1+y) otherwise, with slope sigmoid(s) + s y/(1+y)^2
+    (1/2 at zero); a nonfinite input is NaN, value and slope."""
+    transform = FAMILY_SCORE_FUNCTIONS[family][0]
+    if transform == "identity":
+        return s, None
+    return _transform(transform, s, None if transform == "abs" else _tail(s), slope=slope)
+
+
+def _tail(s):
+    """y = e^-|s| in (0, 1], from one exp2: the transforms' and prefactors' shared transcendental."""
+    return jnp.exp2(jnp.abs(s) * -LOG2E)
+
+
+def _log1p_tail(y):
+    """ln(1 + y) for y in (0, 1]; below y = 2^-6 its cubic series (relative error < 1e-6)."""
+    return jnp.where(y < _SERIES, y * (1.0 - y * (0.5 - y * (1.0 / 3.0))), jnp.log(1.0 + y))
+
+
+def _transform(transform, s, y, *, slope=False):
+    """(phi(s), phi'(s) or None) of a non-identity transform, given y = ``_tail(s)`` (None for abs)."""
+    if transform == "abs":
         z = jnp.abs(s)
         return z, (jnp.where(s > 0.0, 1.0, 0.0) - jnp.where(s < 0.0, 1.0, 0.0) if slope else None)
-    y = jnp.exp2(jnp.abs(s) * -LOG2E)
-    if family == QUERY_SIGMOID:
+    if transform == "sigmoid":
         inverse = 1.0 / (1.0 + y)
         z = jnp.where(finite(s), jnp.where(s >= 0.0, 1.0, y) * inverse, jnp.nan)
         return z, (jnp.where(finite(s), y * inverse * inverse, jnp.nan) if slope else None)
-    log1p = jnp.where(y < _SERIES, y * (1.0 - y * (0.5 - y * (1.0 / 3.0))), jnp.log(1.0 + y))
+    if transform == "swish":
+        inverse = 1.0 / (1.0 + y)
+        logistic = jnp.where(s >= 0.0, 1.0, y) * inverse
+        z = jnp.where(finite(s), s * logistic, jnp.nan)
+        return z, (jnp.where(finite(s), logistic + s * y * inverse * inverse, jnp.nan) if slope else None)
+    log1p = _log1p_tail(y)
     z = (s + jnp.maximum(-s, 0.0)) + log1p  # s + max(-s, 0) is max(s, 0) exactly for finite s, NaN at s = -inf
     return z, (jnp.exp2((jnp.minimum(s, 0.0) - log1p) * LOG2E) if slope else None)
+
+
+def score_prefactor(family, s, *, derivative=False, y=None, z=None, slope=None):
+    """(f(s), f'(s) or None) of a prefactor family's tile, as attention/score_transform.py defines them. ``y``,
+    ``z`` and ``slope`` are the tile's ``_tail(s)`` and base transform value and derivative when already formed:
+    with phi = softplus, f = softplus is z and f' = phi' = sigmoid(s), the sigmoid prefactor is phi' (its slope
+    y/(1+y)^2), and swish is s phi'. Otherwise softplus is max(s, 0) + ln(1 + y) with f' = 2^((min(s, 0) -
+    ln(1 + y)) log2(e)), sigmoid and swish take the stable logistic from y, and exp is 2^(s log2(e)) with f' = f.
+    A nonfinite score gives a nonfinite or NaN f, but for exp at -inf (zero); the row is NaN regardless, since
+    p(z) is nonfinite there."""
+    transform, prefactor = FAMILY_SCORE_FUNCTIONS[family]
+    if prefactor == "exp":
+        value = jnp.exp2(s * LOG2E)
+        return value, (value if derivative else None)
+    if transform == "softplus" and prefactor == "softplus":
+        return z, (slope if derivative else None)
+    if y is None:
+        y = _tail(s)
+    if prefactor == "softplus":
+        return _transform("softplus", s, y, slope=derivative)
+    if transform == "softplus" and slope is not None:  # phi' = sigmoid(s): reuse it as the logistic
+        inverse = 1.0 / (1.0 + y)
+        if prefactor == "sigmoid":
+            return slope, (y * inverse * inverse if derivative else None)
+        return s * slope, (slope + s * y * inverse * inverse if derivative else None)
+    return _transform(prefactor, s, y, slope=derivative)
+
+
+def _score_functions(family, s, *, derivatives):
+    """(z, phi'(s) or None, f(s), f'(s) or None) of a transformed family's tile, its transcendental shared."""
+    transform, prefactor = FAMILY_SCORE_FUNCTIONS[family]
+    y = None if transform in ("identity", "abs") and prefactor == "exp" else _tail(s)
+    if transform == "identity":
+        z, slope = s, None
+    else:
+        z, slope = _transform(transform, s, y, slope=derivatives or prefactor in ("sigmoid", "swish"))
+    if prefactor == "none":
+        return z, slope, None, None
+    value, value_slope = score_prefactor(family, s, derivative=derivatives, y=y, z=z, slope=slope)
+    return z, slope, value, value_slope
+
+
+def _transformed_weights(family, s, vectors):
+    """W = f(s) p(phi(s)) of a transformed family's tile (f = 1 without a prefactor)."""
+    if FAMILY_SCORE_FUNCTIONS[family][1] == "none":
+        return polynomial(transformed_score(family, s)[0], vectors)
+    z, _, value, _ = _score_functions(family, s, derivatives=False)
+    return value * polynomial(z, vectors)
 
 
 def _transformed_terms(family, degree, s, dp, vectors, *, rows):
     """(dS, dQ row sums or []) of a transformed query family's tile, dS = p'(z) (G phi'(s)). In program order the
     sums dc_r = sum_i G z^r come first, then G phi'(s), then the derivative's recurrence, which therefore holds
-    neither G nor phi'(s) beside it."""
-    z, slope = transformed_score(family, s, slope=True)
-    sums = row_sums(QUERY, degree, z, dp) if rows else []
-    gradient = dp * slope
-    return polynomial_and_derivative(z, vectors)[1] * gradient, sums
+    neither G nor phi'(s) beside it. With a prefactor, G_f = G f(s) takes G's place in the sums and the chain
+    rule, and the product rule adds G f'(s) p(z): dS = p'(z) G_f phi'(s) + G f'(s) p(z)."""
+    if FAMILY_SCORE_FUNCTIONS[family][1] == "none":
+        z, slope = transformed_score(family, s, slope=True)
+        sums = row_sums(QUERY, degree, z, dp) if rows else []
+        gradient = dp * slope
+        return polynomial_and_derivative(z, vectors)[1] * gradient, sums
+    z, slope, value, value_slope = _score_functions(family, s, derivatives=True)
+    weighted = dp * value  # G_f
+    sums = row_sums(QUERY, degree, z, weighted) if rows else []
+    gradient = weighted if slope is None else weighted * slope
+    polynomial_value, derivative = polynomial_and_derivative(z, vectors)
+    return derivative * gradient + dp * value_slope * polynomial_value, sums
 
 
 def decay(family, degree, vectors, pair, *, slopes=False):
@@ -642,7 +765,7 @@ def forward_weights(family, degree, s, vectors, pair=None, terms=None):
         terms = decay(family, degree, vectors, pair) if terms is None else terms
         return polynomial(s, vectors[:degree + 1]) * terms.factor
     if family in TRANSFORMED_QUERY_FAMILIES:
-        return polynomial(transformed_score(family, s)[0], vectors)
+        return _transformed_weights(family, s, vectors)
     return taylor(s, degree) if family == TAYLOR else polynomial(s, vectors)
 
 
@@ -679,7 +802,7 @@ def value_weights(family, degree, s, vectors, pair=None, terms=None):
     if family == TAYLOR:
         return taylor(s, degree) * vectors[1]
     if family in TRANSFORMED_QUERY_FAMILIES:
-        return polynomial(transformed_score(family, s)[0], vectors)
+        return _transformed_weights(family, s, vectors)
     return polynomial(s, vectors)
 
 

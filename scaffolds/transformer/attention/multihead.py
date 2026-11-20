@@ -420,11 +420,12 @@ class MultiHeadAttention(nnx.Module):
                 or attention_coefficient_orders is not None or attention_coefficient_gate != "none"
                 or attention_coefficient_scale != "none" or attention_coefficient_amplitude_scale != "none"
                 or attention_forget_gate or attention_score_bias != "none"
-                or attention_score_transform not in ("identity", "softplus")
+                or attention_score_transform not in ("identity", "softplus") or attention_score_prefactor != "none"
                 or attention_kernel_basis != "polynomial" or positional_encoding not in ("rope", "none")
                 or backend not in ("blocked", "mosaic")):
             raise ValueError("Unnormalized static SoS requires an even core degree, identity coefficient activation, "
-                             "identity or softplus scores, no extra scales/gates/biases, and blocked or mosaic attention")
+                             "identity or softplus scores, no prefactor or extra scales/gates/biases, and blocked or "
+                             "mosaic attention")
         if attention_coefficient_parameterization == "sum_of_squares" and attention_coefficient_conditioning in (
                 "query", "query_key"):
             core_degree = attention_degree - attention_coefficient_input_power
@@ -535,7 +536,7 @@ class MultiHeadAttention(nnx.Module):
         # requirements, mirrored for direct construction.
         from scaffolds.transformer.attention.score_transform import validate as validate_transform
 
-        fixed_pointwise = (attention_score_transform in ("sigmoid", "softplus")
+        fixed_pointwise = (attention_score_transform in ("sigmoid", "softplus", "swish")
                            and attention_degree == 1 and attention_fixed_coefficients == (0.0, 1.0)
                            and attention_fixed_square_factors is None
                            and attention_coefficient_conditioning == "static"
@@ -544,10 +545,13 @@ class MultiHeadAttention(nnx.Module):
                            and attention_coefficient_scale == "none"
                            and attention_coefficient_amplitude_scale == "none"
                            and attention_coefficient_input_power == 0)
-        static_transformed = (attention_coefficient_zero_constant
-                              and attention_coefficient_conditioning == "static"
+        # Static direct coefficients (learned; the structural zero constant optional) run per query on the
+        # transformed kernels (_coefficients_per_query).
+        static_transformed = (attention_coefficient_conditioning == "static"
                               and attention_coefficient_parameterization == "direct"
-                              and attention_coefficient_activation == "identity")
+                              and attention_coefficient_activation == "identity"
+                              and attention_fixed_coefficients is None and attention_fixed_square_factors is None
+                              and attention_coefficient_input_power == 0)
         if type(attention_coefficient_zero_constant) is not bool:
             raise ValueError("Coefficient zero constant must be a boolean")
         if attention_coefficient_zero_constant and (
@@ -580,12 +584,17 @@ class MultiHeadAttention(nnx.Module):
                     problem = "the fused kernel is the unnormalized exponential without a forget gate"
                 if problem is not None:
                     raise ValueError(f"The fused backend cannot run these score functions: {problem}")
-        elif attention_score_prefactor != "none" and not blocked_polynomial:
-            raise ValueError("A score prefactor applies to the exponential (softmax or unnormalized), or on the "
-                             "blocked backend to any unnormalized polynomial")
+        elif attention_score_prefactor != "none" and not blocked_polynomial and not (
+                backend == "mosaic" and attention_score_transform in ("identity", "softplus")
+                and (static_transformed or attention_coefficient_conditioning == "query"
+                     and attention_coefficient_activation == "tanh")):
+            raise ValueError("A score prefactor applies to the exponential (softmax or unnormalized), on the "
+                             "blocked backend to any unnormalized polynomial, or on the mosaic backend to diagonal "
+                             "tanh query or static direct coefficients at identity or softplus scores")
         self.attention_score_prefactor = attention_score_prefactor
-        if validate_transform(attention_score_transform) != "identity" and not exponential_kernel and not blocked_polynomial and (
-                not (fixed_pointwise or (attention_score_transform != "sigmoid"
+        if (validate_transform(attention_score_transform) != "identity" or attention_score_prefactor != "none") and (
+                not exponential_kernel and not blocked_polynomial) and (
+                not (fixed_pointwise or (attention_score_transform not in ("sigmoid", "swish")
                                         and (static_sos or static_transformed
                                              or (attention_coefficient_conditioning == "query"
                                                  and attention_coefficient_activation == "tanh"))))
@@ -595,8 +604,8 @@ class MultiHeadAttention(nnx.Module):
                 or attention_degree < 1 or positional_encoding not in ("rope", "none")
                 or backend not in ("blocked", "mosaic") or backend == "mosaic" and positional_encoding != "rope"
                 or attention_forget_gate or attention_score_bias != "none"):
-            raise ValueError("A score transform requires fixed static linear (0, 1) sigmoid/softplus weights or "
-                             "diagonal tanh query coefficients of unnormalized polynomial "
+            raise ValueError("A score transform requires fixed static linear (0, 1) sigmoid/softplus/swish weights, "
+                             "static direct or diagonal tanh query coefficients of unnormalized polynomial "
                              "attention with RoPE or no positional encoding, without selected orders, coefficient "
                              "gates, a B-spline basis, a forget gate, or score biases, on the blocked backend, or "
                              "with RoPE on the mosaic backend")
@@ -670,10 +679,10 @@ class MultiHeadAttention(nnx.Module):
                 query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
                              "shift every order's score")
-        if self.attention_score_transform != "identity" and (
+        if (self.attention_score_transform != "identity" or self.attention_score_prefactor != "none") and (
                 query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture assume sum_r c_r s^r; a score transform evaluates "
-                             "the polynomial at z = phi(s)")
+                             "the polynomial at z = phi(s), and a prefactor multiplies it by f(s)")
         if query_coefficients is not None or return_coefficients:
             if (self.attention_coefficient_conditioning not in ("static", "query")
                     or self.attention_normalization or self.attention_degree is None
