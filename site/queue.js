@@ -1,8 +1,10 @@
 // The Queue page: runs not queued yet ("planned") and runs in progress ("active"). Each list holds
-// runs and named groups of runs, one level deep. A planned run's checkbox moves it to In progress;
+// runs and named groups of runs, one level deep, and either list takes new runs and groups (its
+// + Run and + Group, or a group's +). A planned run's checkbox moves it to In progress;
 // an active run's checkbox closes it out (removes it, after asking), and its arrow sends it back.
-// A moved run lands under the group of the same name on the other side, made if missing; a group
-// left empty disappears from In progress but stays in Not queued. Planned runs and groups reorder
+// A moved run lands under the group of the same name on the other side, made if missing. A group
+// disappears once its last run moves to the other side (or, in In progress, is closed out); in
+// Not queued, one emptied by deleting or dragging its runs stays. Planned runs and groups reorder
 // by their grip (drag, or the arrow keys), and runs drag in and out of groups. Every change saves
 // both lists through serve.py (api/queue), which refuses a save from a page that is out of date.
 import {element, failure, render} from "./editor.js";
@@ -52,6 +54,7 @@ function remove(list, id) {
 
 function transfer(id, from, to) {
   const {item, group} = remove(from, id);
+  if (group && !group.runs.length && find(from, group.id)) remove(from, group.id);  // its last run left
   const items = state.lists[to];
   if (!group) {
     items.push(item);
@@ -184,7 +187,8 @@ function groupNode(list, group) {
   );
   const actions = element("span", "queue-actions");
   if (list === "active") {
-    actions.append(icon("back", "Send all its runs back to Not queued", BACK, () => moveGroup(group, "active", "planned")));
+    actions.append(icon("add", "Add a run to this group", PLUS, () => add(group.runs)));
+    if (group.runs.length) actions.append(icon("back", "Send all its runs back to Not queued", BACK, () => moveGroup(group, "active", "planned")));
   } else {
     actions.append(
       icon("add", "Add a run to this group", PLUS, () => add(group.runs)),
@@ -266,8 +270,8 @@ function edit(span, item, field, fresh = false) {
       item[field] = value;
       commit();
     } else if (fresh && !item[field]) {
-      const list = find("planned", item.id) ? "planned" : "active";
-      remove(list, item.id);
+      const found = find("planned", item.id) ?? find("active", item.id);
+      found.container.splice(found.index, 1);  // only the new item, never the group it was added to
       draw();
     } else {
       draw();
@@ -377,8 +381,11 @@ function nudge(event, node) {
   document.querySelector(`[data-id="${node.dataset.id}"] > .queue-row > .drag-handle`)?.focus();
 }
 
-document.querySelector('[data-action="add-run"]').addEventListener("click", () => add(state.lists.planned));
-document.querySelector('[data-action="add-group"]').addEventListener("click", () => add(state.lists.planned, true));
+for (const panel of document.querySelectorAll(".queue-panel")) {
+  const list = panel.dataset.list;
+  panel.querySelector('[data-action="add-run"]').addEventListener("click", () => add(state.lists[list]));
+  panel.querySelector('[data-action="add-group"]').addEventListener("click", () => add(state.lists[list], true));
+}
 load().catch(() => {
   for (const panel of document.querySelectorAll(".queue-panel")) {
     panel.querySelector(".queue-empty").textContent = "Could not load the queue.";

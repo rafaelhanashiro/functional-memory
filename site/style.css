@@ -761,6 +761,9 @@ header { position: relative; }
    text or a group's name edits in place. */
 .queue { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 24px; align-items: start; }
 .queue-panel { padding: 14px 14px 12px; border: 1px solid var(--rule); border-radius: 14px; background: #fff; }
+/* Soft tints, light enough to read on: red for runs not queued yet, yellow for runs in progress. */
+.queue-panel[data-list="planned"] { border-color: #fecaca; background: #fef2f2; }
+.queue-panel[data-list="active"] { border-color: #fde68a; background: #fefce8; }
 .queue-head { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 4px 8px; }
 .queue-head h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
 .queue-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
@@ -779,7 +782,7 @@ header { position: relative; }
   padding: 6px 8px 6px 24px;
   border-radius: 9px;
 }
-.queue-row:hover { background: #f8fafc; }
+.queue-row:hover { background: rgba(24, 24, 27, 0.04); }  /* shows on either tint */
 .queue-row:hover .drag-handle, .queue-row .drag-handle:focus-visible { opacity: 1; }
 .queue-group-head .queue-name { font-weight: 600; }
 .queue-text, .queue-name { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: text; }
