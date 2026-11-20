@@ -7,11 +7,10 @@ Every value is a run's validation-best perplexity. Rerun only when the user asks
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 from cells import number, text
-from polynomial import RESULTS, ROOT, RUNS, best, rows
+from polynomial import ROOT, RUNS, best
 from scaling import change
 
 EXP = "r6a76e7fbde45"
@@ -43,11 +42,6 @@ SPLINES = (
     (f"Binomial: (1/2 + {Z}/8)<sup>4</sup>", "ra4c3ada624af", "r78fa0d682f44"),
 )
 SPLINE_CONTROLS = ("r4339a245820e", "rca97cc9db8f2")
-# Knot calibration: the controls' scores at initialization and update 7,500, from the spline collection.
-SPLINE_RESULTS = RESULTS / "pretraining/alternative_attention/splines/spline_attention"
-KNOT_ROLES = (("static", "Static"), ("query_wdecay", "Query + <var>W</var> decay"))
-KNOT_STATES = (("initialization", "initialization"), ("checkpoint", "update 7,500"))
-KNOT_RADII = (12, 24)
 
 
 def shape(run_id: str) -> str:
@@ -99,38 +93,8 @@ def splines() -> list[dict]:
                          "caption": "PPL (% vs polynomial baseline)."}]}]
 
 
-def share(fraction: str) -> str:
-    """A share in percent: two decimals from 1%, three significant figures below."""
-    percent = 100 * float(fraction)
-    return "0%" if percent == 0 else f"{percent:.2f}%" if percent >= 1 else f"{percent:.3g}%"
-
-
-def knots() -> dict:
-    summary = {(row["role"], row["state"]): row for row in rows(SPLINE_RESULTS / "summary.csv")}
-    coverage = {(row["role"], row["state"], int(row["radius"])): row for row in rows(SPLINE_RESULTS / "coverage.csv")}
-    minus = lambda value: f"{float(value):.2f}".replace("-", "−")
-    table = []
-    for state, when in KNOT_STATES:
-        for role, label in KNOT_ROLES:
-            scores = summary[(role, state)]
-            table.append([text(f"{label}, {when}"), text(f"{float(scores['score_std']):.3f}"),
-                          text(f"{minus(scores['score_min'])} to {minus(scores['score_max'])}"),
-                          *(text(share(coverage[(role, state, radius)]["head_mean_query_absolute_weight_share_outside"]))
-                            for radius in KNOT_RADII)])
-    figures = Path(__file__).resolve().parents[1] / "figures" / "splines"
-    figures.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(SPLINE_RESULTS / "score_coverage.png", figures / "score-coverage.png")
-    return {"key": "knots", "title": "Knot calibration",
-            "tables": [{"head": ["Scores", "Std", "Range", *(f"Weight outside ±{radius}" for radius in KNOT_RADII)],
-                        "rows": table,
-                        "caption": "Attention scores of the two degree-4 controls on 16 training sequences; weight: "
-                                   "the mean share of a query's absolute attention weight."}],
-            "figures": [{"src": "figures/splines/score-coverage.png",
-                         "alt": "Score density and the absolute-weight share outside each candidate knot range"}]}
-
-
 def main() -> None:
-    data = {"fixed-kernels": fixed_kernels(), "mlp": mlp(), "splines": [*splines(), knots()]}
+    data = {"fixed-kernels": fixed_kernels(), "mlp": mlp(), "splines": splines()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     print(f"wrote {output.relative_to(ROOT)}")
