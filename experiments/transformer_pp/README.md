@@ -296,24 +296,22 @@ done
 ## Extrapolation ablation
 
 The [extrapolation_ablation diagnostic](results/diagnostics/length_extrapolation/extrapolation_ablation/README.md)
-rescored the query + W decay checkpoint at 16,384 tokens with a 2,048-key window and with RoPE
-distances clamped at 2,047 (`rb786bd19c6b1`). One GPU, no training:
+evaluates 2,048-token checkpoints on 608 long documents at 16,384 tokens. One GPU each, no
+training: `r313eb59e1d5f` scores exp, query + W decay and FoX with `evaluate_per_position.sbatch`;
+`ra9834409e40a` rescores the query + W decay checkpoint with a 2,048-key window and with RoPE
+distances clamped at 2,047, with `evaluate_extrapolation_ablation.sbatch`; and `r6122f26085ec`
+measures per-key weights with `attention_position_weights.sbatch`. The ablation's launch:
 
 ```bash
 sbatch --parsable --partition=standard,long --gres=gpu:1 --cpus-per-task=8 --mem=96G --time=04:00:00 \
-  --exclude=collie,samoyed,doodle,terrier,shiba --job-name=rb786bd19c6b1 \
-  --output=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
-  --error=experiments/transformer_pp/runs/rb786bd19c6b1/training.log \
+  --exclude=collie,samoyed,doodle,terrier,shiba --job-name=ra9834409e40a \
+  --output=experiments/transformer_pp/runs/ra9834409e40a/training.log \
+  --error=experiments/transformer_pp/runs/ra9834409e40a/training.log \
   experiments/transformer_pp/evaluate_extrapolation_ablation.sbatch \
-  "$PWD" "$(git rev-parse HEAD)" rb786bd19c6b1
+  "$PWD" "$(git rev-parse HEAD)" ra9834409e40a
 ```
 
-The weight profile (`r9155f2214b4b`) uses `attention_weight_profile.sbatch` with the same
-resources, and the per-position weights (`rece89382b690` for one sequence, `ra0ad3d431842`
-averaged over 128 sequences, `r6122f26085ec` on 128 long documents) use
-`attention_position_weights.sbatch`. On long documents, `r313eb59e1d5f` scores exp, query + W
-decay and FoX with `evaluate_per_position.sbatch`, and `ra9834409e40a` reruns the ablation with
-`evaluate_extrapolation_ablation.sbatch`; all use the same resources and arguments.
+The other two use the same resources and arguments with their own scripts and run IDs.
 
 ## Diagnostic notes
 
@@ -858,33 +856,8 @@ sbatch --parsable --partition=long --gres=gpu:h100:1 --cpus-per-task=16 --mem=12
 
 ## Context length
 
-The [context-length topic](results/pretraining/scalings/context_length/README.md) compares
-held-out per-position loss at and beyond the checkpoints' training length.
-`r2a45c518f703` evaluates the validation-best 2,048-token exp, query + W decay,
-and FoX no RoPE + W decay checkpoints at 16,384 tokens on Kennel. It makes no
-optimizer updates and preserves the source models' parameters and attention backends.
-The recipe pins the source checkpoints and the held-out manifests. The long pass
-scores 608 sequences (9,961,472 predictions), following the original validation replay
-and a causal-prefix consistency check.
-
-Prepare the evaluation data outside the repository, then launch from a committed,
-isolated worktree with both locked CUDA environments installed:
-
-```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.transformer.data.repack \
-  /data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json \
-  /data/cl/u/rafah/home/datasets/fineweb_12b_seq16385/eval --sequence-length 16385
-sbatch --parsable --partition=standard --gres=gpu:1 --cpus-per-task=8 --mem=64G \
-  --time=04:00:00 --exclude=collie,samoyed,doodle,terrier,shiba \
-  --job-name=r2a45c518f703 \
-  --output=experiments/transformer_pp/runs/r2a45c518f703/training.log \
-  --error=experiments/transformer_pp/runs/r2a45c518f703/training.log \
-  experiments/transformer_pp/evaluate_per_position.sbatch "$PWD" "$(git rev-parse HEAD)" r2a45c518f703
-```
-
-Repacking refuses to overwrite an existing manifest; reuse the existing data only
-when its manifest and shard checksums match the frozen recipe. A new scientific
-execution gets a fresh run ID. The exact submission is recorded with the run.
+The [context-length topic](results/pretraining/scalings/context_length/README.md) compares the
+attention variants trained at 4,096 tokens with their 2,048-token partners.
 
 ### Training at 4,096 tokens
 
@@ -1681,42 +1654,6 @@ for run in r0e76396bdee5 r527a30ff7ed1 rc60345dfcff7 re253a5f1b03e; do
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.static_distance_gate_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 done
-```
-
-## Gated polynomial gradient-spike diagnostics
-
-`re0db53b7b704` (B300) and `rc1c463ddc494` (H100 SXM) are bounded diagnostics of
-the completed per-order query–key distance-gate run `r03be769d2069`, on its home
-cluster Kennel. Each restores the complete update-7,500 checkpoint, including
-Adam state, and replays
-updates 7,501–7,570 with the same data, microbatches, RNG clock, learning-rate
-schedule, and native update function. Neither retained a new checkpoint.
-The original model and kernel source is `b38c116f`; the diagnostic adds only a
-study-level observer. The parent checkpoint and manifests are checked inputs.
-
-Each replay records every native update before recomputing the worst update
-at its frozen pre-update state. Plain and instrumented gradient calculations
-must be compared before interpreting parameter-group, layer, order, and
-pre-output-RMSNorm activation statistics. It writes only its own run directory.
-Run `r1736cf7a019c` instead holds the update-7,500 state fixed, scans at most 256
-global batches, and stops at the first gradient norm above one. It retains no
-optimizer update. A threshold event triggers a frozen attention VJP comparison
-against independent FP64 arithmetic, using the same inputs and cotangent and
-all causal keys. Full-state hashes and gradient-parity checks qualify the probes.
-Historical findings and the replay's limits belong to the
-[gated_gradient_spikes record](results/diagnostics/learning_dynamics/gated_gradient_spikes/README.md).
-
-These diagnostics use their recorded source commits built on the original
-scaffold, rather than an unrelated current runtime. A fresh execution needs a
-fresh run ID and committed recipe. From the prepared isolated diagnostic
-worktree, the fixed-state scan's launch is:
-
-```bash
-uv sync --project scaffolds/transformer --locked --extra cuda --link-mode hardlink
-sbatch --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=4 --mem=64G \
-  --time=01:00:00 --job-name=gate-fixed-scan --open-mode=append \
-  --output=experiments/transformer_pp/runs/r1736cf7a019c/training.log \
-  experiments/transformer_pp/diagnose_gate_spikes.sbatch r1736cf7a019c "$(git rev-parse HEAD)"
 ```
 
 ## Per-degree score biases

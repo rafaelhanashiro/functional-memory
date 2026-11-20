@@ -116,78 +116,6 @@ independence or the behavior on every training sequence. The inferred moments
 are subject to rounding in the recorded coefficient summaries and are undefined
 when a=0. They are preserved separately from the raw parameters in the summary.
 
-## Activation and projection probe
-
-The forward-only run `r1ac137c4f1ce` evaluates the same first held-out sequence
-through both retained step-7,500 checkpoints. It captures the exact input to the
-coefficient generator at layer 8, together with the residual before pre-attention
-RMSNorm, the norm's learned channel gains, and head 1's W vectors. Checkpoint
-parameters remain unchanged and no optimizer state is restored. These are
-checkpoint measurements at 7,500, separate from the terminal parameter summaries
-at 7,570 above.
-
-Without its learned gain, RMSNorm sets the activation's RMS approximately to one,
-so its Euclidean norm is approximately sqrt(896), or 29.93. This is not a unit-L2
-normalization. However, a unit-length W does not imply a dot product of that size:
-for zero-mean isotropic unit-RMS inputs, the projection variance is ||W||². With
-learned diagonal gains g, the corresponding isotropic baseline is ||g * W||².
-The actual projection obeys z = ||x|| ||W|| cos(theta), and its mean and variance
-depend on the activation distribution and alignment with W. The probe therefore
-measures projections and tanh saturation directly as well as both norms.
-
-The near-saturation threshold is fixed at |tanh(z)| >= 0.99, equivalent in exact
-arithmetic to |z| >= atanh(0.99), approximately 2.647. One sequence and one head describe a local
-behavior, not the prevalence across the model or training distribution.
-
-![Activation norms, coefficient projections, and tanh saturation](activation_probe.png)
-
-| Measurement in the selected head | Degree 8 | Degree 12 |
-| --- | ---: | ---: |
-| Mean token norm before RMSNorm | 74.9881 | 71.1425 |
-| Mean token norm after RMSNorm and gain | 28.1694 | 28.3901 |
-| After-norm token range, 1st–99th percentiles | 26.3295–29.8925 | 26.6235–29.9730 |
-| W norm range across orders | 1.2638–1.6350 | 1.1630–1.5304 |
-| RMS of learned channel gains | 1.0091 | 1.0100 |
-| Norm of the token-mean activation | 15.2614 | 15.3401 |
-
-RMSNorm reduces the activation norm on this sequence. The input magnitude is
-consistent with unit RMS in 896 dimensions, with channel gains close to one.
-The actual projections reveal substantial differences between orders despite
-similar W norms:
-
-| Model and order | W norm | Mean z | Standard deviation of z | Tokens with abs(tanh(z)) >= 0.99 |
-| --- | ---: | ---: | ---: | ---: |
-| Degree 8, order 2 | 1.3803 | 0.0587 | 1.6621 | 11.43% |
-| Degree 8, order 3 | 1.3302 | 5.5864 | 0.8800 | 99.80% |
-| Degree 12, order 4 | 1.2734 | 0.2313 | 1.5710 | 9.18% |
-| Degree 12, order 8 | 1.4842 | 6.0701 | 1.0240 | 99.85% |
-
-For the nearly saturated examples, the projection has a large persistent
-positive offset. Decomposing x into its token mean plus a centered residual,
-the squared mean projection accounts for 97.58% (degree 8, order 3) and 97.23%
-(degree 12, order 8) of mean z². This is evidence of alignment with a shared
-activation direction on this sequence. A moderate W norm alone does not ensure
-that tanh operates near zero. Other orders retain substantial variation. These
-observations neither establish a cause of gradient spikes nor show that
-near-constant coefficients harm performance.
-
-The [probe selection](probe_selection.yaml) pins the diagnostic and both parents.
-[activation_probe_summary.csv](activation_probe_summary.csv) records all 22
-orders; the run's compact measurements also contain the mean/centered activation
-decomposition. Quantile intervals summarize tokens, not uncertainty. Saturation
-fractions include every token, including tails outside the plotted intervals.
-
-The native forward ran on one Kennel B200 under CUDA 13, job 244590, with six
-query-kernel parity checks passing before inference. Captured and uninstrumented
-forward losses agreed exactly in the CPU capture check. Both restored parent
-parameter hashes were unchanged; coefficients reconstructed from captured x, W,
-a and b agreed within 2.50e-7 of the generator scale. Checkpoint parameters
-matched the saved step-7,500 records. Historical coefficient moments used the
-blocked diagnostic backend; native-Mosaic replay moments differed by at most
-0.17% (degree 8) and 0.31% (degree 12) of the generator scale, within the declared
-2% audit tolerance. Archived activation arrays independently reproduce the
-norms, projection moments, and saturation fractions in the compact metrics.
-
 ## Regeneration
 
 From the repository root, using its locked environment:
@@ -195,7 +123,6 @@ From the repository root, using its locked environment:
 ```bash
 uv sync --project scaffolds/transformer --locked --link-mode hardlink
 scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/learning_dynamics/query_parameter_dynamics/plot.py
-scaffolds/transformer/.venv/bin/python experiments/transformer_pp/results/diagnostics/learning_dynamics/query_parameter_dynamics/probe_plot.py
 ```
 
 The script verifies pinned scientific inputs, completed status, recipes, array

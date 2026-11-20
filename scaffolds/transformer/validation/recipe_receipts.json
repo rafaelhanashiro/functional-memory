@@ -1757,9 +1757,6 @@
    "digest": "7fa65e6a59f9e22e49d2b3250dc53c1a6d047591dcff471f9aafb2589e0679b9",
    "arrays_count": 56
   },
-  "transformer_pp/r1736cf7a019c": {
-   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
-  },
   "transformer_pp/r17444ad0f60e": {
    "version": 1,
    "loss": 5.5703935623168945,
@@ -1834,9 +1831,6 @@
    "loss": 5.558903694152832,
    "digest": "f0c87ad6748cf69661c70d9ebf1429c32d5d6171cf0fa19d1fdfbcda3227c60d",
    "arrays_count": 52
-  },
-  "transformer_pp/r1d87cc903125": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r1f2c24c109f9": {
    "version": 1,
@@ -1921,9 +1915,6 @@
    "loss": 5.56720495223999,
    "digest": "fb0fc1ecf50a7a4d24bf1401fd9b8b3b9d6eec81f147d9710c74ec1dce711543",
    "arrays_count": 52
-  },
-  "transformer_pp/r2a45c518f703": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r2b22f2ff6461": {
    "version": 1,
@@ -2504,17 +2495,11 @@
    "digest": "c88168f22cbd4732934d0d6688961497099cfe0eeb9178e0c15bfdf85a8fd7fb",
    "arrays_count": 62
   },
-  "transformer_pp/r8e4d56dfc830": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
-  },
   "transformer_pp/r9040f12f3d80": {
    "version": 1,
    "loss": 5.593576431274414,
    "digest": "e152b823c4510d5b384cda892fe41ba97c6af3847b54f83da053e7d6e85c9879",
    "arrays_count": 48
-  },
-  "transformer_pp/r9155f2214b4b": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/r917f3650296e": {
    "version": 1,
@@ -2599,9 +2584,6 @@
    "loss": 5.572043418884277,
    "digest": "3c9b091dec8fae1d9bfce49a9a27e41950c246131e1780ce733bd6f944bcd6a3",
    "arrays_count": 50
-  },
-  "transformer_pp/ra0ad3d431842": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/ra0f402ff6758": {
    "version": 1,
@@ -2729,9 +2711,6 @@
    "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
    "arrays_count": 56
   },
-  "transformer_pp/rb786bd19c6b1": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
-  },
   "transformer_pp/rb7e83a4b653f": {
    "version": 1,
    "loss": 5.572040557861328,
@@ -2749,9 +2728,6 @@
    "loss": 5.566226005554199,
    "digest": "74ff1a6de82f9ed84a91eaaca3365829ea1b08847ccfa4f7dc055975b1244989",
    "arrays_count": 62
-  },
-  "transformer_pp/rc1c463ddc494": {
-   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
   },
   "transformer_pp/rc28ef4dbe26d": {
    "version": 1,
@@ -2960,9 +2936,6 @@
    "digest": "8d50746b7423276bab5a760b1290ce604136c15fece7e81366e5ffd8447a748f",
    "arrays_count": 56
   },
-  "transformer_pp/re0db53b7b704": {
-   "error": "ValueError: Unknown config key <recipe>.experiment_kind"
-  },
   "transformer_pp/re12e78d1ded3": {
    "version": 1,
    "loss": 5.57211446762085,
@@ -3014,9 +2987,6 @@
   "transformer_pp/rec777591a61b": {
    "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
-  "transformer_pp/rece89382b690": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
-  },
   "transformer_pp/reeb92d46a95d": {
    "version": 1,
    "loss": 5.6054792404174805,
@@ -3034,9 +3004,6 @@
    "loss": 5.581636428833008,
    "digest": "ff8e0e62bf7ffefc72f38991f56414b6bff04f2093a4e7f8f0e9c6ca83e32f77",
    "arrays_count": 48
-  },
-  "transformer_pp/rf033859dd68e": {
-   "error": "ValueError: Unknown config key <recipe>.schema_version"
   },
   "transformer_pp/rf1993c745e17": {
    "version": 1,

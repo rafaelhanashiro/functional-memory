@@ -1,5 +1,5 @@
-"""Write diagnostics.json from the run records and the Input dependence result table,
-and copy the Length extrapolation figures from their result collection into figures/.
+"""Write diagnostics.json from the run records and the Input dependence result table, and copy
+the figures the Diagnostics pages show from the result collections that generate them into figures/.
 
     python3 site/data/diagnostics.py
 
@@ -35,9 +35,20 @@ CONTINUATIONS = (
     ("FoX, without W decay", "rd5ea49c1fde6", None, ""),
     ("FoX NoPE, with W decay", "r554ce7da6a8a", None, ""),
 )
-FIGURES = {"length-extrapolation": (RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation", (
-    "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
-    "position_weights_long_documents.png"))}
+# Figures the pages show, copied byte for byte from the result collections that generate them:
+# {folder in figures/: ((source, name), ...)}.
+EXTRAPOLATION = RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation"
+LEARNING = RESULTS / "diagnostics/learning_dynamics"
+FIGURES = {
+    "length-extrapolation": tuple((EXTRAPOLATION / name, name) for name in (
+        "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
+        "position_weights_long_documents.png")),
+    "learning-dynamics": (
+        (LEARNING / "query_parameter_dynamics/head_parameters_combined.png", "query.png"),
+        (LEARNING / "sos_training_dynamics/head_parameters_combined.png", "sos.png"),
+        (RESULTS / "pretraining/parametrizations/sos/softplus_sos/head_parameters_combined.png", "sos-softplus-prefactor.png"),
+    ),
+}
 
 
 def record(run_id: str, name: str) -> dict:
@@ -110,11 +121,11 @@ def input_dependence() -> list[dict]:
 
 
 def copy_figures() -> None:
-    for page, (source, names) in FIGURES.items():
+    for page, figures in FIGURES.items():
         target = Path(__file__).resolve().parents[1] / "figures" / page
         target.mkdir(parents=True, exist_ok=True)
-        for name in names:
-            shutil.copyfile(source / name, target / name)
+        for source, name in figures:
+            shutil.copyfile(source, target / name)
 
 
 def main() -> None:

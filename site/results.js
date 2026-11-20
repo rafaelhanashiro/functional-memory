@@ -1,6 +1,6 @@
 // Result pages drawn from a data file that a generator in data/ writes: an element with
 // data-source="data/<name>.json" and data-key="<page>" gets that page's sections, each an optional
-// heading over its tables, whose cells the generator has already formatted (rows may be grouped
+// heading over its tables and figures, whose cells the generator has already formatted (rows may be grouped
 // under a label, and a table may carry a caption), with places for the user's text above and below
 // them and the heading renamable (text.js).
 import {html, table} from "./tables.js";
@@ -30,6 +30,12 @@ function render(sections, host) {
       node.append(pair);
     } else {
       node.append(...tables);
+    }
+    for (const {src, alt} of part.figures ?? []) {
+      const link = html("a", "figure");
+      link.href = src;
+      link.append(Object.assign(document.createElement("img"), {src, alt, loading: "lazy"}));
+      node.append(link);
     }
     node.append(slot(`${part.key}-notes`));
     host.append(node);

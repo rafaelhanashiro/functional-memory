@@ -1,6 +1,0 @@
-{
-  "finished_utc": "2026-11-03T22:03:10.331233+00:00",
-  "interpretation": "|w| share of the last query (position 4,096) over every key position, per layer, averaged over the 14 heads and the first 128 4,097-token validation sequences (one 4k training batch), for query + W decay (m = 4) trained at 2,048 and at 4,096 tokens. No gradient or optimizer update.",
-  "optimizer_updates": 0,
-  "status": "complete"
-}

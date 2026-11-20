@@ -1,6 +1,0 @@
-{
-  "finished_utc": "2026-11-01T17:45:48.434201+00:00",
-  "interpretation": "Attention scores and late-query weight shares of 2,048-token checkpoints by key distance on 4,096-token validation rows; models run their own backends; no gradient or optimizer update.",
-  "optimizer_updates": 0,
-  "status": "complete"
-}

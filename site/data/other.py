@@ -1,4 +1,5 @@
-"""Write other.json, the Other runs page's data, from the runs' records and result summaries.
+"""Write other.json, the Other runs page's data, from the runs' records and result summaries, and
+copy its saturation figure from the collection that generates it.
 
     python3 site/data/other.py
 
@@ -7,11 +8,14 @@ Every value is a run's validation-best perplexity. Rerun only when the user asks
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 from polynomial import RESULTS, ROOT, RUNS, best, rows
 
 EVEN = RESULTS / "pretraining/other/even_powers/summary.csv"
+# The saturation figure under the coefficient-input L2 table, as its collection generates it.
+SATURATION = RESULTS / "pretraining/other/coefficient_input_norm/saturation_by_coordinate.png"
 # Selected powers: columns (label, degree) and each row's summary role per column (None: not run).
 POWER_COLUMNS = (("Full", 4), ("Even-only", 8), ("Odd + constant", 7), ("Full", 8))
 POWER_ROWS = (
@@ -133,6 +137,9 @@ def main() -> None:
             "decay_and_lr": decay_and_lr()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
+    figures = Path(__file__).resolve().parents[1] / "figures" / "other-runs"
+    figures.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(SATURATION, figures / "saturation-layer8-head1.png")
     print(f"wrote {output.relative_to(ROOT)}")
 
 

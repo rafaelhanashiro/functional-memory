@@ -83,53 +83,6 @@ Validation-best PPL, at update 7,500 in every run; terminal (update 7,570) in pa
 The [SoS training-dynamics diagnostic](../../../../diagnostics/learning_dynamics/sos_training_dynamics/README.md) records
 the coefficient trajectories of the m = 8 and m = 12 runs.
 
-## Matched-head tanh saturation
-
-The forward-only probe `rc3dfb9569345` measures the SoS factor generators, compared
-with regular-query probe `r1ac137c4f1ce`. Both use layer 8, head 1 (indices 7, 0),
-checkpoint update 7,500, and the same first held-out 2,048-token input. The native
-Mosaic forward is preserved. Saturation means `abs(tanh(W_j^T x)) >= 0.99`;
-fractions average all query tokens and generator coordinates equally.
-
-| Degree | Regular query saturated | SoS saturated | Mean tanh derivative, regular / SoS | Coordinates saturated on >90% of tokens, regular / SoS |
-| ---: | ---: | ---: | ---: | ---: |
-| 8 | 48.46% | 17.42% | 0.1994 / 0.3565 | 2/9 / 0/9 |
-| 12 | 53.54% | 61.90% | 0.1836 / 0.1498 | 4/13 / 5/13 |
-
-**SoS has less saturation at m = 8 in this head, but more at m = 12.** Both SoS
-models have better validation perplexity than their regular-query controls.
-These observations do not support uniformly reduced tanh saturation as an
-explanation of SoS's advantage. They do not rule out an effect at other heads,
-sequences, checkpoints, or output-weighted generator sensitivities.
-
-At m = 8, the norm discrepancy remains: mean post-RMSNorm activation norm is
-28.72 (regular: 28.17), and projection-vector norms are 1.42–1.58 (regular:
-1.26–1.64). Less saturation therefore occurs without matching the two norms.
-SoS coordinate mean projections range from -1.52 to 1.79, while regular query
-has two means above 4.7; projection direction and activation alignment matter.
-At m = 12, three SoS factor generators are saturated on every sampled token,
-and two more on over 96%. A nearly saturated generator contributes little local
-tanh derivative but may still supply a useful near-constant factor coefficient;
-its overall influence also depends on amplitude, the square factors, and downstream
-attention. The displayed tanh derivatives are not full model gradient estimates.
-
-Regular-query coordinates are polynomial orders; SoS coordinates are the factors
-`U0..U(m/2), V0..V(m/2-1)` in `p = U^2 + V^2`. Coordinate averages are descriptive,
-not weighted by amplitude, polynomial contribution, or model-output sensitivity.
-The probes verify the selected raw parameters against training measurements and
-reconstruct native generator outputs. Historical SoS expanded-coefficient moments
-are not compared with the pre-expansion generator moments.
-
-The explicit [saturation selection](saturation_selection.yaml),
-[figure](saturation.png), and [summary](saturation_summary.csv) remain part of this
-open exploration. Regenerate using committed compact metrics, without a GPU,
-checkpoint, dataset or numerical archive:
-
-```bash
-python -m scaffolds.records refresh experiments/transformer_pp/results/pretraining/parametrizations/sos/sum_of_squares/saturation_selection.yaml
-python experiments/transformer_pp/results/pretraining/parametrizations/sos/sum_of_squares/saturation_plot.py
-```
-
 ## Limits
 
 - One seed per cell; differences below about 0.2% are not resolved.
