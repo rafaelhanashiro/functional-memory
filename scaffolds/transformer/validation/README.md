@@ -51,13 +51,16 @@ CUDA 12 environment on H100 and CUDA 13 on B200):
 | H100 PCIe | 8243 | sos2: zero constants and static coefficients with a learnable `c_0`, with and without the softplus prefactor | `78b5c25e` | 13 passed | 44 |
 | H100 PCIe | 8217 | pointwise (sigmoid, softplus, swish), strips composition, query and Taylor kernels at width 4; fused | `6aefb8f8` | 65 passed; 3 fused cases superseded | 231 |
 | H100 PCIe | 8244 | fused: exp at Q/K widths 4, 8, 16 and 64, 2,048 tokens | `78b5c25e` | 4 passed | 12 |
+| B300 SXM6 (`akita`) | 8252 | fused (long partition) | `78b5c25e` | 4 passed | 55 |
 | B200 (`shiba`) | 8200 | the whole prefactor suite, before its split | `7f03ebda` | 138 passed; 2 exp extreme-score cases superseded (below) | 1,663 |
 
-B200 jobs 8245-8251 (the seven suites but fused, `78b5c25e`) and the B300 fused job 8252 (`akita`, long partition, so as not to preempt) were queued behind full nodes when this record was written; their outcomes go in [B200](runs/score-prefactor-mosaic-b200/record.json) and this table.
+B200 jobs 8245-8251 (the seven suites but fused, `78b5c25e`) were queued behind a full `shiba` when this record
+was written; their outcomes go in [B200](runs/score-prefactor-mosaic-b200/record.json) and this table.
 
 Bounds are the query kernels': relative L2 0.006 (output), 0.025 (dQ, dK), 0.015 (dV), 0.01 per coefficient
 order and 0.02 for SoS generator gradients, each with its largest element error within three times the bound
-times the largest reference element. Records: [H100](runs/score-prefactor-mosaic-h100/record.json).
+times the largest reference element (the fused exponential: 0.006, 0.025, 0.025, 0.015). Records:
+[H100](runs/score-prefactor-mosaic-h100/record.json), [B300 fused](runs/score-prefactor-fused-b300/record.json).
 
 Three test corrections, none of them in kernel code:
 
