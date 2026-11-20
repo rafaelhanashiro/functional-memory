@@ -41,7 +41,7 @@ transformer_pp, attention_scaling and state_rank: all 573 unchanged (516 `same`,
 | GPU | Job | Source | Result | JUnit seconds |
 | --- | --- | --- | --- | --- |
 | B300 SXM6 (`akita`, standard) | 8461 | `62c95e0f` | 80 passed: 25 shifted fused cases, 4 shifted strips cases, the module's 51 unshifted cases | 119 |
-| H100 SXM (`dogo`, long) | 8464 | `bbe4f532` | pending: no H100 was free (`dogo` fully allocated, `mastiff`'s idle GPU fails CUDA initialization, [CLUSTERS.md](../../../CLUSTERS.md)) | |
+| H100 SXM (`dogo`, long) | 8464 | `bbe4f532` | 80 passed: the same cases | 194 |
 
 The shifted fused cases: outputs, row maxima and VJPs at Q/K widths 4, 8, 16 and 64 (value width 64, 2,048 tokens,
 BF16) against the shifted scan and dense FP64 at row maxima of 3-4 and of 180-280; head RMSNorm with the offset
@@ -49,16 +49,17 @@ against the FP64 function at row maxima of 135-210 (output and the Q/K/V and gai
 maxima up to 190; future-token invariance; finite scores up to 1e30 kept finite and nonfinite ones poisoning their
 rows alone; underflow and zero scores; bitwise repeatability; a two-layer model on the fused kernel against the
 scan. Bounds: relative L2 0.006 (output), 0.025 (dQ, dK), 0.015 (dV) in BF16, FP32 ones scaled by the row maximum,
-row maxima within 1e-5; [record](runs/exp-shift-fused-b300/record.json).
+row maxima within 1e-5; records: [B300](runs/exp-shift-fused-b300/record.json),
+[H100](runs/exp-shift-fused-h100/record.json).
 
-Per layer and micro-batch (16 x 2,048 tokens, 14 heads, BF16), the forward with its VJP takes on B300, unshifted
-and shifted: 3.98 and 3.91 ms at Q/K width 4, 4.03 and 4.06 at 8, 4.04 and 4.02 at 16, 5.69 and 5.66 at 64
-(`benchmarks/benchmark_exp_shift.py`, 0.9-1.4 s of attention per 15-layer, 16-micro-batch update): the shift
-costs no time.
+Per layer and micro-batch (16 x 2,048 tokens, 14 heads, BF16), the forward with its VJP takes, unshifted and
+shifted, on B300: 3.98 and 3.91 ms at Q/K width 4, 4.03 and 4.06 at 8, 4.04 and 4.02 at 16, 5.69 and 5.66 at 64;
+on H100 SXM: 3.05 and 3.01 at 4, 3.02 and 2.96 at 8, 2.96 and 2.99 at 16, 3.47 and 3.47 at 64
+(`benchmarks/benchmark_exp_shift.py`; 0.9-1.4 s on B300 and 0.71-0.83 s on H100 of attention per 15-layer,
+16-micro-batch update): the shift costs no time.
 
-Record the H100 job once it has run (`python3 scaffolds/transformer/validation/record_exp_shift_qualification.py
-8464 exp-shift-fused-h100`). This qualifies the kernels, not a training run: each production allocation still runs
-its adapter's CPU and GPU suites, the initialization check, the pilot and a fresh-process resume.
+This qualifies the kernels, not a training run: each production allocation still runs its adapter's CPU and GPU
+suites, the initialization check, the pilot and a fresh-process resume.
 
 ### Score prefactors, swish and Q/K width 4 on Mosaic (2026-11-20)
 

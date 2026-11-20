@@ -2955,9 +2955,9 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
   like its partner. Narrower keys drop 18.1-22.6 M Q/K parameters (175,859,146, 177,364,546 and 180,375,346 against
   198,440,146); every other initial array is the partner's, bit for bit. Results: the
   [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside B1-B6.
-- **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461;
-  on H100, job 8464 passed the same 80 cases on `dogo` and awaits its validation record;
-  [validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
+- **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461)
+  and H100 (job 8464, `dogo`) by the same 80 cases
+  ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
   S1-S3 train on cuDNN, as their partner: it zero-pads Q and K to the value width 64, so the scores are the narrow
   key's exactly, at width 64's cost. `tests/test_softmax_backends.py`'s cuDNN cases at widths 2-128 pass on B300
   ([job 219252](../../scaffolds/transformer/validation/README.md#b300-cuda-13-environment)), and
@@ -3045,8 +3045,10 @@ Submit from `worktrees/shifted-exp-dk` after committing the frozen execution set
 long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). **The five `d_K` 4 runs (T4,
 P4, Q4, E1, S1) are the user's top priority, ahead of every other job of ours:** submit them first, at the default
 nice, three on the standard GPUs that leave one free for the waiting `dogo` placeholder (`hold-dogo-badgpu`,
-[CLUSTERS.md](../../CLUSTERS.md#kennel-csail)) and two on long, and lower every other pending job of ours, here
-(`--nice=1000` below) and in other worktrees (`scontrol update jobid=<id> nice=1000`), until they have started:
+[CLUSTERS.md](../../CLUSTERS.md#kennel-csail)) and two on long, and lower every other pending training job of ours,
+here (`--nice=1000` below) and in other worktrees (`scontrol update jobid=<id> nice=1000`), until they have started.
+The placeholder keeps the default nice: no `d_K` 4 run can use `dogo`, and lowering it would only let another job
+take the failing GPU when it frees:
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice

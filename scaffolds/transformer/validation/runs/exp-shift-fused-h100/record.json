@@ -1,0 +1,114 @@
+{
+  "asserted_relative_l2_bounds": {
+    "bf16": {
+      "dK": 0.025,
+      "dQ": 0.025,
+      "dV": 0.015,
+      "output": 0.006,
+      "row_maximum": "1e-5 relative, and 1e-5 times max(1, |m|) absolute"
+    },
+    "fp32": {
+      "dQ, dK, dV": "1e-4 times max(1, largest row maximum / 30)",
+      "output": "3e-5 times max(1, largest row maximum / 30)"
+    }
+  },
+  "date": "2026-11-20",
+  "format": "fused-exponential-row-max-shift-qualification",
+  "gpu": "NVIDIA H100 80GB HBM3 (dogo)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/exp-shift-8464/gpu-tests.xml",
+          "sha256": "c8bddf812820ab6b4a626e038a929958617886b6ac97c177e22affdfc89f4bc8",
+          "size_bytes": 12249
+        },
+        "log": {
+          "path": "logs/exp-shift-8464.log",
+          "sha256": "3cd41444bd3d94484bf3013a4a03249d7c08045896e6bcec0a0e960d5f75ae8e",
+          "size_bytes": 4779
+        },
+        "throughput": {
+          "path": "logs/exp-shift-8464/throughput.json",
+          "sha256": "c0b5a1653da54f47dbb08d5c8183a3048b6ce8fdc745489b0d838f9763903bee",
+          "size_bytes": 12067
+        }
+      },
+      "elapsed_seconds": 217,
+      "environment": "scaffolds/transformer/.venv",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T11:15:26",
+      "forward_and_vjp_median_ms": {
+        "d_K=16, none": 2.959,
+        "d_K=16, row_max": 2.985,
+        "d_K=4, none": 3.046,
+        "d_K=4, row_max": 3.009,
+        "d_K=64, none": 3.474,
+        "d_K=64, row_max": 3.465,
+        "d_K=8, none": 3.023,
+        "d_K=8, row_max": 2.959
+      },
+      "forward_median_ms": {
+        "d_K=16, none": 1.032,
+        "d_K=16, row_max": 1.029,
+        "d_K=4, none": 1.027,
+        "d_K=4, row_max": 1.048,
+        "d_K=64, none": 1.076,
+        "d_K=64, row_max": 1.135,
+        "d_K=8, none": 1.03,
+        "d_K=8, row_max": 1.03
+      },
+      "gpu": {
+        "bus_id": "00000000:43:00.0",
+        "compute_capability": "9.0",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA H100 80GB HBM3",
+        "uuid": "GPU-3e3edaa5-3d91-e8f4-1f4a-7cded56e836b"
+      },
+      "junit_seconds": 193.999,
+      "node": "dogo",
+      "partition": "long",
+      "passed_by_module": {
+        "test_exp_row_max_shift": 4,
+        "test_unnormalized_fused_attention": 76
+      },
+      "row_max_shift_cases_passed": 29,
+      "slurm_job_id": "8464",
+      "slurm_state": "COMPLETED",
+      "source_commit": "bbe4f532b75af15d75470cd5d58da528d4c4fbba",
+      "started_at": "2026-11-20T11:11:49",
+      "tests": {
+        "passed": 80
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_exp_shift.sbatch",
+  "launcher_sha256": "57e5fadccfd68f16c64046dc869a896d4ed4dffc0f74b7a92a434afebc76ed24",
+  "maximum_element_error_bound": "3 times the relative-L2 bound times the largest absolute reference element, per batch and head",
+  "precisions": [
+    "bf16 Q/K/V and gradients (training)",
+    "fp32 Q/K/V (TF32x3 products)"
+  ],
+  "schema_version": 1,
+  "scope": "The fused Pallas-Triton unnormalized exponential shifted by its causal row maximum (fused_unnormalized_attention, exp_shift='row_max'): outputs, row maxima and VJPs at Q/K widths 4, 8, 16 and 64 with value width 64 at 2,048 tokens, at ordinary scores and at row maxima of 180-280, beyond FP32's e^88.7, against the shifted blocked scan and dense FP64 (129-token, one-head prefix); with head RMSNorm's offset against the FP64 function at row maxima of 135-210; FP32 inputs at row maxima up to 190; future-token invariance, nonfinite and extreme scores, underflow, repeatability, and a two-layer model on the fused kernel against the blocked scan; the blocked strips and scan at production precision against FP64 with and without a cumulative decay; and every unshifted case of the fused module.",
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "bbe4f532b75af15d75470cd5d58da528d4c4fbba": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "de82d0fb0a5e11999453b2141f246dc9c931acf7b4fdd1dd45f1aeb55a8b5fac"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_exp_row_max_shift.py@bbe4f532": "3ab749a93024ebeb640884feaa41cf67ffebd9f5b20d3a5635be553ad99dce32",
+    "test_unnormalized_fused_attention.py@bbe4f532": "5ff5b7113b205b529a04a439c06c76a3de5e3e22260c0ea47c2c84c12bc33dba"
+  },
+  "tests": {
+    "passed": 80
+  }
+}
