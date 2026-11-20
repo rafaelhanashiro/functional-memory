@@ -20,10 +20,11 @@ The Mosaic transformed query-polynomial kernels evaluate `W = f(s) p(phi(s))` in
 `z = phi(s)` and `phi'`, sharing `y = 2^(-abs(s) log2(e))`; the weight is `f p(z)`, the dQ pass sums
 `dc_r = sum_i dP f z^r`, and `dS = p'(z) (dP f) phi'(s) + dP f'(s) p(z)`. Vectors, shared memory, precision and
 failure rows are the query family's. Q/K width 4 joins every Mosaic family, zero-padded to 16 like width 8.
-Admission stays H100 (sm90) and B200 (sm100); B300 is refused before tracing. The kernels and configuration code
+Admission stays H100 (sm90) and B200 (sm100); B300 is refused before tracing. Recipes take a prefactor at degrees up
+to eight (`api.MAX_PREFACTOR_QUERY_DEGREE`), the degrees these suites run. The kernels and configuration code
 are identical at every commit below (`7f03ebda` to `78b5c25e` changed only GPU test modules).
 
-**CPU** (`JAX_PLATFORMS=cpu`, the branch's final scaffold code): every test module of the scaffold, the
+**CPU** (`JAX_PLATFORMS=cpu`, at `78b5c25e`): every test module of the scaffold, the
 Transformer++ study and the records passed, 6,448 tests in 192 modules (1,651 GPU or distributed cases deselected; the ignored summary log `logs/score-prefactor-cpu-78b5c25e.log`, SHA256 in the H100 record). Among them `tests/test_score_prefactor.py` (243):
 swish's and exp's values and JVPs against FP64 autodiff; the family registry; every new family's H100 forward, dQ
 and dK/dV kernels lowering in exactly `hopper_smem_bytes` and failing one byte below at degrees 1, 8, 9 and 12;
@@ -81,6 +82,14 @@ Three test corrections, none of them in kernel code:
 - In job 8217 the fused exponential matched the blocked backend at 2,048 tokens for every narrow width, then XLA
   failed to compile the dense FP64 reference at a 257-token, two-head prefix (a layout RET_CHECK). The case now uses
   the width-64 case's 129-token, one-head prefix (`78b5c25e`), and passed in job 8244.
+
+The launch source keeps these kernels. Outside them it admits a prefactor only at the degrees above, divides a head
+output whose FP32 mean square overflows by its largest magnitude before the per-head RMSNorm
+(`attention/output_scaling.py`; a finite mean square keeps its arithmetic bit for bit), and names the prefactor in
+the diagnostics. There the CPU modules that the 17 runs' acceptance selects passed in both CPU stages (1,431 tests
+in 36 modules), as did 39 further modules covering admission, diagnostics, the study's other adapters and the
+records (2,426 tests), and `records receipts` over the three studies found all 573 receipts unchanged (516 `same`,
+57 `same rejection`).
 
 This qualifies the kernels, not a training run: each production allocation still runs its adapter's CPU and GPU
 suites, the initialization check, the 20-update full-shape pilot and a fresh-process resume.

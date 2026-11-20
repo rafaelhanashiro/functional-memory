@@ -9,6 +9,13 @@ applies an RMSNorm over each head's value channels with a learned gain; it remov
 any positive per-row scale without dividing by a kernel sum that a signed kernel can
 drive through zero. It also applies to normalized attention: for a positive kernel,
 RMSNorm of the normalized and unnormalized outputs differ only through ``eps``.
+
+In FP32 the mean square of a head's output overflows once its L2 norm over the value
+channels passes about 1.8e19 (the square root of the FP32 maximum), and ``rsqrt(inf) = 0``
+would silently zero that output and its gradient. Such a row is first divided by its
+largest magnitude, ``eps`` with it: RMSNorm is scale-invariant, so it is the same function.
+A row whose mean square is finite keeps scale one, which leaves its arithmetic and gradient
+unchanged bit for bit, and a row with an infinite or NaN entry is NaN, a numerical failure.
 """
 
 import jax
@@ -42,6 +49,11 @@ def scale_attention_output(y: jax.Array, scaling: str, *, output_norm_scale: jax
     else:
         if output_norm_scale.shape != y.shape[-2:]:
             raise ValueError("output_norm_scale must have shape (heads, value_dim)")
-        value = value * jax.lax.rsqrt(jnp.mean(jnp.square(value), axis=-1, keepdims=True) + eps)
+        # The divisor is one where the FP32 mean square is finite, and otherwise the row's largest magnitude (module
+        # docstring); a constant to differentiation, since RMSNorm's output does not depend on it (up to eps).
+        overflow = ~jnp.isfinite(jnp.mean(jnp.square(value), axis=-1, keepdims=True))
+        divisor = jax.lax.stop_gradient(jnp.where(overflow, jnp.max(jnp.abs(value), axis=-1, keepdims=True), 1.0))
+        value = value / divisor
+        value = value * jax.lax.rsqrt(jnp.mean(jnp.square(value), axis=-1, keepdims=True) + eps / jnp.square(divisor))
         value = value * output_norm_scale.astype(jnp.float32)[None, None]
     return value.astype(y.dtype)

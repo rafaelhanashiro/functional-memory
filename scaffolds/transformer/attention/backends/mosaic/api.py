@@ -44,7 +44,8 @@ unchanged; the scale is that of the unpadded width; narrower tiles use narrower 
 >= 1 (ordinary query coefficients: degree <= 12, subject to shared memory), and time a
 multiple of 128 (H100) or 256 (Blackwell). Softplus additionally admits degree 13 at width
 64 and 512/2,048 tokens; transformed kernels admit H100 and B200 only. Unsupported shapes
-or architectures raise ValueError.
+or architectures raise ValueError. Recipe admission (``query_degree_supported``) takes a score
+prefactor at degrees up to ``MAX_PREFACTOR_QUERY_DEGREE``, the ones its GPU qualification covers.
 """
 import math
 from functools import partial
@@ -64,6 +65,10 @@ VALUE_WIDTH = 64
 MIN_WIDTH = 16  # BF16 tensor-core contraction step on Hopper and Blackwell
 MAX_QUERY_DEGREE = 12  # ordinary query families; the GPUs must also fit them (query_degree_supported)
 MAX_SOFTPLUS_QUERY_DEGREE = 13  # degree-12 SoS with one input prefactor, at the qualified shapes below
+# The prefactor families (query_times_<f>, query_softplus_times_<f>) are qualified on the GPUs at degrees 1, 4 and 8
+# (tests/test_mosaic_score_prefactor.py, test_mosaic_softplus_sos.py), so recipes take them up to degree eight; the
+# kernels themselves lower to their transform's limit, which qualification tests may exercise.
+MAX_PREFACTOR_QUERY_DEGREE = 8
 
 
 def _query_degree_limit(width, time, transform):
@@ -97,7 +102,8 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
     ``transform`` other than the identity (``TRANSFORM_FAMILY``) or a score ``prefactor`` other than
     "none" (``common.score_function_family``) takes no gate and holds the coefficients alone, as the
     untransformed polynomial does. Softplus alone additionally supports degree 13 at width 64 and
-    512/2,048 tokens for a degree-12 SoS prefactor; a prefactor keeps its transform's degree limit."""
+    512/2,048 tokens for a degree-12 SoS prefactor; a score prefactor admits degrees up to
+    ``MAX_PREFACTOR_QUERY_DEGREE``, the ones its GPU qualification covers, within its transform's limit."""
     if mode not in ("query_distance", "cumulative"):
         raise ValueError(f"Unknown decay mode: {mode!r}")
     if gate is None:
@@ -113,6 +119,8 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
         if gate is not None or family is None:
             return False
     if not (1 <= degree <= _query_degree_limit(width, time, transform) and time > 0):
+        return False
+    if prefactor != "none" and degree > MAX_PREFACTOR_QUERY_DEGREE:
         return False
     if family in common.PER_ORDER_FAMILIES:
         return hopper_supported(family, degree, width)

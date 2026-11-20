@@ -117,8 +117,10 @@ and gradient-event capture, from its exact initial parameters, so `h_t` starts a
   `sigmoid(s) T_8(z)` is near `e^s`, `swish(s) T_8(z)` near `s e^s`, and `exp(s) T_8(s)` near `e^(2s)`.
 - Comparisons: the control; `h_t(s)`, `reeefbcc19abf`, 14.196; `h_t(z)`, `r41a4c74c5f58`, 14.339; exp,
   `r6a76e7fbde45`, 14.257; and swish alone, `r8a9fd53dacfd` (planned in pointwise_attention).
-- Limits: exp's weight `e^s h_t(s)` overflows FP32 near `s = 60` (recorded score maxima are 23–31), which would
-  end that run as a numerical failure; swish's weights are signed. One seed each
+- Limits: exp's weight `e^s h_t(s)` passes the FP32 maximum at `s = 65.7` (at `h_t = T_8`; recorded score maxima
+  of the related runs are 22–32), which would end that run as a numerical failure; from `s = 28` the per-head
+  output RMSNorm divides overflowing rows by their largest magnitude, the same function. Swish's weights are
+  signed. One seed each
   ([methods and launch](../../../../../README.md#score-prefactors-swish-and-narrow-keys)).
 
 ## Open question

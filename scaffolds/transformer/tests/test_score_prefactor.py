@@ -12,8 +12,9 @@ widths 4 to 64; the tile mathematics against explicit FP64 f(s) p(phi(s)) and it
 zero and extreme scores with masked entries holding +-1e15; a nonfinite causal score making its row NaN; the
 prefactor f = phi = softplus on a degree-m polynomial equal to the input power z p(z) of degree m + 1, on the
 blocked backend and through two models; dispatch from attention_core and the model to the kernels; admission on
-H100 and B200 alone; the recipes' validation and refusals; and their provenance. The kernels' numerics on GPUs
-are qualified by ``tests/test_mosaic_score_prefactor.py``.
+H100 and B200 alone, at the GPU-qualified degrees up to eight; the recipes' validation and refusals; and their
+provenance and diagnostics labels. The kernels' numerics on GPUs are qualified by
+``tests/test_mosaic_score_prefactor.py``.
 """
 from dataclasses import replace
 import math
@@ -127,16 +128,23 @@ def test_families_count_like_the_query_family():
 
 
 def test_support_is_the_transform_support():
-    """A prefactor keeps its transform's degree limit (softplus 13 at width 64 and 512 or 2,048 tokens) and the
-    query family's shared memory at every width, Q/K width 4 included; no family takes a gate, and transforms that
-    take no prefactor are refused."""
+    """A prefactor takes its transform's support (the query family's shared memory at every width, Q/K width 4
+    included) at the degrees its GPU qualification covers, up to eight (``MAX_PREFACTOR_QUERY_DEGREE``), not the
+    transform's limit (softplus 13 at width 64 and 512 or 2,048 tokens); no family takes a gate, and transforms
+    that take no prefactor are refused."""
     assert api.WIDTHS == (4, 8, 16, 32, 64, 128)
+    assert api.MAX_PREFACTOR_QUERY_DEGREE == 8
     for (transform, prefactor), family in NEW_FAMILIES.items():
+        qualified = api.MAX_PREFACTOR_QUERY_DEGREE if prefactor != "none" else 99
         for width in api.WIDTHS:
             for time in (256, 512, 2048, 4096):
                 for degree in range(0, 15):
                     assert api.query_degree_supported(degree, width, time, transform=transform, prefactor=prefactor) == (
-                        api.query_degree_supported(degree, width, time, transform=transform)), (family, degree, width)
+                        degree <= qualified and api.query_degree_supported(degree, width, time, transform=transform)), (
+                        family, degree, width)
+        assert api.query_degree_supported(8, 64, 2048, transform=transform, prefactor=prefactor)
+        nine = api.query_degree_supported(9, 64, 2048, transform=transform, prefactor=prefactor)
+        assert nine == (prefactor == "none")
         assert not api.query_degree_supported(8, 64, 2048, transform=transform, prefactor=prefactor, gate="query")
     for transform in ("abs", "sigmoid", "swish"):
         assert not api.query_degree_supported(8, 64, 2048, transform=transform, prefactor="exp")
@@ -193,14 +201,16 @@ def _admit_all(monkeypatch, arch):
 @pytest.mark.parametrize("transform,prefactor", list(NEW_FAMILIES), ids=FAMILY_IDS)
 def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, prefactor, arch):
     """The production entry point lowers forward and with every gradient at 2,048 tokens: degree eight at Q/K
-    widths 4, 8, 16 (zero-padded to 16) and 64, and degree nine at widths 4 and 64."""
+    widths 4, 8, 16 (zero-padded to 16) and 64, and degree nine at widths 4 and 64, which recipes take only
+    without a prefactor (a prefactor's recipes stop at its GPU-qualified degree eight)."""
     _admit_all(monkeypatch, arch)
 
     def attend(q, k, v, c):
         return api.transformed_query_polynomial_attention(q, k, v, c, transform=transform, prefactor=prefactor)
 
     for degree, width in ((8, 4), (8, 8), (8, 16), (8, 64), (9, 4), (9, 64)):
-        assert api.query_degree_supported(degree, width, 2048, transform=transform, prefactor=prefactor)
+        assert api.query_degree_supported(degree, width, 2048, transform=transform, prefactor=prefactor) == (
+            prefactor == "none" or degree <= api.MAX_PREFACTOR_QUERY_DEGREE)
         q = jax.ShapeDtypeStruct((1, 2048, 2, width), jnp.bfloat16)
         v = jax.ShapeDtypeStruct((1, 2048, 2, 64), jnp.bfloat16)
         c = jax.ShapeDtypeStruct((1, 2048, 2, degree + 1), jnp.float32)
@@ -586,6 +596,22 @@ def test_unsupported_recipes_are_refused(name):
         validate_config(_mosaic_recipe(run, **changes))
 
 
+@pytest.mark.parametrize("degree", (9, 12, 13))
+@pytest.mark.parametrize("transform,prefactor", (("softplus", "softplus"), ("identity", "exp"), ("softplus", "swish")))
+def test_mosaic_refuses_a_prefactor_above_its_qualified_degree(transform, prefactor, degree):
+    """The GPU suites qualify the prefactor families at degrees 1, 4 and 8, so Mosaic takes a prefactor recipe up to
+    degree eight; above it the blocked backend still takes the recipe, and Mosaic the transform alone."""
+    from scaffolds.transformer.configs import validate_config
+
+    changes = dict(attention_score_transform=transform, attention_degree=degree)
+    with pytest.raises(ValueError, match="GPU-qualified at degrees up to 8"):
+        validate_config(_mosaic_recipe("ra3b54e2489f8", **changes, attention_score_prefactor=prefactor))
+    validate_config(_mosaic_recipe("ra3b54e2489f8", **changes, attention_score_prefactor=prefactor,
+                                   attention_backend="blocked"))
+    if transform != "identity":
+        validate_config(_mosaic_recipe("ra3b54e2489f8", **changes))
+
+
 def test_polynomial_prefactor_refuses_unqualified_schedules():
     from scaffolds.transformer.configs import validate_config
 
@@ -619,6 +645,61 @@ def test_provenance_records_the_prefactor_and_its_kernels(name):
     scores = "" if transform == "identity" else f"_{transform}_scores"
     assert identity["attention_implementation"] == f"pallas_mosaic_gpu_query_polynomial{scores}_times_{prefactor}"
     assert identity["attention_signed"] is True
+
+
+DIAGNOSTIC_LABELS = {
+    "C1 static softplus": "learned_polynomial_of_softplus_scores",
+    "C2 static softplus prefactor": "learned_polynomial_of_softplus_scores_times_softplus_of_raw_scores",
+    "C3 query softplus prefactor": "query_polynomial_of_softplus_scores_times_softplus_of_raw_scores",
+    "D identity exp": "unshifted_query_polynomial_times_exp_of_raw_scores",
+    "D softplus sigmoid": "query_polynomial_of_softplus_scores_times_sigmoid_of_raw_scores",
+}
+
+
+@pytest.mark.parametrize("name", list(DIAGNOSTIC_LABELS))
+def test_diagnostics_name_the_transform_and_the_prefactor(name, monkeypatch):
+    """The planned recipes' diagnostics at a two-layer shape on their Mosaic route (the transformed kernels replaced
+    by the blocked scan of the same weights): kernel_values names the polynomial's transform and its prefactor of the
+    raw score, and the score-transform report states W = f(s) p(z) with f's definition, its decreasing measure being
+    the polynomial factor's dp/dz."""
+    from scaffolds.transformer.attention.backends import selection
+    from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
+    from scaffolds.transformer.attention.score_transform import FORMULAS, PREFACTOR_FORMULAS
+    from scaffolds.transformer.configs import validate_config
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics, fixed_diagnostic_sample
+    from scaffolds.transformer.training.state import create_state
+
+    def scan(q, k, v, c, *, transform, prefactor="none", precision=None):
+        functions = {key: value for key, value in (("score_transform", transform), ("score_prefactor", prefactor))
+                     if value not in ("identity", "none")}
+        return blocked_backend_attention(q, k, v, implementation="scan", attention_degree=c.shape[-1] - 1,
+                                         attention_normalization=False, query_polynomial_coefficients=c, **functions)
+
+    monkeypatch.setattr(api, "transformed_query_polynomial_attention", scan)
+    monkeypatch.setattr(selection, "_runtime_platform", lambda: "gpu")
+    monkeypatch.setattr(selection, "_cuda_compute_capabilities", lambda: ("9.0",))
+    run, changes = PLANNED[name]
+    config = _mosaic_recipe(run, **changes, vocab_size=64, max_seq_len=128, num_layers=2, hidden_size=32,
+                            num_heads=2, num_kv_heads=2, intermediate_size=64)
+    config.data.source, config.data.sequence_length, config.data.synthetic_vocab_size = "synthetic", 129, 64
+    config.data.batch_size = config.train.micro_batch_size = 2
+    validate_config(config)
+    state = create_state(config, jax.random.PRNGKey(0))
+    report = attention_diagnostics(state, config, *fixed_diagnostic_sample(config))
+    assert report["valid"], report["issues"]
+    assert report["kernel_values"] == DIAGNOSTIC_LABELS[name]
+    section = report["coefficients"].get("score_transform")
+    if config.model.attention_coefficient_conditioning == "static":
+        assert section is None  # static coefficients report their values, not the transformed inputs
+        return
+    transform, prefactor = config.model.attention_score_transform, config.model.attention_score_prefactor
+    if transform == "identity":
+        assert section is None
+        return
+    assert section["formula"] == (f"W(t,i) = f(s_ti) p(z_ti), p(z_ti) = sum_r c_r(x_t) z_ti^r, {FORMULAS[transform]}, "
+                                  f"{PREFACTOR_FORMULAS[prefactor]}")
+    assert section["decreasing_formula"].startswith("dp/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0")
+    assert "without the prefactor f" in section["decreasing_formula"]
 
 
 def test_model_layers_reach_the_prefactor_kernels(monkeypatch):

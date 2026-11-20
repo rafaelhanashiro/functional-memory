@@ -891,7 +891,8 @@ structural zero coefficient.
   `dS = p'(z) (dP f) phi'(s) + dP f'(s) p(z)`. Vectors, shared memory, precision, shapes and failure rows are the
   query family's; a nonfinite causal score makes its row NaN (exp at `-inf` gives `0` times a nonfinite
   polynomial). Families without a prefactor trace their former programs. Admission is H100 and B200, as for the
-  transforms.
+  transforms, at degrees up to eight (`api.MAX_PREFACTOR_QUERY_DEGREE`), the ones the GPU suites qualify; the
+  kernels lower to the transform's limit, and a higher-degree prefactor recipe runs on the blocked backend.
 - Q/K width 4 joins the Mosaic widths (every family), zero-padded to the tensor cores' 16 like width 8, with the
   unpadded width's scale.
 - Recipes refuse a polynomial prefactor with coefficient release, a query-coefficient learning-rate scale or a
@@ -899,10 +900,14 @@ structural zero coefficient.
 - Records: the attention identity adds `attention_score_prefactor` and `f`'s definition to the formula (before
   the output-scaling clause), and swish records `attention_signed: true`; on Mosaic the implementation is
   `pallas_mosaic_gpu_query_polynomial[_<phi>_scores]_times_<f>`. The run index has `attention_score_prefactor`.
+  Diagnostics name the polynomial's transform and prefactor in `kernel_values` (for example
+  `query_polynomial_of_softplus_scores_times_exp_of_raw_scores`; a learned static polynomial of transformed scores
+  is `learned_polynomial_of_<phi>_scores`), and the score-transform report's formula states `W = f(s) p(z)`, its
+  decreasing fraction measuring the polynomial factor `p` alone.
 - Acceptance adds `tests/test_score_prefactor.py` (values and JVPs against FP64 autodiff, the family registry,
   exact shared memory and lowering of every family on both architectures at Q/K widths 4-64, tile mathematics
   against explicit FP64, NaN rows, the input-power identity on the blocked backend and through two models,
-  dispatch, admission, recipes and provenance) and `tests/test_blocked_composition.py` on CPU, and
+  dispatch, admission, recipes, provenance and diagnostics labels) and `tests/test_blocked_composition.py` on CPU, and
   `tests/test_mosaic_score_prefactor.py` to the GPU stage (every family against host FP64 at degrees 1, 4 and 8
   with unit and wide scores and both precisions, narrow keys, the production context against FP64 and the
   strips, the input-power kernel, future-token invariance, overflowing scores, extremes and repeatability).
@@ -1313,6 +1318,13 @@ kernel it equals the RMSNorm of the normalized output; unlike a row sum, its
 divisor cannot be driven through zero by a signed kernel. Its gain `w` is the
 `output_norm_scale` array `[layers, heads, value_head_dim]`, initialized at 1 and
 excluded from weight decay. Run metadata and W&B tags name the option.
+
+`head_rms_norm` computes in FP32, whose mean square overflows once a head's output has an
+L2 norm above about 1.8e19 (an exp prefactor's `e^s T_8(s)` reaches such weights at
+`s = 28`), and `rsqrt(inf) = 0` would silently zero the head and its gradient. Such a row is
+divided by its largest magnitude first, and `rms_norm_eps` by its square: the same function,
+by RMSNorm's scale invariance. Rows whose mean square is finite keep the plain arithmetic bit
+for bit, and an infinite or NaN entry makes its row NaN.
 
 `AttentionParameterSpec` declares initialization, sharing, the forward argument,
 and weight-decay policy; `repeat_initial_axis` makes a named random draw once without that

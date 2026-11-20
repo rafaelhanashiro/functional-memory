@@ -2807,7 +2807,8 @@ Kennel (branch `claude/prefactor-kernels-m8`, worktree `worktrees/prefactor-kern
 score, `z = softplus(s)`, `h_t` a query-conditioned sum-of-squares polynomial of core degree eight (as in
 `r841f35a24241`, `z h_t(z)`: best 14.095), `p` a degree-eight polynomial with direct coefficients and `p_t` its
 query-conditioned form. Each recipe is its partner's (`derive_recipe.py --partner`, same shape and budget) with only
-the listed settings changed, plus gradient-event capture where the partner lacks it; seed (42), data order, QK
+the listed settings changed, plus gradient-event capture where the partner lacks it (except A1, which keeps its
+pointwise partners' and the pinned exp control's setting, without capture); seed (42), data order, QK
 RMSNorm with per-head scale, reference initialization, per-head output RMSNorm, RoPE and the query coefficients' W
 decay are the partner's.
 
@@ -2869,10 +2870,14 @@ Home cluster: Kennel; every record states it.
   and GPU suites; every allocation also runs the full-recipe pilot, whose projection must fit the allocation less
   two hours, and a fresh-process resume. Each of the 17 recipes passes its adapter's recipe and full-shape
   initialization checks on CPU.
-- **Numerics.** The exp prefactor's weight `e^s h_t(s)` overflows FP32 near `s = 60` (recorded score maxima are
-  23-31), which would make its rows NaN: a numerical failure, not a fallback. Margins near 0.5-1% are within the
-  single seed's noise.
-- **Time limits.** 1.4 times the upper projection on the slowest GPU the submission admits (H100 SXM), plus
+- **Numerics.** At its initial `h_t = T_8`, the exp prefactor's weight (`e^s h_t(s)`, D2; `e^s h_t(z)`, D3) passes
+  the FP32 maximum at `s = 65.7`, which makes its row NaN: a numerical failure, not a fallback. From about `s = 28`
+  (a weight of 1.8e19) a head output's FP32 mean square overflows; the per-head output RMSNorm then divides that row
+  by its largest magnitude first, the same function by RMSNorm's scale invariance, instead of silently zeroing the
+  head and its gradient ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). Recorded
+  diagnostic score maxima of the related runs are 22-32 (exp 23.4, the D partner 24.2, the control 32.2). Margins
+  near 0.5-1% are within the single seed's noise.
+- **Time limits.** 1.4 times the upper projection on the slowest GPU type the submission lists (H100 SXM), plus
   acceptance's two-hour reserve, rounded up to whole hours, as for the 12-layer width-640 runs above. A projection
   is the wall clock of 7,570 updates and their 28 validations (`metrics.jsonl` timestamps) of the nearest measured
   run on B200 (B300 for exp), times 1.25 on `dogo`'s H100 SXM (softplus SoS at degree twelve: `rc5aac8f37a2e`,
@@ -2890,7 +2895,9 @@ Home cluster: Kennel; every record states it.
   | D1-D7 | `r841f35a24241` 5.25-5.58, the same tile work with `f = z`, +7% | 6.0 | 7.5 | 13.5 | 13 |
 
   `mastiff` is excluded: its projections are about twice B200's, and CLUSTERS.md excludes it for one-GPU jobs until
-  its failing H100 is reset. Admitting it would take limits from its column by the same rule (15-21 h).
+  its failing H100 is reset. Admitting it would take limits from its column by the same rule (15-21 h). `dogo` is
+  excluded as well while no placeholder of ours holds its failing H100 (below), so the Mosaic runs take `shiba`'s
+  B200s and the exponential runs `akita`'s B300s; the H100 SXM limits still hold if `dogo` is readmitted.
 
 Submit from the worktree after committing the frozen execution set and checking the live standard and long
 allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The four-GPU standard lane takes
@@ -2904,9 +2911,10 @@ submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
     scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-# Add dogo to both lists unless a placeholder job holds its failing H100 (Slurm index 4; CLUSTERS.md).
-mosaic=akita,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba) or H100 SXM (dogo)
-fused=shiba,mastiff,collie,samoyed,doodle,terrier   # B300 (akita) or H100 SXM (dogo)
+# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md) and would be the first GPU a pending job gets
+# there. Drop dogo from both lists only while a placeholder job of ours holds that GPU.
+mosaic=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba)
+fused=shiba,dogo,mastiff,collie,samoyed,doodle,terrier   # B300 (akita)
 submit standard 9:00:00 pointwise_attention_acceptance B200,H100 "$mosaic" r8a9fd53dacfd       # A1
 for run in r5a25f500bfa8 r8d6683db38a8 r79abb4d7292c; do                                          # B1-B3
   submit standard 12:00:00 key_width_acceptance B200,H100 "$mosaic" "$run"

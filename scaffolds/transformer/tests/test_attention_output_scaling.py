@@ -10,6 +10,7 @@ applies to softmax itself.
 import copy
 import json
 from dataclasses import replace
+from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -87,6 +88,60 @@ def test_head_rms_norm_removes_the_row_normalizer():
     expected = y / np.sqrt(np.mean(y ** 2, axis=-1, keepdims=True) + 1e-6) * np.asarray(gain)
     np.testing.assert_allclose(scale_attention_output(unnormalized, "head_rms_norm", output_norm_scale=gain),
                                expected, rtol=1e-5, atol=1e-6)
+
+
+def _plain_head_rms_norm(y, gain, eps=1e-6):
+    """value * rsqrt(mean(value^2) + eps) * gain in FP32: the arithmetic every finite mean square keeps."""
+    value = y.astype(jnp.float32)
+    value = value * jax.lax.rsqrt(jnp.mean(jnp.square(value), axis=-1, keepdims=True) + eps)
+    return (value * gain.astype(jnp.float32)[None, None]).astype(y.dtype)
+
+
+@pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16), ids=("fp32", "bf16"))
+def test_head_rms_norm_normalizes_outputs_whose_fp32_mean_square_overflows(dtype):
+    """Head outputs beyond about 1.8e19 (an exp prefactor's weight e^s T_8(s) reaches it at s = 28) overflow the
+    FP32 mean square, and rsqrt(inf) = 0 would zero the head and its gradient with every value finite. Such rows
+    are divided by their largest magnitude first: output (to 3e38) and VJP (to 1e30) match FP64. Rows with a
+    finite mean square (zero rows included) keep the plain arithmetic: output and VJP bitwise, also under jit.
+    An infinite or NaN entry makes its row NaN."""
+    rng = np.random.default_rng(11)
+    magnitudes = rng.choice([0., 1e-30, 1e-3, 1., 1e9, 1e18], size=(2, 17, 3, 1))
+    y = jnp.asarray(rng.normal(size=(2, 17, 3, 8)) * magnitudes, dtype)
+    gain = jnp.asarray(rng.uniform(0.5, 2.0, size=(3, 8)), jnp.float32)
+    cotangent = jnp.asarray(rng.normal(size=y.shape), dtype)
+    scaled = partial(scale_attention_output, scaling="head_rms_norm")
+
+    def assert_bitwise(actual, expected):
+        for got, want in zip(jax.tree.leaves(actual), jax.tree.leaves(expected), strict=True):
+            np.testing.assert_array_equal(np.asarray(got).view(np.uint8), np.asarray(want).view(np.uint8))
+
+    assert bool(jnp.isfinite(jnp.mean(jnp.square(y.astype(jnp.float32)), axis=-1)).all())
+    for transform in (lambda f: f, jax.jit):
+        new = transform(lambda y, g, c: jax.vjp(lambda y, g: scaled(y, output_norm_scale=g), y, g)[1](c)
+                        + (scaled(y, output_norm_scale=g),))
+        old = transform(lambda y, g, c: jax.vjp(_plain_head_rms_norm, y, g)[1](c) + (_plain_head_rms_norm(y, g),))
+        assert_bitwise(new(y, gain, cotangent), old(y, gain, cotangent))
+    ones = jnp.ones((1, 8), jnp.float32)
+    for peak in (1.9e19, 1e25, 1e30, 1e37, 3e38):
+        row = rng.normal(size=(1, 1, 1, 8))
+        row[..., 2], row[..., 5] = -peak, peak / 3
+        row = np.asarray(jnp.asarray(row, dtype).astype(jnp.float32), np.float64)
+        assert not np.isfinite(np.asarray(jnp.mean(jnp.square(jnp.asarray(row, jnp.float32)))))
+        rms = np.sqrt(np.mean(row ** 2))
+        output, pullback = jax.vjp(lambda y: scaled(y, output_norm_scale=ones), jnp.asarray(row, dtype))
+        np.testing.assert_allclose(np.asarray(output.astype(jnp.float32), np.float64), row / rms,
+                                   rtol=1e-2 if dtype == jnp.bfloat16 else 1e-6, atol=1e-7)
+        if peak <= 1e30:
+            direction = rng.normal(size=row.shape)
+            (gradient,) = pullback(jnp.asarray(direction, dtype))
+            direction = np.asarray(jnp.asarray(direction, dtype).astype(jnp.float32), np.float64)
+            expected = (direction - row / rms * np.mean(direction * row / rms)) / rms  # VJP of x / rms(x)
+            np.testing.assert_allclose(np.asarray(gradient.astype(jnp.float32), np.float64), expected,
+                                       rtol=2e-2 if dtype == jnp.bfloat16 else 1e-5,
+                                       atol=1e-2 * np.abs(expected).max())
+    for bad in (np.inf, -np.inf, np.nan):
+        row = jnp.ones((1, 1, 1, 8), dtype).at[..., 3].set(bad)
+        assert np.isnan(np.asarray(scaled(row, output_norm_scale=ones).astype(jnp.float32))).all()
 
 
 def test_scaling_rejects_inconsistent_arguments():

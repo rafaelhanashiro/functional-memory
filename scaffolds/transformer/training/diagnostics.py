@@ -1569,9 +1569,10 @@ def score_transform_report(raw_layers, config) -> dict:
     inputs' moments and extrema, the fraction of raw scores below zero, and the fraction of causal pairs at which
     the polynomial decreases in its input; per layer, histograms of s and z pooled over heads, on the score
     biases' edges. With the coefficient statistics (signs per order) they show whether the kernel is monotone
-    where the scores fall. Measurements only, at FP32 precision."""
+    where the scores fall. With a prefactor, W = f(s) p(z): the formula states f, and the decreasing fraction
+    measures the polynomial factor p alone. Measurements only, at FP32 precision."""
     from scaffolds.transformer.attention.score_bias import HISTOGRAM_EDGES
-    from scaffolds.transformer.attention.score_transform import FORMULAS
+    from scaffolds.transformer.attention.score_transform import FORMULAS, PREFACTOR_FORMULAS
 
     stack = lambda name: np.stack([np.asarray(layer[f"score_transform_{name}"], np.float64) for layer in raw_layers])
     serial = _float32_serializable
@@ -1590,13 +1591,24 @@ def score_transform_report(raw_layers, config) -> dict:
                 "counts": stack(f"{prefix}_histogram").astype(np.int64).tolist()}
 
     transform = config.model.attention_score_transform
+    prefactor = getattr(config.model, "attention_score_prefactor", "none")
     fixed_pointwise = (config.model.attention_degree == 1
                        and config.model.attention_fixed_coefficients == (0.0, 1.0)
                        and config.model.attention_coefficient_conditioning == "static")
+    polynomial = "z_ti" if fixed_pointwise else "sum_r c_r(x_t) z_ti^r"
+    if prefactor == "none":
+        formula = f"W(t,i) = {polynomial}, {FORMULAS[transform]}"
+        decreasing = ("dW/dz = 1, so the fixed pointwise kernel never decreases in z" if fixed_pointwise
+                      else "dW/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients")
+    else:
+        formula = (f"W(t,i) = f(s_ti) p(z_ti), p(z_ti) = {polynomial}, {FORMULAS[transform]}, "
+                   f"{PREFACTOR_FORMULAS[prefactor]}")
+        decreasing = ("dp/dz = 1, so the factor p(z) = z of W = f(s) p(z) never decreases in z" if fixed_pointwise
+                      else "dp/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients: the "
+                           "polynomial factor of W = f(s) p(z) alone, without the prefactor f")
     return {
         "transform": transform,
-        "formula": (f"W(t,i) = z_ti, {FORMULAS[transform]}" if fixed_pointwise
-                    else f"W(t,i) = sum_r c_r(x_t) z_ti^r, {FORMULAS[transform]}"),
+        "formula": formula,
         "sample": "fixed_diagnostic_sample",
         "axes": ["layer", "head"],
         "note": "measured by the blocked reference of the same kernel, forward only, over causal pairs",
@@ -1604,8 +1616,7 @@ def score_transform_report(raw_layers, config) -> dict:
         "raw_score": {**moments("raw"), "negative_fraction": serial(stack("raw_negative_count") / pairs)},
         "polynomial_input": moments("input"),
         "decreasing_fraction": serial(stack("decreasing_count") / pairs),
-        "decreasing_formula": ("dW/dz = 1, so the fixed pointwise kernel never decreases in z" if fixed_pointwise
-                               else "dW/dz = sum_(r=1..m) r c_r(x_t) z_ti^(r-1) < 0, with each query's own coefficients"),
+        "decreasing_formula": decreasing,
         "raw_score_histogram": histogram("raw", "s"),
         "polynomial_input_histogram": histogram("input", "z"),
     }
@@ -2119,6 +2130,17 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     if has_score_mlp(config.model):
         report["kernel_values"] = ("unshifted_score_mlp" if config.model.attention_score_mlp_form == "kernel"
                                    else "unshifted_exp_times_one_plus_score_mlp")
+    from scaffolds.transformer.configs.base import _exponential_kernel
+
+    transform = getattr(config.model, "attention_score_transform", "identity")
+    if transform != "identity" and report["kernel_values"] == "unshifted_learned_polynomial":
+        # A learned static polynomial of transformed scores, named as the query polynomial's.
+        report["kernel_values"] = f"learned_polynomial_of_{transform}_scores"
+    prefactor = getattr(config.model, "attention_score_prefactor", "none")
+    if prefactor != "none" and not _exponential_kernel(config.model):
+        # W = f(s) p(z): the polynomial's label times its prefactor of the raw score (the exponential's score
+        # functions are in its attention formula).
+        report["kernel_values"] += f"_times_{prefactor}_of_raw_scores"
     if scale_report is not None:
         report["qk_norm_scale"] = scale_report
     if gain_report is not None:

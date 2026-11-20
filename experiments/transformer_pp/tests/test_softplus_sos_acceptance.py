@@ -369,11 +369,15 @@ def test_prefactor_runs_outside_the_composition_are_refused(change, reason, monk
         adapter.check_recipe(config)
 
 
-def test_prefactor_runs_take_only_the_degree_eight_reference_control():
+def test_prefactor_runs_take_only_the_degree_eight_reference_control(monkeypatch):
     config = adapter.control_config(REFERENCE_M12)
     config.model.attention_score_prefactor = "exp"
     for name, value in adapter.CAPTURE_POLICY.items():
         setattr(config.train, name, value)
+    # The scaffold refuses a prefactor above its GPU-qualified degree on mosaic, and the adapter any other control.
+    with pytest.raises(ValueError, match="GPU-qualified at degrees up to 8"):
+        adapter.check_recipe(config)
+    monkeypatch.setattr(adapter, "validate_config", lambda config: None)
     with pytest.raises(ValueError, match="degree-eight reference control"):
         adapter.check_recipe(config)
 
