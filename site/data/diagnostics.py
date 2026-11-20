@@ -31,7 +31,7 @@ CONTINUATIONS = (
     ("Query + W decay", "rae91f24b06b4", "r673e14eab803", "rdfc42659424f"),
     ("Fixed Taylor", "r82203a85ef8e", "rddcbe6dfb1eb", "r82203a85ef8e"),
     ("Query temperature + W decay", "re563830cf150", None, ""),
-    ("FoX with RoPE, without W decay", "rd5ea49c1fde6", None, ""),
+    ("FoX, without W decay", "rd5ea49c1fde6", None, ""),
     ("FoX NoPE, with W decay", "r554ce7da6a8a", None, ""),
 )
 FIGURES = {"length-extrapolation": (RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation", (

@@ -54,8 +54,7 @@ def fixed_kernels() -> list[dict]:
          "tables": [{"head": ["Attention", "Score weight", "Layers × width", "PPL"],
                      "rows": [[text(name), text(weight), text(shape(run_id)), number(best(run_id), 4, run_id)]
                               for name, weight, run_id in ALTERNATIVES],
-                     "caption": f"{SCORE} is the attention score. Linear, sigmoid, and softplus use RoPE and "
-                                "per-head output RMSNorm."}]},
+                     "caption": f"{SCORE} is the attention score. Linear, sigmoid, and softplus use per-head output RMSNorm."}]},
         {"key": "prefactors", "title": "Exp with prefactors",
          "tables": [{"head": head, "compact": True, "rows": versus_exp(PREFACTORS)}]},
         {"key": "misc", "title": "Misc", "tables": [{"head": head, "compact": True, "rows": versus_exp(MISC)}]},

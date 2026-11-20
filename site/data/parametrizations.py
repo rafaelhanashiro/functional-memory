@@ -96,12 +96,12 @@ def dense() -> list[dict]:
     decay = ["Without <var>W</var> decay", "With <var>W</var> decay (0.1)"]
     sigmoid = [("Dense (<var>K</var> = 5)", *row) for row in DENSE_SIGMOID] + [("Per degree", *row) for row in PURE_SIGMOID]
     return [
-        {"key": "dense", "title": "Dense polynomial parametrizations · query coefficients · RoPE",
+        {"key": "dense", "title": "Dense polynomial parametrizations · query coefficients",
          "tables": [{"head": ["Parametrization", "Degree", "Readout scale", *decay], "caption": "— Not run.",
                      "rows": [[text(f"Dense (<var>K</var> = {features})"), text(f"<var>m</var> = {degree}"), text(scale),
                                perplexity(plain), perplexity(decayed)]
                               for features, degree, scale, plain, decayed in DENSE]}]},
-        {"key": "sigmoid", "title": "Sigmoid coefficients · <var>m</var> = 4 · RoPE",
+        {"key": "sigmoid", "title": "Sigmoid coefficients · <var>m</var> = 4",
          "tables": [{"head": ["Readout", "Scaling", *decay],
                      "caption": "Per degree: fixed <var>V</var> = <var>I</var>. Dense: learned <var>V</var>.",
                      "rows": [[text(readout), text(scaling), perplexity(plain), perplexity(decayed)]

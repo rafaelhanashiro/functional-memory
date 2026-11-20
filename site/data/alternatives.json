@@ -77,7 +77,7 @@
               }
             ]
           ],
-          "caption": "<var>s</var> is the attention score. Linear, sigmoid, and softplus use RoPE and per-head output RMSNorm."
+          "caption": "<var>s</var> is the attention score. Linear, sigmoid, and softplus use per-head output RMSNorm."
         }
       ]
     },

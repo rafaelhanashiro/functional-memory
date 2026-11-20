@@ -75,7 +75,7 @@ OTHER = (
     ("+ |<var>s</var>| input", 8, "r17a1290cb4ac"),
     ("Exp (baseline)", None, "r3e2fa2532c23"),
 )
-FOX = "FoX uses shared cumulative gates and no positional encoding."
+FOX = "FoX uses shared cumulative gates and NoPE."
 VERSUS_EXP = "PPL (% vs exp)."
 
 

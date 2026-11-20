@@ -150,7 +150,7 @@
   "dense": [
     {
       "key": "dense",
-      "title": "Dense polynomial parametrizations · query coefficients · RoPE",
+      "title": "Dense polynomial parametrizations · query coefficients",
       "tables": [
         {
           "head": [
@@ -248,7 +248,7 @@
     },
     {
       "key": "sigmoid",
-      "title": "Sigmoid coefficients · <var>m</var> = 4 · RoPE",
+      "title": "Sigmoid coefficients · <var>m</var> = 4",
       "tables": [
         {
           "head": [

@@ -477,7 +477,7 @@
               "className": ""
             }
           ],
-          "caption": "PPL (% vs exp). Each shape at its 1× Chinchilla budget. FoX uses shared cumulative gates and no positional encoding."
+          "caption": "PPL (% vs exp). Each shape at its 1× Chinchilla budget. FoX uses shared cumulative gates and NoPE."
         }
       ]
     },
@@ -771,7 +771,7 @@
               "className": ""
             }
           ],
-          "caption": "PPL (% vs exp). —: no run. Unsubmitted: a planned FoX run. FoX uses shared cumulative gates and no positional encoding."
+          "caption": "PPL (% vs exp). —: no run. Unsubmitted: a planned FoX run. FoX uses shared cumulative gates and NoPE."
         }
       ]
     },

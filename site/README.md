@@ -52,8 +52,9 @@ never overwrite, regenerate, or delete them, and commit their edits only when th
 content the user asks for may add new texts. Rerun a generator only when the user asks for newer
 results. Every perplexity on the site is the run's validation-best value, never the terminal
 one, which the Runs page says once (its text) rather than every table or plot; a percentage
-change is labeled minimally, as (% vs exp); the overfitting fits report perplexity on the batch
-they fit. The Learned polynomials figure in `figures/` is a copy with no generator.
+change is labeled minimally, as (% vs exp); RoPE is assumed and never named, while runs without
+it say NoPE; the overfitting fits report perplexity on the batch they fit. The Learned
+polynomials figure in `figures/` is a copy with no generator.
 
 The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits
