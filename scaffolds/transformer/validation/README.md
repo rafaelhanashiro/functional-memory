@@ -153,6 +153,155 @@ training run: each production allocation still runs its adapter's CPU and GPU su
 module's CPU cases and its probe and composition cases on the run's GPU), the initialization check, the pilot and a
 fresh-process resume.
 
+### Head RMSNorm backward at run checkpoints (2026-11-20)
+
+`head_rms_norm` ([README](../README.md#unnormalized-output-scaling)) divides a head's output `y` (per token and head,
+64 value channels) by `sqrt(mean(y^2) + eps)` in FP32. Its backward multiplies by `(mean(y^2) + eps)^(-3/2)`, which
+is subnormal in FP32 once `mean(y^2)` passes 1.9e25 (output RMS 4.4e12) and under the smallest subnormal past 8e29
+(RMS 8.9e14); the term it scales removes the gradient's component along `y`. A CPU flushes subnormals and loses the
+term from RMS 4.4e12 (next section). `validation/measure_head_rms_backward.py` measures where a GPU loses it and, at
+eleven run checkpoints, how far that moves the gradient of the next-token NLL. Record:
+[`runs/head-rms-backward/record.json`](runs/head-rms-backward/record.json).
+
+**Method.** Each run keeps its recipe, its precision (`train.dtype: bfloat16`) and its checkpoint; only
+`attention_backend` becomes `blocked` (the recipe's scan or strips), so every kernel runs on any GPU. The gradient
+with respect to every parameter is taken on the first four held-out sequences of the run's eval manifest (2,048
+predictions each; the first is the diagnostic sequence), one sequence per evaluation, and averaged. One compiled
+program evaluates the model with five head RMSNorms, chosen at run time:
+
+| Evaluation | Forward | Backward |
+| --- | --- | --- |
+| production | `scale_attention_output` as committed at the run's source commit | its autodiff |
+| stable | `(y/c) / sqrt(mean((y/c)^2) + eps/c^2)` in FP32, `c` the row's largest magnitude (at least 1) held constant: the same function of `y` for any constant `c`, so its gradient is the function's | its autodiff, every factor in FP32's normal range |
+| fp64_head | NumPy FP64 on the host | FP64 on the host |
+| stable_backward | production's | the stable evaluation's VJP |
+| fp64_backward | production's | FP64 on the host |
+
+The whole model in FP64 (parameters upcast, every layer and the blocked kernel in FP64; QK RMSNorm, RoPE tables and
+coefficient generators keep their FP32 steps) gives a sixth gradient on the first sequence. A probe takes the VJP of
+each committed version on synthetic FP32 rows of a given RMS against FP64.
+
+**Resolution.** A BF16 model rounds differently after any last-bit change of an activation, so two evaluations
+whose forwards differ in the last FP32 bit differ by the model's rounding noise: between the two exact evaluations
+with their own forwards (stable, fp64_head), 1.3-1.4% of the whole gradient (1.7-2.1% of Q/K) in the Q/K width-64
+runs, 1.9-2.6% (3.4-4.8%) at widths 16 and 8, and 2.4-6.1% (3.6-12%) at width 4; two compilations of the production
+evaluation differ as much (1.4-3.9%, job 9109). With one forward (stable_backward against fp64_backward) the floor
+is 0.4-0.6% (0.6-1.0% of Q/K). The five runs trained before `c426b65a` did not share it: their compiled production
+evaluation differs in the last bit from the forward the two others take (unequal losses), so their production
+columns carry the larger floor.
+
+**The GPU keeps subnormals.** VJP of the committed head RMSNorm on 4,096 synthetic FP32 rows; "radial share" is the
+part of the component along `y` left in the result (0 exact, 1 when the term is lost). RTX A6000 and A100 agree to
+eleven digits, in the radial share exactly. The stable evaluation is within 7e-8 at every scale.
+
+| Output RMS | Relative L2 error | Radial share |
+| --- | --- | --- |
+| up to 1e13 | under 8e-8 | under 3e-7 |
+| 3e13 | 7.0e-6 | 5.6e-5 |
+| 1e14 | 6.6e-5 | 5.3e-4 |
+| 2e14, 3e14, 4.5e14 | 0.17%, 0.20%, 0.27% | 1.4%, 1.6%, 2.2% |
+| 6e14 | 2.6% | 21% |
+| 9e14 to 1e18 | 12.5% (the radial part of a random cotangent) | 1.00 |
+| from the FP32 overflow of the mean square (RMS 2.3e18 over 64 channels) | before `c426b65a`: output and gradient zero; from `c426b65a`: 7e-8 | 0 |
+
+**Runs** (job 9142, A100). Rows are (token, head) pairs over all layers and the four sequences; the counts over
+1.9e25 and 8e29 include the rows whose FP32 mean square overflows.
+
+| Run | Update | Largest output RMS | Rows over 1.9e25 | Rows over 8e29 | Layers with rows over 8e29 | Rows whose FP32 mean square overflows | NLL production / stable |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `r6a76e7fbde45` exp, Q/K width 64 | 7,500 | 5.3e10 | 0 | 0 | none | 0 | 2.7062 / 2.7063 |
+| `r841f35a24241` softplus-input SoS (degree-8 core), Q/K width 64 | 7,500 | 9.3e9 | 0 | 0 | none | 0 | 2.6934 / 2.6939 |
+| `re3515eed3576` fixed Taylor m=8, Q/K width 4 | 7,500 | 1.8e17 | 4.2% | 0.52% | 9 of 15, at most 2.1% | 0 | 3.0727 / 3.0722 |
+| `r0f5e38b0d934` static m=8, Q/K width 4, in training | 3,500 | 1.5e13 | 0.0058% | 0 | none | 0 | 3.2950 / 3.2949 |
+| `rd5e3ec5a4f02` query m=8, Q/K width 4, in training | 4,000 | 1.7e12 | 0 | 0 | none | 0 | 3.2124 / 3.2124 |
+| `r5a25f500bfa8` softplus-input SoS (degree-8 core), Q/K width 4 | 7,500 | 1.2e16 | 1.2% | 0.076% | 6 of 15, at most 0.39% | 0 | 3.0071 / 3.0072 |
+| `rcace22b32f93` fixed Taylor m=12, 12-layer width-640, 4x Chinchilla | 30,205 | 1.2e16 | 4.7% | 0.0043% | layer 0, 0.051% | 0 | 2.7404 / 2.7408 |
+| `r1f935f18fe21` query SoS m=12, 12-layer width-640, 4x Chinchilla | 30,205 | 1.1e16 | 1.4% | 0.0045% | layer 0, 0.054% | 0 | 2.7377 / 2.7378 |
+| `r6f84b1db6de6` unshifted exp, Q/K width 16 | 7,500 | 1.7e24 | 5.1% | 2.4% | 10 of 15, at most 11.2% | 0.40% | 2.8206 / 2.8208 |
+| `r535bc84a7772` unshifted exp, Q/K width 8 | 7,500 | 8.1e30 | 13.4% | 5.8% | 11 of 15, at most 18% | 2.2% | 3.0605 / 3.0605 |
+| `r7820049184ef` exp with fixed ALiBi decay, no RoPE, Q/K width 64 | 7,500 | 2.1e22 | 0.76% | 0.38% | 3 of 15, at most 5.4% | 0.091% | 2.7008 / 2.7009 |
+
+Relative L2 difference of the production gradient from the stable-backward one, `||g_production - g|| / ||g||`, by
+parameter group (Q/K: Q and K projections, QK gains and head scales; "other": embeddings, MLPs, norms, output head);
+then the floors (one forward: stable_backward against fp64_backward; two forwards: stable against fp64_head) and the
+distances from the FP64 model on the first sequence:
+
+| Run | One forward | Q/K | V | Output projections | Coefficients | Other | All | Cosine Q/K / all | Floor, one forward: Q/K / all | Floor, two forwards: Q/K / all | From the FP64 model, Q/K: production / stable |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `r6a76e7fbde45` | no | 1.8% | 1.2% | 1.3% | none | 1.2% | 1.3% | 0.99984 / 0.99992 | 0.60% / 0.43% | 1.8% / 1.3% | 1.8% / 1.7% |
+| `r841f35a24241` | no | 1.6% | 1.1% | 1.3% | 2.0% | 1.2% | 1.2% | 0.99987 / 0.99992 | 0.59% / 0.43% | 1.7% / 1.3% | 1.6% / 1.6% |
+| `re3515eed3576` | yes | 12.0% | 7.4% | 7.8% | none | 4.9% | 7.5% | 0.99294 / 0.99722 | 0.78% / 0.54% | 3.6% / 2.4% | 13.7% / 3.9% |
+| `r0f5e38b0d934` | yes | 0.69% | 0.46% | 0.44% | 0.66% | 0.31% | 0.43% | 0.99998 / 0.99999 | 0.67% / 0.43% | 11.9% / 6.1% | 27% / 38% |
+| `rd5e3ec5a4f02` | yes | 0.71% | 0.44% | 0.48% | 0.32% | 0.30% | 0.42% | 0.99998 / 0.99999 | 0.69% / 0.47% | 7.0% / 3.4% | 5.0% / 5.2% |
+| `r5a25f500bfa8` | yes | 1.9% | 0.84% | 1.1% | 1.8% | 0.83% | 1.1% | 0.99982 / 0.99994 | 0.93% / 0.56% | 4.8% / 3.1% | 5.4% / 5.0% |
+| `rcace22b32f93` | no | 2.3% | 1.2% | 1.3% | none | 1.2% | 1.3% | 0.99974 / 0.99992 | 0.66% / 0.41% | 1.9% / 1.3% | 2.7% / 2.1% |
+| `r1f935f18fe21` | no | 2.3% | 1.3% | 1.5% | 2.3% | 1.2% | 1.3% | 0.99974 / 0.99991 | 0.66% / 0.41% | 2.1% / 1.3% | 2.7% / 2.2% |
+| `r6f84b1db6de6` | yes | 854% | 230% | 264% | none | 148% | 291% | 0.179 / 0.347 | 0.87% / 0.49% | 3.4% / 1.9% | 1,450% / 3.2% |
+| `r535bc84a7772` | yes | 4,310% | 1,610% | 2,110% | none | 1,160% | 1,960% | 0.011 / 0.044 | 1.0% / 0.58% | 4.8% / 2.6% | 3,550% / 4.6% |
+| `r7820049184ef` | no | 23.6% | 7.8% | 8.7% | none | 6.3% | 8.7% | 0.973 / 0.996 | 0.64% / 0.44% | 1.9% / 1.4% | 31% / 3.7% |
+
+- **Q/K width 64 (`r6a76e7fbde45` exp, `r841f35a24241` SoS): not affected.** Their largest output RMS is more
+  than 500 times below the first inexact scale (3e13); production differs from the exact evaluations by rounding
+  noise, and both lie 1.6-1.8% from the FP64 model. Their recorded row sums never passed 1.5e10 and 7.6e9 in training.
+- **Fixed Taylor m=8 at width 4 (`re3515eed3576`): affected.** 0.52% of rows are past 8e29; the Q/K gradient is off
+  by 12.0% (11-13% per sequence), the V, output-projection and other gradients by 5-8% and the head RMSNorm gains'
+  by 20%; production lies 13.7% from the FP64 model where the stable evaluation lies 3.9%. Its recorded row sum
+  passed 1e15 at update 3,500 (3e14 at 3,000, 1.1e17 at 7,500).
+- **Softplus-input SoS at width 4 (`r5a25f500bfa8`): 1.9% of Q/K, 1.1% overall,** twice the one-forward floor and
+  under the 4.8% rounding noise of its own Q/K gradient; rows past 8e29 since about update 3,000 (recorded row sum
+  7.4e14).
+- **Static at 3,500 and query at 4,000 (width 4): not affected yet** (largest RMS 1.5e13 and 1.7e12; production
+  equals the exact backward to the floor). The static run's recorded row sum grows about fivefold per 500 updates
+  (6.9e13 at 4,000); the query run's doubles (8.6e11 at 4,000).
+- **12-layer width-640 at 4x Chinchilla: no error above rounding noise.** 31% and 16% of layer 0's rows are past
+  1.9e25 but 0.05% past 8e29; the 2.3% Q/K difference is close to that of two exact evaluations (1.9-2.1%), and the
+  FP64 model lies 2.7% from production and 2.1-2.2% from the stable evaluation. A device that flushes subnormals
+  would lose the term in all of those rows.
+- **Unshifted exp at widths 16 and 8: the production gradient is mostly the lost term.** Its Q/K norm is 8.7 and 43
+  times the exact one (2.01 against 0.232, 13.2 against 0.307), cosine 0.18 and 0.011; the whole gradient's norm is
+  3.1 and 20 times the exact one, against clipping at 1. The FP64 model agrees with the stable evaluation (3.2%,
+  4.6%).
+- **ALiBi exp (`r7820049184ef`): affected,** 23.6% of Q/K (13-31% per sequence), from about update 5,000 (recorded
+  row sum 5.8e14); its source also zeroed the 1.4% of layer 13's rows past the FP32 overflow.
+
+The polynomial runs were not handicapped as the unshifted exponential was: their largest error is 12% of the Q/K
+gradient at one final checkpoint, against 8.5 and 43 times the gradient. A weight's score derivative is `m/s` of
+the weight for a degree-`m` monomial (0.02 at `s` = 390) and the whole weight for exp, and under 1% of polynomial
+rows pass 8e29.
+
+**Limits.**
+
+- GPUs: RTX A6000 and A100 (both Ampere), the idle ones; the runs trained on H100, B200 and B300, which were not
+  measured. The two agree on the probe to eleven digits; Hopper and Blackwell remain to be probed.
+- Kernels: the blocked reference in place of the Mosaic and fused kernels the runs trained on (`r7820049184ef`
+  trained on the blocked strips); the head RMSNorm is each run's own source.
+- One checkpoint per run and four sequences, one per evaluation (training averages 256 in micro-batches of 16); the
+  raw gradient, before clipping and Adam. Earlier updates are dated from recorded row sums, which lie within a factor
+  of ten of the measured output RMS on the same sequence (0.8 to 10.5).
+- A gradient error is not a perplexity cost: that takes a run trained with the stable backward.
+- The static and query runs were still training; their later updates are not covered.
+
+**Jobs** (`measure_head_rms_backward.sbatch`, `long`, each started on idle resources):
+
+| Job | Node, GPU | Runs | Evaluations | Elapsed |
+| --- | --- | --- | --- | --- |
+| 9142 | `samoyed`, 2 x A100 80GB PCIe, six processes | all eleven | the five, the FP64 model, the probe | 8 min 55 s |
+| 9109 | `doodle`, RTX A6000, two processes | eight (the three exp runs past its deadline) | production, stable, fp64_head; the production evaluation traced alone on four; the probe | 21 min 54 s |
+
+Job 9109 ran the script before the two one-forward evaluations existed (its source is `0193a8a8`); on its eight
+runs the production-against-stable differences agree with job 9142's within rounding noise (Q/K 12.5% and 12.5% for
+`re3515eed3576`, 1.8% and 1.7% for `r6a76e7fbde45`). CPU: `validation/test_measure_head_rms_backward.py`, 14 tests.
+Regeneration, from a checkout with both environments synced:
+
+```bash
+sbatch --partition=long --nodelist=<node> --gres=gpu:2 --cpus-per-task=12 --mem=160G \
+  --output=scaffolds/transformer/validation/logs/head-rms-backward-%j.log \
+  scaffolds/transformer/validation/measure_head_rms_backward.sbatch "<run lists>" \
+  --sequences 4 --probe --fp64-model --direct-check 0
+python3 scaffolds/transformer/validation/record_head_rms_backward.py 9142 9109 --checkpoints <hashes.json> \
+  --order r6a76e7fbde45,r841f35a24241,re3515eed3576,r0f5e38b0d934,rd5e3ec5a4f02,r5a25f500bfa8,rcace22b32f93,r1f935f18fe21,r6f84b1db6de6,r535bc84a7772,r7820049184ef
+```
+
 ### Row-maximum-shifted exponential (2026-11-20)
 
 `model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the
