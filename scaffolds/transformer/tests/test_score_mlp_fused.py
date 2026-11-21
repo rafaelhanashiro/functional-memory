@@ -484,13 +484,14 @@ def test_records_create_accepts_a_fused_recipe_without_the_triton_opt_out(tmp_pa
     from scaffolds.records.__main__ import main
 
     source = tmp_path / "score_mlp.yaml"
-    save_config(_config("exp_residual", 8, attention_backend=backend,
-                        attention_blocked_implementation="strips"), source)
+    save_config(_config("exp_residual", 8, attention_backend=backend, attention_blocked_implementation="strips",
+                        attention_head_rms_prescale="max_abs"), source)
     monkeypatch.setattr("sys.argv", ["records", "create", "--study", str(tmp_path / "study"), "--config", str(source)])
     main()
     run = Path(capsys.readouterr().out.strip())
     model = yaml.safe_load((run / "config.yaml").read_text())["model"]
     assert (model["attention_backend"], model["attention_score_mlp_width"]) == (backend, 8)
+    assert model["attention_head_rms_prescale"] == "max_abs"
     validate_record(run)
 
 
