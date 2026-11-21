@@ -1,9 +1,9 @@
 # Softplus inputs
 
 Opened: 2026-11-12. Both runs are complete and fell short of the bar, each against the control at its degree:
-0.42% below it at degree eight, 0.02% at degree twelve. Three direct-coefficient runs on `z`, static and times `z`,
-are [planned](#direct-polynomials-of-z-static-and-times-z). Each run's status is in its record and the study's
-`runs.csv`.
+0.42% below it at degree eight, 0.02% at degree twelve. Three direct-coefficient runs on `z`
+[add static coefficients and a factor `z`](#direct-polynomials-of-z-static-and-times-z): the factor is what
+helps (static `z p(z)` 14.114, 1.00% below exp). Each run's status is in its record and the study's `runs.csv`.
 
 With a very negative score `s`, the query polynomial gives a large weight: odd orders a large negative one
 (the value pushed in the opposite direction), even orders a large positive one, where `exp(s)` gives about
@@ -133,17 +133,24 @@ listed in their records.
 
 ## Direct polynomials of z: static, and times z
 
-Planned; no results. Added 2026-11-20. At degree eight, do static coefficients or a factor `z` help the direct
-(not sum-of-squares) polynomial of `z = softplus(s)`? Three runs, each its partner's recipe with the listed score
-functions and gradient-event capture, from the partner's exact initial parameters. Validation-best perplexity of the
-existing runs:
+Added 2026-11-20. At degree eight, do static coefficients or a factor `z` help the direct (not sum-of-squares)
+polynomial of `z = softplus(s)`? Three runs, each its partner's recipe with the listed score functions and
+gradient-event capture, from the partner's exact initial parameters. Validation-best perplexity:
 
-| Run | Weight | Start | Partner | Comparisons |
-| --- | --- | --- | --- | --- |
-| `r2026eaa99f9a` | static `p(z)` | `T_8(z)`, about `1 + e^s` | static `p(s)`, `r9c69dd7cfc8d`, 14.294 | static `p(z)` with `c_0 = 0`, `rc28ef4dbe26d`, 14.192; query `p_t(z)`, `ra3b54e2489f8`, 14.262 |
-| `rd00848e00f1d` | static `z p(z)` | `z T_8(z)` | `r9c69dd7cfc8d` | static `p(z)`, `r2026eaa99f9a`; `rc28ef4dbe26d`, which also vanishes at very negative scores |
-| `r7f80334aafbd` | `z p_t(z)` | `z (T_8(z) − 1)`, about `softplus(s) e^s` | `ra3b54e2489f8` | query `p_t(z)` with `c_0 = 0`, `rb5b604ae829a`, 14.250; `z h_t(z)`, `r841f35a24241`, 14.095; softplus(s) exp(s), `rbd24b948a240`, 14.132; exp, 14.257 |
+| Run | Weight | Start | Validation-best PPL | Partner |
+| --- | --- | --- | ---: | --- |
+| `r2026eaa99f9a` | static `p(z)` | `T_8(z)`, about `1 + e^s` | 14.351 | static `p(s)`, `r9c69dd7cfc8d`, 14.294 |
+| `rd00848e00f1d` | static `z p(z)` | `z T_8(z)` | **14.114** | `r9c69dd7cfc8d` |
+| `r7f80334aafbd` | `z p_t(z)` | `z (T_8(z) − 1)`, about `softplus(s) e^s` | 14.159 | query `p_t(z)`, `ra3b54e2489f8`, 14.262 |
 
+- **The factor `z` is what helps.** Static `z p(z)` is 1.65% below static `p(z)` and 1.26% below static `p(s)`;
+  `z p_t(z)` is 0.73% below `p_t(z)`. Both beat exp (14.257), by 1.00% and 0.69%.
+- **Static `p(z)` alone is worse than static `p(s)`** (+0.40%) and than exp (+0.66%). Removing its constant
+  (`rc28ef4dbe26d`, 14.192) recovers 1.11%: the constant starts the kernel near `1 + e^s`, which does not vanish at
+  very negative scores.
+- **Static coefficients match query ones here**: static `z p(z)` is 0.31% below `z p_t(z)`.
+- **Both tie the sum-of-squares form**: `z h_t(z)` (`r841f35a24241`, 14.095) is 0.14% below static `z p(z)` and
+  0.45% below `z p_t(z)`; softplus(s) exp(s) (`rbd24b948a240`, 14.132) is 0.13% above static `z p(z)`.
 - The factor `z` is the parameter-free score prefactor `f = softplus` on the Mosaic transformed kernels
   (`query_softplus` for `p(z)`, `query_softplus_times_softplus` for `z p(z)`; static coefficients are broadcast
   over queries), on one B200 or H100
@@ -151,6 +158,7 @@ existing runs:
 - The static constant `c_0` stays learnable from its Taylor start of 1: no scaffold option starts a learnable
   static constant at zero (`rc28ef4dbe26d` removes it), so `p(z)` starts near `1 + e^s`, where the query runs and
   `rc28ef4dbe26d` start near `e^s`.
+- Limits: one seed each; the margins among the three `z`-prefactor kernels (0.1–0.5%) are within one seed's noise.
 
 ## Open question
 
@@ -160,8 +168,9 @@ did: softplus at degree eight (14.262) is 0.42% below its control, level with ex
 fixed Taylor at degree eight (14.218); at degree twelve (validation-best 14.222, terminal 14.226) it is 0.02%
 below its control, 0.24% below exp and 0.60% below fixed Taylor at degree twelve (14.309). Softplus inputs
 composed with query sum of squares are in [softplus_sos](../softplus_sos/README.md), and with structurally
-zero constants in [zero_constant](../../../other/zero_constant/README.md). Keep the folder, or delete it with
-its runs and their artifacts.
+zero constants in [zero_constant](../../../other/zero_constant/README.md). The direct polynomials times `z`
+clear the bar against exp (1.00% and 0.69%) on one seed each. Keep the folder, or delete it with its runs and
+their artifacts.
 
 Refresh the selection after the runs' scientific files change:
 
