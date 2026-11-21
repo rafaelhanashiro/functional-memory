@@ -172,4 +172,6 @@ unnormalized attention and max-abs-prescaled head RMSNorm.
 
 The two Half runs isolate score choice. The two QK runs isolate initialization. Each comparison uses one seed.
 The [selection](selection.yaml) fixes the comparisons and the summary reports validation-best and terminal PPL
-separately as results become available.
+separately. The canonical QK score with half-initialized gates achieved 21.1780 best and 21.1842 terminal PPL.
+With the same initialization, cosine scored 23.9328 and 23.9356. With the same QK score, Taylor-initialized
+gates scored 24.7980 and 24.8165. All three reached their best validation PPL at update 7,500 of 7,570.
