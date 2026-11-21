@@ -486,7 +486,8 @@ def even_exp_attention(q, k, v, coefficients, exp_gate, *, precision: str | None
     _check_precision(precision)
     from scaffolds.transformer.attention.backends.fused_even_gate_exp import row_shifts
 
-    shift = jax.lax.stop_gradient(row_shifts(q, k, exp_gate))
+    # The shift is a constant to differentiation, and the pre-pass has no derivative rule: give it no tangents.
+    shift = row_shifts(*(jax.lax.stop_gradient(x) for x in (q, k, exp_gate)))
     return _even_exp(q, k, v, _even_exp_vectors(coefficients, exp_gate, shift), precision), shift
 
 
