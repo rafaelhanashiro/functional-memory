@@ -3126,12 +3126,21 @@ source's, and the settings add no parameter.
   [fixed Taylor and query SoS](#the-12-layer-width-640-shape-at-four-times-its-1x-budget) and the
   [softplus-prefactor SoS](#the-12-layer-width-640-shape-at-1x-2x-and-4x). The measurement covered the first three
   sources; `r4589172dcd8b` is rerun for the same recorded row sums. The other 4x runs stayed below 2e14 (static,
-  softplus input, SoS without the prefactor, exp) or passed it only at the last validation (query, 6.2e14).
-- **Kernels and GPUs.** As their sources: the ALiBi exp run on the blocked backend's causal strips (B300 or H100
-  SXM), which evaluate the shift over the decayed logits; query SoS and fixed Taylor on the Mosaic polynomial kernels
-  (B300 or H100); `z h_t(z)` on the Mosaic transformed kernels (H100 or B200). The prescale is head RMSNorm's own
-  arithmetic after any kernel, qualified on B200, B300 and H100
-  ([validation](../../scaffolds/transformer/validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20)).
+  softplus input, SoS without the prefactor, exp) or passed it only at the last two validations (query: 6.1e14 at
+  30,000, 6.2e14 at 30,205).
+- **What each pair compares.** The three 12-layer pairs differ in the prescale alone. The ALiBi exp pair differs in
+  more: its source trained before head RMSNorm guarded an overflowing FP32 mean square, so the source's output and
+  gradient were zero on every row past an L2 norm of 1.8e19 (1.4% of layer 13's rows at update 7,500), and the
+  rerun changes the row shift and the prescale together. Its difference from the source is the plain evaluation's
+  whole effect, not the inexact gradient's alone.
+- **Kernels and GPUs.** On their sources' kernels and GPU types: the ALiBi exp run on the blocked backend's causal
+  strips (B300 or H100 SXM), which evaluate the shift over the decayed logits; query SoS and fixed Taylor on the
+  Mosaic polynomial kernels (B300 or H100); `z h_t(z)` on the Mosaic transformed kernels (H100 or B200). The
+  prescale is head RMSNorm's own arithmetic after any kernel, qualified on B200, B300 and H100
+  ([validation](../../scaffolds/transformer/validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20)). A
+  rerun need not get its source's GPU: the ALiBi exp source trained on an H100 SXM in the CUDA 12 environment and
+  the `z h_t(z)` source on H100 SXM alone, so a pair's difference can also carry the hardware's (each record lists
+  its GPU). One seed each: differences below run-to-run scatter are not attributable to the settings.
 - **Acceptance.** The [coefficient-forms](coefficient_forms_acceptance.py) and [softplus SoS](softplus_sos_acceptance.py)
   adapters pin their controls' recipes and compare without the prescale; the generic acceptance pins none.
   `tests/test_max_abs_reruns.py` holds each rerun to its source's recipe apart from the listed settings. Every
@@ -3147,8 +3156,9 @@ source's, and the settings add no parameter.
   | `r3474c2559dd7` | 8.7-9.0 on H100 SXM | 15 |
 
 Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
-allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The ALiBi exp run waits behind the
-polynomial runs (`--nice=1000`):
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor); `long` jobs preempt `sweep` jobs on
+the eligible nodes. The ALiBi exp run takes `--nice=1000`, which orders it behind the polynomial runs only while
+they are pending for the same GPUs:
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice
@@ -3158,8 +3168,8 @@ submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, ni
     scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
-# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md): drop dogo from a list only while a placeholder
-# job of ours holds that GPU.
+# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md): drop dogo from a list only while a standard
+# placeholder job of ours holds that GPU and will outlast every start and requeue of the run.
 b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita)
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba)
 submit long 12:00:00 coefficient_forms_acceptance B300,H100 "$b300" r775f6499974f 0  # query SoS
