@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r9047be7f01c3/config.yaml",
+    "sha256": "4a004d6e86c1652cad4f99a07c134c64229873225a839a3f3a61642b63d474ec"
+  },
+  "label": "even-gates-exp-m16-dk4-qk-half",
+  "name": "even-gates-exp-m16-dk4-qk-half",
+  "receipt": {
+    "arrays_count": 58,
+    "digest": "6f1c8ceb2b808323b200a929033625278574d5c2f39b8f801143a6ba7174e18e",
+    "loss": 5.604668140411377,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r9047be7f01c3",
+  "status": "planned"
+}

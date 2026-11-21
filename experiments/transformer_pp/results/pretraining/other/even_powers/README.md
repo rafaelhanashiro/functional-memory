@@ -175,3 +175,31 @@ The [selection](selection.yaml) fixes the comparisons and the summary reports va
 separately. The canonical QK score with half-initialized gates achieved 21.1780 best and 21.1842 terminal PPL.
 With the same initialization, cosine scored 23.9328 and 23.9356. With the same QK score, Taylor-initialized
 gates scored 24.7980 and 24.8165. All three reached their best validation PPL at update 7,500 of 7,570.
+
+
+## Degree sixteen with a separately gated exponential
+
+Opened 2026-11-21. Can a learned positive mixture of eight even powers and an exponential improve
+validation perplexity at key width four? Each variant matches its degree-eight control in model shape,
+training budget, score definition and polynomial gate initialization. All three train from scratch with seed 42.
+
+| Score and polynomial gate initialization | Degree-sixteen hybrid | Degree-eight control |
+|---|---|---|
+| Cosine, half | rd77e8919453a | rf1185ae8a89c |
+| QK, half | r9047be7f01c3 | r4ec7b748d430 |
+| QK, Taylor | r2572a21e0362 | r2bb06d5ee682 |
+
+For each query token and head, the causal weight on a key with signed score `s` is
+`g_exp exp(s) + sum_r g_r s^r` for `r = 2, 4, …, 16`. Each of the nine gates is a sigmoid of
+its own affine projection of the query token's unit-L2 pre-RMSNorm residual. The exponential gate
+starts with zero logit bias for all three variants. The Taylor variant uses `logit(1/r!)` for the
+eight polynomial biases. Projection vectors have Gaussian initialization and weight decay 0.1.
+At a zero score the exponential contributes `g_exp`. Positive and negative scores of the same
+magnitude receive the same polynomial contribution and different exponential contributions.
+
+The fused kernel evaluates both branches with one causal numerical shift and compensates the
+head RMSNorm epsilon for that shift. Each allocation checks the forward pass and gate gradients against
+FP64 and runs a full-model training and checkpoint-resume pilot. The comparison table regenerates
+from the pinned selection with the command above. The within-degree pairs test score choice at half
+initialization and polynomial gate initialization at fixed QK scoring. Each comparison against its
+degree-eight control changes both the maximum power and the presence of the exponential.

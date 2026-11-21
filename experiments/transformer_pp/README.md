@@ -3143,3 +3143,22 @@ done
 
 Dogo is eligible while its faulty H100 is occupied by the existing placeholder. See the
 [Kennel cluster notes](../../CLUSTERS.md#kennel-csail).
+
+
+### Degree-sixteen even powers with a gated exponential
+
+The [even-power comparison](results/pretraining/other/even_powers/README.md#degree-sixteen-with-a-separately-gated-exponential)
+lists the three variants and their degree-eight controls. Their [acceptance adapter](even_gate_exp_acceptance.py)
+verifies the matched recipes, tests the fused kernel on the allocated GPU and checks a full-size training pilot
+and checkpoint resume. From this worktree on Kennel, submit each independent run with one GPU.
+
+```sh
+for run in rd77e8919453a r9047be7f01c3 r2572a21e0362; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=23:00:00 \
+    --exclude=collie,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.even_gate_exp_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```

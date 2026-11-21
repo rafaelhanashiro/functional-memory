@@ -11,3 +11,6 @@ taylor_m7,re12e78d1ded3,complete,7570,14.309452242,7500,14.304166110
 cosine_half_dk4,rf1185ae8a89c,complete,7570,23.935566582,7500,23.932785580
 qk_half_dk4,r4ec7b748d430,complete,7570,21.184193054,7500,21.178001047
 qk_taylor_dk4,r2bb06d5ee682,complete,7570,24.816534846,7500,24.798010918
+even_exp_m16_dk4_cosine_half,rd77e8919453a,planned,,,,
+even_exp_m16_dk4_qk_half,r9047be7f01c3,planned,,,,
+even_exp_m16_dk4_qk_taylor,r2572a21e0362,planned,,,,

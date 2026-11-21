@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2572a21e0362/config.yaml",
+    "sha256": "7a4fb82932977799c2c493abdd38f6d8c8db9035cd195198682467d07ebc11b2"
+  },
+  "label": "even-gates-exp-m16-dk4-qk-taylor",
+  "name": "even-gates-exp-m16-dk4-qk-taylor",
+  "receipt": {
+    "arrays_count": 58,
+    "digest": "a3faf1652e139cf2be72e78506e18f9068fe0b5b8b29c565e13ec5e788ec9ee7",
+    "loss": 5.604022026062012,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r2572a21e0362",
+  "status": "planned"
+}

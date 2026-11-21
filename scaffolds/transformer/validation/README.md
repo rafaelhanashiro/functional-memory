@@ -11,6 +11,22 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Degree-sixteen gated even powers plus a gated exponential
+
+Kennel job `9651` on 2026-11-21 passed six GPU checks on an akita B300. The tested kernel and tests
+match commit `3994e868b3598d54589b2d39a1952a7c4e870351`. FP64 comparisons cover the forward pass,
+Q/K/V and gate gradients, large signed scores and a saturated-off exponential gate. The full-head
+comparison uses key width 4, value width 64, BF16 projections, and FP32 attention accumulation through
+head RMSNorm. Across outputs and the separately checked gate and raw-input gradients, the maximum
+relative L2 errors against FP64 were 0.225%, 0.717% and 0.230% for cosine half, QK half and QK Taylor.
+With the BF16 output projection boundaries reproduced in the reference, each maximum was below 0.018%.
+Every production allocation repeats its selected device checks before the training pilot.
+
+```sh
+JAX_PLATFORMS=cuda,cpu python -m pytest -q -m gpu -c scaffolds/transformer/pyproject.toml \
+  scaffolds/transformer/tests/test_even_gate_exp_attention.py scaffolds/transformer/tests/test_even_gate_exp_head.py
+```
+
 ### Degree-eight query polynomial at key width four on B300
 
 On 2026-11-21 (Atlantic time), Kennel job `9516` on an akita B300 checked the
