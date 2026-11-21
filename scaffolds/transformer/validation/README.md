@@ -59,6 +59,13 @@ arithmetic against FP64 on CPU, where the Triton programs cannot run. On an akit
 the six GPU tests of `test_even_gate_exp_attention.py` and `test_even_gate_exp_head.py` above pass. H100 is not yet
 qualified for this kernel.
 
+Where the remaining time goes, on a shiba B200 at the same shape (job 9702, ms per call, forward / forward and
+backward): the Mosaic degree-8 query kernel takes 0.47 / 2.25 with BF16 products and 0.57 / 2.74 with FP32-level
+(BF16x3) products; the Triton fixed Taylor degree-8 kernel, without gates or shift, takes 1.54 / 5.57; the Triton
+exponential with its row-maximum shift 1.14 / 3.41; this kernel 1.49 / 7.36. For the same polynomial work at the same
+precision the Triton programs take about twice as long as Mosaic's, the larger part of the gap to a degree-8 query run;
+the gated exponential, the shift and the ninth gate add about 1.8 ms over the Triton Taylor kernel.
+
 ### Degree-eight query polynomial at key width four on B300
 
 On 2026-11-21 (Atlantic time), Kennel job `9516` on an akita B300 checked the
