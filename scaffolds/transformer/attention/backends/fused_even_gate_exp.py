@@ -3,7 +3,7 @@
 The query-tile program accumulates V online. Its companion recomputes the shifted weights' slopes to return dQ
 and all nine gate derivatives. A key-tile program accumulates dK/dV. No pass stores pair weights. With BF16 V the
 output cotangent enters both backward programs as its three BF16 components, split once
-(fused_unnormalized._bf16_components): the products are those of splitting it in every tile.
+(fused_unnormalized._bf16_components); dV's product takes the components' FP32 sum.
 
 The even powers are one polynomial in w = u^2, u = s exp(-shift/16) (|u| <= 1, even_gate_exp.shifted_basis):
 sum_r c_r s^r e^-shift = w (a_2 + w (a_4 + ... + w a_16)), a_r = c_r exp(-(16 - r) shift / 16) per query row,
@@ -44,7 +44,7 @@ def _cotangent_dot(do, v):
 
 
 def _cotangent(do):
-    """The FP32 cotangent tile: the components' sum, exact where they split it."""
+    """The FP32 cotangent tile: the components' sum."""
     if len(do) == 1:
         return do[0]
     high, middle, low = (part.astype(jnp.float32) for part in do)

@@ -34,25 +34,30 @@ coefficients `a_r = c_r exp(-(16 - r) shift / 16)`, instead of forming each powe
 second Horner sum, and each gate's derivative is its row factor times the moment `sum_i dp_i w_i^(r/2)`. The function,
 the common shift and the FP32 three-part products are unchanged. The output cotangent's BF16 split is formed once per
 backward pass rather than in every tile, and each program takes its own tiles: forward 64 x 64 on 8 warps, dQ
-64 x 64 on 4, dK/dV 64 queries by 32 keys on 4 (a sweep of 31 settings on a shiba B200, job 9687).
+64 x 64 on 4, dK/dV 64 queries by 32 keys on 4 (a sweep of 31 settings on a shiba B200, job 9687; the tiles change
+no result). Splitting the cotangent once leaves the output, dQ, dK and every gate gradient bitwise equal to splitting
+it in every tile; dV, whose product takes the components' FP32 sum, differs in 24-440 of its 3.7 million elements at
+2,048 tokens by one BF16 rounding step (akita B300, job 9699).
 
 On a shiba B200 (job 9695) the seven FP64 tests of `test_even_gate_exp_attention.py` pass, and against an FP64
 reference at 2,048 tokens the Horner kernel's relative errors equal the previous kernel's to two digits (output
 7.8e-7 against 9.2e-7, dQ/dK/dV 2.4-3.3e-3 for both, gate gradients 0.36-13 against 0.33-8.4 parts per million). At
 the training micro-batch (16 x 2,048 tokens, 14 heads, Q/K width 4, value width 64), one call took:
 
-| Kernel | Forward, ms | Forward and backward, ms |
-| --- | ---: | ---: |
-| Previous (commit `415969bd`) | 1.70 | 21.21 |
-| Horner, tuned tiles | 1.39 | 7.36 |
-| Horner with BF16 weights in every product (not adopted) | 1.15 | 5.53 |
-| Mosaic degree-8 query polynomial, for scale | 0.47 | 2.25 |
+| Kernel | B200 forward, ms | B200 forward and backward, ms | B300 forward, ms | B300 forward and backward, ms |
+| --- | ---: | ---: | ---: | ---: |
+| Previous (commit `415969bd`) | 1.70 | 21.21 | 1.65 | 20.77 |
+| Horner, tuned tiles | 1.39 | 7.36 | 1.36 | 7.13 |
+| Horner with BF16 weights in every product (not adopted) | 1.15 | 5.53 | | |
+| Mosaic degree-8 query polynomial, for scale | 0.47 | 2.25 | | |
 
 BF16 weights would cost the gate gradients 1-2% against FP64 (2.3e-2 and 1.0e-2), so the kernel keeps FP32-level
 products. A training step calls the kernel 240 times (15 layers, 16 micro-batches), about 5.1 of the 5.86 s per update
 measured with the previous kernel on B200; the Horner kernel projects to about 2.5 s per update.
 `test_even_gate_exp_attention.py::test_fused_horner_arithmetic_matches_the_shifted_basis` checks the programs'
-arithmetic against FP64 on CPU, where the Triton programs cannot run.
+arithmetic against FP64 on CPU, where the Triton programs cannot run. On an akita B300 (job 9699, commit `c021f5bf`)
+the six GPU tests of `test_even_gate_exp_attention.py` and `test_even_gate_exp_head.py` above pass. H100 is not yet
+qualified for this kernel.
 
 ### Degree-eight query polynomial at key width four on B300
 
