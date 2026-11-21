@@ -371,11 +371,12 @@ RUNS = {
     "rabfbab32a594": (f"{SOS_LABEL}-dk4-max-abs-head-rms", "softplus_sos", 4, PRESCALED),
     "r1eaa4a4c3c77": ("fixed-m8-head-scale-dk4-max-abs-head-rms", "taylor", 4, PRESCALED),
     "r5e540d8620b1": ("fixed-m8-head-scale-dk8-max-abs-head-rms", "taylor", 8, PRESCALED),
+    "r99b1eebb5254": ("static-m8-head-scale-dk4-max-abs-head-rms", "static", 4, PRESCALED),
 }
 
 
 @pytest.mark.parametrize("run_id, plain", (("rabfbab32a594", "r5a25f500bfa8"), ("r1eaa4a4c3c77", "re3515eed3576"),
-                                            ("r5e540d8620b1", "r858c094cb85f")))
+                                            ("r5e540d8620b1", "r858c094cb85f"), ("r99b1eebb5254", "r0f5e38b0d934")))
 def test_the_prescaled_runs_rerun_the_plain_ones(run_id, plain):
     prescaled = run_config(run_id)
     assert scientific_differences(prescaled, run_config(plain)) == {"model.attention_head_rms_prescale"}

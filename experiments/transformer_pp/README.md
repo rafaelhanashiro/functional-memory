@@ -3057,7 +3057,7 @@ done
 
 ### Max-abs head RMSNorm at Q/K widths 4 and 8
 
-Three narrow-key runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
+Four narrow-key runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
 same function whose FP32 gradient is exact at any output scale. The plain arithmetic loses the term that removes the
 gradient's component along a head's output once that output's RMS passes about 9e14 on GPU
 ([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)):
@@ -3069,6 +3069,7 @@ SoS run 1.3% (2% off, concentrated in the head score scales).
 | `rabfbab32a594` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms` | `z h_t(z)`, `d_K` 4 | `r5a25f500bfa8` | `attention_head_rms_prescale: max_abs` | key width |
 | `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `re3515eed3576` | `attention_head_rms_prescale: max_abs` | key width |
 | `r5e540d8620b1` | `fixed-m8-head-scale-dk8-max-abs-head-rms` | `T_8(s)`, `d_K` 8 | `r858c094cb85f` | `attention_head_rms_prescale: max_abs` | key width |
+| `r99b1eebb5254` | `static-m8-head-scale-dk4-max-abs-head-rms` | `p(s)`, `d_K` 4 | `r0f5e38b0d934` | `attention_head_rms_prescale: max_abs` | key width |
 
 Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) compares a run with its partner without the
 prescale, as every adapter does (`scaffolds.transformer.acceptance.comparison_recipe`), and keeps its pins: the option
@@ -3102,4 +3103,17 @@ sbatch --parsable --partition=long --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-p
   --error=experiments/transformer_pp/runs/r5e540d8620b1/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
   experiments/transformer_pp/runs/r5e540d8620b1/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+The static run at `d_K` 4 (`r0f5e38b0d934`) had attention row sums above 2e14 from update 4,500 (3.4e15 at the final
+validation), so `r99b1eebb5254` reruns it with the prescale, on the width-4 kernel's GPUs (H100 or B200) with the
+ladder's 9-hour limit:
+
+```bash
+sbatch --parsable --partition=standard --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,dogo,mastiff,collie,samoyed,doodle,terrier --job-name=r99b1eebb5254 \
+  --output=experiments/transformer_pp/runs/r99b1eebb5254/training.log \
+  --error=experiments/transformer_pp/runs/r99b1eebb5254/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+  experiments/transformer_pp/runs/r99b1eebb5254/config.yaml "$(git rev-parse HEAD)" 1 B200,H100
 ```

@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r99b1eebb5254/config.yaml",
+    "sha256": "5e586cf620f4cb46be7b3173c08e78dbc797c61a1cdf8c7287c7215f4670171c"
+  },
+  "home_cluster": "kennel",
+  "label": "static-m8-head-scale-dk4-max-abs-head-rms",
+  "name": "static-m8-head-scale-dk4-max-abs-head-rms",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "e10aa6bbc3b2fefc06877816e39eedefc91168332f81e3ba8d955c4d8f859a6c",
+    "loss": 5.6005859375,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r99b1eebb5254",
+  "status": "planned"
+}
