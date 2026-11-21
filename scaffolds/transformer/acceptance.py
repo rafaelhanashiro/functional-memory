@@ -200,8 +200,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         paths.extend(("scaffolds/transformer/tests/test_even_gate_exp_attention.py",
                       "scaffolds/transformer/tests/test_even_gate_exp_head.py"))
         if not cpu:
-            if resolved_backend != "fused":
-                raise ValueError("Degree-sixteen even gates with an exponential train on the fused hybrid kernel")
+            if resolved_backend not in ("fused", "mosaic"):
+                raise ValueError("Degree-sixteen even gates with an exponential train on the fused or mosaic kernels")
             return tuple(dict.fromkeys(paths))
     from scaffolds.transformer.configs.base import ModelConfig, _blocked_polynomial
 

@@ -123,3 +123,15 @@ def test_blocked_hybrid_head_matches_dense_fp64(score, bias, record_property):
 def test_fused_bf16_hybrid_head_matches_dense_fp64(score, bias, record_property):
     assert jax.default_backend() == "gpu"
     _check_head(score, bias, "fused", 256, jnp.bfloat16, record_property)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize(("score", "bias"), VARIANTS)
+def test_mosaic_bf16_hybrid_head_matches_dense_fp64(score, bias, record_property):
+    from scaffolds.transformer.attention.backends.mosaic.api import EVEN_EXP_COMPUTE_CAPABILITIES
+
+    assert jax.default_backend() == "gpu"
+    capability = str(jax.devices()[0].compute_capability)
+    if capability not in EVEN_EXP_COMPUTE_CAPABILITIES:
+        pytest.skip(f"The Mosaic even-power kernels admit {EVEN_EXP_COMPUTE_CAPABILITIES}, not {capability}")
+    _check_head(score, bias, "mosaic", 256, jnp.bfloat16, record_property)

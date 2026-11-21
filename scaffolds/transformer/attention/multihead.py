@@ -308,7 +308,7 @@ class MultiHeadAttention(nnx.Module):
                 not self.sigmoid_logit_bias or tuple(attention_coefficient_orders or ()) != tuple(range(2, 17, 2))
                 or attention_degree != 16 or attention_coefficient_input_source != "pre_rmsnorm"
                 or attention_output_scaling != "head_rms_norm" or attention_head_rms_prescale != "max_abs"
-                or backend not in ("blocked", "fused")):
+                or backend not in ("blocked", "fused", "mosaic")):
             raise ValueError("The gated exponential requires the degree-16 even basis with biased sigmoid "
                              "gates on unit-L2 raw inputs and max-abs head RMSNorm")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization

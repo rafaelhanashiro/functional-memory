@@ -73,12 +73,27 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
     if getattr(model_config, "attention_coefficient_exp_gate", False):
         if request == "blocked":
             return request
+        if request == "mosaic":
+            from scaffolds.transformer.attention.backends.mosaic.api import (
+                EVEN_EXP_COMPUTE_CAPABILITIES, VALUE_WIDTH, WIDTHS,
+            )
+
+            capabilities = EVEN_EXP_COMPUTE_CAPABILITIES[:1] if platform is not None else _cuda_compute_capabilities()
+            length = model_config.max_seq_len if sequence_length is None else sequence_length
+            if (gpu and dtype == "bfloat16" and capabilities
+                    and all(item in EVEN_EXP_COMPUTE_CAPABILITIES for item in capabilities)
+                    and model_config.qk_head_dim in WIDTHS and model_config.value_head_dim == VALUE_WIDTH
+                    and length % 256 == 0):
+                return request
+            raise ValueError("Gated even powers plus exp on Mosaic require BF16 training on a qualified GPU "
+                             f"(compute capability {EVEN_EXP_COMPUTE_CAPABILITIES}), Q/K width in {WIDTHS}, value "
+                             f"width {VALUE_WIDTH} and a sequence length divisible by 256")
         capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
         if (request == "fused" and capability is not None and capability >= 8
                 and max(model_config.qk_head_dim, model_config.value_head_dim) <= 128):
             return request
-        raise ValueError("Gated even powers plus exp require the blocked reference or fused CUDA kernels "
-                         "with sm80+ and head widths at most 128")
+        raise ValueError("Gated even powers plus exp require the blocked reference, the mosaic kernels or fused "
+                         "CUDA kernels with sm80+ and head widths at most 128")
     if getattr(model_config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.backends.fla_path_attention import (
             BLACKWELL_HEAD_DIMS, SEQUENCE_MULTIPLE,

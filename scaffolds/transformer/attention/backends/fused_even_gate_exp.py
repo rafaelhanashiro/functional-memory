@@ -251,6 +251,34 @@ def _bwd(interpret, saved, cotangents):
 _attention.defvjp(_fwd, _bwd)
 
 
+def _shift_kernel(q_ref, k_ref, gate_ref, shift_ref, *, time, dq, bq, bk):
+    """The forward program's final row shift alone: the same tiles and running maximum, without weights."""
+    qi = pl.program_id(0) * bq + jnp.arange(bq)
+    q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
+    active = plt.load(gate_ref, mask=qi < time, other=0) != 0.0
+
+    def body(tile, previous):
+        ki = tile * bk + jnp.arange(bk)
+        scores, _ = _scores(q, _load(k_ref, ki, dq, time), qi, ki, time, dq)
+        return jnp.maximum(previous, row_shift(scores, active))
+
+    end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
+    plt.store(shift_ref, lax.fori_loop(0, end, body, jnp.zeros((bq,), jnp.float32)), mask=qi < time)
+
+
+def row_shifts(q, k, exp_gate, *, interpret=False):
+    """[batch, time, heads] row shifts of the gated even powers plus exp, as the forward program forms them: for
+    kernels that take the shift as an input (mosaic.api.even_exp_attention). Not differentiated."""
+    batch, time, heads, dq = q.shape
+    bq, bk, warps, stages = _tiling("forward", dq, dq)
+    return pl.pallas_call(partial(_shift_kernel, time=time, dq=dq, bq=bq, bk=bk),
+                          out_shape=jax.ShapeDtypeStruct(q.shape[:3], jnp.float32),
+                          in_specs=(_spec(bq, dq), _full_spec(time, dq), _shift_spec(bq)), out_specs=_shift_spec(bq),
+                          grid=(pl.cdiv(time, bq), batch, heads),
+                          compiler_params=plt.CompilerParams(num_warps=warps, num_stages=stages),
+                          interpret=interpret, name="even_gate_exp_row_shift")(q, k, exp_gate)
+
+
 def fused_even_gate_exp(q, k, v, coefficients, exp_gate, *, interpret=False):
     gates = tuple(coefficients[..., order] for order in ORDERS) + (exp_gate,)
     return _attention(q, k, v, gates, interpret)

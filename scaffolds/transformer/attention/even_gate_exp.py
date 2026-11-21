@@ -121,10 +121,15 @@ def even_gate_exp_attention(q, k, v, coefficients, exp_gate, *, backend="blocked
         raise ValueError("The gated even polynomial plus exponential requires BF16 or FP32 Q/K/V and FP32 gates")
     if backend == "blocked":
         return _reference(q, k, v, coefficients, exp_gate, return_diagnostics)
-    if backend != "fused" or max(q.shape[-1], v.shape[-1]) > 128:
-        raise ValueError("The gated even polynomial plus exponential uses blocked or fused attention (width <= 128)")
-    from scaffolds.transformer.attention.backends.fused_even_gate_exp import fused_even_gate_exp
-    output = fused_even_gate_exp(q, k, v, coefficients, exp_gate)
+    if backend == "mosaic":
+        from scaffolds.transformer.attention.backends.mosaic.api import even_exp_attention
+        output = even_exp_attention(q, k, v, coefficients, exp_gate)
+    elif backend != "fused" or max(q.shape[-1], v.shape[-1]) > 128:
+        raise ValueError("The gated even polynomial plus exponential uses blocked, fused (width <= 128) or mosaic "
+                         "attention")
+    else:
+        from scaffolds.transformer.attention.backends.fused_even_gate_exp import fused_even_gate_exp
+        output = fused_even_gate_exp(q, k, v, coefficients, exp_gate)
     if not return_diagnostics:
         return output
     _, stats = _reference(q, k, v, coefficients, exp_gate, True)

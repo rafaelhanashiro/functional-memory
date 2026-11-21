@@ -55,9 +55,9 @@ import jax.numpy as jnp
 
 from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import (
-    BF16, BF16X3, ENDPOINT_DECAY, PER_ORDER_CUMULATIVE_DECAY, PER_ORDER_ENDPOINT_DECAY, PER_ORDER_QUERY_DECAY,
-    PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SIGMOID, QUERY_SOFTPLUS, QUERY_SWISH, TAYLOR,
-    score_function_family,
+    BF16, BF16X3, ENDPOINT_DECAY, EVEN_EXP, PER_ORDER_CUMULATIVE_DECAY, PER_ORDER_ENDPOINT_DECAY,
+    PER_ORDER_QUERY_DECAY, PRECISIONS, QUERY, QUERY_ABS, QUERY_DECAY, QUERY_SIGMOID, QUERY_SOFTPLUS, QUERY_SWISH,
+    TAYLOR, score_function_family,
 )
 
 WIDTHS = (4, 8, 16, 32, 64, 128)
@@ -414,6 +414,80 @@ def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: 
     precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
     return _transformed_query(q, k, v, coefficients, family, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# Degree-sixteen even powers plus a gated exponential in one row shift (attention/even_gate_exp.py).
+
+EVEN_EXP_ORDERS = tuple(range(2, 17, 2))
+EVEN_EXP_DEGREE = len(EVEN_EXP_ORDERS)  # the polynomial's degree in z = u^2
+# Exact GPU capabilities whose qualification covers this family (validation README); others are refused.
+EVEN_EXP_COMPUTE_CAPABILITIES = ("10.0", "10.3")
+
+
+def _even_exp_vectors(coefficients, exp_gate, shift):
+    """The family's per-query vectors [m + 3, batch, heads, time]: a_k = c_2k exp(-(16 - 2k) m_t / 16), h =
+    exp(-m_t / 32), m_t and the gate, as the fused programs form them."""
+    rows = lambda x: x.transpose(0, 2, 1)
+    shift = rows(shift)
+    units = [1.0 if r == EVEN_EXP_ORDERS[-1] else jnp.exp(shift * (-(EVEN_EXP_ORDERS[-1] - r) / EVEN_EXP_ORDERS[-1]))
+             for r in EVEN_EXP_ORDERS]
+    scaled = [rows(coefficients[..., r]) * unit for r, unit in zip(EVEN_EXP_ORDERS, units)]
+    return jnp.stack([*scaled, jnp.exp(shift * (-0.5 / EVEN_EXP_ORDERS[-1])), shift, rows(exp_gate)])
+
+
+def _even_exp_forward(q, k, v, vectors, precision):
+    _, kernels = _kernels()
+    out, _ = kernels.forward(_pad(q), _pad(k), v, vectors, family=EVEN_EXP, degree=EVEN_EXP_DEGREE,
+                             scale=_scale(q), precision=precision)
+    return out
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(4,))
+def _even_exp(q, k, v, vectors, precision):
+    return _even_exp_forward(q, k, v, vectors, precision)
+
+
+def _even_exp_fwd(q, k, v, vectors, precision):
+    return _even_exp_forward(q, k, v, vectors, precision), (q, k, v, vectors)
+
+
+def _even_exp_bwd(precision, residuals, do):
+    q, k, v, vectors = residuals
+    # The kernels read dO as BF16 tiles, as FlashAttention and cuDNN do.
+    grad_q, sums, grad_k, grad_v = _backward(EVEN_EXP, EVEN_EXP_DEGREE, precision, q, k, v,
+                                             do.astype(jnp.bfloat16), vectors)
+    zero = jnp.zeros_like(sums[0])
+    return grad_q, grad_k, grad_v, jnp.stack([*sums[:EVEN_EXP_DEGREE], zero, zero, sums[EVEN_EXP_DEGREE]])
+
+
+_even_exp.defvjp(_even_exp_fwd, _even_exp_bwd)
+
+
+def even_exp_attention(q, k, v, coefficients, exp_gate, *, precision: str | None = None):
+    """(Y, m): the causal sum_i (sum_(r = 2, 4, ..., 16) c_(t,r) s_ti^r + g_t e^(s_ti)) e^(-m_t) v_i in FP32 and the
+    row shift m_t, the fused kernel's (backends/fused_even_gate_exp.py, whose ``row_shifts`` forms m before the
+    Mosaic passes), for head RMSNorm. Coefficients are FP32 [batch, time, heads, 17] (orders other than 2, 4, ...,
+    16 are ignored), the gate FP32 [batch, time, heads]; a zero gate removes the exponential and its gradient. The
+    even powers are a degree-8 polynomial in z = (s e^(-m/16))^2 (``common`` family query_even_exp). ``precision``
+    is that of the weights and score gradients entering the tensor cores (default BF16X3); dO enters them as BF16.
+    A row with a nonfinite weight is NaN."""
+    name = "Mosaic even-power plus gated exponential attention"
+    _check_operands(q, k, v, name)
+    if (coefficients.shape != (*q.shape[:3], EVEN_EXP_ORDERS[-1] + 1) or coefficients.dtype != jnp.float32
+            or exp_gate.shape != q.shape[:3] or exp_gate.dtype != jnp.float32):
+        raise ValueError(f"{name} requires FP32 coefficients [batch, time, heads, 17] and an FP32 gate "
+                         f"[batch, time, heads], got {coefficients.dtype} {coefficients.shape} and "
+                         f"{exp_gate.dtype} {exp_gate.shape}")
+    capability = _device_compute_capability()
+    if capability not in EVEN_EXP_COMPUTE_CAPABILITIES:
+        raise ValueError(f"{name} admits compute capabilities {EVEN_EXP_COMPUTE_CAPABILITIES}, not {capability}")
+    precision = BF16X3 if precision is None else precision
+    _check_precision(precision)
+    from scaffolds.transformer.attention.backends.fused_even_gate_exp import row_shifts
+
+    shift = jax.lax.stop_gradient(row_shifts(q, k, exp_gate))
+    return _even_exp(q, k, v, _even_exp_vectors(coefficients, exp_gate, shift), precision), shift
 
 
 # ----------------------------------------------------------------------------------------
