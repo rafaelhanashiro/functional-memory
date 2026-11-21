@@ -297,6 +297,21 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   ([attention scaling results](results/attention_scaling/README.md)). This is a practice
   for new runs: historical recipes and resumptions keep their settings, and the
   scaffold's default stays `none`.
+- New experiments with per-head RMSNorm output scaling evaluate it with the max-abs
+  prescale (`model.attention_head_rms_prescale: max_abs`: each head's output divided by
+  its largest magnitude first, the same function, whose FP32 gradient stays exact at
+  any output scale) unless the user explicitly requests the plain arithmetic; do not
+  inherit `none` when copying a recipe. `scaffolds.records create` fills it in, and
+  fresh allocation of such a recipe with `none` requires `--allow-plain-head-rms`.
+  Historical recipes and resumptions keep their setting.
+- New unnormalized exponential experiments with per-head RMSNorm output scaling
+  subtract each row's largest logit (`model.attention_exp_shift: row_max`: the same
+  function, finite at any score) wherever the shift is implemented: on the blocked
+  backend with RoPE or no positional encoding, forget gates and score functions
+  included, and for the plain ungated exponential on the fused kernel; PaTH keeps its
+  own kernels. Do not inherit `none` when copying a recipe. `scaffolds.records create`
+  fills it in, and fresh allocation of such a recipe with `none` requires
+  `--allow-unshifted-exp`. Historical recipes and resumptions keep their setting.
 - New dense query-coefficient experiments always use
   `model.attention_coefficient_readout_scale: 1/sqrt(K)`, where K is
   `model.attention_coefficient_feature_count` (or degree + 1 when omitted).
