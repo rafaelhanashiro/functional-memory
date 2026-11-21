@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rf1fad040d27d/config.yaml",
+    "sha256": "7bb79c21427c75f2edc24e384666709caad646e2d0cf23c854c5f2da46e8ec19"
+  },
+  "home_cluster": "kennel",
+  "label": "fixed-m12-l12-d640-4x-max-abs-head-rms",
+  "name": "fixed-m12-l12-d640-4x-max-abs-head-rms",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "4bbb464528e47cf2c02e0e34dbe64fcb75c5526bf0b5fbaa17d60d736c64abdb",
+    "loss": 5.572049140930176,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rf1fad040d27d",
+  "status": "planned"
+}

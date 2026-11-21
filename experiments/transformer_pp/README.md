@@ -3103,3 +3103,67 @@ sbatch --parsable --partition=long --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-p
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
   experiments/transformer_pp/runs/r5e540d8620b1/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
 ```
+
+## Max-abs reruns of the ALiBi exp and 12-layer width-640 4x runs
+
+Four earlier runs again, requested 2026-11-21 on Kennel, under the settings `scaffolds.records create` now gives a
+fresh copy of each recipe: head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`) and, for
+the exponential, its row-maximum shift (`model.attention_exp_shift: row_max`). Each source run trained with attention
+row sums above 2e14, where the plain head RMSNorm arithmetic's FP32 gradient is inexact
+([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)).
+Each recipe is its source's with those settings alone; seed (42), data order, schedule and initialization are the
+source's, and the settings add no parameter.
+
+| Run | Label | Kernel | Rerun of | Row sums above 2e14 from update (largest) | Recipe change | Adapter |
+| --- | --- | --- | --- | --- | --- | --- |
+| `rcb0ee48a6e75` | `exp-alibi-fixed-no-rope-row-max-max-abs-head-rms` | exp with ALiBi's fixed slopes, no RoPE | `r7820049184ef` | 4,500 (5.1e21) | row shift and prescale | generic |
+| `r775f6499974f` | `query-m12-sum-of-squares-w-decay-l12-d640-4x-max-abs-head-rms` | query SoS, `m = 12` | `r1f935f18fe21` | 20,000 (1.7e15) | prescale | coefficient forms |
+| `rf1fad040d27d` | `fixed-m12-l12-d640-4x-max-abs-head-rms` | fixed Taylor, `m = 12` | `rcace22b32f93` | 18,000 (1.3e15) | prescale | generic |
+| `r3474c2559dd7` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms` | `z h_t(z)`, core degree twelve | `r4589172dcd8b` | 24,000 (1.2e15) | prescale | softplus SoS |
+
+- **Sources.** `r7820049184ef` is the [ALiBi exp run](#alibi-on-softmax-and-exp) at the 15-layer width-896 reference
+  shape (7,570 updates); the other three are 12-layer width-640 runs at four times their 1x budget (30,205 updates):
+  [fixed Taylor and query SoS](#the-12-layer-width-640-shape-at-four-times-its-1x-budget) and the
+  [softplus-prefactor SoS](#the-12-layer-width-640-shape-at-1x-2x-and-4x). The measurement covered the first three
+  sources; `r4589172dcd8b` is rerun for the same recorded row sums. The other 4x runs stayed below 2e14 (static,
+  softplus input, SoS without the prefactor, exp) or passed it only at the last validation (query, 6.2e14).
+- **Kernels and GPUs.** As their sources: the ALiBi exp run on the blocked backend's causal strips (B300 or H100
+  SXM), which evaluate the shift over the decayed logits; query SoS and fixed Taylor on the Mosaic polynomial kernels
+  (B300 or H100); `z h_t(z)` on the Mosaic transformed kernels (H100 or B200). The prescale is head RMSNorm's own
+  arithmetic after any kernel, qualified on B200, B300 and H100
+  ([validation](../../scaffolds/transformer/validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20)).
+- **Acceptance.** The [coefficient-forms](coefficient_forms_acceptance.py) and [softplus SoS](softplus_sos_acceptance.py)
+  adapters pin their controls' recipes and compare without the prescale; the generic acceptance pins none.
+  `tests/test_max_abs_reruns.py` holds each rerun to its source's recipe apart from the listed settings. Every
+  allocation also runs the selected CPU and GPU suites, the full-recipe pilot and a fresh-process resume.
+- **Time limits.** 1.4 times the source's slowest recorded rate on the slowest GPU type listed (H100 SXM), plus
+  acceptance's two-hour reserve, rounded up to whole hours:
+
+  | Run | Source's wall clock, hours | Limit, h |
+  | --- | --- | ---: |
+  | `rcb0ee48a6e75` | 10.3-10.5 on H100 SXM (4.9-5.0 s per update) | 17 |
+  | `r775f6499974f` | 5.1 on B300 to 7.1 on H100 SXM | 12 |
+  | `rf1fad040d27d` | 4.5 on B300 to 6.0 on H100 SXM | 11 |
+  | `r3474c2559dd7` | 8.7-9.0 on H100 SXM | 15 |
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The ALiBi exp run waits behind the
+polynomial runs (`--nice=1000`):
+
+```bash
+submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice
+  sbatch --parsable --partition="${1:?standard or long}" --time="$2" --nice="${7:?nice}" --gres=gpu:1 \
+    --cpus-per-task=16 --mem=128G --exclude="$5" --job-name="$6" \
+    --output="experiments/transformer_pp/runs/$6/training.log" --error="experiments/transformer_pp/runs/$6/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch "experiments.transformer_pp.$3" \
+    "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
+}
+# dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md): drop dogo from a list only while a placeholder
+# job of ours holds that GPU.
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita)
+b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba)
+submit long 12:00:00 coefficient_forms_acceptance B300,H100 "$b300" r775f6499974f 0  # query SoS
+submit long 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7 0       # z h_t(z)
+submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
+submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
+```

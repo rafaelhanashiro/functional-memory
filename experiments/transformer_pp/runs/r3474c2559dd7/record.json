@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r3474c2559dd7/config.yaml",
+    "sha256": "51595be4157e19036a1132c73292bee56d94f6be1e921876e57ef9c616358bec"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms",
+  "name": "query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "3593d19d5963450a6d0ab3e75f142399f55648ba448a926997ab0244590c6d51",
+    "loss": 5.56720495223999,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r3474c2559dd7",
+  "status": "planned"
+}
