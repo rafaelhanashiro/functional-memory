@@ -287,7 +287,8 @@ def attention_identity(config) -> dict:
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
         elif config.model.attention_coefficient_sigmoid_bias_initial != "none":
             orders = config.model.attention_coefficient_orders
-            per_polynomial = (len(orders) if orders else degree + 1) * (config.model.hidden_size + 1)
+            count = len(orders) if orders else degree + 1
+            per_polynomial = (count + int(config.model.attention_coefficient_exp_gate)) * (config.model.hidden_size + 1)
         elif config.model.attention_coefficient_orders is not None:
             per_polynomial = len(config.model.attention_coefficient_orders) * (
                 config.model.hidden_size + 2 + int(config.model.attention_coefficient_tanh_bias)
@@ -394,6 +395,8 @@ def attention_identity(config) -> dict:
                                 if coefficient_gate == "sigmoid"
                                 else f"sum_(i<=t) sum_(r<={degree}) alpha_r(x_t) c_r(x_t) s_ti^r v_i"
                                 if coefficient_gate == "gdn"
+                                else "sum_(i<=t) (g_exp(x_t) exp(s_ti) + sum_r c_r(x_t) s_ti^r) v_i"
+                                if config.model.attention_coefficient_exp_gate
                                 else f"sum_(i<=t) sum_(r<={degree}) c_r(x_t) s_ti^r v_i")
                                + ", s_ti = Q_t K_i^T / sqrt(d_k); "
                                + (f"{tanh_formula} per layer/head, {tanh_start}, b_r initially 1/r!; " if query_tanh
@@ -791,6 +794,21 @@ def attention_identity(config) -> dict:
                 "unshifted exponential overflows FP32"))
         if identity["attention_implementation"] == "pallas_triton":
             identity["attention_implementation"] = "pallas_triton_row_max_shifted"
+    if config.model.attention_coefficient_exp_gate:
+        identity.update(
+            attention_kernel="query_gated_even_polynomial_plus_exp",
+            diagnostic_backend="blocked",
+            diagnostic_query_block_size=min(32, config.model.max_seq_len),
+            attention_coefficient_exp_gate=True,
+            attention_formula=identity["attention_formula"] + (
+                "; g_exp = sigmoid(x_t W_exp + b_exp) uses the same unit-L2 input and a separate "
+                "projection with b_exp initially zero; both branches share a causal row shift "
+                "carried into the output RMSNorm epsilon"))
+        if config.model.attention_backend == "fused":
+            identity["attention_implementation"] = "triton_even_gate_exp_row_shift"
+        else:
+            identity.update(attention_implementation="blocked_even_gate_exp_row_shift",
+                            query_block_size=min(32, config.model.max_seq_len))
     if getattr(config.model, "attention_head_rms_prescale", "none") != "none":
         # How the formula's head RMSNorm is evaluated (attention/output_scaling.py), after every other clause.
         identity.update(
@@ -1293,6 +1311,16 @@ def query_coefficient_report(params, raw_layers, *, amplitude_scale="none", coef
                        and (inner_bias is None or np.isfinite(inner_bias).all())
                        and all(np.isfinite(values).all() for values in summaries.values())),
     }
+    if "query_exp_gate_kernel" in params:
+        exp_kernel = np.asarray(jax.device_get(params["query_exp_gate_kernel"][...]), dtype=np.float64)[..., 0]
+        exp_bias = np.asarray(jax.device_get(params["query_exp_gate_bias"][...]), dtype=np.float64)[..., 0]
+        exp_summaries = {stat: np.stack([layer[f"query_exp_gate_{stat}"] for layer in raw_layers])
+                         for stat in ("mean", "std", "min", "max")}
+        report.update(exp_gate_summary={k: _serializable(v) for k, v in exp_summaries.items()},
+                      exp_gate_projection_kernel_l2=_serializable(np.linalg.norm(exp_kernel, axis=-1)),
+                      exp_gate_projection_bias=_serializable(exp_bias))
+        report["finite"] &= bool(np.isfinite(exp_kernel).all() and np.isfinite(exp_bias).all()
+                                 and all(np.isfinite(v).all() for v in exp_summaries.values()))
     if parameterization == "sum_of_squares":
         core_degree = summaries["mean"].shape[-1] - 1 - input_power
         report.update(parameterization=parameterization, input_power=input_power,
@@ -1972,7 +2000,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     for index, raw in enumerate(raw_layers):
         layer = {"layer": index}
         for name, value in raw.items():
-            if name.startswith(("query_coefficient_", "key_factor_", "forget_gate_", "token_scale_",
+            if name.startswith(("query_coefficient_", "query_exp_gate_", "key_factor_", "forget_gate_", "token_scale_",
                                 "coefficient_gate_", "coefficient_input_", "coefficient_projection_",
                                 "coefficient_tanh_", "spline_", "score_bias_", "score_transform_", "score_mlp_")):
                 continue  # Per-head/order arrays are summarized in the coefficient report.

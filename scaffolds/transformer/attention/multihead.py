@@ -65,6 +65,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
         attention_coefficient_sigmoid_bias_initial=config.attention_coefficient_sigmoid_bias_initial,
+        attention_coefficient_exp_gate=config.attention_coefficient_exp_gate,
         attention_coefficient_input_source=config.attention_coefficient_input_source,
         attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
@@ -128,6 +129,7 @@ class MultiHeadAttention(nnx.Module):
         attention_coefficient_activation: str = "identity",
         attention_coefficient_input_normalization: str = "none",
         attention_coefficient_sigmoid_bias_initial: str = "none",
+        attention_coefficient_exp_gate: bool = False,
         attention_coefficient_input_source: str = "post_rmsnorm",
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
@@ -302,6 +304,13 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh query "
                              "polynomial coefficients with RoPE or no positional encoding, without selected "
                              "orders, gates or score biases; only softplus SoS with an input prefactor permits a score transform")
+        if attention_coefficient_exp_gate and (
+                not self.sigmoid_logit_bias or tuple(attention_coefficient_orders or ()) != tuple(range(2, 17, 2))
+                or attention_degree != 16 or attention_coefficient_input_source != "pre_rmsnorm"
+                or attention_output_scaling != "head_rms_norm" or attention_head_rms_prescale != "max_abs"
+                or backend not in ("blocked", "fused")):
+            raise ValueError("The gated exponential requires the degree-16 even basis with biased sigmoid "
+                             "gates on unit-L2 raw inputs and max-abs head RMSNorm")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         self.attention_coefficient_input_source = attention_coefficient_input_source
         if not isinstance(attention_forget_gate, bool):
@@ -474,6 +483,7 @@ class MultiHeadAttention(nnx.Module):
         self.attention_coefficient_readout = attention_coefficient_readout
         self.attention_coefficient_readout_scale = attention_coefficient_readout_scale
         self.attention_coefficient_orders = attention_coefficient_orders
+        self.attention_coefficient_exp_gate = attention_coefficient_exp_gate
         self.attention_coefficient_zero_constant = attention_coefficient_zero_constant
         self.attention_coefficient_conditioning = attention_coefficient_conditioning
         self.attention_coefficient_parameterization = attention_coefficient_parameterization
@@ -716,6 +726,8 @@ class MultiHeadAttention(nnx.Module):
         spline = self.attention_kernel_basis == "bspline"
         if spline and (query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture apply to monomial coefficients, not a B-spline basis")
+        if self.attention_coefficient_exp_gate and (query_coefficients is not None or return_coefficients):
+            raise ValueError("Polynomial-only coefficient overrides and captures omit the independent exp gate")
         if self.attention_score_bias != "none" and (
                 query_coefficients is not None or return_coefficients or key_factors is not None):
             raise ValueError("Coefficient override and capture assume sum_r c_r s^r; per-degree score biases "
@@ -763,6 +775,10 @@ class MultiHeadAttention(nnx.Module):
         query_amplitude = parameters.pop("query_polynomial_amplitude", None)
         query_mixing = parameters.pop("query_polynomial_mixing", None)
         query_tanh_bias = parameters.pop("query_polynomial_tanh_bias", None)
+        exp_kernel = parameters.pop("query_exp_gate_kernel", None)
+        exp_bias = parameters.pop("query_exp_gate_bias", None)
+        if self.attention_coefficient_exp_gate != (exp_kernel is not None) or (exp_kernel is None) != (exp_bias is None):
+            raise ValueError("The exponential gate requires its model-owned kernel and bias")
         key_kernel = parameters.pop("key_polynomial_kernel", None)
         key_amplitude = parameters.pop("key_polynomial_amplitude", None)
         gate_kernel = parameters.pop("query_polynomial_gate_kernel", None)
@@ -847,6 +863,11 @@ class MultiHeadAttention(nnx.Module):
                     readout_scale=self.attention_coefficient_readout_scale,
                     orders=self.attention_coefficient_orders, gate_kernel=gate_kernel, gate_bias=gate_bias,
                     gate_log_rate=gate_log_rate)
+                if exp_kernel is not None:
+                    from scaffolds.transformer.attention.input_dependent import project_coefficient_gates
+
+                    parameters["query_exp_gate"] = project_coefficient_gates(
+                        coefficient_input, exp_kernel, exp_bias)[..., 0]
                 if self.attention_coefficient_parameterization == "sum_of_squares":
                     from scaffolds.transformer.attention.nonnegative_polynomial import query_square_coefficients
 
@@ -1075,7 +1096,8 @@ class MultiHeadAttention(nnx.Module):
         )
         y, diagnostics = result if return_diagnostics else (result, None)
         # The shifted exponential's output e^(-m) o and its row shifts m [batch, time, heads], which head RMSNorm takes.
-        y, output_shift = y if self.attention_exp_shift != "none" else (y, None)
+        shifted_output = self.attention_exp_shift != "none" or "query_exp_gate" in parameters
+        y, output_shift = y if shifted_output else (y, None)
         if (return_diagnostics and self.attention_coefficient_input_normalization == "l2"
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
@@ -1083,6 +1105,11 @@ class MultiHeadAttention(nnx.Module):
             diagnostics.update(coefficient_input_statistics(
                 coefficient_source, coefficient_input, query_kernel,
                 sigmoid_logit_bias=query_bias if self.sigmoid_logit_bias else None))
+        if return_diagnostics and exp_kernel is not None:
+            exp_gate = jax.lax.stop_gradient(parameters["query_exp_gate"])
+            diagnostics.update({f"query_exp_gate_{name}": reduce(exp_gate, axis=(0, 1))
+                                for name, reduce in (("mean", jnp.mean), ("std", jnp.std),
+                                                     ("min", jnp.min), ("max", jnp.max))})
         if gate_statistics is not None:
             diagnostics.update(gate_statistics)
         if return_diagnostics and log_alpha is not None:

@@ -193,6 +193,15 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                     spec = replace(spec, initial=tuple(spec.initial[order] for order in orders))
                 selected.append(spec)
             specs = tuple(selected)
+        if getattr(config, "attention_coefficient_exp_gate", False):
+            width = config.hidden_size
+            specs += (
+                AttentionParameterSpec("query_exp_gate_kernel", "query_exp_gate_kernel", (0.0,) * width,
+                                       "per_head", weight_decay=config.attention_coefficient_kernel_weight_decay,
+                                       initial_shape=(width, 1),
+                                       initial_std=config.attention_coefficient_projection_initial_std),
+                AttentionParameterSpec("query_exp_gate_bias", "query_exp_gate_bias", (0.0,), "per_head"),
+            )
     elif config.quadratic_mode == "fixed":
         specs = ()
     else:

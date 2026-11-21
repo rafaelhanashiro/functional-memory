@@ -196,6 +196,13 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         # requeue restoration; its data-parallel case runs in the two-device stage.
         paths.append(GRADIENT_EVENT_TESTS)
     model = config["model"]
+    if model.get("attention_coefficient_exp_gate", False):
+        paths.extend(("scaffolds/transformer/tests/test_even_gate_exp_attention.py",
+                      "scaffolds/transformer/tests/test_even_gate_exp_head.py"))
+        if not cpu:
+            if resolved_backend != "fused":
+                raise ValueError("Degree-sixteen even gates with an exponential train on the fused hybrid kernel")
+            return tuple(dict.fromkeys(paths))
     from scaffolds.transformer.configs.base import ModelConfig, _blocked_polynomial
 
     composed = (resolved_backend == "blocked" and (
@@ -499,6 +506,9 @@ def _runtime_test_paths(config, resolved_backend: str) -> tuple[str, ...]:
 def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tuple[str, ...]:
     """Qualify the recipe's mechanism without depending on study names or past sweeps."""
     model = config["model"]
+    if model.get("attention_coefficient_exp_gate", False) and not cpu:
+        # The hybrid uses its own fused kernel; the generic polynomial kernel is outside this execution path.
+        return tuple(f"scaffolds/transformer/tests/test_head_rms_prescale.py::{name}" for name in HEAD_RMS_GPU_TESTS)
     fused = resolved_backend == "fused"
     tests = []
     if model.get("attention_mechanism", "dot_product") == "gla":
@@ -937,7 +947,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
-                                           attention_coefficient_sigmoid_bias_initial="none",
+                                           attention_coefficient_sigmoid_bias_initial="none", attention_coefficient_exp_gate=False,
                                            attention_coefficient_gate="none",
                                            attention_score_bias="none", attention_score_transform="identity",
                                            attention_score_prefactor="none",
@@ -1008,7 +1018,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_input_normalization="none",
         attention_coefficient_input_source="post_rmsnorm",
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
-        attention_coefficient_sigmoid_bias_initial="none",
+        attention_coefficient_sigmoid_bias_initial="none", attention_coefficient_exp_gate=False,
         attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
         attention_score_prefactor="none", attention_coefficient_constant_initial=None,
         attention_coefficient_zero_constant=False,

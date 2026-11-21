@@ -70,6 +70,15 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
                          f"{request!r} never selects it")
     actual_platform = _runtime_platform() if platform is None else platform
     gpu = actual_platform in ("gpu", "cuda")
+    if getattr(model_config, "attention_coefficient_exp_gate", False):
+        if request == "blocked":
+            return request
+        capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
+        if (request == "fused" and capability is not None and capability >= 8
+                and max(model_config.qk_head_dim, model_config.value_head_dim) <= 128):
+            return request
+        raise ValueError("Gated even powers plus exp require the blocked reference or fused CUDA kernels "
+                         "with sm80+ and head widths at most 128")
     if getattr(model_config, "positional_encoding", "rope") == "path":
         from scaffolds.transformer.attention.backends.fla_path_attention import (
             BLACKWELL_HEAD_DIMS, SEQUENCE_MULTIPLE,

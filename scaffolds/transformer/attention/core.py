@@ -23,6 +23,7 @@ def attention_core(
     polynomial_square_factors: jax.Array | None = None,
     square_factor_input_power: int = 0,
     query_polynomial_coefficients: jax.Array | None = None,
+    query_exp_gate: jax.Array | None = None,
     key_polynomial_factors: jax.Array | None = None,
     query_log_decay: jax.Array | None = None,
     query_decay_mode: str = "cumulative",
@@ -127,6 +128,20 @@ def attention_core(
     decay = query_log_decay is not None or endpoint_operands
     per_order = ((query_log_decay is not None and query_log_decay.ndim == 4)
                  or (query_gate_input is not None and query_gate_input.ndim == 4))
+    if query_exp_gate is not None:
+        from scaffolds.transformer.attention.even_gate_exp import DEGREE, even_gate_exp_attention
+
+        if (attention_normalization or attention_degree != DEGREE or query_polynomial_coefficients is None
+                or coefficients is not None or polynomial_coefficients is not None or polynomial_square_factors is not None
+                or key_polynomial_factors is not None or decay or score_bias or score_transform != "identity" or score_prefactor != "none"
+                or any(value is not None for value in denominators.values()) or exp_shift != "none" or quadratic_mode != "fixed"
+                or query_decay_mode != "cumulative" or square_factor_input_power
+                or any(x is not None for x in (score_mlp_amplitude, score_mlp_offset, score_mlp_slope,
+                                               score_mlp_output_bias, spline_knots, spline_coefficients,
+                                               query_spline_coefficients))):
+            raise ValueError("The query exp gate requires only degree-16 even powers with query coefficients")
+        return even_gate_exp_attention(q, k, v, query_polynomial_coefficients, query_exp_gate,
+                                       backend=backend, return_diagnostics=return_diagnostics)
     # Composition (attention/pieces.py): on the blocked backend a per-query polynomial (static and fixed coefficients
     # arrive broadcast per query) takes key factors, any decay, score biases, a transform and a prefactor together.
     # Only combinations no specialized route below implements take this route, so every other call is unchanged.

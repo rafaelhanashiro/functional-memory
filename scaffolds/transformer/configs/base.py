@@ -182,6 +182,8 @@ class ModelConfig:
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
     attention_coefficient_sigmoid_bias_initial: Literal["none", "zero", "logit_taylor"] = "none"
+    # Add an independently query-gated exp(score) to the positive even-power mixture.
+    attention_coefficient_exp_gate: bool = False
     # "sigmoid" gates every order independently per layer/head: c~_r(x_t) = 2 g_r(x_t) c_r(x_t),
     # g_r(x_t) = sigmoid(U_r^T x_t + beta_r), with U and this gate bias beta starting at zero
     # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
@@ -874,6 +876,16 @@ class ModelConfig:
                 raise ValueError("attention_coefficient_orders must be strictly increasing integers from 0 to "
                                  "attention_degree, including attention_degree")
             self.attention_coefficient_orders = tuple(orders)
+        if not isinstance(self.attention_coefficient_exp_gate, bool):
+            raise ValueError("model.attention_coefficient_exp_gate must be boolean")
+        if self.attention_coefficient_exp_gate and (
+                not biased_sigmoid or self.attention_coefficient_orders != tuple(range(2, 17, 2))
+                or self.attention_coefficient_input_source != "pre_rmsnorm"
+                or self.attention_score_prefactor != "none" or self.attention_exp_shift != "none"
+                or self.attention_output_scaling != "head_rms_norm" or self.attention_head_rms_prescale != "max_abs"
+                or self.attention_backend not in ("blocked", "fused")):
+            raise ValueError("The gated exponential addition requires sigmoid-gated powers 2,4,...,16, "
+                             "unit-L2 raw coefficient inputs, max-abs head RMSNorm, and the blocked or fused backend")
         if sigmoid_bias == "logit_taylor" and (
                 not self.attention_coefficient_orders or self.attention_coefficient_orders[0] < 2):
             raise ValueError("Finite Taylor logits require explicit coefficient orders >= 2")
