@@ -883,10 +883,9 @@ class ModelConfig:
                 or self.attention_coefficient_input_source != "pre_rmsnorm"
                 or self.attention_score_prefactor != "none" or self.attention_exp_shift != "none"
                 or self.attention_output_scaling != "head_rms_norm" or self.attention_head_rms_prescale != "max_abs"
-                or self.attention_backend not in ("blocked", "fused", "mosaic")):
+                or self.attention_backend not in ("blocked", "fused")):
             raise ValueError("The gated exponential addition requires sigmoid-gated powers 2,4,...,16, "
-                             "unit-L2 raw coefficient inputs, max-abs head RMSNorm, and the blocked, fused or mosaic "
-                             "backend")
+                             "unit-L2 raw coefficient inputs, max-abs head RMSNorm, and the blocked or fused backend")
         if sigmoid_bias == "logit_taylor" and (
                 not self.attention_coefficient_orders or self.attention_coefficient_orders[0] < 2):
             raise ValueError("Finite Taylor logits require explicit coefficient orders >= 2")

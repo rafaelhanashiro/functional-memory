@@ -199,15 +199,7 @@ def polynomial_and_derivative(s, coefficients):
 #                 large scores, which makes the row NaN. Masked entries enter at s = 0, where every f is finite,
 #                 and are zeroed; a nonfinite causal score makes its row NaN, since p(z) is nonfinite there
 #                 (and f too, but for exp at -inf, whose zero times the nonfinite p is NaN).
-#   query_even_exp: even powers of the score plus a gated exponential in one row shift m
-#                 (attention/even_gate_exp.py): W = z (a_1 + z (a_2 + ... + z a_m)) + g e^(s - m), z = u^2,
-#                 u = (s h) h, with per-query vectors a_1..a_m (the caller's c_2k exp(-(2m - 2k) m_t / 2m)), h =
-#                 exp(-m_t / 4m), m_t and the gate g, in that order. The caller's shift bounds every causal
-#                 |u| <= 1 and, where g != 0, s - m_t <= 0; a zero gate removes its exponential before exp2, so
-#                 it neither overflows nor enters a gradient. dS = G (p'(z) 2 u h^2 + g e^(s - m)); the dQ sums
-#                 are da_k = sum_i G z^k for k = 1..m, then sum_i G e^(s - m), the gate's.
 TAYLOR, QUERY = "taylor", "query"
-EVEN_EXP = "query_even_exp"
 QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
 QUERY_SIGMOID, QUERY_SWISH = "query_sigmoid", "query_swish"
 # The kernel family of each parameter-free score transform (attention/score_transform.py); the identity is the
@@ -318,8 +310,6 @@ def vector_counts(family, degree):
     """(forward vectors, backward vectors, dQ row sums) for a family."""
     if family == TAYLOR:
         return 0, 2, 0
-    if family == EVEN_EXP:  # a_1..a_m, h, m_t, g; sums da_1..da_m and the gate's
-        return degree + 3, degree + 3, degree + 1
     if family in SCORE_BIAS_FAMILIES:
         orders, gated = degree + 1, family in GATED_SCORE_BIAS_FAMILIES
         vectors = (2 if gated else 1) * orders + degree
@@ -342,7 +332,7 @@ def approx_math(family):
     if family in FAMILY_SCORE_FUNCTIONS:
         transform, prefactor = FAMILY_SCORE_FUNCTIONS[family]
         return transform in ("softplus", "sigmoid", "swish") or prefactor != "none"
-    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES or family == EVEN_EXP
+    return family in DECAY_FAMILIES or family in SCORE_BIAS_FAMILIES
 
 
 def key_counts(family, degree):
@@ -765,39 +755,8 @@ def _score_bias_backward(family, degree, s, dp, vectors, pair, sums, *, rows, we
     return dp * derivative, value
 
 
-def _even_exp_operands(degree, s, vectors):
-    """(a_1..a_m, h, g, u, z, e^(s - m) or zero where g = 0) of a query_even_exp tile."""
-    coefficients, (half, shift, gate) = vectors[:degree], vectors[degree:degree + 3]
-    u = (s * half) * half
-    exponential = jnp.exp2(jnp.where(gate != 0.0, s - shift, -jnp.inf) * LOG2E)
-    return coefficients, half, gate, u, u * u, exponential
-
-
-def _even_exp_weights(degree, s, vectors):
-    """W = z q(z) + g e^(s - m), q(z) = a_1 + a_2 z + ... + a_m z^(m-1)."""
-    coefficients, _, gate, _, z, exponential = _even_exp_operands(degree, s, vectors)
-    return polynomial(z, coefficients) * z + gate * exponential
-
-
-def _even_exp_terms(degree, s, dp, vectors, *, rows):
-    """(dS, dQ row sums or []) of a query_even_exp tile: dS = G ((q(z) + z q'(z)) 2 u h^2 + g e^(s - m)), and
-    the sums da_k = sum_i G z^k for k = 1..m, then sum_i G e^(s - m)."""
-    coefficients, half, gate, u, z, exponential = _even_exp_operands(degree, s, vectors)
-    sums = []
-    if rows:
-        power = z
-        for _ in range(degree):
-            sums.append((dp * power).sum(axis=1))
-            power = power * z
-        sums.append((dp * exponential).sum(axis=1))
-    value, derivative = polynomial_and_derivative(z, coefficients)
-    return dp * ((value + z * derivative) * ((u + u) * (half * half)) + gate * exponential), sums
-
-
 def forward_weights(family, degree, s, vectors, pair=None, terms=None):
     """Weights of a tile; decay families may pass the tile's ``Decay`` as ``terms``."""
-    if family == EVEN_EXP:
-        return _even_exp_weights(degree, s, vectors)
     if family in SCORE_BIAS_FAMILIES:
         return _score_bias_weights(family, degree, s, vectors, pair)
     if family in PER_ORDER_FAMILIES:
@@ -834,8 +793,6 @@ def score_gradient(family, degree, s, dp, vectors):
 
 def value_weights(family, degree, s, vectors, pair=None, terms=None):
     """W for the dV product."""
-    if family == EVEN_EXP:
-        return _even_exp_weights(degree, s, vectors)
     if family in SCORE_BIAS_FAMILIES:
         return _score_bias_weights(family, degree, s, vectors, pair)
     if family in PER_ORDER_FAMILIES:
@@ -876,8 +833,6 @@ def _decay_gradient(family, degree, s, dp, vectors, pair, terms=None):
 def dq_terms(family, degree, s, dp, vectors, pair=None, sums=None):
     """(dS, dQ-kernel row sums) of a tile; families that ``accumulates`` add the tile's sums to the
     running ``sums`` instead and return (dS, None)."""
-    if family == EVEN_EXP:
-        return _even_exp_terms(degree, s, dp, vectors, rows=True)
     if family in SCORE_BIAS_FAMILIES:
         return _score_bias_backward(family, degree, s, dp, vectors, pair, sums, rows=True)[0], None
     if family in PER_ORDER_FAMILIES:
@@ -898,8 +853,6 @@ def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None, sums=None):
     """(dS, per-key sums over the tile's queries) of a transposed dK tile; ``terms`` may hold
     the tile's ``Decay`` from ``decay(..., slopes=True)``. Families that ``accumulates`` add the
     tile's sums to the running ``sums`` instead and return (dS, None)."""
-    if family == EVEN_EXP:
-        return _even_exp_terms(degree, s, dp, vectors, rows=False)
     if family in SCORE_BIAS_FAMILIES:
         return _score_bias_backward(family, degree, s, dp, vectors, pair, sums, rows=False)[0], None
     if family in PER_ORDER_FAMILIES:

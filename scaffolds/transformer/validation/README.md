@@ -65,6 +65,10 @@ backward): the Mosaic degree-8 query kernel takes 0.47 / 2.25 with BF16 products
 exponential with its row-maximum shift 1.14 / 3.41; this kernel 1.49 / 7.36. For the same polynomial work at the same
 precision the Triton programs take about twice as long as Mosaic's, the larger part of the gap to a degree-8 query run;
 the gated exponential, the shift and the ninth gate add about 1.8 ms over the Triton Taylor kernel.
+A Mosaic version of this kernel (job 9872, B300) took 0.97 / 5.73 ms with FP32-level (BF16x3) weight products and
+0.77 / 5.21 with BF16; Mosaic's backward programs read the output cotangent as BF16, which left its gate gradients
+0.2-3% from FP64 (this kernel: under 0.002%) and the exponential gate's unreliable in rows the exponential dominates,
+where head RMSNorm makes that gradient a small difference of large terms. It was not adopted.
 
 ### Degree-eight query polynomial at key width four on B300
 
