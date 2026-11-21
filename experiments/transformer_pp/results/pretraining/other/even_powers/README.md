@@ -148,3 +148,28 @@ Acceptance checks retained orders, gradients, kernel correctness, backbone
 initialization, production-shaped throughput and checkpoint resume before
 training; its order tests cover both the even and the intercept-and-odd sets.
 Actual submissions and allocations live in each run's record.
+
+
+## Query-dependent positive coefficients at key width four
+
+Opened 2026-11-21. At Q/K width 4, can query-dependent mixtures of powers 2, 4, 6 and 8 retrieve keys with bounded
+cosine scores? Does Taylor initialization help when the QK score scale can grow? The three runs use the same
+15-layer width-896 backbone, RoPE, 14 heads, value width 64, seed 42 and 7,570 updates.
+
+For each layer and head the weight is `sum_r sigmoid(u_r · unit(x_t) + b_r) s^r` over those four powers.
+The input is the attention block's residual before its RMSNorm, normalized to unit Euclidean length per token.
+The four projection vectors have matched Gaussian draws with standard deviation `1/sqrt(896)` and weight
+decay 0.1. Biases are exempt from weight decay. The Half runs start with zero logit biases. The Taylor run starts
+with `logit(1/r!)` for each retained order. The nonzero projection makes gate values vary slightly across tokens
+from initialization. The gates supply the entire coefficient. Both score modes keep Q/K channel gains and RoPE.
+The cosine run normalizes the resulting query and key directions and uses their cosine, with its range subject
+to BF16 rounding. The QK runs use the study's RMSNorm score and learned positive per-head scale. All use
+unnormalized attention and max-abs-prescaled head RMSNorm.
+
+* `rf1185ae8a89c` uses the cosine score with Half initialization.
+* `r4ec7b748d430` uses the QK score with Half initialization.
+* `r2bb06d5ee682` uses the QK score with Taylor initialization.
+
+The two Half runs isolate score choice. The two QK runs isolate initialization. Each comparison uses one seed.
+The [selection](selection.yaml) fixes the comparisons and the summary reports validation-best and terminal PPL
+separately as results become available.

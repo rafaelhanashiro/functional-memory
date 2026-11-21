@@ -27,6 +27,13 @@ python -m pytest --import-mode=importlib -m gpu -q \
   'scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-4-bf16x3]'
 ```
 
+The three even-gate variants then passed the complete FP64 comparison at
+`0eb077e305f1e748ee0d45f7e585de45fda9597a` on both akita B300 (job 9517,
+three passed) and shiba B200 (job 9518, three passed). The gate fixture also
+checks gradients into the projection, logit bias, and L2-normalized coefficient
+input. It includes a zero row and opposite keys. To repeat it, run
+`python -m pytest --import-mode=importlib -m gpu -q scaffolds/transformer/tests/test_mosaic_gated_even_coefficients.py`.
+
 ### Row-maximum-shifted exponential (2026-11-20)
 
 `model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the

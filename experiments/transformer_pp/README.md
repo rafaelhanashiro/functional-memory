@@ -3120,3 +3120,26 @@ b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 9:00:00 "$b200" rabfbab32a594 0
 submit standard 9:00:00 "$b200" r1eaa4a4c3c77 0
 ```
+
+
+### Sigmoid coefficients on even powers at key width four
+
+Three Transformer++ runs vary the score and the gate initialization at the 15-layer, width-896 shape.
+The [even-power comparison](results/pretraining/other/even_powers/README.md#query-dependent-positive-coefficients-at-key-width-four)
+gives their scientific question and selection. The [acceptance adapter](even_gate_acceptance.py) verifies each recipe
+against the query partner at key width four, tests the Mosaic kernel against FP64, and checks a full-shape training
+pilot including a checkpoint restart. Each run uses one GPU on Kennel. The launch from this study worktree is
+
+```sh
+for run in rf1185ae8a89c r4ec7b748d430 r2bb06d5ee682; do
+  sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=09:00:00 \
+    --exclude=collie,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" \
+    --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.even_gate_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```
+
+Dogo is eligible while its faulty H100 is occupied by the existing placeholder. See the
+[Kennel cluster notes](../../CLUSTERS.md#kennel-csail).

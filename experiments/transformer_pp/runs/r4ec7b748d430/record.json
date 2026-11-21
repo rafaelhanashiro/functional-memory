@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r4ec7b748d430/config.yaml",
+    "sha256": "79e2f77b0b95be51f65a37fbf57e1e19ecc796c7bcc9e11186587c34205d1f04"
+  },
+  "home_cluster": "kennel",
+  "label": "even-gates-m8-dk4-qk-half",
+  "name": "even-gates-m8-dk4-qk-half",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "70101d669e7196356cb56e3d8feb2005c4772364b4baa0d4ee719a72db2c4423",
+    "loss": 5.603438377380371,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r4ec7b748d430",
+  "status": "planned"
+}

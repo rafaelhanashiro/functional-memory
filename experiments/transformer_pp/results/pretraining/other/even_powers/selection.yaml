@@ -41,6 +41,19 @@ settings:
     - query_full_m8_w_decay
     references:
     - taylor_m7
+  positive_query_gates_dk4:
+    active_orders:
+    - 2
+    - 4
+    - 6
+    - 8
+    qk_head_dim: 4
+    score_comparison:
+    - cosine_half_dk4
+    - qk_half_dk4
+    initialization_comparison:
+    - qk_half_dk4
+    - qk_taylor_dk4
 runs:
 - study: transformer_pp
   run_id: r45831d718944
@@ -213,3 +226,24 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/re12e78d1ded3/best_validation.json
       sha256: 3366bfa1e299af221cbfe607d314479184783e29d989ec087eef5f294c409c9e
+- study: transformer_pp
+  run_id: rf1185ae8a89c
+  role: cosine_half_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rf1185ae8a89c/config.yaml
+      sha256: 3f51fc1b16bd82d32377c238fc299b418530d09e924f969c485bdb80598639b5
+- study: transformer_pp
+  run_id: r4ec7b748d430
+  role: qk_half_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4ec7b748d430/config.yaml
+      sha256: 79e2f77b0b95be51f65a37fbf57e1e19ecc796c7bcc9e11186587c34205d1f04
+- study: transformer_pp
+  run_id: r2bb06d5ee682
+  role: qk_taylor_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2bb06d5ee682/config.yaml
+      sha256: 6fe4fb6759c928f6334a36c4025435a2bf44e9cb6779a0fd97a51f7e2fdbd5e1

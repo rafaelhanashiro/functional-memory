@@ -8,3 +8,6 @@ static_full_m8,r9c69dd7cfc8d,complete,7570,14.298509500,7500,14.294211762
 query_odd_m7_w_decay,r0bdac8e1b97b,complete,7570,16.054271551,7500,16.043570680
 query_full_m7_w_decay,rdb67453630c8,complete,7570,14.384250652,7500,14.378923987
 taylor_m7,re12e78d1ded3,complete,7570,14.309452242,7500,14.304166110
+cosine_half_dk4,rf1185ae8a89c,planned,,,,
+qk_half_dk4,r4ec7b748d430,planned,,,,
+qk_taylor_dk4,r2bb06d5ee682,planned,,,,
