@@ -438,6 +438,132 @@
           "caption": "—: not run. The static gate reads no token: <var>G</var><sub><var>t</var>,<var>i</var></sub> = (<var>t</var> − <var>i</var>) softplus(<var>β</var>)."
         }
       ]
+    },
+    {
+      "key": "reference",
+      "title": "Reference FoX / PaTH",
+      "tables": [
+        {
+          "head": [
+            "Attention",
+            "Softmax",
+            "Exp"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "FoX NoPE"
+              },
+              {
+                "text": "13.6800",
+                "value": 13.680023755264207,
+                "run_id": "r5adc29a91e3b"
+              },
+              {
+                "text": "13.6280",
+                "value": 13.627967054220683,
+                "run_id": "r183f08346ddc"
+              }
+            ],
+            [
+              {
+                "text": "FoX–PaTH"
+              },
+              {
+                "text": "13.3540",
+                "value": 13.354023903848505,
+                "run_id": "r14db6f0e8592"
+              },
+              {
+                "text": "13.3211",
+                "value": 13.321144094399378,
+                "run_id": "rafcf22b799ed",
+                "best": true
+              }
+            ],
+            [
+              {
+                "text": "ALiBi NoPE (fixed slopes)"
+              },
+              {
+                "text": "13.8991",
+                "value": 13.899146890165671,
+                "run_id": "ref652c257797"
+              },
+              {
+                "text": "13.9011",
+                "value": 13.901147052140729,
+                "run_id": "r7820049184ef"
+              }
+            ]
+          ]
+        },
+        {
+          "title": "Original FoX sigmoid gate · NoPE",
+          "head": [
+            "Attention",
+            "QK normalization",
+            "PPL"
+          ],
+          "compact": true,
+          "rows": [
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "None"
+              },
+              {
+                "text": "14.0135",
+                "value": 14.013507859938473,
+                "run_id": "reeb92d46a95d"
+              }
+            ],
+            [
+              {
+                "text": "Exp + RMSNorm"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "14.0049",
+                "value": 14.004941827196461,
+                "run_id": "rdd3e9cb3bb80"
+              }
+            ],
+            [
+              {
+                "text": "Query (<var>m</var> = 4) + <var>W</var> decay + RMSNorm"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "14.3716",
+                "value": 14.371596098403161,
+                "run_id": "rfa9636279199"
+              }
+            ],
+            [
+              {
+                "text": "Softmax"
+              },
+              {
+                "text": "Per-head RMSNorm"
+              },
+              {
+                "text": "13.9854",
+                "value": 13.985443413168339,
+                "run_id": "rac200ce11221",
+                "best": true
+              }
+            ]
+          ]
+        }
+      ]
     }
   ]
 }

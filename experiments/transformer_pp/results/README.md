@@ -28,7 +28,7 @@ README says otherwise.
 | 12-layer width-640: [score_transforms](pretraining/scalings/l12_d640/score_transforms/README.md) | The degree-eight query polynomial at softplus(s) reaches 17.488 (−0.59% against its control); at the score's absolute value 17.941 (+1.98%). |
 | 12-layer width-640: [score_biases](pretraining/scalings/l12_d640/score_biases/README.md) | A signed score shift per polynomial order: static shifts tie (+0.07%), query-dependent shifts lose 3.55%. |
 | [token_budget](pretraining/scalings/token_budget/README.md) | Do attention-variant comparisons change between 1× and 2.5× Chinchilla? |
-| [context_length](pretraining/scalings/context_length/README.md) | How do the variants extrapolate from 2,048 to 16,384 tokens, and how do they compare trained at 4,096? |
+| [context_length](pretraining/scalings/context_length/README.md) | How do the variants compare trained at 4,096 tokens instead of 2,048? |
 
 ### FoX / ALiBi
 
@@ -77,8 +77,7 @@ README says otherwise.
 | Continued pretraining | [learned_coefficient_continuation](diagnostics/continued_pretraining/learned_coefficient_continuation/README.md) | How does introducing learned static or query coefficients after Taylor or exp pretraining compare with coefficients learned from the start? |
 | Continued pretraining | [forget_gate_continuation](diagnostics/continued_pretraining/forget_gate_continuation/README.md) | Does FoX improve Taylor continuation, including its no-RoPE recipe with projection weight decay? |
 | Continued pretraining | [token_query_scale_continuation](diagnostics/continued_pretraining/token_query_scale_continuation/README.md) | Does a bounded per-token query scale with direction weight decay improve degree-four Taylor continuation? |
-| Length extrapolation | [extrapolation_scores](diagnostics/length_extrapolation/extrapolation_scores/README.md) | Why does degree-four polynomial attention break past its 2,048-token training length while exp does not? |
-| Length extrapolation | [extrapolation_ablation](diagnostics/length_extrapolation/extrapolation_ablation/README.md) | Why does query attention break past 2,048 tokens: keys beyond the training distance, their RoPE phases, or their number, and does the picture change on single long documents? |
+| Length extrapolation | [extrapolation_ablation](diagnostics/length_extrapolation/extrapolation_ablation/README.md) | Why does query attention break past 2,048 tokens on long documents: keys beyond the training distance, their RoPE phases, or their number? |
 | Learning dynamics | [query_parameter_dynamics](diagnostics/learning_dynamics/query_parameter_dynamics/README.md) | How do one middle-layer head's a, b, and W norms evolve in regular query polynomials at degrees 8 and 12, and do its coefficients vary across queries? |
-| Learning dynamics | [sos_training_dynamics](diagnostics/learning_dynamics/sos_training_dynamics/README.md) | Are the completed sum-of-squares query-polynomial runs stable, and how do their effective coefficients evolve? |
-| Learning dynamics | [gated_gradient_spikes](diagnostics/learning_dynamics/gated_gradient_spikes/README.md) | What causes rare gradient spikes in gated polynomial attention? The evidence and reproduction limits are established; the cause remains open. |
+| Learning dynamics | [sos_training_dynamics](diagnostics/learning_dynamics/sos_training_dynamics/README.md) | How do one middle-layer head's a, b, and W norms evolve in the completed sum-of-squares query-polynomial runs at degrees 8 and 12? |
+| Input dependence | [calibration_mean](diagnostics/input_dependence/calibration_mean/README.md) | Replacing every head's query-conditioned polynomial with its calibration mean increases held-out PPL by 1.21–1.37% across the three degree-eight-core checkpoints. |

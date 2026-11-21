@@ -14,6 +14,10 @@ accepts:
     PUT    /text/<page>/<name>.md   save one of those texts; an empty body deletes it
     PUT    /api/titles/<page>       {"key": ..., "title": ...}: rename a title of <page>.html (the
                                     key "title" is the page's own); an empty title restores it
+    GET    /api/queue               {"revision": n, "lists": {"planned": [...], "active": [...]}}:
+                                    the Queue page's runs not queued yet and in progress
+    PUT    /api/queue               {"revision": n, "lists": ...}: replace both lists, refused (409)
+                                    unless n is the saved revision; the reply gives the new one
     GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first
     POST   /api/meetings            {"date": ..., "title": ...}: add a meeting, with an empty
                                     agenda and notes (the title, its name, is optional)
@@ -21,9 +25,17 @@ accepts:
     DELETE /api/meetings/<date>     delete a meeting: its agenda, notes and name
     POST   /api/media               an image body (PNG, JPEG, GIF, WebP): store it in media/
     PUT    /api/literature          {"order": [ids]}: reorder the resources (the page's order)
-    POST   /api/literature          {"url": ...}: add a resource, reading its title, authors and year
+    POST   /api/literature          {"url": ..., "category": id}: add a resource, reading its title,
+                                    authors and year (the category is optional)
     PATCH  /api/literature/<id>     {"seen": true or false} moves a resource between the two
-                                    groups; {"title": ...} renames it
+                                    groups; {"title": ...} renames it; {"category": id or null}
+                                    files it under a category, or under none
+    GET    /api/categories          {"categories": [{"id": ..., "name": ...}]}: the Literature page's
+                                    categories, in its order, kept in literature/categories.json
+    POST   /api/categories          {"name": ...}: add a category, first in the order
+    PUT    /api/categories          {"order": [ids]}: reorder the categories
+    PATCH  /api/categories/<id>     {"name": ...}: rename a category
+    DELETE /api/categories/<id>     delete a category; its resources stay, under no category
 
 A meeting's name is kept in meeting/<date>.json; an unnamed meeting has none.
 
@@ -55,6 +67,8 @@ import xml.etree.ElementTree as ET
 SITE = Path(__file__).resolve().parent
 LITERATURE = SITE / "literature"
 LIST = LITERATURE / "papers.json"
+CATEGORIES = LITERATURE / "categories.json"
+CATEGORY_API = re.compile(r"/api/categories/([a-z0-9-]+)")
 MEETINGS = SITE / "meeting"
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 MEETING_FILE = re.compile(r"(\d{4}-\d{2}-\d{2})-(?:agenda|notes)\.md")
@@ -71,6 +85,10 @@ TEXT_FILE = re.compile(r"/text/([a-z0-9-]+)/([a-z0-9-]+)\.md")
 TITLES_API = re.compile(r"/api/titles/([a-z0-9-]+)")
 TITLE_KEY = re.compile(r"[a-z0-9-]+")
 MAX_TITLE = 200
+QUEUE = SITE / "queue" / "runs.json"
+QUEUE_LISTS = ("planned", "active")
+QUEUE_ID = re.compile(r"[A-Za-z0-9_-]{1,40}")
+MAX_QUEUE_TEXT = 500
 MEDIA = SITE / "media"
 IMAGES = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp"}
 MAX_BYTES = 1 << 20
@@ -125,6 +143,38 @@ def load_titles() -> dict[str, dict[str, str]]:
     return {path.parent.name: json.loads(path.read_text()) for path in sorted(TEXT.glob("*/titles.json"))}
 
 
+def load_queue() -> dict:
+    if QUEUE.is_file():
+        return json.loads(QUEUE.read_text())
+    return {"revision": 0, "lists": {name: [] for name in QUEUE_LISTS}}
+
+
+def valid_queue(lists) -> bool:
+    """Each list holds runs and groups of runs, every id unique: a run is {"id", "type": "run",
+    "text"} and a group {"id", "type": "group", "name", "runs": [runs]}."""
+    seen = set()
+
+    def run(item) -> bool:
+        return (isinstance(item, dict) and set(item) == {"id", "type", "text"} and item["type"] == "run"
+                and isinstance(item["text"], str) and len(item["text"]) <= MAX_QUEUE_TEXT and identifier(item["id"]))
+
+    def identifier(value) -> bool:
+        if not isinstance(value, str) or not QUEUE_ID.fullmatch(value) or value in seen:
+            return False
+        seen.add(value)
+        return True
+
+    def entry(item) -> bool:
+        if isinstance(item, dict) and item.get("type") == "group":
+            return (set(item) == {"id", "type", "name", "runs"} and isinstance(item["name"], str)
+                    and len(item["name"]) <= MAX_TITLE and identifier(item["id"]) and isinstance(item["runs"], list)
+                    and all(run(member) for member in item["runs"]))
+        return run(item)
+
+    return (isinstance(lists, dict) and set(lists) == set(QUEUE_LISTS)
+            and all(isinstance(lists[name], list) and all(entry(item) for item in lists[name]) for name in QUEUE_LISTS))
+
+
 def meeting_files(day: str) -> list[Path]:
     """A meeting's agenda and notes, then the file with its name."""
     return [*(MEETINGS / f"{day}-{part}.md" for part in PARTS), MEETINGS / f"{day}.json"]
@@ -176,6 +226,37 @@ def load_list() -> list[dict]:
 
 def save_list(papers: list[dict]) -> None:
     write_atomic(LIST, json.dumps(papers, indent=2, ensure_ascii=False) + "\n")
+
+
+def load_categories() -> list[dict]:
+    return json.loads(CATEGORIES.read_text()) if CATEGORIES.exists() else []
+
+
+def save_categories(categories: list[dict]) -> None:
+    write_atomic(CATEGORIES, json.dumps(categories, indent=2, ensure_ascii=False) + "\n")
+
+
+def has_category(identifier: str) -> bool:
+    return any(category["id"] == identifier for category in load_categories())
+
+
+def category_id(name: str, categories: list[dict]) -> str:
+    """A readable id from the name, unique among the categories."""
+    base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:40].strip("-") or "category"
+    taken = {category["id"] for category in categories}
+    candidate, number = base, 2
+    while candidate in taken:
+        candidate, number = f"{base}-{number}", number + 1
+    return candidate
+
+
+def parse_category_name(value) -> str:
+    name = parse_title(value)
+    if not name:
+        raise ValueError("The name can't be empty")
+    if len(name) > MAX_TITLE:
+        raise ValueError(f"The name can be at most {MAX_TITLE} characters")
+    return name
 
 
 def fetch(url: str) -> tuple[bytes, str, str]:
@@ -308,6 +389,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/meetings":
             self._json(200, {"meetings": list_meetings()})
             return
+        if self._route() == "/api/queue":
+            with LOCK:
+                self._json(200, load_queue())
+            return
+        if self._route() == "/api/categories":
+            with LOCK:
+                self._json(200, {"categories": load_categories()})
+            return
         page = TEXT_API.fullmatch(self._route())
         if page:
             if not (SITE / f"{page.group(1)}.html").is_file():
@@ -329,9 +418,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/literature":
             self._reorder()
             return
+        if self._route() == "/api/categories":
+            self._reorder_categories()
+            return
         titles = TITLES_API.fullmatch(self._route())
         if titles:
             self._rename_title(titles.group(1))
+            return
+        if self._route() == "/api/queue":
+            self._save_queue()
             return
         match = DOCUMENT.fullmatch(self._route())
         block = TEXT_FILE.fullmatch(self._route())
@@ -361,6 +456,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         for name in prune_media():
             print(f"removed unlinked image media/{name}", file=sys.stderr, flush=True)
+
+    def _save_queue(self):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            change = json.loads(body)
+            revision, lists = change["revision"], change["lists"]
+        except (ValueError, KeyError, TypeError):
+            revision = lists = None
+        if not isinstance(revision, int) or not valid_queue(lists):
+            self._json(400, {"error": "Expected {\"revision\": n, \"lists\": ...} with valid runs and groups"})
+            return
+        with LOCK:
+            current = load_queue()["revision"]
+            if revision != current:
+                self._json(409, {"error": "The queue changed since the page loaded; reload it"})
+                return
+            QUEUE.parent.mkdir(parents=True, exist_ok=True)
+            write_atomic(QUEUE, json.dumps({"revision": current + 1, "lists": lists}, indent=2, ensure_ascii=False) + "\n")
+        self._json(200, {"revision": current + 1})
 
     def _rename_title(self, page: str):
         if not (SITE / f"{page}.html").is_file():
@@ -409,6 +525,81 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return
             save_list([papers[identifier] for identifier in order])
         self._json(200, {"order": order})
+
+    def _reorder_categories(self):
+        body = self._body()
+        if body is None:
+            return
+        try:
+            order = json.loads(body)["order"]
+        except (ValueError, KeyError, TypeError):
+            order = None
+        if not isinstance(order, list) or not all(isinstance(identifier, str) for identifier in order):
+            self._json(400, {"error": 'Expected {"order": [ids]}'})
+            return
+        with LOCK:
+            categories = {category["id"]: category for category in load_categories()}
+            if len(order) != len(categories) or set(order) != set(categories):
+                self._json(409, {"error": "The categories changed since the page loaded; reload it"})
+                return
+            save_categories([categories[identifier] for identifier in order])
+        self._json(200, {"order": order})
+
+    def _category_name(self) -> str | None:
+        """The name in a {"name": ...} body, or None once an error is sent."""
+        body = self._body()
+        if body is None:
+            return None
+        try:
+            value = json.loads(body)["name"]
+        except (ValueError, KeyError, TypeError):
+            self._json(400, {"error": 'Expected {"name": ...}'})
+            return None
+        try:
+            return parse_category_name(value)
+        except ValueError as error:
+            self._json(400, {"error": str(error)})
+            return None
+
+    def _add_category(self):
+        name = self._category_name()
+        if name is None:
+            return
+        with LOCK:
+            categories = load_categories()
+            category = {"id": category_id(name, categories), "name": name}
+            save_categories([category, *categories])
+        self._json(201, category)
+
+    def _rename_category(self, identifier: str):
+        name = self._category_name()
+        if name is None:
+            return
+        with LOCK:
+            categories = load_categories()
+            category = next((other for other in categories if other["id"] == identifier), None)
+            if category is None:
+                self._json(404, {"error": f"No category {identifier}"})
+                return
+            category["name"] = name
+            save_categories(categories)
+        self._json(200, category)
+
+    def _delete_category(self, identifier: str):
+        with LOCK:
+            categories = load_categories()
+            if not any(category["id"] == identifier for category in categories):
+                self._json(404, {"error": f"No category {identifier}"})
+                return
+            save_categories([category for category in categories if category["id"] != identifier])
+            papers = load_list()
+            filed = [paper for paper in papers if paper.get("category") == identifier]
+            for paper in filed:
+                del paper["category"]
+            if filed:
+                save_list(papers)
+        self.send_response(204)
+        self.end_headers()
 
     def _upload(self):
         kind = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
@@ -483,6 +674,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self._route() == "/api/meetings":
             self._add_meeting()
             return
+        if self._route() == "/api/categories":
+            self._add_category()
+            return
         if self._route() != "/api/literature":
             self.send_error(404)
             return
@@ -490,9 +684,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if body is None:
             return
         try:
-            url = json.loads(body)["url"].strip()
+            request = json.loads(body)
+            url, category = request["url"].strip(), request.get("category")
         except (ValueError, KeyError, TypeError, AttributeError):
             self._json(400, {"error": 'Expected {"url": ...}'})
+            return
+        if category is not None and (not isinstance(category, str) or not has_category(category)):
+            self._json(404, {"error": "That category no longer exists; reload the page"})
             return
         if urllib.parse.urlsplit(url).scheme not in ("http", "https") or not urllib.parse.urlsplit(url).hostname:
             self._json(400, {"error": "The link must be an http or https address"})
@@ -515,15 +713,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 if (identifier and paper.get("arxiv") == identifier) or same_link(paper["url"], url):
                     self._json(409, {"error": f"Already listed: {paper['title']}"})
                     return
+            if category is not None and not has_category(category):
+                self._json(404, {"error": "That category no longer exists; reload the page"})
+                return
             entry = {"id": new_id(identifier or metadata["title"], papers), **metadata, "url": url,
                      **({"arxiv": identifier} if identifier else {}), "seen": False,
-                     "added": date.today().isoformat()}
+                     **({"category": category} if category else {}), "added": date.today().isoformat()}
             (LITERATURE / f"{entry['id']}.md").touch()
             save_list([entry, *papers])
         self._json(201, entry)
 
     def do_DELETE(self):
         if not self._same_user():
+            return
+        if category := CATEGORY_API.fullmatch(self._route()):
+            self._delete_category(category.group(1))
             return
         match = MEETING_API.fullmatch(self._route())
         if not match:
@@ -544,6 +748,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if meeting_match := MEETING_API.fullmatch(self._route()):
             self._change_meeting(meeting_match.group(1))
             return
+        if category_match := CATEGORY_API.fullmatch(self._route()):
+            self._rename_category(category_match.group(1))
+            return
         match = RESOURCE.fullmatch(self._route())
         if not match:
             self.send_error(404)
@@ -555,8 +762,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             changes = json.loads(body)
         except ValueError:
             changes = None
-        if not isinstance(changes, dict) or not changes or set(changes) - {"seen", "title"}:
-            self._json(400, {"error": 'Expected {"seen": true or false} or {"title": ...}'})
+        if not isinstance(changes, dict) or not changes or set(changes) - {"seen", "title", "category"}:
+            self._json(400, {"error": 'Expected {"seen": true or false}, {"title": ...} or {"category": id or null}'})
+            return
+        if "category" in changes and changes["category"] is not None and not isinstance(changes["category"], str):
+            self._json(400, {"error": "category must be a category's id or null"})
             return
         if "seen" in changes and not isinstance(changes["seen"], bool):
             self._json(400, {"error": "seen must be true or false"})
@@ -573,7 +783,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if entry is None:
                 self._json(404, {"error": f"No resource {match.group(1)}"})
                 return
+            category = changes.pop("category", entry.get("category"))
+            if category is not None and category != entry.get("category") and not has_category(category):
+                self._json(404, {"error": "That category no longer exists; reload the page"})
+                return
             entry.update(changes)
+            if category is None:
+                entry.pop("category", None)
+            else:
+                entry["category"] = category
             save_list(papers)
         self._json(200, entry)
 

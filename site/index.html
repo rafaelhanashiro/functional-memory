@@ -2,7 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=runs.html">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Functional Memory</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="vendor/marked/marked.min.js"></script>
+<script defer src="vendor/katex/katex.min.js"></script>
+<script type="module" src="text.js"></script>
+<script type="module" src="results.js"></script>
 </head>
+<body>
+<div class="page">
+  <header>
+    <a class="brand" href="index.html">Functional Memory</a>
+    <nav>
+      <a href="runs.html">Runs</a>
+      <a href="diagnostics.html">Diagnostics</a>
+      <a href="literature.html">Literature</a>
+      <a href="meeting.html">Meetings</a>
+      <a href="queue.html">Queue</a>
+    </nav>
+  </header>
+  <main>
+    <div class="text-block page-text" data-text="page"></div>
+    <div class="recipe" data-source="data/home.json" data-key="model"></div>
+  </main>
+</div>
+</body>
 </html>

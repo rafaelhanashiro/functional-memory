@@ -171,8 +171,79 @@ main {
   font-size: 0.85rem;
 }
 .literature-status:empty { display: none; }
+/* Categories, the user's own: each heads its seen and not-seen-yet halves, and the resources under
+   no category come last (under no heading while there are no categories). */
+.add-resource select {
+  flex: none;
+  max-width: 34%;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.literature-bar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.literature-bar .literature-status { flex: 1; margin: 0; }
+.literature-bar .button { margin-left: auto; padding: 4px 12px; color: var(--muted); }
+.literature-bar .button:hover { color: var(--text); }
+.category { margin-top: 40px; }
+body:not(.has-categories) .uncategorized { margin-top: 0; }
+body:not(.has-categories) .uncategorized > .category-head { display: none; }
+.category-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+.category-name { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.category-name[tabindex] { cursor: text; }  /* a name that renames in place */
+.category-name:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+.uncategorized .category-name { color: var(--muted); cursor: default; }
+.category-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.category-actions { display: flex; gap: 2px; margin-left: auto; opacity: 0; transition: opacity 0.15s; }
+.category-head:hover .category-actions, .category-head:focus-within .category-actions { opacity: 1; }
+@media (hover: none) { .category-actions { opacity: 1; } }
+.category-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.category-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.category-icon:hover:not(:disabled) { color: var(--text); background: rgba(24, 24, 27, 0.06); }
+.category-icon.delete:hover { color: #dc2626; background: #fef2f2; }
+.category-icon:disabled { opacity: 0.3; cursor: default; }
+.category-icon:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+/* The chevron that hides a category (literature.js) points down, or right once it is hidden. */
+.category-icon.fold { margin-left: -6px; }
+.category.folded .category-icon.fold .chevron { transform: rotate(-90deg); }
+.category.folded > .resource-group { display: none; }
+.category-input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 1.5px solid var(--text);
+  background: none;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.has-categories .category .resource-group { margin-top: 18px; }
+.has-categories .papers:empty::before { content: "None yet"; display: block; padding: 6px 2px; color: #a1a1aa; font-size: 0.88rem; }
+.has-categories.reordering .category[hidden], .has-categories.reordering .resource-group[hidden] { display: block; }
 .resource-group { margin-top: 36px; }
-.resource-group h2 {
+.resource-group h3 {
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.78rem;
@@ -326,7 +397,6 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .writeup::after, .sheet::after { content: ""; display: block; clear: both; }
 .writeup-view { line-height: 1.65; }
-.writeup-view > * { max-width: 72ch; }
 .writeup-view > :first-child { margin-top: 0; }
 .writeup-view > :last-child { margin-bottom: 0; }
 .writeup-view p, .writeup-view ul, .writeup-view ol, .writeup-view blockquote, .writeup-view pre, .writeup-view table { margin: 0 0 1em; }
@@ -368,18 +438,20 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .writeup-view .callout-title { color: rgb(var(--callout)); font-weight: 600; }
 .writeup-view summary.callout-title { cursor: pointer; }
-.writeup-view .callout-content { margin-top: 6px; }
+.writeup-view .callout-title + .callout-content { margin-top: 6px; }
 .writeup-view .callout-content > :first-child { margin-top: 0; }
 .writeup-view .callout-content > :last-child { margin-bottom: 0; }
 .writeup-view .callout:is([data-callout="abstract"], [data-callout="summary"], [data-callout="tldr"],
-  [data-callout="tip"], [data-callout="hint"], [data-callout="important"]) { --callout: 13 148 136; }
-.writeup-view .callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"]) { --callout: 22 163 74; }
+  [data-callout="tip"], [data-callout="hint"], [data-callout="important"], [data-callout="teal"]) { --callout: 13 148 136; }
+.writeup-view .callout:is([data-callout="success"], [data-callout="check"], [data-callout="done"],
+  [data-callout="green"]) { --callout: 22 163 74; }
 .writeup-view .callout:is([data-callout="question"], [data-callout="help"], [data-callout="faq"],
-  [data-callout="warning"], [data-callout="caution"], [data-callout="attention"]) { --callout: 234 88 12; }
+  [data-callout="warning"], [data-callout="caution"], [data-callout="attention"], [data-callout="orange"]) { --callout: 234 88 12; }
 .writeup-view .callout:is([data-callout="failure"], [data-callout="fail"], [data-callout="missing"],
-  [data-callout="danger"], [data-callout="error"], [data-callout="bug"]) { --callout: 220 38 38; }
-.writeup-view .callout[data-callout="example"] { --callout: 124 58 237; }
-.writeup-view .callout:is([data-callout="quote"], [data-callout="cite"]) { --callout: 113 113 122; }
+  [data-callout="danger"], [data-callout="error"], [data-callout="bug"], [data-callout="red"]) { --callout: 220 38 38; }
+.writeup-view .callout:is([data-callout="example"], [data-callout="purple"]) { --callout: 124 58 237; }
+.writeup-view .callout:is([data-callout="quote"], [data-callout="cite"], [data-callout="gray"],
+  [data-callout="grey"]) { --callout: 113 113 122; }
 /* Tables and images in the Markdown (agendas, notes, write-ups, page texts) stand centered. */
 .writeup-view table { margin-inline: auto; border-collapse: collapse; }
 .writeup-view th, .writeup-view td {
@@ -395,9 +467,7 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   border: 1px solid var(--rule);
   border-radius: 8px;
 }
-.writeup-view p:has(> img:only-child) { max-width: none; }
-.writeup-view p:has(> img):not(:has(> :not(img, br))) { margin-inline: auto; }  /* several images in a row */
-.writeup-view .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+:is(.writeup-view, .text-block) .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
 .writeup-view .empty { color: var(--muted); font-style: italic; }
 
 /* Result pages: tables and charts */
@@ -415,7 +485,6 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 }
 .result h2 + h3 { margin-top: 4px; }
 .result .intro {
-  max-width: 72ch;
   margin: 0 0 12px;
   color: var(--muted);
   font-size: 0.92rem;
@@ -466,6 +535,8 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
   gap: 18px 24px;
 }
 .table-pair h3 { margin: 0 0 8px; }
+/* The home page's reference-model tables: each value reads left to right after its setting. */
+.recipe .results-table td + td { text-align: left; white-space: normal; }
 .figure {
   display: block;
   margin: 0 0 16px;
@@ -663,7 +734,9 @@ var { font-style: italic; }
 
 @media (max-width: 560px) {
   .brand { padding-bottom: 4px; }
-  nav { gap: 22px; }
+  nav { gap: 18px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }  /* five tabs scroll on a phone */
+  nav::-webkit-scrollbar { display: none; }
+  nav a { flex: none; }
   .paper summary { padding: 16px 18px; }
   .drag-handle { left: 1px; }
   .writeup { margin: 0 18px; }
@@ -753,3 +826,88 @@ header { position: relative; }
   letter-spacing: inherit;
   outline: none;
 }
+
+/* Queue: runs not queued yet and runs in progress, side by side; each list holds runs and groups
+   of runs. A checkbox moves a run on (or closes it out), the grip reorders Not queued, and a run's
+   text or a group's name edits in place. */
+.queue { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 24px; align-items: start; }
+.queue-panel { padding: 14px 14px 12px; border: 1px solid var(--rule); border-radius: 14px; background: #fff; }
+/* Soft tints, light enough to read on: red for runs not queued yet, yellow for runs in progress. */
+.queue-panel[data-list="planned"] { border-color: #fecaca; background: #fef2f2; }
+.queue-panel[data-list="active"] { border-color: #fde68a; background: #fefce8; }
+.queue-head { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 4px 8px; }
+.queue-head h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
+.queue-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.queue-head-actions { display: flex; gap: 6px; margin-left: auto; }
+.queue-head-actions .button { padding: 4px 11px; color: var(--muted); }
+.queue-head-actions .button:hover { color: var(--text); }
+.queue-items { margin: 0; padding: 0; list-style: none; }
+.queue-group-runs { margin: 0 0 4px 30px; padding-left: 8px; border-left: 1px solid var(--rule); }
+.queue-empty { margin: 4px 8px 6px; color: var(--muted); font-size: 0.9rem; }
+.queue-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 8px 6px 24px;
+  border-radius: 9px;
+}
+.queue-row:hover { background: rgba(24, 24, 27, 0.04); }  /* shows on either tint */
+.queue-row:hover .drag-handle, .queue-row .drag-handle:focus-visible { opacity: 1; }
+.queue-group-head .queue-name { font-weight: 600; }
+.queue-text, .queue-name { flex: 1; min-width: 0; overflow-wrap: anywhere; cursor: text; }
+.queue-placeholder { color: #a1a1aa; }
+.queue-group-count { color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.queue-input {
+  width: 100%;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 1.5px solid var(--text);
+  background: none;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+.queue-check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1.5px solid #a1a1aa;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
+}
+.queue-check svg { width: 14px; height: 14px; fill: none; stroke: transparent; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.queue-check:hover:not(:disabled) svg { stroke: #a1a1aa; }
+.queue-check.checked { border-color: #3d9a5d; background: #3d9a5d; }
+.queue-check.checked svg { stroke: #fff; }
+[data-list="active"] .queue-check.checked { border-color: var(--text); background: var(--text); }
+.queue-check:active:not(:disabled) { transform: scale(0.9); }
+.queue-check:disabled { opacity: 0.4; cursor: default; }
+.queue-check:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.queue-actions { display: flex; flex: none; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+.queue-row:hover .queue-actions, .queue-row:focus-within .queue-actions { opacity: 1; }
+@media (hover: none) { .queue-actions { opacity: 1; } }
+.queue-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.queue-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.queue-icon:hover { color: var(--text); background: rgba(24, 24, 27, 0.06); }
+.queue-icon.delete:hover { color: #dc2626; background: #fef2f2; }
+.queue-icon:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.queue-run.dragging, .queue-group.dragging { border-radius: 9px; background: #fff; box-shadow: 0 14px 36px rgba(24, 24, 27, 0.16); }
+.queue-slot { border: 1.5px dashed #d4d4d8; border-radius: 9px; }

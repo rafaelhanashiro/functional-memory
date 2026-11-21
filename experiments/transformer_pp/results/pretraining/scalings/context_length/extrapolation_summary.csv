@@ -1,6 +1,0 @@
-role,source_run_id,replay_nll,recorded_validation_nll,replay_absolute_error,ppl_validation_2048,ppl_positions_1_2048,ppl_positions_2049_4096,ppl_positions_1_4096
-forget_gate_no_rope_wdecay_m4,r4a80e28ce0a7,2.629972,2.629976,3.72e-06,13.8734,13.9192,13.2379,13.5743
-exp,r6a76e7fbde45,2.657255,2.657260,5.46e-06,14.2571,14.3035,13.9203,14.1106
-softmax,r9040f12f3d80,2.677106,2.677096,1.08e-05,14.5429,14.5951,14.5363,14.5657
-fixed_taylor_m4,r816ab0fbe119,2.689324,2.689328,4.39e-06,14.7217,14.7746,112.9427,40.8495
-query_wdecay_m4,rca97cc9db8f2,2.688429,2.688428,1.21e-06,14.7086,14.7617,138.9122,45.2834

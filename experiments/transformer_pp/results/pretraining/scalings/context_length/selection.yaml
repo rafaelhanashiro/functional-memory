@@ -1,43 +1,10 @@
-question: How do the Transformer++ attention variants use context beyond their 2,048-token
-  training length, up to 16,384 tokens, and when trained at 4,096 tokens?
+question: How do the Transformer++ attention variants compare when trained on 4,096-token
+  sequences instead of 2,048?
 settings:
-  metric: per-position validation NLL
-  comparison: 2,048-token checkpoints scored at 4,096 and 16,384 tokens, whose source
-    checkpoints the evaluation runs' recipes pin; 4,096-token runs by validation-best
-    perplexity
+  metric: validation-best perplexity
+  comparison: 4,096-token runs against their 2,048-token partners, each on its own
+    validation rows
 runs:
-- study: transformer_pp
-  run_id: r8e4d56dfc830
-  role: extrapolation_evaluation
-  sources:
-    config.yaml:
-      path: experiments/transformer_pp/runs/r8e4d56dfc830/config.yaml
-      sha256: 6809828a3e4de911fb88131240e74728db727c4448a421a08b7bf056c559ae38
-    metrics.jsonl:
-      path: experiments/transformer_pp/runs/r8e4d56dfc830/metrics.jsonl
-      sha256: 5260ae4d8791d3aa7e4de3e0fb156f2e0cf683c423ac078413e0edb2d6ac4c3b
-    completion.json:
-      path: experiments/transformer_pp/runs/r8e4d56dfc830/completion.json
-      sha256: 6901cac49c34de5800833937554b536d6ac4e0b12654f517c0754d627827b992
-    metadata.json:
-      path: experiments/transformer_pp/runs/r8e4d56dfc830/metadata.json
-      sha256: 0146ef3871af93b43ac456e63d14e12fe895623e554a3cf6aa23c88c617c24f6
-- study: transformer_pp
-  run_id: r2a45c518f703
-  role: extrapolation_16k_evaluation
-  sources:
-    config.yaml:
-      path: experiments/transformer_pp/runs/r2a45c518f703/config.yaml
-      sha256: 0eccb596505252fc95f0f8d604dd68da718bfdd34a03a61a4ac0d5be668a99db
-    metrics.jsonl:
-      path: experiments/transformer_pp/runs/r2a45c518f703/metrics.jsonl
-      sha256: cff0678aa4234845eac8d38af92b4ada82c630328adefde3b5ac0c2fc4cacbaf
-    completion.json:
-      path: experiments/transformer_pp/runs/r2a45c518f703/completion.json
-      sha256: dc6bd3db748e2434ac0ad8b7cdac159cdd1bbd0a999d8492090f866fa9dedf17
-    metadata.json:
-      path: experiments/transformer_pp/runs/r2a45c518f703/metadata.json
-      sha256: 428e420ac8d3dbaae84c29c9030b9425dc949c4ebd2ac9ad0668c2db2a099f6c
 - study: transformer_pp
   run_id: r58efc973ff28
   role: trained_4096_forget_gate_no_rope_wdecay_m4
@@ -133,3 +100,98 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r339a31ad8d4b/best_validation.json
       sha256: 89afa109abf94a574d424543471b5cd10c9cb6f81ae28e5f2c85adbeb42543c5
+- study: transformer_pp
+  run_id: r4a80e28ce0a7
+  role: trained_2048_forget_gate_no_rope_wdecay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/config.yaml
+      sha256: cbcbe1ebbf1c370e1b82711a636fddae03e58738822e61f65fe4463f748d8763
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/metrics.jsonl
+      sha256: 366d18a632afcbe08d8d408683421ff747d34173220da0953351330b62f8c3e6
+    completion.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/completion.json
+      sha256: ed704e2bf7be57a9b9afecf802331b4b3743c34f365c39e73f6fed4594498ed2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/metadata.json
+      sha256: 6f6e775bffbad182a5f174a3c1e89e01295921cf3c3970991a76970d65c46ba9
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4a80e28ce0a7/best_validation.json
+      sha256: 00fbad27a4a36dbba48be4c195e740017728df4a581117dfe74c72ef45ed82fe
+- study: transformer_pp
+  run_id: r6a76e7fbde45
+  role: trained_2048_exp
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/config.yaml
+      sha256: 599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metrics.jsonl
+      sha256: adcc711574d95b506246b762fef2fdb724ab1aa00f618c0546cb3f47c4ce165d
+    completion.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/completion.json
+      sha256: 8b7e7bf2d3124fe5dff032355b96a42f3982166f58978f998b47b3415ae4298e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/metadata.json
+      sha256: 7fa4b1ed64bf0e895b67d2db757a580599e831500a0757ad7787ed7d7a4c92ae
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6a76e7fbde45/best_validation.json
+      sha256: 92967ac8bad2f14f73e83f00d683ece2be6f4cc261c028b2d3371fb7ba646d0d
+- study: transformer_pp
+  run_id: r9040f12f3d80
+  role: trained_2048_softmax
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9040f12f3d80/config.yaml
+      sha256: 92b7682b6c95c60ef9bb05ba067e9ceb87f6de0766af48bbbc8ca7e2bd4be897
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9040f12f3d80/metrics.jsonl
+      sha256: 34a588e7252c6d1485e767e2dfa3146d83dc4c41b42befe8eb2cdc0cabce9a2d
+    completion.json:
+      path: experiments/transformer_pp/runs/r9040f12f3d80/completion.json
+      sha256: 3d542c4558fc8317d2dce5160fcf29b510a35e299e10ae2f277e997254686e39
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9040f12f3d80/metadata.json
+      sha256: a91fc5ba7ac2862a4bed13c480787babfb80e8b875057d6f9e54109f55a1a4c2
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9040f12f3d80/best_validation.json
+      sha256: eccf08cff33d6449cf1e238e953e7aba1577e3494144137d573e6c8e923a9172
+- study: transformer_pp
+  run_id: rca97cc9db8f2
+  role: trained_2048_query_wdecay_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/config.yaml
+      sha256: 75fa1e3e30eaf98aa49d5b4ca833860a2664877e5892ecca11c008eff1978f58
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metrics.jsonl
+      sha256: f6d3fefedd4d47796a3ff601ce2e6b305d1656f0de5367ef7a3fe7663eef267c
+    completion.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/completion.json
+      sha256: 2d42e39e0804e7085d9f07b0828e97fe337d1d4febbdf6d02d1bb9f1a2287585
+    metadata.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/metadata.json
+      sha256: fe0b3ec087202b4c8cff7aeacd0c63894e07de7abc11131f6e2a5328af000656
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rca97cc9db8f2/best_validation.json
+      sha256: 6ee539ffd73580a48dba2a39cbdb005faebc71c751c5bdbd2e556c2464a82466
+- study: transformer_pp
+  run_id: r816ab0fbe119
+  role: trained_2048_fixed_taylor_m4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/config.yaml
+      sha256: 56b8c0fc0d776c44822e1a22d2608f3de96354702f17da43fac0e4dbf994abc5
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metrics.jsonl
+      sha256: bfe9a6fc67b9462e30a4b610075118a6001ebc4c2885034ca5a55b5772453a8d
+    completion.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/completion.json
+      sha256: 4b215c6374089daa6264ca749e458d9bcd6d7830adba4b223dc97e9204817330
+    metadata.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/metadata.json
+      sha256: 3287429f2c63130f3ddc5618578e5b8a294bdf72877976012835918a2e21525c
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r816ab0fbe119/best_validation.json
+      sha256: 5d976697f0da120f1e7458d5b1c694b410564ab9ca3e187dab77247de7d80914

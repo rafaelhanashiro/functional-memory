@@ -1,5 +1,5 @@
-"""Write diagnostics.json, the tables of the Overfitting and Continued pretraining pages, from the
-runs' records, and copy the Length extrapolation figures from their result collection into figures/.
+"""Write diagnostics.json from the run records and the Input dependence result table, and copy
+the figures the Diagnostics pages show from the result collections that generate them into figures/.
 
     python3 site/data/diagnostics.py
 
@@ -10,11 +10,10 @@ from __future__ import annotations
 import json
 import math
 import shutil
-import subprocess
 from pathlib import Path
 
 from cells import bold_lowest, number, text
-from polynomial import RESULTS, ROOT, RUNS, best
+from polynomial import RESULTS, ROOT, RUNS, best, rows as read_rows
 from scaling import change
 
 # (fit, batch size, start checkpoint, run)
@@ -36,17 +35,23 @@ CONTINUATIONS = (
     ("FoX, without W decay", "rd5ea49c1fde6", None, ""),
     ("FoX NoPE, with W decay", "r554ce7da6a8a", None, ""),
 )
-# Calibration-mean interventions, all layers at once, on degree-8 query + W decay checkpoints: (model,
-# evaluation run). Until Codex merges its branch, the runs' records are read from that branch.
-INPUT_DEPENDENCE = (
-    ("Query", "r50200ac83292"),
-    ("SoS", "r850466844aff"),
-    ("SoS + softplus input + prefactor", "r2384d21a3134"),
-)
-INPUT_DEPENDENCE_BRANCH = "codex/layerwise-polynomial-swap"
-FIGURES = {"length-extrapolation": (RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation", (
-    "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
-    "position_weights_long_documents.png"))}
+# Figures the pages show, copied byte for byte from the result collections that generate them:
+# {folder in figures/: ((source, name), ...)}.
+EXTRAPOLATION = RESULTS / "diagnostics/length_extrapolation/extrapolation_ablation"
+LEARNING = RESULTS / "diagnostics/learning_dynamics"
+FIGURES = {
+    "length-extrapolation": tuple((EXTRAPOLATION / name, name) for name in (
+        "long_documents_16k.png", "long_documents_16k_zoom.png", "long_documents_16k_ablations.png",
+        "position_weights_long_documents.png")),
+    "learned-polynomials": (
+        (RESULTS / "diagnostics/overfitting/coefficient_oracle/learned_polynomials.png", "layer8.png"),
+    ),
+    "learning-dynamics": (
+        (LEARNING / "query_parameter_dynamics/head_parameters_combined.png", "query.png"),
+        (LEARNING / "sos_training_dynamics/head_parameters_combined.png", "sos.png"),
+        (RESULTS / "pretraining/parametrizations/sos/softplus_sos/head_parameters_combined.png", "sos-softplus-prefactor.png"),
+    ),
+}
 
 
 def record(run_id: str, name: str) -> dict:
@@ -104,24 +109,14 @@ def continued_pretraining() -> list[dict]:
     }]
 
 
-def run_text(run_id: str, name: str) -> str:
-    path = RUNS / run_id / name
-    if path.is_file():
-        return path.read_text()
-    relative = path.relative_to(ROOT).as_posix()
-    return subprocess.run(["git", "-C", str(ROOT), "show", f"{INPUT_DEPENDENCE_BRANCH}:{relative}"],
-                          check=True, capture_output=True, text=True).stdout
-
-
 def input_dependence() -> list[dict]:
     rows = []
-    for model, run_id in INPUT_DEPENDENCE:
-        nll = {entry["condition"]: entry["nll"] for line in run_text(run_id, "metrics.jsonl").splitlines()
-               if (entry := json.loads(line)).get("layer_scope", "all_layers") == "all_layers"}
-        native, mean = math.exp(nll["native"]), math.exp(nll["calibration_mean"])
-        cell = number(mean, 3, run_id)
+    summary = RESULTS / "diagnostics/input_dependence/calibration_mean/summary.csv"
+    for row in read_rows(summary):
+        native, mean = float(row["native_ppl"]), float(row["mean_ppl"])
+        cell = number(mean, 3, row["run_id"])
         cell["text"] += f' <span class="change">({change(mean, native)})</span>'
-        rows.append([text(model), cell])
+        rows.append([text(row["model"]), cell])
     return [{"key": "calibration-means",
              "tables": [{"head": ["Model", "Calibration means (% vs native)"], "compact": True, "rows": rows,
                          "caption": "PPL on 256 validation sequences at update 7,500 of the degree-8 runs (prefactor: core "
@@ -129,11 +124,11 @@ def input_dependence() -> list[dict]:
 
 
 def copy_figures() -> None:
-    for page, (source, names) in FIGURES.items():
+    for page, figures in FIGURES.items():
         target = Path(__file__).resolve().parents[1] / "figures" / page
         target.mkdir(parents=True, exist_ok=True)
-        for name in names:
-            shutil.copyfile(source / name, target / name)
+        for source, name in figures:
+            shutil.copyfile(source, target / name)
 
 
 def main() -> None:

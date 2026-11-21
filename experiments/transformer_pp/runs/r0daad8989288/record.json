@@ -1,0 +1,89 @@
+{
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r0daad8989288/completion.json",
+      "sha256": "cd4a64edd458fab9d075d3523da90fc1454d635629e2700b2ca12207cf9accff",
+      "size_bytes": 118
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r0daad8989288/learned_polynomials.json",
+      "sha256": "1ce8632e36323ad8d03163d3041ce6be01900333b9e34258c26e25db99afaf0e",
+      "size_bytes": 119152
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r0daad8989288/metrics.jsonl",
+      "sha256": "8d39ac808fb316bce4e8b01c9f4344a97955be32e9b3f860473d646210e42c68",
+      "size_bytes": 1305
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r0daad8989288/operands.npz",
+      "sha256": "24b38aa9607b4d2301188d7dd039a5eb07150e0e57a79f75dac6ccf29569fdac",
+      "size_bytes": 14476822
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r0daad8989288/training.log",
+      "sha256": "a1a55126cf86066ec9a053a5bd08babe26f9330a3799a3ad3faead73be8fc272",
+      "size_bytes": 1497
+    }
+  ],
+  "attempts": [
+    {
+      "exit_code": 0,
+      "finished_utc": "2026-11-20T19:20:21.941286+00:00",
+      "frozen_execution_sha256": "f012d460f43ea1923a05ffc9410aaa8ac12bff044a4496f8cb023282ad787821",
+      "gpu_count": 1,
+      "gpu_type": "NVIDIA H100 80GB HBM3",
+      "node": "dogo.csail.mit.edu",
+      "optimizer_updates": 0,
+      "partition": "standard",
+      "resolved_attention_backends": {},
+      "slurm_job_id": "8861",
+      "source_commit": "aa90edf4e2df2c8e0e3cc0a923015b4d39eb9b66",
+      "started_utc": "2026-11-20T19:16:00.793778+00:00"
+    }
+  ],
+  "checkpoint_retention": "none; reads the fits' selected and parent checkpoints without optimizer updates",
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r0daad8989288/completion.json",
+    "sha256": "cd4a64edd458fab9d075d3523da90fc1454d635629e2700b2ca12207cf9accff",
+    "size_bytes": 118
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0daad8989288/config.yaml",
+    "sha256": "1834adbe9240514912e684637126eb68b2ba51244cc98103c144054f72eca6e9"
+  },
+  "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+  "home_cluster": "kennel",
+  "label": "learned-polynomials-layer8-operands",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r0daad8989288/training.log",
+    "sha256": "a1a55126cf86066ec9a053a5bd08babe26f9330a3799a3ad3faead73be8fc272",
+    "size_bytes": 1497
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r0daad8989288/metrics.jsonl",
+    "sha256": "8d39ac808fb316bce4e8b01c9f4344a97955be32e9b3f860473d646210e42c68",
+    "size_bytes": 1305
+  },
+  "name": "learned-polynomials-layer8-operands",
+  "optimizer_updates": 0,
+  "parent_run_ids": [
+    "rceea84f19f6b",
+    "rda6029c3286f"
+  ],
+  "record_schema_version": 1,
+  "run_id": "r0daad8989288",
+  "runtime": {
+    "frozen_execution_sha256": "f012d460f43ea1923a05ffc9410aaa8ac12bff044a4496f8cb023282ad787821",
+    "gpu_count": 1,
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "node": "dogo.csail.mit.edu",
+    "optimizer_updates": 0,
+    "partition": "standard",
+    "resolved_attention_backends": {},
+    "slurm_job_id": "8861",
+    "source_commit": "aa90edf4e2df2c8e0e3cc0a923015b4d39eb9b66",
+    "started_utc": "2026-11-20T19:16:00.793778+00:00"
+  },
+  "status": "complete"
+}

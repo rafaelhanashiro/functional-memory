@@ -1,4 +1,4 @@
-"""Regenerate the per-key weight figures and tables from the position-weights runs in this topic's selection."""
+"""Regenerate the long-document per-key weight figure and table from this topic's selection."""
 from __future__ import annotations
 
 import csv
@@ -25,16 +25,7 @@ FAR, BLOCK = 2048, 64
 BANDS = ((0, 16), (16, 64), (64, 256), (256, 1024), (1024, 2048), (2048, 4096))
 # The two key stretches where the 2k model's far weight peaks, [low, high) in key positions.
 STRETCHES = ((896, 1024), (1664, 1792))
-SINGLE_NOTE = ("Query + W decay, m = 4; one 4,096-token validation row. Each bar is one key's share of the query's |w|, "
-               "averaged over the 14 heads,\n÷ the uniform share 1/4,096; the axis stops at 8×. Black line: mean over each "
-               "block of 64 keys. Dashed line: uniform.\nGray: keys ≥ 2,048 back, distances the 2,048-token model never "
-               "saw. ▲ end-of-document token.")
-BATCH_NOTE = ("Query + W decay, m = 4; the first 128 validation sequences of 4,096 tokens. Each bar is one key's share of "
-              "the query's |w|, averaged over the 14 heads\nand the 128 sequences, ÷ the uniform share 1/4,096; the axis "
-              "stops at {ceiling:.0f}×. Black line: mean over each block of 64 keys. Dashed line: uniform.\nGray: keys "
-              "≥ 2,048 back, distances the 2,048-token model never saw. In parentheses: 10th–90th percentile of that "
-              "share across sequences.")
-BATCH_CEILING = 8.0
+BATCH_CEILING = 8.0  # the axis ceiling, in multiples of the uniform share
 LONG_NOTE = ("Query + W decay, m = 4; the first 4,096 tokens of 128 long documents past both models' training data. Each bar is "
              "one key's share of the query's |w|,\naveraged over the 14 heads and the 128 documents, ÷ the uniform share "
              "1/4,096; the axis stops at {ceiling:.0f}×. Black line: mean over each block of 64 keys.\nDashed line: "
@@ -129,20 +120,10 @@ def draw(name: str, data: dict, field: str, *, title: str, note: str, ceiling: f
 
 
 def main() -> None:
-    single = metrics("position_weights")
-    write_table(TOPIC / "position_weights.csv", single, "head_mean_share", {
-        "weight_end_of_document_keys": lambda row, ratio: " ".join(f"{key}:{ratio[key]:.2f}" for key in row["eos_positions"])})
-    draw("position_weights", single, "head_mean_share", title="Where the query at position 4,095 puts its weight",
-         note=SINGLE_NOTE, ceiling=8.0, yticks=[0, 1, 2, 4, 6, 8], spread=False)
     averaged = {
         "share_2048_or_more_back_p10": lambda row, _: f"{np.percentile(row['share_beyond_2048_by_row'], 10):.4f}",
         "share_2048_or_more_back_p90": lambda row, _: f"{np.percentile(row['share_beyond_2048_by_row'], 90):.4f}",
         "stretch_peak_block_weight": lambda _, ratio: f"{max(ratio[low:high].reshape(-1, BLOCK).mean(axis=1).max() for low, high in STRETCHES):.4f}"}
-    batch = metrics("position_weights_batch")
-    write_table(TOPIC / "position_weights_batch.csv", batch, "mean_share", averaged)
-    draw("position_weights_batch", batch, "mean_share",
-         title="Where the query at position 4,095 puts its weight, over 128 sequences",
-         note=BATCH_NOTE.format(ceiling=BATCH_CEILING), ceiling=BATCH_CEILING, yticks=[0, 1, 2, 4, 6, 8], spread=True)
     long = metrics("position_weights_long_documents")
     write_table(TOPIC / "position_weights_long_documents.csv", long, "mean_share", averaged)
     draw("position_weights_long_documents", long, "mean_share",

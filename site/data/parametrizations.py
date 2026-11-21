@@ -69,21 +69,22 @@ def pure_sigmoid() -> dict:
                                    f"= σ({FEATURE}), divided by <var>r</var>! or not, from <var>W</var> = 0."}]}
 
 
-# SoS and softplus: per coefficient group, (variant, runs at core degree 4, 8 and 12; None: not run). A
+# SoS and softplus: per coefficient group, (variant, runs at core degree 4, 8, 12 and 16; None: not run). A
 # prefactor (*) raises the total degree to m + 1.
 SOS = (
     ("Query coefficients · <var>W</var> decay", (
-        ("SoS", ("r016b914d927a", "reeefbcc19abf", "r3d52b7ab43d1")),
-        ("Softplus input", (None, "ra3b54e2489f8", "r9eb845aae5bb")),
-        ("SoS + softplus input", (None, "r41a4c74c5f58", "rc5aac8f37a2e")),
-        ("SoS + softplus input + prefactor*", (None, "r841f35a24241", "rf637de9b65b1")),
+        ("SoS", ("r016b914d927a", "reeefbcc19abf", "r3d52b7ab43d1", "rdfc61c988309")),
+        ("Softplus input", (None, "ra3b54e2489f8", "r9eb845aae5bb", None)),
+        ("SoS + softplus input", (None, "r41a4c74c5f58", "rc5aac8f37a2e", None)),
+        ("SoS + softplus input + prefactor*", (None, "r841f35a24241", "rf637de9b65b1", None)),
     )),
     ("Static coefficients", (
-        ("SoS", (None, "r0e32dd2bd3f7", "rdc8b04b223af")),
-        ("SoS + softplus input", ("r6d4217061453", "r54f771e54722", "r1b9e2e69f7f0")),
-        ("SoS + softplus input + prefactor*", ("r91e0c1bb8458", "ra3bffee9a528", "r28a991faed4f")),
+        ("SoS", (None, "r0e32dd2bd3f7", "rdc8b04b223af", None)),
+        ("SoS + softplus input", ("r6d4217061453", "r54f771e54722", "r1b9e2e69f7f0", None)),
+        ("SoS + softplus input + prefactor*", ("r91e0c1bb8458", "ra3bffee9a528", "r28a991faed4f", None)),
     )),
 )
+SOS_DEGREES = (4, 8, 12, 16)
 EXP = "r6a76e7fbde45"
 FIXED_KERNELS = (("Exp (baseline)", EXP), ("Sigmoid", "r88d8654a8a1d"), ("Softplus", "r266c5dd1f935"))
 
@@ -111,7 +112,7 @@ def dense() -> list[dict]:
 
 def sos() -> list[dict]:
     """Bold marks the lowest polynomial perplexity; every value shows its change from exp."""
-    band = lambda label: {"className": "band", "cells": [{"text": label, "colspan": 4}]}
+    band = lambda label: {"className": "band", "cells": [{"text": label, "colspan": 1 + len(SOS_DEGREES)}]}
     rows, polynomials = [], []
     for group, variants in SOS:
         rows.append(band(group))
@@ -121,14 +122,15 @@ def sos() -> list[dict]:
             rows.append([text(variant), *cells])
     bold_lowest(polynomials)
     rows.append(band("Fixed kernels"))
-    rows += [[text(label), {**perplexity(run_id), "colspan": 3}] for label, run_id in FIXED_KERNELS]
+    rows += [[text(label), {**perplexity(run_id), "colspan": len(SOS_DEGREES)}] for label, run_id in FIXED_KERNELS]
     for row in rows:
         for cell in row if isinstance(row, list) else []:
             if "value" in cell:
                 cell["text"] += f' <span class="change">({change(cell["value"], best(EXP))})</span>'
     return [{"key": "sos", "title": "SoS and softplus",
-             "tables": [{"head": ["Variant", *(f"<var>m</var> = {degree}" for degree in (4, 8, 12))], "rows": rows,
-                         "caption": "PPL (% vs exp) at core degree <var>m</var>. * Total degree <var>m</var> + 1."}]}]
+             "tables": [{"head": ["Variant", *(f"<var>m</var> = {degree}" for degree in SOS_DEGREES)], "rows": rows,
+                         "caption": "PPL (% vs exp) at core degree <var>m</var>. * Total degree <var>m</var> + 1. "
+                                    "<var>m</var> = 16 ran on the blocked kernel."}]}]
 
 
 def main() -> None:

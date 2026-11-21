@@ -58,7 +58,7 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   scaffolds. Its results mirror the results site (`site/`): `results/pretraining/<group>/`
   (polynomial, scalings, fox_alibi, parametrizations, alternative_attention, other) and
   `results/diagnostics/<group>/` (overfitting, continued_pretraining, length_extrapolation,
-  learning_dynamics), indexed by `results/README.md`; their runs stay in the study's `runs/`.
+  learning_dynamics, input_dependence), indexed by `results/README.md`; their runs stay in the study's `runs/`.
   They follow the selection, provenance, and regeneration rules below, but not the
   canonical, exploratory, and diagnostic statuses: every folder has a README (question,
   runs, findings, limits, the date opened, any open question) and a selection pinned by

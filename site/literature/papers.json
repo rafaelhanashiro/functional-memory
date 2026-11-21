@@ -1,5 +1,75 @@
 [
   {
+    "id": "2402.04347",
+    "title": "The Hedgehog & the Porcupine: Expressive Linear Attentions with Softmax Mimicry",
+    "authors": [
+      "Michael Zhang",
+      "Kush Bhatia",
+      "Hermann Kumbong",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2402.04347",
+    "arxiv": "2402.04347",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2402.18668",
+    "title": "Simple linear attention language models balance the recall-throughput tradeoff",
+    "authors": [
+      "Simran Arora",
+      "Sabri Eyuboglu",
+      "Michael Zhang",
+      "Aman Timalsina",
+      "Silas Alberti",
+      "Dylan Zinsley",
+      "James Zou",
+      "Atri Rudra",
+      "Christopher Ré"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2402.18668",
+    "arxiv": "2402.18668",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2402.10644",
+    "title": "Linear Transformers with Learnable Kernel Functions are Better In-Context Models",
+    "authors": [
+      "Yaroslav Aksenov",
+      "Nikita Balagansky",
+      "Sofia Maria Lo Cicero Vaina",
+      "Boris Shaposhnikov",
+      "Alexey Gorbatovski",
+      "Daniil Gavrilov"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2402.10644",
+    "arxiv": "2402.10644",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
+    "id": "2403.02920",
+    "title": "TaylorShift: Shifting the Complexity of Self-Attention from Squared to Linear (and Back) using Taylor-Softmax",
+    "authors": [
+      "Tobias Christian Nauen",
+      "Sebastian Palacio",
+      "Andreas Dengel"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/abs/2403.02920",
+    "arxiv": "2403.02920",
+    "seen": false,
+    "added": "2026-11-19"
+  },
+  {
     "id": "2602.02422",
     "title": "Poly-attention: a general scheme for higher-order self-attention",
     "authors": [
@@ -13,6 +83,22 @@
     "arxiv": "2602.02422",
     "seen": false,
     "added": "2026-11-18"
+  },
+  {
+    "id": "2310.01655",
+    "title": "PolySketchFormer: Fast Transformers via Sketching Polynomial Kernels",
+    "authors": [
+      "Praneeth Kacham",
+      "Vahab Mirrokni",
+      "Peilin Zhong"
+    ],
+    "year": 2023,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2310.01655",
+    "arxiv": "2310.01655",
+    "seen": true,
+    "added": "2026-11-17",
+    "category": "state-space"
   },
   {
     "id": "2404.19756",
@@ -47,21 +133,6 @@
     "source": "arXiv",
     "url": "https://arxiv.org/pdf/2610.14219",
     "arxiv": "2610.14219",
-    "seen": false,
-    "added": "2026-11-17"
-  },
-  {
-    "id": "2310.01655",
-    "title": "PolySketchFormer: Fast Transformers via Sketching Polynomial Kernels",
-    "authors": [
-      "Praneeth Kacham",
-      "Vahab Mirrokni",
-      "Peilin Zhong"
-    ],
-    "year": 2023,
-    "source": "arXiv",
-    "url": "https://arxiv.org/pdf/2310.01655",
-    "arxiv": "2310.01655",
     "seen": false,
     "added": "2026-11-17"
   },

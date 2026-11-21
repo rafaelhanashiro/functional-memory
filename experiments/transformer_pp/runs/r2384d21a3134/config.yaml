@@ -1,0 +1,15 @@
+schema_version: 1
+experiment_kind: layerwise_polynomial_intervention
+condition: exploratory/softplus_sos/prefactor_coefficient_swap
+output_directory: experiments/transformer_pp/runs/r2384d21a3134
+evaluation:
+  parent_run_id: r841f35a24241
+  parent_config_sha256: 1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b
+  checkpoint_step: 7500
+  checkpoint_sha256: 18bddb7924feaac08d8e985821b2d30bc149195590883942a2b5864504b926f4
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+  calibration_sequences: 64
+  evaluation_sequences: 256
+  microbatch: 4
+  pairing_seed: 42
+  layer_scope: all_layers

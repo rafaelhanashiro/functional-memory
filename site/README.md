@@ -12,15 +12,27 @@ at http://127.0.0.1:8765. Elsewhere, such as a laptop with Python 3.9 or later, 
 `python3 site/serve.py --port 8766` from the repository root and open http://127.0.0.1:8766
 (another port while a tunnel holds 8765); edits there are saved in that checkout.
 
+A read-only copy is public at https://rafaelhanashiro.github.io/functional-memory/, served by
+GitHub Pages from the `gh-pages` branch. Pushing `main` does not change it: after pushing, run
+`python3 site/publish.py` from any checkout to publish the committed site there (`--build DIR`
+only builds it, to look at first). It leaves out Literature, Meetings, the Queue and every
+editing control; `public/` holds the read-only modules it uses instead.
+
 Everything the pages load is inside this folder: images in `media/`, result figures in `figures/`, result data in `data/`,
 and the Markdown and math libraries in `vendor/`. Only adding a literature link reaches the
 internet, to read the link's title.
 
 `literature/papers.json` lists the literature resources in the page's order (title,
-authors, year, link, and whether the user has seen it). On the page the user adds a
-resource from a link (it goes to the top, with metadata read from the link), reorders,
-renames, and switches resources between seen and not seen, and edits each resource's
-write-up, their own Markdown file `literature/<id>.md` (math in `$...$` and `$$...$$`).
+authors, year, link, whether the user has seen it, and the category it is filed under, if
+any), and `literature/categories.json` the user's own categories in theirs (an id and a name).
+The page shows each category's seen and not-seen-yet resources, then those under no category.
+On the page the user adds a resource from a link (it goes to the top of the category picked
+beside the link, with metadata read from the link), reorders resources and drags them into
+another category or half, renames them and switches them between seen and not seen, makes,
+renames, moves, and deletes categories (a deleted category's resources stay, under no
+category), and edits each resource's write-up, their own Markdown file `literature/<id>.md`
+(math in `$...$` and `$$...$$`). The chevron before a category's name hides it down to its
+heading, in that browser only (its local storage).
 The Meetings page lists the meetings by date, newest first, and adds one for a chosen date,
 optionally named. A meeting's page (`meeting.html?date=YYYY-MM-DD`) shows its agenda and
 notes, `meeting/<date>-agenda.md` and `meeting/<date>-notes.md`, edited the same way; the
@@ -35,10 +47,14 @@ The result pages draw their tables from `data/*.json`, each written by the gener
 from the Transformer++ runs' records and result summaries: `polynomial.py` (Polynomial, with its
 chart), `other.py` (Other runs), `scaling.py` (2.5× Chinchilla, 4k sequences and 100M),
 `parametrizations.py` (Activations, Dense, and SoS / Softplus), `alternatives.py` (Fixed
-kernels, MLP and Splines), `fox.py` (FoX / ALiBi / PaTH), and `diagnostics.py` (Overfitting and
-Continued pretraining; it also copies the Length extrapolation figures from their result
-collection into `figures/`). `results.js` draws the tables of all but the first two from cells
-the generators format.
+kernels, MLP and Splines), `fox.py` (FoX / ALiBi / PaTH), `diagnostics.py` (the Diagnostics
+pages; it also copies their figures from the result collections that draw them into `figures/`),
+and `home.py` (the home page's reference model, from `experiments/transformer_pp/recipe.yaml`
+and the softmax reference run's parameter count). `results.js` draws the tables of all but the
+first two from cells the generators format.
+
+The home page, `index.html`, which the site's name in every header links to, introduces the
+project in its text and shows the reference model under it.
 
 The result pages' text and titles are the user's, edited on the page: the pencil in the header
 switches a page to editing, where clicking a text, or an empty place for one, opens the shared
@@ -54,11 +70,18 @@ content the user asks for may add new texts. Rerun a generator only when the use
 results. Every perplexity on the site is the run's validation-best value, never the terminal
 one, which the Runs page says once (its text) rather than every table or plot; a percentage
 change is labeled minimally, as (% vs exp); RoPE is assumed and never named, while runs without
-it say NoPE; the overfitting fits report perplexity on the batch they fit. The Learned
-polynomials and Polynomial learning dynamics figures and the Other runs page's saturation figure
-in `figures/` are copies with no generator; the saturation figure is shown by that page's L2
-notes text. The Input dependence table reads its runs from Codex's branch `codex/layerwise-
-polynomial-swap` until that branch merges.
+it say NoPE; the overfitting fits report perplexity on the batch they fit. Every figure in
+`figures/` is copied byte for byte, by a generator here, from the result collection that draws
+it; the Other runs page's saturation figure is shown by that page's L2 notes text. The Input
+dependence page reads its table from the [calibration-mean diagnostic](../
+experiments/transformer_pp/results/diagnostics/input_dependence/calibration_mean/README.md).
+
+The Queue tab lists the runs the user plans and the runs in progress, each list a sequence of runs
+and named groups of runs, in `queue/runs.json`. A planned run's checkbox moves it to In progress;
+an active run's checkbox closes it out after asking, and its arrow sends it back; a moved run joins
+the group of the same name on the other side. Every change saves both lists through `serve.py`
+(`/api/queue`), which refuses a save made against an older revision. The file is the user's, like
+the meetings' files below: never write, reset, or regenerate it, and commit it only when asked.
 
 The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits

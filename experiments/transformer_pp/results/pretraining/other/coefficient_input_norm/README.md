@@ -76,7 +76,7 @@ head, sequence, and saturation threshold `abs(tanh(z)) >= 0.99`.
 | SoS query | 61.9028% / **0%** | 0.9679 |
 
 The original probe values and explicit parents are recorded in the
-[SoS saturation diagnostic](../../parametrizations/sos/sum_of_squares/README.md#matched-head-tanh-saturation).
+[saturation selection](saturation_selection.yaml).
 Across all layers/heads/coordinates, terminal sampled saturation is **0% for
 query and 0.0113% for SoS**. Mean tanh derivatives are 0.9514 and 0.9202. These
 all-model averages have no matched all-model original-input probe. The most
@@ -245,27 +245,13 @@ factor generators are approximately constant across this sample; other
 coordinates occupy both tails. Tail fractions do not measure the amplitude
 of coefficient variation or establish behavior on other sequences.
 
-The separate [all-layer/head bars](saturation_all_heads.png) average each
-coordinate's token saturation over all 15 layers and 14 heads. This L2-only
-view retains combined-tail blue bars and uses a shared **0–0.5%** axis to show
-the small remaining SoS saturation; its signed split was not measured.
-For ordinary SoS, the largest coordinate mean is U2: 0.1283% for degree-eight
-post-RMSNorm L2, 0.0523% for degree-twelve post-RMSNorm L2, and 0.2260% for
-degree-twelve raw L2. Softplus-times-SoS raw L2 also peaks at U2, at 0.4836%
-for core degree eight and 0.2100% for core degree twelve.
-All query coordinates average zero at this checkpoint. No matched all-model
-probe exists for the original controls, so they are not included in this view.
-The percentages here are at checkpoint 7,500, rather than the terminal
-measurements reported above.
-
 SoS bars describe the U/V factor generators before square expansion; they are
-not individual expanded polynomial orders. Both views weight tokens and selected
+not individual expanded polynomial orders. The bars weight tokens and selected
 coordinates equally, without amplitude or contribution weighting, and describe
 one sequence. The [explicit plot selection](saturation_selection.yaml) pins the
-training measurements and the original-input probes. The original probes also
-remain selected by the [SoS saturation comparison](../../parametrizations/sos/sum_of_squares/README.md#matched-head-tanh-saturation).
+training measurements and the original-input probes.
 
-The PNGs, matching PDFs, and [coordinate table](saturation_by_coordinate.csv)
+The PNG, matching PDF, and [coordinate table](saturation_by_coordinate.csv)
 regenerate from committed measurements without checkpoints, data, or a GPU:
 
 ```bash

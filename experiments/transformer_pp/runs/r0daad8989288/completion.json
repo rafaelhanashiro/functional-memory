@@ -1,0 +1,8 @@
+{
+  "status": "complete",
+  "fits": [
+    "static",
+    "free"
+  ],
+  "max_replay_nll_error": 0.0008068084716796875
+}

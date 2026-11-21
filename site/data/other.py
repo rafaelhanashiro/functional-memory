@@ -1,4 +1,5 @@
-"""Write other.json, the Other runs page's data, from the runs' records and result summaries.
+"""Write other.json, the Other runs page's data, from the runs' records and result summaries, and
+copy its saturation figure from the collection that generates it.
 
     python3 site/data/other.py
 
@@ -7,11 +8,14 @@ Every value is a run's validation-best perplexity. Rerun only when the user asks
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 from polynomial import RESULTS, ROOT, RUNS, best, rows
 
 EVEN = RESULTS / "pretraining/other/even_powers/summary.csv"
+# The saturation figure under the coefficient-input L2 table, as its collection generates it.
+SATURATION = RESULTS / "pretraining/other/coefficient_input_norm/saturation_by_coordinate.png"
 # Selected powers: columns (label, degree) and each row's summary role per column (None: not run).
 POWER_COLUMNS = (("Full", 4), ("Even-only", 8), ("Odd + constant", 7), ("Full", 8))
 POWER_ROWS = (
@@ -30,16 +34,18 @@ L2_GROUPS = (
 # Decay and LR experiments: rows of (label, run IDs per column; None: not run).
 DECAY = (("Query", ("r2b22f2ff6461", "rca97cc9db8f2", "r68cac6f03d77")), ("Query-key", ("r501f5cca0d4c", "r79d829a16029", None)))
 LEARNING_RATE = (("Query", ("r2b22f2ff6461", "rb74fa2ebede6")),)
+# Taylor warmup: (run, query + W decay run, static run); both release on the same schedule.
 RELEASE = (
-    ("All degrees at once", "rd40b46f5dc9b"),
-    ("One degree at a time (0 → 8)", "rcc4f4e5d7abb"),
-    ("Query + W decay, no freeze", "r25fffc16c2f3"),
-    ("Exp baseline", "r6a76e7fbde45"),
+    ("All degrees at once", "rd40b46f5dc9b", "r1c72e8860ade"),
+    ("One degree at a time (0 → 8)", "rcc4f4e5d7abb", "r991a756da7a9"),
+    ("No freeze", "r25fffc16c2f3", "r9c69dd7cfc8d"),
 )
+RELEASE_EXP = "r6a76e7fbde45"
+# Zero constant at degree 8: (variant, run on the softplus of the score, run on the raw score).
 ZERO_CONSTANT = (
-    ("Query + softplus input", "rb5b604ae829a"),
-    ("Query SoS + softplus input", "r7d5baf55104e"),
-    ("Static + softplus input", "rc28ef4dbe26d"),
+    ("Query", "rb5b604ae829a", "r81b5ebb23a51"),
+    ("Query SoS", "r7d5baf55104e", "rc379a8f30f5b"),
+    ("Static", "rc28ef4dbe26d", "r37fb1c7bb6db"),
 )
 
 
@@ -82,7 +88,8 @@ def input_norm() -> dict:
 def zero_constant() -> dict:
     return {
         "title": "Zero constant",
-        "rows": [{"label": label, **cell(run_id)} for label, run_id in ZERO_CONSTANT],
+        "columns": ["Softplus input", "Raw score"],
+        "rows": [{"label": label, "cells": [cell(run_id) for run_id in runs]} for label, *runs in ZERO_CONSTANT],
     }
 
 
@@ -97,6 +104,13 @@ def release_update(run_id: str) -> str:
     return f"{start + 1:,}–{end + 1:,}" if end is not None else f"{start + 1:,}"
 
 
+def release(query: str, static: str) -> str:
+    """The release update both runs of a row share."""
+    update = release_update(query)
+    assert release_update(static) == update, (query, static)
+    return update
+
+
 def decay_and_lr() -> dict:
     return {
         "title": "Decay and LR experiments",
@@ -109,9 +123,10 @@ def decay_and_lr() -> dict:
              "head": ["Attention", "Coefficient LR ×1", "Coefficient LR ×3"],
              "rows": [[label, *(cell(run_id) for run_id in runs)] for label, runs in LEARNING_RATE],
              "compact": True},
-            {"key": "release", "title": "Taylor warmup, then query + W decay",
-             "head": ["Run", "Release update", "PPL"],
-             "rows": [[label, release_update(run_id), cell(run_id)] for label, run_id in RELEASE],
+            {"key": "release", "title": "Taylor warmup, then learned coefficients",
+             "head": ["Run", "Release update", "Query + <var>W</var> decay", "Static"],
+             "rows": [*([label, release(query, static), cell(query), cell(static)] for label, query, static in RELEASE),
+                      ["Exp baseline", "—", {**cell(RELEASE_EXP), "colspan": 2}]],
              "compact": True},
         ],
     }
@@ -122,6 +137,9 @@ def main() -> None:
             "decay_and_lr": decay_and_lr()}
     output = Path(__file__).with_suffix(".json")
     output.write_text(json.dumps(data, indent=2) + "\n")
+    figures = Path(__file__).resolve().parents[1] / "figures" / "other-runs"
+    figures.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(SATURATION, figures / "saturation-layer8-head1.png")
     print(f"wrote {output.relative_to(ROOT)}")
 
 

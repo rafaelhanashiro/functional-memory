@@ -1,9 +1,9 @@
 """Saturation bars from explicitly selected, pinned measurements.
 
 The matched-head figure includes original-input controls, softplus times SoS,
-and both L2 placements, with positive and negative saturation stacked separately.
-The supplemental figure averages the L2 measurements over all layers and heads;
-original controls have only a matched-head probe. Missing runs stay explicit.
+and both L2 placements, with positive and negative saturation stacked separately;
+the coordinate table also keeps the L2 runs' all-layer/head averages. Missing runs
+stay explicit.
 No GPU, checkpoint, dataset, or numerical archive is needed to regenerate.
 """
 from __future__ import annotations
@@ -345,8 +345,7 @@ def main() -> None:
     selection = yaml.safe_load((OUT / "saturation_selection.yaml").read_text())
     panels = load(selection)
     with plt.rc_context({"font.family": "DejaVu Sans", "font.size": 11, "pdf.fonttype": 42}):
-        for scope in SCOPES:
-            plot(panels, selection["settings"], scope=scope)
+        plot(panels, selection["settings"], scope="selected_head")
     save_summary(panels)
     for panel in panels:
         for variant in VARIANTS:
@@ -358,7 +357,7 @@ def main() -> None:
                 suffix = "not measured" if all_heads is None else f"{100 * all_heads.mean():.6f}%"
                 print(f"{panel['label']} m={panel['degree']} / {TITLES[variant]}: "
                       f"selected head {100 * cell['selected_head'].mean():.6f}%; all heads {suffix}")
-    print("Regenerated two saturation figures and coordinate CSV from pinned measurements.")
+    print("Regenerated the matched-head saturation figure and coordinate CSV from pinned measurements.")
 
 
 if __name__ == "__main__":
