@@ -2785,7 +2785,7 @@ recipes, and study membership remain frozen while any of these jobs can run or r
 ## Score prefactors, swish and narrow keys
 
 Seventeen runs at the 15-layer width-896 reference shape and 1x budget (7,570 updates), requested 2026-11-20 on
-Kennel (branch `claude/prefactor-kernels-m8`, worktree `worktrees/prefactor-kernels-m8`). Notation: `s` is the
+Kennel. Notation: `s` is the
 score, `z = softplus(s)`, `h_t` a query-conditioned sum-of-squares polynomial of core degree eight (as in
 `r841f35a24241`, `z h_t(z)`: best 14.095), `p` a degree-eight polynomial with direct coefficients and `p_t` its
 query-conditioned form. Each recipe is its partner's (`derive_recipe.py --partner`, same shape and budget) with only
@@ -2915,8 +2915,8 @@ done
 
 ### Shifted exp and softmax at narrow keys
 
-Four more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel (branch
-`claude/shifted-exp-dk`, worktree `worktrees/shifted-exp-dk`). Each recipe is its partner's (`derive_recipe.py
+Four more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel. Each recipe is
+its partner's (`derive_recipe.py
 --partner`, same shape and budget) with only the listed setting changed; `value_head_dim` stays 64 and seed (42),
 data order, QK RMSNorm with per-head scale, reference initialization and RoPE are the partner's.
 
@@ -2964,8 +2964,8 @@ E1 and S1-S3 are launched with the ladder's runs, in the next subsection's order
 
 ### Degree-eight ladder and shifted exp at narrow keys
 
-Nine more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel (same branch and
-worktree). Each recipe is its partner's (`derive_recipe.py --partner`, same shape and budget) with only `qk_head_dim`
+Nine more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel. Each recipe is
+its partner's (`derive_recipe.py --partner`, same shape and budget) with only `qk_head_dim`
 changed; `value_head_dim` stays 64, and seed (42), data order, QK RMSNorm with per-head scale, reference
 initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds.records create` changed no setting.
 
@@ -2981,8 +2981,8 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
 | P16 | `r576bb8758634` | `static-m8-head-scale-dk16` | `p(s)`, `d_K` 16 | `r9c69dd7cfc8d` | `qk_head_dim: 16` | key width |
 | Q4 | `rd5e3ec5a4f02` | `query-m8-dk4-w-decay` | `p_t(s)`, `d_K` 4 | `r16b23893884d` | `qk_head_dim: 8 -> 4` | key width |
 
-- **Question.** Does the polynomial form, learned coefficients or their input dependence explain why polynomial
-  attention keeps its quality at narrow keys while exp collapses? Each width climbs a degree-eight ladder on the
+- **Question.** Which ingredient matters at narrow keys: the polynomial form, learned coefficients or their input
+  dependence? Each width climbs a degree-eight ladder on the
   raw score, one ingredient per step: `T_8(s) = sum_(r<=8) s^r / r!`, exp's truncation with nothing learned
   (`ra7ee8a4b2544`, the degree-scaling collection's Taylor `m = 8`, best 14.218); static learned `p(s)` from that
   start (`r9c69dd7cfc8d`, 14.294); and tanh query coefficients `p_t(s)` with W decay, the
@@ -3005,7 +3005,7 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   initial parameters at each width (counts and SHA256 from CPU; fixed Taylor's equal the exponential's, and Q4's
   equal `z h_t(z)`'s at width 4) and requires each width's qualified GPUs. Fixed and static runs add the Mosaic query
   kernel's degree-eight cases at their own width to their GPU stage, since their shared Mosaic suite takes widths 16
-  and 64; the query run's shared stage runs that kernel's whole suite. All 13 recipes of this worktree (E1, S1-S3
+  and 64; the query run's shared stage runs that kernel's whole suite. All 13 recipes (E1, S1-S3
   and these nine) pass the adapter's recipe and full-shape initialization checks on CPU: every partner array of
   unchanged shape is bit-identical, and only `q_proj`, `k_proj` and the Q/K RMSNorm gains change. Every allocation
   also runs the full-recipe pilot and a fresh-process resume.
@@ -3023,14 +3023,9 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   more work. H100 PCIe projections are the partners' own 8.26-9.71 h on `mastiff` (T and P) or 1.8 times H100 SXM;
   `mastiff` stays excluded, and `dogo` joins only while a placeholder holds its failing H100.
 
-Submit from `worktrees/shifted-exp-dk` after committing the frozen execution set and checking the live standard and
-long allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). **The five `d_K` 4 runs (T4,
-P4, Q4, E1, S1) are the user's top priority, ahead of every other job of ours:** submit them first, at the default
-nice, three on the standard GPUs that leave one free for the waiting `dogo` placeholder (`hold-dogo-badgpu`,
-[CLUSTERS.md](../../CLUSTERS.md#kennel-csail)) and two on long, and lower every other pending training job of ours,
-here (`--nice=1000` below) and in other worktrees (`scontrol update jobid=<id> nice=1000`), until they have started.
-The placeholder keeps the default nice: no `d_K` 4 run can use `dogo`, and lowering it would only let another job
-take the failing GPU when it frees:
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The five `d_K` 4 runs (T4, P4, Q4,
+E1, S1) go first, at the default nice; the others wait behind them (`--nice=1000`):
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice
@@ -3079,7 +3074,7 @@ Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) compares a
 prescale, as every adapter does (`scaffolds.transformer.acceptance.comparison_recipe`), and keeps its pins: the option
 adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
 trained at 1.3 to 1.6 s per update on B200 (2.7 to 3.4 h), so a 9-hour limit covers H100 SXM (4.8 h) with acceptance's
-two-hour reserve. Submit from `worktrees/sos-dk4-stable` after committing the frozen execution set, the SoS run first:
+two-hour reserve. Submit from the study's worktree after committing the frozen execution set, the SoS run first:
 
 ```bash
 submit() {  # partition, time limit, excluded nodes, run, nice
