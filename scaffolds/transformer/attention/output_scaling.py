@@ -46,7 +46,12 @@ derivative through it vanishes). Head RMSNorm takes ``c`` per token and head fro
   row is divided by its largest magnitude: ``mean((y / c)^2)`` lies in ``[1 / channels, 1]``, ``eps / c^2`` is at
   most ``eps`` (zero once ``c^2`` overflows, which is its FP32 value next to a mean square of at least
   ``1 / channels``), and every factor of the forward and the backward is within a few powers of ten of one,
-  whatever the row's scale. This also covers the overflowing mean square, so the prescale needs no guard.
+  whatever the row's scale. This also covers the overflowing mean square, so the prescale needs no guard. The
+  backward's last step divides by ``c``, so the gradient's elements are of size cotangent / RMS: they are
+  exact to rounding while FP32's normal range (down to 1.2e-38) holds them. A GPU keeps smaller ones as
+  subnormal numbers, with fewer bits, and XLA's CPU code flushes them to zero, however the function is
+  evaluated: on CPU the row gradient is within 1e-7 of FP64 for a quotient of 1e-33 or more, 7e-7 at 1e-34
+  and 2% at 1e-37 (its elements under the range), and zero from 1e-39.
 - a row-shifted exponential ``y = e^(-m) o``: the size of ``y`` says nothing about that of ``o``, so the row is
   classified by ``log max|o| = m + log max|y|``. Where ``max|o|`` exceeds ``e^-23 sqrt(eps)`` (1e-13 at
   ``eps = 1e-6``), ``c = max|o|``: ``o / c = y / max|y|`` and ``eps / c^2 = eps (e^(-m/2) / max|y| * e^(-m/2))^2``,
@@ -68,7 +73,7 @@ import jax.numpy as jnp
 OUTPUT_SCALINGS = ("none", "inverse_position", "head_rms_norm")
 # How head RMSNorm is evaluated (module docstring): "none" (every historical recipe) as written, with a divisor
 # only for rows whose FP32 mean square overflows; "max_abs" in units of each row's largest magnitude, the same
-# function with an FP32 gradient that is exact at any output scale.
+# function with an FP32 gradient that is exact to rounding wherever FP32 holds the gradient itself.
 HEAD_RMS_PRESCALES = ("none", "max_abs")
 # A shifted row whose largest unshifted magnitude is below e^-LINEAR_LOG_RANGE sqrt(eps) is in RMSNorm's linear
 # range: mean(o^2) / eps < e^-46 = 1.05e-20, below FP64's rounding of eps (1.1e-16), let alone FP32's.

@@ -35,12 +35,16 @@ retain the established recipe, including its previously selected learning rate.
 
 Unnormalized kernels normalize each head's output with per-head RMSNorm
 (`model.attention_output_scaling: head_rms_norm`). New runs evaluate it with the max-abs prescale
-(`model.attention_head_rms_prescale: max_abs`, which `scaffolds.records create` writes): each token and
-head's output is divided by its largest magnitude, at least one, before the normalization. It is the same
-function, and its FP32 gradient is exact at any output scale; the plain evaluation's gradient degrades once a
-head's output RMS passes about 3e13 and loses its projection term from 9e14
+(`model.attention_head_rms_prescale: max_abs`, which `scaffolds.records create` and the continuation launcher
+write): each token and head's output is divided by its largest magnitude, at least one, before the normalization.
+It is the same function, and its FP32 gradient is exact to rounding wherever FP32 holds the gradient itself (its
+elements are of size cotangent / output RMS: to an RMS of 1e30 for a cotangent of 1e-4); the plain evaluation's
+gradient degrades once a head's output RMS passes about 3e13 and loses its projection term from 9e14
 ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). Historical runs and their
-resumptions keep their recorded evaluation.
+resumptions keep their recorded evaluation, as do coefficient fits, oracles and distillations, which run their
+parent's recipe. The study's adapters compare a run with its pinned partner without this setting
+(`scaffolds.transformer.acceptance.comparison_recipe`), so a run takes it whatever its partner trained with, and
+`runs.csv` lists it (`attention_head_rms_prescale`).
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output

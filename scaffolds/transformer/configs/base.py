@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 import math
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Literal
 
 
@@ -76,9 +77,10 @@ class ModelConfig:
     # backward degrades once a head's output RMS passes about 3e13 and from 9e14 loses the term that removes the
     # gradient's component along y; "max_abs" on each row (token and head) divided by its largest magnitude, at
     # least one, a constant to differentiation, with eps divided by its square (attention/output_scaling.py). The
-    # same function in real arithmetic, with an FP32 gradient that is exact at any output scale; it applies
-    # wherever head RMSNorm does (attention/pieces.py head_rms_prescale_problem). Fresh recipes with head RMSNorm
-    # use it (fresh_recipe_uses_head_rms_prescale).
+    # same function in real arithmetic, with an FP32 gradient that is exact to rounding wherever FP32 holds the
+    # gradient itself: its elements are of size cotangent / output RMS and FP32's normal range ends at 1.2e-38
+    # (an RMS of 1e30 for a cotangent of 1e-4). It applies wherever head RMSNorm does (attention/pieces.py
+    # head_rms_prescale_problem). Fresh recipes with head RMSNorm use it (fresh_recipe_uses_head_rms_prescale).
     attention_head_rms_prescale: Literal["none", "max_abs"] = "none"
     attention_mechanism: Literal["dot_product", "gla", "gated_deltanet"] = "dot_product"
     # Gated DeltaNet's causal depthwise short-convolution width (FLA and paper default 4).
@@ -1535,12 +1537,18 @@ def fresh_recipe_uses_exp_shift(model: ModelConfig) -> bool:
     return exp_shift_problem(model) is None
 
 
-def fresh_recipe_uses_head_rms_prescale(model: ModelConfig) -> bool:
+def fresh_recipe_uses_head_rms_prescale(model: ModelConfig | dict) -> bool:
     """Whether a fresh recipe evaluates head RMSNorm with the max-abs prescale unless it says otherwise: wherever
     it applies (attention/pieces.py head_rms_prescale_problem), that is every recipe with head RMSNorm output
-    scaling. Allocation (scaffolds.records create) applies this rule to the loaded recipe; others keep "none"."""
+    scaling. ``model`` is a ModelConfig or a recipe's ``model`` mapping. Allocation applies this rule:
+    scaffolds.records create to the loaded recipe, and launchers that allocate copied recipes for training to the
+    copy; others keep "none". A fixed-input fit, oracle or distillation runs its parent's recipe, and with it the
+    parent's evaluation."""
     from scaffolds.transformer.attention.pieces import head_rms_prescale_problem
 
+    if isinstance(model, dict):
+        # The rule reads the output scaling alone; a recipe that predates the field has none.
+        model = SimpleNamespace(attention_output_scaling=model.get("attention_output_scaling", "none"))
     return head_rms_prescale_problem(model) is None
 
 

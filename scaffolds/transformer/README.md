@@ -1356,16 +1356,27 @@ separate guard. With a row-shifted exponential the row holds `y = e^(-m) o`, so 
 evaluated as `y e^m / sqrt(eps)` (the slope capped at `e^80.5`, which only an exactly zero row reaches). This also
 evaluates rows the shifted arithmetic alone cannot: a zero row at shifts above 22 (a NaN gradient without the
 prescale, until its shifted epsilon underflows: 37 on CPU) and rows below 1e-13 at shifts above 22 (an infinite
-gradient, or a zero output once the mean square underflows). A row with an infinite or NaN entry is NaN, as
-without it. It
-applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
+gradient, or a zero output once the mean square underflows). A row with an infinite or NaN entry is NaN, as without
+it.
+
+It applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
 included); other recipes reject it. `scaffolds.records create` writes `max_abs` into fresh recipes with
 `head_rms_norm` (`configs.base.fresh_recipe_uses_head_rms_prescale`); a fresh recipe there that sets `none` needs
-`--allow-plain-head-rms`. Run metadata records `attention_head_rms_prescale` and a formula clause. Continuations
-may change it with the backend: it changes no parameter and keeps the function. Telemetry is unchanged (it reads
-the output before its normalization). In FP32 the prescaled output and gradient match FP64 to 1e-6 at output RMS
-1e-25 to 1e30, and a two-layer model's gradients match its FP64 counterpart's to 1e-5 with every head output above
-1e15. Qualification: [validation](validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20).
+`--allow-plain-head-rms`. A launcher that allocates a copied recipe for training applies the same rule to the copy
+(`experiments/transformer_pp/launch_continuation.py`), while a fixed-input coefficient fit, oracle or distillation
+runs its parent's recipe (`training/coefficient_fit.py` `parent_config`) and so keeps the parent's evaluation. A
+study adapter compares a run with its pinned partner through `acceptance.comparison_recipe`, which holds this
+setting at `none` on both sides: it adds no parameter and no kernel, and a recipe that sets it selects its tests
+itself. Run metadata records `attention_head_rms_prescale` and a formula clause, and `runs.csv` has an
+`attention_head_rms_prescale` column (`none` for every recipe with `head_rms_norm` that predates it, empty without
+it) beside `attention_exp_shift` (the unnormalized exponential's under `head_rms_norm`). Continuations may change it
+with the backend: it changes no parameter and keeps the function. Telemetry is unchanged (it reads the output before
+its normalization). In FP32 the prescaled output and gradient match FP64 to 1e-6 at output RMS 1e-25 to 1e30, and a
+two-layer model's gradients match its FP64 counterpart's to 1e-5 with every head output above 1e15. The gradient is
+exact to rounding wherever FP32 holds the gradient itself, not at every scale: its elements are of size cotangent /
+RMS, and FP32's normal range ends at 1.2e-38 (the bound of 1e30 is that of a cotangent of 1e-4; beyond it no FP32
+evaluation has the gradient, prescaled or plain). Qualification:
+[validation](validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20).
 
 The unnormalized exponential with `head_rms_norm` fails earlier: `e^s` passes FP32's maximum at
 `s` about 88.7, and before that the RMSNorm backward's derivative of `rsqrt` (the mean square's
@@ -2048,6 +2059,11 @@ Studies configure these shared modules with execution modules at their root
   checks experiment-specific behavior after finite pilot validation and before the stage
   passes. Its facts are recorded under `pilot.json` → `outcome.experiment_check`; raising
   an exception blocks production. Existing adapters omit the callback.
+- `comparison_recipe(config)` is `config_to_dict(config)` for a study adapter that pins a partner's recipe key by
+  key: the model's evaluation settings (`EVALUATION_SETTINGS`: `attention_head_rms_prescale`) are held at their
+  historical values on both sides, so a run may take them whatever its partner trained with. The backend, the
+  blocked implementation and the exponential's row shift stay in the comparison: each runs kernels that need their
+  qualification, so an adapter states which of them its runs may take.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection, keeping a capturing run's kept gradient-event states as recorded
   diagnostic checkpoints.
