@@ -6,9 +6,9 @@ import hashlib
 from pathlib import Path
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, main as run_acceptance, matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 
@@ -41,7 +41,7 @@ def check_recipe(config: Config) -> None:
     """The only scientific change from each source is the initial spline function."""
     validate_config(config)
     source = source_config(config.model.attention_coefficient_conditioning)
-    actual, expected = config_to_dict(config), config_to_dict(source)
+    actual, expected = comparison_recipe(config), comparison_recipe(source)
     for field, value in AFFINE_INITIALIZATION.items():
         if actual["model"][field] != value:
             raise ValueError(f"This comparison requires model.{field}: {value}")

@@ -4,8 +4,8 @@ from functools import partial
 import hashlib
 from pathlib import Path
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 ROOT = Path(__file__).resolve().parent
@@ -47,7 +47,7 @@ def check_recipe(config):
         raise ValueError("This comparison requires independent per-order gates")
     conditioning = config.model.attention_forget_gate_conditioning
     control = control_config(conditioning, config.model.attention_degree)
-    actual, expected = config_to_dict(config), config_to_dict(control)
+    actual, expected = comparison_recipe(config), comparison_recipe(control)
     actual["model"]["attention_forget_gate_per_order"] = False
     if (expected["model"]["attention_forget_gate_conditioning"], conditioning) == ("query", "query_key"):
         actual["model"]["attention_forget_gate_conditioning"] = "query"

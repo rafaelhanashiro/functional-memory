@@ -55,8 +55,9 @@ CANONICAL_QK = {"qk_norm": True, "qk_norm_type": "rms_norm", "qk_norm_sharing": 
 LOCATIONS = {"data.train_manifest", "data.eval_manifest", "train.checkpoint_dir", "train.workdir",
              "train.wandb_group", "train.wandb_run_name"}
 # Execution, not science: the blocked backend's historical scan and its causal strips (which new
-# runs there use) evaluate the same arithmetic, and other backends ignore the setting.
-EXECUTION = {"model.attention_blocked_implementation"}
+# runs there use) evaluate the same arithmetic, and other backends ignore the setting; head RMSNorm's
+# max-abs prescale (which new runs with head RMSNorm use) evaluates the same function.
+EXECUTION = {"model.attention_blocked_implementation", "model.attention_head_rms_prescale"}
 ABSENT = {
     "continuation.new_parameter_learning_rate": None, "continuation.parent_checkpoint": "",
     "continuation.parent_checkpoint_sha256": "", "continuation.parent_config": "",

@@ -27,10 +27,10 @@ from pathlib import Path
 import sys
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
     matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -121,7 +121,7 @@ def control_config(key):
 
 def control_recipe(key):
     """The control's recipe at the selected budget: its own, or the 2x control's with the derived 1x schedule."""
-    recipe = config_to_dict(control_config(key))
+    recipe = comparison_recipe(control_config(key))
     for section, values in CONTROLS[key].get("schedule", {}).items():
         recipe[section].update(values)
     return recipe
@@ -155,7 +155,7 @@ def check_recipe(config):
     check_prefactor(config)
     prefactor = config.model.attention_score_prefactor
     core_degree, control = selected[0], CONTROLS[selected]
-    actual, expected = config_to_dict(config), control_recipe(selected)
+    actual, expected = comparison_recipe(config), control_recipe(selected)
     expected["model"].update(attention_score_transform=("softplus" if prefactor == "none"
                                                         else config.model.attention_score_transform),
                              attention_score_prefactor=prefactor,

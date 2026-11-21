@@ -17,9 +17,10 @@ from pathlib import Path
 import sys
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
+    matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -76,7 +77,7 @@ def check_recipe(config):
     validate_config(config)
     key = partner_key(config)
     partner = PARTNERS[key]
-    actual, expected = config_to_dict(config), config_to_dict(partner_config(key))
+    actual, expected = comparison_recipe(config), comparison_recipe(partner_config(key))
     for name, values in partner["model"].items():
         if actual["model"].get(name) not in values:
             raise ValueError(f"Direct softplus {key} runs take model.{name} in {values}, not "

@@ -6,9 +6,10 @@ import hashlib
 from pathlib import Path
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
+    matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -60,7 +61,7 @@ def check_recipe(config: Config) -> None:
         # The GPU tests qualify this decay through the strips at the production context, not the scan.
         raise ValueError("Query-distance softmax and exp train on the blocked backend's causal strips")
     run = CONTROLS[kernel(config)][0]
-    actual, expected = config_to_dict(config), config_to_dict(control_config(kernel(config)))
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config(kernel(config)))
     actual["model"]["attention_forget_gate_mode"] = "cumulative"
     if key_conditioned(config):
         # The query-key gate is the query gate plus a key projection; every other gate setting is the control's.

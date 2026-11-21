@@ -564,7 +564,7 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             # production precision. The fused kernel's GPU cases are in unnormalized_fused_attention, selected above.
             tests.append("exp_row_max_shift")
         if model.get("attention_head_rms_prescale", "none") != "none":
-            # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at every output scale;
+            # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at output RMS 1e-25 to 1e30;
             # GPU, the device's own FP32 arithmetic at the scales where the plain backward fails and through the
             # row shift. The module's Mosaic cases belong to the scaffold's qualification
             # (validation/qualify_head_rms_prescale.sbatch): they skip where a kernel is not admitted, and a
@@ -627,6 +627,25 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
         runtime_env=runtime_env,
         select_tests=attention_test_paths,
     )
+
+
+# Model settings that choose how a recipe's function is evaluated and nothing else, with their historical values,
+# which every recorded partner recipe has. None adds a parameter, changes a kernel or needs a GPU qualification of
+# its own, and a recipe that sets one selects that setting's tests itself (attention_test_paths). Head RMSNorm's
+# max-abs prescale is the normalization's own arithmetic, after any kernel on any backend
+# (attention/output_scaling.py), and fresh recipes with head RMSNorm carry it. The backend, the blocked
+# implementation and the exponential's row shift are not such settings: each runs kernels that need their
+# qualification, so an adapter states which of them its partner's runs may take.
+EVALUATION_SETTINGS = {"attention_head_rms_prescale": "none"}
+
+
+def comparison_recipe(config) -> dict:
+    """``config_to_dict(config)`` as a study adapter compares it, key by key, with a pinned partner's recipe: the
+    model's EVALUATION_SETTINGS at their historical values on both sides, so that a run may choose them whatever
+    its partner trained with."""
+    recipe = config_to_dict(config)
+    recipe["model"].update(EVALUATION_SETTINGS)
+    return recipe
 
 
 def write_json(path, value) -> None:

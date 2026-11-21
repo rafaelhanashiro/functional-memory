@@ -5,10 +5,11 @@ import hashlib
 from pathlib import Path
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, gdn_gate_start_parity, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, gdn_gate_start_parity, main as run_acceptance,
+    matches_softmax_backbone_initialization,
 )
 from scaffolds.transformer.attention.input_dependent import GDN_GATE_PARAMETERS
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 CONTROL_RUN = "rca97cc9db8f2"
@@ -40,7 +41,7 @@ def check_recipe(config: Config) -> None:
     validate_config(config)
     if config.model.attention_coefficient_gate != "gdn":
         raise ValueError("This run uses the GDN coefficient gate")
-    actual, expected = config_to_dict(config), config_to_dict(control_config())
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config())
     actual["model"]["attention_coefficient_gate"] = expected["model"]["attention_coefficient_gate"]
     for key, digest in MANIFEST_SHA256.items():
         path, control_path = actual["data"].pop(key), expected["data"].pop(key)

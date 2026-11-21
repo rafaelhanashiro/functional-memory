@@ -12,10 +12,10 @@ import hashlib
 from pathlib import Path
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
     matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 
@@ -86,14 +86,14 @@ def control_config(parameterization, degree=8, input_source="post_rmsnorm",
 
 def check_recipe(config):
     validate_config(config)
-    expected = config_to_dict(control_config(config.model.attention_coefficient_parameterization,
+    expected = comparison_recipe(control_config(config.model.attention_coefficient_parameterization,
                                             config.model.attention_degree,
                                             config.model.attention_coefficient_input_source,
                                             config.model.attention_score_transform,
                                             config.model.attention_coefficient_input_power))
     expected["model"]["attention_coefficient_input_normalization"] = "l2"
     expected["model"]["attention_coefficient_input_source"] = config.model.attention_coefficient_input_source
-    actual = config_to_dict(config)
+    actual = comparison_recipe(config)
     for recipe in (actual, expected):
         for key in PATH_FIELDS:
             recipe["train"].pop(key, None)
