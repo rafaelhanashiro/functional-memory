@@ -39,8 +39,8 @@ settings:
     query_column: narrow_query_dk4, then the grid's query_decay_dk8_m8, query_decay_dk16_m8
       and query_decay_dk64_m8
     exact_evaluation: 'narrow_exp_dk4, _dk8 and _dk16 use attention_exp_shift: row_max;
-      narrow_softplus_times_sos_dk4, narrow_taylor_dk4 and narrow_taylor_dk8 use attention_head_rms_prescale:
-      max_abs'
+      narrow_softplus_times_sos_dk4, narrow_taylor_dk4, narrow_taylor_dk8 and narrow_static_dk4
+      use attention_head_rms_prescale: max_abs'
     plain_evaluation: the plain_* roles are the same recipes without the row shift
       or the prescale
     heatmap: plot.py reads the query_decay_* roles only
@@ -654,24 +654,24 @@ runs:
       path: experiments/transformer_pp/runs/ra7ee8a4b2544/best_validation.json
       sha256: aed0989fd08f1d9b134287e10d61b3baf008ad39b40ee0790e88ef651923c6db
 - study: transformer_pp
-  run_id: r0f5e38b0d934
+  run_id: r99b1eebb5254
   role: narrow_static_dk4
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/r0f5e38b0d934/config.yaml
-      sha256: e0233965e9c31d04eccdf3edabd8060e2c3cc113b4fa5f5f5dd84807229249ae
+      path: experiments/transformer_pp/runs/r99b1eebb5254/config.yaml
+      sha256: 5e586cf620f4cb46be7b3173c08e78dbc797c61a1cdf8c7287c7215f4670171c
     metrics.jsonl:
-      path: experiments/transformer_pp/runs/r0f5e38b0d934/metrics.jsonl
-      sha256: 02f3470e842e321941e51f9dc6b6050b5606fea3a8d926574243b5391b52742a
+      path: experiments/transformer_pp/runs/r99b1eebb5254/metrics.jsonl
+      sha256: dd8716e2fe538e0888c910477d9312b15e14dec9221410c190153abb2466fc23
     completion.json:
-      path: experiments/transformer_pp/runs/r0f5e38b0d934/completion.json
-      sha256: df19f2bbf12a78f49a885936be30c48a39a39139fef203a32727b6ee9e8d6077
+      path: experiments/transformer_pp/runs/r99b1eebb5254/completion.json
+      sha256: a228be7c2513e9c12c92ce4bee86c43ebe356a5a39b3bc032897db0f4055f170
     metadata.json:
-      path: experiments/transformer_pp/runs/r0f5e38b0d934/metadata.json
-      sha256: 5d8cf8bd8314fcb048a91f6ce7b7d9dbb5c7ed272ded2653aa1f0c3a3c52aa14
+      path: experiments/transformer_pp/runs/r99b1eebb5254/metadata.json
+      sha256: bbca5112f57c99bb981a6ac390765898918a11e398ddafb843bce4af232a69ed
     best_validation.json:
-      path: experiments/transformer_pp/runs/r0f5e38b0d934/best_validation.json
-      sha256: 4a99bbb686e33b572739cf9581f05abc60f8859dbf38c2ab34a6d7d79b27a396
+      path: experiments/transformer_pp/runs/r99b1eebb5254/best_validation.json
+      sha256: 99a7c1fb53f9994744ed372c8b21219bc130f1dac0e6ae375856793218c76447
 - study: transformer_pp
   run_id: r161f07127f20
   role: narrow_static_dk8
@@ -862,3 +862,22 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r858c094cb85f/best_validation.json
       sha256: ecb3bf81ef6583d1dc8e1db531c5502313d985928b6bb6eaa7b5a4def0c06f70
+- study: transformer_pp
+  run_id: r0f5e38b0d934
+  role: plain_head_rms_static_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0f5e38b0d934/config.yaml
+      sha256: e0233965e9c31d04eccdf3edabd8060e2c3cc113b4fa5f5f5dd84807229249ae
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r0f5e38b0d934/metrics.jsonl
+      sha256: 02f3470e842e321941e51f9dc6b6050b5606fea3a8d926574243b5391b52742a
+    completion.json:
+      path: experiments/transformer_pp/runs/r0f5e38b0d934/completion.json
+      sha256: df19f2bbf12a78f49a885936be30c48a39a39139fef203a32727b6ee9e8d6077
+    metadata.json:
+      path: experiments/transformer_pp/runs/r0f5e38b0d934/metadata.json
+      sha256: 5d8cf8bd8314fcb048a91f6ce7b7d9dbb5c7ed272ded2653aa1f0c3a3c52aa14
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r0f5e38b0d934/best_validation.json
+      sha256: 4a99bbb686e33b572739cf9581f05abc60f8859dbf38c2ab34a6d7d79b27a396

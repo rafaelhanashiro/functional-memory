@@ -15,7 +15,7 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | [degree_scaling](pretraining/polynomial/degree_scaling/README.md) | Validation perplexity against degree `m = 1-8` and 12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with projection weight decay (Taylor and query only at 12), with softmax as the reference level. |
-| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? At degree eight and `d_K` 4–16, exp with its row maximum subtracted is the best kernel (`d_K` 4) or 0.5% behind `z h_t(z)` (8 and 16); the raw-score polynomials trail exp by 1.2–6.5%, and query coefficients beat fixed Taylor and static ones only at `d_K` 4 (2.2% and 2.5%). |
+| [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? At degree eight and `d_K` 4–16, exp with its row maximum subtracted is the best kernel (`d_K` 4) or 0.5% behind `z h_t(z)` (8 and 16); the raw-score polynomials trail exp by 1.2–6.2%. Learned coefficients beat fixed Taylor only at `d_K` 4 (static by 1.9%, query by 2.2%), and input dependence adds 0.3% to static there. |
 
 ### Scalings
 
