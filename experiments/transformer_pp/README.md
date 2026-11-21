@@ -3100,6 +3100,7 @@ SoS run 1.3% (2% off, concentrated in the head score scales).
 | --- | --- | --- | --- | --- | --- |
 | `rabfbab32a594` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms` | `z h_t(z)`, `d_K` 4 | `r5a25f500bfa8` | `attention_head_rms_prescale: max_abs` | key width |
 | `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `re3515eed3576` | `attention_head_rms_prescale: max_abs` | key width |
+| `r5e540d8620b1` | `fixed-m8-head-scale-dk8-max-abs-head-rms` | `T_8(s)`, `d_K` 8 | `r858c094cb85f` | `attention_head_rms_prescale: max_abs` | key width |
 
 Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) lets the polynomial partners take the prescale and
 keeps their pins: the option adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
@@ -3119,4 +3120,17 @@ submit() {  # partition, time limit, excluded nodes, run, nice
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 9:00:00 "$b200" rabfbab32a594 0
 submit standard 9:00:00 "$b200" r1eaa4a4c3c77 0
+```
+
+The fixed Taylor run at `d_K` 8 (`r858c094cb85f`) passed an output RMS of 9e14 from about update 5,500 (recorded row sums
+1.8e14 at 4,500, 8.5e14 at 5,500, 1.2e15 at 6,000), so `r5e540d8620b1` reruns it with the prescale. Its kernel is qualified
+at width 8 on H100 and B300; a 9-hour limit covers H100 SXM (4.8 h) with acceptance's two-hour reserve:
+
+```bash
+sbatch --parsable --partition=long --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=shiba,mastiff,collie,samoyed,doodle,terrier --job-name=r5e540d8620b1 \
+  --output=experiments/transformer_pp/runs/r5e540d8620b1/training.log \
+  --error=experiments/transformer_pp/runs/r5e540d8620b1/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+  experiments/transformer_pp/runs/r5e540d8620b1/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
 ```
