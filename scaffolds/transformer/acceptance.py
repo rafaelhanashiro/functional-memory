@@ -201,7 +201,7 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                       "scaffolds/transformer/tests/test_even_gate_exp_head.py"))
         if not cpu:
             if resolved_backend != "fused":
-                raise ValueError("Degree-sixteen even gates with an exponential train on the fused hybrid kernel")
+                raise ValueError("Even-power gates with an exponential train on the fused hybrid kernel")
             return tuple(dict.fromkeys(paths))
     from scaffolds.transformer.configs.base import ModelConfig, _blocked_polynomial
 

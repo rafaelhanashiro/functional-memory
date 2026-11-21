@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r6490cdf696da/config.yaml",
+    "sha256": "f0da47678c166957698da33791ac92e27f387f2bec90bca0589557475fd23a8a"
+  },
+  "label": "even-gates-exp-m8-dk4-qk-taylor",
+  "name": "even-gates-exp-m8-dk4-qk-taylor",
+  "receipt": {
+    "arrays_count": 58,
+    "digest": "826974341319cd04a1ee92e8883424e2f37b3067a69ae666f8d25f5288b24237",
+    "loss": 5.60398006439209,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r6490cdf696da",
+  "status": "planned"
+}

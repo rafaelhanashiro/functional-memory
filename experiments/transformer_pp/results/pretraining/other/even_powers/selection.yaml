@@ -70,6 +70,22 @@ settings:
       even_exp_m16_dk4_cosine_half: cosine_half_dk4
       even_exp_m16_dk4_qk_half: qk_half_dk4
       even_exp_m16_dk4_qk_taylor: qk_taylor_dk4
+  gated_exp_m8_dk4:
+    active_orders:
+    - 2
+    - 4
+    - 6
+    - 8
+    qk_head_dim: 4
+    exponential_gate_logit_bias_initial: 0.0
+    matched_runs_without_exponential:
+      even_exp_m8_dk4_cosine_half: cosine_half_dk4
+      even_exp_m8_dk4_qk_half: qk_half_dk4
+      even_exp_m8_dk4_qk_taylor: qk_taylor_dk4
+    matched_degree_sixteen_runs:
+      even_exp_m8_dk4_cosine_half: even_exp_m16_dk4_cosine_half
+      even_exp_m8_dk4_qk_half: even_exp_m16_dk4_qk_half
+      even_exp_m8_dk4_qk_taylor: even_exp_m16_dk4_qk_taylor
 runs:
 - study: transformer_pp
   run_id: r45831d718944
@@ -320,3 +336,24 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r2572a21e0362/config.yaml
       sha256: 7a4fb82932977799c2c493abdd38f6d8c8db9035cd195198682467d07ebc11b2
+- study: transformer_pp
+  run_id: r0404d6d81446
+  role: even_exp_m8_dk4_cosine_half
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r0404d6d81446/config.yaml
+      sha256: a09179be9616fa4a07cf60272b9886f0ce8c3686cd5033b7c40dddc171f839ef
+- study: transformer_pp
+  run_id: rc766a892ce73
+  role: even_exp_m8_dk4_qk_half
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rc766a892ce73/config.yaml
+      sha256: 5ef92e90c6777b29c0628a684d5dee25aa889d43e001d84b00ca87a83cd33140
+- study: transformer_pp
+  run_id: r6490cdf696da
+  role: even_exp_m8_dk4_qk_taylor
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6490cdf696da/config.yaml
+      sha256: f0da47678c166957698da33791ac92e27f387f2bec90bca0589557475fd23a8a

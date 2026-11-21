@@ -141,6 +141,8 @@ def mosaic_supported(model) -> bool:
         return False  # Transforms run on their own kernels (mosaic_score_transform_supported).
     if getattr(model, "attention_score_prefactor", "none") != "none":
         return False  # Prefactors run on the transformed kernels too (mosaic_score_transform_supported).
+    if getattr(model, "attention_coefficient_exp_gate", False):
+        return False  # The gated exponential runs on its own fused Triton kernel (attention/even_gate_exp.py).
     taylor = (model.attention_normalization and integer_degree and degree >= 1
               and model.attention_coefficients == "fixed" and model.quadratic_mode == "fixed"
               and model.attention_fixed_coefficients is None and model.attention_fixed_square_factors is None

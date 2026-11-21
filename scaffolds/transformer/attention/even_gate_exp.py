@@ -1,4 +1,4 @@
-"""Degree-16 query-gated even powers and a separately gated exp, in common row units."""
+"""Query-gated even powers 2, 4, ..., m (m = 8 or 16) and a separately gated exp, in common row units."""
 import math
 
 import jax
@@ -6,32 +6,40 @@ from jax import lax
 import jax.numpy as jnp
 
 
-ORDERS = tuple(range(2, 17, 2))
-DEGREE = ORDERS[-1]
+DEGREES = (8, 16)  # the top even degrees m the kernels are qualified for (validation README)
+
+
+def even_orders(degree):
+    """The powers 2, 4, ..., degree."""
+    return tuple(range(2, degree + 1, 2))
+
+
+DEGREE = DEGREES[-1]
+ORDERS = even_orders(DEGREE)
 BASIS_COUNT = len(ORDERS) + 1
 
 
-def row_shift(scores, exp_active):
+def row_shift(scores, exp_active, degree=DEGREE):
     """Log upper bound for every ungated basis in a row. Masked scores may be zero."""
     magnitude = jnp.maximum(1.0, jnp.max(jnp.abs(scores), axis=-1))
     exp_max = jnp.where(exp_active, jnp.max(scores, axis=-1), 0.0)
-    return lax.stop_gradient(jnp.maximum(exp_max, DEGREE * jnp.log(magnitude)))
+    return lax.stop_gradient(jnp.maximum(exp_max, degree * jnp.log(magnitude)))
 
 
-def shifted_basis(scores, shift, exp_active, *, slopes=False):
+def shifted_basis(scores, shift, exp_active, *, slopes=False, degree=DEGREE):
     """Return e^-shift times each basis (and optionally its derivative with shift fixed).
 
-    Set u = s exp(-shift/16). Then |u| <= 1 and s^r exp(-shift) = u^r exp(-(16-r)shift/16).
+    Set u = s exp(-shift/m). Then |u| <= 1 and s^r exp(-shift) = u^r exp(-(m-r)shift/m).
     Applying the scale in two halves also handles large negative FP32 scores whose reciprocals
     would be subnormal. All exponential arguments are nonpositive on eligible pairs.
     """
-    half = jnp.exp(shift * (-0.5 / DEGREE))
+    half = jnp.exp(shift * (-0.5 / degree))
     u = (scores * half) * half
     even = []
     derivatives = []
-    for r in ORDERS:
-        # For r=16 the exponential factor is identically one.
-        common = 1.0 if r == DEGREE else jnp.exp(shift * (-(DEGREE - r) / DEGREE))
+    for r in even_orders(degree):
+        # For r=m the exponential factor is identically one.
+        common = 1.0 if r == degree else jnp.exp(shift * (-(degree - r) / degree))
         even.append((u ** r) * common)
         if slopes:
             derivatives.append((r * (u ** (r - 1)) * common * half) * half)
@@ -45,6 +53,7 @@ def shifted_basis(scores, shift, exp_active, *, slopes=False):
 def _reference(q, k, v, c, exp_gate, return_diagnostics):
     """Evaluate complete causal rows in small batches; all diagnostics use the same shifted weights."""
     batch, time, heads, width = q.shape
+    degree = c.shape[-1] - 1
     block = min(32, time)
     positions = jnp.arange(time)
 
@@ -57,10 +66,10 @@ def _reference(q, k, v, c, exp_gate, return_diagnostics):
         scores = jnp.where(causal, scores, 0.0)
         exp_coefficient = exp_gate[:, index].swapaxes(1, 2)
         active = exp_coefficient != 0.0
-        shift = row_shift(scores, active)
-        bases = shifted_basis(scores, shift[..., None], active[..., None])
+        shift = row_shift(scores, active, degree)
+        bases = shifted_basis(scores, shift[..., None], active[..., None], degree=degree)
         weights = exp_coefficient[..., None] * bases[-1]
-        for r, basis in zip(ORDERS, bases[:-1], strict=True):
+        for r, basis in zip(even_orders(degree), bases[:-1], strict=True):
             weights = weights + c[..., r][:, index].swapaxes(1, 2)[..., None] * basis
         weights = jnp.where(causal, weights, 0.0)
         output = jnp.einsum("bhqk,bkhd->bqhd", weights, v.astype(jnp.float32),
@@ -113,9 +122,11 @@ def even_gate_exp_attention(q, k, v, coefficients, exp_gate, *, backend="blocked
     off, including its zero derivative through the sigmoid logit; it is not a free linear coefficient at zero.
     """
     if (q.ndim != 4 or q.shape != k.shape or v.ndim != 4 or v.shape[:3] != q.shape[:3]
-            or min(*q.shape, v.shape[-1]) <= 0 or coefficients.shape != (*q.shape[:3], DEGREE + 1)
+            or min(*q.shape, v.shape[-1]) <= 0 or coefficients.shape[:3] != q.shape[:3]
+            or coefficients.ndim != 4 or coefficients.shape[-1] - 1 not in DEGREES
             or exp_gate.shape != q.shape[:3]):
-        raise ValueError("Expected Q/K/V [B,T,H,D], degree-16 coefficients [B,T,H,17] and exp gate [B,T,H]")
+        raise ValueError(f"Expected Q/K/V [B,T,H,D], coefficients [B,T,H,m+1] for m in {DEGREES} and exp gate "
+                         "[B,T,H]")
     if (q.dtype != k.dtype or q.dtype != v.dtype or q.dtype not in (jnp.float32, jnp.bfloat16)
             or coefficients.dtype != jnp.float32 or exp_gate.dtype != jnp.float32):
         raise ValueError("The gated even polynomial plus exponential requires BF16 or FP32 Q/K/V and FP32 gates")

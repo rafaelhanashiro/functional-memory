@@ -304,12 +304,14 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh query "
                              "polynomial coefficients with RoPE or no positional encoding, without selected "
                              "orders, gates or score biases; only softplus SoS with an input prefactor permits a score transform")
+        from scaffolds.transformer.attention.even_gate_exp import DEGREES, even_orders
         if attention_coefficient_exp_gate and (
-                not self.sigmoid_logit_bias or tuple(attention_coefficient_orders or ()) != tuple(range(2, 17, 2))
-                or attention_degree != 16 or attention_coefficient_input_source != "pre_rmsnorm"
+                not self.sigmoid_logit_bias or attention_degree not in DEGREES
+                or tuple(attention_coefficient_orders or ()) != even_orders(attention_degree)
+                or attention_coefficient_input_source != "pre_rmsnorm"
                 or attention_output_scaling != "head_rms_norm" or attention_head_rms_prescale != "max_abs"
                 or backend not in ("blocked", "fused")):
-            raise ValueError("The gated exponential requires the degree-16 even basis with biased sigmoid "
+            raise ValueError(f"The gated exponential requires an even basis of degree {DEGREES} with biased sigmoid "
                              "gates on unit-L2 raw inputs and max-abs head RMSNorm")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         self.attention_coefficient_input_source = attention_coefficient_input_source

@@ -203,3 +203,22 @@ FP64 and runs a full-model training and checkpoint-resume pilot. The comparison 
 from the pinned selection with the command above. The within-degree pairs test score choice at half
 initialization and polynomial gate initialization at fixed QK scoring. Each comparison against its
 degree-eight control changes both the maximum power and the presence of the exponential.
+
+
+## Degree eight with a separately gated exponential
+
+Opened 2026-11-21. Each degree-sixteen hybrid above changes both the highest power and the presence of the
+exponential. These three runs add only the gated exponential to each degree-eight control: the weight is
+`g_exp exp(s) + sum_r g_r s^r` for `r = 2, 4, 6, 8`, with the degree-sixteen hybrids' gates, initialization and
+fused kernel.
+
+| Score and polynomial gate initialization | Degree-eight hybrid | Without exponential | Degree-sixteen hybrid |
+|---|---|---|---|
+| Cosine, half | r0404d6d81446 | rf1185ae8a89c | rd77e8919453a |
+| QK, half | rc766a892ce73 | r4ec7b748d430 | r9047be7f01c3 |
+| QK, Taylor | r6490cdf696da | r2bb06d5ee682 | r2572a21e0362 |
+
+Against its control each run isolates the exponential; against its degree-sixteen partner, powers 10 to 16. The
+selection pins both pairings. Where exp outweighs the even powers by more than FP32 resolves, the exponential
+gate's gradient keeps only a few percent accuracy at degree eight, as in any FP32 evaluation
+([validation record](../../../../../../scaffolds/transformer/validation/README.md#degree-eight-2026-11-21)).

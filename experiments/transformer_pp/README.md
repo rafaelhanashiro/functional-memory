@@ -3162,3 +3162,23 @@ for run in rd77e8919453a r9047be7f01c3 r2572a21e0362; do
     "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
 done
 ```
+
+
+### Degree-eight even powers with a gated exponential
+
+The [even-power comparison](results/pretraining/other/even_powers/README.md#degree-eight-with-a-separately-gated-exponential)
+pairs each run with its degree-eight control without the exponential and its degree-sixteen partner. The same
+[acceptance adapter](even_gate_exp_acceptance.py) verifies the recipes at degree eight and repeats the fused
+kernel's GPU tests on the allocated GPU; the kernel is qualified at degree eight on B300. Dogo stays excluded
+while no placeholder holds its faulty H100. From this worktree on Kennel, submit each independent run with one GPU.
+
+```sh
+for run in r0404d6d81446 rc766a892ce73 r6490cdf696da; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=23:00:00 \
+    --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.even_gate_exp_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
+done
+```

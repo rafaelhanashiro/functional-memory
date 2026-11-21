@@ -1,14 +1,14 @@
-"""Causal degree-16 even powers plus exp with nine query gates and one common numerical shift.
+"""Causal even powers 2, 4, ..., m (m = 8 or 16) plus exp with m/2 + 1 query gates and one common numerical shift.
 
 The query-tile program accumulates V online. Its companion recomputes the shifted weights' slopes to return dQ
-and all nine gate derivatives. A key-tile program accumulates dK/dV. No pass stores pair weights. With BF16 V the
+and every gate derivative. A key-tile program accumulates dK/dV. No pass stores pair weights. With BF16 V the
 output cotangent enters both backward programs as its three BF16 components, split once
 (fused_unnormalized._bf16_components); dV's product takes the components' FP32 sum.
 
-The even powers are one polynomial in w = u^2, u = s exp(-shift/16) (|u| <= 1, even_gate_exp.shifted_basis):
-sum_r c_r s^r e^-shift = w (a_2 + w (a_4 + ... + w a_16)), a_r = c_r exp(-(16 - r) shift / 16) per query row,
-evaluated by Horner's rule in seven multiply-adds per pair, and its slope with the shift fixed is
-u e^(-shift/16) (2 a_2 + w (4 a_4 + ... + w 16 a_16)). Gate r's derivative is exp(-(16 - r) shift / 16) times the
+The even powers are one polynomial in w = u^2, u = s exp(-shift/m) (|u| <= 1, even_gate_exp.shifted_basis):
+sum_r c_r s^r e^-shift = w (a_2 + w (a_4 + ... + w a_m)), a_r = c_r exp(-(m - r) shift / m) per query row,
+evaluated by Horner's rule in m/2 - 1 multiply-adds per pair, and its slope with the shift fixed is
+u e^(-shift/m) (2 a_2 + w (4 a_4 + ... + w m a_m)). Gate r's derivative is exp(-(m - r) shift / m) times the
 row's moment sum_i dp_i w_i^(r/2), accumulated from successive products dp w^k.
 """
 from functools import partial
@@ -24,7 +24,7 @@ from scaffolds.transformer.attention.backends.fused_unnormalized import (
     NUM_STAGES, NUM_WARPS, _bf16_components, _dot, _full_shift_spec, _full_spec, _load, _shift_spec, _spec,
     _tile_sizes,
 )
-from scaffolds.transformer.attention.even_gate_exp import BASIS_COUNT, DEGREE, ORDERS, row_shift
+from scaffolds.transformer.attention.even_gate_exp import even_orders, row_shift
 
 
 def _scores(q, k, qi, ki, time, dq):
@@ -51,11 +51,17 @@ def _cotangent(do):
     return (high + middle) + low
 
 
+def _degree(gates):
+    """m, from the m/2 power gates and the exp gate."""
+    return 2 * (len(gates) - 1)
+
+
 def _row_units(shift, gates):
-    """Per query row: half = exp(-shift/32), the even powers' row units exp(-(16 - r) shift / 16), and the
+    """Per query row: half = exp(-shift/(2m)), the even powers' row units exp(-(m - r) shift / m), and the
     Horner coefficients a_r = c_r times those units."""
-    half = jnp.exp(shift * (-0.5 / DEGREE))
-    units = tuple(1.0 if r == DEGREE else jnp.exp(shift * (-(DEGREE - r) / DEGREE)) for r in ORDERS)
+    degree = _degree(gates)
+    half = jnp.exp(shift * (-0.5 / degree))
+    units = tuple(1.0 if r == degree else jnp.exp(shift * (-(degree - r) / degree)) for r in even_orders(degree))
     return half, units, tuple(gate * unit for gate, unit in zip(gates[:-1], units, strict=True))
 
 
@@ -80,7 +86,7 @@ def _polynomial(scores, half, coefficients, *, slope=False):
     value = _horner(coefficients, w) * w
     if not slope:
         return value, w
-    scaled = tuple(r * a * half * half for r, a in zip(ORDERS, coefficients, strict=True))
+    scaled = tuple(r * a * half * half for r, a in zip(even_orders(2 * len(coefficients)), coefficients, strict=True))
     return value, w, _horner(scaled, w) * u
 
 
@@ -96,7 +102,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, time, dq, dv, bq, bk):
         ki = tile * bk + jnp.arange(bk)
         k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
         scores, causal = _scores(q, k, qi, ki, time, dq)
-        shift = jnp.maximum(previous, row_shift(scores, gates[-1] != 0.0))
+        shift = jnp.maximum(previous, row_shift(scores, gates[-1] != 0.0, _degree(gates)))
         half, _, coefficients = _row_units(shift, gates)
         polynomial, _ = _polynomial(scores, half, coefficients)
         weights = polynomial + gates[-1][:, None] * _exponential(scores, shift, gates[-1])
@@ -113,7 +119,8 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, time, dq, dv, bq, bk):
 
 def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, time, dq, dv, bq, bk):
     do_refs, shift_ref, refs = refs[:parts], refs[parts], refs[parts + 1:]
-    gate_refs, dq_ref, dg_refs = refs[:BASIS_COUNT], refs[BASIS_COUNT], refs[BASIS_COUNT + 1:]
+    count = (len(refs) - 1) // 2  # the gates, dQ, and the gates' derivatives
+    gate_refs, dq_ref, dg_refs = refs[:count], refs[count], refs[count + 1:]
     qi = pl.program_id(0) * bq + jnp.arange(bq)
     qmask = (qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq)
     q = plt.load(q_ref, mask=qmask, other=0)
@@ -140,7 +147,7 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, time, dq, dv, bq, bk):
 
     end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
     grad_q, moments = lax.fori_loop(0, end, body, (jnp.zeros(q_ref.shape, jnp.float32),
-                                                   (jnp.zeros((bq,), jnp.float32),) * BASIS_COUNT))
+                                                   (jnp.zeros((bq,), jnp.float32),) * count))
     plt.store(dq_ref, grad_q.astype(dq_ref.dtype), mask=qmask)
     for ref, grad in zip(dg_refs, (*(m * unit for m, unit in zip(moments[:-1], units, strict=True)), moments[-1]),
                          strict=True):
@@ -207,7 +214,7 @@ def _forward(q, k, v, gates, interpret):
     row = _shift_spec(bq)
     output, shift = _launch(_forward_kernel, "forward", (q, k, v, *gates),
                             (jax.ShapeDtypeStruct(v.shape, jnp.float32), jax.ShapeDtypeStruct(q.shape[:3], jnp.float32)),
-                            (query, key, value, *(row,) * BASIS_COUNT), (_spec(bq, v.shape[-1]), row),
+                            (query, key, value, *(row,) * len(gates)), (_spec(bq, v.shape[-1]), row),
                             query_tiles=True, q=q, v=v, interpret=interpret)
     # Keep the scaled sum and its incoming cotangent in FP32 through head RMSNorm. In particular the
     # small residual gradient of a nearly dominant degree is sensitive to rounding before normalization.
@@ -235,14 +242,15 @@ def _bwd(interpret, saved, cotangents):
     cotangent = _bf16_components(do) if v.dtype == jnp.bfloat16 else (do,)
     parts = len(cotangent)
     args = (q, k, v, *cotangent, shift, *gates)
-    grad_q, *grad_gates = _launch(_dq_kernel, "dq", args, (dq_type, *(gate_type,) * BASIS_COUNT),
+    count = len(gates)
+    grad_q, *grad_gates = _launch(_dq_kernel, "dq", args, (dq_type, *(gate_type,) * count),
                                   (_spec(bq, dq), _full_spec(time, dq), _full_spec(time, dv),
-                                   *(_spec(bq, dv),) * parts, row, *(row,) * BASIS_COUNT),
-                                  (_spec(bq, dq), *(row,) * BASIS_COUNT), query_tiles=True, q=q, v=v,
+                                   *(_spec(bq, dv),) * parts, row, *(row,) * count),
+                                  (_spec(bq, dq), *(row,) * count), query_tiles=True, q=q, v=v,
                                   interpret=interpret, parts=parts)
     grad_k, grad_v = _launch(_dkv_kernel, "dkv", args, (dk_type, dv_type),
                              (_full_spec(time, dq), _spec(bk, dq), _spec(bk, dv), *(_full_spec(time, dv),) * parts,
-                              full_row, *(full_row,) * BASIS_COUNT),
+                              full_row, *(full_row,) * count),
                              (_spec(bk, dq), _spec(bk, dv)), query_tiles=False, q=q, v=v, interpret=interpret,
                              parts=parts)
     return grad_q, grad_k, grad_v, tuple(grad_gates)
@@ -252,5 +260,5 @@ _attention.defvjp(_fwd, _bwd)
 
 
 def fused_even_gate_exp(q, k, v, coefficients, exp_gate, *, interpret=False):
-    gates = tuple(coefficients[..., order] for order in ORDERS) + (exp_gate,)
+    gates = tuple(coefficients[..., order] for order in even_orders(coefficients.shape[-1] - 1)) + (exp_gate,)
     return _attention(q, k, v, gates, interpret)

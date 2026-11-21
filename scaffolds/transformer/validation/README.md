@@ -70,6 +70,19 @@ A Mosaic version of this kernel (job 9872, B300) took 0.97 / 5.73 ms with FP32-l
 0.2-3% from FP64 (this kernel: under 0.002%) and the exponential gate's unreliable in rows the exponential dominates,
 where head RMSNorm makes that gradient a small difference of large terms. It was not adopted.
 
+#### Degree eight (2026-11-21)
+
+The same programs take the highest even degree from the number of gates: 8 (powers 2, 4, 6, 8 and five gates) or
+16. On an akita B300 (job 10001) the twelve GPU tests of `test_even_gate_exp_attention.py` and
+`test_even_gate_exp_head.py`, now at both degrees, pass. Against FP64 at 2,048 tokens, degree 8 keeps the output
+within 1.1e-6, dQ/dK/dV within 3.2e-3 and the polynomial gates' gradients within 6.5e-6. The exponential gate's
+gradient is 6.4e-7 from FP64 at score scale 1 but 2.0e-2 at scale 20, where exp outweighs the even powers in every
+row by more than FP32 resolves: head RMSNorm then makes that gradient a small difference of large terms, and the
+FP32 blocked reference misses it by 5.3e-2 on the same inputs (CPU). At degree 16, s^16 keeps the powers' share of
+those rows resolvable, and both stay within 4e-6. One call at the training micro-batch takes 1.16 ms forward and
+6.07 ms forward and backward at degree 8, against 1.35 / 7.11 at degree 16: the exponential and the FP32-level
+products, not the powers, set the cost.
+
 ### Degree-eight query polynomial at key width four on B300
 
 On 2026-11-21 (Atlantic time), Kennel job `9516` on an akita B300 checked the

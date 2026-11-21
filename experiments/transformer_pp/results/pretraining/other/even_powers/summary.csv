@@ -14,3 +14,6 @@ qk_taylor_dk4,r2bb06d5ee682,complete,7570,24.816534846,7500,24.798010918
 even_exp_m16_dk4_cosine_half,rd77e8919453a,planned,,,,
 even_exp_m16_dk4_qk_half,r9047be7f01c3,planned,,,,
 even_exp_m16_dk4_qk_taylor,r2572a21e0362,planned,,,,
+even_exp_m8_dk4_cosine_half,r0404d6d81446,planned,,,,
+even_exp_m8_dk4_qk_half,rc766a892ce73,planned,,,,
+even_exp_m8_dk4_qk_taylor,r6490cdf696da,planned,,,,

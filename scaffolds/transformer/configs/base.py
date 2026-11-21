@@ -878,14 +878,18 @@ class ModelConfig:
             self.attention_coefficient_orders = tuple(orders)
         if not isinstance(self.attention_coefficient_exp_gate, bool):
             raise ValueError("model.attention_coefficient_exp_gate must be boolean")
-        if self.attention_coefficient_exp_gate and (
-                not biased_sigmoid or self.attention_coefficient_orders != tuple(range(2, 17, 2))
-                or self.attention_coefficient_input_source != "pre_rmsnorm"
-                or self.attention_score_prefactor != "none" or self.attention_exp_shift != "none"
-                or self.attention_output_scaling != "head_rms_norm" or self.attention_head_rms_prescale != "max_abs"
-                or self.attention_backend not in ("blocked", "fused")):
-            raise ValueError("The gated exponential addition requires sigmoid-gated powers 2,4,...,16, "
-                             "unit-L2 raw coefficient inputs, max-abs head RMSNorm, and the blocked or fused backend")
+        if self.attention_coefficient_exp_gate:
+            from scaffolds.transformer.attention.even_gate_exp import DEGREES, even_orders
+
+            if (not biased_sigmoid or self.attention_degree not in DEGREES
+                    or self.attention_coefficient_orders != even_orders(self.attention_degree)
+                    or self.attention_coefficient_input_source != "pre_rmsnorm"
+                    or self.attention_score_prefactor != "none" or self.attention_exp_shift != "none"
+                    or self.attention_output_scaling != "head_rms_norm" or self.attention_head_rms_prescale != "max_abs"
+                    or self.attention_backend not in ("blocked", "fused")):
+                raise ValueError(f"The gated exponential addition requires sigmoid-gated powers 2,4,...,m for m in "
+                                 f"{DEGREES}, unit-L2 raw coefficient inputs, max-abs head RMSNorm, and the "
+                                 "blocked or fused backend")
         if sigmoid_bias == "logit_taylor" and (
                 not self.attention_coefficient_orders or self.attention_coefficient_orders[0] < 2):
             raise ValueError("Finite Taylor logits require explicit coefficient orders >= 2")

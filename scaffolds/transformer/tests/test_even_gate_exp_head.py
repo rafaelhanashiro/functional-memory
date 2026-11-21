@@ -7,21 +7,22 @@ import numpy as np
 import pytest
 from flax import nnx
 
+from scaffolds.transformer.attention.even_gate_exp import DEGREES, even_orders
 from scaffolds.transformer.attention.parameters import parameters_for_layer
 from scaffolds.transformer.attention.positional import apply_rope
 from scaffolds.transformer.attention.qk_norm import rms_score_operands, scale_rms_queries, unit_cosine_score_operands
 from scaffolds.transformer.models import build_model
 from scaffolds.transformer.tests.test_gated_even_coefficients import _model
 
-ORDERS = tuple(range(2, 17, 2))
 GATE_PARAMETERS = ("query_polynomial_kernel", "query_polynomial_bias", "query_exp_gate_kernel", "query_exp_gate_bias")
 VARIANTS = (("rms_norm_cosine", "zero"), ("rms_norm", "zero"), ("rms_norm", "logit_taylor"))
 
 
-def _check_head(score, bias, backend, tokens, dtype, record_property):
+def _check_head(score, bias, degree, backend, tokens, dtype, record_property):
     heads, hidden, dk, dv = 2, 64, 4, 64
+    orders = even_orders(degree)
     config = replace(_model(bias), hidden_size=hidden, intermediate_size=128, max_seq_len=tokens,
-                     value_head_dim=dv, attention_degree=16, attention_coefficient_orders=ORDERS,
+                     value_head_dim=dv, attention_degree=degree, attention_coefficient_orders=orders,
                      attention_coefficient_exp_gate=True, attention_backend=backend,
                      attention_coefficient_projection_initial_std=hidden ** -0.5,
                      qk_norm_type=score, qk_norm_head_scale=(score == "rms_norm"))
@@ -33,7 +34,7 @@ def _check_head(score, bias, backend, tokens, dtype, record_property):
     params = parameters_for_layer(model, model.attention_parameter_specs, 0)
     rng = np.random.default_rng(64)
     raw = jnp.asarray(rng.normal(size=(1, tokens, hidden)), jnp.float32)
-    # Distinct raw and post-RMS streams expose using the wrong input for any of the nine gates.
+    # Distinct raw and post-RMS streams expose using the wrong input for any of the gates.
     x = jnp.asarray(rng.normal(size=raw.shape), dtype)
     cotangent = jnp.asarray(rng.normal(size=x.shape), dtype)
     gates = tuple(params[k] for k in GATE_PARAMETERS)
@@ -68,7 +69,7 @@ def _check_head(score, bias, backend, tokens, dtype, record_property):
             poly = jax.nn.sigmoid(jnp.einsum("btd,hdr->bthr", unit, wp) + bp)
             exp = jax.nn.sigmoid(jnp.einsum("btd,hdr->bthr", unit, we) + be)
             weights = exp * jnp.exp(scores)
-            for j, r in enumerate(ORDERS):
+            for j, r in enumerate(orders):
                 weights += poly[..., j, None] * scores ** r
             sums = jnp.einsum("bthi,bihd->bthd", jnp.where(causal[None, :, None, :], weights, 0), v64)
             y = sums * jax.lax.rsqrt(jnp.mean(sums**2, axis=-1, keepdims=True) + config.rms_norm_eps)
@@ -98,7 +99,7 @@ def _check_head(score, bias, backend, tokens, dtype, record_property):
         errors[label] = relative_error(actual, full, label)
         matched_errors[label] = relative_error(actual, matched, label)
 
-    # Each Taylor gate receives a relative test, including gradients at the scale of 1/16!.
+    # Each Taylor gate receives a relative test, including gradients at the scale of 1/m!.
     compare("output", got, expected, matched_out)
     compare("raw input VJP", grads[0], refs[0], matched_grads[0])
     for name, grad, ref, match in zip(GATE_PARAMETERS, grads[1:], refs[1:], matched_grads[1:]):
@@ -113,13 +114,15 @@ def _check_head(score, bias, backend, tokens, dtype, record_property):
         assert matched_errors[label] < matched_limit, f"{label} relative L2 at matched precision: {matched_errors[label]:.6g}"
 
 
+@pytest.mark.parametrize("degree", DEGREES)
 @pytest.mark.parametrize(("score", "bias"), VARIANTS)
-def test_blocked_hybrid_head_matches_dense_fp64(score, bias, record_property):
-    _check_head(score, bias, "blocked", 64, jnp.float32, record_property)
+def test_blocked_hybrid_head_matches_dense_fp64(score, bias, degree, record_property):
+    _check_head(score, bias, degree, "blocked", 64, jnp.float32, record_property)
 
 
 @pytest.mark.gpu
+@pytest.mark.parametrize("degree", DEGREES)
 @pytest.mark.parametrize(("score", "bias"), VARIANTS)
-def test_fused_bf16_hybrid_head_matches_dense_fp64(score, bias, record_property):
+def test_fused_bf16_hybrid_head_matches_dense_fp64(score, bias, degree, record_property):
     assert jax.default_backend() == "gpu"
-    _check_head(score, bias, "fused", 256, jnp.bfloat16, record_property)
+    _check_head(score, bias, degree, "fused", 256, jnp.bfloat16, record_property)

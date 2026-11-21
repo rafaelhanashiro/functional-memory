@@ -42,3 +42,24 @@ def test_each_exp_gate_run_is_paired_with_its_degree_eight_control():
         assert hybrid["attention_coefficient_exp_gate"] and not parent.get("attention_coefficient_exp_gate", False)
         for setting in ("qk_head_dim", "qk_norm_type", "qk_norm_head_scale", "attention_coefficient_sigmoid_bias_initial"):
             assert hybrid[setting] == parent[setting]
+
+
+def test_each_degree_eight_exp_run_changes_only_the_exponential_or_the_highest_powers():
+    topic = Path(__file__).resolve().parents[1]
+    study = next(parent for parent in topic.parents if (parent / "sweep.yaml").is_file())
+    selection = yaml.safe_load((topic / "selection.yaml").read_text())
+    roles = {row["role"]: row["run_id"] for row in selection["runs"]}
+    settings = selection["settings"]["gated_exp_m8_dk4"]
+    execution = {"train.workdir", "train.checkpoint_dir", "train.wandb_run_name"}
+    pairings = ((settings["matched_runs_without_exponential"], {"attention_backend", "attention_coefficient_exp_gate"}),
+                (settings["matched_degree_sixteen_runs"], {"attention_degree", "attention_coefficient_orders"}))
+    assert len(pairings[0][0]) == len(pairings[1][0]) == 3
+    for pairs, changed in pairings:
+        for role, partner in pairs.items():
+            hybrid, other = (yaml.safe_load((study / "runs" / roles[key] / "config.yaml").read_text())
+                             for key in (role, partner))
+            assert hybrid["model"]["attention_degree"] == 8 and hybrid["model"]["attention_coefficient_exp_gate"]
+            differences = {f"{section}.{name}" for section in set(hybrid) | set(other)
+                           for name in set(hybrid.get(section, {})) | set(other.get(section, {}))
+                           if hybrid.get(section, {}).get(name) != other.get(section, {}).get(name)}
+            assert differences == {f"model.{name}" for name in changed} | execution

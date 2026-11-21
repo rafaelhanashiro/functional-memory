@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0404d6d81446/config.yaml",
+    "sha256": "a09179be9616fa4a07cf60272b9886f0ce8c3686cd5033b7c40dddc171f839ef"
+  },
+  "label": "even-gates-exp-m8-dk4-cosine-half",
+  "name": "even-gates-exp-m8-dk4-cosine-half",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "c1983f7b404aed62eef234b10df8e2a13aa781334c9bf24f7fc9c60585418041",
+    "loss": 5.606818199157715,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r0404d6d81446",
+  "status": "planned"
+}

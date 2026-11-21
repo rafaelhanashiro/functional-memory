@@ -89,19 +89,20 @@ def test_gate_and_input_gradients_match_independent_fp64_reference():
         np.testing.assert_allclose(actual, wanted, atol=2e-5, rtol=3e-5)
 
 
+@pytest.mark.parametrize("degree", (8, 16))
 @pytest.mark.parametrize("initialization", ("zero", "logit_taylor"))
-def test_gated_exponential_is_an_independent_ninth_projection(initialization):
+def test_gated_exponential_is_an_independent_extra_projection(initialization, degree):
     from scaffolds.transformer.attention.input_dependent import project_coefficient_gates
     from scaffolds.transformer.attention.parameters import initial_attention_parameter_values
 
-    orders = tuple(range(2, 17, 2))
-    config = replace(_model(initialization), attention_degree=16, attention_coefficient_orders=orders,
+    orders = tuple(range(2, degree + 1, 2))
+    config = replace(_model(initialization), attention_degree=degree, attention_coefficient_orders=orders,
                      attention_coefficient_exp_gate=True)
     specs = attention_parameter_specs(config)
     params = initial_attention_parameter_values(specs, num_layers=1, num_heads=2, key=jax.random.key(42))
     kw, b = params["query_exp_gate_kernel"][0], params["query_exp_gate_bias"][0]
     w = params["query_polynomial_kernel"][0]
-    assert kw.shape == (2, 16, 1) and w.shape == (2, 16, 8)
+    assert kw.shape == (2, 16, 1) and w.shape == (2, 16, len(orders))
     assert not np.array_equal(kw, w[..., :1])
     np.testing.assert_array_equal(b, 0)
     gate_bias = params["query_polynomial_bias"][0]
@@ -115,13 +116,15 @@ def test_gated_exponential_is_an_independent_ninth_projection(initialization):
     expected = 1 / (1 + np.exp(-np.einsum("btd,hdr->bthr", np.asarray(unit), np.asarray(kw))))
     np.testing.assert_allclose(probabilities, expected, rtol=2e-6)
     identity = attention_identity(Config(model=config))
-    assert identity["attention_coefficient_count"] == 2 * 9 * 17
+    assert identity["attention_coefficient_count"] == 2 * (len(orders) + 1) * 17
     assert identity["attention_coefficient_exp_gate"]
 
 
 def test_exponential_gate_refuses_incomplete_or_conflicting_basis():
-    with pytest.raises(ValueError, match="gated exponential"):
-        replace(_model("zero"), attention_coefficient_exp_gate=True)
+    for degree, orders in ((8, (2, 4, 8)), (12, tuple(range(2, 13, 2))), (16, (2, 4, 6, 8, 16))):
+        with pytest.raises(ValueError, match="gated exponential"):
+            replace(_model("zero"), attention_degree=degree, attention_coefficient_orders=orders,
+                    attention_coefficient_exp_gate=True)
     with pytest.raises(ValueError, match="gated exponential"):
         replace(_model("zero"), attention_degree=16, attention_coefficient_orders=tuple(range(2, 17, 2)),
                 attention_coefficient_exp_gate=True, attention_head_rms_prescale="none")
