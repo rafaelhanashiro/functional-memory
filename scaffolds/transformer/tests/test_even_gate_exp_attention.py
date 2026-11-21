@@ -96,3 +96,55 @@ def test_flat_exp_gate_preserves_polynomial_at_large_positive_scores(backend):
         raw = jnp.einsum("bhqk,bkhd->bqhd", jnp.tril(polynomial), v64)
         reference = raw / jnp.sqrt(jnp.mean(raw**2, axis=-1, keepdims=True) + 1e-6)
     np.testing.assert_allclose(y, reference, rtol=2e-4, atol=1e-5)
+
+
+
+@pytest.mark.parametrize("scale", [0.5, 4.0, 40.0, 150.0])
+def test_fused_horner_arithmetic_matches_the_shifted_basis(scale):
+    """The fused programs' per-tile arithmetic (fused_even_gate_exp: Horner in u^2, slopes and gate moments, run here
+    over whole rows on CPU because Triton programs need a GPU) against FP64, as close as even_gate_exp.shifted_basis."""
+    from scaffolds.transformer.attention.backends import fused_even_gate_exp as fused
+    from scaffolds.transformer.attention.even_gate_exp import row_shift, shifted_basis
+
+    rng = np.random.default_rng(int(scale * 10))
+    rows, keys = 16, 256
+    s = jnp.asarray(rng.normal(size=(rows, keys)) * scale, jnp.float32)
+    coefficients = tuple(jnp.asarray(rng.uniform(0.05, 0.95, size=rows) / math.factorial(r), jnp.float32)
+                         for r in ORDERS)
+    exp_gate = jnp.asarray(rng.uniform(0.05, 0.95, size=rows), jnp.float32).at[:3].set(0.0)
+    gates = (*coefficients, exp_gate)
+    dp = jnp.asarray(rng.normal(size=(rows, keys)), jnp.float32)
+    shift = row_shift(s, exp_gate != 0.0)
+
+    half, units, horner = fused._row_units(shift, gates)
+    polynomial, w, slope = fused._polynomial(s, half, horner, slope=True)
+    exponential = fused._exponential(s, shift, exp_gate)
+    product, moments = dp, []
+    for _ in ORDERS:
+        product = product * w
+        moments.append(jnp.sum(product, axis=1))
+    fused_values = (polynomial + exp_gate[:, None] * exponential, slope + exp_gate[:, None] * exponential,
+                    [m * unit for m, unit in zip(moments, units)] + [jnp.sum(dp * exponential, axis=1)])
+    bases, derivatives = shifted_basis(s, shift[:, None], (exp_gate != 0.0)[:, None], slopes=True)
+    basis_values = (sum(b * g[:, None] for b, g in zip(bases, gates)), sum(d * g[:, None] for d, g in zip(derivatives, gates)),
+                    [jnp.sum(dp * b, axis=1) for b in bases])
+
+    with jax.enable_x64(True):
+        s64, shift64 = jnp.asarray(s, jnp.float64), jnp.asarray(shift, jnp.float64)[:, None]
+        on = (exp_gate != 0.0)[:, None]
+        e = jnp.where(on, jnp.exp(s64 - shift64), 0.0)
+        g64 = [jnp.asarray(g, jnp.float64)[:, None] for g in gates]
+        terms = [g * s64 ** r * jnp.exp(-shift64) for g, r in zip(g64, ORDERS)] + [g64[-1] * e]
+        slope_terms = [g * r * s64 ** (r - 1) * jnp.exp(-shift64) for g, r in zip(g64, ORDERS)] + [g64[-1] * e]
+        bases64 = [s64 ** r * jnp.exp(-shift64) for r in ORDERS] + [e]
+        # Signed sums lose FP32 resolution relative to their terms: compare at the scale of the terms' magnitudes.
+        exact = [(np.asarray(sum(x)), np.asarray(sum(jnp.abs(t) for t in x))) for x in (terms, slope_terms)]
+        exact_grads = [(np.asarray(jnp.sum(jnp.asarray(dp, jnp.float64) * b, axis=1)),
+                        np.asarray(jnp.sum(jnp.abs(b), axis=1))) for b in bases64]
+    # Products below FP32's normal range keep only subnormal resolution, up to one smallest normal number each.
+    floor = keys * np.finfo(np.float32).tiny
+    for values in (fused_values, basis_values):
+        for got, (want, size) in zip(values[:2], exact):
+            np.testing.assert_array_less(np.abs(np.asarray(got, np.float64) - want), 4e-6 * size + floor)
+        for got, (want, size) in zip(values[2], exact_grads):
+            np.testing.assert_array_less(np.abs(np.asarray(got, np.float64) - want), 1e-5 * size + floor)
