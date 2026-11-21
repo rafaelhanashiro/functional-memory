@@ -402,6 +402,42 @@ def test_index_exposes_a_constant_coefficient_start_only_where_a_recipe_sets_one
     assert regenerate_index(study).read_bytes() == first
 
 
+def test_index_exposes_how_head_rms_norm_is_evaluated_and_none_for_recipes_that_predate_it(tmp_path):
+    """A prescaled or row-shifted rerun differs from the run it repeats in these columns, not in its label alone."""
+    study = tmp_path / "study"
+    fixed = {"attention_coefficients": "fixed", "attention_normalization": False}
+    head = {**fixed, "attention_output_scaling": "head_rms_norm"}
+    runs = {
+        "legacy_taylor": create_run(study, {"model": {**head, "attention_degree": 8}}),
+        "plain_taylor": create_run(study, {"model": {**head, "attention_degree": 8,
+                                                     "attention_head_rms_prescale": "none"}}),
+        "prescaled_taylor": create_run(study, {"model": {**head, "attention_degree": 8,
+                                                         "attention_head_rms_prescale": "max_abs"}}),
+        "legacy_exp": create_run(study, {"model": {**head, "attention_degree": None}}),
+        "shifted_exp": create_run(study, {"model": {**head, "attention_degree": None, "attention_exp_shift": "row_max",
+                                                    "attention_head_rms_prescale": "max_abs"}}),
+        # Without head RMSNorm neither setting applies, whatever a recipe written since carries.
+        "softmax": create_run(study, {"model": {**fixed, "attention_degree": None, "attention_normalization": True,
+                                                "attention_output_scaling": "none", "attention_exp_shift": "none",
+                                                "attention_head_rms_prescale": "none"}}),
+        "unscaled_exp": create_run(study, {"model": {**fixed, "attention_degree": None,
+                                                     "attention_output_scaling": "none"}}),
+        "pretrained": create_run(study, {"model": "organization/model", "condition": "random"}),
+        "analysis": create_run(study, {"experiment_kind": "per_position_evaluation"}),
+    }
+    with (study / "runs.csv").open() as stream:
+        rows = {row["run_id"]: row for row in csv.DictReader(stream)}
+    assert {name: (rows[run.name]["attention_exp_shift"], rows[run.name]["attention_head_rms_prescale"])
+            for name, run in runs.items()} == {
+        "legacy_taylor": ("", "none"), "plain_taylor": ("", "none"), "prescaled_taylor": ("", "max_abs"),
+        "legacy_exp": ("none", "none"), "shifted_exp": ("row_max", "max_abs"),
+        "softmax": ("", ""), "unscaled_exp": ("", ""), "pretrained": ("", ""), "analysis": ("", "")}
+    assert {rows[runs[name].name]["attention_family"] for name in ("legacy_exp", "shifted_exp", "unscaled_exp")} == {
+        "exponential"}
+    first = (study / "runs.csv").read_bytes()
+    assert regenerate_index(study).read_bytes() == first
+
+
 def test_record_updates_preserve_execution_evidence_and_reject_identity_changes(tmp_path):
     run = create_run(tmp_path / "study", recipe(), "label")
     update_record(run, {"execution": {"hardware": "H100", "acceptance": {"passed": 10}}})
