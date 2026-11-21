@@ -12,6 +12,7 @@ import yaml
 
 from experiments.transformer_pp import derive_recipe
 from experiments.transformer_pp import softplus_sos_acceptance as adapter
+from scaffolds.transformer.acceptance import EVALUATION_SETTINGS
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 KEYS = tuple(adapter.CONTROLS)
@@ -156,14 +157,16 @@ def test_allocated_runs_are_their_control_with_the_composition(run_id):
 
 @pytest.mark.parametrize("run_id", RUNS)
 def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
-    """Every field but the execution settings, changed alone, is refused by name, with validation bypassed so that
-    the adapter's own checks must refuse it: the degree and input power by the core-degree check, the depth, width
-    and update count by the control selection, everything else by the control comparison."""
+    """Every field but the execution settings and the model's evaluation settings (which every adapter leaves to
+    the run: scaffolds.transformer.acceptance.comparison_recipe), changed alone, is refused by name, with validation
+    bypassed so that the adapter's own checks must refuse it: the degree and input power by the core-degree check,
+    the depth, width and update count by the control selection, everything else by the control comparison."""
     monkeypatch.setattr(adapter, "validate_config", lambda config: None)
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
         for key, value in values.items():
-            if section == "train" and key in adapter.EXECUTION_KEYS:
+            if (section == "train" and key in adapter.EXECUTION_KEYS) or (
+                    section == "model" and key in EVALUATION_SETTINGS):
                 continue
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))

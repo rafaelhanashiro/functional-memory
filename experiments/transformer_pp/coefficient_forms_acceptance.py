@@ -4,8 +4,8 @@ from functools import partial
 import hashlib
 from pathlib import Path
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -62,10 +62,10 @@ def check_recipe(config):
     validate_config(config)
     name = form(config)
     shape = (config.model.num_layers, config.model.hidden_size, config.optim.total_steps)
-    expected = config_to_dict(replace(partner_config(name, config.model.attention_degree, shape)))
+    expected = comparison_recipe(replace(partner_config(name, config.model.attention_degree, shape)))
     expected["model"].update(CHANGES[name])
     expected["model"].update(DEGREE_CHANGES.get((name, config.model.attention_degree), {}))
-    actual = config_to_dict(config)
+    actual = comparison_recipe(config)
     if name == "static_gate":
         if config.model.attention_degree not in (4, 8):
             raise ValueError("The static query-key gate runs are degree 4 and 8")

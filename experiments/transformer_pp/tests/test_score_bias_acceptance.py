@@ -127,7 +127,8 @@ def test_pinned_additions():
 
 @pytest.mark.parametrize("run_id", TRIALS)
 def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
-    """Every field but the execution settings and the score-bias mode, changed alone, is rejected by name, with
+    """Every field but the execution settings, the model's evaluation settings (which every adapter leaves to the
+    run: acceptance.comparison_recipe) and the score-bias mode, changed alone, is rejected by name, with
     validation bypassed so that the adapter's own checks must reject it: the attention implementation and
     capture policy by their own checks, everything else (the depth, width and forget gate included) by the
     control comparison."""
@@ -135,7 +136,8 @@ def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
         for key, value in values.items():
-            if (section == "train" and key in adapter.EXECUTION_KEYS) or key == "attention_score_bias":
+            if ((section == "train" and key in adapter.EXECUTION_KEYS) or key == "attention_score_bias"
+                    or (section == "model" and key in acceptance.EVALUATION_SETTINGS)):
                 continue
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))

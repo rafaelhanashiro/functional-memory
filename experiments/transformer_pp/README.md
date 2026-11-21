@@ -35,12 +35,16 @@ retain the established recipe, including its previously selected learning rate.
 
 Unnormalized kernels normalize each head's output with per-head RMSNorm
 (`model.attention_output_scaling: head_rms_norm`). New runs evaluate it with the max-abs prescale
-(`model.attention_head_rms_prescale: max_abs`, which `scaffolds.records create` writes): each token and
-head's output is divided by its largest magnitude, at least one, before the normalization. It is the same
-function, and its FP32 gradient is exact at any output scale; the plain evaluation's gradient degrades once a
-head's output RMS passes about 3e13 and loses its projection term from 9e14
+(`model.attention_head_rms_prescale: max_abs`, which `scaffolds.records create` and the continuation launcher
+write): each token and head's output is divided by its largest magnitude, at least one, before the normalization.
+It is the same function, and its FP32 gradient is exact to rounding wherever FP32 holds the gradient itself (its
+elements are of size cotangent / output RMS: to an RMS of 1e30 for a cotangent of 1e-4); the plain evaluation's
+gradient degrades once a head's output RMS passes about 3e13 and loses its projection term from 9e14
 ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). Historical runs and their
-resumptions keep their recorded evaluation.
+resumptions keep their recorded evaluation, as do coefficient fits, oracles and distillations, which run their
+parent's recipe. The study's adapters compare a run with its pinned partner without this setting
+(`scaffolds.transformer.acceptance.comparison_recipe`), so a run takes it whatever its partner trained with, and
+`runs.csv` lists it (`attention_head_rms_prescale`).
 
 Linear and embedding weights use a Gaussian with underlying standard deviation
 0.02, truncated to [-0.04, 0.04] without variance compensation. Attention output
@@ -3087,9 +3091,9 @@ for run in r858c094cb85f rcc9e0b03e692 r161f07127f20 r576bb8758634 \
 done
 ```
 
-### Max-abs head RMSNorm at Q/K width 4
+### Max-abs head RMSNorm at Q/K widths 4 and 8
 
-Two width-4 runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
+Three narrow-key runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
 same function whose FP32 gradient is exact at any output scale. The plain arithmetic loses the term that removes the
 gradient's component along a head's output once that output's RMS passes about 9e14 on GPU
 ([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)):
@@ -3102,8 +3106,9 @@ SoS run 1.3% (2% off, concentrated in the head score scales).
 | `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `re3515eed3576` | `attention_head_rms_prescale: max_abs` | key width |
 | `r5e540d8620b1` | `fixed-m8-head-scale-dk8-max-abs-head-rms` | `T_8(s)`, `d_K` 8 | `r858c094cb85f` | `attention_head_rms_prescale: max_abs` | key width |
 
-Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) lets the polynomial partners take the prescale and
-keeps their pins: the option adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
+Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) compares a run with its partner without the
+prescale, as every adapter does (`scaffolds.transformer.acceptance.comparison_recipe`), and keeps its pins: the option
+adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
 trained at 1.3 to 1.6 s per update on B200 (2.7 to 3.4 h), so a 9-hour limit covers H100 SXM (4.8 h) with acceptance's
 two-hour reserve. Submit from `worktrees/sos-dk4-stable` after committing the frozen execution set, the SoS run first:
 

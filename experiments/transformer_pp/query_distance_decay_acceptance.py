@@ -8,10 +8,10 @@ from pathlib import Path
 import yaml
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
     matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import Config, config_to_dict
+from scaffolds.transformer.configs import Config
 from scaffolds.transformer.configs.base import validate_config
 from scaffolds.transformer.configs.loader import _update_dataclass
 
@@ -40,7 +40,7 @@ def check_recipe(config: Config) -> None:
     validate_config(config)
     if config.model.attention_forget_gate_mode != "query_distance":
         raise ValueError("This experiment requires query-distance decay")
-    actual, expected = config_to_dict(config), config_to_dict(control_config())
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config())
     actual["model"]["attention_forget_gate_mode"] = "cumulative"
     # The blocked backend's causal strips, which new runs there use, compute the scan's arithmetic.
     actual["model"]["attention_blocked_implementation"] = expected["model"]["attention_blocked_implementation"]

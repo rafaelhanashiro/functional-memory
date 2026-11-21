@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from experiments.transformer_pp import per_order_decay_acceptance as adapter
-from scaffolds.transformer.acceptance import test_paths as selected_paths
+from scaffolds.transformer.acceptance import EVALUATION_SETTINGS, test_paths as selected_paths
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 APPROVED = (("query", 4), ("query_key", 4), ("query", 8), ("query", 12), ("query_key", 8), ("query_key", 12))
@@ -122,14 +122,16 @@ def test_altered_query_key_recipes_are_rejected(monkeypatch, degree, run_id, twi
 
 @pytest.mark.parametrize("degree,run_id,twin", QUERY_KEY_RUNS)
 def test_the_control_comparison_covers_every_other_field(monkeypatch, degree, run_id, twin):
-    """Every field but the execution settings and the per-order switch, changed alone, is rejected by
-    name (the degree and gate conditioning by having no control), with validation bypassed so that the
-    comparison alone must reject it."""
+    """Every field but the execution settings, the model's evaluation settings (which every adapter leaves to
+    the run: scaffolds.transformer.acceptance.comparison_recipe) and the per-order switch, changed alone, is
+    rejected by name (the degree and gate conditioning by having no control), with validation bypassed so that
+    the comparison alone must reject it."""
     monkeypatch.setattr(adapter, "validate_config", lambda config: None)
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
         for key, value in values.items():
-            if (section == "train" and key in EXECUTION_KEYS) or key == "attention_forget_gate_per_order":
+            if ((section == "train" and key in EXECUTION_KEYS) or key == "attention_forget_gate_per_order"
+                    or (section == "model" and key in EVALUATION_SETTINGS)):
                 continue
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))

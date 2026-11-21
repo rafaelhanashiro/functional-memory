@@ -1,0 +1,404 @@
+{
+  "asserted_relative_l2_bounds": {
+    "fp32_normalization": {
+      "plain d/dy, RMS 9e14 to 1e18": "at least 0.05, radial fraction at least 0.99",
+      "probe output, d/dy, d/dgain, every scale": 1e-06,
+      "probe radial fraction, RMS 1 to 1e25": 1e-05,
+      "shifted composition output, d/dy, d/dgain": 1e-06
+    },
+    "mosaic_kernels_bf16": {
+      "dK": 0.06,
+      "dQ": 0.06,
+      "dV": 0.05,
+      "dcoefficients": 0.06,
+      "dgain": 0.05,
+      "output": 0.02,
+      "plain dQ, values scaled by 1e16": "at least 0.15",
+      "values scaled by 1e16": "twice the unscaled error plus 0.01"
+    },
+    "mosaic_models_bf16": {
+      "each parameter group, unscaled": 0.1,
+      "plain Q/K, values scaled by 1e16": "at least 0.5",
+      "values scaled by 1e16": "three times the unscaled error plus 0.01, at most 0.15"
+    }
+  },
+  "date": "2026-11-20",
+  "format": "head-rms-norm-prescale-qualification",
+  "gpu": "NVIDIA B300 SXM6 AC (akita)",
+  "home_cluster": "kennel",
+  "jobs": [
+    {
+      "artifacts": {
+        "junit": {
+          "path": "logs/head-rms-prescale-9292/gpu-tests.xml",
+          "sha256": "94eb9fd994616d9d269582a8a86adacd4958bb9d5d6c6ef4030e426d88de5810",
+          "size_bytes": 34099
+        },
+        "log": {
+          "path": "logs/head-rms-prescale-9292.log",
+          "sha256": "932caeba7b5e7845eca4ab9103c95968bc4d97b621bb54beedb3f4228fa23d51",
+          "size_bytes": 3241
+        }
+      },
+      "elapsed_seconds": 135,
+      "environment": "scaffolds/transformer/.venv-cuda13",
+      "exit_code": "0:0",
+      "failed_cases": [],
+      "finished_at": "2026-11-20T18:38:55",
+      "gpu": {
+        "bus_id": "00000000:DF:00.0",
+        "compute_capability": "10.3",
+        "driver_version": "620.70.06",
+        "name": "NVIDIA B300 SXM6 AC",
+        "uuid": "GPU-4c35acb7-32d4-8021-78ce-ce49dadec484"
+      },
+      "junit_seconds": 127.706,
+      "measured": {
+        "mosaic_kernels": {
+          "query, d_K=64": {
+            "max_abs x1": {
+              "dcoefficients": 0.0018444640391503593,
+              "dgain": 0.0023412085019432383,
+              "dk": 0.0029468625519197596,
+              "dq": 0.002966825514806511,
+              "dv": 0.002881213467913598,
+              "output": 0.002838386530076552
+            },
+            "max_abs x1e+16": {
+              "dcoefficients": 0.002092492375055603,
+              "dgain": 0.0020908384816315283,
+              "dk": 0.0029588231564346566,
+              "dq": 0.0029787714965529657,
+              "dv": 0.0029151780970737206,
+              "output": 0.002845319041843864
+            },
+            "none x1": {
+              "dcoefficients": 0.0018445541721696318,
+              "dgain": 0.002341192412458311,
+              "dk": 0.002946487744579879,
+              "dq": 0.002966918693070035,
+              "dv": 0.0028812692938018003,
+              "output": 0.0028384112777976563
+            },
+            "none x1e+16": {
+              "dcoefficients": 0.30337894016261013,
+              "dgain": 0.0020908367190557533,
+              "dk": 0.15875745601512614,
+              "dq": 0.20781667144276267,
+              "dv": 0.1415733536855827,
+              "output": 0.0028453247076056184
+            }
+          },
+          "static, d_K=64": {
+            "max_abs x1": {
+              "dcoefficients": 0.0009629574935925779,
+              "dgain": 0.0021452897446723107,
+              "dk": 0.002945516352668384,
+              "dq": 0.002977248053128194,
+              "dv": 0.0029375293985979874,
+              "output": 0.0028416697012521716
+            },
+            "max_abs x1e+16": {
+              "dcoefficients": 0.0011367335669194001,
+              "dgain": 0.0021035149408470434,
+              "dk": 0.0029539769164201647,
+              "dq": 0.0029803540712052055,
+              "dv": 0.002869219697574643,
+              "output": 0.0028432668218936396
+            },
+            "none x1": {
+              "dcoefficients": 0.0009629755184697799,
+              "dgain": 0.00214528580454037,
+              "dk": 0.0029450902304891343,
+              "dq": 0.0029773030224434695,
+              "dv": 0.0029378318116151493,
+              "output": 0.0028416662533652195
+            },
+            "none x1e+16": {
+              "dcoefficients": 0.12895554993732555,
+              "dgain": 0.0021035145851857665,
+              "dk": 0.15626112528850447,
+              "dq": 0.19987011629489038,
+              "dv": 0.13949330027294984,
+              "output": 0.0028432965309069633
+            }
+          },
+          "taylor, d_K=64": {
+            "max_abs x1": {
+              "dgain": 0.0019929895378196162,
+              "dk": 0.002958442194394786,
+              "dq": 0.002973463062246886,
+              "dv": 0.0029321681430999834,
+              "output": 0.002847620518008134
+            },
+            "max_abs x1e+16": {
+              "dgain": 0.002215213517311966,
+              "dk": 0.0029312325367280684,
+              "dq": 0.002982182938007058,
+              "dv": 0.0028645271262280054,
+              "output": 0.0028422064022294554
+            },
+            "none x1": {
+              "dgain": 0.0019929537116229034,
+              "dk": 0.002957820560118163,
+              "dq": 0.002973523342174769,
+              "dv": 0.002931611989868316,
+              "output": 0.0028476211348387437
+            },
+            "none x1e+16": {
+              "dgain": 0.002215211223383649,
+              "dk": 0.15879896885301037,
+              "dq": 0.20334010381352272,
+              "dv": 0.1433893824573247,
+              "output": 0.00284219623491712
+            }
+          }
+        },
+        "mosaic_models": {
+          "query, d_K=64": {
+            "max_abs x1": {
+              "coefficients": 0.010581488676084102,
+              "fp64_loss": 5.554158434595772,
+              "gain": 0.007040719739358994,
+              "loss": 5.554126262664795,
+              "o": 0.00745107814124548,
+              "other": 0.008648730379767537,
+              "qk": 0.010816226394362548,
+              "v": 0.007660129560436352
+            },
+            "max_abs x1e+16": {
+              "coefficients": 0.010062978747102689,
+              "fp64_loss": 5.554158456967349,
+              "gain": 0.007027265942074764,
+              "loss": 5.554126739501953,
+              "o": 0.007265929868785863,
+              "other": 0.00857778736610192,
+              "qk": 0.010998597920247504,
+              "v": 0.007408145612728015
+            },
+            "none x1": {
+              "coefficients": 0.0114438829004667,
+              "fp64_loss": 5.554158434595772,
+              "gain": 0.007238362767104813,
+              "loss": 5.554141998291016,
+              "o": 0.007476275356929619,
+              "other": 0.008720754674680666,
+              "qk": 0.010919718033403723,
+              "v": 0.0077372046027285755
+            },
+            "none x1e+16": {
+              "coefficients": 1.3011080899701066,
+              "fp64_loss": 5.554158456967349,
+              "gain": 0.3634083296645879,
+              "loss": 5.554126739501953,
+              "o": 0.3337732136585628,
+              "other": 0.42709283296596007,
+              "qk": 0.8055155225867413,
+              "v": 0.35076157109804673
+            }
+          },
+          "static, d_K=64": {
+            "max_abs x1": {
+              "coefficients": 0.00989571027967502,
+              "fp64_loss": 5.554158434595772,
+              "gain": 0.007040719739358994,
+              "loss": 5.554126262664795,
+              "o": 0.00745107814124548,
+              "other": 0.008648730379767537,
+              "qk": 0.010816226394362548,
+              "v": 0.007660129560436352
+            },
+            "max_abs x1e+16": {
+              "coefficients": 0.009145652135237476,
+              "fp64_loss": 5.554158456967349,
+              "gain": 0.007027265942074764,
+              "loss": 5.554126739501953,
+              "o": 0.007265929868785863,
+              "other": 0.008577787366101918,
+              "qk": 0.010998597920247504,
+              "v": 0.007408145612728015
+            },
+            "none x1": {
+              "coefficients": 0.010456589054929763,
+              "fp64_loss": 5.554158434595772,
+              "gain": 0.007238362767104813,
+              "loss": 5.554141998291016,
+              "o": 0.007476275356929619,
+              "other": 0.008720754674680666,
+              "qk": 0.010919718033403723,
+              "v": 0.0077372046027285755
+            },
+            "none x1e+16": {
+              "coefficients": 1.204361597387729,
+              "fp64_loss": 5.554158456967349,
+              "gain": 0.3634083296645879,
+              "loss": 5.554126739501953,
+              "o": 0.3337732136585628,
+              "other": 0.42709283296596007,
+              "qk": 0.8055155225867413,
+              "v": 0.35076157109804673
+            }
+          },
+          "taylor, d_K=64": {
+            "max_abs x1": {
+              "fp64_loss": 5.554158434600867,
+              "gain": 0.007040720092498207,
+              "loss": 5.554126262664795,
+              "o": 0.0074510781293820804,
+              "other": 0.008648730083839264,
+              "qk": 0.01081622663205153,
+              "v": 0.007660129554548264
+            },
+            "max_abs x1e+16": {
+              "fp64_loss": 5.554158456950779,
+              "gain": 0.0070272669748042155,
+              "loss": 5.554126739501953,
+              "o": 0.0072659306454035955,
+              "other": 0.008577787157856287,
+              "qk": 0.010998597813083585,
+              "v": 0.007408146687751496
+            },
+            "none x1": {
+              "fp64_loss": 5.554158434600867,
+              "gain": 0.007238362820107506,
+              "loss": 5.554141998291016,
+              "o": 0.007476275423024981,
+              "other": 0.008720754440532308,
+              "qk": 0.010919718085411853,
+              "v": 0.0077372047546103336
+            },
+            "none x1e+16": {
+              "fp64_loss": 5.554158456950779,
+              "gain": 0.3634083267904262,
+              "loss": 5.554126739501953,
+              "o": 0.33377321298899654,
+              "other": 0.42709283394626235,
+              "qk": 0.8055155280892511,
+              "v": 0.35076156996292907
+            }
+          }
+        },
+        "probe": {
+          "plain_gradient_relative_l2_by_rms": {
+            "0.001": 6.192878128493242e-08,
+            "1": 6.096805780140796e-08,
+            "1.2e+15": 0.12536386827828697,
+            "1e+06": 4.793362422035149e-08,
+            "1e+10": 7.04582389021844e-08,
+            "1e+11": 4.871659663763192e-08,
+            "1e+12": 4.642482148853846e-08,
+            "1e+13": 5.715511665749223e-08,
+            "1e+14": 6.608962648285649e-05,
+            "1e+16": 0.12536386364631127,
+            "1e+17": 0.12536387177836358,
+            "1e+18": 0.12536386149608408,
+            "1e+19": 6.697828870650325e-08,
+            "1e+25": 6.679211779472372e-08,
+            "1e+30": 6.721625167548835e-08,
+            "1e-06": 4.395221360276308e-08,
+            "1e-13": 3.586683372823134e-08,
+            "1e-25": 3.586683372823134e-08,
+            "2e+14": 0.0016906322991765259,
+            "2e+15": 0.125363869296916,
+            "3e+12": 5.532165069509673e-08,
+            "3e+13": 7.048175192778503e-06,
+            "3e+14": 0.002041986206461548,
+            "3e+19": 6.699728443159253e-08,
+            "4.4e+12": 5.079078784301133e-08,
+            "4.5e+14": 0.0027011597044758555,
+            "6e+12": 5.528693249354503e-08,
+            "6e+14": 0.02641690978997618,
+            "9e+14": 0.1253638716225005
+          },
+          "plain_radial_fraction_by_rms": {
+            "1": 9.520199851494272e-07,
+            "1.2e+15": 0.9999999953942215,
+            "1e+06": 1.3301088281302687e-07,
+            "1e+10": 9.199225578894183e-08,
+            "1e+11": 8.722239398900128e-08,
+            "1e+12": 9.471807836828689e-08,
+            "1e+13": 2.484303674599496e-07,
+            "1e+14": 0.0005271813809727249,
+            "1e+16": 0.9999999591369915,
+            "1e+17": 1.0000000244000997,
+            "1e+18": 0.9999999424495958,
+            "1e+19": 1.008323314732988e-07,
+            "1e+25": 9.880826254612409e-08,
+            "1e+30": 9.993745954563103e-08,
+            "2e+14": 0.013485802496145761,
+            "2e+15": 1.0000000040573236,
+            "3e+12": 8.570843034301822e-08,
+            "3e+13": 5.621875794260723e-05,
+            "3e+14": 0.016288475054289837,
+            "3e+19": 9.974083742689038e-08,
+            "4.4e+12": 8.633303286130497e-08,
+            "4.5e+14": 0.021546557236573612,
+            "6e+12": 8.317311110659954e-08,
+            "6e+14": 0.2107218761463786,
+            "9e+14": 1.000000022161678
+          },
+          "prescaled_largest_radial_fraction_1_to_1e25": 1.001538441125896e-06,
+          "prescaled_largest_relative_l2": 1.7971813874430688e-07,
+          "scales": 29
+        },
+        "shifted_composition": {
+          "cases": 32,
+          "largest_relative_l2": 1.2937622549088998e-07
+        }
+      },
+      "node": "akita",
+      "partition": "long",
+      "passed_by_module": {
+        "test_head_rms_prescale": 8,
+        "test_mosaic_unnormalized": 1
+      },
+      "skipped_as_not_admitted": [
+        "test_gpu_mosaic_kernels_through_the_prescaled_normalization_match_fp64[query-4]",
+        "test_gpu_mosaic_kernels_through_the_prescaled_normalization_match_fp64[softplus_sos-4]",
+        "test_gpu_mosaic_kernels_through_the_prescaled_normalization_match_fp64[softplus_sos-64]",
+        "test_gpu_mosaic_kernels_through_the_prescaled_normalization_match_fp64[static-4]",
+        "test_gpu_mosaic_kernels_through_the_prescaled_normalization_match_fp64[taylor-4]",
+        "test_gpu_mosaic_model_step_matches_fp64_with_every_head_output_above_1e15[query-4]",
+        "test_gpu_mosaic_model_step_matches_fp64_with_every_head_output_above_1e15[softplus_sos-4]",
+        "test_gpu_mosaic_model_step_matches_fp64_with_every_head_output_above_1e15[softplus_sos-64]",
+        "test_gpu_mosaic_model_step_matches_fp64_with_every_head_output_above_1e15[static-4]",
+        "test_gpu_mosaic_model_step_matches_fp64_with_every_head_output_above_1e15[taylor-4]"
+      ],
+      "slurm_job_id": "9292",
+      "slurm_state": "COMPLETED",
+      "source_commit": "370afb2edf821ea3dfc6907b6c3cfc0a902525d7",
+      "started_at": "2026-11-20T18:36:40",
+      "tests": {
+        "passed": 9,
+        "skipped": 10
+      }
+    }
+  ],
+  "launcher": "scaffolds/transformer/validation/qualify_head_rms_prescale.sbatch",
+  "launcher_sha256": "eb35e656ce614c8ae1488bc41693aeae153a951ea3c3f38422027e8bd60a82de",
+  "precisions": [
+    "fp32 head RMSNorm (the model's)",
+    "bf16 Q/K/V, attention outputs and gradients (training)"
+  ],
+  "schema_version": 1,
+  "scope": "Head RMSNorm's max-abs prescale (scale_attention_output, head_rms_prescale='max_abs') on the device's FP32 arithmetic: output and VJP of the measured probe (2,048 tokens, two heads, 64 channels) against host FP64 at output RMS 1e-25 to 1e30, with the plain evaluation beside it; its composition with the exponential's row shift at shifts of -60 to 2,000 and rows of 1e-30 to 1e25; the Mosaic kernels (fixed Taylor, static, query, softplus sum of squares with its input power) at 2,048 tokens and Q/K widths 4 and 64 into the prescaled normalization against dense FP64, values at their own scale and scaled by 1e16; one training gradient of two-layer BF16 models on those kernels with every head output above 1e15 against the same models in FP64; and the existing Mosaic case of the unprescaled head RMSNorm.",
+  "selection": [
+    "-m",
+    "gpu"
+  ],
+  "source_commits": {
+    "370afb2edf821ea3dfc6907b6c3cfc0a902525d7": {
+      "dependency_lock_sha256": "de7e8a445c250b7a9a6c9d6c6153a62fb5c192a6acdfbb5b327b23b482da0fc0",
+      "frozen_execution_sha256": "862134761420aa7c7462f80d325d99699f6680c1f974d7093620806ee8f33895"
+    }
+  },
+  "status": "passed",
+  "test_module_sha256": {
+    "test_head_rms_prescale.py@370afb2e": "444bd6f84e2213685fd5c35d5c8680223b1f40eb111956c13f04a71267d7ddde",
+    "test_mosaic_unnormalized.py@370afb2e": "42c6ae28d4229735993a410f70d73c85bf65c6a3768f5a96058eb1ad779e5454"
+  },
+  "tests": {
+    "passed": 9,
+    "skipped_as_not_admitted": 10
+  }
+}

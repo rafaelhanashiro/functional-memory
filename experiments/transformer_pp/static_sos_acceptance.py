@@ -6,8 +6,8 @@ import hashlib
 from pathlib import Path
 import sys
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
+from scaffolds.transformer.configs import load_config, validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
 CONTROLS = {
@@ -70,9 +70,9 @@ def static_config(core_degree, transform, power):
 def check_recipe(config):
     validate_config(config)
     core = config.model.attention_degree - config.model.attention_coefficient_input_power
-    expected = config_to_dict(static_config(core, config.model.attention_score_transform,
+    expected = comparison_recipe(static_config(core, config.model.attention_score_transform,
                                            config.model.attention_coefficient_input_power))
-    actual = config_to_dict(config)
+    actual = comparison_recipe(config)
     for recipe in (expected, actual):
         for key in PATH_FIELDS:
             recipe["train"].pop(key, None)

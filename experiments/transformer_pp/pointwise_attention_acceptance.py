@@ -12,8 +12,8 @@ import hashlib
 from pathlib import Path
 import sys
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -55,7 +55,7 @@ def check_recipe(config: Config) -> None:
             actual = tuple(actual) if actual is not None else None
         if actual != value:
             raise ValueError(f"Pointwise baselines require model.{key}: {value}")
-    actual, expected = config_to_dict(config), config_to_dict(control_config())
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config())
     for key in (*MODEL_CHANGES, "attention_score_transform"):
         actual["model"][key] = expected["model"][key]
     for recipe in (actual, expected):

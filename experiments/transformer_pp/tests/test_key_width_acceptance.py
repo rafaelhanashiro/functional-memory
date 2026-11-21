@@ -382,14 +382,6 @@ def test_the_prescaled_runs_rerun_the_plain_ones(run_id, plain):
     assert prescaled.model.attention_head_rms_prescale == "max_abs"
 
 
-@pytest.mark.parametrize("key", ("exponential", "softmax"))
-def test_only_the_polynomial_partners_take_the_prescale(key):
-    config = variant(key, first_width(key))
-    config.model.attention_head_rms_prescale = "max_abs"
-    with pytest.raises(ValueError):
-        adapter.check_recipe(config)
-
-
 @pytest.mark.parametrize("run_id", RUNS)
 def test_allocated_runs_are_their_partner_at_the_key_width(run_id):
     label, key, width, model = RUNS[run_id]

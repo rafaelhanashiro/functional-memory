@@ -132,7 +132,8 @@ def test_allocated_runs_are_the_control_with_the_transform_and_capture(run_id):
 
 @pytest.mark.parametrize("run_id", RUNS)
 def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
-    """Every field but the execution settings and the transform's, changed alone, is rejected by name, with
+    """Every field but the execution settings, the model's evaluation settings (which every adapter leaves to the
+    run: acceptance.comparison_recipe) and the transform's, changed alone, is rejected by name, with
     validation bypassed so that the adapter's own checks must reject it: the start by the transform's start, the
     depth, width, degree and update count by the control selection, the attention implementation and capture
     policy by their own checks, everything else by the control comparison."""
@@ -140,7 +141,8 @@ def test_the_control_comparison_covers_every_other_field(monkeypatch, run_id):
     frozen, missed = run_config(run_id), []
     for section, values in config_to_dict(frozen).items():
         for key, value in values.items():
-            if (section == "train" and key in adapter.EXECUTION_KEYS) or key == "attention_score_transform":
+            if ((section == "train" and key in adapter.EXECUTION_KEYS) or key == "attention_score_transform"
+                    or (section == "model" and key in acceptance.EVALUATION_SETTINGS)):
                 continue
             config = deepcopy(frozen)
             setattr(getattr(config, section), key, ("changed", value))

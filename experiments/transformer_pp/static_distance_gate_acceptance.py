@@ -13,8 +13,10 @@ from functools import partial
 import hashlib
 from pathlib import Path
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance, matches_softmax_backbone_initialization
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.acceptance import (
+    attention_spec, comparison_recipe, main as run_acceptance, matches_softmax_backbone_initialization,
+)
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -91,13 +93,13 @@ def check_recipe(config: Config) -> None:
             or model.attention_forget_gate_conditioning != "none"):
         raise ValueError("This experiment trains learned static coefficients with the input-free gate")
     degree = _degree(config)
-    actual = config_to_dict(config)
+    actual = comparison_recipe(config)
     if model.attention_forget_gate_per_order:
-        expected = config_to_dict(shared_gate_config(degree))
+        expected = comparison_recipe(shared_gate_config(degree))
         actual["model"]["attention_forget_gate_per_order"] = False
         name = f"shared-gate run {SHARED_GATES[degree][0]}"
     else:
-        expected = config_to_dict(control_config(degree))
+        expected = comparison_recipe(control_config(degree))
         for key, value in GATE_SETTINGS.items():
             if actual["model"][key] != value:
                 raise ValueError(f"The shared-gate runs set model.{key}: {value}")

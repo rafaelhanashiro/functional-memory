@@ -13,9 +13,9 @@ from pathlib import Path
 import sys
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, main as run_acceptance, matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 
@@ -76,7 +76,7 @@ def check_recipe(config):
     transform = config.model.attention_score_transform
     if transform not in TRANSFORMS:
         raise ValueError(f"Zero-constant runs read softplus or raw scores, not {transform!r}")
-    actual, expected = config_to_dict(config), config_to_dict(control_config(key))
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config(key))
     expected["model"].update(attention_coefficient_zero_constant=True,
                              attention_score_transform=transform)
     expected["train"].update(CAPTURE_POLICY)

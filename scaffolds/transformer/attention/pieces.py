@@ -16,7 +16,8 @@ exp(phi(s) + log D), which is the same weight. Unnormalized and followed by head
 subtract each row's largest logit m_t first (EXP_SHIFTS, exp_shift_problem): y_t e^(-m_t) goes to the
 RMSNorm with the offset m_t, which keeps the function. Head RMSNorm output scaling, after any kernel, may
 evaluate each row in units of its largest magnitude (output_scaling.HEAD_RMS_PRESCALES,
-head_rms_prescale_problem): the same function again, with an FP32 gradient that is exact at any output scale.
+head_rms_prescale_problem): the same function again, with an FP32 gradient that is exact to rounding wherever
+FP32 holds the gradient itself.
 
 Coefficients per query: on the blocked backend, static and fixed polynomial coefficients that meet a
 forget gate, a score transform, score biases or a prefactor run as every query's equal coefficients

@@ -88,6 +88,9 @@ def test_pairs_differ_only_by_the_shape_rules():
     executed = copy.deepcopy(configs)
     executed["r3d14b598d88f"]["model"]["attention_blocked_implementation"] = "strips"
     check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
+    # So is head RMSNorm's max-abs prescale, the same function: a prescaled run still pairs with a plain one.
+    executed["r3d14b598d88f"]["model"]["attention_head_rms_prescale"] = "max_abs"
+    check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
     # (run, section, key, value, expected message): settings outside the shape rules.
     mutations = [
         ("rf81c96f76a1d", "optim", "learning_rate", 0.002, "optim.learning_rate"),

@@ -1329,12 +1329,12 @@ for bit, and an infinite or NaN entry makes its row NaN.
 Below that overflow the plain FP32 arithmetic still fails in the backward. With `x = mean(o_t²) + eps`, the
 gradient of `o_t / sqrt(x)` is `(g - o_t mean(g ⊙ o_t) / x) / sqrt(x)`, and FP32 forms the second term through
 `x^(-3/2)`: a subnormal number once the head's output RMS passes 4.4e12 and zero past 1.1e15. That term removes
-the gradient's component along `o_t`. On GPU the gradient of such a row is off by 1e-5 of its norm at an RMS of
+the gradient's component along `o_t`. On GPU the gradient of such a row is off by 7e-6 of its norm at an RMS of
 3e13, 0.2% at 2e14 and 2.6% at 6e14, and from 9e14 up to the mean square's overflow it keeps the whole component
 along `o_t` (12.5% of the gradient's norm for a random cotangent over 64 channels; in two-layer models with every
-head output above 1e15, Q/K gradients off by 60% to 140% of their norm). XLA's CPU code flushes subnormal numbers,
-so there the whole term is lost from 4.4e12. Any unnormalized kernel can reach such outputs: `T_8(s)` alone
-passes 1e15 at a score of 283.
+head output above 1e15, Q/K gradients off by 60% to 100% of their norm and coefficient gradients by one to ten
+times theirs). XLA's CPU code flushes subnormal numbers, so there the whole term is lost from 4.4e12. Any
+unnormalized kernel can reach such outputs: `T_8(s)` alone passes 1e15 at a score of 283.
 
 `model.attention_head_rms_prescale: max_abs` evaluates the same function in units of each row's size
 (`attention/output_scaling.py`, `attention/pieces.py` `head_rms_prescale_problem`). For any constant `c > 0`,
@@ -1354,16 +1354,29 @@ separate guard. With a row-shifted exponential the row holds `y = e^(-m) o`, so 
 `log max|o| = m + log max|y|`: above `e^-23 sqrt(eps)` it is divided by `max|y|` with
 `eps (e^(-m/2) / max|y| · e^(-m/2))²` as its epsilon, and below it the function is linear to FP64's rounding and is
 evaluated as `y e^m / sqrt(eps)` (the slope capped at `e^80.5`, which only an exactly zero row reaches). This also
-evaluates rows the shifted arithmetic alone cannot: a zero row at shifts of 22 to 37 (a NaN gradient without the
-prescale) and rows below 1e-13 at shifts above 22. A row with an infinite or NaN entry is NaN, as without it. It
-applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
+evaluates rows the shifted arithmetic alone cannot: a zero row at shifts above 22 (a NaN gradient without the
+prescale, until its shifted epsilon underflows: 37 on CPU) and rows below 1e-13 at shifts above 22 (an infinite
+gradient, or a zero output once the mean square underflows). A row with an infinite or NaN entry is NaN, as without
+it.
+
+It applies wherever `head_rms_norm` does: any kernel, normalized or not, every backend and positional encoding (PaTH
 included); other recipes reject it. `scaffolds.records create` writes `max_abs` into fresh recipes with
 `head_rms_norm` (`configs.base.fresh_recipe_uses_head_rms_prescale`); a fresh recipe there that sets `none` needs
-`--allow-plain-head-rms`. Run metadata records `attention_head_rms_prescale` and a formula clause. Continuations
-may change it with the backend: it changes no parameter and keeps the function. Telemetry is unchanged (it reads
-the output before its normalization). In FP32 the prescaled output and gradient match FP64 to 1e-6 at output RMS
-1e-25 to 1e30, and a two-layer model's gradients match its FP64 counterpart's to 1e-5 with every head output above
-1e15. Qualification: [validation](validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20).
+`--allow-plain-head-rms`. A launcher that allocates a copied recipe for training applies the same rule to the copy
+(`experiments/transformer_pp/launch_continuation.py`), while a fixed-input coefficient fit, oracle or distillation
+runs its parent's recipe (`training/coefficient_fit.py` `parent_config`) and so keeps the parent's evaluation. A
+study adapter compares a run with its pinned partner through `acceptance.comparison_recipe`, which holds this
+setting at `none` on both sides: it adds no parameter and no kernel, and a recipe that sets it selects its tests
+itself. Run metadata records `attention_head_rms_prescale` and a formula clause, and `runs.csv` has an
+`attention_head_rms_prescale` column (`none` for every recipe with `head_rms_norm` that predates it, empty without
+it) beside `attention_exp_shift` (the unnormalized exponential's under `head_rms_norm`). Continuations may change it
+with the backend: it changes no parameter and keeps the function. Telemetry is unchanged (it reads the output before
+its normalization). In FP32 the prescaled output and gradient match FP64 to 1e-6 at output RMS 1e-25 to 1e30, and a
+two-layer model's gradients match its FP64 counterpart's to 1e-5 with every head output above 1e15. The gradient is
+exact to rounding wherever FP32 holds the gradient itself, not at every scale: its elements are of size cotangent /
+RMS, and FP32's normal range ends at 1.2e-38 (the bound of 1e30 is that of a cotangent of 1e-4; beyond it no FP32
+evaluation has the gradient, prescaled or plain). Qualification:
+[validation](validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20).
 
 The unnormalized exponential with `head_rms_norm` fails earlier: `e^s` passes FP32's maximum at
 `s` about 88.7, and before that the RMSNorm backward's derivative of `rsqrt` (the mean square's
@@ -2046,6 +2059,11 @@ Studies configure these shared modules with execution modules at their root
   checks experiment-specific behavior after finite pilot validation and before the stage
   passes. Its facts are recorded under `pilot.json` → `outcome.experiment_check`; raising
   an exception blocks production. Existing adapters omit the callback.
+- `comparison_recipe(config)` is `config_to_dict(config)` for a study adapter that pins a partner's recipe key by
+  key: the model's evaluation settings (`EVALUATION_SETTINGS`: `attention_head_rms_prescale`) are held at their
+  historical values on both sides, so a run may take them whatever its partner trained with. The backend, the
+  blocked implementation and the exponential's row shift stay in the comparison: each runs kernels that need their
+  qualification, so an adapter states which of them its runs may take.
 - `retention.py` prunes a completed run to its validation-best checkpoint and records
   the selection, keeping a capturing run's kept gradient-event states as recorded
   diagnostic checkpoints.

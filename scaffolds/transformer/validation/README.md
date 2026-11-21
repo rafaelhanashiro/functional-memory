@@ -11,6 +11,148 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Head RMSNorm max-abs prescale (2026-11-20)
+
+`model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head
+RMSNorm on each token and head's output divided by its largest magnitude `c` (at least one), with `eps / c²`: the
+plain function and gradient in real arithmetic, `c` held constant to differentiation. `none`, every historical
+recipe, computes as before, bit for bit.
+
+**The defect it removes.** The plain FP32 backward forms `(mean(y²) + eps)^(-3/2)`: a subnormal number once a head's
+output RMS passes 4.4e12, zero past 1.1e15. It scales the term that removes the gradient's component along `y`.
+The probe is 2,048 tokens of two heads with 64 channels, unit-RMS random directions times the scale, a cotangent
+of scale 1e-4 and gains near one, against host FP64; the error is the relative L2 of the gradient in the rows, and
+the radial fraction is the share of that component the gradient keeps (zero for the exact Jacobian).
+
+| Output RMS | Plain, GPU | Its radial fraction | Plain, CPU | Prescaled, GPU | Prescaled, CPU |
+| --- | --- | --- | --- | --- | --- |
+| 1e-25 to 3e12 | at most 7.1e-8 | at most 1e-6 (from RMS 1) | at most 7.5e-8 | at most 1.8e-7 | at most 1.7e-7 |
+| 4.4e12 to 1e13 | at most 5.7e-8 | at most 2.5e-7 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 3e13 | 7.0e-6 | 5.6e-5 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 1e14 | 6.6e-5 | 5.3e-4 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 2e14, 3e14, 4.5e14 | 0.0017, 0.0020, 0.0027 | 0.013, 0.016, 0.022 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 6e14 | 0.026 | 0.21 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 9e14 to 1e18 | 0.125 | 1.0 | 0.125 | at most 1.8e-7 | at most 1.7e-7 |
+| 1e19 to 1e30 (the mean square overflows and the plain evaluation's guard rescales the row) | at most 6.7e-8 | 1e-7 | 6.8e-8, and 7.3e-7 at 1e30 | at most 1.8e-7 | 1.7e-7, and 7.3e-7 at 1e30 |
+
+The GPU columns are H100's, B200's and B300's: their plain errors agree to every recorded digit, and the prescaled
+ones are at most 1.2e-7 on H100 and B200 and 1.8e-7 on B300. Prescaled errors are the largest of the output, the
+row gradient and the gain gradient; its radial fraction is at most 1e-6 from RMS 1 to 1e25. XLA's GPU code keeps
+subnormal numbers, so the plain gradient degrades gradually there; its CPU code flushes them, so the whole term is
+lost from 4.4e12 (and at 1e30 the gradient's smallest elements, below FP32's normal range, are flushed with either
+evaluation). With a random cotangent the lost term is 12.5% of the gradient (`1 / sqrt(64)`); through a model it
+is most of the Q/K gradient (below).
+
+**Where the gradient ends.** The prescaled gradient is exact to rounding wherever FP32 holds the gradient itself,
+which is not every scale: its elements are of size cotangent / RMS (1e-34 at an RMS of 1e30 with the probe's
+cotangent), and FP32's normal range ends at 1.2e-38. The module's probe with cotangents of 1e-12 to 1e4 at RMS 1e19
+to 1e37 (86 pairs, CPU, against its FP64 reference) has an error that depends on that quotient alone:
+
+| Cotangent / RMS | 1e-33 or more | 1e-34 | 1e-35 | 1e-36 | 1e-37 | 1e-38 | 1e-39 or less |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Row gradient, relative L2 | at most 7.6e-8 | 7.3e-7 | 2.3e-5 | 6.7e-4 | 0.021 | 0.54 | 1 (all zero) |
+
+The plain evaluation returns the same gradient bit for bit at every pair (from 1e19 its guard for an overflowing
+mean square is the same division), so the bound is FP32's, not the prescale's; the output and the gain's gradient
+stay within 1.9e-7. XLA's CPU code flushes numbers below the normal range to zero, and a GPU keeps them as
+subnormal numbers with fewer bits (the probe at 1e30, a quotient of 1e-34: within 1.8e-7 on the three GPUs,
+7.3e-7 on CPU). The module holds the row gradient to 1e-6 at a quotient of 1e-33 for each of those cotangents.
+
+**CPU** (`JAX_PLATFORMS=cpu`, at `477cfc2d`): 3,524 tests in 62 modules passed (10 skipped for want of a second host
+device): `tests/test_head_rms_prescale.py` (79 CPU cases); the output-scaling, row-maximum-shift, unnormalized
+(attention, configuration, training), configuration, fixed-polynomial configuration, telemetry, acceptance (three
+modules), continuation (two), model, training, initialization, composition, strips, exponential score-function,
+attention, QK-norm and PaTH (three) modules; Transformer++'s 30 adapter, launcher and diagnostic modules,
+attention_scaling's three, the records modules (two) and the two result modules whose recipe checks name the setting.
+In FP64 the production arithmetic equals the plain function to 1e-12 of each row in value and VJP at RMS 1e-25 to 1e30
+(eps 1e-12, 1e-6 and 1; a zero row and a row of mixed channel scales with them), also when the divisor is
+differentiated, and the shifted form to 1e-11 on both sides of its linear range's boundary at shifts of -60 to 150. In
+FP32 "none" is the pre-existing function bit for bit (output and VJP, with and without a row shift, compiled or not),
+and rows of at most one are the plain arithmetic bit for bit. The composition with the row shift matches FP64 to
+1.5e-7 in 32 cases (shifts of -60 to 2,000, rows of 1e-30 to 1e25), nine of which the shifted arithmetic alone gets
+wrong or nonfinite; the shifted scan and strips with the prescale match the FP64 function at row maxima of 5 to 440.
+Two-layer models (QK RMSNorm with head scales, Q/K width 4, RoPE unless noted) whose value projections are scaled by
+1e16, so that every head output is above 1e15, against the same models in FP64:
+
+| Kernel | Q/K gradient, prescaled, FP32 layers | BF16 layers | Q/K gradient, plain |
+| --- | --- | --- | --- |
+| Fixed Taylor `T_8(s)` | 8.9e-7 | 0.022 | 0.95 |
+| Static `p(s)` | 8.0e-7 | 0.022 | 0.95 |
+| Query `p_t(s)` | 8.0e-7 | 0.022 | 0.95 |
+| Softplus SoS `z h_t(z)` | 1.5e-6 | 0.024 | 1.02 |
+| Exponential with the row shift | 9.0e-7 | 0.020 | 0.95 |
+| Exponential with the row shift and a fixed constant decay, no RoPE | 4.7e-7 | 0.015 | 1.27 |
+
+Every other parameter group is within 1.2e-6 (FP32) with the prescale; BF16 layers keep the unscaled BF16 model's
+distance from FP64 (0.019 to 0.028 in Q/K). The plain evaluation's coefficient gradients are off by 2.3 to 6.9 times
+their norm. A PaTH exponential model, whose attention calls the normalization at its own site, keeps its unscaled
+self's loss and gradients to 1.6e-4 with the values scaled by 1e16 (1.41 times the Q/K gradient's norm without the
+prescale); with the prescale removed from that call, this case alone fails. Refusals, the allocation default and
+flag, the continuation launcher's copies, every study adapter's partner comparison (each field but the prescale
+still refused), the run index, identity, telemetry (unchanged), continuation and exact training resumes pass.
+`records receipts` over transformer_pp, attention_scaling and state_rank at `477cfc2d`: all 586 unchanged (529
+`same`, 57 `same rejection`).
+
+**GPU** (`qualify_head_rms_prescale.sbatch`, one GPU on `long`, `-m gpu` over `test_head_rms_prescale.py` and the
+existing Mosaic case of the unprescaled head RMSNorm):
+
+| GPU | Job | Source | Result | JUnit seconds |
+| --- | --- | --- | --- | --- |
+| B200 (`shiba`, long) | 9250 | `520f5293` | 19 passed: probe, shifted composition, 8 kernel cases, 8 model cases, the control | 314 |
+| B300 SXM6 (`akita`, long) | 9292 | `370afb2e` | 9 passed: probe, shifted composition, 3 kernel cases and 3 model cases at Q/K width 64, the control; 10 skipped as not admitted | 128 |
+| H100 SXM (`dogo`, long) | 9291 | `370afb2e` | 19 passed: probe, shifted composition, 8 kernel cases, 8 model cases, the control | 183 |
+
+`370afb2e` differs from `520f5293` in the scaffold README's text alone (the code and tests are identical).
+At `477cfc2d` the executable code of `attention/output_scaling.py`, `attention/pieces.py` and
+`attention/multihead.py` and the module's GPU cases are those of `370afb2e`: under `attention/` only comments and
+docstrings differ, and the other changes are CPU cases and code outside the normalization (the run index, the
+adapters' comparison, the continuation launcher, the recorded formula's clause).
+
+H100 (CUDA 12 environment), [record](runs/head-rms-prescale-h100/record.json): the probe and the shifted
+composition as on B200 (prescaled at most 1.2e-7 and 1.5e-7), and B200's kernel and model errors at both Q/K
+widths: every kernel error within B200's ranges below (dQ 0.0030 to 0.0044 prescaled against 0.20 to 0.90 plain
+with the scaled values) and every prescaled model group within 0.003 of its table (Q/K 0.011 to 0.020 against
+0.61 to 0.86 plain).
+
+B300 (CUDA 13 environment), [record](runs/head-rms-prescale-b300/record.json): the probe and the shifted
+composition as on B200 (prescaled at most 1.8e-7 and 1.3e-7); fixed Taylor, static and query at Q/K width 64 give
+B200's kernel and model errors (Q/K 0.011 prescaled against 0.81 plain with every head output above 1e15). B300 does
+not admit the transformed kernels and its query kernel is not qualified at Q/K width 4, so its job skips the
+softplus-SoS cases and the width-4 cases (10 of 19), which its final check allows.
+
+B200 (CUDA 13 environment), [record](runs/head-rms-prescale-b200/record.json):
+
+- Probe: the table above. Shifted composition: at most 1.3e-7 over the 32 cases; zero rows stay zero with finite
+  gradients at every shift.
+- Mosaic kernels at 2,048 tokens into the prescaled normalization, against dense FP64 of the same BF16 operands, at
+  Q/K widths 4 and 64 (fixed Taylor, static and query at degree eight, softplus SoS with its input power at degree
+  nine). Relative L2 over the eight cases, with the values at their own scale and scaled by 1e16 (head outputs
+  above 1e15) alike: output 0.0028 to 0.0029, dQ 0.0030 to 0.0044, dK 0.0029 to 0.0034, dV 0.0029 to 0.0030, gain
+  0.0020 to 0.0029, coefficients 0.0010 to 0.0045 (0.0086 for static at width 4 with the scaled values). Plain at
+  the scaled values: dQ 0.20 to 0.90, dK 0.16 to 0.32, dV 0.10 to 0.14, coefficients 0.13 to 0.89, and its output
+  0.0028 to 0.0029, as prescaled.
+- One training gradient of two-layer BF16 models on those kernels (width 128, two heads, 512 tokens), every head
+  output above 1e15, against the same models in FP64 on the blocked backend:
+
+| Kernel, Q/K width | Q/K, prescaled | Unscaled model | Coefficients, prescaled | Q/K, plain | Coefficients, plain |
+| --- | --- | --- | --- | --- | --- |
+| Fixed Taylor, 4 | 0.014 | 0.014 | | 0.61 | |
+| Fixed Taylor, 64 | 0.011 | 0.011 | | 0.81 | |
+| Static, 4 | 0.014 | 0.014 | 0.013 | 0.61 | 0.99 |
+| Static, 64 | 0.011 | 0.011 | 0.009 | 0.81 | 1.2 |
+| Query, 4 | 0.014 | 0.014 | 0.013 | 0.61 | 1.0 |
+| Query, 64 | 0.011 | 0.011 | 0.010 | 0.81 | 1.3 |
+| Softplus SoS, 4 | 0.020 | 0.018 | 0.018 | 0.62 | 9.6 |
+| Softplus SoS, 64 | 0.014 | 0.013 | 0.011 | 0.86 | 5.4 |
+
+  V, O, gain and the other groups: 0.007 to 0.015 with the prescale, 0.32 to 0.55 without. The loss is the FP64
+  model's to 3e-5 either way: the defect is in the backward alone.
+
+This qualifies the normalization's arithmetic on the device and its composition with the Mosaic kernels, not a
+training run: each production allocation still runs its adapter's CPU and GPU suites (for a prescaled recipe the
+module's CPU cases and its probe and composition cases on the run's GPU), the initialization check, the pilot and a
+fresh-process resume.
+
 ### Row-maximum-shifted exponential (2026-11-20)
 
 `model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the

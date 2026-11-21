@@ -30,9 +30,10 @@ from pathlib import Path
 import sys
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, initialization_facts, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, initialization_facts, main as run_acceptance,
+    matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -52,9 +53,6 @@ def every_width(gpus, widths=WIDTHS) -> dict:
 # query's coefficients equal): widths 8-128 are qualified on H100 and B300 (validation README, "Mosaic GPU polynomial
 # attention kernels on H100 and B300"); width 4, added on 2026-11-20, on H100 (job 8217) and B200 (job 8251) only.
 MOSAIC_QUERY_GPUS = {4: ("H100", "B200"), 8: ("H100", "B300"), 16: ("H100", "B300")}
-# The polynomial partners trained with the plain head RMSNorm arithmetic; a run may take its max-abs prescale, the
-# same function with an FP32 gradient that is exact at any output scale (attention/output_scaling.py).
-HEAD_RMS_PRESCALE = {"attention_head_rms_prescale": ("none", "max_abs")}
 # Each partner, selected by its kernel: recipe SHA256, backend, the GPUs its kernels are qualified on at each width,
 # the training settings a run adds, the model settings a run may choose (each with its allowed values, the partner's
 # first), and the seed-42 initial parameters (count, SHA256) at each width the partner takes, computed on CPU with
@@ -63,8 +61,7 @@ PARTNERS = {
     "softplus_sos": {
         "run_id": "r841f35a24241",
         "config_sha256": "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
-        "backend": "mosaic", "gpu_types": every_width(("H100", "B200")), "train": {},
-        "model_options": HEAD_RMS_PRESCALE,
+        "backend": "mosaic", "gpu_types": every_width(("H100", "B200")), "train": {}, "model_options": {},
         "initialization": {
             4: (177_569_806, "98062beda15b818e558372eebfd952763cef53134d9691a5b0193826ad2ef3a0"),
             8: (179_075_206, "c7ac75ba66434f7b21762fd61b0f3bd791e5880844b2a8c0eb13e9707914f53e"),
@@ -96,7 +93,7 @@ PARTNERS = {
     "taylor": {
         "run_id": "ra7ee8a4b2544",
         "config_sha256": "ad685b374e7caa940ebed20c5a696747e142b3ec252a6811cda322898c484a02",
-        "backend": "mosaic", "gpu_types": MOSAIC_QUERY_GPUS, "train": {}, "model_options": HEAD_RMS_PRESCALE,
+        "backend": "mosaic", "gpu_types": MOSAIC_QUERY_GPUS, "train": {}, "model_options": {},
         "initialization": {
             4: (175_872_586, "43c380f796e3c44a63a20ca96c1afd41db919f071e81fb942d811b9773b7becf"),
             8: (177_377_986, "3ae84675c937f136528edf83920beb189c6e80d7c8e4e239a0888b9717af0e92"),
@@ -106,7 +103,7 @@ PARTNERS = {
     "static": {
         "run_id": "r9c69dd7cfc8d",
         "config_sha256": "f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f",
-        "backend": "mosaic", "gpu_types": MOSAIC_QUERY_GPUS, "train": {}, "model_options": HEAD_RMS_PRESCALE,
+        "backend": "mosaic", "gpu_types": MOSAIC_QUERY_GPUS, "train": {}, "model_options": {},
         "initialization": {
             4: (175_874_476, "7fe351aabe14b5cdd64dbc1ef98c38338ce8a566bb90c2119e78a3d772042f81"),
             8: (177_379_876, "d67d7873c0087e7482966873845bda863041979ff6808e61fd035b7884b6a634"),
@@ -118,8 +115,7 @@ PARTNERS = {
     "query": {
         "run_id": "r16b23893884d",
         "config_sha256": "86c7df0a9f03354e46671838bb3f6432f49592ce1df1253c9ea1569caa0dfed7",
-        "backend": "mosaic", "gpu_types": {4: MOSAIC_QUERY_GPUS[4]}, "train": {},
-        "model_options": HEAD_RMS_PRESCALE,
+        "backend": "mosaic", "gpu_types": {4: MOSAIC_QUERY_GPUS[4]}, "train": {}, "model_options": {},
         "initialization": {
             4: (177_569_806, "98062beda15b818e558372eebfd952763cef53134d9691a5b0193826ad2ef3a0"),
         },
@@ -205,7 +201,7 @@ def check_recipe(config):
     if width not in partner_widths(key):
         raise ValueError(f"Key-width partner {partner['run_id']} takes model.qk_head_dim in {partner_widths(key)}, "
                          f"not {width}")
-    actual, expected = config_to_dict(config), config_to_dict(partner_config(key))
+    actual, expected = comparison_recipe(config), comparison_recipe(partner_config(key))
     expected["model"]["qk_head_dim"] = width
     expected["train"].update(partner["train"])
     for name, allowed in partner["model_options"].items():

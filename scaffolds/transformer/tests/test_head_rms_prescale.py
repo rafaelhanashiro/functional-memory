@@ -3,16 +3,18 @@
 ``o / sqrt(mean(o^2) + eps) g`` is evaluated as ``(o / c) / sqrt(mean((o / c)^2) + eps / c^2) g`` with ``c > 0``
 taken per token and head from the row and held constant (attention/output_scaling.py): the same function of ``o``,
 so its values and gradients are the plain evaluation's in real arithmetic. These checks hold the production
-arithmetic to the plain function in FP64 (values and VJPs at every output scale, the eps term included, both
+arithmetic to the plain function in FP64 (values and VJPs at output RMS 1e-25 to 1e30, the eps term included, both
 branches of a row-shifted exponential's); hold its FP32 gradient to FP64 at every scale of the measured probe
 (validation/README.md), where the plain evaluation loses the term that removes the gradient's component along the
-row from an output RMS of 9e14 to 1e18, kept here as the regression case of that defect; check that "none" is the
-historical arithmetic bit for bit, the composition with the exponential's row-maximum shift on the scan and the
-strips, nonfinite rows, refusals, the recipe default, provenance, telemetry and exact training resumption; and
-compare two-layer models of the four polynomial families and of the shifted exponential with the same models in
-FP64 when every head output is forced above 1e15. The GPU cases repeat the probe on the device's own arithmetic and
-run the Mosaic kernels (fixed Taylor, static, query, and softplus sum of squares with its input power) through the
-prescaled normalization, at the kernel and through two-layer models at Q/K widths 4 and 64.
+row from an output RMS of 9e14 to 1e18, kept here as the regression case of that defect, and wherever FP32 holds
+the gradient itself, whose elements are of size cotangent / RMS; check that "none" is the historical arithmetic bit
+for bit, the composition with the exponential's row-maximum shift on the scan and the strips, nonfinite rows,
+refusals, the recipe default, provenance, telemetry and exact training resumption; and compare two-layer models of
+the four polynomial families and of the shifted exponential (with RoPE, and with a constant decay in its place)
+with the same models in FP64 when every head output is forced above 1e15, and a PaTH model, whose attention calls
+the normalization at its own site, with its unscaled self. The GPU cases repeat the probe on the device's own
+arithmetic and run the Mosaic kernels (fixed Taylor, static, query, and softplus sum of squares with its input
+power) through the prescaled normalization, at the kernel and through two-layer models at Q/K widths 4 and 64.
 """
 from dataclasses import replace
 from functools import partial
@@ -326,6 +328,31 @@ def test_the_prescale_covers_rows_whose_fp32_mean_square_overflows(dtype):
             assert _relative(pullback(direction)[0].astype(jnp.float32), expected[1][0]) <= 2 * rtol
 
 
+def test_fp32_gradient_is_exact_wherever_fp32_holds_the_gradient():
+    """The gradient's elements are of size cotangent / RMS, so FP32's range for that quotient bounds its exactness,
+    and nothing else does. The probe with cotangents of 1e-12 to 1e4: wherever the quotient is 1e-33 or more, the
+    prescaled VJP in the rows matches FP64 to FP32 rounding, up to rows of RMS 1e37; the output and the gain's
+    gradient, which are of the output's and the cotangent's own size, match at every case. At a quotient of 1e-42,
+    below FP32's normal range (1.2e-38), no FP32 evaluation holds the gradient, with the prescale or without it:
+    XLA's CPU code flushes such numbers to zero, and a GPU keeps a few bits of them."""
+    direction, cotangent, gain = _probe()
+    gain = jnp.asarray(gain, jnp.float32)
+    prescaled, plain = _evaluation("max_abs"), _evaluation("none")
+    for scale, rms, held in ((1e4, 1e37, True), (1.0, 1e33, True), (1e-4, 1e29, True), (1e-8, 1e25, True),
+                             (1e-12, 1e21, True), (1e-8, 1e34, False)):
+        y = jnp.asarray(direction * rms, jnp.float32)
+        scaled = jnp.asarray(cotangent * (scale / 1e-4), jnp.float32)  # the probe's cotangent has scale 1e-4
+        expected = _reference(y, gain, scaled)
+        output, dy, dgain = prescaled(y, gain, scaled)
+        assert _relative(output, expected[0]) <= 1e-6, (scale, rms)
+        assert _relative(dgain, expected[1][1]) <= 1e-6, (scale, rms)
+        if held:
+            assert _relative(dy, expected[1][0]) <= 1e-6, (scale, rms, _relative(dy, expected[1][0]))
+        else:
+            for gradient in (dy, plain(y, gain, scaled)[1]):
+                assert _relative(gradient, expected[1][0]) >= 1e-5, (scale, rms)
+
+
 @pytest.mark.parametrize("prescale", HEAD_RMS_PRESCALES)
 def test_nonfinite_rows_are_nan_and_leave_the_other_rows_alone(prescale):
     """A row with an infinite or NaN entry is NaN in every channel, with or without the prescale and a row shift
@@ -453,7 +480,9 @@ def test_shifted_scan_and_strips_with_the_prescale_match_fp64(implementation, sc
 
 
 # The four polynomial recipes of the key-width runs (fixed Taylor, static, query, and the softplus sum of squares
-# with its input power, z h_t(z)), the shifted exponential, and two recipes on the normalization's other paths.
+# with its input power, z h_t(z)), the shifted exponential with RoPE and with a fixed constant decay in its place
+# (an ALiBi-style gate, whose decayed rows reach the normalization through the same shift), and two recipes on the
+# normalization's other paths.
 FAMILIES = {
     "taylor": dict(attention_degree=8),
     "static": dict(attention_degree=8, attention_coefficients="learned", attention_coefficient_sharing="per_head",
@@ -471,6 +500,8 @@ FAMILIES = {
                          attention_coefficient_parameterization="sum_of_squares",
                          attention_coefficient_input_power=1),
     "shifted_exp": dict(attention_exp_shift="row_max"),
+    "decayed_shifted_exp": dict(attention_exp_shift="row_max", positional_encoding="none", attention_forget_gate=True,
+                                attention_forget_gate_form="constant", attention_forget_gate_constant_rate="fixed"),
     "softmax": dict(attention_normalization=True),
     "path_exp": dict(positional_encoding="path", attention_blocked_implementation="scan"),
 }
@@ -578,9 +609,10 @@ def _tokens(config, *, batch=2, seed=5):
 
 @pytest.mark.parametrize("family", list(FAMILIES))
 def test_model_with_the_prescale_is_the_model_without_it_at_ordinary_scales(family):
-    """Two-layer models of every family (the polynomial kernels, the shifted exponential, softmax with head RMSNorm,
-    and PaTH, which has its own call of the normalization): at initialization, where head outputs are of ordinary
-    size, loss and every gradient with the prescale are those without it to FP32 rounding."""
+    """Two-layer models of every family (the polynomial kernels, the shifted exponential with RoPE and with a
+    constant decay, softmax with head RMSNorm, and PaTH, which has its own call of the normalization): at
+    initialization, where head outputs are of ordinary size, loss and every gradient with the prescale are those
+    without it to FP32 rounding."""
     tokens = _tokens(_model_config(family, "none"))
     results = {}
     for prescale in HEAD_RMS_PRESCALES:
@@ -593,7 +625,7 @@ def test_model_with_the_prescale_is_the_model_without_it_at_ordinary_scales(fami
 
 
 @pytest.mark.parametrize("dtype", (jnp.float32, jnp.bfloat16), ids=("fp32", "bf16"))
-@pytest.mark.parametrize("family", (*POLYNOMIAL_FAMILIES, "shifted_exp"))
+@pytest.mark.parametrize("family", (*POLYNOMIAL_FAMILIES, "shifted_exp", "decayed_shifted_exp"))
 def test_model_gradients_match_fp64_with_every_head_output_above_1e15(family, dtype, monkeypatch):
     """A two-layer model at Q/K width 4 whose value projections are scaled by 1e16, so that every head output lies
     in the band where the plain backward fails. With the prescale every gradient matches the FP64 model's: to 1e-5
@@ -621,14 +653,16 @@ def test_model_gradients_match_fp64_with_every_head_output_above_1e15(family, dt
     assert max(errors["none", 1.0].values()) <= (1e-5 if dtype == jnp.float32 else 0.06), errors
 
 
-@pytest.mark.parametrize("family", ("taylor", "softplus_sos"))
+@pytest.mark.parametrize("family", ("taylor", "softplus_sos", "path_exp"))
 def test_scaling_the_values_leaves_the_prescaled_model_unchanged(family):
     """Head RMSNorm removes any positive scale of a head's values, up to eps. With the prescale, a model whose
     value projections are scaled by 1e16 has the unscaled model's loss and gradients, the value projections' own
     divided by 1e16, to the size of eps next to the unscaled rows' mean squares (5e-4 of the coefficient gradient
     for the softplus sum of squares, whose smallest initial outputs are near 0.1); without it the scaled model's
-    Q/K gradient is not the unscaled one's."""
+    Q/K gradient is not the unscaled one's. PaTH attention has its own call of the normalization
+    (MultiHeadAttention._path_attention), which this case alone holds to the prescale at a forced scale."""
     config = _model_config(family, "max_abs")
+    assert (config.positional_encoding == "path") == (family == "path_exp")
     tokens = _tokens(config)
     graphdef, params = _build(config)
     evaluate = jax.jit(jax.value_and_grad(_loss(graphdef, tokens)))
@@ -726,6 +760,17 @@ def test_fresh_recipes_without_head_rms_norm_keep_none(settings):
     assert not fresh_recipe_uses_head_rms_prescale(ModelConfig(**settings))
 
 
+def test_the_fresh_recipe_rule_reads_a_recipes_model_mapping():
+    """Launchers that allocate a copied recipe for training hold it as a mapping, which may predate any field: the
+    rule is the loaded recipe's."""
+    assert fresh_recipe_uses_head_rms_prescale({"attention_output_scaling": "head_rms_norm"})
+    assert fresh_recipe_uses_head_rms_prescale({"attention_output_scaling": "head_rms_norm", "attention_degree": 8,
+                                                "attention_head_rms_prescale": "none", "retired_field": 1})
+    for model in ({}, {"attention_output_scaling": "none"}, {"attention_output_scaling": "inverse_position"},
+                  {"attention_normalization": False, "attention_degree": 4}):
+        assert not fresh_recipe_uses_head_rms_prescale(model)
+
+
 def test_recipes_without_the_field_are_not_prescaled():
     assert ModelConfig().attention_head_rms_prescale == "none"
     config = Config(model=ModelConfig(attention_backend="blocked", attention_normalization=False,
@@ -760,15 +805,18 @@ def _training_config(path, **settings):
 
 def test_identity_acceptance_and_continuations_name_the_prescale(tmp_path):
     from scaffolds.transformer.acceptance import (
-        HEAD_RMS_GPU_TESTS, attention_test_paths, matches_softmax_backbone_initialization,
-        matches_softmax_initialization,
+        EVALUATION_SETTINGS, HEAD_RMS_GPU_TESTS, attention_test_paths, comparison_recipe,
+        matches_softmax_backbone_initialization, matches_softmax_initialization,
     )
     from scaffolds.transformer.training.diagnostics import attention_identity
 
     config = _training_config(tmp_path, attention_degree=4)
     identity = attention_identity(config)
     assert identity["attention_head_rms_prescale"] == "max_abs"
-    assert identity["attention_formula"].endswith("an FP32 gradient that is exact at any output scale")
+    assert identity["attention_formula"].endswith(
+        "an FP32 gradient that is exact to rounding wherever FP32 holds the gradient itself (its elements are of "
+        "size cotangent / output RMS, and FP32's normal range ends at 1.2e-38)")
+    assert "any output scale" not in identity["attention_formula"]
     assert "divided by its largest magnitude" in identity["attention_formula"]
     shifted = attention_identity(_training_config(tmp_path, attention_exp_shift="row_max"))
     assert shifted["attention_exp_shift"] == "row_max" and shifted["attention_head_rms_prescale"] == "max_abs"
@@ -782,7 +830,14 @@ def test_identity_acceptance_and_continuations_name_the_prescale(tmp_path):
         assert TEST_PATH in attention_test_paths(recipe, resolved, True)
         selected = attention_test_paths(recipe, resolved, False)
         assert all(case in selected for case in device_cases) and TEST_PATH not in selected
+    # A study adapter compares a run with its pinned partner without the prescale, which the recipe itself keeps:
+    # a prescaled run of a partner trained with the plain arithmetic differs from it in nothing the adapter pins.
+    assert EVALUATION_SETTINGS == {"attention_head_rms_prescale": "none"}
+    compared = comparison_recipe(config)
+    assert recipe["model"]["attention_head_rms_prescale"] == "max_abs"
+    assert compared == {**recipe, "model": {**recipe["model"], "attention_head_rms_prescale": "none"}}
     config.model.attention_head_rms_prescale = "none"
+    assert comparison_recipe(config) == compared == config_to_dict(config)
     plain = attention_identity(config)
     assert "attention_head_rms_prescale" not in plain
     assert plain["attention_formula"] == identity["attention_formula"].split("; head RMSNorm evaluated")[0]

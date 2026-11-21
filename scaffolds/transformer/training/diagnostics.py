@@ -791,7 +791,8 @@ def attention_identity(config) -> dict:
                 "; head RMSNorm evaluated on each token and head's output divided by its largest magnitude, a "
                 "constant to differentiation, with its epsilon divided by that magnitude's square (an output too "
                 "small for that keeps its plain evaluation): the same function, with an FP32 gradient that is "
-                "exact at any output scale"))
+                "exact to rounding wherever FP32 holds the gradient itself (its elements are of size cotangent / "
+                "output RMS, and FP32's normal range ends at 1.2e-38)"))
     return identity
 
 

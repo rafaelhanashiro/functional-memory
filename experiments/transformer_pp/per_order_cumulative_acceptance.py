@@ -8,8 +8,8 @@ import sys
 
 import yaml
 
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import ModelConfig, validate_config
 from scaffolds.transformer.configs.loader import _update_dataclass
 
@@ -96,7 +96,7 @@ def check_recipe(config: Config) -> None:
         raise ValueError("Per-order cumulative gates train on the blocked backend's causal strips")
     control = control_config(model.attention_degree)
     run = CONTROLS[model.attention_degree][0]
-    actual, expected = config_to_dict(config), config_to_dict(control)
+    actual, expected = comparison_recipe(config), comparison_recipe(control)
     actual["model"]["attention_forget_gate_per_order"] = False
     # The causal strips compute the scan's arithmetic, on which the controls trained. The Mosaic per-order
     # cumulative kernels compute the same weights, rounded once to BF16 for the tensor cores, and never run the

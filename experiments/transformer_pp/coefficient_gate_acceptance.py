@@ -5,9 +5,9 @@ import hashlib
 from pathlib import Path
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, main as run_acceptance, matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 CONTROL = Path(__file__).resolve().parent / "runs/r25fffc16c2f3/config.yaml"
@@ -34,7 +34,7 @@ def check_recipe(config: Config) -> None:
     validate_config(config)
     if config.model.attention_coefficient_gate != "sigmoid" or config.model.attention_degree not in DEGREES:
         raise ValueError("Coefficient-gate runs use the sigmoid gate at degree 8 or 10")
-    actual, expected = config_to_dict(config), config_to_dict(control_config())
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config())
     actual["model"]["attention_coefficient_gate"] = expected["model"]["attention_coefficient_gate"]
     actual["model"]["attention_degree"] = expected["model"]["attention_degree"]
     for key, digest in MANIFEST_SHA256.items():

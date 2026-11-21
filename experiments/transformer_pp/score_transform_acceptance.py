@@ -27,9 +27,9 @@ from pathlib import Path
 import sys
 
 from scaffolds.transformer.acceptance import (
-    attention_spec, main as run_acceptance, matches_softmax_backbone_initialization,
+    attention_spec, comparison_recipe, main as run_acceptance, matches_softmax_backbone_initialization,
 )
-from scaffolds.transformer.configs import Config, config_to_dict, load_config
+from scaffolds.transformer.configs import Config, load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
@@ -129,7 +129,7 @@ def check_recipe(config: Config) -> None:
     policy = {key: getattr(config.train, key) for key in CAPTURE_POLICY}
     if policy != CAPTURE_POLICY:
         raise ValueError(f"Gradient-event capture must be on with the default policy {CAPTURE_POLICY}, not {policy}")
-    actual, expected = config_to_dict(config), config_to_dict(control_config(name))
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config(name))
     actual["model"].update({key: expected["model"][key] for key in (*TRANSFORM_KEYS, *required)})
     for recipe in (actual, expected):
         for key in (*EXECUTION_KEYS, *CAPTURE_POLICY):

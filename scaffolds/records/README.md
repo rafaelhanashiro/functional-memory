@@ -98,6 +98,9 @@ whole sweep before any jobs can run or requeue.
   it stays empty when the recipe does not restrict the powers.
   `coefficient_zero_constant` records structural removal of direct constants or
   both SoS factor constants; it stays unknown for recipes that predate the field.
+  `attention_head_rms_prescale` and `attention_exp_shift` state how head RMSNorm output
+  scaling, and the unnormalized exponential under it, are evaluated: `none` for a recipe that
+  predates the field, and empty where the setting does not apply.
   Missing historical settings remain empty; current defaults are not
   retroactively assigned to old results.
 

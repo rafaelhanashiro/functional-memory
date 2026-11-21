@@ -7,8 +7,7 @@ from experiments.transformer_pp.query_distance_decay_acceptance import (
     INITIALIZATION_SHA256 as CONTROL_INITIALIZATION_SHA256,
     control_config,
 )
-from scaffolds.transformer.acceptance import attention_spec, main as run_acceptance
-from scaffolds.transformer.configs import config_to_dict
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
 from scaffolds.transformer.configs.base import validate_config
 
 
@@ -26,7 +25,7 @@ QUERY_PARAMETERS = {"query_polynomial_bias", "query_polynomial_amplitude", "quer
 
 def check_recipe(config) -> None:
     validate_config(config)
-    actual, expected = config_to_dict(config), config_to_dict(control_config())
+    actual, expected = comparison_recipe(config), comparison_recipe(control_config())
     expected["model"].update(STATIC_SETTINGS)
     # Only storage locations and monitoring labels are execution choices.
     for recipe in (actual, expected):

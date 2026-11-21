@@ -111,6 +111,9 @@ def test_recipes_differ_only_in_the_compared_settings():
     executed = copy.deepcopy(configs)
     executed["r81fad1755b11"]["model"]["attention_blocked_implementation"] = "strips"
     check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
+    # So is head RMSNorm's max-abs prescale, the same function: a run that takes it compares with those before it.
+    executed["r81fad1755b11"]["model"]["attention_head_rms_prescale"] = "max_abs"
+    check_recipes(SELECTION["runs"], executed, SELECTION["settings"])
     # (run, section, key, value, expected message): settings outside the comparison.
     mutations = [
         ("r81fad1755b11", "model", "attention_forget_gate", True, "attention_forget_gate"),

@@ -30,7 +30,8 @@ INDEX_COLUMNS = (
     "attention_mechanism", "attention_family", "attention_kernel", "qk_head_dim", "value_head_dim",
     "num_layers", "hidden_size", "num_heads", "intermediate_size", "parameter_count",
     "gdn_erase_mode", "gdn_write_activation",
-    "attention_degree", "attention_normalization", "attention_output_scaling", "qk_norm",
+    "attention_degree", "attention_normalization", "attention_output_scaling", "attention_exp_shift",
+    "attention_head_rms_prescale", "qk_norm",
     "qk_norm_type", "qk_norm_sharing", "qk_norm_head_scale", "qk_norm_token_scale", "initialization",
     "coefficient_mode", "coefficient_conditioning", "coefficient_activation", "coefficient_input_normalization",
     "coefficient_input_source",
@@ -588,6 +589,9 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         kernel = "learned_polynomial_unnormalized"
         sharing = "per_layer_per_head_per_sequence_per_position"
 
+    family = "learned_polynomial" if free_coefficients else _attention_family(model, record, kernel)
+    head_rms_norm = model.get("attention_output_scaling") == "head_rms_norm"
+
     def relative_output_rms(rows):
         if not isinstance(rows, list) or not rows:
             return None
@@ -603,7 +607,7 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "model_id": _first(model_id, record.get("model_id"), metadata.get("model_id")),
         "condition": _first(condition_name, record.get("condition"), metadata.get("condition")),
         "attention_mechanism": _first(model.get("attention_mechanism"), metadata.get("attention_mechanism")),
-        "attention_family": "learned_polynomial" if free_coefficients else _attention_family(model, record, kernel),
+        "attention_family": family,
         "attention_kernel": kernel,
         "gdn_erase_mode": _first(model.get("gdn_erase_mode"), get("gdn_erase_mode"))
             if model.get("attention_mechanism") == "gated_deltanet" else None,
@@ -617,6 +621,12 @@ def _index_row(study: Path, record: Mapping[str, Any]) -> dict[str, Any]:
         "attention_degree": _first(model.get("attention_degree"), record.get("attention_degree"), metadata.get("attention_degree")),
         "attention_normalization": _first(model.get("attention_normalization"), record.get("attention_normalization"), metadata.get("attention_normalization")),
         "attention_output_scaling": model.get("attention_output_scaling"),
+        # How head RMSNorm output scaling is evaluated: its max-abs prescale and, for the unnormalized exponential
+        # under it, the row-maximum shift. Each postdates every recipe that lacks its field, which therefore
+        # evaluated without it; recipes without head RMSNorm, or of another kernel, leave the column empty.
+        "attention_exp_shift": model.get("attention_exp_shift", "none")
+            if head_rms_norm and family == "exponential" else None,
+        "attention_head_rms_prescale": model.get("attention_head_rms_prescale", "none") if head_rms_norm else None,
         "qk_norm": _first(model.get("qk_norm"), record.get("qk_norm"), metadata.get("qk_norm")),
         "qk_norm_type": model.get("qk_norm_type"),
         "qk_norm_sharing": model.get("qk_norm_sharing"),
@@ -804,8 +814,9 @@ def regenerate_index(study: str | Path) -> Path:
     behavior that predates the option: the coefficient-input normalization/source,
     the forget-gate mode, form, constant
     rate, conditioning, rate activation, and per-order gates of gated recipes,
-    and ``attention_score_bias`` (``none``) and ``attention_score_transform`` (``identity``) of every
-    model recipe.
+    ``attention_score_bias`` (``none``) and ``attention_score_transform`` (``identity``) of every
+    model recipe, and the evaluation of head RMSNorm output scaling (``attention_head_rms_prescale``:
+    ``none``) and of the unnormalized exponential under it (``attention_exp_shift``: ``none``).
     """
     study = _study_path(study)
     with _locked(study):
