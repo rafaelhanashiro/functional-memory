@@ -11,6 +11,22 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Degree-eight query polynomial at key width four on B300
+
+On 2026-11-21 (Atlantic time), Kennel job `9516` on an akita B300 checked the
+Mosaic query kernel that the even-degree gates use. The kernel at source
+`ea2c1b5df0ba0b36749e7b0c23ff2d3b50cdee89` passed both BF16 and BF16x3
+weight-precision tests against an independent FP64 calculation and against the
+fused kernel. The checks cover outputs and gradients with respect to Q, K, V and
+the polynomial coefficients. Run the following from the repository root in a
+B300 allocation with the CUDA 13 environment to repeat them.
+
+```sh
+python -m pytest --import-mode=importlib -m gpu -q \
+  'scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-4-bf16]' \
+  'scaffolds/transformer/tests/test_mosaic_query.py::test_outputs_and_vjp_match_fp64_and_triton[8-4-bf16x3]'
+```
+
 ### Row-maximum-shifted exponential (2026-11-20)
 
 `model.attention_exp_shift: row_max` ([README](../README.md#unnormalized-output-scaling)) evaluates the

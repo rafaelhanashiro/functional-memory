@@ -45,6 +45,9 @@ def is_signed_kernel(model) -> bool:
     Unnormalized static and query SoS expand factors before evaluation. Cancellation near a root
     can round negative; this does not waive the checks for nonfinite losses or gradients.
     """
+    if (getattr(model, "attention_coefficient_sigmoid_bias_initial", "none") != "none"
+            and model.attention_coefficient_orders and all(r % 2 == 0 for r in model.attention_coefficient_orders)):
+        return False
     return (is_odd_taylor(model) or has_fixed_polynomial(model) or model.quadratic_mode == "unrestricted"
             or (has_learned_polynomial(model)
                 and (not has_sum_of_squares_kernel(model) or not model.attention_normalization))

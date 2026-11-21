@@ -181,6 +181,7 @@ class ModelConfig:
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
     attention_coefficient_tanh_bias: bool = False
+    attention_coefficient_sigmoid_bias_initial: Literal["none", "zero", "logit_taylor"] = "none"
     # "sigmoid" gates every order independently per layer/head: c~_r(x_t) = 2 g_r(x_t) c_r(x_t),
     # g_r(x_t) = sigmoid(U_r^T x_t + beta_r), with U and this gate bias beta starting at zero
     # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
@@ -314,7 +315,7 @@ class ModelConfig:
     qk_norm: bool | None = None
     # rms_norm uses separate Q/K channel gains per layer, shared across heads,
     # applied before RoPE. Set sharing=per_layer and leave initial_scale=null.
-    qk_norm_type: Literal["cosine_log_scale", "rms_norm"] = "cosine_log_scale"
+    qk_norm_type: Literal["cosine_log_scale", "rms_norm", "rms_norm_cosine"] = "cosine_log_scale"
     qk_norm_sharing: Literal["global", "per_head", "per_layer"] = "per_head"
     qk_norm_initial_scale: float | None = None
     qk_norm_eps: float = 1e-6
@@ -583,6 +584,15 @@ class ModelConfig:
         activation = self.attention_coefficient_activation
         if activation not in ("identity", *AFFINE_ACTIVATIONS, *PURE_ACTIVATIONS):
             raise ValueError(f"Unknown attention coefficient activation: {activation}")
+        sigmoid_bias = self.attention_coefficient_sigmoid_bias_initial
+        if sigmoid_bias not in ("none", "zero", "logit_taylor"):
+            raise ValueError(f"Unknown sigmoid coefficient bias initialization: {sigmoid_bias}")
+        biased_sigmoid = sigmoid_bias != "none"
+        if biased_sigmoid and (activation != "sigmoid" or self.attention_coefficient_conditioning != "query"
+                              or self.attention_coefficient_readout != "diagonal"
+                              or self.attention_coefficient_amplitude_scale != "none"
+                              or self.attention_coefficient_scale != "none"):
+            raise ValueError("Sigmoid logit biases require unscaled diagonal sigmoid query coefficients")
         if self.attention_coefficient_input_normalization not in ("none", "l2"):
             raise ValueError("Unknown attention coefficient input normalization: "
                              f"{self.attention_coefficient_input_normalization}")
@@ -599,10 +609,11 @@ class ModelConfig:
         if self.attention_coefficient_input_normalization == "l2" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_sharing != "per_head"
-                or self.attention_coefficient_conditioning != "query" or activation != "tanh"
+                or self.attention_coefficient_conditioning != "query" or (activation != "tanh" and not biased_sigmoid)
                 or self.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
                 or self.attention_coefficient_readout != "diagonal"
-                or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
+                or (self.attention_coefficient_orders is not None and not biased_sigmoid)
+                or self.attention_coefficient_tanh_bias
                 or self.attention_coefficient_gate != "none" or self.attention_forget_gate
                 or self.attention_kernel_basis != "polynomial" or self.attention_score_bias != "none"
                 or not l2_score_supported or self.attention_normalization
@@ -854,7 +865,7 @@ class ModelConfig:
                     or self.attention_coefficient_parameterization != "direct"
                     or (self.attention_coefficient_conditioning != "static" and not (
                         self.attention_coefficient_conditioning == "query"
-                        and self.attention_coefficient_activation == "tanh"
+                        and (self.attention_coefficient_activation == "tanh" or biased_sigmoid)
                         and self.attention_coefficient_readout == "diagonal"))):
                 raise ValueError("Selected coefficient orders require learned direct static or diagonal tanh-query coefficients")
             if (not isinstance(orders, (tuple, list)) or not orders
@@ -863,6 +874,9 @@ class ModelConfig:
                 raise ValueError("attention_coefficient_orders must be strictly increasing integers from 0 to "
                                  "attention_degree, including attention_degree")
             self.attention_coefficient_orders = tuple(orders)
+        if sigmoid_bias == "logit_taylor" and (
+                not self.attention_coefficient_orders or self.attention_coefficient_orders[0] < 2):
+            raise ValueError("Finite Taylor logits require explicit coefficient orders >= 2")
         if self.attention_coefficient_parameterization not in ("direct", "sum_of_squares", "rational"):
             raise ValueError(f"Unknown coefficient parameterization: {self.attention_coefficient_parameterization}")
         power = self.attention_coefficient_input_power
@@ -984,12 +998,16 @@ class ModelConfig:
             raise ValueError("model.qk_norm_token_scale_kernel_weight_decay must be a boolean")
         if self.qk_norm_token_scale_kernel_weight_decay and self.qk_norm_token_scale == "none":
             raise ValueError("Token-scale projection weight decay requires an enabled per-token query scale")
-        if self.qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+        if self.qk_norm_type not in ("cosine_log_scale", "rms_norm", "rms_norm_cosine"):
             raise ValueError(f"Unknown QK-norm type: {self.qk_norm_type}")
-        allowed_sharing = ("per_layer",) if self.qk_norm_type == "rms_norm" else ("global", "per_head")
+        if self.qk_norm_type == "rms_norm_cosine" and (
+                not self.qk_norm or self.positional_encoding == "path"):
+            raise ValueError("Unit cosine after QK RMSNorm requires enabled QK normalization and RoPE or NoPE")
+        uses_rms_gains = self.qk_norm_type in ("rms_norm", "rms_norm_cosine")
+        allowed_sharing = ("per_layer",) if uses_rms_gains else ("global", "per_head")
         if self.qk_norm_sharing not in allowed_sharing:
             raise ValueError(f"Unknown QK-norm sharing: {self.qk_norm_sharing}")
-        if self.qk_norm_type == "rms_norm" and self.qk_norm_initial_scale is not None:
+        if uses_rms_gains and self.qk_norm_initial_scale is not None:
             raise ValueError("QK RMSNorm initializes channel gains at one; qk_norm_initial_scale must be null")
         for name in ("qk_norm_initial_scale", "qk_norm_eps"):
             value = getattr(self, name)

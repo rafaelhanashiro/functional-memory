@@ -285,6 +285,9 @@ def attention_identity(config) -> dict:
             from scaffolds.transformer.attention.rational_polynomial import denominator_constant, denominator_degree
 
             per_polynomial = degree + 1 + denominator_degree(config.model) + (denominator_constant(config.model) == "learned")
+        elif config.model.attention_coefficient_sigmoid_bias_initial != "none":
+            orders = config.model.attention_coefficient_orders
+            per_polynomial = (len(orders) if orders else degree + 1) * (config.model.hidden_size + 1)
         elif config.model.attention_coefficient_orders is not None:
             per_polynomial = len(config.model.attention_coefficient_orders) * (
                 config.model.hidden_size + 2 + int(config.model.attention_coefficient_tanh_bias)
@@ -358,6 +361,11 @@ def attention_identity(config) -> dict:
                 tanh_formula = tanh_formula.replace("= sum_j", f"= {readout_scale:.9g} * sum_j")
             tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
                 ", V initially the identity" if dense else "")
+            bias_initial = config.model.attention_coefficient_sigmoid_bias_initial
+            if bias_initial != "none":
+                tanh_formula = "c_r(x_t) = sigmoid(x_t W_r + b_r)"
+                tanh_start += ", b_r initially " + ("0" if bias_initial == "zero" else "logit(1/r!)")
+                identity["attention_coefficient_sigmoid_bias_initial"] = bias_initial
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -1080,10 +1088,10 @@ def qk_norm_identity(model) -> dict:
     """Normalization and parameter ownership recorded beside the mechanism identity."""
     from scaffolds.transformer.attention.qk_norm import initial_scale
 
-    if model.qk_norm_type == "rms_norm":
+    if model.qk_norm_type in ("rms_norm", "rms_norm_cosine"):
         identity = {
             "qk_norm": True,
-            "qk_norm_type": "rms_norm",
+            "qk_norm_type": model.qk_norm_type,
             "qk_norm_sharing": "per_layer",
             "qk_norm_eps": model.qk_norm_eps,
             "qk_norm_parameter_count": 2 * model.num_layers * model.qk_head_dim,
@@ -1098,6 +1106,16 @@ def qk_norm_identity(model) -> dict:
                 + "independent Q/K channel gains per layer, shared across heads"),
             **({"positional_encoding": "none"} if model.positional_encoding == "none" else {}),
         }
+        if model.qk_norm_type == "rms_norm_cosine":
+            operands = ("RoPE(Q), RoPE(K)" if model.positional_encoding == "rope" else "Q, K")
+            identity.update(
+                qk_norm_head_scale=False,
+                attention_score_scale="unit_cosine",
+                attention_score_formula=(
+                    f"cos({operands}), where Q and K carry per-layer RMSNorm channel gains; "
+                    "each final direction is divided by max(||v||_2, eps), with no learned temperature"
+                ),
+            )
         if model.qk_norm_head_scale:
             identity.update(
                 qk_norm_head_scale=True,
@@ -1411,6 +1429,20 @@ def coefficient_input_report(raw_layers, model) -> dict:
         "before shared pre-attention RMSNorm; no RMSNorm channel gain enters the coefficient generator"
         if source == "pre_rmsnorm" else
         "x_hat = x / max(||x||_2, epsilon); z_j = W_j^T x_hat; x includes the pre-attention RMSNorm channel gains")
+    if model.attention_coefficient_sigmoid_bias_initial != "none":
+        labels = [f"r{r}" for r in (model.attention_coefficient_orders or range(degree + 1))]
+        formula = formula.replace("z_j = W_j^T x_hat", "z_j = W_j^T x_hat + b_j")
+        feature_stats = {
+            "saturation_sigmoid_tail_thresholds": [.01, .99],
+            "saturation_fraction": _float32_serializable(arrays["coefficient_projection_sigmoid_saturation_fraction"]),
+            "mean_sigmoid_derivative": _float32_serializable(arrays["coefficient_projection_sigmoid_derivative_mean"]),
+        }
+    else:
+        feature_stats = {
+            "saturation_absolute_tanh_threshold": .99,
+            "saturation_fraction": _float32_serializable(arrays["coefficient_tanh_saturation_fraction"]),
+            "mean_tanh_derivative": _float32_serializable(arrays["coefficient_tanh_derivative_mean"]),
+        }
     return {
         "source": source,
         "normalization": model.attention_coefficient_input_normalization,
@@ -1428,9 +1460,7 @@ def coefficient_input_report(raw_layers, model) -> dict:
                         for kind, prefix in (("before", "coefficient_input_raw_l2"), ("after", "coefficient_input_l2"))},
         "projection_summary": {stat: _float32_serializable(arrays[f"coefficient_projection_{stat}"])
                                for stat in ("mean", "std", "min", "max")},
-        "saturation_absolute_tanh_threshold": .99,
-        "saturation_fraction": _float32_serializable(arrays["coefficient_tanh_saturation_fraction"]),
-        "mean_tanh_derivative": _float32_serializable(arrays["coefficient_tanh_derivative_mean"]),
+        **feature_stats,
         "finite": finite,
     }
 
@@ -2092,7 +2122,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     head_scale_report = None
     token_scale_report = None
     if config.model.qk_norm:
-        if config.model.qk_norm_type == "rms_norm":
+        if config.model.qk_norm_type in ("rms_norm", "rms_norm_cosine"):
             gain_report = qk_norm_gain_report(params)
             if not gain_report["finite"]:
                 issues.append("Nonfinite QK RMSNorm gains")

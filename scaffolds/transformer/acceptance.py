@@ -437,7 +437,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
         if activation == "tanh" and model.get("attention_coefficient_readout", "diagonal") == "dense":
             paths.append(DENSE_QUERY_READOUT_TESTS)
         if activation == "sigmoid":
-            paths.append(SIGMOID_COEFFICIENT_TESTS)
+            biased = model.get("attention_coefficient_sigmoid_bias_initial", "none") != "none"
+            if cpu or not biased:
+                paths.append(SIGMOID_COEFFICIENT_TESTS)
+            if biased and not cpu and resolved_backend == "mosaic":
+                paths.append("scaffolds/transformer/tests/test_mosaic_gated_even_coefficients.py")
         if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
             paths.append(COEFFICIENT_FORM_TESTS)
         if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
@@ -933,6 +937,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_sigmoid_bias_initial="none",
                                            attention_coefficient_gate="none",
                                            attention_score_bias="none", attention_score_transform="identity",
                                            attention_score_prefactor="none",
@@ -1003,6 +1008,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_input_normalization="none",
         attention_coefficient_input_source="post_rmsnorm",
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_sigmoid_bias_initial="none",
         attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
         attention_score_prefactor="none", attention_coefficient_constant_initial=None,
         attention_coefficient_zero_constant=False,
@@ -1015,7 +1021,8 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_amplitude_scale="none", attention_coefficient_scale="none",
         attention_coefficient_orders=None,
         attention_denominator_degree=None, attention_denominator_parameterization="direct",
-        attention_denominator_constant="fixed", qk_norm=False, qk_norm_head_scale=False,
+        attention_denominator_constant="fixed", qk_norm=False, qk_norm_type="cosine_log_scale",
+        qk_norm_sharing="global", qk_norm_initial_scale=None, qk_norm_head_scale=False,
         qk_norm_token_scale="none", qk_norm_token_scale_kernel_weight_decay=False,
         attention_kernel_basis="polynomial", attention_spline_knots=None,
         attention_spline_initial_intercept=None, attention_spline_initial_slope=None,

@@ -41,7 +41,7 @@ def normalize_coefficient_input(x, normalization="none"):
     return x * jax.lax.rsqrt(jnp.maximum(squared_norm, COEFFICIENT_INPUT_L2_EPS ** 2))
 
 
-def coefficient_input_statistics(raw_x, normalized_x, kernel):
+def coefficient_input_statistics(raw_x, normalized_x, kernel, *, sigmoid_logit_bias=None):
     """Stopped diagnostic summaries of actual input and tanh projection coordinates.
 
     Input norms have scalar summaries; projection and tanh summaries have [H,R]
@@ -57,11 +57,18 @@ def coefficient_input_statistics(raw_x, normalized_x, kernel):
             result[f"{prefix}_{name}"] = reduce(norms)
     z = jnp.einsum("btd,hdr->bthr", normalized_x.astype(jnp.float32), kernel.astype(jnp.float32),
                    precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
-    features = jax.lax.optimization_barrier(jnp.tanh(z))
+    if sigmoid_logit_bias is not None:
+        z = z + sigmoid_logit_bias.astype(jnp.float32)
+        features = jax.nn.sigmoid(z)
+        result["coefficient_projection_sigmoid_saturation_fraction"] = jnp.mean(
+            (features <= .01) | (features >= .99), axis=(0, 1))
+        result["coefficient_projection_sigmoid_derivative_mean"] = jnp.mean(features * (1 - features), axis=(0, 1))
+    else:
+        features = jax.lax.optimization_barrier(jnp.tanh(z))
+        result["coefficient_tanh_saturation_fraction"] = jnp.mean(jnp.abs(features) >= .99, axis=(0, 1))
+        result["coefficient_tanh_derivative_mean"] = jnp.mean(1.0 - features ** 2, axis=(0, 1))
     for name, reduce in (("mean", jnp.mean), ("std", jnp.std), ("min", jnp.min), ("max", jnp.max)):
         result[f"coefficient_projection_{name}"] = reduce(z, axis=(0, 1))
-    result["coefficient_tanh_saturation_fraction"] = jnp.mean(jnp.abs(features) >= .99, axis=(0, 1))
-    result["coefficient_tanh_derivative_mean"] = jnp.mean(1.0 - features ** 2, axis=(0, 1))
     return jax.lax.stop_gradient(result)
 
 
@@ -70,7 +77,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
                     feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none",
                     initialization: str = "taylor", parameterization: str = "direct",
-                    constant_initial: float | None = None):
+                    constant_initial: float | None = None, sigmoid_bias_initial: str = "none"):
     """b starts at 1/r! (the Hermite start's coefficients under "hermite"; 1 under sum_of_squares,
     where b + a tanh is relative to the Taylor square factors), or for diagonal tanh query coefficients
     with ``constant_initial`` b_0 at that value and b_r at 1/r! for r >= 1; W at zero or N(0,
@@ -114,6 +121,16 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
         sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
     )
+    if sigmoid_bias_initial != "none":
+        if (sigmoid_bias_initial not in ("zero", "logit_taylor") or activation != "sigmoid"
+                or conditioning != "query" or tanh_bias or readout != "diagonal" or amplitude_initial != 1.0):
+            raise ValueError("Sigmoid logit biases require pure, diagonal sigmoid query coefficients")
+        # The config excludes orders 0 and 1 for Taylor logits. Their placeholders
+        # disappear when the full vector is sliced to its retained orders.
+        bias_logits = tuple(-math.log(math.factorial(r) - 1) if sigmoid_bias_initial == "logit_taylor" and r >= 2
+                            else 0.0 for r in range(count))
+        return (kernel, AttentionParameterSpec(name="query_polynomial_bias", argument="query_polynomial_bias",
+                                              initial=bias_logits, sharing="per_head", weight_decay=False))
     if activation in PURE_FEATURES:
         if tanh_bias or conditioning != "query":
             raise ValueError(f"Pure {activation} coefficients are query-only, without an inner bias")
@@ -283,7 +300,7 @@ def gdn_gate_log_multipliers(logits, log_rate):
 
 def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activation="identity", tanh_bias=None,
                          amplitude_scale="none", readout_scale=1.0, orders=None, gate_kernel=None, gate_bias=None,
-                         gate_log_rate=None):
+                         gate_log_rate=None, sigmoid_logit_bias=None):
     """FP32 c=b+xW or c=b+a*f(xW+beta), f = tanh or sigmoid; the inner bias beta is optional and
     otherwise absent. Pure coefficients c=f(xW) take bias=None (see _pure_coefficients).
 
@@ -307,6 +324,16 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
                                     or gate_kernel.shape != kernel.shape or gate_bias.shape != bias.shape):
         raise ValueError("Coefficient gates require diagonal tanh coefficients without an inner bias or "
                          "selected orders, with kernel [H,D,R] and bias [H,R] matching the generator's")
+    if sigmoid_logit_bias is not None:
+        if (activation != "sigmoid" or bias is not None or amplitude is not None or mixing is not None
+                or tanh_bias is not None or gate_kernel is not None or amplitude_scale != "none" or readout_scale != 1):
+            raise ValueError("Sigmoid logit biases require an unscaled diagonal sigmoid coefficient")
+        gates = project_coefficient_gates(x, kernel, sigmoid_logit_bias)
+        if orders is None:
+            return gates
+        from scaffolds.transformer.attention.parameters import expand_polynomial_coefficients
+
+        return expand_polynomial_coefficients(gates, orders[-1], orders)
     if orders is not None and (activation != "tanh" or mixing is not None or bias is None
                                 or len(orders) != kernel.shape[-1]):
         raise ValueError("Selected orders require matching compact diagonal tanh features")

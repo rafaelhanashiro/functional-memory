@@ -14,6 +14,7 @@ from scaffolds.transformer.attention.output_scaling import (
 )
 from scaffolds.transformer.attention.qk_norm import (
     TOKEN_SCALE_PARAMETERS, cosine_score_operands, rms_score_operands, scale_rms_queries, token_log_scale,
+    unit_cosine_score_operands,
 )
 from scaffolds.transformer.attention.rational_polynomial import DENOMINATOR_KINDS
 from scaffolds.transformer.attention.spline import (
@@ -63,6 +64,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         attention_static_sos_parameterization=getattr(config, "attention_static_sos_parameterization", "direct"),
         attention_coefficient_activation=config.attention_coefficient_activation,
         attention_coefficient_input_normalization=config.attention_coefficient_input_normalization,
+        attention_coefficient_sigmoid_bias_initial=config.attention_coefficient_sigmoid_bias_initial,
         attention_coefficient_input_source=config.attention_coefficient_input_source,
         attention_coefficient_readout=config.attention_coefficient_readout,
         attention_coefficient_readout_scale=config.attention_coefficient_readout_scale,
@@ -125,6 +127,7 @@ class MultiHeadAttention(nnx.Module):
         attention_static_sos_parameterization: str = "direct",
         attention_coefficient_activation: str = "identity",
         attention_coefficient_input_normalization: str = "none",
+        attention_coefficient_sigmoid_bias_initial: str = "none",
         attention_coefficient_input_source: str = "post_rmsnorm",
         attention_coefficient_readout: str = "diagonal",
         attention_coefficient_readout_scale: float = 1.0,
@@ -203,8 +206,10 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("attention_normalization must be a boolean")
         if not isinstance(qk_norm, bool):
             raise ValueError("qk_norm must be a boolean")
-        if qk_norm_type not in ("cosine_log_scale", "rms_norm"):
+        if qk_norm_type not in ("cosine_log_scale", "rms_norm", "rms_norm_cosine"):
             raise ValueError(f"Unknown QK-norm type: {qk_norm_type}")
+        if qk_norm_type == "rms_norm_cosine" and (not qk_norm or positional_encoding == "path"):
+            raise ValueError("Unit cosine after QK RMSNorm requires enabled QK normalization and RoPE or NoPE")
         if not isinstance(qk_norm_head_scale, bool):
             raise ValueError("qk_norm_head_scale must be a boolean")
         if qk_norm_head_scale and (not qk_norm or qk_norm_type != "rms_norm"):
@@ -266,6 +271,12 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("Unknown attention coefficient activation")
         if attention_coefficient_activation != "identity" and attention_coefficient_conditioning == "static":
             raise ValueError("Tanh and sigmoid coefficients require query conditioning")
+        self.sigmoid_logit_bias = attention_coefficient_sigmoid_bias_initial != "none"
+        if self.sigmoid_logit_bias and (attention_coefficient_sigmoid_bias_initial not in ("zero", "logit_taylor")
+                                       or attention_coefficient_activation != "sigmoid"
+                                       or attention_coefficient_readout != "diagonal"
+                                       or attention_coefficient_amplitude_scale != "none"):
+            raise ValueError("Sigmoid logit biases require unscaled diagonal sigmoid coefficients")
         if attention_coefficient_input_normalization not in ("none", "l2"):
             raise ValueError(f"Unknown coefficient input normalization: {attention_coefficient_input_normalization}")
         if attention_coefficient_input_source not in ("post_rmsnorm", "pre_rmsnorm"):
@@ -278,9 +289,11 @@ class MultiHeadAttention(nnx.Module):
             and attention_coefficient_parameterization == "sum_of_squares"
             and attention_coefficient_input_power == 1))
         if attention_coefficient_input_normalization == "l2" and (
-                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                attention_coefficient_conditioning != "query"
+                or (attention_coefficient_activation != "tanh" and not self.sigmoid_logit_bias)
                 or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
-                or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
+                or attention_coefficient_readout != "diagonal"
+                or (attention_coefficient_orders is not None and not self.sigmoid_logit_bias)
                 or attention_coefficient_gate != "none" or attention_forget_gate
                 or attention_kernel_basis != "polynomial" or attention_score_bias != "none"
                 or not l2_score_supported or attention_normalization
@@ -733,7 +746,7 @@ class MultiHeadAttention(nnx.Module):
         head_log_scale = parameters.pop("qk_norm_head_log_scale", None)
         if (self.qk_norm and self.qk_norm_type == "cosine_log_scale") != (log_scale is not None):
             raise ValueError("QK-norm requires exactly its model-owned qk_norm_log_scale parameter")
-        rms_enabled = self.qk_norm and self.qk_norm_type == "rms_norm"
+        rms_enabled = self.qk_norm and self.qk_norm_type in ("rms_norm", "rms_norm_cosine")
         if rms_enabled != (q_gain is not None) or rms_enabled != (k_gain is not None):
             raise ValueError("QK RMSNorm requires exactly its model-owned qk_norm_q_gain and qk_norm_k_gain parameters")
         if self.qk_norm_head_scale != (head_log_scale is not None):
@@ -810,7 +823,7 @@ class MultiHeadAttention(nnx.Module):
             )
 
             if query_kernel is None or (query_bias is None) != (
-                    self.attention_coefficient_activation in ("sigmoid", "pure_tanh")):
+                    self.attention_coefficient_activation in ("sigmoid", "pure_tanh") and not self.sigmoid_logit_bias):
                 raise ValueError("Query-conditioned attention requires its model-owned kernel and, "
                                  "except for pure sigmoid and tanh coefficients, bias")
             if (self.attention_coefficient_readout == "dense") != (query_mixing is not None):
@@ -826,7 +839,9 @@ class MultiHeadAttention(nnx.Module):
                 coefficient_input = normalize_coefficient_input(
                     coefficient_source, self.attention_coefficient_input_normalization)
                 effective_coefficients = project_coefficients(
-                    coefficient_input, query_kernel, query_bias, amplitude=query_amplitude, mixing=query_mixing,
+                    coefficient_input, query_kernel, None if self.sigmoid_logit_bias else query_bias,
+                    sigmoid_logit_bias=query_bias if self.sigmoid_logit_bias else None,
+                    amplitude=query_amplitude, mixing=query_mixing,
                     activation=self.attention_coefficient_activation, tanh_bias=query_tanh_bias,
                     amplitude_scale=self.attention_coefficient_amplitude_scale,
                     readout_scale=self.attention_coefficient_readout_scale,
@@ -983,7 +998,7 @@ class MultiHeadAttention(nnx.Module):
         k = k.reshape(batch, seq_len, self.num_kv_heads, self.qk_head_dim)
         v = v.reshape(batch, seq_len, self.num_kv_heads, self.value_head_dim)
         if self.qk_norm:
-            if self.qk_norm_type == "rms_norm":
+            if rms_enabled:
                 q, k = rms_score_operands(q, k, q_gain, k_gain, eps=self.qk_norm_eps)
                 if self.qk_norm_head_scale:
                     q = scale_rms_queries(q, head_log_scale, token_log_scales)
@@ -998,6 +1013,8 @@ class MultiHeadAttention(nnx.Module):
             positions = jnp.arange(seq_len)
             q = apply_rope(q, positions, self.rope_theta)
             k = apply_rope(k, positions, self.rope_theta)
+        if self.qk_norm_type == "rms_norm_cosine":
+            q, k = unit_cosine_score_operands(q, k, eps=self.qk_norm_eps)
         # "none": positions enter only through the causal mask (and a forget gate's decay).
         if self.backend != "manual":
             q, k = q.astype(self.dtype), k.astype(self.dtype)
@@ -1063,7 +1080,9 @@ class MultiHeadAttention(nnx.Module):
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
 
-            diagnostics.update(coefficient_input_statistics(coefficient_source, coefficient_input, query_kernel))
+            diagnostics.update(coefficient_input_statistics(
+                coefficient_source, coefficient_input, query_kernel,
+                sigmoid_logit_bias=query_bias if self.sigmoid_logit_bias else None))
         if gate_statistics is not None:
             diagnostics.update(gate_statistics)
         if return_diagnostics and log_alpha is not None:

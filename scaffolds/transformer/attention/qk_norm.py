@@ -6,8 +6,10 @@ keep their ``QK^T / sqrt(d_K)`` arithmetic and fused kernels: the attention modu
 feeds them ``q' = exp(gamma) sqrt(d_K) q / ||q||`` and ``k' = k / ||k||``. RoPE is
 orthogonal, so its scalar normalization commutes with RoPE. ``rms_norm`` instead
 uses independent learned Q/K channel gains, shared across heads in each layer.
-Those gains apply before RoPE and do not in general commute with it. Both modes
-preserve the kernels' ordinary ``QK^T / sqrt(d_K)`` arithmetic.
+Those gains apply before RoPE and do not in general commute with it. In
+``rms_norm_cosine``, the final rotated queries and keys are then unit-normalized
+without a learned temperature. All modes preserve the kernels' ordinary
+``QK^T / sqrt(d_K)`` arithmetic.
 RMSNorm may additionally multiply each head's queries by its own positive scalar
 ``exp(gamma_h)``, initially one, preserving the existing channel gains. The optional
 per-token gate multiplies that scalar by ``exp(a_h cos(w_h, x_t))``: a bounded log
@@ -151,6 +153,16 @@ def unit_normalize(x: jax.Array, eps: float) -> jax.Array:
     values = x.astype(jnp.float32)
     normalized = values * jax.lax.rsqrt(jnp.sum(jnp.square(values), axis=-1, keepdims=True) + eps)
     return normalized.astype(x.dtype)
+
+
+def unit_cosine_score_operands(q: jax.Array, k: jax.Array, *, eps: float):
+    """Unit-normalize the final Q/K vectors, compensating only the backend's fixed 1/sqrt(d_K)."""
+    def direction(x):
+        fp32 = x.astype(jnp.float32)
+        squared_norm = jnp.sum(jnp.square(fp32), axis=-1, keepdims=True)
+        return fp32 * jax.lax.rsqrt(jnp.maximum(squared_norm, eps * eps))
+
+    return (direction(q) * math.sqrt(q.shape[-1])).astype(q.dtype), direction(k).astype(k.dtype)
 
 
 def cosine_score_operands(q: jax.Array, k: jax.Array, log_scale: jax.Array, *, eps: float):

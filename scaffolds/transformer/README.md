@@ -406,6 +406,14 @@ head log scales/effective scales in `attention_diagnostics.qk_norm_head_scales`;
 W&B mirrors their mean, minimum, and maximum. Historical RMSNorm recipes with
 `qk_norm_head_scale: false` have no additional scalar or parameter array.
 
+
+`qk_norm_type: rms_norm_cosine` uses the same per-layer channel gains followed
+by unit L2 normalization of each query and key after RoPE (or with NoPE).
+It requires `qk_norm_head_scale: false`. Each operand is divided by the larger
+of its FP32 L2 norm and `qk_norm_eps`. Multiplying Q by the fixed
+`sqrt(qk_head_dim)` cancels the backend's dot-product divisor. The resulting
+score is the unscaled cosine up to operand rounding.
+
 `qk_norm_token_scale: cosine` (default `none`; requires the head scale) gives each
 query its own bounded log scale from the attention input `x_t`, the activation after
 the block's pre-attention RMSNorm: `delta_th = a_h cos(w_h, x_t)`, and Q is multiplied

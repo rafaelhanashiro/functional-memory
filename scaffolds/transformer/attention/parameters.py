@@ -138,6 +138,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
                 projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
                 tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
+                sigmoid_bias_initial=getattr(config, "attention_coefficient_sigmoid_bias_initial", "none"),
                 kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
                 initialization=getattr(config, "attention_coefficient_initialization", "taylor"),
@@ -219,7 +220,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         )
 
         specs += (rms_parameter_specs(qk_head_dim=config.qk_head_dim)
-                  if config.qk_norm_type == "rms_norm" else
+                  if config.qk_norm_type in ("rms_norm", "rms_norm_cosine") else
                   qk_norm_specs(initial_scale=initial_scale(config), sharing=config.qk_norm_sharing))
         if config.qk_norm_head_scale:
             specs += rms_head_scale_specs()
