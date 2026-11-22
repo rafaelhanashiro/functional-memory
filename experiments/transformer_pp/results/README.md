@@ -24,7 +24,7 @@ README says otherwise.
 | [l12_d640](pretraining/scalings/l12_d640/README.md) | Every pretraining comparison at the 12-layer width-640 shape, indexed in its README. |
 | 12-layer width-640: [shape_pairs](pretraining/scalings/l12_d640/shape_pairs/README.md) | Do the attention-variant comparisons hold at this shape? Eight variants at 1×, each against its reference-shape partner. |
 | 12-layer width-640: [budgets](pretraining/scalings/l12_d640/budgets/README.md) | How do the variants compare at 2× and 4× this shape's budget, against exp and their runs at smaller budgets? |
-| 12-layer width-640: [softplus_sos](pretraining/scalings/l12_d640/softplus_sos/README.md) | The two degree-twelve softplus–SoS compositions at 1×, 2× and 4×: the prefactor form's lead over exp shrinks from 0.88% to 0.27%, and at 4× it ties raw-score SoS. |
+| 12-layer width-640: [softplus_sos](pretraining/scalings/l12_d640/softplus_sos/README.md) | The two degree-twelve softplus–SoS compositions at 1×, 2× and 4×: the prefactor form's lead over exp shrinks from 0.88% to 0.37%, and at 4× it leads raw-score SoS by 0.15%. |
 | 12-layer width-640: [score_transforms](pretraining/scalings/l12_d640/score_transforms/README.md) | The degree-eight query polynomial at softplus(s) reaches 17.488 (−0.59% against its control); at the score's absolute value 17.941 (+1.98%). |
 | 12-layer width-640: [score_biases](pretraining/scalings/l12_d640/score_biases/README.md) | A signed score shift per polynomial order: static shifts tie (+0.07%), query-dependent shifts lose 3.55%. |
 | [token_budget](pretraining/scalings/token_budget/README.md) | Do attention-variant comparisons change between 1× and 2.5× Chinchilla? |
@@ -35,7 +35,7 @@ README says otherwise.
 | Folder | Question and findings |
 | --- | --- |
 | [forget_gate](pretraining/fox_alibi/forget_gate/README.md) | Does a FoX forget gate improve tanh query attention, softmax and exp, and does the original sigmoid gate match Gated DeltaNet's? Per-order cumulative gates beat the shared gate; at m = 8 they reach 13.633, level with FoX exp (13.628). |
-| [alibi_decay](pretraining/fox_alibi/alibi_decay/README.md) | Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent forget gate? On softmax (13.899) and exp (13.901) it beats RoPE by 4.4% and 2.5% but trails the forget gate by 1.6% and 2.0%. |
+| [alibi_decay](pretraining/fox_alibi/alibi_decay/README.md) | Does a constant ALiBi-style decay per head, without RoPE, match the token-dependent forget gate? On softmax (13.899) and exp (13.878) it beats RoPE by 4.4% and 2.7% but trails the forget gate by 1.6% and 1.8%. |
 | [query_distance_decay](pretraining/fox_alibi/query_distance_decay/README.md) | Can endpoint dependence, bounded rates, or per-order gates improve query-distance decay? Per-order gates gain 2.2–2.3%; per-order query–key (13.708) beats cumulative FoX by 1.2%. |
 
 ### Polynomial parametrizations

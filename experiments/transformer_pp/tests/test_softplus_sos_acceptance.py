@@ -30,7 +30,7 @@ RUNS = {
     "rf637de9b65b1": ("query-m12-sos-softplus-prefactor-w-decay", 1, REFERENCE_M12),
     "r3b9c8cc6fab8": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-1x", 1, L12_D640_1X),
     "re7593f1d0a4c": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-2x", 1, L12_D640_2X),
-    "r4589172dcd8b": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x", 1, L12_D640_4X),
+    "r3474c2559dd7": ("query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms", 1, L12_D640_4X),
     "r5a18841b21b5": ("query-m12-sos-softplus-w-decay-l12-d640-1x", 0, L12_D640_1X),
     "r83fa09df3931": ("query-m12-sos-softplus-w-decay-l12-d640-2x", 0, L12_D640_2X),
     "r0623d3020268": ("query-m12-sos-softplus-w-decay-l12-d640-4x", 0, L12_D640_4X),
@@ -104,7 +104,7 @@ def test_the_12_layer_width_640_controls_share_one_initialization():
             for key in (L12_D640_1X, L12_D640_2X, L12_D640_4X)}
     assert pins == {("c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9", 99_986_216)}
     assert adapter.CONTROLS[L12_D640_1X]["run_id"] == adapter.CONTROLS[L12_D640_2X]["run_id"] == "r08be7093202a"
-    assert adapter.CONTROLS[L12_D640_4X]["run_id"] == "r1f935f18fe21"
+    assert adapter.CONTROLS[L12_D640_4X]["run_id"] == "r775f6499974f"
 
 
 def test_the_1x_schedule_is_derive_recipes_for_the_2x_control():
@@ -142,9 +142,12 @@ def test_allocated_runs_are_their_control_with_the_composition(run_id):
         "softplus", key[0] + power, power)
     schedule = {f"{section}.{name}" for section, values in adapter.CONTROLS[key].get("schedule", {}).items()
                 for name in values}
-    assert scientific_differences(config, adapter.control_config(key)) == {
+    # Head RMSNorm's evaluation (the max-abs prescale) is the same function, so it may differ from the control's.
+    evaluation = {f"model.{name}" for name in EVALUATION_SETTINGS}
+    assert scientific_differences(config, adapter.control_config(key)) - evaluation == {
         "model.attention_score_transform", "train.gradient_event_capture", *schedule,
         *(("model.attention_degree", "model.attention_coefficient_input_power") if power else ())}
+    assert model.attention_head_rms_prescale == ("max_abs" if label.endswith("-max-abs-head-rms") else "none")
     record = json.loads((adapter.RUNS / run_id / "record.json").read_text())
     assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
     assert record["home_cluster"] == "kennel"  # status is the launcher's, so not checked

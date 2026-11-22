@@ -349,24 +349,24 @@ runs:
       path: experiments/transformer_pp/runs/ref652c257797/best_validation.json
       sha256: a63932f2b1efabec3c1308b74214d4fd632d166837b157a511434bc489851974
 - study: transformer_pp
-  run_id: r7820049184ef
+  run_id: rcb0ee48a6e75
   role: primary_exp_alibi_fixed_no_rope
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/r7820049184ef/config.yaml
-      sha256: 86de8523a9211c79eb493977b32011d1b0306d288cd1d0666295b69fd66b1362
+      path: experiments/transformer_pp/runs/rcb0ee48a6e75/config.yaml
+      sha256: d28db89557bf1b3a909700ee3c8a94af1b5ef560f90354b965a2873a2db8957b
     metrics.jsonl:
-      path: experiments/transformer_pp/runs/r7820049184ef/metrics.jsonl
-      sha256: e8fae6b660d4edc66ca3f785a4f3f6e030abd37ace2c1fa92eb7359682f15413
+      path: experiments/transformer_pp/runs/rcb0ee48a6e75/metrics.jsonl
+      sha256: 451ed7d30a5e3afa3655cbffc5b8a539d43c3896383f2c16371cc0164c5c8e69
     completion.json:
-      path: experiments/transformer_pp/runs/r7820049184ef/completion.json
-      sha256: 4104ec4914e33c29d0890e212815fa4c69705de42d66c5c53f335b7250ffe75b
+      path: experiments/transformer_pp/runs/rcb0ee48a6e75/completion.json
+      sha256: be00c49aad9a14a513fdfee4042e412fba4d4b63dccd8eb4eb976657a4206776
     metadata.json:
-      path: experiments/transformer_pp/runs/r7820049184ef/metadata.json
-      sha256: 571edfa91f9acac9d77b4c778b6c98a6d1f80499f9acb6e14b20aade65169347
+      path: experiments/transformer_pp/runs/rcb0ee48a6e75/metadata.json
+      sha256: 8ab60987536f702efcee7be7999230845bb360e019fd3f948fae3a7f7e006290
     best_validation.json:
-      path: experiments/transformer_pp/runs/r7820049184ef/best_validation.json
-      sha256: c45302671228f584a54fab4ad92b5c2bbb87e65e06459059117877028e07020d
+      path: experiments/transformer_pp/runs/rcb0ee48a6e75/best_validation.json
+      sha256: 7369bbebbef606671e07f7d41954a77eae9f64b06be4ca2a18e97ef3ff894f49
 - study: transformer_pp
   run_id: r5adc29a91e3b
   role: control_softmax_forget_gate_no_rope

@@ -42,7 +42,7 @@ STATIC_GATES = (
 REFERENCES = (
     ("FoX NoPE", "r5adc29a91e3b", "r183f08346ddc"),
     ("FoX–PaTH", "r14db6f0e8592", "rafcf22b799ed"),
-    ("ALiBi NoPE (fixed slopes)", "ref652c257797", "r7820049184ef"),
+    ("ALiBi NoPE (fixed slopes)", "ref652c257797", "rcb0ee48a6e75"),
 )
 # The original FoX sigmoid gate, NoPE: (attention, QK normalization, run).
 SIGMOID_GATE = (

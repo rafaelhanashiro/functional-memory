@@ -69,8 +69,8 @@ CONTROLS = {
         "parameter_count": 99_986_216,
     },
     (12, 12, 640, 30205): {
-        "run_id": "r1f935f18fe21",
-        "config_sha256": "8351d24f33e1c4f6a54983fe7a069c76911d7fdf6db35e537ed122aaf7a51cec",
+        "run_id": "r775f6499974f",
+        "config_sha256": "a557659923c00a770fab90c7d77962e741425c95474844acb439fd7c3276a3ec",
         "parameter_sha256": "c8a7ed88e12ea4c33806ee8a701e0c75655fc86f176790db6e07b189948e89b9",
         "parameter_count": 99_986_216,
     },

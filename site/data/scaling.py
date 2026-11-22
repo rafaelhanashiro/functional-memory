@@ -52,7 +52,7 @@ BUDGET_POLYNOMIALS = (
                               (12, (None, "r0f6d929e5992", "r2f41d054e944")))),
     ("Learned static coefficients", ((8, (None, "r3cca4c13edab", None)),
                                      (12, (None, "r84f325593209", "r0f8122dd8439")))),
-    ("Fixed Taylor", ((8, (None, "rd77db79142e6", None)), (12, (None, "rffab7c4eeac5", "rcace22b32f93")))),
+    ("Fixed Taylor", ((8, (None, "rd77db79142e6", None)), (12, (None, "rffab7c4eeac5", "rf1fad040d27d")))),
     ("FoX query", ((8, (None, "r656e8e652b72", None)), (12, (None, "rbf05f7baab5e", PLANNED)))),
 )
 BUDGET_BASELINES = (
@@ -63,9 +63,9 @@ BUDGET_BASELINES = (
 SOS_SOFTPLUS = (
     ("Query + softplus input", ((8, ("r1d342ca6e58c", "rc6a7e50d27e1", None)),
                                 (12, (None, "r53d5bbcac16f", "rb74e8b994b74")))),
-    ("Query SoS", ((8, (None, "rccd2cb5e8bab", None)), (12, (None, "r08be7093202a", "r1f935f18fe21")))),
+    ("Query SoS", ((8, (None, "rccd2cb5e8bab", None)), (12, (None, "r08be7093202a", "r775f6499974f")))),
     ("Query SoS + softplus input", ((12, ("r5a18841b21b5", "r83fa09df3931", "r0623d3020268")),)),
-    ("Query SoS + softplus input + prefactor", ((13, ("r3b9c8cc6fab8", "re7593f1d0a4c", "r4589172dcd8b")),)),
+    ("Query SoS + softplus input + prefactor", ((13, ("r3b9c8cc6fab8", "re7593f1d0a4c", "r3474c2559dd7")),)),
 )
 # Other runs at 1×, each changing the first, query tanh + W decay, in one way: (attention, degree, run).
 OTHER = (

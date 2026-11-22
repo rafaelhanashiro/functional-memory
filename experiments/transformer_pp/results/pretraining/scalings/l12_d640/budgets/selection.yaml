@@ -396,25 +396,25 @@ runs:
       path: experiments/transformer_pp/runs/r0f8122dd8439/best_validation.json
       sha256: 0f94a18c1d49f4bc684a6fa1875e21f982ca4ffd336bb1caf0bba63b3835ea80
 - study: transformer_pp
-  run_id: rcace22b32f93
+  run_id: rf1fad040d27d
   role: l12_d640_4x_fixed_taylor_m12
   label: fixed Taylor m = 12, 12-layer width-640, 4x
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/rcace22b32f93/config.yaml
-      sha256: 7aa93a788faca5d3ba4c0d149868e404fa1c1b3dd4cda2b177c904c173af8611
+      path: experiments/transformer_pp/runs/rf1fad040d27d/config.yaml
+      sha256: 7bb79c21427c75f2edc24e384666709caad646e2d0cf23c854c5f2da46e8ec19
     metrics.jsonl:
-      path: experiments/transformer_pp/runs/rcace22b32f93/metrics.jsonl
-      sha256: 29ed44032f883600f7ca5b1f8f3dc12ef61d84ea3bd801bc1c60dae734715fcf
+      path: experiments/transformer_pp/runs/rf1fad040d27d/metrics.jsonl
+      sha256: 3374477597895870b450e93c012390a30a8694768342b823209b0380e187c5fc
     completion.json:
-      path: experiments/transformer_pp/runs/rcace22b32f93/completion.json
-      sha256: 280623ecdaf2f4c9554fd1b3d5a950656f2e2bd1cc1991e430fe4773abc5b281
+      path: experiments/transformer_pp/runs/rf1fad040d27d/completion.json
+      sha256: afae562f8ec88d16894d28a8d4fe6f8d15e0f918fee4c2014f86af32d613289d
     metadata.json:
-      path: experiments/transformer_pp/runs/rcace22b32f93/metadata.json
-      sha256: df56772ab50aef397156e73ca3a314f5f030fd9014d3470ae3be2177e59b8474
+      path: experiments/transformer_pp/runs/rf1fad040d27d/metadata.json
+      sha256: c78bf5a4b0ad405beddb139fb25f8e46db06c7160500d5f537a811e7dde6f631
     best_validation.json:
-      path: experiments/transformer_pp/runs/rcace22b32f93/best_validation.json
-      sha256: 3e5834932cdc3a504dd7955c57dfc0f3f55fe95089d32b8925f2f7e1761addab
+      path: experiments/transformer_pp/runs/rf1fad040d27d/best_validation.json
+      sha256: 7bd0dda9e1e6eff51b28c298566049e0bcb937203c4d16035b847862a1e3e753
 - study: transformer_pp
   run_id: rb74e8b994b74
   role: l12_d640_4x_softplus_input_m12
@@ -436,25 +436,25 @@ runs:
       path: experiments/transformer_pp/runs/rb74e8b994b74/best_validation.json
       sha256: a383607dba97e9b08cb83c5bed03af47354b104db8ae865cd36a6199a651c47b
 - study: transformer_pp
-  run_id: r1f935f18fe21
+  run_id: r775f6499974f
   role: l12_d640_4x_sum_of_squares_m12
   label: sum-of-squares query m = 12 + RoPE + W decay, 12-layer width-640, 4x
   sources:
     config.yaml:
-      path: experiments/transformer_pp/runs/r1f935f18fe21/config.yaml
-      sha256: 8351d24f33e1c4f6a54983fe7a069c76911d7fdf6db35e537ed122aaf7a51cec
+      path: experiments/transformer_pp/runs/r775f6499974f/config.yaml
+      sha256: a557659923c00a770fab90c7d77962e741425c95474844acb439fd7c3276a3ec
     metrics.jsonl:
-      path: experiments/transformer_pp/runs/r1f935f18fe21/metrics.jsonl
-      sha256: 7c3dbed98d9fe995de7f1304f700026e4228ef27bcddd5db978d5308fd8dd8cf
+      path: experiments/transformer_pp/runs/r775f6499974f/metrics.jsonl
+      sha256: 5fe483a93a9b4a2e897ce0013cbec5e27ecefb918eb0d357308763b9135a9d4a
     completion.json:
-      path: experiments/transformer_pp/runs/r1f935f18fe21/completion.json
-      sha256: 5466324b13e7e72de81e8299f375c90c544b82fae73f852bdf10539bf72c1ef1
+      path: experiments/transformer_pp/runs/r775f6499974f/completion.json
+      sha256: 230bdd706958e227402c1b0598e0964eae6d100a504059674d2317c850c89ffb
     metadata.json:
-      path: experiments/transformer_pp/runs/r1f935f18fe21/metadata.json
-      sha256: e4acb59677f427c477378241b9960ba74e44643bcf1fc8fbf63b330670eb2e7d
+      path: experiments/transformer_pp/runs/r775f6499974f/metadata.json
+      sha256: 7ba08d6352293dc0e707767348d31501bbb3c54bbd74a64d14f60d47498ce0ab
     best_validation.json:
-      path: experiments/transformer_pp/runs/r1f935f18fe21/best_validation.json
-      sha256: 97a7174f0a829622bd73f109805b7c337e9a69026435e52103d2df433497618f
+      path: experiments/transformer_pp/runs/r775f6499974f/best_validation.json
+      sha256: 969a9cd118576aa07fc54eb781ffdc2129450bbd3d79366a8f36ef8952b33d3e
 - study: transformer_pp
   run_id: r333444bd4304
   role: l12_d640_4x_exp

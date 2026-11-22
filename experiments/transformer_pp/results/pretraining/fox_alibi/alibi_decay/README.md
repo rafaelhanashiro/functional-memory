@@ -52,7 +52,9 @@ and changes only the gate: `attention_forget_gate_form: constant` with
 `attention_forget_gate_constant_rate: fixed`, so every score gains `-m_h (t - i)`,
 `m_h = 2^(-8 h / 14)` for heads `h = 1..14` in every layer, with **no parameters** (the gate
 controls carry 188,580). Softmax with this bias is ALiBi (Press et al., 2022); exp keeps its
-per-head output RMSNorm. These are the paper's geometric slopes, which the learned-slope run
+per-head output RMSNorm, evaluated with the row-maximum shift and the max-abs prescale
+(`attention_exp_shift: row_max`, `attention_head_rms_prescale: max_abs`): the same function, exact in FP32
+at the row sums its scores reach, where the plain evaluation's gradient is not. These are the paper's geometric slopes, which the learned-slope run
 starts from, 0.67 down to 1/256; ALiBi's code would give 14 heads `2^-1..2^-8` and
 `2^-0.5, 2^-1.5, ..., 2^-5.5` instead (its rule for a head count that is not a power of two),
 0.71 down to 1/256. The primaries train on the blocked backend's causal strips and the controls
@@ -62,7 +64,7 @@ across blocks.
 | Role | Run | Label | Kernel | Position | Validation-best PPL (terminal) |
 | --- | --- | --- | --- | --- | --- |
 | Primary: softmax ALiBi | `ref652c257797` | `softmax-alibi-fixed-no-rope` | softmax | ALiBi only | 13.899 (13.904) |
-| Primary: exp ALiBi | `r7820049184ef` | `exp-alibi-fixed-no-rope` | exp | ALiBi only | 13.901 (13.904) |
+| Primary: exp ALiBi | `rcb0ee48a6e75` | `exp-alibi-fixed-no-rope-row-max-max-abs-head-rms` | exp | ALiBi only | 13.878 (13.884) |
 | Control: softmax forget gate | `r5adc29a91e3b` | `softmax-forget-gate-no-rope` | softmax | gate only | 13.680 (13.680) |
 | Control: exp forget gate | `r183f08346ddc` | `exp-forget-gate-no-rope` | exp | gate only | 13.628 (13.630) |
 | Reference: softmax | `r9040f12f3d80` | `softmax-head-scale` | softmax | RoPE | 14.543 (14.546) |
@@ -70,8 +72,9 @@ across blocks.
 
 Both primaries completed 7,570 updates in one attempt each, after acceptance (including ALiBi's
 GPU tests on the strips) passed: softmax on one B300 (`akita`, `standard`, job 239928,
-8 h 55 min), exp on one H100 SXM (`dogo`, `long`, job 239929, 11 h 16 min). Launch commands are
-in the [study README](../../../../README.md#alibi-on-softmax-and-exp).
+8 h 55 min), exp on one B300 (`akita`, `long`, job 9647, 6 h 35 min). Launch commands are in the
+study README: [softmax](../../../../README.md#alibi-on-softmax-and-exp) and
+[exp](../../../../README.md#max-abs-alibi-exp-and-12-layer-width-640-4x-runs).
 
 ## Softmax and exp with query-distance gates
 
@@ -99,7 +102,7 @@ query gate, and per-order query–key gates by a further 2.3%
 `w_k` (188,160 parameters) starts at zero, so the run starts exactly as the exp query-distance
 primary; `w_alpha`, `A_log` and `b_dt` keep FoX's initialization. It compares with exp FoX
 (`r183f08346ddc`, 13.628), the exp query-distance primary (`r17444ad0f60e`) and exp ALiBi
-(`r7820049184ef`, 13.901). No softmax counterpart is planned.
+(`rcb0ee48a6e75`, 13.878). No softmax counterpart is planned.
 
 | Role | Run | Label | Kernel | Score decay | Validation-best PPL |
 | --- | --- | --- | --- | --- | ---: |
@@ -109,7 +112,7 @@ primary; `w_alpha`, `A_log` and `b_dt` keep FoX's initialization. It compares wi
 | Control: softmax forget gate | `r5adc29a91e3b` | `softmax-forget-gate-no-rope` | softmax | `L_t - L_i` | 13.680 |
 | Control: exp forget gate | `r183f08346ddc` | `exp-forget-gate-no-rope` | exp | `L_t - L_i` | 13.628 |
 | Reference: softmax ALiBi | `ref652c257797` | `softmax-alibi-fixed-no-rope` | softmax | `-m_h (t - i)` | 13.899 |
-| Reference: exp ALiBi | `r7820049184ef` | `exp-alibi-fixed-no-rope` | exp | `-m_h (t - i)` | 13.901 |
+| Reference: exp ALiBi | `rcb0ee48a6e75` | `exp-alibi-fixed-no-rope-row-max-max-abs-head-rms` | exp | `-m_h (t - i)` | 13.878 |
 | Reference: query m = 4 | `r3e26412b2811` | `query-m4-query-distance-no-rope-w-decay` | query polynomial | `(t - i) log alpha_t` | 14.198 |
 | Reference: query m = 8 | `r9320e5cd3071` | `query-m8-query-distance-no-rope-w-decay` | query polynomial | `(t - i) log alpha_t` | 13.939 |
 | Reference: query m = 8, per order | `r20fe6fe864bc` | `query-m8-per-order-query-gate-nope-wd` | query polynomial | `(t - i) log alpha_tr` for order `r` | 13.780 |
@@ -217,8 +220,8 @@ Validation-best PPL; each comparison covers all 28 evaluations.
 - **Reading the key token helps exp slightly.** The query–key gate reaches 13.604 at update 7,500
   (terminal 13.608): −0.25% against the query-only gate (13.638), lower at 22 of 28 evaluations and
   by 0.14–0.27% from update 3,000 on, and −0.18% against FoX (13.628), lower at 11 of 28 and between
-  −0.18% and +0.07% from update 3,000 on. It is 2.14% below exp ALiBi and 4.58% below exp RoPE, at all
-  28 evaluations, and the lowest exp run without positional encoding.
+  −0.18% and +0.07% from update 3,000 on. It is 1.98% below exp ALiBi (lower at 27 of 28 evaluations) and
+  4.58% below exp RoPE (at all 28), and the lowest exp run without positional encoding.
 - **The key projection is used.** Starting at zero, its per-head norm reaches a median of 0.36
   against the query projection's 0.64. Half-lives barely change: a median of 3.0 tokens, as with
   the query-only gate (3.1), with 19% of heads above 100 tokens against 21%.
@@ -234,19 +237,19 @@ Validation-best PPL; each comparison covers all 28 evaluations.
 Validation-best PPL is at update 7,500 for all six runs; each has 28 evaluations.
 
 - **Fixed-slope ALiBi beats RoPE on both kernels**: softmax 13.899 vs 14.543 (−4.43%) and exp
-  13.901 vs 14.257 (−2.50%), lower at all 28 evaluations and by 4.3–4.6% and 2.5–2.7% from
+  13.878 vs 14.257 (−2.66%), lower at all 28 evaluations and by 4.3–4.6% and 2.6–2.9% from
   update 3,000 on.
-- **It trails the forget gate on both**: softmax +1.60% against 13.680 and exp +2.00% against
-  13.628, behind at all 28 evaluations and by 1.6–2.0% and 2.0–2.6% from update 3,000 on. As
+- **It trails the forget gate on both**: softmax +1.60% against 13.680 and exp +1.84% against
+  13.628, behind at all 28 evaluations and by 1.6–2.0% and 1.8–2.3% from update 3,000 on. As
   with the degree-four polynomial below, a decay with distance alone does not reach the
   token-dependent gate.
-- **With ALiBi, softmax and exp tie**: 13.899 vs 13.901 (−0.01%). Softmax is lower at all 28
-  evaluations, by at most 0.5% from update 3,000 on. Exp leads by 2.0% with RoPE and by 0.4%
-  with the forget gate.
+- **With ALiBi, softmax and exp tie**: 13.899 vs 13.878 (+0.15%). Softmax is lower at 21 of 28
+  evaluations, and the two are within 0.25% from update 3,000 on. Exp leads by 2.0% with RoPE and by
+  0.4% with the forget gate.
 - **The degree-eight per-order query-distance polynomial beats both** (`r20fe6fe864bc`, 13.780,
   pinned in [query_distance_decay](../query_distance_decay/README.md#degree-eight)): −0.86%
   against softmax ALiBi, lower from update 3,000 on (11 of 28 evaluations) by 0.4–0.9%, and
-  −0.87% against exp ALiBi, lower at 26 of 28. Its decay is learned and query-dependent, so
+  −0.71% against exp ALiBi, lower at 26 of 28. Its decay is learned and query-dependent, so
   this is not a matched comparison.
 
 ### Learned input-free gates for static coefficients
@@ -275,8 +278,8 @@ preemption. Validation-best PPL; each comparison covers all 28 evaluations.
   0.75% (m = 4) and 1.41% (m = 8), per-order gates by 2.83% and 3.49%. These pairs differ in
   the coefficients' and the gate's input dependence together. With query coefficients and query
   gates, per-order gating gained 2.2% (m = 4) and 1.1% (m = 8); here it gains nothing.
-- The degree-eight static shared gate trails fixed ALiBi on softmax (13.899) and exp (13.901)
-  by 1.7%.
+- The degree-eight static shared gate trails fixed ALiBi on softmax (13.899) and exp (13.878)
+  by 1.7% and 1.9%.
 - **What the gates learned.** At update 7,570 the median half-life over the 210 layer-heads is
   9.8 tokens for both shared gates and 6.7–9.1 (m = 4) and 6.9–10.7 (m = 8) for the orders of
   the per-order gates, longer than the query gates' 0.9–5.0. As with the query gates, the top

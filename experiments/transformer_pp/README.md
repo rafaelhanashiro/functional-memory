@@ -1057,31 +1057,31 @@ the no-RoPE forget-gate run on its kernel and changes the gate to
 `attention_forget_gate_form: constant` with `attention_forget_gate_constant_rate: fixed`:
 every score gains `-m_h (t - i)`, `m_h = 2^(-8 h / 14)` for heads `h = 1..14` in every layer,
 with no trainable parameter. `softmax(s - m_h (t - i))` is ALiBi; exp keeps its per-head output
-RMSNorm. `records create` set the causal strips (`attention_blocked_implementation: strips`),
-where the sources trained on the scan. See the
+RMSNorm, evaluated with the row-maximum shift and the max-abs prescale. `records create` set the causal
+strips (`attention_blocked_implementation: strips`), where the sources trained on the scan. See the
 [alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md).
 
 | Run | Label | Source | Kernel | Parameters |
 | --- | --- | --- | --- | ---: |
 | `ref652c257797` | softmax-alibi-fixed-no-rope | `r5adc29a91e3b` | softmax | 198,440,146 |
-| `r7820049184ef` | exp-alibi-fixed-no-rope | `r183f08346ddc` | unnormalized exp | 198,453,586 |
+| `rcb0ee48a6e75` | exp-alibi-fixed-no-rope-row-max-max-abs-head-rms | `r183f08346ddc` | unnormalized exp | 198,453,586 |
 
 Home cluster: **Kennel**. GPU acceptance runs `tests/test_constant_decay.py`'s 2,048-token
 BF16 strips cases against FP64 ALiBi before training. From the isolated
-`claude/alibi-softmax-exp` worktree, after committing the inputs, submit each on one B300 or
+`claude/alibi-softmax-exp` worktree, after committing the inputs, submit the softmax run on one B300 or
 H100 SXM, excluding the H100 PCIe node `mastiff` (the strips' FoX softmax ran 11.7 s per update
 there, past 24 hours for 7,570 updates) and the B200 node `shiba`, with the partition
-(`standard` or `long`) chosen from the live allowance:
+(`standard` or `long`) chosen from the live allowance. The exp run is launched with the
+[max-abs runs](#max-abs-alibi-exp-and-12-layer-width-640-4x-runs).
 
 ```bash
-for run in ref652c257797 r7820049184ef; do
-  sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
-    --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
-    --output="experiments/transformer_pp/runs/$run/training.log" \
-    --error="experiments/transformer_pp/runs/$run/training.log" \
-    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
-    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
-done
+run=ref652c257797
+sbatch --parsable --partition=<standard|long> --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --time=24:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier,shiba --job-name="$run" \
+  --output="experiments/transformer_pp/runs/$run/training.log" \
+  --error="experiments/transformer_pp/runs/$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.acceptance \
+  "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
 ```
 
 ## Query-dependent distance decay
@@ -2106,10 +2106,12 @@ done
 Added 2026-11-15 at the user's request. Seven runs train the 12-layer width-640 shape at four times its 1x budget:
 the degree-twelve query, static, fixed Taylor, softplus input and sum-of-squares runs of the
 [2x set](#the-12-layer-width-640-shape-at-the-reference-token-count), and exp and softmax. All seven are complete:
-sum of squares (validation-best 14.565) and softplus input (14.581) are 0.28% and 0.16% below exp (14.605), query
-ties it (+0.01%), fixed Taylor and static are 0.07% and 0.13% above it, and softmax 3.34%; against exp each
-polynomial is 0.08–0.19 percentage points worse than at 2x. Runs, results and limits: the
-[budgets collection](results/pretraining/scalings/l12_d640/budgets/README.md#four-times-the-budget).
+sum of squares (validation-best 14.573) and softplus input (14.581) are 0.22% and 0.16% below exp (14.605), query
+ties it (+0.01%), static and fixed Taylor are 0.13% above it, and softmax 3.34%; against exp each polynomial is
+0.09–0.19 percentage points worse than at 2x. Runs, results and limits: the
+[budgets collection](results/pretraining/scalings/l12_d640/budgets/README.md#four-times-the-budget). The sum-of-squares
+and fixed Taylor runs, `r775f6499974f` and `rf1fad040d27d`, take head RMSNorm's max-abs prescale and are launched
+with the [max-abs runs](#max-abs-alibi-exp-and-12-layer-width-640-4x-runs); the launch below covers the other five.
 
 - Recipes: each 2x run derived with `derive_recipe.py --budget 4` and allocated with `scaffolds.records create`:
   30,205 updates of 128 × 2,048 tokens (7.92B prediction tokens), warmup 1,815, validation every 400 updates
@@ -2133,8 +2135,8 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
 - Kernels and GPUs: as at 2x. Mosaic for the polynomials (the softplus run's transformed kernels on H100 alone),
   fused Triton for exp, cuDNN for softmax. Each run requests one B300 or H100 (the softplus run an H100 alone)
   and depends on no other run. The H100 PCIe node `mastiff` is excluded: its failing H100 is not verified reset
-  (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. All seven finished on `dogo`, four of them after starting
-  on `akita`'s B300; the budgets collection's [4x limits](results/pretraining/scalings/l12_d640/budgets/README.md#4x-limits) list each
+  (CLUSTERS.md). The H100s are thus `dogo`'s H100 SXM. The five launched here finished on `dogo`, two of them
+  after starting on `akita`'s B300; the budgets collection's [4x limits](results/pretraining/scalings/l12_d640/budgets/README.md#4x-limits) list each
   run's GPUs and resumptions.
 - Time limits: the projection on the slowest eligible GPU, the H100 SXM, plus acceptance's two-hour reserve,
   rounded up with room. A projection is a 2x run's wall time per update, validation included, over 30,205
@@ -2144,8 +2146,7 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   | Run | H100 SXM projection, hours | Limit, hours |
   | --- | ---: | ---: |
   | query | 5.6–7.0, estimated | 10 |
-  | static, fixed Taylor | 6.3 | 10 |
-  | sum of squares | 7.0 | 10 |
+  | static | 6.3 | 10 |
   | softplus input | 8.6 | 13 |
   | exp | 5.0–6.2, estimated | 10 |
   | softmax | 3.9–4.8, estimated | 8 |
@@ -2155,14 +2156,13 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.derive_reci
   softmax). Acceptance projects again on the granted GPU and refuses an allocation whose projection exceeds the
   limit less two hours.
 
-Home cluster: **Kennel**. All seven runs are complete; each record holds its launch commit, attempts, and the
+Home cluster: **Kennel**. All five runs are complete; each record holds its launch commit, attempts, and the
 artifact-root locations of its validation-best checkpoint, kept gradient-event states (the softplus run) and
 log. Branch `claude/l12-d640-4x`. The runs were submitted on `long` from the worktree root after the frozen
-execution set was committed. Six jobs whose start or restart failed at JAX initialization on a `dogo` H100
-(`CUDA_ERROR_UNKNOWN`; CLUSTERS.md) were resubmitted under new job IDs: query 2424, sum of squares 2425, exp 2426
-and softmax 2427 with their commands below, static 2883 and fixed Taylor 2884 with `akita` also excluded (the last
-two lines). After the preemptions on `akita`, `akita` was added to the queued jobs' excluded nodes. Each record
-lists its jobs and attempts.
+execution set was committed. Four jobs whose start or restart failed at JAX initialization on a `dogo` H100
+(`CUDA_ERROR_UNKNOWN`; CLUSTERS.md) were resubmitted under new job IDs: query 2424, exp 2426 and softmax 2427 with
+their commands below, and static 2883 with `akita` also excluded (the last line). After the preemptions on
+`akita`, `akita` was added to the queued jobs' excluded nodes. Each record lists its jobs and attempts.
 
 ```bash
 submit() {  # partition, time, adapter, GPU types, excluded nodes, run
@@ -2174,14 +2174,11 @@ submit() {  # partition, time, adapter, GPU types, excluded nodes, run
 }
 EXCL=collie,samoyed,doodle,terrier,shiba,mastiff
 submit long 13:00:00 score_transform_acceptance H100 akita,$EXCL rb74e8b994b74   # softplus input
-submit long 10:00:00 coefficient_forms_acceptance B300,H100 $EXCL r1f935f18fe21  # sum of squares
 submit long 10:00:00 acceptance B300,H100 $EXCL r2f41d054e944                    # query
 submit long 10:00:00 acceptance B300,H100 $EXCL r0f8122dd8439                    # static
-submit long 10:00:00 acceptance B300,H100 $EXCL rcace22b32f93                    # fixed Taylor
 submit long 10:00:00 acceptance B300,H100 $EXCL r333444bd4304                    # exp
 submit long 8:00:00 acceptance B300,H100 $EXCL r93df1e48c8fd                     # softmax
 submit long 10:00:00 acceptance B300,H100 akita,$EXCL r0f8122dd8439              # static, job 2883
-submit long 10:00:00 acceptance B300,H100 akita,$EXCL rcace22b32f93              # fixed Taylor, job 2884
 ```
 
 ## Calibration-mean coefficient evaluation
@@ -2520,16 +2517,17 @@ Added 2026-11-16 at the user's request. Six runs train the two degree-twelve com
 width-640 shape with 1, 2 and 4 times its 1x budget: `rf637de9b65b1`'s `z h_t(z)` with `z = softplus(s)` and a
 query-conditioned SoS core of degree twelve (`attention_degree: 13`, `attention_coefficient_input_power: 1`), and
 `rc5aac8f37a2e`'s `h_t(z)` without the prefactor (`attention_degree: 12`, `attention_coefficient_input_power: 0`).
-Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.565 at
-1x, 2x and 4x, 0.88%, 0.63% and 0.27% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
-below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, findings and limits: the
-[results](results/pretraining/scalings/l12_d640/softplus_sos/README.md).
+Home cluster: **Kennel**. All six are complete: `z h_t(z)` reaches validation-best 17.397, 15.671 and 14.551 at
+1x, 2x and 4x, 0.88%, 0.63% and 0.37% below exp, and `h_t(z)` 17.524, 15.726 and 14.594, 0.15%, 0.29% and 0.08%
+below it; at 4x `z h_t(z)` is 0.15% below raw-score SoS (14.573). Results, comparisons, findings and limits: the
+[results](results/pretraining/scalings/l12_d640/softplus_sos/README.md). The 4x `z h_t(z)` run, `r3474c2559dd7`,
+takes head RMSNorm's max-abs prescale and is launched with the [max-abs runs](#max-abs-alibi-exp-and-12-layer-width-640-4x-runs).
 
 | Run | Label | Updates | Warmup | Validation |
 | --- | --- | ---: | ---: | --- |
 | `r3b9c8cc6fab8` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
 | `re7593f1d0a4c` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
-| `r4589172dcd8b` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
+| `r3474c2559dd7` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
 | `r5a18841b21b5` | `query-m12-sos-softplus-w-decay-l12-d640-1x` | 7,551 | 454 | every 100 through 1,500, then every 500 |
 | `r83fa09df3931` | `query-m12-sos-softplus-w-decay-l12-d640-2x` | 15,103 | 908 | every 200 through 3,000, then every 1,000 |
 | `r0623d3020268` | `query-m12-sos-softplus-w-decay-l12-d640-4x` | 30,205 | 1,815 | every 400 through 6,000, then every 2,000 |
@@ -2545,7 +2543,8 @@ below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, fi
 - Acceptance: [`softplus_sos_acceptance`](softplus_sos_acceptance.py) selects the raw-score SoS control by SoS
   core degree, depth, width and update count, and requires the recipe to be the control's but for the score
   transform, degree, input power and gradient-event capture. The 2x runs' control is the 2x raw-score SoS run
-  `r08be7093202a` (recipe SHA256 `4683fd9d`) and the 4x runs' `r1f935f18fe21` (`8351d24f`). No raw-score SoS
+  `r08be7093202a` (recipe SHA256 `4683fd9d`) and the 4x runs' `r775f6499974f` (`a5576599`), compared without
+  its max-abs prescale. No raw-score SoS
   run of core degree twelve exists at 1x here, so the 1x runs' control is `r08be7093202a` with derive_recipe's
   1x schedule in place of its own. The adapter pins each control's seed-42 parameter fingerprint and count,
   computed on CPU: `c8a7ed88` and 99,986,216 for both controls, the values computed for each of the six runs
@@ -2553,12 +2552,14 @@ below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, fi
 - Kernels and GPUs: the Mosaic transformed SoS kernels at total degree thirteen (twelve without the prefactor), on one H100 or B200; the
   adapter refuses other GPU types, and B300 remains unqualified for these kernels. Their composed GPU suite
   passed in the acceptance of `rc5aac8f37a2e` on `dogo`'s H100 SXM (job 2981) and of `rf637de9b65b1` on
-  `shiba`'s B200 (job 2982), and again in job 4513 (`r4589172dcd8b`, `dogo`'s H100 SXM); the other five runs
-  reused that pass by matching test identity (each record's `acceptance.summary.reused_tests`, which also lists
-  reused CPU test stages), and each run's acceptance ran its own initialization, pilot and resume checks.
+  `shiba`'s B200 (job 2982), and again on `dogo`'s H100 SXM in job 4513, an acceptance of the 4x `z h_t(z)`
+  recipe; the five runs launched here reused that pass by matching test identity (each record's
+  `acceptance.summary.reused_tests`, which also lists reused CPU test stages), and each run's acceptance ran its
+  own initialization, pilot and resume checks.
   `mastiff` (H100 PCIe) is excluded: Slurm grants its failing H100 to one-GPU jobs first (CLUSTERS.md). B200
-  jobs run in the worktree's `.venv-cuda13`. Every update of the six runs trained on `dogo`'s H100 SXM, in the
-  CUDA 12 environment; the attempts granted `shiba`'s B200 were preempted during acceptance, before any update.
+  jobs run in the worktree's `.venv-cuda13`. Every update of the five runs launched here trained on `dogo`'s H100
+  SXM, in the CUDA 12 environment; their attempts granted `shiba`'s B200 were preempted during acceptance, before
+  any update. The 4x `z h_t(z)` run trained on `shiba`'s B200.
 - Time limits: 1.4 times the upper H100 SXM projection, for the estimate's uncertainty and `dogo`'s variation
   between attempts, plus acceptance's two-hour reserve, rounded up to whole hours. A projection is the run's
   training time plus its 28 validations at 25–40 s each, checkpoints included (their time on `dogo` at this
@@ -2588,12 +2589,12 @@ below it; at 4x `z h_t(z)` ties raw-score SoS (14.565). Results, comparisons, fi
   Acceptance projects again from its pilot on the granted GPU and refuses an allocation whose projection
   exceeds the limit less two hours: 4, 7 and 13 hours, about 1.91, 1.67 and 1.55 s per update.
 
-  On `dogo` the trainer ran 2.45, 4.68 and 9.13 hours at 1x, 2x and 4x with the prefactor and 2.34, 4.39 and
-  8.53 without it (`completion.json`), within the H100 SXM projections.
+  On `dogo` the trainer ran 2.45 and 4.68 hours at 1x and 2x with the prefactor and 2.34, 4.39 and 8.53 at 1x, 2x
+  and 4x without it (`completion.json`), within the H100 SXM projections.
 
-Branch `claude/l12-d640-softplus-sos`. The six runs were submitted on 2026-11-17 from the worktree root at launch
-commit `9251ea11`, after the frozen execution set was committed, each as one job with no dependency: the 4x
-`z h_t(z)` run on `standard` (job 4513), the other five on `long` (jobs 4514–4518), all excluding `akita`,
+Branch `claude/l12-d640-softplus-sos`. Five runs were submitted on 2026-11-17 from the worktree root at launch
+commit `9251ea11`, after the frozen execution set was committed, each as one job with no dependency on `long`
+(jobs 4514–4518), all excluding `akita`,
 `mastiff`, `collie`, `samoyed`, `doodle` and `terrier`. `dogo` stayed eligible: the placeholder holding its
 failing H100 (job 4436, CLUSTERS.md) outlasted every start and requeue. Attempts granted `shiba`'s B200 (1x
 `z h_t(z)`, 2x and 4x `h_t(z)`) or, once, `dogo` (2x `z h_t(z)`) were preempted during acceptance, before any
@@ -2610,7 +2611,6 @@ submit() {  # partition, time, adapter, GPU types, excluded nodes, run
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
 EXCL=akita,mastiff,collie,samoyed,doodle,terrier
-submit standard 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r4589172dcd8b  # 4x, job 4513
 submit long 15:00:00 softplus_sos_acceptance H100,B200 $EXCL r0623d3020268      # 4x, no prefactor, job 4514
 submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL re7593f1d0a4c       # 2x, job 4515
 submit long 9:00:00 softplus_sos_acceptance H100,B200 $EXCL r83fa09df3931       # 2x, no prefactor, job 4516
@@ -3140,51 +3140,48 @@ sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --ti
   "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 ```
 
-## Max-abs reruns of the ALiBi exp and 12-layer width-640 4x runs
+## Max-abs ALiBi exp and 12-layer width-640 4x runs
 
-Four earlier runs again, requested 2026-11-21 on Kennel, under the settings `scaffolds.records create` now gives a
-fresh copy of each recipe: head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`) and, for
-the exponential, its row-maximum shift (`model.attention_exp_shift: row_max`). Each source run trained with attention
-row sums above 2e14, where the plain head RMSNorm arithmetic's FP32 gradient is inexact
-([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)).
-Each recipe is its source's with those settings alone; seed (42), data order, schedule and initialization are the
-source's, and the settings add no parameter.
+Four runs, requested 2026-11-21 on Kennel, with the settings `scaffolds.records create` gives a fresh recipe: head
+RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`) and, for the exponential, its row-maximum
+shift (`model.attention_exp_shift: row_max`). Each is a recipe of an earlier section with these settings alone:
+seed (42), data order, schedule and initialization are that recipe's, and the settings add no parameter. Evaluated
+plainly, these recipes train with attention row sums above 2e14, where the plain head RMSNorm arithmetic's FP32
+gradient is inexact
+([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20));
+the stable evaluations compute the same functions exactly. Plain, the recipes ended within 0.16% of these runs'
+perplexities.
 
-| Run | Label | Kernel | Rerun of | Row sums above 2e14 from update (largest) | Recipe change | Adapter |
-| --- | --- | --- | --- | --- | --- | --- |
-| `rcb0ee48a6e75` | `exp-alibi-fixed-no-rope-row-max-max-abs-head-rms` | exp with ALiBi's fixed slopes, no RoPE | `r7820049184ef` | 4,500 (5.1e21) | row shift and prescale | generic |
-| `r775f6499974f` | `query-m12-sum-of-squares-w-decay-l12-d640-4x-max-abs-head-rms` | query SoS, `m = 12` | `r1f935f18fe21` | 20,000 (1.7e15) | prescale | coefficient forms |
-| `rf1fad040d27d` | `fixed-m12-l12-d640-4x-max-abs-head-rms` | fixed Taylor, `m = 12` | `rcace22b32f93` | 18,000 (1.3e15) | prescale | generic |
-| `r3474c2559dd7` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms` | `z h_t(z)`, core degree twelve | `r4589172dcd8b` | 24,000 (1.2e15) | prescale | softplus SoS |
+| Run | Label | Kernel | Recipe | Change | Adapter |
+| --- | --- | --- | --- | --- | --- |
+| `rcb0ee48a6e75` | `exp-alibi-fixed-no-rope-row-max-max-abs-head-rms` | exp with ALiBi's fixed slopes, no RoPE | [ALiBi exp](#alibi-on-softmax-and-exp) | row shift and prescale | generic |
+| `r775f6499974f` | `query-m12-sum-of-squares-w-decay-l12-d640-4x-max-abs-head-rms` | query SoS, `m = 12` | [4x query SoS](#the-12-layer-width-640-shape-at-four-times-its-1x-budget) | prescale | coefficient forms |
+| `rf1fad040d27d` | `fixed-m12-l12-d640-4x-max-abs-head-rms` | fixed Taylor, `m = 12` | [4x fixed Taylor](#the-12-layer-width-640-shape-at-four-times-its-1x-budget) | prescale | generic |
+| `r3474c2559dd7` | `query-m12-sos-softplus-prefactor-w-decay-l12-d640-4x-max-abs-head-rms` | `z h_t(z)`, core degree twelve | [4x `z h_t(z)`](#the-12-layer-width-640-shape-at-1x-2x-and-4x) | prescale | softplus SoS |
 
-- **Sources.** `r7820049184ef` is the [ALiBi exp run](#alibi-on-softmax-and-exp) at the 15-layer width-896 reference
-  shape (7,570 updates); the other three are 12-layer width-640 runs at four times their 1x budget (30,205 updates):
-  [fixed Taylor and query SoS](#the-12-layer-width-640-shape-at-four-times-its-1x-budget) and the
-  [softplus-prefactor SoS](#the-12-layer-width-640-shape-at-1x-2x-and-4x). The measurement covered the first three
-  sources; `r4589172dcd8b` is rerun for the same recorded row sums. The other 4x runs stayed below 2e14 (static,
-  softplus input, SoS without the prefactor, exp) or passed it only at the last two validations (query: 6.1e14 at
-  30,000, 6.2e14 at 30,205).
-- **What each pair compares.** The three 12-layer pairs differ in the prescale alone. The ALiBi exp pair differs in
-  more: its source trained before head RMSNorm guarded an overflowing FP32 mean square, so the source's output and
-  gradient were zero on every row past an L2 norm of 1.8e19 (1.4% of layer 13's rows at update 7,500), and the
-  rerun changes the row shift and the prescale together. Its difference from the source is the plain evaluation's
-  whole effect, not the inexact gradient's alone.
-- **Kernels and GPUs.** On their sources' kernels and GPU types: the ALiBi exp run on the blocked backend's causal
-  strips (B300 or H100 SXM), which evaluate the shift over the decayed logits; query SoS and fixed Taylor on the
-  Mosaic polynomial kernels (B300 or H100); `z h_t(z)` on the Mosaic transformed kernels (H100 or B200). The
-  prescale is head RMSNorm's own arithmetic after any kernel, qualified on B200, B300 and H100
-  ([validation](../../scaffolds/transformer/validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20)). A
-  rerun need not get its source's GPU: the ALiBi exp source trained on an H100 SXM in the CUDA 12 environment and
-  the `z h_t(z)` source on H100 SXM alone, so a pair's difference can also carry the hardware's (each record lists
-  its GPU). One seed each: differences below run-to-run scatter are not attributable to the settings.
+- **Results.** The ALiBi exp run in the [alibi_decay topic](results/pretraining/fox_alibi/alibi_decay/README.md), the
+  4x query SoS and fixed Taylor runs in the
+  [budgets collection](results/pretraining/scalings/l12_d640/budgets/README.md#four-times-the-budget), and the 4x
+  `z h_t(z)` run, with query SoS as a comparison, in
+  [softplus SoS at this shape](results/pretraining/scalings/l12_d640/softplus_sos/README.md). The other 4x runs at
+  this shape stay below 2e14 (static, softplus input, SoS without the prefactor, exp) or pass it only at the last
+  two validations (query: 6.1e14 at 30,000, 6.2e14 at 30,205), so they keep the plain evaluation.
+- **Kernels and GPUs.** The ALiBi exp run on the blocked backend's causal strips, which evaluate the shift over the
+  decayed logits; query SoS and fixed Taylor on the Mosaic polynomial kernels; `z h_t(z)` on the Mosaic transformed
+  kernels. The prescale is head RMSNorm's own arithmetic after any kernel, qualified on B200, B300 and H100
+  ([validation](../../scaffolds/transformer/validation/README.md#head-rmsnorm-max-abs-prescale-2026-11-20)). The
+  ALiBi exp, query SoS and fixed Taylor runs trained on `akita`'s B300, `z h_t(z)` on `shiba`'s B200; each record
+  lists its attempts.
 - **Acceptance.** The [coefficient-forms](coefficient_forms_acceptance.py) and [softplus SoS](softplus_sos_acceptance.py)
-  adapters pin their controls' recipes and compare without the prescale; the generic acceptance pins none.
-  `tests/test_max_abs_reruns.py` holds each rerun to its source's recipe apart from the listed settings. Every
-  allocation also runs the selected CPU and GPU suites, the full-recipe pilot and a fresh-process resume.
-- **Time limits.** 1.4 times the source's slowest recorded rate on the slowest GPU type listed (H100 SXM), plus
-  acceptance's two-hour reserve, rounded up to whole hours:
+  adapters pin their controls' recipes and compare without the prescale; the softplus SoS adapter's 4x control is
+  the query SoS run here. The generic acceptance pins none. `tests/test_max_abs_runs.py` checks each run's settings
+  and adapter and the ALiBi exp recipe against its forget-gate source; the 4x recipes' derivations are checked with
+  their comparisons. Every allocation also runs the selected CPU and GPU suites, the full-recipe pilot and a
+  fresh-process resume.
+- **Time limits.** 1.4 times the recipe's slowest recorded rate under the plain evaluation on the slowest GPU type
+  listed (H100 SXM), plus acceptance's two-hour reserve, rounded up to whole hours:
 
-  | Run | Source's wall clock, hours | Limit, h |
+  | Run | Plain evaluation's wall clock, hours | Limit, h |
   | --- | --- | ---: |
   | `rcb0ee48a6e75` | 10.3-10.5 on H100 SXM (4.9-5.0 s per update) | 17 |
   | `r775f6499974f` | 5.1 on B300 to 7.1 on H100 SXM | 12 |
@@ -3209,7 +3206,7 @@ submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, ni
 b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita)
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba)
 submit long 12:00:00 coefficient_forms_acceptance B300,H100 "$b300" r775f6499974f 0  # query SoS
-submit long 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7 0       # z h_t(z)
+submit standard 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7 500  # z h_t(z), job 10347
 submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
 submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
 ```

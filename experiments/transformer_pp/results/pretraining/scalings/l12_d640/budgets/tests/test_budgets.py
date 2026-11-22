@@ -24,11 +24,11 @@ VERSUS_1X = {("query", 8): -10.30, ("exp", None): -10.14, ("softplus_input", 8):
              ("fox_exp", None): -8.56}
 VERSUS_REFERENCE = {("fox_query", 8): 10.12, ("fixed_taylor", 12): 10.16, ("softmax", None): 11.34,
                     ("fox_exp", None): 12.41}
-BEST_4X = {("sum_of_squares", 12): 14.565, ("softplus_input", 12): 14.581, ("exp", None): 14.605,
-           ("query", 12): 14.606, ("fixed_taylor", 12): 14.615, ("static", 12): 14.624, ("softmax", None): 15.092}
-VERSUS_EXP_4X = {("sum_of_squares", 12): -0.28, ("softplus_input", 12): -0.16, ("query", 12): 0.01,
-                 ("fixed_taylor", 12): 0.07, ("static", 12): 0.13, ("softmax", None): 3.34}
-TWO_TO_FOUR = {("exp", None): -7.40, ("query", 12): -7.22, ("sum_of_squares", 12): -7.32, ("softmax", None): -6.79}
+BEST_4X = {("sum_of_squares", 12): 14.573, ("softplus_input", 12): 14.581, ("exp", None): 14.605,
+           ("query", 12): 14.606, ("static", 12): 14.624, ("fixed_taylor", 12): 14.624, ("softmax", None): 15.092}
+VERSUS_EXP_4X = {("sum_of_squares", 12): -0.22, ("softplus_input", 12): -0.16, ("query", 12): 0.01,
+                 ("static", 12): 0.13, ("fixed_taylor", 12): 0.13, ("softmax", None): 3.34}
+TWO_TO_FOUR = {("exp", None): -7.40, ("query", 12): -7.22, ("static", 12): -7.31, ("softmax", None): -6.79}
 # Recipe keys that differ between runs by design: run names and locations (the data manifests' contents are
 # checked by hash) and the blocked backend's summation order, which evaluates the same arithmetic.
 LOCATIONS = {"data.train_manifest", "data.eval_manifest", "train.checkpoint_dir", "train.workdir",
@@ -125,9 +125,14 @@ def test_budget_partners_are_derived_by_the_study_rules(tmp_path):
         expected, actual = _resolved(tmp_path / f"{run}.yaml"), _resolved(path(run))
         changed = {key: (expected.get(key), actual.get(key)) for key in set(expected) | set(actual)
                    if expected.get(key) != actual.get(key)}
-        # The 2x softplus run trains on the Mosaic transformed kernels, its 1x partner on the causal strips.
-        assert changed == ({"model.attention_backend": ("blocked", "mosaic")}
-                           if (variant, budget) == ("softplus_input", 2) else {}), (variant, degree, budget)
+        # The 2x softplus run trains on the Mosaic transformed kernels, its 1x partner on the causal strips; the
+        # 4x sum-of-squares and fixed Taylor runs evaluate head RMSNorm with the max-abs prescale.
+        expected_change = {}
+        if (variant, budget) == ("softplus_input", 2):
+            expected_change = {"model.attention_backend": ("blocked", "mosaic")}
+        elif (variant, budget) in (("sum_of_squares", 4), ("fixed_taylor", 4)):
+            expected_change = {"model.attention_head_rms_prescale": ("none", "max_abs")}
+        assert changed == expected_change, (variant, degree, budget)
         checked.append((budget, variant, degree))
     assert sorted(budget for budget, _, _ in checked) == [2] * 5 + [4] * 7
 

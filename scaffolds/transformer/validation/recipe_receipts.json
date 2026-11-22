@@ -1850,12 +1850,6 @@
    "digest": "b2c70db68b67bf73841136a452e5ef59052e15cfd732f2d8d9ca1095e4ad17d5",
    "arrays_count": 52
   },
-  "transformer_pp/r1f935f18fe21": {
-   "version": 1,
-   "loss": 5.572048664093018,
-   "digest": "32bce0dc9275c8d279d678b425cf10d2e8215310f1d7223377501383d187c1ea",
-   "arrays_count": 56
-  },
   "transformer_pp/r2047d29a0d9f": {
    "version": 1,
    "loss": 5.572049140930176,
@@ -2095,12 +2089,6 @@
    "loss": 5.589047431945801,
    "digest": "043d47460a51025ffeafd739774dea527675efbb0c95dc171caacab8f266ead5",
    "arrays_count": 52
-  },
-  "transformer_pp/r4589172dcd8b": {
-   "version": 1,
-   "loss": 5.56720495223999,
-   "digest": "d3bc534adf23cc0cbb9d48eba8e9fb0452f9fc60cd4fe37c3574413ce77e2667",
-   "arrays_count": 56
   },
   "transformer_pp/r47bfe39ce9b4": {
    "version": 1,
@@ -2362,12 +2350,6 @@
    "loss": 5.572040557861328,
    "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
    "arrays_count": 56
-  },
-  "transformer_pp/r7820049184ef": {
-   "version": 1,
-   "loss": 5.549942493438721,
-   "digest": "15eaf966114fc04c6020f23d56a5fbb15c57bb2d96333d936c335b1983abb25d",
-   "arrays_count": 50
   },
   "transformer_pp/r78fa0d682f44": {
    "version": 1,
@@ -2779,12 +2761,6 @@
    "loss": 5.572854995727539,
    "digest": "7f18f0f50a873decf592414e0e06739f9d60afa11927385d8feeca281edc70f4",
    "arrays_count": 56
-  },
-  "transformer_pp/rcace22b32f93": {
-   "version": 1,
-   "loss": 5.572048664093018,
-   "digest": "4dcad21d53834a8aea05cf7a63adad90c712c91ec58f57b05888a47882e7217d",
-   "arrays_count": 50
   },
   "transformer_pp/rcaff0dfb095f": {
    "version": 1,
