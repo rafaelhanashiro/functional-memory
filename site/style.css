@@ -831,6 +831,7 @@ header { position: relative; }
    of runs. A checkbox moves a run on (or closes it out), the grip reorders Not queued, and a run's
    text or a group's name edits in place. */
 .queue { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 24px; align-items: start; }
+.queue > .text-block { grid-column: 1 / -1; }  /* the user's notes, across both lists */
 .queue-panel { padding: 14px 14px 12px; border: 1px solid var(--rule); border-radius: 14px; background: #fff; }
 /* Soft tints, light enough to read on: red for runs not queued yet, yellow for runs in progress. */
 .queue-panel[data-list="planned"] { border-color: #fecaca; background: #fef2f2; }

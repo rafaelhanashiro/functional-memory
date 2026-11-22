@@ -15,7 +15,7 @@ at http://127.0.0.1:8765. Elsewhere, such as a laptop with Python 3.9 or later, 
 A read-only copy is public at https://rafaelhanashiro.github.io/functional-memory/, served by
 GitHub Pages from the `gh-pages` branch. Pushing `main` does not change it: after pushing, run
 `python3 site/publish.py` from any checkout to publish the committed site there (`--build DIR`
-only builds it, to look at first). It leaves out Literature, Meetings, the Queue and every
+only builds it, to look at first). It leaves out Literature, Meetings, Plan and every
 editing control; `public/` holds the read-only modules it uses instead.
 
 Everything the pages load is inside this folder: images in `media/`, result figures in `figures/`, result data in `data/`,
@@ -76,7 +76,9 @@ it; the Other runs page's saturation figure is shown by that page's L2 notes tex
 dependence page reads its table from the [calibration-mean diagnostic](../
 experiments/transformer_pp/results/diagnostics/input_dependence/calibration_mean/README.md).
 
-The Queue tab lists the runs the user plans and the runs in progress, each list a sequence of runs
+The Plan tab (`queue.html`) starts with the user's notes (`text/queue/notes.md`, edited with the
+pencil like the pages' texts), then lists the runs the user plans and the runs in progress, each
+list a sequence of runs
 and named groups of runs, in `queue/runs.json`. A planned run's checkbox moves it to In progress;
 an active run's checkbox closes it out after asking, and its arrow sends it back; a moved run joins
 the group of the same name on the other side. Every change saves both lists through `serve.py`

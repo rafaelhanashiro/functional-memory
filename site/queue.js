@@ -1,4 +1,5 @@
-// The Queue page: runs not queued yet ("planned") and runs in progress ("active"). Each list holds
+// The Plan page (queue.html): the user's notes on top (text/queue/notes.md, edited through
+// text.js), then runs not queued yet ("planned") and runs in progress ("active"). Each list holds
 // runs and named groups of runs, one level deep, and either list takes new runs and groups (its
 // + Run and + Group, or a group's +). A planned run's checkbox moves it to In progress;
 // an active run's checkbox closes it out (removes it, after asking), and its arrow sends it back.

@@ -15,7 +15,7 @@ accepts:
     PUT    /api/titles/<page>       {"key": ..., "title": ...}: rename a title of <page>.html (the
                                     key "title" is the page's own); an empty title restores it
     GET    /api/queue               {"revision": n, "lists": {"planned": [...], "active": [...]}}:
-                                    the Queue page's runs not queued yet and in progress
+                                    the Plan page's runs not queued yet and in progress
     PUT    /api/queue               {"revision": n, "lists": ...}: replace both lists, refused (409)
                                     unless n is the saved revision; the reply gives the new one
     GET    /api/meetings            {"meetings": [{"date": ..., "title": ...}]}, newest first

@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Queue · Functional Memory</title>
+<title>Plan · Functional Memory</title>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="style.css">
 <script defer src="vendor/marked/marked.min.js"></script>
 <script defer src="vendor/katex/katex.min.js"></script>
+<script type="module" src="text.js"></script>
 <script type="module" src="queue.js"></script>
 </head>
 <body>
@@ -19,10 +20,11 @@
       <a href="diagnostics.html">Diagnostics</a>
       <a href="literature.html">Literature</a>
       <a href="meeting.html">Meetings</a>
-      <a href="queue.html" aria-current="page">Queue</a>
+      <a href="queue.html" aria-current="page">Plan</a>
     </nav>
   </header>
   <main class="queue">
+    <div class="text-block page-text" data-text="notes"></div>
     <section class="queue-panel" data-list="planned">
       <div class="queue-head">
         <h2>Not queued</h2>

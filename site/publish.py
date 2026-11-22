@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Publish the read-only results snapshot that GitHub Pages serves from the gh-pages branch.
 
-The snapshot is the committed site/ without its private and editing parts: no literature, meetings
-or queue (nor links to them), no serve.py, media, page-text sources, data generators or READMEs.
+The snapshot is the committed site/ without its private and editing parts: no Literature, Meetings
+or Plan pages (nor links to them), no serve.py, media, page-text sources, data generators or READMEs.
 Page texts and renamed titles are baked into data/page-text.json. public/ holds the modules that
 replace the editing ones: a read-only text.js, and markdown.js, which re-exports editor.js's
 rendering.
@@ -30,7 +30,7 @@ PRIVATE_FILES = {"README.md", "serve.py", "publish.py", "text.js", "literature.h
                  "meeting.js", "queue.html", "queue.js", "vendor/README.md"}
 PRIVATE_DIRS = {"literature", "meeting", "queue", "text", "media", "public", "__pycache__"}
 NAV = ['      <a href="literature.html">Literature</a>\n', '      <a href="meeting.html">Meetings</a>\n',
-       '      <a href="queue.html">Queue</a>\n']
+       '      <a href="queue.html">Plan</a>\n']
 
 
 def git(*args, stdin=None, env=None):
