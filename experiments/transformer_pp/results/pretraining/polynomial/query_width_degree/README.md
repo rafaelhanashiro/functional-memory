@@ -133,10 +133,7 @@ or the softplus input? Two runs drop them in turn from `rabfbab32a594`. Each is 
 | `h_t(z)`, `z = softplus(s)` | `r8dca728e7c99` | `r41a4c74c5f58`, 14.339 | no prefactor (degree eight) |
 | `h_t(s)` | `reea3d6436271` | `reeefbcc19abf`, 14.196 | no prefactor, raw score |
 
-`r2e7f5617fdf2` keeps `z h_t(z)` and doubles its core's degree to sixteen (total seventeen), its only other
-change being the evaluation: in units of each row's largest power (`attention_polynomial_shift: row_power`), on
-its fused kernel, because the Mosaic kernels stop at degree twelve and `z^17` overflows FP32 at the scores width 4
-reaches. At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z)` trains on the Mosaic
+At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z)` trains on the Mosaic
 transformed kernels and `h_t(s)` on the query-coefficient kernel, which takes the expanded squares' coefficients;
 both on B200 or H100 ([launch](../../../../README.md#parts-of-the-softplus-sos-kernel-at-key-width-four)).
 
@@ -155,6 +152,22 @@ Both completed 7,570 updates without numerical failure. Validation-best PPL (ter
   (+1.7%); there the softplus input without the prefactor trails the raw score.
 - **Both reductions stay ahead of the raw-score ladder** at `d_K` 4 (query `p_t(s)` 19.925, static `p(s)` 19.994).
 - One seed each, so differences below about 0.5% are within one seed's noise.
+
+`r2e7f5617fdf2` keeps `z h_t(z)` and doubles its core's degree to sixteen (total seventeen). Its only other change
+is the evaluation: in units of each row's largest power (`attention_polynomial_shift: row_power`), on its fused
+kernel, because the Mosaic kernels stop at degree twelve and `z^17` overflows FP32 at the scores width 4 reaches
+([kernel](../../../../../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
+It completed 7,570 updates without numerical failure:
+
+| Kernel at `d_K` 4 | Best PPL | Against `z h_t(z)` | Against exp |
+| --- | ---: | ---: | ---: |
+| `z h_t(z)`, core sixteen (`r2e7f5617fdf2`) | 19.192 | −1.4% | +0.0% |
+
+- **Doubling the core's degree ties exp at `d_K` 4** (19.192 against 19.190), the first kernel here to do so;
+  softmax trails it by 0.7%.
+- **The gain is steady**: 1.5–1.7% below the degree-eight core at every validation from update 2,000, where the
+  degree-eight core sat 1.4–1.6% above exp.
+- One seed; the tie is within one seed's noise.
 
 ### Numerics at narrow keys
 

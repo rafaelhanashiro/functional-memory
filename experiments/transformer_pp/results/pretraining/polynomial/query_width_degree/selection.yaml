@@ -978,3 +978,15 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r2e7f5617fdf2/config.yaml
       sha256: 53e71c960ce46cbe21b420a810610ff8a80d4ec9484d0d8f4ca218b6a65473bf
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2e7f5617fdf2/metrics.jsonl
+      sha256: 7e798b8afa49b53fe0f00a61b18d7188cf7880c67fa3313973e37a2fa2a76fe2
+    completion.json:
+      path: experiments/transformer_pp/runs/r2e7f5617fdf2/completion.json
+      sha256: 55bd5f4c64b56b918b7c1490584b143a166fdacf6b8d460598488b83272c5155
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2e7f5617fdf2/metadata.json
+      sha256: db336f2c755201a38505f2a7f6718d349765bd0d3b2f5f80927bec5e65715007
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2e7f5617fdf2/best_validation.json
+      sha256: a65ee187e4bb8db4439882d521949e9e11db6a6f559b213328b9bb62cc62ed7e
