@@ -222,3 +222,20 @@ Against its control each run isolates the exponential; against its degree-sixtee
 selection pins both pairings. Where exp outweighs the even powers by more than FP32 resolves, the exponential
 gate's gradient keeps only a few percent accuracy at degree eight, as in any FP32 evaluation
 ([validation record](../../../../../../scaffolds/transformer/validation/README.md#degree-eight-2026-11-21)).
+
+All three completed 7,570 updates without numerical failure. Validation-best PPL (terminal in the
+[summary](summary.csv)), against the control without the exponential and against unnormalized exp attention at
+`d_K` 4 (`r2739c80cc032`, 19.190, pinned in the
+[narrow-key comparison](../../polynomial/query_width_degree/README.md#narrow-keys-for-exp-softmax-softplussos-and-a-degree-eight-ladder)):
+
+| Score and polynomial gate initialization | With exponential | Without | Change | Against exp attention |
+| --- | ---: | ---: | ---: | ---: |
+| Cosine, half | 23.063 | 23.933 | −3.6% | +20.2% |
+| QK, half | 20.732 | 21.178 | −2.1% | +8.0% |
+| QK, Taylor | 19.710 | 24.798 | −20.5% | +2.7% |
+
+- **The gated exponential helps every variant**, most where the powers alone did worst: it removes most of the
+  Taylor initialization's 17% deficit against half initialization, so Taylor-initialized gates finish first.
+- **None reaches exp attention.** The QK Taylor hybrid trails it by 2.7%, but is ahead of the raw-score
+  polynomials at `d_K` 4 (query `p_t(s)` 19.925, static `p(s)` 19.994; [narrow keys](../../polynomial/query_width_degree/README.md#narrow-keys-for-exp-softmax-softplussos-and-a-degree-eight-ladder)).
+- One seed each. The degree-sixteen pairing awaits those runs' records.
