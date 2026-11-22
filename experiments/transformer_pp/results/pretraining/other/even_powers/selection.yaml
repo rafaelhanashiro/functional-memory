@@ -297,6 +297,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r4546c6fbc1a8/config.yaml
       sha256: bcbf99726c037817af6d7aee31a6c265ac4a0f44dccc1cc42c206d3d7ce273a7
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r4546c6fbc1a8/metrics.jsonl
+      sha256: 08da17752fef2b6f2c8e003cecf487c60fb4b51bb49b94727dac0861f545a067
+    completion.json:
+      path: experiments/transformer_pp/runs/r4546c6fbc1a8/completion.json
+      sha256: 827b319e88a30a40b682368bc1e018f2357dac0dd286f1cd692f46f0ecd6f82e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r4546c6fbc1a8/metadata.json
+      sha256: 1c32c480edde9674b22ef8ee84e15000d6c9b63ce539c1d601f9787564da77a9
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r4546c6fbc1a8/best_validation.json
+      sha256: 8b7cf1caee7be9b47776d273a3c123b51734f6de145621750dcaa4e4e3efa574
 - study: transformer_pp
   run_id: ra3e8edca7d94
   role: cosine_half_dk4_order_lr_up
@@ -304,3 +316,15 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/ra3e8edca7d94/config.yaml
       sha256: 792c29736dae83d9400af2a91bc2fd95b724b9544d03ab9bc1f245409941351b
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra3e8edca7d94/metrics.jsonl
+      sha256: 2ffd958525551c45132de4a01f3f2ed587371872a81a29031961d59e2e420e70
+    completion.json:
+      path: experiments/transformer_pp/runs/ra3e8edca7d94/completion.json
+      sha256: bb4b696891467f9b20743cea5c3eef659d2b99afb43aee2ae07ae02192e3bc7f
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra3e8edca7d94/metadata.json
+      sha256: d24b2d551526254b306db47495982d3c00f3f83e9833fb14a13db7bda59452e5
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra3e8edca7d94/best_validation.json
+      sha256: d09b98264f8968a6aeeb3cf3a1605743bbbbb111424af64f51c7603b752b05c9

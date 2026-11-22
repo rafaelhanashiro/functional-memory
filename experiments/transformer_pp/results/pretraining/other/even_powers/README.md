@@ -185,3 +185,18 @@ schedule (`optim.coefficient_order_learning_rate: two_over_order`): the projecti
 for `r` = 2, 4, 6 and 8. Every other parameter keeps the schedule. Adam already makes each gate's step about
 the learning rate whatever its gradient's scale, so a small `s^r` shrinks each step's effect on the weights, not
 the step: `ra3e8edca7d94` tries the opposite rule, `r/2` (`order_over_two`: times 1, 2, 3 and 4).
+
+Both completed 7,570 updates without numerical failure. Validation-best PPL (terminal in the
+[summary](summary.csv)):
+
+| Gate learning rate | Run | Best PPL | Against one rate |
+| --- | --- | ---: | ---: |
+| One rate | `rf1185ae8a89c` | 23.933 | – |
+| `2/r` | `r4546c6fbc1a8` | 24.438 | +2.1% |
+| `r/2` | `ra3e8edca7d94` | 24.591 | +2.7% |
+
+- **Both directions hurt; one rate for every order is best.** Both runs track the control within about 1% through
+  update 2,000 and fall 2–3% behind from update 3,000 on.
+- Under head RMSNorm only the gates' ratios matter, and with one rate Adam already moves every gate's logit by
+  about the learning rate per step. Slowing the high orders or speeding them does not help.
+- One seed each.
