@@ -42,6 +42,18 @@ def resolve_attention_backend(model_config, *, dtype="float32", platform=None, s
         raise ValueError(f"Unknown attention backend: {request}")
     if dtype not in ("float32", "bfloat16"):
         raise ValueError("Attention requires float32 or bfloat16 computation")
+    if getattr(model_config, "attention_polynomial_shift", "none") != "none":
+        # The row-power shifted polynomial (attention/shifted_polynomial.py): its blocked reference, or its fused
+        # kernel on sm80+ with head widths at most 128; nothing selects it automatically.
+        gpu = (_runtime_platform() if platform is None else platform) in ("gpu", "cuda")
+        if request == "blocked":
+            return request
+        capability = (8 if platform is not None else _cuda_compute_capability()) if gpu else None
+        if (request == "fused" and capability is not None and capability >= 8
+                and max(model_config.qk_head_dim, model_config.value_head_dim) <= 128):
+            return request
+        raise ValueError("The row-power shifted polynomial runs on its blocked reference or its fused CUDA kernel "
+                         "with sm80+ and head widths at most 128")
     score_bias = getattr(model_config, "attention_score_bias", "none") != "none"
     if score_bias and request not in ("mosaic", "blocked"):
         # Nothing may resolve them to a kernel that ignores the biases.

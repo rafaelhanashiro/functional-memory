@@ -3140,3 +3140,25 @@ for run in r8dca728e7c99 reea3d6436271; do
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
 done
 ```
+
+
+### Degree-sixteen SoS core with the softplus prefactor at key width four
+
+`r2e7f5617fdf2` is `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) with a degree-sixteen core (total seventeen), evaluated
+in units of each row's largest power (`attention_polynomial_shift: row_power`) on its fused kernel: the Mosaic
+kernels stop at degree twelve, and `z^17` overflows FP32 at the scores width 4 reaches
+([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4),
+[kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
+The [adapter](shifted_sos_acceptance.py) derives the recipe and requires the fused backend. Home cluster Kennel.
+At about 3.6 s per update on B200 the run takes about 8 h, so a 12-hour limit leaves acceptance's two-hour reserve;
+dogo stays excluded while no placeholder holds its faulty H100:
+
+```sh
+run=r2e7f5617fdf2
+d="experiments/transformer_pp/runs/$run"
+sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=12:00:00 \
+  --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+  --output="$d/training.log" --error="$d/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.shifted_sos_acceptance \
+  "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
+```

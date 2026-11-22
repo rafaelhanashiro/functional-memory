@@ -73,6 +73,11 @@ class ModelConfig:
     # exponential); attention/pieces.py exp_shift_problem. Fresh eligible recipes use it
     # (fresh_recipe_uses_exp_shift).
     attention_exp_shift: Literal["none", "row_max"] = "none"
+    # How a query sum-of-squares polynomial p_t(z) of degree M, z = s or softplus(s), is evaluated before head
+    # RMSNorm: "none" (historical) directly; "row_power" in units e^(-m_t), m_t = M log max(1, max_i |z_ti|), so every
+    # term stays finite where z^M overflows FP32, with RMSNorm's epsilon scaled by e^(-2 m_t). Blocked reference or
+    # fused kernel; attention/pieces.py polynomial_shift_problem.
+    attention_polynomial_shift: Literal["none", "row_power"] = "none"
     # How head RMSNorm output scaling is evaluated: "none" (historical) as y / sqrt(mean(y^2) + eps), whose FP32
     # backward degrades once a head's output RMS passes about 3e13 and from 9e14 loses the term that removes the
     # gradient's component along y; "max_abs" on each row (token and head) divided by its largest magnitude, at
@@ -965,6 +970,7 @@ class ModelConfig:
         _validate_zero_constant(self)
         _validate_score_transform(self)
         _validate_exp_shift(self)
+        _validate_polynomial_shift(self)
         _validate_head_rms_prescale(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0
@@ -1338,6 +1344,20 @@ def _validate_exp_shift(model: ModelConfig) -> None:
             raise ValueError(f"model.attention_exp_shift {model.attention_exp_shift} does not apply: {problem}")
 
 
+def _validate_polynomial_shift(model: ModelConfig) -> None:
+    """The row-power shift of a query SoS polynomial (attention/pieces.py polynomial_shift_problem): "none" leaves
+    every recipe as it was; "row_power" only where it evaluates the same function."""
+    from scaffolds.transformer.attention.pieces import POLYNOMIAL_SHIFTS, polynomial_shift_problem
+
+    if model.attention_polynomial_shift not in POLYNOMIAL_SHIFTS:
+        raise ValueError(f"Unknown model.attention_polynomial_shift: {model.attention_polynomial_shift!r}")
+    if model.attention_polynomial_shift != "none":
+        problem = polynomial_shift_problem(model)
+        if problem is not None:
+            raise ValueError(f"model.attention_polynomial_shift {model.attention_polynomial_shift} does not apply: "
+                             f"{problem}")
+
+
 def _validate_head_rms_prescale(model: ModelConfig) -> None:
     """The max-abs prescale of head RMSNorm (attention/pieces.py head_rms_prescale_problem): "none" leaves every
     recipe as it was; "max_abs" only where head RMSNorm output scaling runs."""
@@ -1409,7 +1429,8 @@ def _validate_score_transform(model: ModelConfig) -> None:
     if problem is not None:
         raise ValueError(f"The {name} do not fit this recipe: {problem}" if prefactor != "none"
                          else f"The {name} does not fit this recipe: {problem}")
-    if model.attention_backend not in ("blocked", "mosaic"):
+    if model.attention_backend not in ("blocked", "mosaic") and not (
+            model.attention_backend == "fused" and model.attention_polynomial_shift != "none"):
         raise ValueError(f"A score transform runs on attention_backend blocked (its scan and causal strips) or mosaic "
                          f"(the transformed query-polynomial kernels); {model.attention_backend!r} never evaluates it")
     if model.attention_backend == "mosaic":

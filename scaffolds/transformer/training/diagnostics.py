@@ -783,6 +783,17 @@ def attention_identity(config) -> dict:
                 "unshifted exponential overflows FP32"))
         if identity["attention_implementation"] == "pallas_triton":
             identity["attention_implementation"] = "pallas_triton_row_max_shifted"
+    if getattr(config.model, "attention_polynomial_shift", "none") != "none":
+        # How the per-query polynomial is evaluated (attention/shifted_polynomial.py), on its own kernels.
+        identity.update(
+            attention_polynomial_shift=config.model.attention_polynomial_shift,
+            attention_implementation=("triton_row_power_shifted_polynomial"
+                                      if config.model.attention_backend == "fused"
+                                      else "blocked_row_power_shifted_polynomial"),
+            attention_formula=identity["attention_formula"] + (
+                "; each row evaluated in units e^(-m_t), m_t = M log max(1, max_i |z_ti|) over its transformed "
+                "scores, a constant to differentiation, with the RMSNorm epsilon scaled by e^(-2 m_t): the same "
+                "function, finite where z^M overflows FP32"))
     if getattr(config.model, "attention_head_rms_prescale", "none") != "none":
         # How the formula's head RMSNorm is evaluated (attention/output_scaling.py), after every other clause.
         identity.update(
@@ -2120,7 +2131,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                            else "gated_delta_rule_recurrence") if config.model.attention_mechanism == "gated_deltanet" else
                           (("row_max_shifted_exp" if getattr(config.model, "attention_exp_shift", "none") == "row_max"
                             else "unshifted_exp") if config.model.attention_degree is None else
-                           "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
+                           ("row_power_shifted_learned_polynomial"
+                            if getattr(config.model, "attention_polynomial_shift", "none") != "none" else
+                            "unshifted_learned_polynomial") if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else

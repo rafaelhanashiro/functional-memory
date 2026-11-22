@@ -47,6 +47,8 @@ RUNS = {
 # The coefficient-gate runs read another cluster's dataset manifests, which the adapter hashes: its case is the
 # pinned control with the gate, as in the adapter's own tests.
 CONSTRUCTED = ("coefficient_gate_acceptance",)
+# Adapters whose mechanism needs the prescale (the row-power shift is divided out through it), each with a run.
+PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",)}
 CASES = (*((name, run) for name, runs in RUNS.items() for run in runs), *((name, None) for name in CONSTRUCTED))
 
 
@@ -69,7 +71,16 @@ def with_prescale(config, prescale):
 def test_every_adapter_has_a_case():
     """A new adapter joins this module, so its comparison is held to the shared rule too."""
     adapters = {path.stem for path in STUDY.glob("*_acceptance.py")}
-    assert adapters == set(RUNS) | set(CONSTRUCTED)
+    assert adapters == set(RUNS) | set(CONSTRUCTED) | set(PRESCALED_ONLY)
+
+
+@pytest.mark.parametrize("name, run", tuple((name, run) for name, runs in PRESCALED_ONLY.items() for run in runs))
+def test_an_adapter_whose_mechanism_needs_the_prescale_refuses_the_plain_evaluation(name, run):
+    adapter, config = adapter_module(name), recipe(name, run)
+    assert config.model.attention_head_rms_prescale == "max_abs"
+    adapter.check_recipe(config)
+    with pytest.raises(ValueError):
+        adapter.check_recipe(with_prescale(config, "none"))
 
 
 @pytest.mark.parametrize("name, run", CASES)

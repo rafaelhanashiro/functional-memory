@@ -50,6 +50,9 @@ settings:
       - narrow_softplus_times_sos_dk4
       - narrow_softplus_sos_core_dk4
       - narrow_raw_sos_dk4
+      core_degree_comparison:
+      - narrow_softplus_times_sos_dk4
+      - narrow_softplus_times_sos_core16_dk4
       partners:
       - narrow_softplus_times_sos_dk64
       - narrow_softplus_sos_core_dk64
@@ -944,3 +947,10 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
       sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2
+- study: transformer_pp
+  run_id: r2e7f5617fdf2
+  role: narrow_softplus_times_sos_core16_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2e7f5617fdf2/config.yaml
+      sha256: 53e71c960ce46cbe21b420a810610ff8a80d4ec9484d0d8f4ca218b6a65473bf

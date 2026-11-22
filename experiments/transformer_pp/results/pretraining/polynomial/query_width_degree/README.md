@@ -133,7 +133,10 @@ or the softplus input? Two runs drop them in turn from `rabfbab32a594`. Each is 
 | `h_t(z)`, `z = softplus(s)` | `r8dca728e7c99` | `r41a4c74c5f58`, 14.339 | no prefactor (degree eight) |
 | `h_t(s)` | `reea3d6436271` | `reeefbcc19abf`, 14.196 | no prefactor, raw score |
 
-At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z)` trains on the Mosaic
+`r2e7f5617fdf2` keeps `z h_t(z)` and doubles its core's degree to sixteen (total seventeen), its only other
+change being the evaluation: in units of each row's largest power (`attention_polynomial_shift: row_power`), on
+its fused kernel, because the Mosaic kernels stop at degree twelve and `z^17` overflows FP32 at the scores width 4
+reaches. At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z)` trains on the Mosaic
 transformed kernels and `h_t(s)` on the query-coefficient kernel, which takes the expanded squares' coefficients;
 both on B200 or H100 ([launch](../../../../README.md#parts-of-the-softplus-sos-kernel-at-key-width-four)).
 

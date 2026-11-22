@@ -531,7 +531,7 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                         tests.append("learned_polynomial_rational")
                 if fused:
                     tests.append("normalized_polynomial_fused_attention")
-            elif fused:
+            elif fused and model.get("attention_polynomial_shift", "none") == "none":
                 tests.append("learned_polynomial_fused_attention")
         elif fixed:
             if cpu:
@@ -563,6 +563,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             # The row-maximum shift: CPU, against the unshifted exponential and FP64, scan and strips; GPU, the strips'
             # production precision. The fused kernel's GPU cases are in unnormalized_fused_attention, selected above.
             tests.append("exp_row_max_shift")
+        if model.get("attention_polynomial_shift", "none") != "none":
+            # The row-power shift: CPU, the blocked reference and the fused programs' arithmetic against FP64; GPU,
+            # the fused kernel against FP64 (its own kernel; no generic fused polynomial suite applies).
+            tests.append("shifted_polynomial_attention")
         if model.get("attention_head_rms_prescale", "none") != "none":
             # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at output RMS 1e-25 to 1e30;
             # GPU, the device's own FP32 arithmetic at the scales where the plain backward fails and through the

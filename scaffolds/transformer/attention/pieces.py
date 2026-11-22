@@ -98,6 +98,38 @@ def exp_shift_problem(model) -> str | None:
     return None
 
 
+# How a per-query polynomial p_t(z) = sum_r c_tr z^r of degree M, z = s or softplus(s), is evaluated before head
+# RMSNorm: "none" (every historical recipe) directly; "row_power" in units e^(-m_t), m_t = M log max(1, max_i |z_ti|),
+# where each term c_tr z^r e^(-m_t) = c_tr e^(-(M - r) m_t / M) u^r with |u| = |z| e^(-m_t / M) <= 1, and RMSNorm's
+# epsilon is scaled by e^(-2 m_t) (attention/shifted_polynomial.py): the same function, finite where z^M overflows FP32.
+POLYNOMIAL_SHIFTS = ("none", "row_power")
+
+
+def polynomial_shift_problem(model) -> str | None:
+    """Why the row-power shift cannot evaluate this recipe's attention, or None. It evaluates the plain query
+    sum-of-squares polynomial (any input power) on the raw score or its softplus, unnormalized and without gates,
+    decay, score biases or a score prefactor, whose output goes straight into head RMSNorm with the max-abs prescale;
+    with RoPE or no positional encoding, on its blocked reference or fused kernel."""
+    if model.attention_mechanism != "dot_product" or model.attention_normalization:
+        return "it applies to unnormalized polynomial attention alone"
+    if (model.attention_coefficients != "learned" or model.attention_coefficient_conditioning != "query"
+            or model.attention_coefficient_parameterization != "sum_of_squares"
+            or model.attention_coefficient_activation != "tanh" or model.attention_coefficient_readout != "diagonal"):
+        return "it evaluates diagonal tanh query sum-of-squares coefficients"
+    if model.attention_score_transform not in ("identity", "softplus") or model.attention_score_prefactor != "none":
+        return "it takes the raw score or its softplus, without a score prefactor"
+    if (model.attention_forget_gate or model.attention_score_bias != "none"
+            or model.attention_coefficient_gate != "none" or model.attention_coefficient_orders is not None):
+        return "it evaluates the plain polynomial, without gates, decay, score biases or selected orders"
+    if model.attention_output_scaling != "head_rms_norm" or model.attention_head_rms_prescale != "max_abs":
+        return "head RMSNorm with the max-abs prescale divides out its row factor"
+    if model.positional_encoding not in ("rope", "none"):
+        return "PaTH runs its own kernels, which do not shift"
+    if model.attention_backend not in ("blocked", "fused"):
+        return f"backend {model.attention_backend!r} does not implement it; its blocked reference and fused kernel do"
+    return None
+
+
 def head_rms_prescale_problem(model) -> str | None:
     """Why the max-abs prescale (attention/output_scaling.py) cannot evaluate this recipe's attention, or None. It
     is head RMSNorm's own arithmetic, so it applies wherever head RMSNorm output scaling does: every kernel,
@@ -142,6 +174,8 @@ def mosaic_supported(model) -> bool:
         return False  # Transforms run on their own kernels (mosaic_score_transform_supported).
     if getattr(model, "attention_score_prefactor", "none") != "none":
         return False  # Prefactors run on the transformed kernels too (mosaic_score_transform_supported).
+    if getattr(model, "attention_polynomial_shift", "none") != "none":
+        return False  # The row-power shift runs on its own fused kernel (attention/shifted_polynomial.py).
     taylor = (model.attention_normalization and integer_degree and degree >= 1
               and model.attention_coefficients == "fixed" and model.quadratic_mode == "fixed"
               and model.attention_fixed_coefficients is None and model.attention_fixed_square_factors is None
