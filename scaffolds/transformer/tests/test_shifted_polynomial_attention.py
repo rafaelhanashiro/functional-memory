@@ -192,3 +192,23 @@ def test_the_shift_is_refused_off_its_recipe():
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(0, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
                 attention_coefficient_parameterization="direct", attention_degree=8)
+
+
+@pytest.mark.parametrize("power", (0, 1))
+def test_validation_diagnostics_report_the_shifted_model_as_the_unshifted_one(power):
+    """After a training step, the trainer's attention report of the shifted model is valid and has the unshifted
+    model's transform measurements, with its kernel values named for the shift."""
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics
+    from scaffolds.transformer.training.state import create_state
+
+    batch = jnp.asarray(np.random.default_rng(9).integers(0, 32, (2, 9)), jnp.int32)
+    reports = []
+    for shift in ("row_power", "none"):
+        config = _config(power, attention_head_rms_prescale="max_abs", attention_polynomial_shift=shift)
+        state, *_ = loop.train_step(create_state(config, jax.random.PRNGKey(0)), batch, jax.random.PRNGKey(0))
+        reports.append(attention_diagnostics(state, config, np.asarray(batch[:1]), {"selection": "test"}))
+    shifted, plain = reports
+    assert shifted["valid"], shifted["issues"]
+    assert sorted(shifted["coefficients"]["score_transform"]) == sorted(plain["coefficients"]["score_transform"])
+    assert shifted["kernel_values"] == "row_power_shifted_learned_polynomial_of_softplus_scores"

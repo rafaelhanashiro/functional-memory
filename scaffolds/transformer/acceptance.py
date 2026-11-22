@@ -948,7 +948,7 @@ def matches_softmax_initialization(config) -> dict:
     control = replace(config, model=replace(config.model, attention_backend="blocked",
                                            attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none", attention_exp_shift="none",
-                                           attention_head_rms_prescale="none",
+                                           attention_polynomial_shift="none", attention_head_rms_prescale="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_static_sos_parameterization="direct",
@@ -1020,7 +1020,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     control = replace(config, model=replace(
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
-        attention_exp_shift="none", attention_head_rms_prescale="none",
+        attention_exp_shift="none", attention_polynomial_shift="none", attention_head_rms_prescale="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",

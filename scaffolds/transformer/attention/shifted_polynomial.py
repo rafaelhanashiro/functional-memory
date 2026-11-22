@@ -79,6 +79,12 @@ def _reference(q, k, v, c, transform, return_diagnostics):
                  "invalid_output_count": jnp.sum(actual[None, :, None, None] & ~jnp.isfinite(output)),
                  "causal_entry_count": jnp.sum(measured) * batch * heads,
                  "negative_weight_count": jnp.sum(measured & (weights < 0))}
+        if transform != "identity":
+            # The transform's per-head measurements, as the blocked backend records them for its score functions.
+            from scaffolds.transformer.attention.backends.reference import _score_transform_statistics
+
+            stats.update(_score_transform_statistics(scores, z, measured, lambda r: coefficients[..., r, None],
+                                                     degree))
         return outputs, stats
 
     result = lax.map(rows, jnp.arange((time + block - 1) // block))
@@ -91,8 +97,11 @@ def _reference(q, k, v, c, transform, return_diagnostics):
     output = tuple(flatten(x) for x in result)
     if not return_diagnostics:
         return output
-    stats = {name: (values.min() if name.endswith("_min") else values.max() if name.endswith("_max")
-                    else values.sum()) for name, values in stats.items()}
+    # Each block's scalars reduce to scalars; the transform's per-head and histogram arrays keep their own axes.
+    axis = lambda name: 0 if name.startswith("score_transform_") else None
+    stats = {name: (values.min(axis=axis(name)) if name.endswith("_min") else
+                    values.max(axis=axis(name)) if name.endswith("_max") else values.sum(axis=axis(name)))
+             for name, values in stats.items()}
     stats["min_abs_weight_sum"] = stats["weight_sum_min"]
     stats["negative_kernel_count"] = stats["negative_weight_count"]
     stats["negative_weight_fraction"] = stats["negative_weight_count"] / stats["causal_entry_count"]

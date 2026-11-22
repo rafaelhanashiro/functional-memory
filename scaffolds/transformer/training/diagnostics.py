@@ -2167,9 +2167,11 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     from scaffolds.transformer.configs.base import _exponential_kernel
 
     transform = getattr(config.model, "attention_score_transform", "identity")
-    if transform != "identity" and report["kernel_values"] == "unshifted_learned_polynomial":
-        # A learned static polynomial of transformed scores, named as the query polynomial's.
-        report["kernel_values"] = f"learned_polynomial_of_{transform}_scores"
+    if transform != "identity" and report["kernel_values"] in ("unshifted_learned_polynomial",
+                                                               "row_power_shifted_learned_polynomial"):
+        # A learned polynomial of transformed scores, named as the query polynomial's (and its row-power shift).
+        shifted = "row_power_shifted_" if report["kernel_values"].startswith("row_power") else ""
+        report["kernel_values"] = f"{shifted}learned_polynomial_of_{transform}_scores"
     prefactor = getattr(config.model, "attention_score_prefactor", "none")
     if prefactor != "none" and not _exponential_kernel(config.model):
         # W = f(s) p(z): the polynomial's label times its prefactor of the raw score (the exponential's score
