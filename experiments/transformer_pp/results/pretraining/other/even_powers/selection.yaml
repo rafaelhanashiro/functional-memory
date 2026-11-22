@@ -57,7 +57,10 @@ settings:
     gate_learning_rate_comparison:
     - cosine_half_dk4
     - cosine_half_dk4_order_lr
+    - cosine_half_dk4_order_lr_up
     order_lr: gate r of cosine_half_dk4_order_lr takes 2/r of the learning-rate schedule
+    order_lr_up: gate r of cosine_half_dk4_order_lr_up takes r/2 of the learning-rate
+      schedule
 runs:
 - study: transformer_pp
   run_id: r45831d718944
@@ -294,3 +297,10 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r4546c6fbc1a8/config.yaml
       sha256: bcbf99726c037817af6d7aee31a6c265ac4a0f44dccc1cc42c206d3d7ce273a7
+- study: transformer_pp
+  run_id: ra3e8edca7d94
+  role: cosine_half_dk4_order_lr_up
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra3e8edca7d94/config.yaml
+      sha256: 792c29736dae83d9400af2a91bc2fd95b724b9544d03ab9bc1f245409941351b

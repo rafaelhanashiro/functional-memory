@@ -3148,7 +3148,8 @@ Dogo is eligible while its faulty H100 is occupied by the existing placeholder. 
 ### Gate learning rates by order for the cosine even-gate run
 
 `r4546c6fbc1a8` is the cosine-score even-gate run `rf1185ae8a89c` with gate `r`'s learning rate at `2/r` of the
-schedule (`optim.coefficient_order_learning_rate: two_over_order`), its only change
+schedule (`optim.coefficient_order_learning_rate: two_over_order`), its only change, and `ra3e8edca7d94` the same
+run at `r/2` (`order_over_two`)
 ([comparison](results/pretraining/other/even_powers/README.md#gate-learning-rates-by-order-for-the-cosine-score)).
 The [even-gate adapter](even_gate_acceptance.py) checks the recipe and adds the rule's CPU tests
 (`test_coefficient_order_learning_rate.py`); the rule scales AdamW's completed update and adds no optimizer state.
@@ -3157,7 +3158,7 @@ acceptance's two-hour reserve; dogo stays excluded while no placeholder holds it
 worktree after committing the frozen execution set:
 
 ```sh
-run=r4546c6fbc1a8
+run=r4546c6fbc1a8  # and ra3e8edca7d94, from its own worktree
 d="experiments/transformer_pp/runs/$run"
 sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=6:00:00 \
   --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \

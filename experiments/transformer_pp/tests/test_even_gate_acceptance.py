@@ -15,6 +15,7 @@ ALLOCATED = {
     "r4ec7b748d430": ("rms_norm", "zero", "constant"),
     "r2bb06d5ee682": ("rms_norm", "logit_taylor", "constant"),
     "r4546c6fbc1a8": ("rms_norm_cosine", "zero", "two_over_order"),
+    "ra3e8edca7d94": ("rms_norm_cosine", "zero", "order_over_two"),
 }
 
 
@@ -53,8 +54,9 @@ def test_each_allocated_recipe_is_its_variant(run_id):
             config.optim.coefficient_order_learning_rate) == ALLOCATED[run_id]
 
 
-def test_the_order_rate_variant_changes_only_the_gate_learning_rates():
-    constant, scaled = (config_to_dict(adapter.recipe("rms_norm_cosine", "zero", rate)) for rate in adapter.ORDER_RATES)
+@pytest.mark.parametrize("rate", adapter.ORDER_RATES[1:])
+def test_the_order_rate_variants_change_only_the_gate_learning_rates(rate):
+    constant, scaled = (config_to_dict(adapter.recipe("rms_norm_cosine", "zero", value)) for value in ("constant", rate))
     assert {(section, name) for section in constant for name in constant[section]
             if constant[section][name] != scaled[section][name]} == {("optim", "coefficient_order_learning_rate")}
     with pytest.raises(ValueError, match="learning-rate rule"):

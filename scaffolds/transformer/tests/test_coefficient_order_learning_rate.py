@@ -1,4 +1,4 @@
-"""Order-scaled learning rates: sigmoid query gate r takes 2/r of the schedule's, Adam step and decay alike."""
+"""Order-scaled learning rates: sigmoid query gate r takes 2/r or r/2 of the schedule's, Adam step and decay alike."""
 
 import jax
 import jax.numpy as jnp
@@ -11,6 +11,8 @@ from scaffolds.transformer.configs import Config, load_config, save_config, vali
 from scaffolds.transformer.configs.loader import config_dicts_equal, config_to_dict
 from scaffolds.transformer.tests.test_gated_even_coefficients import ORDERS, _model
 from scaffolds.transformer.training.optim import ORDER_GATES, make_optimizer
+
+RULES = {"two_over_order": lambda order: 2 / order, "order_over_two": lambda order: order / 2}
 from scaffolds.transformer.training.state import create_state
 
 
@@ -36,13 +38,14 @@ def assert_equal_tree(left, right):
         np.testing.assert_array_equal(first, second)
 
 
-def test_each_gate_order_takes_two_over_its_order_after_clipping_and_adam():
-    reference_config, scaled_config = gate_config(), gate_config("two_over_order")
+@pytest.mark.parametrize("rule", RULES)
+def test_each_gate_order_takes_its_rule_after_clipping_and_adam(rule):
+    reference_config, scaled_config = gate_config(), gate_config(rule)
     params = create_state(reference_config, jax.random.PRNGKey(0)).params
     reference_tx, scaled_tx = make_optimizer(reference_config), make_optimizer(scaled_config)
     reference_state, scaled_state = reference_tx.init(params), scaled_tx.init(params)
     assert_equal_tree(reference_state, scaled_state)
-    scales = np.asarray([2 / order for order in ORDERS])
+    scales = np.asarray([RULES[rule](order) for order in ORDERS])
     # Cross warmup, the cosine decay and the minimum; gradients above the clip norm vary over time.
     for step in range(reference_config.optim.total_steps + 1):
         grads = jax.tree.map(lambda value: jnp.sin(jnp.arange(value.size).reshape(value.shape) + step) + 2, params)
@@ -65,8 +68,9 @@ def test_each_gate_order_takes_two_over_its_order_after_clipping_and_adam():
         assert ORDER_GATES | {"qk_norm_q_gain", "token_embedding", "lm_head"} <= paths
 
 
-def test_decay_of_each_gate_projection_also_takes_its_order_rate():
-    config = gate_config("two_over_order")
+@pytest.mark.parametrize("rule", RULES)
+def test_decay_of_each_gate_projection_also_takes_its_order_rate(rule):
+    config = gate_config(rule)
     config.optim.warmup_steps = 0
     config.optim.min_learning_rate = config.optim.learning_rate
     state = create_state(config, jax.random.PRNGKey(0))
@@ -74,7 +78,7 @@ def test_decay_of_each_gate_projection_also_takes_its_order_rate():
     updated = state.apply_gradients(grads=jax.tree.map(jnp.zeros_like, state.params))
     params = dict(nnx.to_flat_state(updated.params))
     decay = config.optim.learning_rate * config.optim.weight_decay
-    expected = 1 - decay * np.asarray([2 / order for order in ORDERS])
+    expected = 1 - decay * np.asarray([RULES[rule](order) for order in ORDERS])
     np.testing.assert_allclose(params[("query_polynomial_kernel",)][...],
                                np.broadcast_to(expected, params[("query_polynomial_kernel",)][...].shape), rtol=1e-6)
     np.testing.assert_array_equal(params[("query_polynomial_bias",)][...], 1.0)
@@ -95,7 +99,7 @@ def test_tanh_query_coefficients_are_refused():
 def test_unknown_rule_and_combined_multiplier_are_refused():
     config = gate_config()
     config.optim.coefficient_order_learning_rate = "inverse"
-    with pytest.raises(ValueError, match="must be constant or two_over_order"):
+    with pytest.raises(ValueError, match="must be constant, two_over_order or order_over_two"):
         validate_config(config)
 
 

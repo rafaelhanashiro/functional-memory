@@ -17,8 +17,8 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
                   "wandb_group", "wandb_dir", "wandb_mode")
 ORDER = (2, 4, 6, 8)
 VARIANTS = (("rms_norm_cosine", "zero"), ("rms_norm", "zero"), ("rms_norm", "logit_taylor"))
-# One learning rate for every gate, or gate r at 2/r of it (optim.coefficient_order_learning_rate).
-ORDER_RATES = ("constant", "two_over_order")
+# One learning rate for every gate, or gate r at 2/r or r/2 of it (optim.coefficient_order_learning_rate).
+ORDER_RATES = ("constant", "two_over_order", "order_over_two")
 FEATURE_TESTS = ("scaffolds/transformer/tests/test_gated_even_coefficients.py",
                  "scaffolds/transformer/tests/test_qk_rms_cosine.py",
                  "scaffolds/transformer/tests/test_coefficient_order_learning_rate.py")

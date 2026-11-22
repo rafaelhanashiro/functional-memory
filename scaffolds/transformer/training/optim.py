@@ -80,13 +80,15 @@ def make_optimizer(config: Config):
         # The multiplier has no state. Keep the original optimizer state layout,
         # moments, and counters, including the unchanged default checkpoint format.
         adam = optax.GradientTransformation(adam.init, update_query_coefficients)
-    if config.optim.coefficient_order_learning_rate == "two_over_order":
-        order_scales = jnp.asarray([2.0 / order for order in config.model.attention_coefficient_orders], jnp.float32)
+    order_rule = ORDER_LEARNING_RATES.get(config.optim.coefficient_order_learning_rate)
+    if order_rule is not None:
+        order_scales = jnp.asarray([order_rule(order) for order in config.model.attention_coefficient_orders],
+                                   jnp.float32)
         order_update = adam.update
 
         def update_order_gates(updates, state, params=None):
             # Scale Adam's completed update, weight decay included, after global clipping: each gate array's last
-            # axis holds one coefficient order, and gate r takes 2/r of the learning rate.
+            # axis holds one coefficient order, and gate r takes its rule's multiple of the learning rate.
             updates, state = order_update(updates, state, params)
 
             def scale_parameter(path, value):
@@ -115,6 +117,8 @@ class ContinuationAdamState(NamedTuple):
 QUERY_COEFFICIENT_READOUTS = frozenset({"query_polynomial_bias", "query_polynomial_amplitude"})
 # The diagonal sigmoid query gates, w_r and b_r of sigmoid(w_r . x + b_r), each indexed by order on its last axis.
 ORDER_GATES = frozenset({"query_polynomial_kernel", "query_polynomial_bias"})
+# optim.coefficient_order_learning_rate: gate r's multiple of the learning rate under each rule ("constant": 1).
+ORDER_LEARNING_RATES = {"two_over_order": lambda order: 2.0 / order, "order_over_two": lambda order: order / 2.0}
 
 
 # The arrays a continuation can introduce beside its fixed-Taylor parent: learned static or

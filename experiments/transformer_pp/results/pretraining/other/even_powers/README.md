@@ -182,4 +182,6 @@ Opened 2026-11-21. With a cosine score `|s| <= 1`, so `s^r` shrinks with `r` and
 the weights less for the same step. `r4546c6fbc1a8` is `rf1185ae8a89c` with gate `r`'s learning rate at `2/r` of the
 schedule (`optim.coefficient_order_learning_rate: two_over_order`): the projection `w_r` and bias `b_r` of
 `sigmoid(w_r . unit(x_t) + b_r)` take AdamW's update, decoupled weight decay included, times 1, 1/2, 1/3 and 1/4
-for `r` = 2, 4, 6 and 8. Every other parameter keeps the schedule.
+for `r` = 2, 4, 6 and 8. Every other parameter keeps the schedule. Adam already makes each gate's step about
+the learning rate whatever its gradient's scale, so a small `s^r` shrinks each step's effect on the weights, not
+the step: `ra3e8edca7d94` tries the opposite rule, `r/2` (`order_over_two`: times 1, 2, 3 and 4).
