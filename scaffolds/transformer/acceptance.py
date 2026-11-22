@@ -257,6 +257,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(MOSAIC_SCORE_TRANSFORM_TESTS)
             if prefactor != "none":
                 paths.append(MOSAIC_SCORE_PREFACTOR_TESTS)
+    elif model.get("attention_polynomial_shift", "none") != "none":
+        # The row-power shifted polynomial (attention/shifted_polynomial.py) evaluates any transform it takes on its
+        # blocked reference or fused kernel, whose own module attention_test_paths selects for both stages; on CPU
+        # the transform's FP64 references join it.
+        if cpu and transform != "identity":
+            paths.append(SCORE_TRANSFORM_TESTS)
     elif transform != "identity":
         implementation = model.get("attention_blocked_implementation", "scan")
         if resolved_backend != "blocked" or implementation != "strips":
