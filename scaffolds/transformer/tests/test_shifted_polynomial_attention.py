@@ -191,7 +191,8 @@ def test_the_shift_is_refused_off_its_recipe():
                 attention_backend="mosaic", value_head_dim=64)
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(0, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
-                attention_coefficient_parameterization="direct", attention_degree=8)
+                attention_coefficient_parameterization="direct", attention_score_transform="identity",
+                attention_coefficient_conditioning="query_key")
 
 
 @pytest.mark.parametrize("power", (0, 1))
@@ -213,3 +214,107 @@ def test_validation_diagnostics_report_the_shifted_model_as_the_unshifted_one(po
     assert sorted(shifted["coefficients"]["score_transform"]) == sorted(plain["coefficients"]["score_transform"])
     assert plain["kernel_values"] == "query_polynomial_of_softplus_scores"
     assert shifted["kernel_values"] == "row_power_shifted_query_polynomial_of_softplus_scores"
+
+
+# The direct coefficient sources the shift also evaluates, on the raw score at degree sixteen as the Q/K width 4 runs
+# set them: tanh query coefficients (with a nonzero amplitude, so their generator's gradients are exercised), fixed
+# Taylor, and static learned coefficients from Taylor's.
+SOURCES = {
+    "query": dict(attention_coefficient_parameterization="direct", attention_score_transform="identity",
+                  attention_coefficient_amplitude_scale="factorial", attention_coefficient_scale="factorial",
+                  attention_coefficient_amplitude_initial=0.5),
+    "fixed": dict(attention_coefficients="fixed", attention_coefficient_conditioning="static",
+                  attention_coefficient_activation="identity", attention_coefficient_parameterization="direct",
+                  attention_coefficient_sharing="global", attention_score_transform="identity",
+                  attention_coefficient_amplitude_initial=1.0, attention_coefficient_projection_initial_std=0.0,
+                  attention_coefficient_kernel_weight_decay=False),
+    "static": dict(attention_coefficients="learned", attention_coefficient_conditioning="static",
+                   attention_coefficient_activation="identity", attention_coefficient_parameterization="direct",
+                   attention_score_transform="identity", attention_coefficient_amplitude_initial=1.0,
+                   attention_coefficient_projection_initial_std=0.0, attention_coefficient_kernel_weight_decay=False,
+                   attention_coefficient_scale="factorial", attention_coefficient_initialization="taylor"),
+}
+
+
+def _source_config(source, **changes):
+    return _config(0, core_degree=16, **{"attention_head_rms_prescale": "max_abs", **SOURCES[source], **changes})
+
+
+@pytest.mark.parametrize("source", SOURCES)
+def test_shifted_model_matches_the_unshifted_model_for_every_coefficient_source(source):
+    """Degree-sixteen tanh query, fixed Taylor and static learned coefficients on the raw score: with the shift each
+    model equals the unshifted blocked model at moderate scores, logits and every parameter gradient."""
+    _assert_models_agree(_source_config(source, attention_polynomial_shift="row_power"), _source_config(source),
+                         rtol=1e-4, grad_rtol=1e-3)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("source", SOURCES)
+def test_fused_model_matches_the_blocked_shifted_model_for_every_coefficient_source(source):
+    """As for the SoS models: the fused kernel's model against the blocked reference's, to 1e-3 of each gradient's
+    largest entry."""
+    assert jax.default_backend() == "gpu"
+    blocked, fused = (_source_config(source, attention_backend=backend, attention_polynomial_shift="row_power")
+                      for backend in ("blocked", "fused"))
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3)
+
+
+def test_the_shift_admits_its_coefficient_sources_alone():
+    """The recipe rule alone, on each source's settings with one changed (some changes are invalid recipes on other
+    grounds, which ModelConfig would refuse first)."""
+    from types import SimpleNamespace
+
+    from scaffolds.transformer.attention.pieces import polynomial_shift_problem
+
+    for source in SOURCES:
+        assert polynomial_shift_problem(_source_config(source).model) is None, source
+    query, fixed = _source_config("query").model, _source_config("fixed").model
+    for model, changes, reason in (
+            (query, dict(attention_coefficient_conditioning="query_key"), "diagonal tanh query"),
+            (query, dict(attention_coefficient_readout="dense"), "diagonal tanh query"),
+            (query, dict(attention_coefficient_activation="sigmoid"), "diagonal tanh query"),
+            (fixed, dict(attention_coefficient_parameterization="sum_of_squares"), "diagonal tanh query"),
+            (query, dict(attention_coefficient_input_power=1), "every order from zero"),
+            (query, dict(attention_coefficient_zero_constant=True), "every order from zero"),
+            (fixed, dict(attention_fixed_square_factors=(1.0, 1.0)), "square factors"),
+            (query, dict(attention_normalization=True), "unnormalized"),
+            (query, dict(attention_score_prefactor="softplus"), "prefactor"),
+            (fixed, dict(attention_head_rms_prescale="none"), "max-abs prescale")):
+        assert reason in polynomial_shift_problem(SimpleNamespace(**{**vars(model), **changes})), changes
+
+
+@pytest.mark.parametrize("source, kernel_values", (("query", "query_polynomial"), ("fixed", "taylor"),
+                                                   ("static", "learned_polynomial")))
+def test_validation_diagnostics_name_each_shifted_source(source, kernel_values):
+    """After a training step the trainer's attention report of each shifted model is valid, with its kernel values
+    named for the shift."""
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics
+    from scaffolds.transformer.training.state import create_state
+
+    batch = jnp.asarray(np.random.default_rng(9).integers(0, 32, (2, 9)), jnp.int32)
+    reports = {}
+    for shift in ("row_power", "none"):
+        config = _source_config(source, attention_polynomial_shift=shift)
+        state, *_ = loop.train_step(create_state(config, jax.random.PRNGKey(0)), batch, jax.random.PRNGKey(0))
+        reports[shift] = attention_diagnostics(state, config, np.asarray(batch[:1]), {"selection": "test"})
+    assert reports["row_power"]["valid"], reports["row_power"]["issues"]
+    assert reports["none"]["kernel_values"] == f"unshifted_{kernel_values}"
+    assert reports["row_power"]["kernel_values"] == f"row_power_shifted_{kernel_values}"
+
+
+def test_blocked_diagnostics_measure_the_cancellation_of_signed_rows():
+    """On signed scores with signed coefficients the cancellation ratio is sum |w| / |sum w| of the unshifted
+    weights per row, which the row factor leaves unchanged."""
+    (q, k, v, c), _ = _inputs(35, False, 9)
+    c[..., 1::2] *= -50.0
+    _, d = shifted_polynomial_attention(*map(jnp.asarray, (q, k, v, c)), transform="identity",
+                                        return_diagnostics=True)
+    scores = np.einsum("bqhd,bkhd->bhqk", q.astype(np.float64), k.astype(np.float64)) / 2
+    causal = np.tri(35, dtype=bool)
+    weights = sum(c.astype(np.float64)[..., r].transpose(0, 2, 1)[..., None] * scores ** r for r in range(10))
+    weights = np.where(causal, weights, 0.0)
+    ratio = np.abs(weights).sum(-1) / np.abs(weights.sum(-1))
+    assert ratio.max() > 1.5
+    np.testing.assert_allclose(d["cancellation_ratio_max"], ratio.max(), rtol=1e-3)
+    np.testing.assert_allclose(d["cancellation_ratio_mean"], ratio.mean(), rtol=1e-3)

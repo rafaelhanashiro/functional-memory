@@ -540,13 +540,15 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             elif fused and model.get("attention_polynomial_shift", "none") == "none":
                 tests.append("learned_polynomial_fused_attention")
         elif fixed:
+            # The row-power shift's fixed coefficients run on its own kernel, whose module is selected below.
+            shifted = model.get("attention_polynomial_shift", "none") != "none"
             if cpu:
                 tests.extend(["fixed_polynomial", "fixed_polynomial_config"])
                 if square:
                     tests.append("fixed_square_factors")
-            elif fused:
+            elif fused and not shifted:
                 tests.append("fixed_square_factors_fused" if square else "fixed_polynomial_fused")
-            if model.get("qk_norm") and (cpu or fused):
+            if model.get("qk_norm") and (cpu or (fused and not shifted)):
                 tests.append("fixed_polynomial_qk_norm")
         elif normalized:
             if degree is None:
@@ -561,8 +563,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             elif fused:
                 tests.extend(["fused_attention", "taylor_kernel_widths"])
         if not normalized:
+            # The row-power shift's polynomials run on its own kernel, whose module is selected below.
             tests.extend(["unnormalized_attention", "unnormalized_training"] if cpu else
-                         (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
+                         (["unnormalized_fused_attention"] if fused and not learned and not fixed
+                          and model.get("attention_polynomial_shift", "none") == "none" else []))
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
         if model.get("attention_exp_shift", "none") != "none":

@@ -31,6 +31,14 @@ softplus took 2.21 ms forward and 15.00 ms forward and backward with the first t
 before the sweep, and Mosaic's transformed kernel at degree 9 5.52 ms. B300 and H100 are qualified only by a
 run's own acceptance on its allocated GPU.
 
+**Coefficient sources (2026-11-22).** The kernel evaluates any per-query coefficient vector, so the shift also
+takes the tanh query polynomial and static coefficients, fixed (Taylor's `1/r!` or a recipe's table) or learned,
+broadcast to every query (`attention/pieces.py` `polynomial_shift_problem`). On CPU each source's degree-16 model on
+the raw score equals the unshifted model, logits and every parameter gradient; the same cases compare the fused
+model with the blocked reference's on GPU (`test_shifted_polynomial_attention.py`, `SOURCES`). The diagnostics'
+cancellation ratio, `sum_i |w_ti| / |sum_i w_ti|` per row, is measured from the shifted weights, which the row factor
+leaves unchanged; it had been set to 1, right only for a nonnegative sum of squares.
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head

@@ -3,7 +3,8 @@
 m_t = M log max(1, max_i |z_ti|) over query t's causal row bounds every term: with half = e^(-m_t / (2M)) and
 u = (z half) half, |u| <= 1 and c_r z^r e^(-m_t) = c_r e^(-(M - r) m_t / M) u^r. Head RMSNorm divides the row factor
 out when its epsilon is scaled by e^(-2 m_t) (attention/output_scaling.py); m_t is a constant to differentiation.
-The query sum-of-squares generator supplies c (attention/nonnegative_polynomial.py), prefactor included.
+The layer supplies c per query: the tanh query generator, direct or sum of squares (attention/nonnegative_polynomial.py,
+prefactor included), or static fixed or learned coefficients broadcast to every query.
 """
 import math
 
@@ -66,6 +67,8 @@ def _reference(q, k, v, c, transform, return_diagnostics):
         actual = query_positions < time
         measured = actual[None, None, :, None] & causal
         weight_sums = weights.sum(axis=-1)
+        # sum_i |w_ti| / |sum_i w_ti| per row, unchanged by the row's factor; 1 for nonnegative weights.
+        cancellation = jnp.abs(weights).sum(axis=-1) / jnp.abs(weight_sums)
         min_measured = lambda x, mask: jnp.min(jnp.where(mask, x, jnp.inf))
         max_measured = lambda x, mask: jnp.max(jnp.where(mask, x, -jnp.inf))
         stats = {"score_min": min_measured(scores, measured), "score_max": max_measured(scores, measured),
@@ -78,7 +81,10 @@ def _reference(q, k, v, c, transform, return_diagnostics):
                  "invalid_weight_sum_count": jnp.sum(actual & ~jnp.isfinite(weight_sums)),
                  "invalid_output_count": jnp.sum(actual[None, :, None, None] & ~jnp.isfinite(output)),
                  "causal_entry_count": jnp.sum(measured) * batch * heads,
-                 "negative_weight_count": jnp.sum(measured & (weights < 0))}
+                 "negative_weight_count": jnp.sum(measured & (weights < 0)),
+                 "cancellation_ratio_max": max_measured(cancellation, actual[None, None, :]),
+                 "cancellation_sum": jnp.sum(jnp.where(actual[None, None, :], cancellation, 0.0)),
+                 "row_count": jnp.sum(actual) * batch * heads}
         if transform != "identity":
             # The transform's per-head measurements, as the blocked backend records them for its score functions.
             from scaffolds.transformer.attention.backends.reference import _score_transform_statistics
@@ -106,8 +112,7 @@ def _reference(q, k, v, c, transform, return_diagnostics):
     stats["negative_kernel_count"] = stats["negative_weight_count"]
     stats["negative_weight_fraction"] = stats["negative_weight_count"] / stats["causal_entry_count"]
     stats["negative_kernel_fraction"] = stats["negative_weight_fraction"]
-    # A sum of squares, with a positive prefactor if any, has no negative summand to cancel.
-    stats["cancellation_ratio_mean"] = stats["cancellation_ratio_max"] = jnp.float32(1.0)
+    stats["cancellation_ratio_mean"] = stats.pop("cancellation_sum") / stats.pop("row_count")
     from scaffolds.transformer.attention.input_dependent import coefficient_statistics
     stats.update(coefficient_statistics(c))
     return output, lax.stop_gradient(stats)

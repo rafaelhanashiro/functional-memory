@@ -641,19 +641,21 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The max-abs prescale evaluates head RMSNorm output scaling, which this layer does "
                              "not use")
         self.attention_head_rms_prescale = attention_head_rms_prescale
-        # A query SoS polynomial in units of its row's largest power (attention/pieces.py polynomial_shift_problem,
+        # A per-query polynomial in units of its row's largest power (attention/pieces.py polynomial_shift_problem,
         # which ModelConfig states for recipes): exact only where max-abs head RMSNorm takes the output with its shift.
         from scaffolds.transformer.attention.pieces import POLYNOMIAL_SHIFTS
 
         if attention_polynomial_shift not in POLYNOMIAL_SHIFTS:
             raise ValueError(f"Unknown polynomial shift: {attention_polynomial_shift!r}")
         if attention_polynomial_shift != "none" and (
-                attention_normalization or attention_coefficient_parameterization != "sum_of_squares"
-                or attention_coefficient_conditioning != "query" or attention_score_transform not in ("identity", "softplus")
+                attention_normalization or (attention_coefficient_conditioning, attention_coefficient_parameterization)
+                not in (("query", "sum_of_squares"), ("query", "direct"), ("static", "direct"))
+                or attention_score_transform not in ("identity", "softplus")
                 or attention_score_prefactor != "none" or attention_head_rms_prescale != "max_abs"
                 or backend not in ("blocked", "fused")):
-            raise ValueError("The row-power shift evaluates unnormalized query SoS polynomials on the raw or softplus "
-                             "score, without a prefactor, under max-abs head RMSNorm, on the blocked or fused backend")
+            raise ValueError("The row-power shift evaluates unnormalized per-query polynomials (tanh query coefficients, "
+                             "direct or sum of squares, or static direct ones) on the raw or softplus score, without a "
+                             "prefactor, under max-abs head RMSNorm, on the blocked or fused backend")
         self.attention_polynomial_shift = attention_polynomial_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
@@ -1119,13 +1121,14 @@ class MultiHeadAttention(nnx.Module):
 
     def _coefficients_per_query(self, parameters, query_coefficients) -> bool:
         """Whether static or fixed polynomial coefficients run per query: when a forget gate, a score transform,
-        score biases or a prefactor meets them (static SoS factors keep their own kernel)."""
+        score biases, a prefactor or the row-power shift meets them (static SoS factors keep their own kernel)."""
         return (query_coefficients is None and self.attention_coefficient_conditioning == "static"
                 and self.attention_degree is not None and not self.attention_normalization
                 and "polynomial_square_factors" not in parameters and self.attention_fixed_square_factors is None
                 and self.score_mlp_width is None and self.attention_kernel_basis == "polynomial"
                 and (self.attention_forget_gate or self.attention_score_transform != "identity"
-                     or self.attention_score_bias != "none" or self.attention_score_prefactor != "none"))
+                     or self.attention_score_bias != "none" or self.attention_score_prefactor != "none"
+                     or self.attention_polynomial_shift != "none"))
 
     def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics,
                         log_alpha=None):

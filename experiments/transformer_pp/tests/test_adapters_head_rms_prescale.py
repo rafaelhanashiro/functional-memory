@@ -47,7 +47,8 @@ RUNS = {
 # pinned control with the gate, as in the adapter's own tests.
 CONSTRUCTED = ("coefficient_gate_acceptance",)
 # Adapters whose mechanism needs the prescale (the row-power shift is divided out through it), each with a run.
-PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",)}
+PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",),
+                  "shifted_polynomial_acceptance": ("raec1c513a51b", "re125a8977319")}
 CASES = (*((name, run) for name, runs in RUNS.items() for run in runs), *((name, None) for name in CONSTRUCTED))
 
 

@@ -73,7 +73,7 @@ class ModelConfig:
     # exponential); attention/pieces.py exp_shift_problem. Fresh eligible recipes use it
     # (fresh_recipe_uses_exp_shift).
     attention_exp_shift: Literal["none", "row_max"] = "none"
-    # How a query sum-of-squares polynomial p_t(z) of degree M, z = s or softplus(s), is evaluated before head
+    # How a per-query polynomial p_t(z) of degree M, z = s or softplus(s), is evaluated before head
     # RMSNorm: "none" (historical) directly; "row_power" in units e^(-m_t), m_t = M log max(1, max_i |z_ti|), so every
     # term stays finite where z^M overflows FP32, with RMSNorm's epsilon scaled by e^(-2 m_t). Blocked reference or
     # fused kernel; attention/pieces.py polynomial_shift_problem.
@@ -1345,7 +1345,7 @@ def _validate_exp_shift(model: ModelConfig) -> None:
 
 
 def _validate_polynomial_shift(model: ModelConfig) -> None:
-    """The row-power shift of a query SoS polynomial (attention/pieces.py polynomial_shift_problem): "none" leaves
+    """The row-power shift of a per-query polynomial (attention/pieces.py polynomial_shift_problem): "none" leaves
     every recipe as it was; "row_power" only where it evaluates the same function."""
     from scaffolds.transformer.attention.pieces import POLYNOMIAL_SHIFTS, polynomial_shift_problem
 

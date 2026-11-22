@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/raec1c513a51b/config.yaml",
+    "sha256": "6402362cf53ea4073ffbc102392fc2bd540121db737becffd380c4c57476041b"
+  },
+  "label": "query-m16-dk4-w-decay",
+  "name": "query-m16-dk4-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "0a271c080e0debc57f44a315ee829b813c8ddb98038e0d46fd8e4c1ece8e3158",
+    "loss": 5.600582122802734,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "raec1c513a51b",
+  "status": "planned"
+}

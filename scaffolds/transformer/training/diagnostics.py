@@ -2155,9 +2155,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                                    if getattr(config.model, "attention_score_bias", "none") != "none"
                                    else f"query_polynomial_of_{transform}_scores" if transform != "identity"
                                    else "unshifted_query_polynomial")
-        if getattr(config.model, "attention_polynomial_shift", "none") != "none":
-            # In units of each row's largest power (attention/shifted_polynomial.py).
-            report["kernel_values"] = "row_power_shifted_" + report["kernel_values"].removeprefix("unshifted_")
+    if getattr(config.model, "attention_polynomial_shift", "none") != "none":
+        # In units of each row's largest power (attention/shifted_polynomial.py), for every coefficient source.
+        report["kernel_values"] = "row_power_shifted_" + report["kernel_values"].removeprefix("unshifted_")
     if spline:
         report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"
                                    else "unshifted_spline")
