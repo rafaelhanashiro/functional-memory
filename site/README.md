@@ -84,6 +84,8 @@ an active run's checkbox closes it out after asking, and its arrow sends it back
 the group of the same name on the other side. Every change saves both lists through `serve.py`
 (`/api/queue`), which refuses a save made against an older revision. The file is the user's, like
 the meetings' files below: never write, reset, or regenerate it, and commit it only when asked.
+A blue box under both lists holds another of the user's texts (`text/queue/running.md`), hidden
+while empty.
 
 The meetings' files (`meeting/<date>-agenda.md`, `meeting/<date>-notes.md`,
 `meeting/<date>.json`, and the images they link in `media/`) belong to the user, who edits

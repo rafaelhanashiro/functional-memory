@@ -836,6 +836,9 @@ header { position: relative; }
 /* Soft tints, light enough to read on: red for runs not queued yet, yellow for runs in progress. */
 .queue-panel[data-list="planned"] { border-color: #fecaca; background: #fef2f2; }
 .queue-panel[data-list="active"] { border-color: #fde68a; background: #fefce8; }
+/* A box under both lists for another of the user's texts (text/queue/running.md), hidden while empty. */
+.queue-box { grid-column: 1 / -1; padding: 14px 18px; border: 1px solid #bfdbfe; border-radius: 14px; background: #eff6ff; }
+.queue-box:has(> .text-block:empty) { display: none; }
 .queue-head { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 4px 8px; }
 .queue-head h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
 .queue-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
