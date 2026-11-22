@@ -122,6 +122,21 @@ Exp at `d_K` 4, 8 and 16 subtracts each row's maximum score (`attention_exp_shif
   its gradient norm spiked twice (27 and 62), but recorded row sums did not predict what the plain arithmetic cost
   the static run ([below](#numerics-at-narrow-keys)), so 19.925 is not known to be exact.
 
+### The parts of `z h_t(z)` at `d_K` 4
+
+Opened 2026-11-21. Which part of `z h_t(z)` matters at `d_K` 4, where it trails exp by 1.4%: the prefactor `z`
+or the softplus input? Two runs drop them in turn from `rabfbab32a594`. Each is its own `d_K` 64 partner at width
+4 with the max-abs prescale, and differs from `rabfbab32a594` only in the parts named:
+
+| Kernel | `d_K` 4 run | `d_K` 64 partner, best PPL | Change from `z h_t(z)` |
+| --- | --- | --- | --- |
+| `h_t(z)`, `z = softplus(s)` | `r8dca728e7c99` | `r41a4c74c5f58`, 14.339 | no prefactor (degree eight) |
+| `h_t(s)` | `reea3d6436271` | `reeefbcc19abf`, 14.196 | no prefactor, raw score |
+
+At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z)` trains on the Mosaic
+transformed kernels and `h_t(s)` on the query-coefficient kernel, which takes the expanded squares' coefficients;
+both on B200 or H100 ([launch](../../../../README.md#parts-of-the-softplus-sos-kernel-at-key-width-four)).
+
 ### Numerics at narrow keys
 
 Narrow keys train much larger scores: the largest score at the final validation grows from 21–90 at `d_K` 64 to

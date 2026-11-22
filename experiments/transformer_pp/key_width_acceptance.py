@@ -4,7 +4,9 @@ Each run is a completed partner's recipe with ``model.qk_head_dim`` changed (``v
 15-layer width-896 reference shape and 1x budget:
 
 - r841f35a24241, W = z h_t(z), z = softplus(s), with a query sum-of-squares core of degree eight, on the Mosaic
-  transformed kernels;
+  transformed kernels, and its two reductions, taken to width 4 alone: the same core without the prefactor z,
+  W = h_t(z) (r41a4c74c5f58, on the same kernels), and without the softplus too, W = h_t(s) (reeefbcc19abf, the
+  query polynomial its squares expand to, on the Mosaic query-coefficient kernel);
 - r6a76e7fbde45, the unnormalized exponential on the fused Pallas-Triton kernel, which also takes the gradient-event
   capture the softplus-SoS run already has and may shift the exponential by its causal row maximum
   (``model.attention_exp_shift: row_max``: the same function under head RMSNorm, finite where e^s overflows FP32);
@@ -110,6 +112,24 @@ PARTNERS = {
             16: (180_390_676, "efc4d82ad5de6ca96c6aa79d220daa016a4d107e86e36b5a40b884f52a633044"),
         },
     },
+    # z h_t(z) without its prefactor z, and without the softplus too: each changes only its kernel's settings, so at
+    # width 4 both start from softplus-SoS's arrays. The raw-score run predates the study's gradient-event capture.
+    "softplus_sos_core": {
+        "run_id": "r41a4c74c5f58",
+        "config_sha256": "851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110",
+        "backend": "mosaic", "gpu_types": {4: ("H100", "B200")}, "train": {}, "model_options": {},
+        "initialization": {
+            4: (177_569_806, "98062beda15b818e558372eebfd952763cef53134d9691a5b0193826ad2ef3a0"),
+        },
+    },
+    "raw_sos": {
+        "run_id": "reeefbcc19abf",
+        "config_sha256": "7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326",
+        "backend": "mosaic", "gpu_types": {4: MOSAIC_QUERY_GPUS[4]}, "train": CAPTURE_POLICY, "model_options": {},
+        "initialization": {
+            4: (177_569_806, "98062beda15b818e558372eebfd952763cef53134d9691a5b0193826ad2ef3a0"),
+        },
+    },
     # The grid's d_K 8 run, taken to width 4 alone (the grid has 8, 16, 32 and 64). At width 4 it starts from the
     # same arrays (paths, shapes and values) as softplus-SoS, so the two pins agree.
     "query": {
@@ -134,10 +154,11 @@ SOFTMAX_WIDTH_TESTS = tuple(
     f"scaffolds/transformer/tests/test_softmax_backends.py::{test}[{width}]"
     for test in ("test_cudnn_matches_manual_outputs_input_and_parameter_gradients",
                  "test_cudnn_production_context_forward_and_backward_are_finite") for width in WIDTHS)
-GPU_TESTS = {"softplus_sos": ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
-                              "scaffolds/transformer/tests/test_mosaic_softplus_sos.py"),
+SOFTPLUS_SOS_GPU_TESTS = ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
+                          "scaffolds/transformer/tests/test_mosaic_softplus_sos.py")
+GPU_TESTS = {"softplus_sos": SOFTPLUS_SOS_GPU_TESTS, "softplus_sos_core": SOFTPLUS_SOS_GPU_TESTS,
              "exponential": ("scaffolds/transformer/tests/test_unnormalized_fused_attention.py",),
-             "softmax": SOFTMAX_WIDTH_TESTS, "query": ()}
+             "softmax": SOFTMAX_WIDTH_TESTS, "query": (), "raw_sos": ()}
 # Fixed and static coefficients, whose shared Mosaic suite (test_mosaic_unnormalized.py) takes widths 16 and 64, add
 # the Mosaic query-coefficient kernel's cases at the run's degree and width alone (a width the GPU is not qualified
 # at stays out of its stage), against FP64 and the Pallas-Triton kernel; acceptance keeps the run's weight precision.
@@ -160,12 +181,15 @@ def gpu_tests(config) -> tuple:
 
 def partner_key(config) -> str:
     """The partner of a recipe, by its kernel: softmax and the exponential have no degree; of the polynomials,
-    softplus-SoS has square factors, fixed Taylor fixed coefficients, and the others static or query ones."""
+    the SoS runs have square factors (softplus-SoS with its prefactor, its core alone, or the core on the raw
+    score), fixed Taylor fixed coefficients, and the others static or query ones."""
     model = config.model
     if model.attention_degree is None:
         return "softmax" if model.attention_normalization else "exponential"
     if model.attention_coefficient_parameterization == "sum_of_squares":
-        return "softplus_sos"
+        if model.attention_score_transform != "softplus":
+            return "raw_sos"
+        return "softplus_sos" if model.attention_coefficient_input_power else "softplus_sos_core"
     if model.attention_coefficients == "fixed":
         return "taylor"
     return "query" if model.attention_coefficient_conditioning == "query" else "static"

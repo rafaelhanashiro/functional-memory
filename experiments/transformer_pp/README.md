@@ -3117,3 +3117,26 @@ sbatch --parsable --partition=standard --time=9:00:00 --nice=0 --gres=gpu:1 --cp
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
   experiments/transformer_pp/runs/r99b1eebb5254/config.yaml "$(git rev-parse HEAD)" 1 B200,H100
 ```
+
+
+### Parts of the softplus-SoS kernel at key width four
+
+Two runs take `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) apart: `r8dca728e7c99` (`h_t(z)`, without the prefactor `z`)
+and `reea3d6436271` (`h_t(s)`, without the softplus too). Each is its `d_K` 64 partner, `r41a4c74c5f58` and
+`reeefbcc19abf`, at width 4 with the max-abs prescale; the raw-score partner also takes the study's gradient-event
+capture. The [key-width adapter](key_width_acceptance.py) checks them and runs `h_t(z)`'s width-4 cases in
+`test_mosaic_softplus_sos.py`; both kernels are qualified at width 4 on B200 and H100
+([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4)).
+Home cluster Kennel. The `d_K` 4 SoS runs trained at 1.3 to 1.6 s per update on B200, so a 6-hour limit leaves
+acceptance's two-hour reserve; dogo stays excluded while no placeholder holds its faulty H100. Submit from this
+worktree after committing the frozen execution set:
+
+```bash
+for run in r8dca728e7c99 reea3d6436271; do
+  sbatch --parsable --partition=standard,long --time=6:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```

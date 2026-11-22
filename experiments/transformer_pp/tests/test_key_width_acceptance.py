@@ -66,6 +66,16 @@ def test_pinned_partners_are_the_recorded_runs(key):
     assert config.model.attention_backend == partner["backend"] and adapter.partner_key(config) == key
 
 
+def test_the_sos_reductions_drop_the_prefactor_then_the_softplus():
+    """r41a4c74c5f58 is softplus-SoS's recipe without the prefactor z (degree nine to eight); reeefbcc19abf is that
+    core on the raw score, from before the study's gradient-event capture."""
+    full, core = adapter.partner_config("softplus_sos"), adapter.partner_config("softplus_sos_core")
+    assert scientific_differences(core, full) == {"model.attention_coefficient_input_power", "model.attention_degree"}
+    assert (core.model.attention_degree, core.model.attention_coefficient_input_power) == (8, 0)
+    assert scientific_differences(variant("raw_sos", 64), core) == {"model.attention_score_transform"}
+    assert adapter.partner_config("raw_sos").model.attention_score_transform == "identity"
+
+
 def test_the_polynomial_partners_are_the_ladder_on_the_raw_score():
     """Degree eight on the raw score: fixed Taylor, static learned and tanh query coefficients."""
     taylor, static, query = (adapter.partner_config(key).model for key in ("taylor", "static", "query"))
@@ -86,7 +96,7 @@ def test_the_polynomial_partners_are_the_ladder_on_the_raw_score():
 def test_only_the_key_width_and_capture_change(key, width):
     config = variant(key, width)
     adapter.check_recipe(config)
-    expected = {"model.qk_head_dim", *(("train.gradient_event_capture",) if key == "exponential" else ())}
+    expected = {"model.qk_head_dim", *(("train.gradient_event_capture",) if adapter.PARTNERS[key]["train"] else ())}
     assert scientific_differences(config, adapter.partner_config(key)) == expected
     assert config.model.value_head_dim == 64
 
@@ -152,8 +162,9 @@ def test_softmax_is_the_normalized_partner_on_cudnn():
         adapter.check_recipe(normalized_exponential)
 
 
-def test_the_exponential_runs_take_the_capture_policy():
-    config = variant("exponential", 8)
+@pytest.mark.parametrize("key,width", (("exponential", 8), ("raw_sos", 4)))
+def test_partners_without_capture_take_the_capture_policy(key, width):
+    config = variant(key, width)
     config.train.gradient_event_capture = False
     with pytest.raises(ValueError, match="train.gradient_event_capture"):
         adapter.check_recipe(config)
@@ -210,7 +221,7 @@ def test_shared_pins_are_the_same_initial_arrays():
     softplus-SoS's arrays, so their pins agree; the static coefficients add one vector per head and order."""
     pins = {key: partner["initialization"] for key, partner in adapter.PARTNERS.items()}
     assert pins["taylor"] == pins["exponential"]
-    assert pins["query"][4] == pins["softplus_sos"][4]
+    assert pins["query"][4] == pins["softplus_sos"][4] == pins["softplus_sos_core"][4] == pins["raw_sos"][4]
     for width in adapter.WIDTHS:
         assert pins["static"][width][0] - pins["taylor"][width][0] == 15 * 14 * 9
 
@@ -233,7 +244,7 @@ def test_gpus_are_the_qualified_ones():
         "softmax": every(("H100", "B300")),
         "taylor": {4: ("H100", "B200"), 8: ("H100", "B300"), 16: ("H100", "B300")},
         "static": {4: ("H100", "B200"), 8: ("H100", "B300"), 16: ("H100", "B300")},
-        "query": {4: ("H100", "B200")},
+        "query": {4: ("H100", "B200")}, "softplus_sos_core": {4: ("H100", "B200")}, "raw_sos": {4: ("H100", "B200")},
     }
 
 
@@ -372,7 +383,17 @@ RUNS = {
     "r1eaa4a4c3c77": ("fixed-m8-head-scale-dk4-max-abs-head-rms", "taylor", 4, PRESCALED),
     "r5e540d8620b1": ("fixed-m8-head-scale-dk8-max-abs-head-rms", "taylor", 8, PRESCALED),
     "r99b1eebb5254": ("static-m8-head-scale-dk4-max-abs-head-rms", "static", 4, PRESCALED),
+    "r8dca728e7c99": ("query-sos-core-m8-softplus-rope-w-decay-dk4", "softplus_sos_core", 4, PRESCALED),
+    "reea3d6436271": ("query-m8-sum-of-squares-w-decay-dk4", "raw_sos", 4, PRESCALED),
 }
+
+
+def test_the_width_4_sos_reductions_drop_the_prefactor_then_the_softplus():
+    """The d_K 4 z h_t(z) run without its prefactor z (h_t(z)), and without the softplus too (h_t(s))."""
+    full, core, raw = (run_config(run_id) for run_id in ("rabfbab32a594", "r8dca728e7c99", "reea3d6436271"))
+    assert scientific_differences(core, full) == {"model.attention_coefficient_input_power", "model.attention_degree"}
+    assert scientific_differences(raw, core) == {"model.attention_score_transform"}
+    assert (raw.model.attention_score_transform, raw.model.attention_degree) == ("identity", 8)
 
 
 @pytest.mark.parametrize("run_id, plain", (("rabfbab32a594", "r5a25f500bfa8"), ("r1eaa4a4c3c77", "re3515eed3576"),

@@ -43,6 +43,17 @@ settings:
       use attention_head_rms_prescale: max_abs'
     plain_evaluation: the plain_* roles are the same recipes without the row shift
       or the prescale
+    sos_parts:
+      question: which part of z h_t(z) matters at d_K 4, the prefactor z or the softplus
+        input?
+      roles:
+      - narrow_softplus_times_sos_dk4
+      - narrow_softplus_sos_core_dk4
+      - narrow_raw_sos_dk4
+      partners:
+      - narrow_softplus_times_sos_dk64
+      - narrow_softplus_sos_core_dk64
+      - narrow_raw_sos_dk64
     heatmap: plot.py reads the query_decay_* roles only
 runs:
 - study: transformer_pp
@@ -881,3 +892,55 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r0f5e38b0d934/best_validation.json
       sha256: 4a99bbb686e33b572739cf9581f05abc60f8859dbf38c2ab34a6d7d79b27a396
+- study: transformer_pp
+  run_id: r8dca728e7c99
+  role: narrow_softplus_sos_core_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r8dca728e7c99/config.yaml
+      sha256: c525ef89ca3abad3d1103dc84ce85358ba19475aa25230a7df7bf220ccc976e3
+- study: transformer_pp
+  run_id: reea3d6436271
+  role: narrow_raw_sos_dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reea3d6436271/config.yaml
+      sha256: 05b52e20f935438b9eeed180d247d5355828a87de4797f277d274176e3e5b67a
+- study: transformer_pp
+  run_id: r41a4c74c5f58
+  role: narrow_softplus_sos_core_dk64
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/config.yaml
+      sha256: 851c389a0e00d5e595c5c02b30e09255249412fc3d4f9d11a5ba0551e70a7110
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metrics.jsonl
+      sha256: 49be5d0bf16b835e95bfc69231d9aeb46d194a4fb7c1a8fe2073e9e6207db3bb
+    completion.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/completion.json
+      sha256: 1e2abce0eec8e98379b06a89664e0d6cb70e526eb895dc6404d9d75607cdc328
+    metadata.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/metadata.json
+      sha256: 42b7fbbd934fa9a59985bb3e030d3f6ccba4e62c592eb7b7e86b1f9066809f02
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r41a4c74c5f58/best_validation.json
+      sha256: ff78b0bb95d83d8297a3448a51c7cbcdee95b35e7e9d9f32c70c77b3e5088e24
+- study: transformer_pp
+  run_id: reeefbcc19abf
+  role: narrow_raw_sos_dk64
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/config.yaml
+      sha256: 7d3fca30ff8fb22520f5bdb6df9bffc3a962b2dc5ab539436a17b4d2b0e3d326
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metrics.jsonl
+      sha256: d647b2f1e82f45fbd72d0e68be0d03897f7427477fcbb68ab78d7524b0085ffb
+    completion.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/completion.json
+      sha256: e3fae2b3368b9bf83a8ecaf40eba19c127dc51556d4d0802f2bc11600923c0c0
+    metadata.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/metadata.json
+      sha256: 622b437d7c55de06d920c91df1d58cf1e18248eb4feb612e970c9ddcde6b6adf
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reeefbcc19abf/best_validation.json
+      sha256: f6433184e61ec98f2794dc448c6f7a2eb9e00910feba32e1234a6b31c8c96ef2

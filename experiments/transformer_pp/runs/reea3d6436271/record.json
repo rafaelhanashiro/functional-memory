@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/reea3d6436271/config.yaml",
+    "sha256": "05b52e20f935438b9eeed180d247d5355828a87de4797f277d274176e3e5b67a"
+  },
+  "label": "query-m8-sum-of-squares-w-decay-dk4",
+  "name": "query-m8-sum-of-squares-w-decay-dk4",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "c550e934a573a0bd8e0a09d6d7c086b293799ccdcc428e6d9f78dc9e14a597d7",
+    "loss": 5.6005859375,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "reea3d6436271",
+  "status": "planned"
+}
