@@ -129,6 +129,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_denominator_constant", "fixed")
         value.setdefault("optim", {}).setdefault("coefficient_penalty_denominator", True)
         value["optim"].setdefault("query_coefficient_learning_rate_scale", 1.0)
+        value["optim"].setdefault("coefficient_order_learning_rate", "constant")
         for key in ("coefficient_release_step", "coefficient_release_schedule", "coefficient_release_end_step"):
             value["optim"].setdefault(key, None)
         value["model"].setdefault("attention_coefficient_sharing", "global")

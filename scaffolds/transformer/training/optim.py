@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import optax
 from functools import partial
 from flax import nnx
@@ -79,6 +80,23 @@ def make_optimizer(config: Config):
         # The multiplier has no state. Keep the original optimizer state layout,
         # moments, and counters, including the unchanged default checkpoint format.
         adam = optax.GradientTransformation(adam.init, update_query_coefficients)
+    if config.optim.coefficient_order_learning_rate == "two_over_order":
+        order_scales = jnp.asarray([2.0 / order for order in config.model.attention_coefficient_orders], jnp.float32)
+        order_update = adam.update
+
+        def update_order_gates(updates, state, params=None):
+            # Scale Adam's completed update, weight decay included, after global clipping: each gate array's last
+            # axis holds one coefficient order, and gate r takes 2/r of the learning rate.
+            updates, state = order_update(updates, state, params)
+
+            def scale_parameter(path, value):
+                keys = tuple(entry.key for entry in path if isinstance(entry, jax.tree_util.DictKey))
+                return value * order_scales.astype(value.dtype) if keys and keys[0] in ORDER_GATES else value
+
+            return jax.tree.map_with_path(scale_parameter, updates), state
+
+        # Stateless, like the query multiplier: the optimizer state and checkpoint format are unchanged.
+        adam = optax.GradientTransformation(adam.init, update_order_gates)
     optimizer = optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
     release = coefficient_release(config)
     if release is None:
@@ -95,6 +113,8 @@ class ContinuationAdamState(NamedTuple):
 
 
 QUERY_COEFFICIENT_READOUTS = frozenset({"query_polynomial_bias", "query_polynomial_amplitude"})
+# The diagonal sigmoid query gates, w_r and b_r of sigmoid(w_r . x + b_r), each indexed by order on its last axis.
+ORDER_GATES = frozenset({"query_polynomial_kernel", "query_polynomial_bias"})
 
 
 # The arrays a continuation can introduce beside its fixed-Taylor parent: learned static or

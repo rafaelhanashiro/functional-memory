@@ -68,7 +68,7 @@ def _parent_config(config):
         raise ValueError("Continuation must preserve the parent data recipe and batch size")
     for key in ("beta1", "beta2", "weight_decay", "weight_decay_policy", "grad_clip_norm",
                 "coefficient_penalty", "coefficient_penalty_denominator",
-                "query_coefficient_learning_rate_scale"):
+                "query_coefficient_learning_rate_scale", "coefficient_order_learning_rate"):
         if getattr(parent.optim, key) != getattr(config.optim, key):
             raise ValueError(f"Continuation changes parent optim.{key}")
     for key in ("seed", "dtype"):

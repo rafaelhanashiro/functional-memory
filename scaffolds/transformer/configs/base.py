@@ -1441,6 +1441,9 @@ class OptimConfig:
     # Multiply only the diagonal tanh query generator's stored a and b updates.
     # The projection W and all other parameters retain the base LR schedule.
     query_coefficient_learning_rate_scale: float = 1.0
+    # "two_over_order" gives each sigmoid query gate of coefficient order r the learning rate 2/r times the
+    # schedule's, its Adam step and decoupled weight decay alike (training/optim.py); "constant" keeps one rate.
+    coefficient_order_learning_rate: str = "constant"
     # Coefficient release (training/coefficient_release.py), for learned direct static or diagonal
     # tanh query coefficients storing every order 0..m: each stored entry of order r (static c_r;
     # query b_r, a_r, and column r of W) stays at its initial value for optimizer updates with
@@ -1695,6 +1698,22 @@ def validate_config(config: Config) -> None:
             raise ValueError("optim.query_coefficient_learning_rate_scale is not supported for "
                              "checkpoint continuations; their introduced parameters use "
                              "continuation.new_parameter_learning_rate")
+    order_rate = optim.coefficient_order_learning_rate
+    if order_rate not in ("constant", "two_over_order"):
+        raise ValueError("optim.coefficient_order_learning_rate must be constant or two_over_order")
+    if order_rate != "constant":
+        model = config.model
+        orders = model.attention_coefficient_orders
+        if (model.attention_mechanism != "dot_product" or model.attention_coefficients != "learned"
+                or model.attention_coefficient_conditioning != "query"
+                or model.attention_coefficient_activation != "sigmoid"
+                or model.attention_coefficient_readout != "diagonal" or not orders or min(orders) < 1):
+            raise ValueError("optim.coefficient_order_learning_rate two_over_order scales diagonal sigmoid query "
+                             "gates of explicit coefficient orders, each at least one")
+        if (query_scale != 1.0 or optim.coefficient_release_schedule is not None
+                or optim.coefficient_release_step is not None or continuation.parent_checkpoint):
+            raise ValueError("optim.coefficient_order_learning_rate two_over_order does not combine with a query "
+                             "coefficient LR scale, coefficient release or a checkpoint continuation")
     if data.source not in ("synthetic", "packed"):
         raise ValueError("data.source must be synthetic or packed")
     for name, value in (

@@ -1,10 +1,21 @@
-"""Recipe and numerical qualification of the three bounded-gate polynomial comparisons."""
+"""Recipe and numerical qualification of the bounded-gate polynomial comparisons."""
 from dataclasses import replace
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from experiments.transformer_pp import even_gate_acceptance as adapter
+from scaffolds.transformer.configs import config_to_dict, load_config
+
+RUNS = Path(adapter.__file__).parent / "runs"
+# Allocated runs: (score, sigmoid bias initialization, gate learning-rate rule).
+ALLOCATED = {
+    "rf1185ae8a89c": ("rms_norm_cosine", "zero", "constant"),
+    "r4ec7b748d430": ("rms_norm", "zero", "constant"),
+    "r2bb06d5ee682": ("rms_norm", "logit_taylor", "constant"),
+    "r4546c6fbc1a8": ("rms_norm_cosine", "zero", "two_over_order"),
+}
 
 
 @pytest.mark.parametrize(("score", "bias"), adapter.VARIANTS)
@@ -32,3 +43,19 @@ def test_pilot_detects_a_nonzero_constant_and_an_out_of_bounds_cosine():
     row["score_max"] = 1.05
     with pytest.raises(RuntimeError, match="cosine"):
         adapter.check_pilot(config, {}, validation)
+
+
+@pytest.mark.parametrize("run_id", ALLOCATED)
+def test_each_allocated_recipe_is_its_variant(run_id):
+    config = load_config(RUNS / run_id / "config.yaml")
+    adapter.check_recipe(config)
+    assert (config.model.qk_norm_type, config.model.attention_coefficient_sigmoid_bias_initial,
+            config.optim.coefficient_order_learning_rate) == ALLOCATED[run_id]
+
+
+def test_the_order_rate_variant_changes_only_the_gate_learning_rates():
+    constant, scaled = (config_to_dict(adapter.recipe("rms_norm_cosine", "zero", rate)) for rate in adapter.ORDER_RATES)
+    assert {(section, name) for section in constant for name in constant[section]
+            if constant[section][name] != scaled[section][name]} == {("optim", "coefficient_order_learning_rate")}
+    with pytest.raises(ValueError, match="learning-rate rule"):
+        adapter.recipe("rms_norm_cosine", "zero", "inverse")

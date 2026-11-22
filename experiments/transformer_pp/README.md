@@ -3143,3 +3143,25 @@ done
 
 Dogo is eligible while its faulty H100 is occupied by the existing placeholder. See the
 [Kennel cluster notes](../../CLUSTERS.md#kennel-csail).
+
+
+### Gate learning rates by order for the cosine even-gate run
+
+`r4546c6fbc1a8` is the cosine-score even-gate run `rf1185ae8a89c` with gate `r`'s learning rate at `2/r` of the
+schedule (`optim.coefficient_order_learning_rate: two_over_order`), its only change
+([comparison](results/pretraining/other/even_powers/README.md#gate-learning-rates-by-order-for-the-cosine-score)).
+The [even-gate adapter](even_gate_acceptance.py) checks the recipe and adds the rule's CPU tests
+(`test_coefficient_order_learning_rate.py`); the rule scales AdamW's completed update and adds no optimizer state.
+Home cluster Kennel. The degree-eight even-gate runs trained at about 1.3 s per update, so a 6-hour limit leaves
+acceptance's two-hour reserve; dogo stays excluded while no placeholder holds its faulty H100. Submit from this
+worktree after committing the frozen execution set:
+
+```sh
+run=r4546c6fbc1a8
+d="experiments/transformer_pp/runs/$run"
+sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=6:00:00 \
+  --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+  --output="$d/training.log" --error="$d/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.even_gate_acceptance \
+  "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+```

@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r4546c6fbc1a8/config.yaml",
+    "sha256": "bcbf99726c037817af6d7aee31a6c265ac4a0f44dccc1cc42c206d3d7ce273a7"
+  },
+  "label": "even-gates-m8-dk4-cosine-half-order-lr",
+  "name": "even-gates-m8-dk4-cosine-half-order-lr",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "faf1eb1bdc4f372fb3ae21ebed50dd82309d52a1e93e7a27e0661d8bb70d0a2f",
+    "loss": 5.597960472106934,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r4546c6fbc1a8",
+  "status": "planned"
+}

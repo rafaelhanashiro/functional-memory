@@ -175,3 +175,11 @@ The [selection](selection.yaml) fixes the comparisons and the summary reports va
 separately. The canonical QK score with half-initialized gates achieved 21.1780 best and 21.1842 terminal PPL.
 With the same initialization, cosine scored 23.9328 and 23.9356. With the same QK score, Taylor-initialized
 gates scored 24.7980 and 24.8165. All three reached their best validation PPL at update 7,500 of 7,570.
+
+### Gate learning rates by order for the cosine score
+
+Opened 2026-11-21. With a cosine score `|s| <= 1`, so `s^r` shrinks with `r` and each higher order's gate moves
+the weights less for the same step. `r4546c6fbc1a8` is `rf1185ae8a89c` with gate `r`'s learning rate at `2/r` of the
+schedule (`optim.coefficient_order_learning_rate: two_over_order`): the projection `w_r` and bias `b_r` of
+`sigmoid(w_r . unit(x_t) + b_r)` take AdamW's update, decoupled weight decay included, times 1, 1/2, 1/3 and 1/4
+for `r` = 2, 4, 6 and 8. Every other parameter keeps the schedule.

@@ -17,8 +17,11 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
                   "wandb_group", "wandb_dir", "wandb_mode")
 ORDER = (2, 4, 6, 8)
 VARIANTS = (("rms_norm_cosine", "zero"), ("rms_norm", "zero"), ("rms_norm", "logit_taylor"))
+# One learning rate for every gate, or gate r at 2/r of it (optim.coefficient_order_learning_rate).
+ORDER_RATES = ("constant", "two_over_order")
 FEATURE_TESTS = ("scaffolds/transformer/tests/test_gated_even_coefficients.py",
-                 "scaffolds/transformer/tests/test_qk_rms_cosine.py")
+                 "scaffolds/transformer/tests/test_qk_rms_cosine.py",
+                 "scaffolds/transformer/tests/test_coefficient_order_learning_rate.py")
 
 
 def control_config():
@@ -27,9 +30,11 @@ def control_config():
     return load_config(CONTROL)
 
 
-def recipe(score, bias):
+def recipe(score, bias, order_rate="constant"):
     if (score, bias) not in VARIANTS:
         raise ValueError(f"Unsupported even-gate score and bias initialization {(score, bias)}")
+    if order_rate not in ORDER_RATES:
+        raise ValueError(f"Unsupported gate learning-rate rule {order_rate!r}")
     base = control_config()
     model = replace(base.model, attention_coefficient_orders=list(ORDER),
                     attention_coefficient_activation="sigmoid", attention_coefficient_amplitude_initial=1.0,
@@ -37,12 +42,14 @@ def recipe(score, bias):
                     attention_coefficient_amplitude_scale="none", attention_coefficient_input_normalization="l2",
                     attention_coefficient_input_source="pre_rmsnorm", attention_head_rms_prescale="max_abs",
                     qk_norm_type=score, qk_norm_head_scale=(score == "rms_norm"))
-    return replace(base, model=model, train=replace(base.train, gradient_event_capture=True))
+    return replace(base, model=model, train=replace(base.train, gradient_event_capture=True),
+                   optim=replace(base.optim, coefficient_order_learning_rate=order_rate))
 
 
 def check_recipe(config):
     validate_config(config)
-    reference = recipe(config.model.qk_norm_type, config.model.attention_coefficient_sigmoid_bias_initial)
+    reference = recipe(config.model.qk_norm_type, config.model.attention_coefficient_sigmoid_bias_initial,
+                       config.optim.coefficient_order_learning_rate)
     actual, expected = config_to_dict(config), config_to_dict(reference)
     for entry in (actual, expected):
         for key in EXECUTION_KEYS:
