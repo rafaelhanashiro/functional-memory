@@ -902,6 +902,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/r8dca728e7c99/config.yaml
       sha256: c525ef89ca3abad3d1103dc84ce85358ba19475aa25230a7df7bf220ccc976e3
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r8dca728e7c99/metrics.jsonl
+      sha256: 24469b7d87b5621372bebe5c51cdc5ac8f6a8d46963ae01c4d0e6db22fbe0a9d
+    completion.json:
+      path: experiments/transformer_pp/runs/r8dca728e7c99/completion.json
+      sha256: 24121f3e0f3e16663d901d5b4e4d2975012d4c284f61adc28cf018a09566225b
+    metadata.json:
+      path: experiments/transformer_pp/runs/r8dca728e7c99/metadata.json
+      sha256: 6009747a244428f353a83299a6d9e648ed67fc8f8dbe416d348a7b84466b9a93
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r8dca728e7c99/best_validation.json
+      sha256: fa66eed9c3d909869f96681bc756c55a22ecdd9d859a7cac666e600ae640b2be
 - study: transformer_pp
   run_id: reea3d6436271
   role: narrow_raw_sos_dk4
@@ -909,6 +921,18 @@ runs:
     config.yaml:
       path: experiments/transformer_pp/runs/reea3d6436271/config.yaml
       sha256: 05b52e20f935438b9eeed180d247d5355828a87de4797f277d274176e3e5b67a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/reea3d6436271/metrics.jsonl
+      sha256: 4dbb4291cca25e0af88d64d1a71e01c1a31768112c5d9966983cbb4c29465133
+    completion.json:
+      path: experiments/transformer_pp/runs/reea3d6436271/completion.json
+      sha256: 1f2e818a7579724ffe2b42bfc389a42e20bb90e446a0d46290bf98d81a525ef9
+    metadata.json:
+      path: experiments/transformer_pp/runs/reea3d6436271/metadata.json
+      sha256: bc2a6acd283289a259ef19ac39162415b34d65e4ab998579d3610daf00894113
+    best_validation.json:
+      path: experiments/transformer_pp/runs/reea3d6436271/best_validation.json
+      sha256: dc7dfe80521cb85a36219dda13efd2afc670aecb87e99c21a90150d928e1fa58
 - study: transformer_pp
   run_id: r41a4c74c5f58
   role: narrow_softplus_sos_core_dk64
