@@ -25,8 +25,7 @@ RUNS = {
     "coefficient_l2_acceptance": ("r25a5f78841b2",),
     "endpoint_decay_acceptance": ("r02f984133092",),
     "exponential_query_distance_acceptance": ("r17444ad0f60e",),
-    "key_width_acceptance": ("r5a25f500bfa8", "re3515eed3576", "r0f5e38b0d934", "rd5e3ec5a4f02", "ra28b295d81e6",
-                             "r2739c80cc032"),
+    "key_width_acceptance": ("r8d6683db38a8", "rcc9e0b03e692", "r161f07127f20", "rd5e3ec5a4f02", "r2739c80cc032"),
     "per_order_cumulative_acceptance": ("r319b83140040",),
     "per_order_decay_acceptance": ("r03be769d2069",),
     "pointwise_attention_acceptance": ("r266c5dd1f935",),
@@ -102,7 +101,7 @@ def test_a_prescaled_run_selects_the_prescale_tests_through_its_adapter():
     """The comparison leaves the prescale out; the run's acceptance still qualifies it: the module's CPU cases and
     its two device cases join the adapter's stages."""
     adapter = adapter_module("key_width_acceptance")
-    prescaled = with_prescale(recipe("key_width_acceptance", "r5a25f500bfa8"), "max_abs")
+    prescaled = with_prescale(recipe("key_width_acceptance", "r8d6683db38a8"), "max_abs")
     spec = adapter.experiment_spec(prescaled, entry_module=adapter.__name__)
     assert PRESCALE_TESTS in acceptance_test_paths(spec, config_to_dict(prescaled), resolved_backend="mosaic", cpu=True)
     device = acceptance_test_paths(spec, config_to_dict(prescaled), resolved_backend="mosaic", cpu=False)
@@ -125,7 +124,7 @@ def test_a_partner_without_head_rms_norm_still_refuses_the_prescale():
 
 def test_the_comparison_recipe_is_the_recipe_but_for_its_evaluation_settings():
     assert EVALUATION_SETTINGS == {"attention_head_rms_prescale": "none"}
-    config = recipe("key_width_acceptance", "r5a25f500bfa8")
+    config = recipe("key_width_acceptance", "r8d6683db38a8")
     assert comparison_recipe(config) == config_to_dict(config)
     prescaled = with_prescale(config, "max_abs")
     written, compared = config_to_dict(prescaled), comparison_recipe(prescaled)

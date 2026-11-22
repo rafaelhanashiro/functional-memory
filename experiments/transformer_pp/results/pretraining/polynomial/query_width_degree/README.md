@@ -118,9 +118,8 @@ Exp at `d_K` 4, 8 and 16 subtracts each row's maximum score (`attention_exp_shif
   and 64, and query coefficients 0.1–0.7% above it.
 - **Softmax trails exp at every width**: by 0.7% at `d_K` 4, 2.2% at 8, 3.5% at 16 and 2.0% at 64.
 - Limits: one seed each, so margins near 0.5–1% are within one seed's noise. Query `p_t(s)` at `d_K` 4 trained
-  with the plain head RMSNorm arithmetic. Its recorded attention row sums stayed below `2e14` (largest `1e13`) and
-  its gradient norm spiked twice (27 and 62), but recorded row sums did not predict what the plain arithmetic cost
-  the static run ([below](#numerics-at-narrow-keys)), so 19.925 is not known to be exact.
+  with the plain head RMSNorm arithmetic. Its recorded attention row sums stayed below `2e14` (largest `1e13`), but
+  its gradient norm spiked twice (27 and 62), so 19.925 is not known to be exact.
 
 ### The parts of `z h_t(z)` at `d_K` 4
 
@@ -171,44 +170,25 @@ It completed 7,570 updates without numerical failure:
 
 ### Numerics at narrow keys
 
-Narrow keys train much larger scores: the largest score at the final validation grows from 21–90 at `d_K` 64 to
-87–815 at `d_K` 4, and the attention output before head RMSNorm with it. Two FP32 evaluations fail there, and
-each has an exact replacement:
+Narrow keys train much larger scores (the largest score at the final validation grows from 21–90 at `d_K` 64 to
+87–815 at `d_K` 4), and with them the attention output before head RMSNorm. Two FP32 evaluations fail there, so the
+cells named above use exact evaluations of the same function:
 
-- `e^s` overflows FP32 near `s = 88.7`. `attention_exp_shift: row_max` evaluates `e^(s − m)` with the row's
-  maximum score `m`, which head RMSNorm divides out.
-- Plain head RMSNorm's backward is inexact from an output RMS of about `2e14` and loses its radial term from
-  `9e14`, which adds a spurious gradient to the score-scale parameters
-  ([measurements](../../../../../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)).
-  `attention_head_rms_prescale: max_abs` divides each head's output by its largest magnitude first.
-
-| Kernel, `d_K` | Plain evaluation | Exact evaluation | Change |
-| --- | --- | --- | ---: |
-| exp, 4 | `ra28b295d81e6`, numerical failure at update 3,954 | `r2739c80cc032`, 19.190 | – |
-| exp, 8 | `r535bc84a7772`, 20.571 | `r2a45c9e3d452`, 16.397 | −20.3% |
-| exp, 16 | `r6f84b1db6de6`, 15.836 | `rfdc104924c7c`, 15.129 | −4.5% |
-| `z h_t(z)`, 4 | `r5a25f500bfa8`, 19.413 | `rabfbab32a594`, 19.463 | +0.3% |
-| `T_8(s)`, 4 | `re3515eed3576`, 20.584 | `r1eaa4a4c3c77`, 20.378 | −1.0% |
-| `T_8(s)`, 8 | `r858c094cb85f`, 16.852 | `r5e540d8620b1`, 16.834 | −0.1% |
-| static `p(s)`, 4 | `r0f5e38b0d934`, 20.439 | `r99b1eebb5254`, 19.994 | −2.2% |
-
-- The unshifted exp runs are not valid controls at `d_K` 4–16: the first overflowed (scores reached 74 by update
-  3,500), and the other two trained with attention row sums up to `2e29` and `2e23`, far inside the inexact
-  range. The 20% and 5% leads `z h_t(z)` showed over them were this defect.
-- The prescale removed the gradient spikes of plain `T_8(s)` and plain static `p(s)` at `d_K` 4 (largest gradient
-  norms 733 and 1,035, against 13.6 at the start of both reruns) and 1.0% and 2.2% of their perplexity; `z h_t(z)`
-  at `d_K` 4 did not improve, although its row sums grew to `7e17`, past the `5e15` at which the plain run's had
-  stalled.
-- The plain static run spiked from update 1,400, when its recorded row sums were near `1e8`, and passed `2e14`
-  only at update 4,500. The recorded row sums come from one held-out sequence per validation, so they do not
-  bound what training rows reach, and a plain run with gradient spikes is suspect whatever they show.
+- `e^s` overflows FP32 near `s = 88.7`, and before that its outputs reach the inexact range of the next bullet.
+  `attention_exp_shift: row_max` evaluates `e^(s − m)` with the row's largest score `m`, which head RMSNorm divides
+  out. Without it, exp at `d_K` 4 overflowed at update 3,954; with it, exp's perplexity is 20% and 4.5% lower at
+  `d_K` 8 and 16.
+- Plain head RMSNorm's FP32 backward is inexact from an output RMS of about `2e14` and loses its radial term from
+  `9e14` ([measurements](../../../../../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)).
+  `attention_head_rms_prescale: max_abs` divides each head's output by its largest magnitude first; it lowers the
+  perplexity of `T_8(s)` and static `p(s)` at `d_K` 4 by 1.0% and 2.2%.
 - Narrower keys remove 18–23 M Q/K parameters and run QK RMSNorm over 4–16 channels; every other initial array is
   the partner's. `z h_t(z)` trains on the Mosaic transformed kernels (B200 or H100), the ladder on the Mosaic
   query-coefficient kernel (`d_K` 4 on B200 or H100, 8 and 16 on B300 or H100), exp on the fused kernel and softmax
   on cuDNN, which zero-pads Q and K to width 64 (both B300 or H100); the exp runs add gradient-event capture to
   their October control (methods and launch:
-  [B1-B6](../../../../README.md#score-prefactors-swish-and-narrow-keys),
+  [`z h_t(z)` at `d_K` 8 and 16](../../../../README.md#score-prefactors-swish-and-narrow-keys),
   [shifted exp and softmax](../../../../README.md#shifted-exp-and-softmax-at-narrow-keys),
   [the ladder and shifted exp at `d_K` 8 and 16](../../../../README.md#degree-eight-ladder-and-shifted-exp-at-narrow-keys),
-  [max-abs reruns](../../../../README.md#max-abs-head-rmsnorm-at-qk-widths-4-and-8)).
+  [max-abs runs](../../../../README.md#max-abs-head-rmsnorm-at-qk-widths-4-and-8)).
 - `plot.py` reads the `query_decay_*` roles only, so the heatmap and `summary.csv` above keep to the grid.
