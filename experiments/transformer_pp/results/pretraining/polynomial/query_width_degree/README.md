@@ -137,6 +137,22 @@ At `d_K` 64 they rank `z h_t(z)` (14.095) ahead of `h_t(s)` and `h_t(z)`. `h_t(z
 transformed kernels and `h_t(s)` on the query-coefficient kernel, which takes the expanded squares' coefficients;
 both on B200 or H100 ([launch](../../../../README.md#parts-of-the-softplus-sos-kernel-at-key-width-four)).
 
+Both completed 7,570 updates without numerical failure. Validation-best PPL (terminal in each run's
+`completion.json`):
+
+| Kernel at `d_K` 4 | Best PPL | Against `z h_t(z)` | Against exp |
+| --- | ---: | ---: | ---: |
+| `z h_t(z)` (`rabfbab32a594`) | 19.463 | – | +1.4% |
+| `h_t(z)` (`r8dca728e7c99`) | 19.753 | +1.5% | +2.9% |
+| `h_t(s)` (`reea3d6436271`) | 19.762 | +1.5% | +3.0% |
+
+- **The prefactor `z` carries the gain.** Without it, the softplus input and the raw score tie (19.753 against
+  19.762); with it, `z h_t(z)` is 1.5% better than either.
+- **At `d_K` 64 the prefactor also leads, by less**: `z h_t(z)` 14.095, `h_t(s)` 14.196 (+0.7%), `h_t(z)` 14.339
+  (+1.7%); there the softplus input without the prefactor trails the raw score.
+- **Both reductions stay ahead of the raw-score ladder** at `d_K` 4 (query `p_t(s)` 19.925, static `p(s)` 19.994).
+- One seed each, so differences below about 0.5% are within one seed's noise.
+
 ### Numerics at narrow keys
 
 Narrow keys train much larger scores: the largest score at the final validation grows from 21–90 at `d_K` 64 to
