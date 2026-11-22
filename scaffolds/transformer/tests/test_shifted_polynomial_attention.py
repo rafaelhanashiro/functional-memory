@@ -211,4 +211,5 @@ def test_validation_diagnostics_report_the_shifted_model_as_the_unshifted_one(po
     shifted, plain = reports
     assert shifted["valid"], shifted["issues"]
     assert sorted(shifted["coefficients"]["score_transform"]) == sorted(plain["coefficients"]["score_transform"])
-    assert shifted["kernel_values"] == "row_power_shifted_learned_polynomial_of_softplus_scores"
+    assert plain["kernel_values"] == "query_polynomial_of_softplus_scores"
+    assert shifted["kernel_values"] == "row_power_shifted_query_polynomial_of_softplus_scores"

@@ -2131,9 +2131,7 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                            else "gated_delta_rule_recurrence") if config.model.attention_mechanism == "gated_deltanet" else
                           (("row_max_shifted_exp" if getattr(config.model, "attention_exp_shift", "none") == "row_max"
                             else "unshifted_exp") if config.model.attention_degree is None else
-                           ("row_power_shifted_learned_polynomial"
-                            if getattr(config.model, "attention_polynomial_shift", "none") != "none" else
-                            "unshifted_learned_polynomial") if has_learned_polynomial(config.model) else "unshifted_taylor")
+                           "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else "unshifted_taylor")
                           if not config.model.attention_normalization else
                           "unshifted_learned_quadratic" if config.model.quadratic_mode != "fixed" else
                           "unshifted_learned_polynomial" if has_learned_polynomial(config.model) else
@@ -2157,6 +2155,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                                    if getattr(config.model, "attention_score_bias", "none") != "none"
                                    else f"query_polynomial_of_{transform}_scores" if transform != "identity"
                                    else "unshifted_query_polynomial")
+        if getattr(config.model, "attention_polynomial_shift", "none") != "none":
+            # In units of each row's largest power (attention/shifted_polynomial.py).
+            report["kernel_values"] = "row_power_shifted_" + report["kernel_values"].removeprefix("unshifted_")
     if spline:
         report["kernel_values"] = ("unshifted_query_spline" if config.model.attention_coefficient_conditioning == "query"
                                    else "unshifted_spline")
@@ -2167,11 +2168,9 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
     from scaffolds.transformer.configs.base import _exponential_kernel
 
     transform = getattr(config.model, "attention_score_transform", "identity")
-    if transform != "identity" and report["kernel_values"] in ("unshifted_learned_polynomial",
-                                                               "row_power_shifted_learned_polynomial"):
-        # A learned polynomial of transformed scores, named as the query polynomial's (and its row-power shift).
-        shifted = "row_power_shifted_" if report["kernel_values"].startswith("row_power") else ""
-        report["kernel_values"] = f"{shifted}learned_polynomial_of_{transform}_scores"
+    if transform != "identity" and report["kernel_values"] == "unshifted_learned_polynomial":
+        # A learned static polynomial of transformed scores, named as the query polynomial's.
+        report["kernel_values"] = f"learned_polynomial_of_{transform}_scores"
     prefactor = getattr(config.model, "attention_score_prefactor", "none")
     if prefactor != "none" and not _exponential_kernel(config.model):
         # W = f(s) p(z): the polynomial's label times its prefactor of the raw score (the exponential's score
