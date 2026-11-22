@@ -96,6 +96,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
         attention_exp_shift=getattr(config, "attention_exp_shift", "none"),
         attention_head_rms_prescale=getattr(config, "attention_head_rms_prescale", "none"),
+        attention_polynomial_shift=getattr(config, "attention_polynomial_shift", "none"),
         rngs=rngs,
     )
 
@@ -155,6 +156,7 @@ class MultiHeadAttention(nnx.Module):
         score_mlp_activation: str = "silu",
         attention_exp_shift: str = "none",
         attention_head_rms_prescale: str = "none",
+        attention_polynomial_shift: str = "none",
         rngs: nnx.Rngs,
     ):
         if positional_encoding not in ("rope", "path", "none"):
@@ -608,7 +610,8 @@ class MultiHeadAttention(nnx.Module):
                 or attention_coefficient_gate != "none" or attention_kernel_basis != "polynomial"
                 or attention_normalization or quadratic_mode != "fixed" or attention_degree is None
                 or attention_degree < 1 or positional_encoding not in ("rope", "none")
-                or backend not in ("blocked", "mosaic") or backend == "mosaic" and positional_encoding != "rope"
+                or backend not in ("blocked", "mosaic", *(("fused",) if attention_polynomial_shift != "none" else ()))
+                or backend == "mosaic" and positional_encoding != "rope"
                 or attention_forget_gate or attention_score_bias != "none"):
             raise ValueError("A score transform requires fixed static linear (0, 1) sigmoid/softplus/swish weights, "
                              "static direct or diagonal tanh query coefficients of unnormalized polynomial "
@@ -638,6 +641,20 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The max-abs prescale evaluates head RMSNorm output scaling, which this layer does "
                              "not use")
         self.attention_head_rms_prescale = attention_head_rms_prescale
+        # A query SoS polynomial in units of its row's largest power (attention/pieces.py polynomial_shift_problem,
+        # which ModelConfig states for recipes): exact only where max-abs head RMSNorm takes the output with its shift.
+        from scaffolds.transformer.attention.pieces import POLYNOMIAL_SHIFTS
+
+        if attention_polynomial_shift not in POLYNOMIAL_SHIFTS:
+            raise ValueError(f"Unknown polynomial shift: {attention_polynomial_shift!r}")
+        if attention_polynomial_shift != "none" and (
+                attention_normalization or attention_coefficient_parameterization != "sum_of_squares"
+                or attention_coefficient_conditioning != "query" or attention_score_transform not in ("identity", "softplus")
+                or attention_score_prefactor != "none" or attention_head_rms_prescale != "max_abs"
+                or backend not in ("blocked", "fused")):
+            raise ValueError("The row-power shift evaluates unnormalized query SoS polynomials on the raw or softplus "
+                             "score, without a prefactor, under max-abs head RMSNorm, on the blocked or fused backend")
+        self.attention_polynomial_shift = attention_polynomial_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
             # while the public recipe records the structural constraint separately.
@@ -1051,6 +1068,8 @@ class MultiHeadAttention(nnx.Module):
         if self.attention_exp_shift != "none":
             # Only a shifted recipe passes it, so every other recipe's call is unchanged.
             parameters["exp_shift"] = self.attention_exp_shift
+        if self.attention_polynomial_shift != "none":
+            parameters["polynomial_shift"] = self.attention_polynomial_shift
         result = attention_core(
             q, k, v, backend=self.backend, attention_degree=self.attention_degree,
             attention_normalization=self.attention_normalization,
@@ -1061,8 +1080,9 @@ class MultiHeadAttention(nnx.Module):
             blocked_implementation=self.attention_blocked_implementation,
         )
         y, diagnostics = result if return_diagnostics else (result, None)
-        # The shifted exponential's output e^(-m) o and its row shifts m [batch, time, heads], which head RMSNorm takes.
-        y, output_shift = y if self.attention_exp_shift != "none" else (y, None)
+        # A shifted output e^(-m) o and its row shifts m [batch, time, heads], which head RMSNorm takes.
+        shifted_output = self.attention_exp_shift != "none" or self.attention_polynomial_shift != "none"
+        y, output_shift = y if shifted_output else (y, None)
         if (return_diagnostics and self.attention_coefficient_input_normalization == "l2"
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics

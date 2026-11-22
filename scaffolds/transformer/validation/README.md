@@ -11,6 +11,26 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Row-power shifted query polynomials (2026-11-21)
+
+`attention/shifted_polynomial.py` evaluates a per-query polynomial `sum_r c_r(t) z^r` of degree `M`, `z = s` or
+`softplus(s)`, in units `e^(-m_t)` with `m_t = M log max(1, max_i |z_ti|)`, so every term is a power of
+`|u| = |z| e^(-m_t/M) <= 1`; head RMSNorm's max-abs prescale takes the shift. Its fused Pallas-Triton kernel
+(`backends/fused_shifted_polynomial.py`) evaluates the polynomial and its slope by Horner's rule in `u` and each
+coefficient's gradient from the moments `sum_i dp_i u_i^r`. On a shiba B200 (job 10257) the kernel's eight
+composition tests in `test_shifted_polynomial_attention.py` pass against FP64 (degrees 9 and 17, both transforms,
+with stress rows whose `z^17` overflows FP32). Against FP64 at 2,048 tokens (BF16 Q/K/V, softplus) the output is
+within 3.3e-6 of the largest entry, dQ/dK/dV within 3.4e-3 and the coefficient gradients within 4.4e-5; at the
+production shape every output and gradient is finite for score scales 1 to 2,000. Where one key dominates a
+row, head RMSNorm leaves that row's dominant coefficient gradient a near-cancellation, which FP32 (the blocked
+reference too) resolves to about 1e-3 of the gradient's largest entry.
+
+At the training micro-batch (16 x 2,048 tokens, 14 heads, Q/K width 4, value width 64), degree 17 with
+softplus took 2.21 ms forward and 15.00 ms forward and backward with the first tiles, and 12.19 ms after a
+19-setting sweep (job 10258: dQ 64 x 32 on 4 warps, dK/dV 16 queries by 32 keys on 4); degree 9 took 11.82 ms
+before the sweep, and Mosaic's transformed kernel at degree 9 5.52 ms. B300 and H100 are qualified only by a
+run's own acceptance on its allocated GPU.
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head

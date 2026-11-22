@@ -5,8 +5,8 @@ expanding polynomial coefficients. Its analytic VJP covers Q/K/V and the entire
 query coefficient generator (input x, projection W, amplitude a and bias b).
 Production uses the expanded coefficients and Mosaic's transformed polynomial
 kernels. The variants have degree-eight or degree-twelve SoS cores; the prefactor makes total
-degree nine or thirteen and contributes its product-rule term to the score gradient. The
-input-power runs also run at Q/K widths 4, 8 and 16 (zero-padded to 16). The general score
+degree nine or thirteen and contributes its product-rule term to the score gradient. Both
+degree-eight cores also run at Q/K widths 4, 8 and 16 (zero-padded to 16). The general score
 functions W = f(s) h_t(g(s)) (a prefactor f of the raw score: softplus, sigmoid, exp or swish;
 g the identity or softplus) are checked through the same direct-squares reference.
 """
@@ -236,11 +236,12 @@ def test_overflowing_negative_score_remains_a_numerical_failure(core_degree, inp
     assert np.isfinite(np.delete(output, 100, axis=1)).all()
 
 
+@pytest.mark.parametrize("input_power", (0, 1))
 @pytest.mark.parametrize("width", (4, 8, 16))
-def test_input_power_at_narrow_key_widths(width, monkeypatch):
-    """The softplus-SoS control's z h_t(z) (core eight, total nine) at Q/K widths 4, 8 and 16, zero-padded to the
-    tensor cores' 16 with the unpadded width's scale, through the production dispatch at 2,048 tokens, against the
-    direct-squares FP64 reference with every generator gradient."""
+def test_degree_eight_cores_at_narrow_key_widths(width, input_power, monkeypatch):
+    """The softplus-SoS control's z h_t(z) (core eight, total nine) and its core alone h_t(z) at Q/K widths 4, 8 and
+    16, zero-padded to the tensor cores' 16 with the unpadded width's scale, through the production dispatch at 2,048
+    tokens, against the direct-squares FP64 reference with every generator gradient."""
     calls = []
     original = api.transformed_query_polynomial_attention
 
@@ -250,9 +251,10 @@ def test_input_power_at_narrow_key_widths(width, monkeypatch):
 
     monkeypatch.setattr(api, "transformed_query_polynomial_attention", counted)
     operands, cotangent = _inputs(time=2048, width=width, seed=181)
-    actual = jax.jit(partial(_vjp, _attend(1, production=True)))(operands, cotangent)
-    assert calls == [(width, 9)]
-    _assert_kernel_and_generator(actual, _numpy_fp64(1, operands, cotangent), f"input power, width={width}")
+    actual = jax.jit(partial(_vjp, _attend(input_power, production=True)))(operands, cotangent)
+    assert calls == [(width, 8 + input_power)]
+    _assert_kernel_and_generator(actual, _numpy_fp64(input_power, operands, cotangent),
+                                 f"input power {input_power}, width={width}")
 
 
 def _assert_kernel_and_generator(actual, expected, label):

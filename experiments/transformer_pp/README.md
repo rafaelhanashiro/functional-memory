@@ -2784,7 +2784,7 @@ recipes, and study membership remain frozen while any of these jobs can run or r
 
 ## Score prefactors, swish and narrow keys
 
-Seventeen runs at the 15-layer width-896 reference shape and 1x budget (7,570 updates), requested 2026-11-20 on
+Thirteen runs at the 15-layer width-896 reference shape and 1x budget (7,570 updates), requested 2026-11-20 on
 Kennel. Notation: `s` is the
 score, `z = softplus(s)`, `h_t` a query-conditioned sum-of-squares polynomial of core degree eight (as in
 `r841f35a24241`, `z h_t(z)`: best 14.095), `p` a degree-eight polynomial with direct coefficients and `p_t` its
@@ -2797,12 +2797,8 @@ decay are the partner's.
 | Group | Run | Label | Weight | Partner | Adapter |
 | --- | --- | --- | --- | --- | --- |
 | A1 | `r8a9fd53dacfd` | `swish-head-rmsnorm-rope` | `swish(s) = s sigmoid(s)` | `r266c5dd1f935` | pointwise |
-| B1 | `r5a25f500bfa8` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4` | `z h_t(z)`, `d_K` 4 | `r841f35a24241` | key width |
 | B2 | `r8d6683db38a8` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk8` | `z h_t(z)`, `d_K` 8 | `r841f35a24241` | key width |
 | B3 | `r79abb4d7292c` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk16` | `z h_t(z)`, `d_K` 16 | `r841f35a24241` | key width |
-| B4 | `ra28b295d81e6` | `exp-head-scale-dk4` | `exp(s)`, `d_K` 4 | `r6a76e7fbde45` | key width |
-| B5 | `r535bc84a7772` | `exp-head-scale-dk8` | `exp(s)`, `d_K` 8 | `r6a76e7fbde45` | key width |
-| B6 | `r6f84b1db6de6` | `exp-head-scale-dk16` | `exp(s)`, `d_K` 16 | `r6a76e7fbde45` | key width |
 | C1 | `r2026eaa99f9a` | `static-m8-softplus-input` | `p(z)`, static | `r9c69dd7cfc8d` | direct softplus |
 | C2 | `rd00848e00f1d` | `static-m8-softplus-input-times-input` | `z p(z)`, static | `r9c69dd7cfc8d` | direct softplus |
 | C3 | `r7f80334aafbd` | `query-m8-dk64-w-decay-softplus-input-times-input` | `z p_t(z)` | `ra3b54e2489f8` | direct softplus |
@@ -2818,10 +2814,9 @@ decay are the partner's.
   `[0, 1]`, as the sigmoid (`r88d8654a8a1d`, 16.135) and softplus (`r266c5dd1f935`, 15.744) baselines; its weights
   are signed (minimum -0.2785). Initialization and decay mask are the exp control `r6a76e7fbde45`'s (198,453,586
   parameters). Results: the [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md).
-- **B, key width.** `qk_head_dim` 4, 8 or 16 (`value_head_dim` stays 64) for `z h_t(z)` (`r841f35a24241`, the
-  Mosaic `query_softplus` kernel at degree nine) and for exp (`r6a76e7fbde45`, the fused Pallas-Triton kernel,
-  which adds the capture its October recipe predates). Narrower keys drop 18-23 M Q/K parameters and run QK RMSNorm
-  over 4-16 channels; every other initial array is the partner's, bit for bit. Results: the
+- **B, key width.** `qk_head_dim` 8 or 16 (`value_head_dim` stays 64) for `z h_t(z)` (`r841f35a24241`, the
+  Mosaic `query_softplus` kernel at degree nine). Narrower keys drop 18-21 M Q/K parameters and run QK RMSNorm over
+  8 or 16 channels; every other initial array is the partner's, bit for bit. Results: the
   [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside the query
   polynomial at `d_K` 8 and 16 (`r16b23893884d`, 16.854; `rd10c2ebe1181`, 15.413).
 - **C, direct coefficients of z.** Static `p(z)` keeps a learnable constant (`r9c69dd7cfc8d`'s Taylor start
@@ -2841,16 +2836,15 @@ Home cluster: Kennel; every record states it.
 
 - **Kernels and GPUs.** The polynomials run on the Mosaic transformed query-polynomial kernels
   ([scaffold](../../scaffolds/transformer/README.md#score-prefactors-on-polynomials)): `query_swish` (A1),
-  `query_softplus` at degree nine (B1-B3) and with static coefficients broadcast over queries (C1),
+  `query_softplus` at degree nine (B2, B3) and with static coefficients broadcast over queries (C1),
   `query_softplus_times_softplus` (C2, C3), `query_times_<f>` (D1, D2, D4, D6) and `query_softplus_times_<f>` (D3,
   D5, D7). They are admitted on H100 and B200 (B300 is not qualified for them); B200 jobs use the worktree's
-  `.venv-cuda13`. The narrow-key exponential runs on the fused Pallas-Triton kernel on B300 or H100 (Triton is not
-  qualified on B200). Qualification: the [validation record](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20).
+  `.venv-cuda13`. Qualification: the [validation record](../../scaffolds/transformer/validation/README.md#score-prefactors-swish-and-qk-width-4-on-mosaic-2026-11-20).
 - **Acceptance.** The adapters ([pointwise](pointwise_attention_acceptance.py), [softplus SoS](softplus_sos_acceptance.py),
   [key width](key_width_acceptance.py), [direct softplus](softplus_direct_acceptance.py)) pin each partner's recipe
   and initial parameters (count and SHA256; for narrow keys also every unchanged array) and select the kernels' CPU
   and GPU suites; every allocation also runs the full-recipe pilot, whose projection must fit the allocation less
-  two hours, and a fresh-process resume. Each of the 17 recipes passes its adapter's recipe and full-shape
+  two hours, and a fresh-process resume. Each of the 13 recipes passes its adapter's recipe and full-shape
   initialization checks on CPU.
 - **Numerics.** At its initial `h_t = T_8`, the exp prefactor's weight (`e^s h_t(s)`, D2; `e^s h_t(z)`, D3) passes
   the FP32 maximum at `s = 65.7`, which makes its row NaN: a numerical failure, not a fallback. From about `s = 28`
@@ -2862,15 +2856,14 @@ Home cluster: Kennel; every record states it.
 - **Time limits.** 1.4 times the upper projection on the slowest GPU type the submission lists (H100 SXM), plus
   acceptance's two-hour reserve, rounded up to whole hours, as for the 12-layer width-640 runs above. A projection
   is the wall clock of 7,570 updates and their 28 validations (`metrics.jsonl` timestamps) of the nearest measured
-  run on B200 (B300 for exp), times 1.25 on `dogo`'s H100 SXM (softplus SoS at degree twelve: `rc5aac8f37a2e`,
+  run on B200, times 1.25 on `dogo`'s H100 SXM (softplus SoS at degree twelve: `rc5aac8f37a2e`,
   7.39 h on `dogo`; `rf637de9b65b1`, 6.32 h on `shiba` with one more order) and 1.8 more on `mastiff`'s H100 PCIe
   (one run's attempts on both: `rccd2cb5e8bab` 1.80, `r08be7093202a` 1.77, `r53d5bbcac16f` 1.44).
 
-  | Runs | Basis, hours on B200 (B300 for exp) | B200 or B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
+  | Runs | Basis, hours on B200 | B200, h | H100 SXM, h | H100 PCIe, h | Limit, h |
   | --- | --- | ---: | ---: | ---: | ---: |
   | A1 | sigmoid `r88d8654a8a1d` 3.75; softplus `r266c5dd1f935` 3.20-3.79 | 3.8 | 4.8 | 8.6 | 9 |
-  | B1-B3 | `r841f35a24241` 5.25-5.58; narrower keys are not slower | 5.6 | 7.0 | 12.6 | 12 |
-  | B4-B6 | `r6a76e7fbde45` 5.46; on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 6.00 | 5.5 | 6.0 | 10.8 | 11 |
+  | B2, B3 | `r841f35a24241` 5.25-5.58; narrower keys are not slower | 5.6 | 7.0 | 12.6 | 12 |
   | C1 | `rc28ef4dbe26d` 4.89, the same kernel with `c_0 = 0` | 4.9 | 6.1 | 11.0 | 11 |
   | C2 | C1 with the prefactor's +7% (`r841f35a24241` over `r41a4c74c5f58`) | 5.3 | 6.6 | 11.9 | 12 |
   | C3 | `rb5b604ae829a` 5.18 (`c_0 = 0`), +7% | 5.6 | 7.0 | 12.6 | 12 |
@@ -2878,12 +2871,12 @@ Home cluster: Kennel; every record states it.
 
   `mastiff` is excluded: its projections are about twice B200's, and CLUSTERS.md excludes it for one-GPU jobs until
   its failing H100 is reset. Admitting it would take limits from its column by the same rule (15-21 h). `dogo` is
-  excluded as well while no placeholder of ours holds its failing H100 (below), so the Mosaic runs take `shiba`'s
-  B200s and the exponential runs `akita`'s B300s; the H100 SXM limits still hold if `dogo` is readmitted.
+  excluded as well while no placeholder of ours holds its failing H100 (below), so the runs take `shiba`'s B200s;
+  the H100 SXM limits still hold if `dogo` is readmitted.
 
 Submit from the worktree after committing the frozen execution set and checking the live standard and long
 allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The four-GPU standard lane takes
-A1 and B1-B3, the rest go to long:
+A1, B2 and B3, the rest go to long:
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
@@ -2894,15 +2887,11 @@ submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run
     "experiments/transformer_pp/runs/$6/config.yaml" "$(git rev-parse HEAD)" 1 "$4"
 }
 # dogo's H100 at Slurm index 4 fails CUDA initialization (CLUSTERS.md) and would be the first GPU a pending job gets
-# there. Drop dogo from both lists only while a placeholder job of ours holds that GPU.
+# there. Drop dogo from the list only while a placeholder job of ours holds that GPU.
 mosaic=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba)
-fused=shiba,dogo,mastiff,collie,samoyed,doodle,terrier   # B300 (akita)
 submit standard 9:00:00 pointwise_attention_acceptance B200,H100 "$mosaic" r8a9fd53dacfd       # A1
-for run in r5a25f500bfa8 r8d6683db38a8 r79abb4d7292c; do                                          # B1-B3
+for run in r8d6683db38a8 r79abb4d7292c; do                                                        # B2, B3
   submit standard 12:00:00 key_width_acceptance B200,H100 "$mosaic" "$run"
-done
-for run in ra28b295d81e6 r535bc84a7772 r6f84b1db6de6; do                                          # B4-B6
-  submit long 11:00:00 key_width_acceptance B300,H100 "$fused" "$run"
 done
 submit long 11:00:00 softplus_direct_acceptance B200,H100 "$mosaic" r2026eaa99f9a               # C1
 submit long 12:00:00 softplus_direct_acceptance B200,H100 "$mosaic" rd00848e00f1d               # C2
@@ -2917,26 +2906,26 @@ done
 
 Four more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel. Each recipe is
 its partner's (`derive_recipe.py
---partner`, same shape and budget) with only the listed setting changed; `value_head_dim` stays 64 and seed (42),
+--partner`, same shape and budget) with only the listed settings changed; `value_head_dim` stays 64 and seed (42),
 data order, QK RMSNorm with per-head scale, reference initialization and RoPE are the partner's.
 
 | Group | Run | Label | Weight | Partner | Change | Adapter |
 | --- | --- | --- | --- | --- | --- | --- |
-| E1 | `r2739c80cc032` | `exp-head-scale-row-max-dk4` | `exp(s)`, `d_K` 4 | `ra28b295d81e6` | `attention_exp_shift: row_max` | key width |
+| E1 | `r2739c80cc032` | `exp-head-scale-row-max-dk4` | `exp(s)`, `d_K` 4 | `r6a76e7fbde45` | `qk_head_dim: 4`, `attention_exp_shift: row_max` | key width |
 | S1 | `reaca8ac9420c` | `softmax-head-scale-dk4` | softmax, `d_K` 4 | `r9040f12f3d80` | `qk_head_dim: 4` | key width |
 | S2 | `r6f65dc73550a` | `softmax-head-scale-dk8` | softmax, `d_K` 8 | `r9040f12f3d80` | `qk_head_dim: 8` | key width |
 | S3 | `r328466965c2b` | `softmax-head-scale-dk16` | softmax, `d_K` 16 | `r9040f12f3d80` | `qk_head_dim: 16` | key width |
 
-- **E, shifted exp.** B4 (`ra28b295d81e6`) ended in a numerical failure at update 3,954: its scores reached 74 by
-  update 3,500 and `e^s` overflowed FP32. E1 repeats its recipe with the exponential shifted by its causal row
-  maximum `m_t`: the fused kernel returns `y_t = sum_i e^(s_ti - m_t) v_i` and head RMSNorm divides it by
-  `sqrt(mean(y_t^2) + eps e^(-2 m_t))`, the unshifted output in exact arithmetic and finite at any score
-  ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). The shift adds no parameter: E1
-  starts from B4's initial parameters (175,872,586).
+- **E, shifted exp.** Exp's scores at `d_K` 4 reach the FP32 limit of `e^s` (`s = 88.7`): without the shift, this
+  recipe overflowed at update 3,954. E1 shifts the exponential by its causal row maximum `m_t`: the fused kernel
+  returns `y_t = sum_i e^(s_ti - m_t) v_i` and head RMSNorm divides it by `sqrt(mean(y_t^2) + eps e^(-2 m_t))`, the
+  unshifted output in exact arithmetic and finite at any score
+  ([scaffold](../../scaffolds/transformer/README.md#unnormalized-output-scaling)). It adds the gradient-event capture
+  its October partner predates; the shift adds no parameter (175,872,586).
 - **S, softmax.** Normalized softmax (`r9040f12f3d80`, best 14.543) at the narrow widths, with no output scaling,
   like its partner. Narrower keys drop 18.1-22.6 M Q/K parameters (175,859,146, 177,364,546 and 180,375,346 against
   198,440,146); every other initial array is the partner's, bit for bit. Results: the
-  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside B1-B6.
+  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside E1, B2 and B3.
 - **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461)
   and H100 (job 8464, `dogo`) by the same 80 cases
   ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
@@ -2954,7 +2943,7 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
 
   | Runs | Basis, hours | B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
   | --- | --- | ---: | ---: | ---: | ---: |
-  | E1 | B5, B6 (`r535bc84a7772`, `r6f84b1db6de6`) 3.06-3.09 on B300; the shift costs nothing (fused kernel at `d_K` 4: 3.91 ms per layer, unshifted 3.98); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | 3.1 | 6.0 | 10.8 | 11 |
+  | E1 | exp without the shift at `d_K` 8 and 16, 3.06-3.09 on B300; the shift costs nothing (fused kernel at `d_K` 4: 3.91 ms per layer, unshifted 3.98); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | 3.1 | 6.0 | 10.8 | 11 |
   | S1-S3 | `r9040f12f3d80` 2.27 on B300; padding keeps width 64's attention cost; Attention Scaling's cuDNN softmax took 1.88 times as long on `dogo` as on `akita` (`rf7277f076b8f` 2.09, `rbde7fc4c2135` 1.11, four GPUs each) | 2.3 | 4.3 | 7.7 | 9 |
 
   `mastiff` is excluded: its projections exceed the limits less acceptance's two-hour reserve. `dogo` joins only
@@ -2964,7 +2953,7 @@ E1 and S1-S3 are launched with the ladder's runs, in the next subsection's order
 
 ### Degree-eight ladder and shifted exp at narrow keys
 
-Nine more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel. Each recipe is
+Six more runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-20 on Kennel. Each recipe is
 its partner's (`derive_recipe.py --partner`, same shape and budget) with only `qk_head_dim`
 changed; `value_head_dim` stays 64, and seed (42), data order, QK RMSNorm with per-head scale, reference
 initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds.records create` changed no setting.
@@ -2973,10 +2962,7 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
 | --- | --- | --- | --- | --- | --- | --- |
 | X8 | `r2a45c9e3d452` | `exp-head-scale-row-max-dk8` | `exp(s)`, row-maximum shift, `d_K` 8 | `r2739c80cc032` (E1) | `qk_head_dim: 8` | key width |
 | X16 | `rfdc104924c7c` | `exp-head-scale-row-max-dk16` | `exp(s)`, row-maximum shift, `d_K` 16 | `r2739c80cc032` (E1) | `qk_head_dim: 16` | key width |
-| T4 | `re3515eed3576` | `fixed-m8-head-scale-dk4` | `T_8(s)`, `d_K` 4 | `ra7ee8a4b2544` | `qk_head_dim: 4` | key width |
-| T8 | `r858c094cb85f` | `fixed-m8-head-scale-dk8` | `T_8(s)`, `d_K` 8 | `ra7ee8a4b2544` | `qk_head_dim: 8` | key width |
 | T16 | `rcc9e0b03e692` | `fixed-m8-head-scale-dk16` | `T_8(s)`, `d_K` 16 | `ra7ee8a4b2544` | `qk_head_dim: 16` | key width |
-| P4 | `r0f5e38b0d934` | `static-m8-head-scale-dk4` | `p(s)`, `d_K` 4 | `r9c69dd7cfc8d` | `qk_head_dim: 4` | key width |
 | P8 | `r161f07127f20` | `static-m8-head-scale-dk8` | `p(s)`, `d_K` 8 | `r9c69dd7cfc8d` | `qk_head_dim: 8` | key width |
 | P16 | `r576bb8758634` | `static-m8-head-scale-dk16` | `p(s)`, `d_K` 16 | `r9c69dd7cfc8d` | `qk_head_dim: 16` | key width |
 | Q4 | `rd5e3ec5a4f02` | `query-m8-dk4-w-decay` | `p_t(s)`, `d_K` 4 | `r16b23893884d` | `qk_head_dim: 8 -> 4` | key width |
@@ -2989,10 +2975,10 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   [key-width grid](#query-coefficients-across-key-width-and-degree)'s degree-eight column (`r16b23893884d` at
   `d_K` 8, 16.854), which Q4 extends to `d_K` 4. The partners use the current canonical settings for their
   mechanism. Results: the [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md).
-- **X, shifted exp.** B5 and B6 trained on the unshifted kernel with scores up to 67 and 54, past the row maxima
-  (about 34) beyond which FP32 head RMSNorm's backward departs from FP64 in the Q/K gradients
-  ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)). X8 and
-  X16 are E1 at widths 8 and 16, that is B5 and B6 with the shift, so the shifted exp control spans `d_K` 4-16.
+- **X, shifted exp.** X8 and X16 are E1 at widths 8 and 16, so the shifted exp control spans `d_K` 4-16. Without
+  the shift, exp's scores at these widths reach 67 and 54, past the row maxima (about 34) beyond which FP32 head
+  RMSNorm's backward departs from FP64 in the Q/K gradients
+  ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
 - **Kernels and GPUs.** The ladder trains on the Mosaic query-coefficient kernel, fixed and static coefficients as
   every query's equal coefficients
   ([validation](../../scaffolds/transformer/validation/README.md#mosaic-gpu-polynomial-attention-kernels-on-h100-and-b300)).
@@ -3005,27 +2991,26 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   initial parameters at each width (counts and SHA256 from CPU; fixed Taylor's equal the exponential's, and Q4's
   equal `z h_t(z)`'s at width 4) and requires each width's qualified GPUs. Fixed and static runs add the Mosaic query
   kernel's degree-eight cases at their own width to their GPU stage, since their shared Mosaic suite takes widths 16
-  and 64; the query run's shared stage runs that kernel's whole suite. All 13 recipes (E1, S1-S3
-  and these nine) pass the adapter's recipe and full-shape initialization checks on CPU: every partner array of
+  and 64; the query run's shared stage runs that kernel's whole suite. All 10 recipes (E1, S1-S3
+  and these six) pass the adapter's recipe and full-shape initialization checks on CPU: every partner array of
   unchanged shape is bit-identical, and only `q_proj`, `k_proj` and the Q/K RMSNorm gains change. Every allocation
   also runs the full-recipe pilot and a fresh-process resume.
 - **Time limits.** By the rule above: 1.4 times the upper H100 SXM projection plus two hours, rounded up. Before
-  training, acceptance takes another 20-50 minutes (B5 21, B1 50).
+  training, acceptance takes another 20-50 minutes.
 
   | Runs | Basis, hours | B200 or B300, h | H100 SXM, h | H100 PCIe, h | Limit, h |
   | --- | --- | ---: | ---: | ---: | ---: |
-  | X8, X16 | B5, B6 3.06-3.09 on B300, these recipes without the shift, which costs no time (H100 job 8464: 2.96-2.99 ms per layer shifted at widths 8 and 16, 2.96-3.02 unshifted); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | B300 3.1 | 6.0 | 10.8 | 11 |
-  | T4, P4 | static `m = 8` on `dogo` (`r45831d718944`, `r991a756da7a9`) 4.81; on B200, the transformed static `p(z)` `r2026eaa99f9a` 4.60 and B1, B3 4.68-4.71 | B200 4.7 | 4.8 | 9.7 | 9 |
-  | Q4 | query `m = 8` on `dogo`: `d_K` 16 `rd10c2ebe1181` 4.67 (5.16 at 64, `r698f9a157a94`); on B200, B1 (`z h_t(z)` at `d_K` 4) 4.68 | B200 4.7 | 4.7 | 8.5 | 9 |
-  | T8, T16, P8, P16 | on B300, static `m = 8` `r1c72e8860ade` 3.41 and query `m = 8` at `d_K` 8 and 32 3.21-3.29; on `dogo`, static 4.81 | B300 3.4 | 4.8 | 9.7 | 9 |
+  | X8, X16 | these recipes without the shift, 3.06-3.09 on B300; the shift costs no time (H100 job 8464: 2.96-2.99 ms per layer shifted at widths 8 and 16, 2.96-3.02 unshifted); on `dogo`, sigmoid(s) exp(s) `rd7c9f610e9dc` 5.99 | B300 3.1 | 6.0 | 10.8 | 11 |
+  | Q4 | query `m = 8` on `dogo`: `d_K` 16 `rd10c2ebe1181` 4.67 (5.16 at 64, `r698f9a157a94`); on B200, B3 (`z h_t(z)` at `d_K` 16) 4.71 | B200 4.7 | 4.7 | 8.5 | 9 |
+  | T16, P8, P16 | on B300, static `m = 8` `r1c72e8860ade` 3.41 and query `m = 8` at `d_K` 8 and 32 3.21-3.29; on `dogo`, static 4.81 | B300 3.4 | 4.8 | 9.7 | 9 |
 
   This Mosaic kernel has not trained on B200 yet; its B200 projections take the transformed kernels', whose tiles do
   more work. H100 PCIe projections are the partners' own 8.26-9.71 h on `mastiff` (T and P) or 1.8 times H100 SXM;
   `mastiff` stays excluded, and `dogo` joins only while a placeholder holds its failing H100.
 
 Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
-allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The five `d_K` 4 runs (T4, P4, Q4,
-E1, S1) go first, at the default nice; the others wait behind them (`--nice=1000`):
+allowances, `squeue -u lucastor` and node `AllocTRES` (never preempt lucastor). The three `d_K` 4 runs (Q4, E1,
+S1) go first, at the default nice; the others wait behind them (`--nice=1000`):
 
 ```bash
 submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, nice
@@ -3040,41 +3025,36 @@ submit() {  # partition, time limit, adapter, GPU types, excluded nodes, run, ni
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier  # B200 (shiba): the Mosaic kernel at d_K 4
 b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # B300 (akita): fused exp, cuDNN softmax, Mosaic at d_K 8, 16
 # First, the d_K 4 runs.
-for run in re3515eed3576 r0f5e38b0d934 rd5e3ec5a4f02; do                        # T4, P4, Q4
-  submit standard 9:00:00 key_width_acceptance B200,H100 "$b200" "$run" 0
-done
+submit standard 9:00:00 key_width_acceptance B200,H100 "$b200" rd5e3ec5a4f02 0  # Q4
 submit long 11:00:00 key_width_acceptance B300,H100 "$b300" r2739c80cc032 0     # E1
 submit long 9:00:00 key_width_acceptance B300,H100 "$b300" reaca8ac9420c 0      # S1
 # Then the rest, behind every d_K 4 run.
 for run in r2a45c9e3d452 rfdc104924c7c; do                                      # X8, X16
   submit long 11:00:00 key_width_acceptance B300,H100 "$b300" "$run" 1000
 done
-for run in r858c094cb85f rcc9e0b03e692 r161f07127f20 r576bb8758634 \
-    r6f65dc73550a r328466965c2b; do                                             # T8, T16, P8, P16, S2, S3
+for run in rcc9e0b03e692 r161f07127f20 r576bb8758634 r6f65dc73550a r328466965c2b; do  # T16, P8, P16, S2, S3
   submit long 9:00:00 key_width_acceptance B300,H100 "$b300" "$run" 1000
 done
 ```
 
 ### Max-abs head RMSNorm at Q/K widths 4 and 8
 
-Three narrow-key runs again, now with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the
-same function whose FP32 gradient is exact at any output scale. The plain arithmetic loses the term that removes the
-gradient's component along a head's output once that output's RMS passes about 9e14 on GPU
-([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)):
-at their final checkpoints the fixed Taylor run had 4.7% of its rows there (Q/K gradient 12% off) and the softplus-input
-SoS run 1.3% (2% off, concentrated in the head score scales).
+Four narrow-key runs with head RMSNorm's max-abs prescale (`model.attention_head_rms_prescale: max_abs`), the same
+function whose FP32 gradient is exact at any output scale. At these widths head outputs pass an RMS of about 9e14,
+beyond which the plain FP32 backward loses the term that removes the gradient's component along a head's output
+([measurement](../../scaffolds/transformer/validation/README.md#head-rmsnorm-backward-at-run-checkpoints-2026-11-20)).
 
-| Run | Label | Kernel | Rerun of | Recipe change | Adapter |
+| Run | Label | Kernel | Partner | Recipe change | Adapter |
 | --- | --- | --- | --- | --- | --- |
-| `rabfbab32a594` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms` | `z h_t(z)`, `d_K` 4 | `r5a25f500bfa8` | `attention_head_rms_prescale: max_abs` | key width |
-| `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `re3515eed3576` | `attention_head_rms_prescale: max_abs` | key width |
-| `r5e540d8620b1` | `fixed-m8-head-scale-dk8-max-abs-head-rms` | `T_8(s)`, `d_K` 8 | `r858c094cb85f` | `attention_head_rms_prescale: max_abs` | key width |
+| `rabfbab32a594` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-max-abs-head-rms` | `z h_t(z)`, `d_K` 4 | `r841f35a24241` | `qk_head_dim: 4`, `attention_head_rms_prescale: max_abs` | key width |
+| `r1eaa4a4c3c77` | `fixed-m8-head-scale-dk4-max-abs-head-rms` | `T_8(s)`, `d_K` 4 | `ra7ee8a4b2544` | `qk_head_dim: 4`, `attention_head_rms_prescale: max_abs` | key width |
+| `r5e540d8620b1` | `fixed-m8-head-scale-dk8-max-abs-head-rms` | `T_8(s)`, `d_K` 8 | `ra7ee8a4b2544` | `qk_head_dim: 8`, `attention_head_rms_prescale: max_abs` | key width |
+| `r99b1eebb5254` | `static-m8-head-scale-dk4-max-abs-head-rms` | `p(s)`, `d_K` 4 | `r9c69dd7cfc8d` | `qk_head_dim: 4`, `attention_head_rms_prescale: max_abs` | key width |
 
 Home cluster Kennel. The [key-width adapter](key_width_acceptance.py) compares a run with its partner without the
 prescale, as every adapter does (`scaffolds.transformer.acceptance.comparison_recipe`), and keeps its pins: the option
-adds no parameter. Both kernels are qualified at width 4 on H100 and B200. The plain runs
-trained at 1.3 to 1.6 s per update on B200 (2.7 to 3.4 h), so a 9-hour limit covers H100 SXM (4.8 h) with acceptance's
-two-hour reserve. Submit from the study's worktree after committing the frozen execution set, the SoS run first:
+adds no parameter. Both kernels are qualified at width 4 on H100 and B200 and train at 1.3 to 1.6 s per update on
+B200 (2.7 to 3.4 h), so a 9-hour limit covers H100 SXM (4.8 h) with acceptance's two-hour reserve. Submit from the study's worktree after committing the frozen execution set, the SoS run first:
 
 ```bash
 submit() {  # partition, time limit, excluded nodes, run, nice
@@ -3091,9 +3071,8 @@ submit standard 9:00:00 "$b200" rabfbab32a594 0
 submit standard 9:00:00 "$b200" r1eaa4a4c3c77 0
 ```
 
-The fixed Taylor run at `d_K` 8 (`r858c094cb85f`) passed an output RMS of 9e14 from about update 5,500 (recorded row sums
-1.8e14 at 4,500, 8.5e14 at 5,500, 1.2e15 at 6,000), so `r5e540d8620b1` reruns it with the prescale. Its kernel is qualified
-at width 8 on H100 and B300; a 9-hour limit covers H100 SXM (4.8 h) with acceptance's two-hour reserve:
+`r5e540d8620b1`, `T_8(s)` at `d_K` 8, takes the kernel's width-8 qualification, H100 and B300; a 9-hour limit covers
+H100 SXM (4.8 h) with acceptance's two-hour reserve:
 
 ```bash
 sbatch --parsable --partition=long --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
@@ -3102,6 +3081,63 @@ sbatch --parsable --partition=long --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-p
   --error=experiments/transformer_pp/runs/r5e540d8620b1/training.log \
   scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
   experiments/transformer_pp/runs/r5e540d8620b1/config.yaml "$(git rev-parse HEAD)" 1 B300,H100
+```
+
+`r99b1eebb5254`, static `p(s)` at `d_K` 4, takes the width-4 kernel's GPUs (H100 or B200) and the same 9-hour
+limit:
+
+```bash
+sbatch --parsable --partition=standard --time=9:00:00 --nice=0 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=akita,dogo,mastiff,collie,samoyed,doodle,terrier --job-name=r99b1eebb5254 \
+  --output=experiments/transformer_pp/runs/r99b1eebb5254/training.log \
+  --error=experiments/transformer_pp/runs/r99b1eebb5254/training.log \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+  experiments/transformer_pp/runs/r99b1eebb5254/config.yaml "$(git rev-parse HEAD)" 1 B200,H100
+```
+
+
+### Parts of the softplus-SoS kernel at key width four
+
+Two runs take `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) apart: `r8dca728e7c99` (`h_t(z)`, without the prefactor `z`)
+and `reea3d6436271` (`h_t(s)`, without the softplus too). Each is its `d_K` 64 partner, `r41a4c74c5f58` and
+`reeefbcc19abf`, at width 4 with the max-abs prescale; the raw-score partner also takes the study's gradient-event
+capture. The [key-width adapter](key_width_acceptance.py) checks them and runs `h_t(z)`'s width-4 cases in
+`test_mosaic_softplus_sos.py`; both kernels are qualified at width 4 on B200 and H100
+([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4)).
+Home cluster Kennel. The `d_K` 4 SoS runs trained at 1.3 to 1.6 s per update on B200, so a 6-hour limit leaves
+acceptance's two-hour reserve; dogo stays excluded while no placeholder holds its faulty H100. Submit from this
+worktree after committing the frozen execution set:
+
+```bash
+for run in r8dca728e7c99 reea3d6436271; do
+  sbatch --parsable --partition=standard,long --time=6:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="experiments/transformer_pp/runs/$run/training.log" --error="experiments/transformer_pp/runs/$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.key_width_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
+
+### Degree-sixteen SoS core with the softplus prefactor at key width four
+
+`r2e7f5617fdf2` is `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) with a degree-sixteen core (total seventeen), evaluated
+in units of each row's largest power (`attention_polynomial_shift: row_power`) on its fused kernel: the Mosaic
+kernels stop at degree twelve, and `z^17` overflows FP32 at the scores width 4 reaches
+([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4),
+[kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
+The [adapter](shifted_sos_acceptance.py) derives the recipe and requires the fused backend. Home cluster Kennel.
+At about 3.6 s per update on B200 the run takes about 8 h, so a 12-hour limit leaves acceptance's two-hour reserve;
+dogo stays excluded while no placeholder holds its faulty H100:
+
+```sh
+run=r2e7f5617fdf2
+d="experiments/transformer_pp/runs/$run"
+sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=12:00:00 \
+  --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+  --output="$d/training.log" --error="$d/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.shifted_sos_acceptance \
+  "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 ```
 
 ## Max-abs reruns of the ALiBi exp and 12-layer width-640 4x runs

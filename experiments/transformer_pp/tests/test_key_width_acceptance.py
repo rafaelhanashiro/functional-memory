@@ -66,6 +66,16 @@ def test_pinned_partners_are_the_recorded_runs(key):
     assert config.model.attention_backend == partner["backend"] and adapter.partner_key(config) == key
 
 
+def test_the_sos_reductions_drop_the_prefactor_then_the_softplus():
+    """r41a4c74c5f58 is softplus-SoS's recipe without the prefactor z (degree nine to eight); reeefbcc19abf is that
+    core on the raw score, from before the study's gradient-event capture."""
+    full, core = adapter.partner_config("softplus_sos"), adapter.partner_config("softplus_sos_core")
+    assert scientific_differences(core, full) == {"model.attention_coefficient_input_power", "model.attention_degree"}
+    assert (core.model.attention_degree, core.model.attention_coefficient_input_power) == (8, 0)
+    assert scientific_differences(variant("raw_sos", 64), core) == {"model.attention_score_transform"}
+    assert adapter.partner_config("raw_sos").model.attention_score_transform == "identity"
+
+
 def test_the_polynomial_partners_are_the_ladder_on_the_raw_score():
     """Degree eight on the raw score: fixed Taylor, static learned and tanh query coefficients."""
     taylor, static, query = (adapter.partner_config(key).model for key in ("taylor", "static", "query"))
@@ -86,7 +96,7 @@ def test_the_polynomial_partners_are_the_ladder_on_the_raw_score():
 def test_only_the_key_width_and_capture_change(key, width):
     config = variant(key, width)
     adapter.check_recipe(config)
-    expected = {"model.qk_head_dim", *(("train.gradient_event_capture",) if key == "exponential" else ())}
+    expected = {"model.qk_head_dim", *(("train.gradient_event_capture",) if adapter.PARTNERS[key]["train"] else ())}
     assert scientific_differences(config, adapter.partner_config(key)) == expected
     assert config.model.value_head_dim == 64
 
@@ -152,8 +162,9 @@ def test_softmax_is_the_normalized_partner_on_cudnn():
         adapter.check_recipe(normalized_exponential)
 
 
-def test_the_exponential_runs_take_the_capture_policy():
-    config = variant("exponential", 8)
+@pytest.mark.parametrize("key,width", (("exponential", 8), ("raw_sos", 4)))
+def test_partners_without_capture_take_the_capture_policy(key, width):
+    config = variant(key, width)
     config.train.gradient_event_capture = False
     with pytest.raises(ValueError, match="train.gradient_event_capture"):
         adapter.check_recipe(config)
@@ -210,7 +221,7 @@ def test_shared_pins_are_the_same_initial_arrays():
     softplus-SoS's arrays, so their pins agree; the static coefficients add one vector per head and order."""
     pins = {key: partner["initialization"] for key, partner in adapter.PARTNERS.items()}
     assert pins["taylor"] == pins["exponential"]
-    assert pins["query"][4] == pins["softplus_sos"][4]
+    assert pins["query"][4] == pins["softplus_sos"][4] == pins["softplus_sos_core"][4] == pins["raw_sos"][4]
     for width in adapter.WIDTHS:
         assert pins["static"][width][0] - pins["taylor"][width][0] == 15 * 14 * 9
 
@@ -233,7 +244,7 @@ def test_gpus_are_the_qualified_ones():
         "softmax": every(("H100", "B300")),
         "taylor": {4: ("H100", "B200"), 8: ("H100", "B300"), 16: ("H100", "B300")},
         "static": {4: ("H100", "B200"), 8: ("H100", "B300"), 16: ("H100", "B300")},
-        "query": {4: ("H100", "B200")},
+        "query": {4: ("H100", "B200")}, "softplus_sos_core": {4: ("H100", "B200")}, "raw_sos": {4: ("H100", "B200")},
     }
 
 
@@ -349,37 +360,33 @@ SOS_LABEL = "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay"
 SHIFTED = {"attention_exp_shift": "row_max"}
 PRESCALED = {"attention_head_rms_prescale": "max_abs"}
 RUNS = {
-    "r5a25f500bfa8": (f"{SOS_LABEL}-dk4", "softplus_sos", 4, {}),
     "r8d6683db38a8": (f"{SOS_LABEL}-dk8", "softplus_sos", 8, {}),
     "r79abb4d7292c": (f"{SOS_LABEL}-dk16", "softplus_sos", 16, {}),
-    "ra28b295d81e6": ("exp-head-scale-dk4", "exponential", 4, {}),
-    "r535bc84a7772": ("exp-head-scale-dk8", "exponential", 8, {}),
-    "r6f84b1db6de6": ("exp-head-scale-dk16", "exponential", 16, {}),
     "r2739c80cc032": ("exp-head-scale-row-max-dk4", "exponential", 4, SHIFTED),
     "reaca8ac9420c": ("softmax-head-scale-dk4", "softmax", 4, {}),
     "r6f65dc73550a": ("softmax-head-scale-dk8", "softmax", 8, {}),
     "r328466965c2b": ("softmax-head-scale-dk16", "softmax", 16, {}),
     "r2a45c9e3d452": ("exp-head-scale-row-max-dk8", "exponential", 8, SHIFTED),
     "rfdc104924c7c": ("exp-head-scale-row-max-dk16", "exponential", 16, SHIFTED),
-    "re3515eed3576": ("fixed-m8-head-scale-dk4", "taylor", 4, {}),
-    "r858c094cb85f": ("fixed-m8-head-scale-dk8", "taylor", 8, {}),
     "rcc9e0b03e692": ("fixed-m8-head-scale-dk16", "taylor", 16, {}),
-    "r0f5e38b0d934": ("static-m8-head-scale-dk4", "static", 4, {}),
     "r161f07127f20": ("static-m8-head-scale-dk8", "static", 8, {}),
     "r576bb8758634": ("static-m8-head-scale-dk16", "static", 16, {}),
     "rd5e3ec5a4f02": ("query-m8-dk4-w-decay", "query", 4, {}),
     "rabfbab32a594": (f"{SOS_LABEL}-dk4-max-abs-head-rms", "softplus_sos", 4, PRESCALED),
     "r1eaa4a4c3c77": ("fixed-m8-head-scale-dk4-max-abs-head-rms", "taylor", 4, PRESCALED),
     "r5e540d8620b1": ("fixed-m8-head-scale-dk8-max-abs-head-rms", "taylor", 8, PRESCALED),
+    "r99b1eebb5254": ("static-m8-head-scale-dk4-max-abs-head-rms", "static", 4, PRESCALED),
+    "r8dca728e7c99": ("query-sos-core-m8-softplus-rope-w-decay-dk4", "softplus_sos_core", 4, PRESCALED),
+    "reea3d6436271": ("query-m8-sum-of-squares-w-decay-dk4", "raw_sos", 4, PRESCALED),
 }
 
 
-@pytest.mark.parametrize("run_id, plain", (("rabfbab32a594", "r5a25f500bfa8"), ("r1eaa4a4c3c77", "re3515eed3576"),
-                                            ("r5e540d8620b1", "r858c094cb85f")))
-def test_the_prescaled_runs_rerun_the_plain_ones(run_id, plain):
-    prescaled = run_config(run_id)
-    assert scientific_differences(prescaled, run_config(plain)) == {"model.attention_head_rms_prescale"}
-    assert prescaled.model.attention_head_rms_prescale == "max_abs"
+def test_the_width_4_sos_reductions_drop_the_prefactor_then_the_softplus():
+    """The d_K 4 z h_t(z) run without its prefactor z (h_t(z)), and without the softplus too (h_t(s))."""
+    full, core, raw = (run_config(run_id) for run_id in ("rabfbab32a594", "r8dca728e7c99", "reea3d6436271"))
+    assert scientific_differences(core, full) == {"model.attention_coefficient_input_power", "model.attention_degree"}
+    assert scientific_differences(raw, core) == {"model.attention_score_transform"}
+    assert (raw.model.attention_score_transform, raw.model.attention_degree) == ("identity", 8)
 
 
 @pytest.mark.parametrize("run_id", RUNS)
@@ -395,20 +402,11 @@ def test_allocated_runs_are_their_partner_at_the_key_width(run_id):
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_the_shifted_width_4_exponential_changes_only_the_shift():
-    """r2739c80cc032 is ra28b295d81e6's recipe, which overflowed FP32 at update 3,954, with the row-maximum shift."""
-    shifted, unshifted = run_config("r2739c80cc032"), run_config("ra28b295d81e6")
-    assert scientific_differences(shifted, unshifted) == {"model.attention_exp_shift"}
-    assert (unshifted.model.attention_exp_shift, shifted.model.attention_exp_shift) == ("none", "row_max")
-
-
-@pytest.mark.parametrize("run_id,unshifted,width", (("r2a45c9e3d452", "r535bc84a7772", 8),
-                                                     ("rfdc104924c7c", "r6f84b1db6de6", 16)))
-def test_the_shifted_width_8_and_16_exponentials_rerun_the_unshifted_ones(run_id, unshifted, width):
-    """X8 and X16 are E1 (r2739c80cc032) at widths 8 and 16, and the unshifted d_K 8 and 16 runs with the shift."""
+@pytest.mark.parametrize("run_id,width", (("r2a45c9e3d452", 8), ("rfdc104924c7c", 16)))
+def test_the_shifted_width_8_and_16_exponentials_are_e1_at_their_width(run_id, width):
+    """X8 and X16 are E1 (r2739c80cc032) at widths 8 and 16."""
     shifted = run_config(run_id)
     assert scientific_differences(shifted, run_config("r2739c80cc032")) == {"model.qk_head_dim"}
-    assert scientific_differences(shifted, run_config(unshifted)) == {"model.attention_exp_shift"}
     assert (shifted.model.qk_head_dim, shifted.model.attention_exp_shift) == (width, "row_max")
 
 

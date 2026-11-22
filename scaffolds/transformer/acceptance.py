@@ -257,6 +257,12 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(MOSAIC_SCORE_TRANSFORM_TESTS)
             if prefactor != "none":
                 paths.append(MOSAIC_SCORE_PREFACTOR_TESTS)
+    elif model.get("attention_polynomial_shift", "none") != "none":
+        # The row-power shifted polynomial (attention/shifted_polynomial.py) evaluates any transform it takes on its
+        # blocked reference or fused kernel, whose own module attention_test_paths selects for both stages; on CPU
+        # the transform's FP64 references join it.
+        if cpu and transform != "identity":
+            paths.append(SCORE_TRANSFORM_TESTS)
     elif transform != "identity":
         implementation = model.get("attention_blocked_implementation", "scan")
         if resolved_backend != "blocked" or implementation != "strips":
@@ -531,7 +537,7 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
                         tests.append("learned_polynomial_rational")
                 if fused:
                     tests.append("normalized_polynomial_fused_attention")
-            elif fused:
+            elif fused and model.get("attention_polynomial_shift", "none") == "none":
                 tests.append("learned_polynomial_fused_attention")
         elif fixed:
             if cpu:
@@ -563,6 +569,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             # The row-maximum shift: CPU, against the unshifted exponential and FP64, scan and strips; GPU, the strips'
             # production precision. The fused kernel's GPU cases are in unnormalized_fused_attention, selected above.
             tests.append("exp_row_max_shift")
+        if model.get("attention_polynomial_shift", "none") != "none":
+            # The row-power shift: CPU, the blocked reference and the fused programs' arithmetic against FP64; GPU,
+            # the fused kernel against FP64 (its own kernel; no generic fused polynomial suite applies).
+            tests.append("shifted_polynomial_attention")
         if model.get("attention_head_rms_prescale", "none") != "none":
             # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at output RMS 1e-25 to 1e30;
             # GPU, the device's own FP32 arithmetic at the scales where the plain backward fails and through the
@@ -938,7 +948,7 @@ def matches_softmax_initialization(config) -> dict:
     control = replace(config, model=replace(config.model, attention_backend="blocked",
                                            attention_degree=None, attention_normalization=True,
                                            attention_output_scaling="none", attention_exp_shift="none",
-                                           attention_head_rms_prescale="none",
+                                           attention_polynomial_shift="none", attention_head_rms_prescale="none",
                                            attention_fixed_coefficients=None, attention_fixed_square_factors=None,
                                            attention_coefficient_parameterization="direct",
                                            attention_static_sos_parameterization="direct",
@@ -1010,7 +1020,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
     control = replace(config, model=replace(
         config.model, attention_backend="blocked",  # as in matches_softmax_initialization
         attention_degree=None, attention_normalization=True, attention_output_scaling="none",
-        attention_exp_shift="none", attention_head_rms_prescale="none",
+        attention_exp_shift="none", attention_polynomial_shift="none", attention_head_rms_prescale="none",
         quadratic_mode="fixed", attention_coefficients="fixed", attention_fixed_coefficients=None,
         attention_fixed_square_factors=None,
         attention_coefficient_parameterization="direct", attention_coefficient_initialization="taylor",
