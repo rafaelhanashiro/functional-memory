@@ -52,7 +52,9 @@ cases, and the fused models of pure tanh coefficients `tanh(x_hat W_r + beta_r)/
 `attention_coefficient_tanh_bias` with `attention_coefficient_tanh_bias_initial`) with each prefactor match the blocked
 reference's. The fused and blocked models' logits are compared at 5e-4 of the largest: on a B200 one token of the
 degree-sixteen tanh query test model differs by 4.2e-5 (each evaluation deterministic), which failed the earlier
-2e-4 elementwise check.
+2e-4 elementwise check. Acceptance's GPU stage for a shifted recipe takes this module's cases and leaves out the
+coefficient forms' Mosaic case (`test_coefficient_forms.py`), which qualifies kernels a shifted run never trains on
+and skips on a B200; on CPU the trainer resumes a pure tanh model with each prefactor to the uninterrupted state.
 
 ### Head RMSNorm max-abs prescale (2026-11-20)
 

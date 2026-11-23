@@ -1,5 +1,6 @@
 """Row-power shifted per-query polynomials against dense FP64, their kernel arithmetic, and the layer they serve."""
 from dataclasses import replace
+import json
 import math
 
 from flax import nnx
@@ -408,6 +409,52 @@ def test_shifted_prefactor_models_match_the_unshifted_composition(prefactor):
 def test_the_fused_pure_tanh_models_build(prefactor):
     """The layer admits each fused recipe (building runs no kernel)."""
     build_model(_pure_tanh_config(prefactor, attention_backend="fused", attention_polynomial_shift="row_power").model, 0)
+
+
+@pytest.mark.parametrize("prefactor", PREFACTORS)
+def test_acceptance_checks_the_pure_tanh_start_and_selects_the_shifted_gpu_cases(prefactor):
+    """Acceptance's initialization check builds a softmax control without the inner bias or its start, and its
+    GPU stage takes the shifted module's cases, not the coefficient forms' Mosaic case, which skips on a B200."""
+    from scaffolds.transformer import acceptance
+    from scaffolds.transformer.configs import config_to_dict
+
+    config = _pure_tanh_config(prefactor, attention_backend="fused", attention_polynomial_shift="row_power")
+    spec = acceptance.attention_spec(config, entry_module="tests")
+    facts = spec.check_initialization(config)
+    assert len(facts["softmax_counterpart_parameter_sha256"]) == 64
+    bias = facts["mechanism_parameters"]["query_polynomial_tanh_bias"]
+    assert set(bias["initial"]) == {math.atanh(0.5)}
+    selected = {cpu: acceptance.test_paths(spec, config_to_dict(config), resolved_backend="fused", cpu=cpu)
+                for cpu in (True, False)}
+    module = "scaffolds/transformer/tests/test_shifted_polynomial_attention.py"
+    assert module in selected[True] and module in selected[False]
+    assert acceptance.COEFFICIENT_FORM_TESTS in selected[True]
+    assert acceptance.COEFFICIENT_FORM_TESTS not in selected[False]
+
+
+@pytest.mark.parametrize("prefactor", PREFACTORS)
+def test_training_resumes_a_pure_tanh_model_exactly(tmp_path, prefactor):
+    """The trainer's updates, telemetry, validation diagnostics and checkpoint audit with the inner bias and each
+    prefactor, on the blocked shifted reference: an interrupted run resumes to the uninterrupted one's state."""
+    from scaffolds.transformer.training import loop
+
+    def config(name):
+        current = _pure_tanh_config(prefactor, attention_polynomial_shift="row_power")
+        current.train.workdir = tmp_path / name
+        current.train.eval_every, current.train.eval_batches = 2, 1
+        current.train.ckpt_every, current.train.log_every = 2, 1
+        return current
+
+    full = loop.run_training(config("full"), audit_checkpoint=True)
+    before = loop.run_training(config("restart"), stop_after_step=2, audit_checkpoint=True)
+    after = loop.run_training(config("restart"), audit_checkpoint=True)
+    first, second = before["checkpoint_audit"], after["checkpoint_audit"]
+    assert first["final_state_sha256"] == first["checkpoint_state_sha256"] == second["start_state_sha256"]
+    assert first["next_update"] == second["first_update"]
+    assert second["final_state_sha256"] == full["checkpoint_audit"]["final_state_sha256"]
+    rows = [json.loads(line) for line in (tmp_path / "full" / "metrics.jsonl").read_text().splitlines()]
+    assert all(math.isfinite(row["validation_nll"]) for row in rows if "validation_nll" in row)
+    assert [row["step"] for row in rows if "validation_nll" in row][-1] == 4
 
 
 @pytest.mark.gpu

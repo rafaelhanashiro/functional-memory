@@ -445,7 +445,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(DENSE_QUERY_READOUT_TESTS)
         if activation == "sigmoid":
             paths.append(SIGMOID_COEFFICIENT_TESTS)
-        if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
+        if (activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False)) and (
+                cpu or model.get("attention_polynomial_shift", "none") == "none"):
+            # Its GPU case qualifies the forms on the Mosaic kernels (the blocked backend under a forget gate),
+            # which a row-power shifted run never trains on and which skips on a GPU they are not qualified on;
+            # the shifted module's GPU cases qualify its fused kernel with these generators.
             paths.append(COEFFICIENT_FORM_TESTS)
         if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
             paths.append(QUERY_DISTANCE_DECAY_TESTS)
@@ -967,6 +971,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_tanh_bias_initial=0.0,
                                            attention_coefficient_gate="none",
                                            attention_score_bias="none", attention_score_transform="identity",
                                            attention_score_prefactor="none",
@@ -1037,6 +1042,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_input_normalization="none",
         attention_coefficient_input_source="post_rmsnorm",
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_tanh_bias_initial=0.0,
         attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
         attention_score_prefactor="none", attention_coefficient_constant_initial=None,
         attention_coefficient_zero_constant=False,

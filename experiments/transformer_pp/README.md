@@ -3195,7 +3195,9 @@ schedule are the partner's.
   would do without the shift, but `e^s` overflows FP32 at the scores width 4 reaches and they take no pure tanh inner
   bias; one kernel for the six leaves the weight the only difference.
 - **Acceptance.** The [adapter](pure_tanh_prefactor_acceptance.py) derives the six recipes from the pinned partner and
-  requires the fused backend on a B200 or B300; acceptance runs the shifted kernel's GPU cases on the allocated GPU.
+  requires the fused backend on a B200 or B300. Its GPU stage runs the shifted kernel's cases on the allocated GPU,
+  not the coefficient forms' Mosaic case, which these runs never train on and which skips on a B200; its
+  initialization check compares the backbone with a softmax control that drops the inner bias and its start.
   The kernel's cases for these weights passed on a B200 (jobs 11158 and 11167).
 - **Time limits.** One attention layer's forward and backward at the 16 x 2,048-token micro-batch took, on a B200
   (job 11167), 7.1 / 18.0 / 10.8 ms (`P_t`, softplus, exp) at degree 8 and 9.4 / 25.9 / 17.6 ms at degree 16. With 240
@@ -3206,7 +3208,7 @@ schedule are the partner's.
 
 Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
 allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100.
-The two longest take the free `standard` slots:
+The longest takes the free `standard` slot:
 
 ```sh
 submit() {  # partition, time limit, run
@@ -3218,7 +3220,7 @@ submit() {  # partition, time limit, run
     "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 }
 submit standard 24:00:00 r1a0e7b80c588  # softplus, m = 16
-submit standard 18:00:00 rf51ad9acc005  # exp, m = 16
+submit long 18:00:00 rf51ad9acc005      # exp, m = 16
 submit long 18:00:00 rfa8c0b2f748f      # softplus, m = 8
 submit long 13:00:00 r6621b4589a3b      # exp, m = 8
 submit long 12:00:00 rfd16ec25202a      # P, m = 16
