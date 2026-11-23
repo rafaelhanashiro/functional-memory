@@ -7,7 +7,9 @@ fraction of its fixed Taylor factor f_j, in place of f_j (1 + b_j + a_j tanh(W_j
 attention-block input at unit L2 norm (``attention_coefficient_input_source: pre_rmsnorm``,
 ``attention_coefficient_input_normalization: l2``); W starts at zero and every beta_j at atanh(1/2), so every factor
 starts at half its Taylor factor and each query's z h_t(z) at a quarter of z T_16(z). W takes the weight decay and
-beta none, as in the pure tanh direct runs (pure_tanh_prefactor_acceptance.py). Nothing else changes.
+beta none, as in the pure tanh direct runs (pure_tanh_prefactor_acceptance.py). Nothing else changes, except in
+the second run, which also doubles the partner's learning-rate schedule (``optim.learning_rate`` and
+``optim.min_learning_rate`` times 2, warmup and horizon kept), as learning_rate_acceptance.py's doubled runs do.
 """
 import argparse
 from dataclasses import replace
@@ -33,6 +35,9 @@ CHANGES = {
     "attention_coefficient_input_source": "pre_rmsnorm",
     "attention_coefficient_input_normalization": "l2",
 }
+# The learning-rate schedule's peak and floor scale together.
+RATES = ("learning_rate", "min_learning_rate")
+SCALES = (1.0, 2.0)
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name",
                   "wandb_group", "wandb_dir", "wandb_mode")
 # The fused shifted kernel's GPU qualification (validation README, "Row-power shifted query polynomials").
@@ -45,14 +50,26 @@ def partner_config():
     return load_config(PARTNER)
 
 
-def recipe():
+def recipe(scale=1.0):
+    if scale not in SCALES:
+        raise ValueError(f"The learning-rate scales are {SCALES}, not {scale}")
     partner = partner_config()
-    return replace(partner, model=replace(partner.model, **CHANGES))
+    return replace(partner, model=replace(partner.model, **CHANGES), optim=replace(
+        partner.optim, **{name: getattr(partner.optim, name) * scale for name in RATES}))
+
+
+def scale_of(config) -> float:
+    """The recipe's learning-rate scale: its peak rate over its partner's."""
+    ratio = config.optim.learning_rate / partner_config().optim.learning_rate
+    for scale in SCALES:
+        if math.isclose(ratio, scale, rel_tol=1e-9):
+            return scale
+    raise ValueError(f"optim.learning_rate is {ratio:g} times its partner's; the scales are {SCALES}")
 
 
 def check_recipe(config):
     validate_config(config)
-    actual, expected = config_to_dict(config), config_to_dict(recipe())
+    actual, expected = config_to_dict(config), config_to_dict(recipe(scale_of(config)))
     for entry in (actual, expected):
         for key in EXECUTION_KEYS:
             entry["train"].pop(key, None)

@@ -3229,7 +3229,7 @@ submit long 10:00:00 rfd18b16513a0      # P, m = 8
 
 ### Pure tanh square factors for z h_t(z) at key width four
 
-One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
 `z = softplus(s)`, `h_t = A_t^2 + B_t^2` of core degree sixteen at `d_K` 4 (`r2e7f5617fdf2`, which ties the
 exponential), with its factor generator alone changed. Each factor is a pure tanh fraction of its fixed Taylor
 factor,
@@ -3241,18 +3241,22 @@ in place of `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`. `x_hat_t` is the raw atte
 [pure tanh direct runs](#pure-tanh-coefficients-with-softplus-and-exp-prefactors-at-key-width-four): every factor
 starts at half its Taylor factor and tanh' at 3/4, so each query's `z h_t(z)` starts at a quarter of `z T_16(z)`,
 a scale head RMSNorm removes wherever a head's output is well above its epsilon. Weight decay 0.1 applies to `w_j`
-and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's.
+and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's. The second run
+also doubles the learning-rate schedule (`optim.learning_rate` 0.002, `optim.min_learning_rate` 0.0002; warmup and
+horizon kept), as the doubled-learning-rate runs at `d_K` 4 do for the exponential (`rcc51ed9dbca8`) and the affine
+factors (`rd5cc0aec9712`).
 
-| Run | Label | Weight | Core degree |
-| --- | --- | --- | ---: |
-| `r70e98e1944d5` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4` | `z h_t(z)`, pure tanh factors | 16 |
+| Run | Label | Weight | Core degree | Learning rate |
+| --- | --- | --- | ---: | ---: |
+| `r70e98e1944d5` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4` | `z h_t(z)`, pure tanh factors | 16 | 0.001 |
+| `r772cbbc3a0d9` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double` | `z h_t(z)`, pure tanh factors | 16 | 0.002 |
 
 - **Kernel.** The row-power shifted fused kernel
   ([validation](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)),
   which evaluates any per-query coefficients; the generator expands the factors in FP32 as the affine one does. The
   Mosaic kernels take no pure tanh inner bias.
 - **Acceptance.** The [adapter](pure_tanh_sos_acceptance.py) pins the partner and admits its recipe with the seven
-  generator settings alone, on the fused backend on a B200 or B300. The kernel's GPU cases with this generator
+  generator settings alone, or with them and the doubled schedule, on the fused backend on a B200 or B300. The kernel's GPU cases with this generator
   passed on a B200 (job 11890).
 - **Time limit.** The partner trained in 7.8 h (3.6 s per update on a B200); 12 hours leave acceptance's two-hour
   reserve.
@@ -3261,7 +3265,7 @@ Submit from the study's worktree after committing the frozen execution set and c
 allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
 
 ```sh
-run=r70e98e1944d5
+run=r70e98e1944d5  # and r772cbbc3a0d9
 d="experiments/transformer_pp/runs/$run"
 sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=12:00:00 \
   --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \

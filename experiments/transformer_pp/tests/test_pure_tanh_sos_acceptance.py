@@ -1,5 +1,5 @@
 """z h_t(z) at Q/K width 4 with a degree-sixteen core of pure tanh square factors: its partner's recipe with the
-factor generator's settings alone."""
+factor generator's settings alone, and a second run with the partner's learning-rate schedule doubled as well."""
 import hashlib
 import json
 import math
@@ -11,6 +11,8 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 
 RUN = "r70e98e1944d5"
 LABEL = "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4"
+# Each allocated run: its label and its learning-rate scale.
+RUNS = {RUN: (LABEL, 1.0), "r772cbbc3a0d9": (f"{LABEL}-lr-double", 2.0)}
 
 
 def changed(config, other):
@@ -43,13 +45,24 @@ def test_the_recipe_changes_the_factor_generator_alone():
     assert config.train.seed == partner.train.seed == 42 and config.optim == partner.optim
 
 
-def test_the_allocated_run_is_the_recipe():
-    path = adapter.PARTNER.parents[1] / RUN / "config.yaml"
+def test_the_doubled_schedule_changes_the_rates_alone():
+    config, base = adapter.recipe(2.0), adapter.recipe()
+    assert changed(config, base) == {f"optim.{name}" for name in adapter.RATES}
+    assert (config.optim.learning_rate, config.optim.min_learning_rate) == (2e-3, 2e-4)
+    assert (base.optim.learning_rate, base.optim.min_learning_rate) == (1e-3, 1e-4)
+    with pytest.raises(ValueError):
+        adapter.recipe(0.5)
+
+
+@pytest.mark.parametrize("run", sorted(RUNS))
+def test_the_allocated_runs_are_the_recipes(run):
+    label, scale = RUNS[run]
+    path = adapter.PARTNER.parents[1] / run / "config.yaml"
     config = load_config(path)
     adapter.check_recipe(config)
-    assert changed(config, adapter.recipe()) == set()
+    assert adapter.scale_of(config) == scale and changed(config, adapter.recipe(scale)) == set()
     record = json.loads((path.parent / "record.json").read_text())
-    assert record["run_id"] == RUN and record["label"] == LABEL == config.train.wandb_run_name
+    assert record["run_id"] == run and record["label"] == label == config.train.wandb_run_name
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 
