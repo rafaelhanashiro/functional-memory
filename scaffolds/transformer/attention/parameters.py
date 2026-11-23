@@ -254,6 +254,11 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
         from scaffolds.transformer.attention.output_scaling import parameter_specs as output_specs
 
         specs += output_specs(value_head_dim=config.value_head_dim)
+    if getattr(config, "attention_negative_score_branch", "none") != "none":
+        from scaffolds.transformer.attention import split_score
+
+        if config.attention_negative_score_branch in split_score.DENOMINATORS:
+            specs += split_score.parameter_specs(config)
     return specs
 
 

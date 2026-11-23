@@ -78,6 +78,8 @@ class ModelConfig:
     # term stays finite where z^M overflows FP32, with RMSNorm's epsilon scaled by e^(-2 m_t). Blocked reference or
     # fused kernel; attention/pieces.py polynomial_shift_problem.
     attention_polynomial_shift: Literal["none", "row_power"] = "none"
+    # A learned raw-score SoS on s >= 0 can use a separate kernel on s < 0.
+    attention_negative_score_branch: str = "none"
     # How head RMSNorm output scaling is evaluated: "none" (historical) as y / sqrt(mean(y^2) + eps), whose FP32
     # backward degrades once a head's output RMS passes about 3e13 and from 9e14 loses the term that removes the
     # gradient's component along y; "max_abs" on each row (token and head) divided by its largest magnitude, at
@@ -985,6 +987,10 @@ class ModelConfig:
         _validate_score_transform(self)
         _validate_exp_shift(self)
         _validate_polynomial_shift(self)
+        if self.attention_negative_score_branch != "none":
+            from scaffolds.transformer.attention.split_score import validate as validate_split_score
+
+            validate_split_score(self)
         _validate_head_rms_prescale(self)
         if self.qk_norm is None:
             self.qk_norm = self.attention_mechanism == "dot_product" and self.attention_degree != 0

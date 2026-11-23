@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r789a0220b8d8/config.yaml",
+    "sha256": "9296f41b9563642000e3b92f8929d86ee865a178d7b5db1e51e243d947dc0fd5"
+  },
+  "label": "dk64-query-sos-m8-negative-signed-quartic",
+  "name": "dk64-query-sos-m8-negative-signed-quartic",
+  "receipt": {
+    "arrays_count": 62,
+    "digest": "c8c6d6c05ffb1ba4f2545b7ddfeb32dd9c9e766693a4a80bf0a79e6dd30520f5",
+    "loss": 5.5720906257629395,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r789a0220b8d8",
+  "status": "planned"
+}

@@ -75,6 +75,7 @@ class _Mechanism(NamedTuple):
     score_transform: str = "identity"
     # The prefactor f(s) multiplying every kernel value (attention/pieces.py); "none" multiplies nothing.
     score_prefactor: str = "none"
+    negative_score_branch: str = "none"
     score_mlp: bool = False
     score_mlp_form: str = "kernel"
     score_mlp_slope: jax.Array | None = None
@@ -90,7 +91,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
                query_gate_input, key_gate_input, gate_log_rate, spline_knots=None, spline_coefficients=None,
                query_spline_coefficients=None, score_bias_row_shift=None, score_bias_query_input=None,
                score_bias_key_input=None, score_bias_offset=None, score_bias_amplitude=None,
-               score_transform="identity", score_prefactor="none", score_mlp_amplitude=None, score_mlp_offset=None,
+               score_transform="identity", score_prefactor="none", negative_score_branch="none", score_mlp_amplitude=None, score_mlp_offset=None,
                score_mlp_slope=None, score_mlp_form="kernel", score_mlp_output_bias=None, exp_shift="none",
                **denominators) -> _Mechanism:
     """Validate one call's arguments (shared by the scan and the strips) and derive its settings."""
@@ -174,7 +175,9 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
     if polynomial_coefficients is not None and polynomial_coefficients.shape not in (
             (attention_degree + 1,), (heads, attention_degree + 1)):
         raise ValueError("Polynomial coefficients must have shape (m+1,) or (heads, m+1)")
-    if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, attention_degree + 1):
+    from scaffolds.transformer.attention.split_score import DENOMINATORS
+    extra = 4 if negative_score_branch in DENOMINATORS else 0
+    if query_conditioned and query_polynomial_coefficients.shape != (batch, time, heads, attention_degree + 1 + extra):
         raise ValueError("Query coefficients must have shape [batch,time,heads,m+1]")
     key_conditioned = key_polynomial_factors is not None
     if key_conditioned and (not query_conditioned
@@ -259,7 +262,7 @@ def _mechanism(q, k, v, compute, block_size, block_name, *, attention_degree, at
         query_conditioned=query_conditioned, key_conditioned=key_conditioned, nonnegative=nonnegative,
         rational=rational, signed=signed, extended_diagnostics=extended_diagnostics, endpoint=endpoint,
         decayed=decayed, per_order=per_order, query_decay_mode=query_decay_mode, spline=spline,
-        score_bias=score_bias, score_transform=score_transform, score_prefactor=score_prefactor, score_mlp=score_mlp,
+        score_bias=score_bias, score_transform=score_transform, score_prefactor=score_prefactor, negative_score_branch=negative_score_branch, score_mlp=score_mlp,
         score_mlp_form=score_mlp_form,
         score_mlp_slope=None if score_mlp_slope is None else score_mlp_slope.astype(compute),
         score_mlp_output_bias=None if score_mlp_output_bias is None else score_mlp_output_bias.astype(compute),
@@ -424,7 +427,13 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
             # zero score too (finite), whose weights are zeroed below as for every kernel. The identity is
             # safe_scores itself, so untransformed recipes trace exactly as before.
             inputs = transform_scores(safe_scores, m.score_transform)
-            if m.score_bias is not None:
+            if m.negative_score_branch != "none":
+                from scaffolds.transformer.attention.split_score import weights
+                count = m.attention_degree + 1
+                coefficients = [pair_coefficient(i) for i in range(count)]
+                quartic = [pair_coefficient(i) for i in range(count, block_coefficients.shape[-1])]
+                kernel, split_denominator = weights(safe_scores, coefficients, quartic, m.negative_score_branch)
+            elif m.score_bias is not None:
                 # Slice the query-side shift operand once for every order, as the gate operands above.
                 block_shift = rows(score_bias_rows)
 
@@ -469,6 +478,8 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
                       else _taylor_polynomial(safe_scores, m.attention_degree) if m.quadratic_mode == "fixed"
                       else _quadratic_polynomial(safe_scores, m.coefficients, m.quadratic_mode, dtype=compute))
         invalid_kernel = ~jnp.isfinite(kernel)
+        if m.negative_score_branch != "none" and split_denominator is not None:
+            invalid_kernel |= (safe_scores < 0) & ~jnp.isfinite(split_denominator)
         if m.nonnegative:
             # A sum of squares may be exactly zero at a common real root; never negative.
             invalid_kernel = invalid_kernel | (kernel < 0)
@@ -522,6 +533,21 @@ def _attend_block(mechanism, query, start, rows, *, block_size, time, key_positi
         "invalid_kernel_count": jnp.sum(measured & invalid_kernel, dtype=jnp.int32),
         "invalid_normalizer_count": jnp.sum(actual_rows[None, None, :, None] & invalid_normalizer, dtype=jnp.int32),
     }
+    if m.negative_score_branch != "none":
+        negative = measured & (scores < 0)
+        diagnostics["split_negative_abs_weight_sum"] = jnp.sum(jnp.where(negative, jnp.abs(kernel), 0.))
+        diagnostics["split_total_abs_weight_sum"] = jnp.sum(jnp.where(measured, jnp.abs(kernel), 0.))
+        row_mass = jnp.sum(jnp.where(measured, jnp.abs(kernel), 0.), axis=-1)
+        diagnostics["split_nonzero_row_count"] = jnp.sum(row_mass > 0)
+        for threshold in (2, 8):
+            tail_mass = jnp.sum(jnp.where(measured & (scores < -threshold), jnp.abs(kernel), 0.), axis=-1)
+            diagnostics[f"split_below_minus{threshold}_abs_weight_sum"] = jnp.sum(tail_mass)
+            diagnostics[f"split_below_minus{threshold}_row_fraction_sum"] = jnp.sum(
+                tail_mass / jnp.where(row_mass > 0, row_mass, 1.))
+        if split_denominator is not None:
+            diagnostics["split_negative_score_count"] = jnp.sum(negative)
+            diagnostics["split_denominator_abs_min"] = jnp.min(jnp.where(negative, jnp.abs(split_denominator), jnp.inf))
+            diagnostics["split_negative_denominator_count"] = jnp.sum(negative & (split_denominator < 0))
     if m.spline is not None:
         diagnostics.update(score_coverage(scores, measured, m.spline.knots))
     if m.endpoint and m.per_order:
@@ -732,6 +758,7 @@ def blocked_dot_product_attention(
     score_bias_amplitude: jax.Array | None = None,
     score_transform: str = "identity",
     score_prefactor: str = "none",
+    negative_score_branch: str = "none",
     score_mlp_amplitude: jax.Array | None = None,
     score_mlp_offset: jax.Array | None = None,
     score_mlp_slope: jax.Array | None = None,
@@ -836,7 +863,7 @@ def blocked_dot_product_attention(
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
-        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor,
+        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor, negative_score_branch=negative_score_branch,
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
         score_mlp_output_bias=score_mlp_output_bias,
@@ -851,7 +878,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                   query_decay_mode="cumulative", query_gate_input=None, key_gate_input=None, gate_log_rate=None,
                   spline_knots=None, spline_coefficients=None, query_spline_coefficients=None,
                   score_bias_row_shift=None, score_bias_query_input=None, score_bias_key_input=None,
-                  score_bias_offset=None, score_bias_amplitude=None, score_transform="identity", score_prefactor="none",
+                  score_bias_offset=None, score_bias_amplitude=None, score_transform="identity", score_prefactor="none", negative_score_branch="none",
                   score_mlp_amplitude=None, score_mlp_offset=None, score_mlp_slope=None,
                   score_mlp_form="kernel", score_mlp_output_bias=None,
                   query_block_size=QUERY_BLOCK_SIZE, return_diagnostics=False, exp_shift="none", **denominators):
@@ -867,7 +894,7 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
-        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor,
+        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor, negative_score_branch=negative_score_branch,
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
         score_mlp_output_bias=score_mlp_output_bias, exp_shift=exp_shift, **denominators,
@@ -945,6 +972,14 @@ def _blocked_scan(q, k, v, *, compute, attention_degree=None, attention_normaliz
                    jnp.sum(values, axis=0 if name.startswith(PER_HEAD_DIAGNOSTICS) else None))
             for name, values in per_block.items()
         }
+        if "split_denominator_abs_min" in diagnostics:
+            diagnostics["split_denominator_abs_min"] = jnp.where(
+                diagnostics["split_negative_score_count"] > 0, diagnostics["split_denominator_abs_min"], 1.)
+        if "split_nonzero_row_count" in diagnostics:
+            for threshold in (2, 8):
+                name = f"split_below_minus{threshold}_row_fraction"
+                diagnostics[name + "_mean"] = diagnostics.pop(name + "_sum") / jnp.maximum(
+                    diagnostics["split_nonzero_row_count"], 1)
         if m.endpoint:
             diagnostics["forget_gate_log_alpha_mean"] = diagnostics.pop("forget_gate_log_alpha_sum") / (batch * time * (time + 1) / 2)
         if m.extended_diagnostics:
@@ -1021,6 +1056,7 @@ def strip_dot_product_attention(
     score_bias_amplitude: jax.Array | None = None,
     score_transform: str = "identity",
     score_prefactor: str = "none",
+    negative_score_branch: str = "none",
     score_mlp_amplitude: jax.Array | None = None,
     score_mlp_offset: jax.Array | None = None,
     score_mlp_slope: jax.Array | None = None,
@@ -1065,7 +1101,7 @@ def strip_dot_product_attention(
         spline_coefficients=spline_coefficients, query_spline_coefficients=query_spline_coefficients,
         score_bias_row_shift=score_bias_row_shift, score_bias_query_input=score_bias_query_input,
         score_bias_key_input=score_bias_key_input, score_bias_offset=score_bias_offset,
-        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor,
+        score_bias_amplitude=score_bias_amplitude, score_transform=score_transform, score_prefactor=score_prefactor, negative_score_branch=negative_score_branch,
         score_mlp_amplitude=score_mlp_amplitude, score_mlp_offset=score_mlp_offset,
         score_mlp_slope=score_mlp_slope, score_mlp_form=score_mlp_form,
         score_mlp_output_bias=score_mlp_output_bias, exp_shift=exp_shift, **denominators,

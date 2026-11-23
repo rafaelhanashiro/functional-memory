@@ -52,6 +52,8 @@ def attention_core(
     score_transform: str = "identity",
     score_prefactor: str = "none",
     exp_shift: str = "none",
+    negative_score_branch: str = "none",
+    negative_quartic_parameters: jax.Array | None = None,
     polynomial_shift: str = "none",
     **denominators,
 ):
@@ -151,6 +153,34 @@ def attention_core(
     # Composition (attention/pieces.py): on the blocked backend a per-query polynomial (static and fixed coefficients
     # arrive broadcast per query) takes key factors, any decay, score biases, a transform and a prefactor together.
     # Only combinations no specialized route below implements take this route, so every other call is unchanged.
+    if negative_score_branch != "none":
+        from scaffolds.transformer.attention.backends.reference import blocked_backend_attention
+        from scaffolds.transformer.attention.split_score import BRANCHES, DENOMINATORS
+
+        if (negative_score_branch not in BRANCHES or backend != "blocked" or attention_normalization
+                or query_polynomial_coefficients is None or attention_degree != 8
+                or query_polynomial_coefficients.shape[-1] != 9 or functions or decay or score_bias
+                or key_polynomial_factors is not None or denominators):
+            raise ValueError("Invalid split-score polynomial composition")
+        if (negative_score_branch in DENOMINATORS) != (negative_quartic_parameters is not None):
+            raise ValueError("A split reciprocal needs four denominator coordinates per query")
+        packed = query_polynomial_coefficients
+        if negative_quartic_parameters is not None:
+            if negative_quartic_parameters.shape != (*packed.shape[:-1], 4):
+                raise ValueError("Invalid query denominator shape")
+            import jax.numpy as jnp
+            packed = jnp.concatenate((packed, negative_quartic_parameters), axis=-1)
+        result = blocked_backend_attention(
+            q, k, v, implementation=blocked_implementation, attention_degree=attention_degree,
+            attention_normalization=False, query_polynomial_coefficients=packed,
+            negative_score_branch=negative_score_branch, return_diagnostics=return_diagnostics)
+        if not return_diagnostics:
+            return result
+        from scaffolds.transformer.attention.input_dependent import coefficient_statistics
+
+        output, diagnostics = result
+        diagnostics.update(jax.lax.stop_gradient(coefficient_statistics(query_polynomial_coefficients)))
+        return output, diagnostics
     combined = (score_prefactor != "none"
                 or (score_transform != "identity" or score_bias) and attention_coefficient_activation != "tanh"
                 or score_transform != "identity" and (key_polynomial_factors is not None or score_bias or decay)

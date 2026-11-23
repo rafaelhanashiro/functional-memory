@@ -96,6 +96,7 @@ def attention_from_config(config, *, rngs: nnx.Rngs):
         score_mlp_activation=getattr(config, "attention_score_mlp_activation", "silu"),
         attention_exp_shift=getattr(config, "attention_exp_shift", "none"),
         attention_head_rms_prescale=getattr(config, "attention_head_rms_prescale", "none"),
+        attention_negative_score_branch=getattr(config, "attention_negative_score_branch", "none"),
         attention_polynomial_shift=getattr(config, "attention_polynomial_shift", "none"),
         rngs=rngs,
     )
@@ -156,6 +157,7 @@ class MultiHeadAttention(nnx.Module):
         score_mlp_activation: str = "silu",
         attention_exp_shift: str = "none",
         attention_head_rms_prescale: str = "none",
+        attention_negative_score_branch: str = "none",
         attention_polynomial_shift: str = "none",
         rngs: nnx.Rngs,
     ):
@@ -662,6 +664,7 @@ class MultiHeadAttention(nnx.Module):
                              "direct or sum of squares, or static direct ones) on the raw or softplus score, or times "
                              "softplus or exp of the raw score, under max-abs head RMSNorm, on the blocked or fused "
                              "backend")
+        self.attention_negative_score_branch = attention_negative_score_branch
         self.attention_polynomial_shift = attention_polynomial_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
@@ -1070,6 +1073,16 @@ class MultiHeadAttention(nnx.Module):
             gate_statistics = coefficient_gate_statistics(
                 coefficient_gate_logits(x, gate_kernel, gate_bias), ungated,
                 parameters["query_polynomial_coefficients"], q, k, gate_log_rate=gate_log_rate)
+        if self.attention_negative_score_branch != "none":
+            from scaffolds.transformer.attention import split_score
+            parameters["negative_score_branch"] = self.attention_negative_score_branch
+            if self.attention_negative_score_branch in split_score.DENOMINATORS:
+                from scaffolds.transformer.attention.input_dependent import project_coefficients
+                negative_raw = project_coefficients(
+                    x, parameters.pop("negative_quartic_kernel"), parameters.pop("negative_quartic_bias"),
+                    amplitude=parameters.pop("negative_quartic_amplitude"), activation="tanh")
+                parameters["negative_quartic_parameters"] = split_score.denominator_parameters(
+                    negative_raw, self.attention_negative_score_branch)
         if self.attention_score_transform != "identity":
             # Only transformed recipes pass it, so every other recipe's call is unchanged.
             parameters["score_transform"] = self.attention_score_transform

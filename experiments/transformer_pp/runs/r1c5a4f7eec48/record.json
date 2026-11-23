@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1c5a4f7eec48/config.yaml",
+    "sha256": "df089297adc6a5c8010e30be06a903a75ff50db7b164f464f707464b84f8b1d0"
+  },
+  "label": "dk64-query-sos-m8-negative-exp-times-origin",
+  "name": "dk64-query-sos-m8-negative-exp-times-origin",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "8761443d9c7772143a59820d472e44e5cc46ff8ecc106aad0885a037406d712b",
+    "loss": 5.572056770324707,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r1c5a4f7eec48",
+  "status": "planned"
+}

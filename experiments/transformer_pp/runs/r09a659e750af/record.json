@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r09a659e750af/config.yaml",
+    "sha256": "340779eea76c6668f2de52935b604e82e2137bbb92c45434117b043056fcdf2d"
+  },
+  "label": "dk64-query-sos-m8-negative-positive-quartic",
+  "name": "dk64-query-sos-m8-negative-positive-quartic",
+  "receipt": {
+    "arrays_count": 62,
+    "digest": "387c5c286100b9993139896a86c96f363919aa77ded09c49bbd1c37c118534ef",
+    "loss": 5.5720906257629395,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r09a659e750af",
+  "status": "planned"
+}

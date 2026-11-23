@@ -87,6 +87,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("attention_exp_shift", "none")
         value["model"].setdefault("attention_head_rms_prescale", "none")
         value["model"].setdefault("attention_polynomial_shift", "none")
+        value["model"].setdefault("attention_negative_score_branch", "none")
         value["model"].setdefault("initialization", "flax_default")
         value["model"].setdefault("rms_norm_fp32", False)
         value["model"].setdefault("gdn_conv_size", 4)

@@ -3297,3 +3297,33 @@ submit standard 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7
 submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
 submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
 ```
+
+### Query SoS with separate negative-score branches
+
+These five runs test how negative scores should be weighted when the positive-score kernel stays a learned degree-eight query SoS. They use the 15-layer width-896 shape, 14 heads, Q/K width 64, RoPE, QK RMSNorm with per-head scales, affine tanh query coefficients and head RMSNorm output scaling. The data, optimizer, seed and 7,570-update schedule match the full exponential-prefactor partner `r6525664e6696`. The raw query SoS partner is `reeefbcc19abf`.
+
+For every query, let `h(s)` be its raw-score SoS. All five use `h(s)` for nonnegative scores, including its learned value at zero. For negative scores write `u = -s`.
+
+| Run | Weight for a negative score |
+| --- | --- |
+| `r2772a578f438` | `exp(s) h(s)` |
+| `r1c5a4f7eec48` | `exp(s) h(0)` |
+| `r09a659e750af` | `h(0)/D(u)` with positive quartic coefficients |
+| `r8232fb2003bf` | `h(0)/D(u)` with a quartic SoS denominator |
+| `r789a0220b8d8` | `h(0)/D(u)` with unrestricted quartic coefficients |
+
+Each denominator learns four coordinates per query and head. The positive-coefficient and unrestricted variants use `D(u) = 1 + sum_r c_r u^r/r!` for orders 1–4. The former applies softplus to each generated coefficient. The SoS variant uses `D(u) = (epsilon + (1 + a u + b u^2)^2 + (c u + d u^2)^2)/(1 + epsilon)` with `epsilon = 0.0001`. Each denominator starts at the same degree-four Taylor polynomial of the exponential and has a fixed unit intercept. An unrestricted denominator can become negative or cross zero. The implementation preserves its sign and reports numerical failures at sampled poles. Periodic diagnostics record the smallest absolute denominator observed on negative scores and the fraction of absolute attention weight below scores −2 and −8.
+
+From the sweep worktree on Kennel, with its launch commit checked out, submit one GPU per run. The launcher runs GPU qualification and a training pilot before production. All five use blocked causal strips.
+
+```bash
+launch_commit=$(git rev-parse HEAD)
+for run in r2772a578f438 r1c5a4f7eec48 r09a659e750af r8232fb2003bf r789a0220b8d8; do
+  run_dir="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=long --time=2-00:00:00 --gres=gpu:1 \
+    --cpus-per-task=16 --mem=128G --exclude=collie,dogo,doodle,mastiff,samoyed,terrier \
+    --job-name="$run" --output="$run_dir/training.log" --error="$run_dir/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.split_score_acceptance \
+    "$run_dir/config.yaml" "$launch_commit" 1 B200,B300
+done
+```

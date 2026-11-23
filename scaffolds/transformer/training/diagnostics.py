@@ -801,6 +801,18 @@ def attention_identity(config) -> dict:
                 "; each row evaluated in units e^(-m_t), m_t = M log max(1, max_i |z_ti|) over its transformed "
                 "scores, a constant to differentiation, with the RMSNorm epsilon scaled by e^(-2 m_t): the same "
                 "function, finite where z^M overflows FP32"))
+    negative_branch = getattr(config.model, "attention_negative_score_branch", "none")
+    if negative_branch != "none":
+        negative_formula = {
+            "exp_times_sos": "exp(s) h_t(s)",
+            "exp_times_origin": "exp(s) h_t(0)",
+            "positive_quartic": "h_t(0)/D_t(-s) with positive quartic coefficients and fixed D_t(0)=1",
+            "sos_quartic": "h_t(0)/D_t(-s) with a floored quartic sum of squares and fixed D_t(0)=1",
+            "signed_quartic": "h_t(0)/D_t(-s) with signed quartic coefficients and fixed D_t(0)=1",
+        }[negative_branch]
+        identity.update(attention_negative_score_branch=negative_branch,
+                        attention_formula=identity["attention_formula"] +
+                        f"; use this query polynomial h_t(s) for s>=0 and {negative_formula} for s<0")
     if getattr(config.model, "attention_head_rms_prescale", "none") != "none":
         # How the formula's head RMSNorm is evaluated (attention/output_scaling.py), after every other clause.
         identity.update(
