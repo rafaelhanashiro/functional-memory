@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rcb74ec29ab5f/config.yaml",
+    "sha256": "30e7a402d4be27eb748a1b4bd983d4754e79d3af67b69cf713f25238d3811b81"
+  },
+  "label": "query-pure-tanh-m16-dk64",
+  "name": "query-pure-tanh-m16-dk64",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "0ae85a8866f32544f85a28ffb4d6ac32ddc627079bb189f8db5b12d02aff49e2",
+    "loss": 5.572048664093018,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rcb74ec29ab5f",
+  "status": "planned"
+}

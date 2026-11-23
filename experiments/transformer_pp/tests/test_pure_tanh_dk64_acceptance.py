@@ -12,7 +12,9 @@ from experiments.transformer_pp import pure_tanh_dk64_acceptance as adapter
 from scaffolds.transformer.configs import config_to_dict, load_config
 
 # Each allocated run: its label, coefficient activation and degree.
-RUNS = {}
+RUNS = {"re0af7abe427b": ("query-pure-tanh-m8-dk64", "pure_tanh", 8),
+        "rcb74ec29ab5f": ("query-pure-tanh-m16-dk64", "pure_tanh", 16),
+        "rbb09d696a5b0": ("query-m16-dk64-w-decay", "tanh", 16)}
 # The repository's byte copies of the dataset manifests, another path to the partner's manifests.
 CORPUS = Path(__file__).resolve().parents[3] / "scaffolds/transformer/data/corpora/fineweb_12b"
 

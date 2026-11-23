@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/re0af7abe427b/config.yaml",
+    "sha256": "4f92f9b22ad3fd7781a8a71735e5538cf1bbcc561191c53e4f23e987b16b5195"
+  },
+  "label": "query-pure-tanh-m8-dk64",
+  "name": "query-pure-tanh-m8-dk64",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "34bc1ca18678855fbe3a424397dc8d918308e2a3786f0fcf0686fa1bbebd247f",
+    "loss": 5.572040557861328,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "re0af7abe427b",
+  "status": "planned"
+}
