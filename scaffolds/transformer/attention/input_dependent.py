@@ -41,7 +41,7 @@ def normalize_coefficient_input(x, normalization="none"):
     return x * jax.lax.rsqrt(jnp.maximum(squared_norm, COEFFICIENT_INPUT_L2_EPS ** 2))
 
 
-def coefficient_input_statistics(raw_x, normalized_x, kernel):
+def coefficient_input_statistics(raw_x, normalized_x, kernel, tanh_bias=None):
     """Stopped diagnostic summaries of actual input and tanh projection coordinates.
 
     Input norms have scalar summaries; projection and tanh summaries have [H,R]
@@ -57,6 +57,9 @@ def coefficient_input_statistics(raw_x, normalized_x, kernel):
             result[f"{prefix}_{name}"] = reduce(norms)
     z = jnp.einsum("btd,hdr->bthr", normalized_x.astype(jnp.float32), kernel.astype(jnp.float32),
                    precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32)
+    if tanh_bias is not None:
+        # The pre-activation tanh sees, inner bias included.
+        z = z + tanh_bias.astype(jnp.float32)
     features = jax.lax.optimization_barrier(jnp.tanh(z))
     for name, reduce in (("mean", jnp.mean), ("std", jnp.std), ("min", jnp.min), ("max", jnp.max)):
         result[f"coefficient_projection_{name}"] = reduce(z, axis=(0, 1))
@@ -70,17 +73,17 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                     tanh_bias: bool = False, conditioning: str = "query", readout: str = "diagonal",
                     feature_count: int | None = None, kernel_weight_decay: bool = False, gate: str = "none",
                     initialization: str = "taylor", parameterization: str = "direct",
-                    constant_initial: float | None = None):
+                    constant_initial: float | None = None, tanh_bias_initial: float = 0.0):
     """b starts at 1/r! (the Hermite start's coefficients under "hermite"; 1 under sum_of_squares,
     where b + a tanh is relative to the Taylor square factors), or for diagonal tanh query coefficients
     with ``constant_initial`` b_0 at that value and b_r at 1/r! for r >= 1; W at zero or N(0,
     projection_initial_std^2); tanh's a at amplitude_initial
-    and its optional inner bias beta at zero. "query_key" adds the key factor's W_k (same draw
+    and its optional inner bias beta at tanh_bias_initial (zero by default). "query_key" adds the key factor's W_k (same draw
     rule, independent draws) and a_k (same start as a). Dense readout projects onto K =
     feature_count tanh features (degree+1 when null) and mixes them through V [degree+1, K],
     diagonal at amplitude_initial when K = degree+1 and otherwise zero. affine_sigmoid has the
     same parameters as tanh. Pure sigmoid and pure_tanh coefficients have no b or a: W alone,
-    and dense V. The "sigmoid" coefficient gate adds U [D, degree+1] and its bias [degree+1],
+    and dense V; diagonal pure_tanh may add the inner bias beta, c_r = tanh(x w_r + beta_r). The "sigmoid" coefficient gate adds U [D, degree+1] and its bias [degree+1],
     both exactly zero and drawing no random numbers. The "gdn" gate adds w [D, degree+1],
     A_log and dt_bias [degree+1] with the input-form forget gate's distributions, drawn once
     per layer and head and repeated over the orders. kernel_weight_decay decays the projections
@@ -114,13 +117,20 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
         initial=(0.0,) * (hidden_size * features), initial_shape=(hidden_size, features),
         sharing="per_head", weight_decay=bool(kernel_weight_decay), initial_std=float(projection_initial_std),
     )
+    inner_bias = AttentionParameterSpec(
+        name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
+        initial=(float(tanh_bias_initial),) * features, sharing="per_head", weight_decay=False,
+    )
+    if tanh_bias_initial and not tanh_bias:
+        raise ValueError("An inner-bias start needs the inner bias")
     if activation in PURE_FEATURES:
-        if tanh_bias or conditioning != "query":
-            raise ValueError(f"Pure {activation} coefficients are query-only, without an inner bias")
+        if conditioning != "query" or (tanh_bias and (activation != "pure_tanh" or readout != "diagonal")):
+            raise ValueError(f"Pure {activation} coefficients are query-only; only diagonal pure tanh takes an inner "
+                             "bias")
         if amplitude_initial != 1.0:
             raise ValueError(f"Pure {activation} coefficients have no amplitude; dense V starts at the identity")
         if readout == "diagonal":
-            return (kernel,)
+            return (kernel, inner_bias) if tanh_bias else (kernel,)
         return (kernel, AttentionParameterSpec(
             name="query_polynomial_mixing", argument="query_polynomial_mixing",
             initial=tuple(1.0 if output == feature else 0.0 for output in range(count) for feature in range(features)),
@@ -150,10 +160,7 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
                 initial=(float(amplitude_initial),) * count, sharing="per_head", weight_decay=False,
             ),)
         if tanh_bias:
-            specs += (AttentionParameterSpec(
-                name="query_polynomial_tanh_bias", argument="query_polynomial_tanh_bias",
-                initial=(0.0,) * features, sharing="per_head", weight_decay=False,
-            ),)
+            specs += (inner_bias,)
     elif activation != "identity":
         raise ValueError(f"Unknown coefficient activation: {activation}")
     elif tanh_bias:
@@ -223,8 +230,8 @@ def _diagonal_readout(features, amplitude, bias, amplitude_scale, orders=None):
     return jax.lax.optimization_barrier(product + bias)
 
 
-def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, feature):
-    """FP32 c_r = f(x w_r) [/ r!], or dense c_r = readout_scale * sum_j (V_rj [/ r!]) f(x w_j)."""
+def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, feature, tanh_bias=None):
+    """FP32 c_r = f(x w_r [+ beta_r]) [/ r!], or dense c_r = readout_scale * sum_j (V_rj [/ r!]) f(x w_j)."""
     if x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1]:
         raise ValueError("Pure coefficient projection requires x [B,T,D] and kernel [H,D,K]")
     if mixing is not None and (mixing.ndim != 3 or mixing.shape[0] != kernel.shape[0]
@@ -236,6 +243,10 @@ def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, featur
         "btd,hdr->bthr", x.astype(jnp.float32), kernel.astype(jnp.float32),
         precision=jax.lax.Precision.HIGHEST, preferred_element_type=jnp.float32,
     )
+    if tanh_bias is not None:
+        if mixing is not None or tanh_bias.shape != (kernel.shape[0], kernel.shape[-1]):
+            raise ValueError("The pure tanh inner bias has the diagonal feature shape [H,R]")
+        projected = projected + tanh_bias.astype(jnp.float32)
     features = feature(projected)
     count = kernel.shape[-1] if mixing is None else mixing.shape[1]
     factorials = jnp.asarray([math.factorial(r) for r in range(count)], jnp.float32)
@@ -316,9 +327,11 @@ def project_coefficients(x, kernel, bias, *, amplitude=None, mixing=None, activa
     if readout_scale != 1.0 and (activation not in (*AFFINE_FEATURES, *PURE_FEATURES) or mixing is None):
         raise ValueError("A nondefault readout scale requires dense tanh or sigmoid coefficients")
     if activation in PURE_FEATURES:
-        if bias is not None or amplitude is not None or tanh_bias is not None:
-            raise ValueError("Pure sigmoid and tanh coefficients have no bias, amplitude, or inner bias")
-        return _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, PURE_FEATURES[activation])
+        if bias is not None or amplitude is not None or (tanh_bias is not None and activation != "pure_tanh"):
+            raise ValueError("Pure sigmoid and tanh coefficients have no bias or amplitude; only pure tanh takes an "
+                             "inner bias")
+        return _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, PURE_FEATURES[activation],
+                                  tanh_bias)
     if (x.ndim != 3 or kernel.ndim != 3 or kernel.shape[1] != x.shape[-1] or bias.ndim != 2
             or bias.shape[0] != kernel.shape[0]):
         raise ValueError("Query coefficient projection requires x [B,T,D], kernel [H,D,K], bias [H,R]")

@@ -292,7 +292,8 @@ def attention_identity(config) -> dict:
         elif query_sigmoid:
             features = config.model.attention_coefficient_feature_count or degree + 1
             per_polynomial = features * config.model.hidden_size + (
-                (degree + 1) * features if config.model.attention_coefficient_readout == "dense" else 0)
+                (degree + 1) * features if config.model.attention_coefficient_readout == "dense" else 0) + (
+                features if config.model.attention_coefficient_tanh_bias else 0)
         else:
             per_polynomial = (degree + 1) * (
                 config.model.hidden_size + 1 + int(query_tanh)
@@ -325,10 +326,10 @@ def attention_identity(config) -> dict:
     if query_conditioned and not spline:
         amplitude = config.model.attention_coefficient_amplitude_initial
         spread = config.model.attention_coefficient_projection_initial_std
-        inner_bias = query_tanh and config.model.attention_coefficient_tanh_bias
+        inner_bias = (query_tanh or query_sigmoid) and config.model.attention_coefficient_tanh_bias
         tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
             f", a initially {amplitude:g}" if amplitude != 1.0 else ", a initially 1") + (
-            ", beta initially 0" if inner_bias else "")
+            f", beta initially {config.model.attention_coefficient_tanh_bias_initial:.9g}" if inner_bias else "")
         amplitude_scale = (config.model.attention_coefficient_amplitude_scale
                            if query_tanh or query_sigmoid else "none")
         tanh_formula = (f"c(x_t) = b + (a/r!)*{feature}(x_t W" if amplitude_scale == "factorial"
@@ -353,11 +354,13 @@ def attention_identity(config) -> dict:
             dense = config.model.attention_coefficient_readout == "dense"
             factorial = "/r!" if amplitude_scale == "factorial" else ""
             tanh_formula = (f"c_r(x_t) = sum_j (V_rj{factorial})*{feature}(x_t W_j), j = 1..{features}" if dense
+                            else f"c_r(x_t) = {feature}(x_t W_r + beta_r){factorial}" if inner_bias
                             else f"c_r(x_t) = {feature}(x_t W_r){factorial}")
             if dense and readout_scale != 1.0:
                 tanh_formula = tanh_formula.replace("= sum_j", f"= {readout_scale:.9g} * sum_j")
             tanh_start = (f"W initially N(0, {spread:g}^2) per entry" if spread else "W initially zero") + (
-                ", V initially the identity" if dense else "")
+                ", V initially the identity" if dense else "") + (
+                f", beta initially {config.model.attention_coefficient_tanh_bias_initial:.9g}" if inner_bias else "")
         identity.update(
             attention_kernel="query_key_polynomial_unnormalized" if key_conditioned else "query_polynomial_unnormalized",
             attention_coefficient_conditioning=conditioning,
@@ -367,6 +370,8 @@ def attention_identity(config) -> dict:
             **({"attention_coefficient_amplitude_initial": amplitude,
                 "attention_coefficient_projection_initial_std": spread} if (amplitude, spread) != (1.0, 0.0) else {}),
             **({"attention_coefficient_tanh_bias": True} if inner_bias else {}),
+            **({"attention_coefficient_tanh_bias_initial": config.model.attention_coefficient_tanh_bias_initial}
+               if inner_bias and config.model.attention_coefficient_tanh_bias_initial else {}),
             **({"attention_coefficient_gate": coefficient_gate} if coefficient_gate != "none" else {}),
             **({"attention_coefficient_amplitude_scale": amplitude_scale} if amplitude_scale != "none" else {}),
             **({"attention_coefficient_kernel_weight_decay": True}
@@ -789,7 +794,9 @@ def attention_identity(config) -> dict:
             attention_polynomial_shift=config.model.attention_polynomial_shift,
             attention_implementation=("triton_row_power_shifted_polynomial"
                                       if config.model.attention_backend == "fused"
-                                      else "blocked_row_power_shifted_polynomial"),
+                                      else "blocked_row_power_shifted_polynomial") + (
+                "" if getattr(config.model, "attention_score_prefactor", "none") == "none"
+                else f"_times_{config.model.attention_score_prefactor}"),
             attention_formula=identity["attention_formula"] + (
                 "; each row evaluated in units e^(-m_t), m_t = M log max(1, max_i |z_ti|) over its transformed "
                 "scores, a constant to differentiation, with the RMSNorm epsilon scaled by e^(-2 m_t): the same "

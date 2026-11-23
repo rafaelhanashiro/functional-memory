@@ -839,6 +839,8 @@ header { position: relative; }
 /* A box under both lists for another of the user's texts (text/queue/running.md), hidden while empty. */
 .queue-box { grid-column: 1 / -1; padding: 14px 18px; border: 1px solid #bfdbfe; border-radius: 14px; background: #eff6ff; }
 .queue-box:has(> .text-block:empty) { display: none; }
+/* The same box for ORCD's runs (text/queue/running-orcd.md), in violet. */
+.queue-box-orcd { border-color: #ddd6fe; background: #f5f3ff; }
 .queue-head { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 4px 8px; }
 .queue-head h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; }
 .queue-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }

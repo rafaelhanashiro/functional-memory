@@ -9,6 +9,12 @@ With u = z exp(-shift/M) (|u| <= 1, shifted_polynomial.shifted_terms) the shifte
 a_r = c_r exp(-(M - r) shift / M) per query row, evaluated by Horner's rule in M multiply-adds per pair; its slope in
 z with the shift fixed is exp(-shift/M) sum_r r a_r u^(r-1), times dz/ds for softplus. Coefficient r's derivative is
 exp(-(M - r) shift / M) times the row's moment sum_i dp_i u_i^r, accumulated from successive products dp u^k.
+
+With a prefactor f of the raw score (z = s) each key takes its own units (shifted_polynomial.key_bound and
+keyed_polynomial): the weight is e^(b - shift) h, b = log f(s) + M log max(1, |s|), shift the row's largest b (at least
+zero), h = p(s) / max(1, |s|)^M by Horner's rule in s where |s| <= 1 and in 1/s over the reversed coefficients
+elsewhere. The slope is e^(b - shift) ((f'/f) h + p'(s) / max(1, |s|)^M), and coefficient r's derivative the row sum of
+dp e^(b - shift) s^r / max(1, |s|)^M: ascending powers of s where |s| <= 1, descending powers of 1/s elsewhere.
 """
 from functools import partial
 import math
@@ -23,7 +29,7 @@ from scaffolds.transformer.attention.backends.fused_unnormalized import (
     NUM_STAGES, NUM_WARPS, _bf16_components, _dot, _full_shift_spec, _full_spec, _load, _shift_spec, _spec,
     _tile_sizes,
 )
-from scaffolds.transformer.attention.shifted_polynomial import TRANSFORMS
+from scaffolds.transformer.attention.shifted_polynomial import PREFACTORS, TRANSFORMS
 
 
 def _scores(q, k, qi, ki, time, dq):
@@ -44,6 +50,35 @@ def _transformed(scores, transform):
 
 def _row_shift(z, degree):
     return degree * jnp.log(jnp.maximum(1.0, jnp.max(jnp.abs(z), axis=1)))
+
+
+def _key_bound(scores, prefactor, degree):
+    """b = log f(s) + M log max(1, |s|) and f'(s)/f(s) (None for exp, where it is one). For softplus below s = -20 both
+    take their limits, s and one, within e^-20."""
+    magnitude = degree * jnp.log(jnp.maximum(1.0, jnp.abs(scores)))
+    if prefactor == "exp":
+        return scores + magnitude, None
+    softplus, sigmoid = _transformed(scores, "softplus")
+    tail = scores <= -20.0
+    safe = jnp.maximum(softplus, 1e-30)
+    return (jnp.where(tail, scores, jnp.log(safe)) + magnitude,
+            jnp.where(tail, 1.0, sigmoid / safe))
+
+
+def _keyed_polynomial(scores, coefficients, *, slope=False):
+    """h = p(s) / max(1, |s|)^M and, if asked, p'(s) / max(1, |s|)^M: Horner in s where |s| <= 1, in 1/s over the
+    reversed coefficients elsewhere, times sign(s)^M."""
+    degree = len(coefficients) - 1
+    small = jnp.abs(scores) <= 1.0
+    inner = jnp.where(small, scores, 0.0)
+    inverse = 1.0 / jnp.where(small, 1.0, scores)
+    sign = jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0
+    value = jnp.where(small, _horner(coefficients, inner), sign * _horner(coefficients[::-1], inverse))
+    if not slope:
+        return value
+    weighted = tuple(r * c for r, c in enumerate(coefficients))
+    derivative = jnp.where(small, _horner(weighted[1:], inner), sign * inverse * _horner(weighted[::-1], inverse))
+    return value, derivative
 
 
 def _cotangent_dot(do, v):
@@ -91,7 +126,7 @@ def _polynomial(z, half, coefficients, *, slope=False):
     return value, u, _horner(scaled, u)
 
 
-def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, time, dq, dv, bq, bk):
+def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, prefactor, time, dq, dv, bq, bk):
     *coefficient_refs, output_ref, shift_ref = refs
     degree = len(coefficient_refs) - 1
     qi = pl.program_id(0) * bq + jnp.arange(bq)
@@ -104,10 +139,16 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, time, dq, dv, bq, bk)
         ki = tile * bk + jnp.arange(bk)
         k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
         scores, causal = _scores(q, k, qi, ki, time, dq)
-        z, _ = _transformed(scores, transform)
-        shift = jnp.maximum(previous, _row_shift(z, degree))
-        half, _, horner = _row_units(shift, coefficients)
-        weights, _ = _polynomial(z, half, horner)
+        if prefactor == "none":
+            z, _ = _transformed(scores, transform)
+            shift = jnp.maximum(previous, _row_shift(z, degree))
+            half, _, horner = _row_units(shift, coefficients)
+            weights, _ = _polynomial(z, half, horner)
+        else:
+            # A masked score is zero; its bound, at most zero, never raises the shift above its floor.
+            bound, _ = _key_bound(scores, prefactor, degree)
+            shift = jnp.maximum(previous, jnp.max(bound, axis=1))
+            weights = jnp.exp(bound - shift[:, None]) * _keyed_polynomial(scores, coefficients)
         weights = jnp.where(causal, weights, 0.0)
         output = output * jnp.exp(previous - shift)[:, None] + _dot(weights, v)
         return output, shift
@@ -119,7 +160,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, time, dq, dv, bq, bk)
     plt.store(shift_ref, shift, mask=qi < time)
 
 
-def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, bk):
+def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, dq, dv, bq, bk):
     do_refs, shift_ref, refs = refs[:parts], refs[parts], refs[parts + 1:]
     count = (len(refs) - 1) // 2  # the coefficients, dQ, and the coefficients' derivatives
     coefficient_refs, dq_ref, dc_refs = refs[:count], refs[count], refs[count + 1:]
@@ -130,6 +171,7 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, b
                for ref in do_refs)
     shift = plt.load(shift_ref, mask=qi < time, other=0)
     coefficients = tuple(plt.load(ref, mask=qi < time, other=0) for ref in coefficient_refs)
+    degree = count - 1
     half, units, horner = _row_units(shift, coefficients)
 
     def body(tile, carry):
@@ -137,15 +179,33 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, b
         ki = tile * bk + jnp.arange(bk)
         k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
         scores, causal = _scores(q, k, qi, ki, time, dq)
-        z, dz = _transformed(scores, transform)
-        _, u, slope = _polynomial(z, half, horner, slope=True)
-        dp = jnp.where(causal, _cotangent_dot(do, v), 0.0)
-        ds = dp * slope if dz is None else dp * slope * dz
+        if prefactor == "none":
+            z, dz = _transformed(scores, transform)
+            _, u, slope = _polynomial(z, half, horner, slope=True)
+            dp = jnp.where(causal, _cotangent_dot(do, v), 0.0)
+            ds = dp * slope if dz is None else dp * slope * dz
+            grad_q += _dot(ds, k) * (1.0 / math.sqrt(dq))
+            product, updated = dp, [moments[0] + jnp.sum(dp, axis=1)]
+            for moment in moments[1:]:
+                product = product * u
+                updated.append(moment + jnp.sum(product, axis=1))
+            return grad_q, tuple(updated)
+        bound, ratio = _key_bound(scores, prefactor, degree)
+        value, slope = _keyed_polynomial(scores, coefficients, slope=True)
+        dp = jnp.where(causal, _cotangent_dot(do, v), 0.0) * jnp.exp(bound - shift[:, None])
+        ds = dp * (value + slope if ratio is None else ratio * value + slope)
         grad_q += _dot(ds, k) * (1.0 / math.sqrt(dq))
-        product, updated = dp, [moments[0] + jnp.sum(dp, axis=1)]
-        for moment in moments[1:]:
-            product = product * u
-            updated.append(moment + jnp.sum(product, axis=1))
+        # Coefficient r's moment of s^r / max(1, |s|)^M: s^r where |s| <= 1, sign(s)^M (1/s)^(M - r) elsewhere.
+        small = jnp.abs(scores) <= 1.0
+        inverse = 1.0 / jnp.where(small, 1.0, scores)
+        ascending = jnp.where(small, dp, 0.0)
+        descending = jnp.where(small, 0.0, dp) * (jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0)
+        updated = list(moments)
+        for step in range(degree + 1):
+            if step:
+                ascending, descending = ascending * scores, descending * inverse
+            updated[step] = updated[step] + jnp.sum(ascending, axis=1)
+            updated[degree - step] = updated[degree - step] + jnp.sum(descending, axis=1)
         return grad_q, tuple(updated)
 
     end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
@@ -153,10 +213,11 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, b
                                                    (jnp.zeros((bq,), jnp.float32),) * count))
     plt.store(dq_ref, grad_q.astype(dq_ref.dtype), mask=qmask)
     for ref, moment, unit in zip(dc_refs, moments, units, strict=True):
-        plt.store(ref, moment * unit, mask=qi < time)
+        # The keyed moments carry each key's units already.
+        plt.store(ref, moment * unit if prefactor == "none" else moment, mask=qi < time)
 
 
-def _dkv_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, bk):
+def _dkv_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, dq, dv, bq, bk):
     do_refs, shift_ref, refs = refs[:parts], refs[parts], refs[parts + 1:]
     *coefficient_refs, dk_ref, dv_ref = refs
     ki = pl.program_id(0) * bk + jnp.arange(bk)
@@ -170,13 +231,20 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, time, dq, dv, bq, 
         q, do = _load(q_ref, qi, dq, time), tuple(_load(ref, qi, dv, time) for ref in do_refs)
         shift = plt.load(shift_ref.at[qi], mask=qi < time, other=0)
         coefficients = tuple(plt.load(ref.at[qi], mask=qi < time, other=0) for ref in coefficient_refs)
-        half, _, horner = _row_units(shift, coefficients)
         scores, causal = _scores(q, k, qi, ki, time, dq)
-        z, dz = _transformed(scores, transform)
-        weights, _, slope = _polynomial(z, half, horner, slope=True)
-        weights = jnp.where(causal, weights, 0.0)
         dp = _cotangent_dot(do, v)
-        ds = jnp.where(causal, dp * slope if dz is None else dp * slope * dz, 0.0)
+        if prefactor == "none":
+            half, _, horner = _row_units(shift, coefficients)
+            z, dz = _transformed(scores, transform)
+            weights, _, slope = _polynomial(z, half, horner, slope=True)
+            ds = jnp.where(causal, dp * slope if dz is None else dp * slope * dz, 0.0)
+        else:
+            bound, ratio = _key_bound(scores, prefactor, len(coefficients) - 1)
+            unit = jnp.exp(bound - shift[:, None])
+            value, slope = _keyed_polynomial(scores, coefficients, slope=True)
+            weights = unit * value
+            ds = jnp.where(causal, dp * unit * (value + slope if ratio is None else ratio * value + slope), 0.0)
+        weights = jnp.where(causal, weights, 0.0)
         return grad_k + _dot(ds.T, q) * (1.0 / math.sqrt(dq)), grad_v + _dot(weights.T, _cotangent(do))
 
     start = lax.div(pl.program_id(0) * bk, bq)
@@ -210,7 +278,7 @@ def _launch(kernel, program, args, outputs, specs, out_specs, *, query_tiles, q,
                           interpret=interpret, name=f"shifted_polynomial_{kernel.__name__.strip('_')}")(*args)
 
 
-def _forward(q, k, v, coefficients, transform, interpret):
+def _forward(q, k, v, coefficients, transform, prefactor, interpret):
     bq = _tiling("forward", q.shape[-1], v.shape[-1])[0]
     time = q.shape[1]
     query, key, value = _spec(bq, q.shape[-1]), _full_spec(time, k.shape[-1]), _full_spec(time, v.shape[-1])
@@ -218,22 +286,23 @@ def _forward(q, k, v, coefficients, transform, interpret):
     output, shift = _launch(_forward_kernel, "forward", (q, k, v, *coefficients),
                             (jax.ShapeDtypeStruct(v.shape, jnp.float32), jax.ShapeDtypeStruct(q.shape[:3], jnp.float32)),
                             (query, key, value, *(row,) * len(coefficients)), (_spec(bq, v.shape[-1]), row),
-                            query_tiles=True, q=q, v=v, interpret=interpret, transform=transform)
+                            query_tiles=True, q=q, v=v, interpret=interpret, transform=transform,
+                            prefactor=prefactor)
     # Keep the shifted sum and its incoming cotangent in FP32 through head RMSNorm.
     return output, lax.stop_gradient(shift)
 
 
-@partial(jax.custom_vjp, nondiff_argnums=(4, 5))
-def _attention(q, k, v, coefficients, transform, interpret):
-    return _forward(q, k, v, coefficients, transform, interpret)
+@partial(jax.custom_vjp, nondiff_argnums=(4, 5, 6))
+def _attention(q, k, v, coefficients, transform, prefactor, interpret):
+    return _forward(q, k, v, coefficients, transform, prefactor, interpret)
 
 
-def _fwd(q, k, v, coefficients, transform, interpret):
-    output, shift = _forward(q, k, v, coefficients, transform, interpret)
+def _fwd(q, k, v, coefficients, transform, prefactor, interpret):
+    output, shift = _forward(q, k, v, coefficients, transform, prefactor, interpret)
     return (output, shift), (q, k, v, coefficients, shift)
 
 
-def _bwd(transform, interpret, saved, cotangents):
+def _bwd(transform, prefactor, interpret, saved, cotangents):
     q, k, v, coefficients, shift = saved
     do, _ = cotangents
     time, dq, dv = q.shape[1], q.shape[-1], v.shape[-1]
@@ -248,21 +317,24 @@ def _bwd(transform, interpret, saved, cotangents):
                                          (_spec(bq, dq), _full_spec(time, dq), _full_spec(time, dv),
                                           *(_spec(bq, dv),) * parts, row, *(row,) * count),
                                          (_spec(bq, dq), *(row,) * count), query_tiles=True, q=q, v=v,
-                                         interpret=interpret, parts=parts, transform=transform)
+                                         interpret=interpret, parts=parts, transform=transform,
+                                         prefactor=prefactor)
     grad_k, grad_v = _launch(_dkv_kernel, "dkv", args, (dk_type, dv_type),
                              (_full_spec(time, dq), _spec(bk, dq), _spec(bk, dv), *(_full_spec(time, dv),) * parts,
                               full_row, *(full_row,) * count),
                              (_spec(bk, dq), _spec(bk, dv)), query_tiles=False, q=q, v=v, interpret=interpret,
-                             parts=parts, transform=transform)
+                             parts=parts, transform=transform, prefactor=prefactor)
     return grad_q, grad_k, grad_v, tuple(grad_coefficients)
 
 
 _attention.defvjp(_fwd, _bwd)
 
 
-def fused_shifted_polynomial(q, k, v, coefficients, *, transform="identity", interpret=False):
+def fused_shifted_polynomial(q, k, v, coefficients, *, transform="identity", prefactor="none", interpret=False):
     """The shifted output e^(-m) o [B,T,H,dv] in FP32 and the stopped shifts m [B,T,H]; coefficients [B,T,H,M+1]."""
     if transform not in TRANSFORMS:
         raise ValueError(f"The shifted polynomial takes the transforms {TRANSFORMS}, not {transform!r}")
+    if prefactor not in PREFACTORS or (prefactor != "none" and transform != "identity"):
+        raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, of the raw score with z = s")
     rows = tuple(coefficients[..., r] for r in range(coefficients.shape[-1]))
-    return _attention(q, k, v, rows, transform, interpret)
+    return _attention(q, k, v, rows, transform, prefactor, interpret)

@@ -138,6 +138,7 @@ def attention_parameter_specs(config) -> tuple[AttentionParameterSpec, ...]:
                 amplitude_initial=getattr(config, "attention_coefficient_amplitude_initial", 1.0),
                 projection_initial_std=getattr(config, "attention_coefficient_projection_initial_std", 0.0),
                 tanh_bias=getattr(config, "attention_coefficient_tanh_bias", False),
+                tanh_bias_initial=getattr(config, "attention_coefficient_tanh_bias_initial", 0.0),
                 kernel_weight_decay=getattr(config, "attention_coefficient_kernel_weight_decay", False),
                 conditioning=conditioning,
                 initialization=getattr(config, "attention_coefficient_initialization", "taylor"),
