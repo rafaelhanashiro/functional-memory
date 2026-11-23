@@ -3163,6 +3163,68 @@ for run in raec1c513a51b re125a8977319; do
 done
 ```
 
+### Pure tanh coefficients with softplus and exp prefactors at key width four
+
+Six runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-22 on Kennel: at `d_K` 4, with QK
+RMSNorm (per-head scale) and RoPE, the weight `P_t(s)`, `softplus(s) P_t(s)` or `e^s P_t(s)` of the signed score `s`
+at degrees 8 and 16, with every power 0..m and
+
+`P_t(s) = sum_r tanh(w_r^T x_hat_t + beta_r) / r! s^r`,
+
+`x_hat_t` the raw attention-block input at unit L2 norm, which only the coefficient projection sees. `w_r` start at zero
+and every `beta_r` at atanh(1/2), so each coefficient starts at 0.5/r!, half the degree-m Taylor coefficient of exp,
+where tanh' = 3/4. Each recipe is the degree-eight tanh query run at `d_K` 4 (`rd5e3ec5a4f02`) with these settings, the
+degree and the prefactor (`pure_tanh_prefactor_acceptance.CHANGES`); the base learning rate applies at every order
+(the 1/r! gives the degree scaling), weight decay 0.1 to `w_r` and none to `beta_r`, and seed 42, data order and
+schedule are the partner's.
+
+| Run | Label | Weight | `m` |
+| --- | --- | --- | ---: |
+| `rfd18b16513a0` | `query-pure-tanh-m8-dk4` | `P_t(s)` | 8 |
+| `rfd16ec25202a` | `query-pure-tanh-m16-dk4` | `P_t(s)` | 16 |
+| `rfa8c0b2f748f` | `softplus-times-query-pure-tanh-m8-dk4` | `softplus(s) P_t(s)` | 8 |
+| `r1a0e7b80c588` | `softplus-times-query-pure-tanh-m16-dk4` | `softplus(s) P_t(s)` | 16 |
+| `r6621b4589a3b` | `exp-times-query-pure-tanh-m8-dk4` | `e^s P_t(s)` | 8 |
+| `rf51ad9acc005` | `exp-times-query-pure-tanh-m16-dk4` | `e^s P_t(s)` | 16 |
+
+- **Kernel.** All six train on the row-power shifted fused kernel
+  ([validation](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)) with
+  head RMSNorm's max-abs prescale. With a prefactor it evaluates each key in units of its own bound
+  `log f(s) + m log max(1, |s|)`, the row in units of the largest: the prefactors suppress the far negative keys, which
+  would otherwise set the row's units and underflow the keys that carry the weight. At degree 8 the Mosaic kernels
+  would do without the shift, but `e^s` overflows FP32 at the scores width 4 reaches and they take no pure tanh inner
+  bias; one kernel for the six leaves the weight the only difference.
+- **Acceptance.** The [adapter](pure_tanh_prefactor_acceptance.py) derives the six recipes from the pinned partner and
+  requires the fused backend on a B200 or B300; acceptance runs the shifted kernel's GPU cases on the allocated GPU.
+  The kernel's cases for these weights passed on a B200 (jobs 11158 and 11167).
+- **Time limits.** One attention layer's forward and backward at the 16 x 2,048-token micro-batch took, on a B200
+  (job 11167), 7.1 / 18.0 / 10.8 ms (`P_t`, softplus, exp) at degree 8 and 9.4 / 25.9 / 17.6 ms at degree 16. With 240
+  such calls per update and 0.75 s for the rest of an update (the degree-sixteen query run's 3.0 s on a B300 less its
+  attention), plus 5% for validations and checkpoints, the projections are 5.4, 6.6, 11.2, 15.5, 7.4 and 11.0 hours in
+  the table's order; the limits are 1.4 times the projection plus acceptance's two-hour reserve, rounded up, at most
+  24 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100.
+The two longest take the free `standard` slots:
+
+```sh
+submit() {  # partition, time limit, run
+  d="experiments/transformer_pp/runs/$3"
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$3" \
+    --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.pure_tanh_prefactor_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
+}
+submit standard 24:00:00 r1a0e7b80c588  # softplus, m = 16
+submit standard 18:00:00 rf51ad9acc005  # exp, m = 16
+submit long 18:00:00 rfa8c0b2f748f      # softplus, m = 8
+submit long 13:00:00 r6621b4589a3b      # exp, m = 8
+submit long 12:00:00 rfd16ec25202a      # P, m = 16
+submit long 10:00:00 rfd18b16513a0      # P, m = 8
+```
+
 ## Max-abs ALiBi exp and 12-layer width-640 4x runs
 
 Four runs, requested 2026-11-21 on Kennel, with the settings `scaffolds.records create` gives a fresh recipe: head

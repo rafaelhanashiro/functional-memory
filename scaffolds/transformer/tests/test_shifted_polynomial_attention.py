@@ -21,16 +21,27 @@ def _phi(s, transform):
     return jnp.logaddexp(s, 0.0) if transform == "softplus" else s
 
 
-def _oracle(q, k, v, c, transform):
+def _oracle(q, k, v, c, transform, prefactor="none"):
     scores = jnp.einsum("bqhd,bkhd->bhqk", q, k) / math.sqrt(q.shape[-1])
     causal = jnp.arange(q.shape[1])[:, None] >= jnp.arange(q.shape[1])[None, :]
-    z = _phi(jnp.where(causal, scores, 0), transform)
+    scores = jnp.where(causal, scores, 0)
+    z = _phi(scores, transform)
     weights = sum(c[..., r].transpose(0, 2, 1)[..., None] * z ** r for r in range(c.shape[-1]))
+    shift = jnp.zeros(weights.shape[:-1] + (1,), weights.dtype)
+    if prefactor == "softplus":
+        weights = jnp.logaddexp(scores, 0.0) * weights
+    elif prefactor == "exp":
+        # e^s passes FP64's range at the stress scores: e^(s - m) with m = max(0, max_i s_i) per row, and head
+        # RMSNorm's epsilon times e^(-2m), the same normalized function.
+        shift = jax.lax.stop_gradient(jnp.maximum(0.0, jnp.max(jnp.where(causal, scores, -jnp.inf), axis=-1,
+                                                               keepdims=True)))
+        weights = jnp.exp(scores - shift) * weights
     output = jnp.einsum("bhqk,bkhd->bqhd", jnp.where(causal, weights, 0), v)
-    return output / jnp.sqrt(jnp.mean(jnp.square(output), axis=-1, keepdims=True) + 1e-6)
+    eps = 1e-6 * jnp.exp(-2.0 * shift).transpose(0, 2, 1, 3)
+    return output / jnp.sqrt(jnp.mean(jnp.square(output), axis=-1, keepdims=True) + eps)
 
 
-def _inputs(time, stress, degree):
+def _inputs(time, stress, degree, prefactor="none"):
     rng = np.random.default_rng(124 + degree)
     q, k, v = (rng.normal(size=(1, time, 1, d)).astype(np.float32) / 2 for d in (4, 4, 8))
     if stress:
@@ -39,6 +50,14 @@ def _inputs(time, stress, degree):
         k[0, 0, 0] = [-1000., 0., 0., 0.]
         k[0, time // 2, 0] = [1000., 0., 0., 0.]
         k[0, -1, 0] = [1100., 0., 0., 0.]
+        if prefactor == "exp":
+            # e^100 overflows FP32 too. Near s = 1000, FP32 holds the key bound s + M log s only to 6e-5, a relative
+            # error in e^s beyond what the comparison resolves, and e^s leaves one key per row by e^100 and more
+            # (whose coefficient gradients vanish in exact arithmetic): keep the positive keys near 100, each within
+            # e^1 of another.
+            k[0, time // 2, 0] = [100., 0., 0., 0.]
+            k[0, time // 2 + 1, 0] = [99.5, 0., 0., 0.]
+            k[0, -1, 0] = [100.5, 0., 0., 0.]
     # A sum of squares' coefficients need not all be positive; keep the polynomial positive with signed lower orders.
     c = (rng.uniform(0.1, 0.9, size=(*q.shape[:-1], degree + 1))
          / np.array([math.factorial(r) for r in range(degree + 1)])).astype(np.float32)
@@ -47,21 +66,26 @@ def _inputs(time, stress, degree):
     return (q, k, v, c), cot
 
 
+# Each transform alone, and each prefactor of the raw score.
+SCORE_FUNCTIONS = (*((transform, "none") for transform in TRANSFORMS), ("identity", "softplus"), ("identity", "exp"))
+
+
 @pytest.mark.parametrize("degree", DEGREES)
-@pytest.mark.parametrize("transform", TRANSFORMS)
+@pytest.mark.parametrize("transform, prefactor", SCORE_FUNCTIONS)
 @pytest.mark.parametrize("stress", [False, True])
 @pytest.mark.parametrize("backend", ["blocked", pytest.param("fused", marks=pytest.mark.gpu)])
-def test_shifted_composition_and_all_gradients(backend, stress, transform, degree):
+def test_shifted_composition_and_all_gradients(backend, stress, transform, prefactor, degree):
     # 65 includes masked tail rows/columns and changes the running maximum on a later causal tile.
     if backend == "fused" and jax.default_backend() != "gpu":
         pytest.skip("The fused Triton program requires a GPU")
-    args, cot = _inputs(65, stress, degree)
+    args, cot = _inputs(65, stress, degree, prefactor)
     with jax.enable_x64(True):
-        oracle, pull = jax.vjp(lambda *a: _oracle(*a, transform), *(jnp.asarray(x, jnp.float64) for x in args))
+        oracle, pull = jax.vjp(lambda *a: _oracle(*a, transform, prefactor),
+                               *(jnp.asarray(x, jnp.float64) for x in args))
         oracle_grads = pull(jnp.asarray(cot, jnp.float64))
 
     def normalized(*args):
-        result, shift = shifted_polynomial_attention(*args, transform=transform, backend=backend)
+        result, shift = shifted_polynomial_attention(*args, transform=transform, prefactor=prefactor, backend=backend)
         return max_abs_head_rms(result, 1e-6, shift[..., None])
 
     y, pull = jax.vjp(jax.jit(normalized), *map(jnp.asarray, args))
@@ -147,14 +171,14 @@ def _model_outputs(config, tokens, cotangent):
     return logits, dict(nnx.to_flat_state(grads))
 
 
-def _assert_models_agree(actual_config, expected_config, *, rtol, grad_rtol, grad_atol=1e-4):
+def _assert_models_agree(actual_config, expected_config, *, rtol, grad_rtol, grad_atol=1e-4, logit_atol=0.0):
     rng = np.random.default_rng(7)
     vocab = expected_config.model.vocab_size
     tokens = jnp.asarray(rng.integers(0, vocab, size=(2, 8)), jnp.int32)
     cotangent = jnp.asarray(rng.normal(size=(2, 8, vocab)), jnp.float32)
     expected, expected_grads = _model_outputs(expected_config, tokens, cotangent)
     actual, actual_grads = _model_outputs(actual_config, tokens, cotangent)
-    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=1e-5)
+    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=max(1e-5, logit_atol * float(np.max(np.abs(expected)))))
     assert actual_grads.keys() == expected_grads.keys()
     for path, value in expected_grads.items():
         scale = max(1e-6, float(np.max(np.abs(value[...]))))
@@ -171,6 +195,12 @@ def test_shifted_model_matches_the_unshifted_model_where_both_are_finite(power):
     _assert_models_agree(shifted, plain, rtol=1e-4, grad_rtol=1e-3)
 
 
+# The fused and blocked models' logits agree to rounding except where a token of the tiny model is ill-conditioned:
+# on a B200 one token of the degree-sixteen tanh query model differs by 4.2e-5 (0.02% of the largest logit, 0.19),
+# each evaluation deterministic. Logits are held to 5e-4 of the largest, as gradients to 1e-3 of each array's largest.
+LOGIT_ATOL = 5e-4
+
+
 @pytest.mark.gpu
 @pytest.mark.parametrize("power", (0, 1))
 def test_fused_model_matches_the_blocked_shifted_model(power):
@@ -180,7 +210,7 @@ def test_fused_model_matches_the_blocked_shifted_model(power):
     assert jax.default_backend() == "gpu"
     blocked, fused = (_config(power, attention_head_rms_prescale="max_abs", attention_backend=backend,
                               attention_polynomial_shift="row_power") for backend in ("blocked", "fused"))
-    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3)
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 
 
 def test_the_shift_is_refused_off_its_recipe():
@@ -256,7 +286,7 @@ def test_fused_model_matches_the_blocked_shifted_model_for_every_coefficient_sou
     assert jax.default_backend() == "gpu"
     blocked, fused = (_source_config(source, attention_backend=backend, attention_polynomial_shift="row_power")
                       for backend in ("blocked", "fused"))
-    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3)
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 
 
 def test_the_shift_admits_its_coefficient_sources_alone():
@@ -278,7 +308,8 @@ def test_the_shift_admits_its_coefficient_sources_alone():
             (query, dict(attention_coefficient_zero_constant=True), "every order from zero"),
             (fixed, dict(attention_fixed_square_factors=(1.0, 1.0)), "square factors"),
             (query, dict(attention_normalization=True), "unnormalized"),
-            (query, dict(attention_score_prefactor="softplus"), "prefactor"),
+            (query, dict(attention_score_prefactor="sigmoid"), "prefactor"),
+            (query, dict(attention_score_prefactor="exp", attention_score_transform="softplus"), "prefactor"),
             (fixed, dict(attention_head_rms_prescale="none"), "max-abs prescale")):
         assert reason in polynomial_shift_problem(SimpleNamespace(**{**vars(model), **changes})), changes
 
@@ -318,3 +349,143 @@ def test_blocked_diagnostics_measure_the_cancellation_of_signed_rows():
     assert ratio.max() > 1.5
     np.testing.assert_allclose(d["cancellation_ratio_max"], ratio.max(), rtol=1e-3)
     np.testing.assert_allclose(d["cancellation_ratio_mean"], ratio.mean(), rtol=1e-3)
+
+
+# Pure tanh coefficients tanh(w_r^T x_hat + beta_r)/r! from the L2-normalized raw block input, W at zero and beta at
+# atanh(1/2), as the Q/K width 4 prefactor runs set them.
+PURE_TANH = dict(attention_coefficient_parameterization="direct", attention_score_transform="identity",
+                 attention_coefficient_activation="pure_tanh", attention_coefficient_tanh_bias=True,
+                 attention_coefficient_tanh_bias_initial=math.atanh(0.5),
+                 attention_coefficient_projection_initial_std=0.0, attention_coefficient_amplitude_initial=1.0,
+                 attention_coefficient_amplitude_scale="factorial", attention_coefficient_scale="none",
+                 attention_coefficient_input_source="pre_rmsnorm", attention_coefficient_input_normalization="l2")
+PREFACTORS = ("none", "softplus", "exp")
+
+
+def _pure_tanh_config(prefactor="none", **changes):
+    return _config(0, core_degree=16, **{"attention_head_rms_prescale": "max_abs", **PURE_TANH,
+                                         "attention_score_prefactor": prefactor, **changes})
+
+
+def test_pure_tanh_coefficients_start_at_half_the_taylor_coefficients():
+    """W at zero and beta at atanh(1/2): every c_r starts at 0.5/r!, tanh' = 3/4, and only W decays."""
+    from flax import nnx as flax_nnx
+
+    from scaffolds.transformer.attention.input_dependent import project_coefficients
+    from scaffolds.transformer.attention.parameters import attention_parameter_specs
+
+    config = _pure_tanh_config()
+    params = {"/".join(map(str, key)): np.asarray(value[...])
+              for key, value in flax_nnx.to_flat_state(flax_nnx.state(build_model(config.model, 42), flax_nnx.Param))}
+    kernel = next(value for key, value in params.items() if key.endswith("query_polynomial_kernel"))
+    bias = next(value for key, value in params.items() if key.endswith("query_polynomial_tanh_bias"))
+    assert not np.any(kernel) and np.allclose(bias, math.atanh(0.5))
+    assert not any(key.endswith(("query_polynomial_bias", "query_polynomial_amplitude")) for key in params)
+    decays = {spec.name: spec.weight_decay for spec in attention_parameter_specs(config.model)}
+    assert decays["query_polynomial_kernel"] and not decays["query_polynomial_tanh_bias"]
+    x = jnp.asarray(np.random.default_rng(3).normal(size=(1, 3, 16)), jnp.float32)
+    c = project_coefficients(x, jnp.asarray(kernel[0]), None, activation="pure_tanh",
+                             tanh_bias=jnp.asarray(bias[0]), amplitude_scale="factorial")
+    factorials = np.array([math.factorial(r) for r in range(17)], np.float64)
+    np.testing.assert_allclose(np.asarray(c, np.float64) * factorials, 0.5, rtol=1e-6)
+
+
+def test_the_pure_tanh_shifted_model_matches_the_unshifted_one():
+    _assert_models_agree(_pure_tanh_config(attention_polynomial_shift="row_power"), _pure_tanh_config(),
+                         rtol=1e-4, grad_rtol=1e-3)
+
+
+@pytest.mark.parametrize("prefactor", ("softplus", "exp"))
+def test_shifted_prefactor_models_match_the_unshifted_composition(prefactor):
+    """f(s) p_t(s) with tanh query coefficients at degree sixteen: the shifted model equals the blocked backend's
+    unshifted composition of the prefactor and the polynomial at moderate scores."""
+    plain = _source_config("query", attention_score_prefactor=prefactor)
+    shifted = _source_config("query", attention_score_prefactor=prefactor, attention_polynomial_shift="row_power")
+    _assert_models_agree(shifted, plain, rtol=1e-4, grad_rtol=1e-3)
+
+
+@pytest.mark.parametrize("prefactor", PREFACTORS)
+def test_the_fused_pure_tanh_models_build(prefactor):
+    """The layer admits each fused recipe (building runs no kernel)."""
+    build_model(_pure_tanh_config(prefactor, attention_backend="fused", attention_polynomial_shift="row_power").model, 0)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("prefactor", PREFACTORS)
+def test_fused_pure_tanh_models_match_the_blocked_shifted_models(prefactor):
+    assert jax.default_backend() == "gpu"
+    blocked, fused = (_pure_tanh_config(prefactor, attention_backend=backend, attention_polynomial_shift="row_power")
+                      for backend in ("blocked", "fused"))
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
+
+
+def test_exp_prefactor_overflows_unshifted_and_stays_finite_shifted():
+    """e^1100 overflows FP32 (and FP64); the shifted weights stay finite and the shift holds the row maximum."""
+    (q, k, v, c), _ = _inputs(65, True, 17)
+    y, shift = shifted_polynomial_attention(*map(jnp.asarray, (q, k, v, c)), prefactor="exp")
+    assert not np.isfinite(np.exp(np.float32(1100.0)))
+    assert bool(jnp.all(jnp.isfinite(y))) and float(jnp.max(shift)) > 1000 + 17 * math.log(1000)
+
+
+@pytest.mark.parametrize("prefactor", ("softplus", "exp"))
+def test_validation_diagnostics_name_the_prefactor(prefactor):
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics
+    from scaffolds.transformer.training.state import create_state
+
+    batch = jnp.asarray(np.random.default_rng(9).integers(0, 32, (2, 9)), jnp.int32)
+    config = _pure_tanh_config(prefactor, attention_polynomial_shift="row_power")
+    state, *_ = loop.train_step(create_state(config, jax.random.PRNGKey(0)), batch, jax.random.PRNGKey(0))
+    report = attention_diagnostics(state, config, np.asarray(batch[:1]), {"selection": "test"})
+    assert report["valid"], report["issues"]
+    assert report["kernel_values"] == f"row_power_shifted_query_polynomial_times_{prefactor}_of_raw_scores"
+
+
+def test_prefactors_are_refused_off_the_raw_score():
+    with pytest.raises(ValueError, match="attention_polynomial_shift"):
+        _config(1, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
+                attention_score_prefactor="exp")
+    with pytest.raises(ValueError, match="attention_polynomial_shift"):
+        _pure_tanh_config("sigmoid", attention_polynomial_shift="row_power")
+
+
+@pytest.mark.parametrize("degree", DEGREES)
+@pytest.mark.parametrize("prefactor", ("softplus", "exp"))
+@pytest.mark.parametrize("scale", [0.5, 4.0, 40.0, 400.0])
+def test_keyed_arithmetic_matches_fp64(scale, prefactor, degree):
+    """The fused programs' per-key units: e^(b - m) h and its slope against f(s) p(s) e^(-m) and its derivative in
+    FP64, m the row's largest bound, on rows mixing far negative keys with moderate ones (where units set by the
+    largest |s| alone underflow the weights that matter)."""
+    from scaffolds.transformer.attention.backends.fused_shifted_polynomial import _key_bound, _keyed_polynomial
+
+    rng = np.random.default_rng(int(scale * 10) + degree)
+    s = rng.normal(size=(8, 64)) * scale
+    s[:, 0] = -25 * scale
+    c = rng.uniform(-1, 1, size=(8, degree + 1)) / np.array([math.factorial(r) for r in range(degree + 1)])
+    coefficients = tuple(jnp.asarray(c[:, r], jnp.float32) for r in range(degree + 1))
+    scores = jnp.asarray(s, jnp.float32)
+    bound, ratio = _key_bound(scores, prefactor, degree)
+    shift = jnp.maximum(0.0, jnp.max(bound, axis=1))
+    unit = jnp.exp(bound - shift[:, None])
+    value, slope = _keyed_polynomial(scores, coefficients, slope=True)
+    weight = unit * value
+    derivative = unit * (value + slope if ratio is None else ratio * value + slope)
+    s64 = np.asarray(scores, np.float64)
+    # log softplus(s) and sigmoid(s) / softplus(s), with their limits s and 1 where softplus underflows FP64.
+    tail = s64 < -30
+    softplus = np.logaddexp(0.0, np.where(tail, 0.0, s64))
+    logf = s64 if prefactor == "exp" else np.where(tail, s64, np.log(softplus))
+    fprime_over_f = (np.ones_like(s64) if prefactor == "exp"
+                     else np.where(tail, 1.0, 1 / (1 + np.exp(-np.where(tail, 0.0, s64))) / softplus))
+    powers = [s64 ** r for r in range(degree + 1)]
+    p = sum(c[:, r, None] * powers[r] for r in range(degree + 1))
+    dp = sum(r * c[:, r, None] * powers[r - 1] for r in range(1, degree + 1))
+    m = np.asarray(shift, np.float64)[:, None]
+    exact = np.exp(logf - m) * p
+    exact_derivative = np.exp(logf - m) * (fprime_over_f * p + dp)
+    # Each key's terms reach |c_r| e^(b - m): signed sums resolve to FP32 relative to them.
+    size = np.exp(np.minimum(np.asarray(bound, np.float64) - m, 0)) * np.abs(c).sum(1, keepdims=True)
+    np.testing.assert_array_less(np.abs(np.asarray(weight, np.float64) - exact), 2e-5 * size + 1e-30)
+    np.testing.assert_array_less(np.abs(np.asarray(derivative, np.float64) - exact_derivative),
+                                 2e-5 * size * (degree + 1) + 1e-30)
+    assert float(jnp.max(jnp.abs(weight))) > 0

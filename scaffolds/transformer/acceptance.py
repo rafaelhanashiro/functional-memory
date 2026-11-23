@@ -239,7 +239,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                              f"causal strips; this recipe resolves {resolved_backend!r} with "
                              f"attention_blocked_implementation: {implementation}")
         paths.append(EXPONENTIAL_SCORE_FUNCTION_TESTS)
-    elif (transform != "identity" or prefactor != "none") and resolved_backend == "mosaic":
+    elif ((transform != "identity" or prefactor != "none") and resolved_backend == "mosaic"
+          and model.get("attention_polynomial_shift", "none") == "none"):
         # The Mosaic transformed query-polynomial kernels. CPU: the FP64 references through the scan and the
         # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
         # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the

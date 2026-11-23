@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1a0e7b80c588/config.yaml",
+    "sha256": "ca0cd2c903d899cc8f2d71c183fd344c425872869dc0714fd4ee555e69041add"
+  },
+  "label": "softplus-times-query-pure-tanh-m16-dk4",
+  "name": "softplus-times-query-pure-tanh-m16-dk4",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "0b0afdd3d90223915de548dd1b663fe2282d5aeca9f86a1dc923eb922186d6b1",
+    "loss": 5.596516132354736,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r1a0e7b80c588",
+  "status": "planned"
+}

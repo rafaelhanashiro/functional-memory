@@ -138,7 +138,7 @@ def attention_core(
         if (attention_normalization or attention_degree is None or query_polynomial_coefficients is None
                 or query_polynomial_coefficients.shape[-1] != attention_degree + 1
                 or coefficients is not None or polynomial_coefficients is not None or polynomial_square_factors is not None
-                or key_polynomial_factors is not None or decay or score_bias or score_prefactor != "none"
+                or key_polynomial_factors is not None or decay or score_bias
                 or any(value is not None for value in denominators.values()) or exp_shift != "none"
                 or quadratic_mode != "fixed" or query_decay_mode != "cumulative" or square_factor_input_power
                 or any(x is not None for x in (score_mlp_amplitude, score_mlp_offset, score_mlp_slope,
@@ -146,7 +146,8 @@ def attention_core(
                                                query_spline_coefficients))):
             raise ValueError("The row-power shift evaluates a plain per-query polynomial alone")
         return shifted_polynomial_attention(q, k, v, query_polynomial_coefficients, transform=score_transform,
-                                            backend=backend, return_diagnostics=return_diagnostics)
+                                            prefactor=score_prefactor, backend=backend,
+                                            return_diagnostics=return_diagnostics)
     # Composition (attention/pieces.py): on the blocked backend a per-query polynomial (static and fixed coefficients
     # arrive broadcast per query) takes key factors, any decay, score biases, a transform and a prefactor together.
     # Only combinations no specialized route below implements take this route, so every other call is unchanged.

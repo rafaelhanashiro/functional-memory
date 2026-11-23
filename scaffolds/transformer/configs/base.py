@@ -187,7 +187,10 @@ class ModelConfig:
     attention_coefficient_projection_initial_std: float = 0.0
     # Tanh coefficients may learn an offset inside the tanh, c_r = b_r + a_r tanh(w_r^T x_t + beta_r),
     # starting at beta_r = 0, so a constant shift of the pre-activation need not come through w_r.
+    # pure_tanh takes it too: c_r = tanh(w_r^T x_t + beta_r) [/ r!], with no b or a.
     attention_coefficient_tanh_bias: bool = False
+    # Every order's beta_r start (default zero). Pure tanh coefficients with W at zero start at tanh(beta_r) [/ r!].
+    attention_coefficient_tanh_bias_initial: float = 0.0
     # "sigmoid" gates every order independently per layer/head: c~_r(x_t) = 2 g_r(x_t) c_r(x_t),
     # g_r(x_t) = sigmoid(U_r^T x_t + beta_r), with U and this gate bias beta starting at zero
     # (not the inner tanh bias, which cannot be combined with it). The fixed factor 2 makes the
@@ -606,19 +609,22 @@ class ModelConfig:
         if self.attention_coefficient_input_normalization == "l2" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_sharing != "per_head"
-                or self.attention_coefficient_conditioning != "query" or activation != "tanh"
+                or self.attention_coefficient_conditioning != "query" or activation not in ("tanh", "pure_tanh")
                 or self.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+                or (activation == "pure_tanh" and self.attention_coefficient_parameterization != "direct")
                 or self.attention_coefficient_readout != "diagonal"
-                or self.attention_coefficient_orders is not None or self.attention_coefficient_tanh_bias
+                or self.attention_coefficient_orders is not None
+                or (self.attention_coefficient_tanh_bias and activation != "pure_tanh")
                 or self.attention_coefficient_gate != "none" or self.attention_forget_gate
                 or self.attention_kernel_basis != "polynomial" or self.attention_score_bias != "none"
                 or not l2_score_supported or self.attention_normalization
                 or self.positional_encoding not in ("rope", "none")
                 or self.attention_degree is None or self.attention_degree < 1 or self.quadratic_mode != "fixed"):
             raise ValueError("L2 coefficient input normalization requires unnormalized learned per-head "
-                             "diagonal tanh query polynomial coefficients, direct or sum-of-squares, "
-                             "with RoPE or no positional encoding, without selected orders, inner biases, gates, "
-                             "score biases; score transforms are limited to softplus with a SoS input prefactor")
+                             "diagonal tanh query polynomial coefficients, direct or sum-of-squares (or direct pure "
+                             "tanh, with or without its inner bias), with RoPE or no positional encoding, without "
+                             "selected orders, affine inner biases, gates, score biases; score transforms are "
+                             "limited to softplus with a SoS input prefactor")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError(f"Unknown attention coefficient readout: {self.attention_coefficient_readout}")
         if self.attention_coefficient_readout == "dense" and (
@@ -684,8 +690,10 @@ class ModelConfig:
         if activation in PURE_ACTIVATIONS:
             if amplitude != 1.0:
                 raise ValueError(f"Pure {activation} coefficients have no amplitude; dense V starts at the identity")
-            if activation == "pure_tanh" and spread == 0:
-                raise ValueError("Pure tanh coefficients need a random W start: tanh(0) = 0 zeroes every coefficient")
+            if (activation == "pure_tanh" and spread == 0
+                    and not (self.attention_coefficient_tanh_bias and self.attention_coefficient_tanh_bias_initial)):
+                raise ValueError("Pure tanh coefficients need a random W start or a nonzero inner-bias start: "
+                                 "tanh(0) = 0 zeroes every coefficient")
         elif (amplitude, spread) != (1.0, 0.0):
             if activation not in AFFINE_ACTIVATIONS:
                 raise ValueError("Coefficient amplitude and projection initialization apply to tanh coefficients only")
@@ -693,8 +701,14 @@ class ModelConfig:
                 raise ValueError("Tanh coefficients with a = 0 and W = 0 have zero gradients and never learn")
         if not isinstance(self.attention_coefficient_tanh_bias, bool):
             raise ValueError("model.attention_coefficient_tanh_bias must be a boolean")
-        if self.attention_coefficient_tanh_bias and activation not in AFFINE_ACTIVATIONS:
-            raise ValueError("A bias inside tanh applies to affine tanh or sigmoid coefficients only")
+        if self.attention_coefficient_tanh_bias and activation not in (*AFFINE_ACTIVATIONS, "pure_tanh"):
+            raise ValueError("A bias inside tanh applies to affine tanh or sigmoid coefficients and pure tanh only")
+        start = self.attention_coefficient_tanh_bias_initial
+        if isinstance(start, bool) or not isinstance(start, (int, float)) or not math.isfinite(start):
+            raise ValueError("model.attention_coefficient_tanh_bias_initial must be a finite number")
+        if start != 0 and not self.attention_coefficient_tanh_bias:
+            raise ValueError("An inner-bias start (attention_coefficient_tanh_bias_initial) needs "
+                             "attention_coefficient_tanh_bias")
         if not isinstance(self.attention_coefficient_gate, str) or self.attention_coefficient_gate not in (
                 "none", "sigmoid", "gdn"):
             raise ValueError(f"Unknown attention coefficient gate: {self.attention_coefficient_gate!r}")
@@ -1406,6 +1420,10 @@ def _validate_score_transform(model: ModelConfig) -> None:
     if _exponential_kernel(model):
         if not score_function.identity:
             _validate_exponential_score_function(model, score_function)
+        return
+    if model.attention_polynomial_shift != "none":
+        # The row-power shifted kernel's own rule (attention/pieces.py polynomial_shift_problem, checked with the
+        # shift) states the transforms, prefactors and coefficient families it evaluates.
         return
     if _blocked_polynomial(model):
         return

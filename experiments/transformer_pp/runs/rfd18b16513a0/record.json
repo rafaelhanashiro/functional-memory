@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rfd18b16513a0/config.yaml",
+    "sha256": "5829738786f5a5768fd942680e9684d5947f4e60868b15a607dbc295eb48becf"
+  },
+  "label": "query-pure-tanh-m8-dk4",
+  "name": "query-pure-tanh-m8-dk4",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "b1f808307e1ae0208abe3837550ed1745b335f47fd83580f0cc7ba9a26c6af86",
+    "loss": 5.600586891174316,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rfd18b16513a0",
+  "status": "planned"
+}
