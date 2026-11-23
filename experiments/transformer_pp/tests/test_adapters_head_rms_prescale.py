@@ -48,7 +48,10 @@ RUNS = {
 CONSTRUCTED = ("coefficient_gate_acceptance",)
 # Adapters whose mechanism needs the prescale (the row-power shift is divided out through it), each with a run; of
 # the learning-rate adapter's partners that is z h_t(z), and its own tests hold its exponential to the shared rule.
-PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",), "learning_rate_acceptance": ("r1934bca84bd4",)}
+PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",),
+                  "shifted_polynomial_acceptance": ("raec1c513a51b", "rca649583af62"),
+                  "pure_tanh_prefactor_acceptance": ("rfd18b16513a0", "rfa8c0b2f748f", "r6621b4589a3b"),
+                  "learning_rate_acceptance": ("r1934bca84bd4",)}
 CASES = (*((name, run) for name, runs in RUNS.items() for run in runs), *((name, None) for name in CONSTRUCTED))
 
 

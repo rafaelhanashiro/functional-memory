@@ -239,7 +239,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
                              f"causal strips; this recipe resolves {resolved_backend!r} with "
                              f"attention_blocked_implementation: {implementation}")
         paths.append(EXPONENTIAL_SCORE_FUNCTION_TESTS)
-    elif (transform != "identity" or prefactor != "none") and resolved_backend == "mosaic":
+    elif ((transform != "identity" or prefactor != "none") and resolved_backend == "mosaic"
+          and model.get("attention_polynomial_shift", "none") == "none"):
         # The Mosaic transformed query-polynomial kernels. CPU: the FP64 references through the scan and the
         # strips with every gradient, the start, refusals and diagnostics, and the kernels' tile mathematics in
         # FP64, exact shared memory and lowering on the host. GPU: the kernels against host FP64 and against the
@@ -444,7 +445,11 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
             paths.append(DENSE_QUERY_READOUT_TESTS)
         if activation == "sigmoid":
             paths.append(SIGMOID_COEFFICIENT_TESTS)
-        if activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False):
+        if (activation in ("pure_tanh", "affine_sigmoid") or model.get("attention_forget_gate", False)) and (
+                cpu or model.get("attention_polynomial_shift", "none") == "none"):
+            # Its GPU case qualifies the forms on the Mosaic kernels (the blocked backend under a forget gate),
+            # which a row-power shifted run never trains on and which skips on a GPU they are not qualified on;
+            # the shifted module's GPU cases qualify its fused kernel with these generators.
             paths.append(COEFFICIENT_FORM_TESTS)
         if model.get("attention_forget_gate_mode", "cumulative") == "query_distance":
             paths.append(QUERY_DISTANCE_DECAY_TESTS)
@@ -540,13 +545,15 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             elif fused and model.get("attention_polynomial_shift", "none") == "none":
                 tests.append("learned_polynomial_fused_attention")
         elif fixed:
+            # The row-power shift's fixed coefficients run on its own kernel, whose module is selected below.
+            shifted = model.get("attention_polynomial_shift", "none") != "none"
             if cpu:
                 tests.extend(["fixed_polynomial", "fixed_polynomial_config"])
                 if square:
                     tests.append("fixed_square_factors")
-            elif fused:
+            elif fused and not shifted:
                 tests.append("fixed_square_factors_fused" if square else "fixed_polynomial_fused")
-            if model.get("qk_norm") and (cpu or fused):
+            if model.get("qk_norm") and (cpu or (fused and not shifted)):
                 tests.append("fixed_polynomial_qk_norm")
         elif normalized:
             if degree is None:
@@ -561,8 +568,10 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             elif fused:
                 tests.extend(["fused_attention", "taylor_kernel_widths"])
         if not normalized:
+            # The row-power shift's polynomials run on its own kernel, whose module is selected below.
             tests.extend(["unnormalized_attention", "unnormalized_training"] if cpu else
-                         (["unnormalized_fused_attention"] if fused and not learned and not fixed else []))
+                         (["unnormalized_fused_attention"] if fused and not learned and not fixed
+                          and model.get("attention_polynomial_shift", "none") == "none" else []))
         if model.get("attention_output_scaling", "none") != "none" and cpu:
             tests.append("attention_output_scaling")
         if model.get("attention_exp_shift", "none") != "none":
@@ -962,6 +971,7 @@ def matches_softmax_initialization(config) -> dict:
                                            attention_coefficient_amplitude_initial=1.0,
                                            attention_coefficient_projection_initial_std=0.0,
                                            attention_coefficient_tanh_bias=False,
+                                           attention_coefficient_tanh_bias_initial=0.0,
                                            attention_coefficient_gate="none",
                                            attention_score_bias="none", attention_score_transform="identity",
                                            attention_score_prefactor="none",
@@ -1032,6 +1042,7 @@ def matches_softmax_backbone_initialization(config) -> dict:
         attention_coefficient_input_normalization="none",
         attention_coefficient_input_source="post_rmsnorm",
         attention_coefficient_projection_initial_std=0.0, attention_coefficient_tanh_bias=False,
+        attention_coefficient_tanh_bias_initial=0.0,
         attention_coefficient_gate="none", attention_score_bias="none", attention_score_transform="identity",
         attention_score_prefactor="none", attention_coefficient_constant_initial=None,
         attention_coefficient_zero_constant=False,

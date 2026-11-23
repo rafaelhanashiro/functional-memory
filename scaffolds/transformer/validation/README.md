@@ -31,6 +31,41 @@ softplus took 2.21 ms forward and 15.00 ms forward and backward with the first t
 before the sweep, and Mosaic's transformed kernel at degree 9 5.52 ms. B300 and H100 are qualified only by a
 run's own acceptance on its allocated GPU.
 
+**Coefficient sources (2026-11-22).** The kernel evaluates any per-query coefficient vector, so the shift also
+takes the tanh query polynomial and static coefficients, fixed (Taylor's `1/r!` or a recipe's table) or learned,
+broadcast to every query (`attention/pieces.py` `polynomial_shift_problem`). On CPU each source's degree-16 model on
+the raw score equals the unshifted model, logits and every parameter gradient; the same cases compare the fused
+model with the blocked reference's on GPU (`test_shifted_polynomial_attention.py`, `SOURCES`). The diagnostics'
+cancellation ratio, `sum_i |w_ti| / |sum_i w_ti|` per row, is measured from the shifted weights, which the row factor
+leaves unchanged; it had been set to 1, right only for a nonnegative sum of squares.
+
+**Weights below a row's resolution (2026-11-22).** In row units a weight is a sum of `M + 1` rounded terms, which
+FP32 resolves to epsilon of their magnitudes and, where a key lies so far below its row's largest power that its
+terms underflow, to `FLT_MIN` a term. At degree sixteen the row unit `e^-m` is below `FLT_MIN` once a row's largest
+score passes about 235, and a positive kernel's small weights can then round below zero: fixed Taylor's validation at
+update 5,500 on a B300 measured a kernel minimum of -4.2e-45, three denormal steps, with largest scores above 400.
+The reference counts the weights below minus that resolution (`negative_weight_beyond_rounding_count`), and the
+trainer's validation rejects a nonnegative shifted kernel for those alone. On CPU a top score of 300 beside scores
+in [-9, 9] leaves 94 of `T_16`'s weights below zero, none beyond rounding, while `T_16(s) - 4` and `p(s) = s`
+count every negative weight.
+
+**Prefactors and pure tanh (2026-11-22).** The kernel also evaluates `f(s) p_t(s)` for `f = softplus` or `exp` of the
+raw score. Each key takes its own units: the bound `b_i = log f(s_i) + M log max(1, |s_i|)` on every `|f(s_i) s_i^r|`,
+the row the largest (at least zero), and `p_t(s_i) / max(1, |s_i|)^M` by Horner's rule in `s` where `|s| <= 1` and
+in `1/s` over the reversed coefficients elsewhere; coefficient gradients sum ascending powers of `s` and descending
+powers of `1/s` likewise. Units set by the largest `|s|` alone underflow every moderate key once a far negative key,
+which the prefactor suppresses, sets them. On CPU the arithmetic matches FP64 at score scales 0.5 to 10,000 with far
+negative keys, and the blocked reference matches dense FP64 (output and every gradient, degrees 9 and 17, with stress
+rows whose `e^s` and `s^17` overflow FP32; for `e^s` the positive stress keys are near 100, since at `s = 1000` FP32
+holds `s + M log s` only to 6e-5). On a B200 (jobs 11158, 11167) the fused kernel matches dense FP64 in the same
+cases, and the fused models of pure tanh coefficients `tanh(x_hat W_r + beta_r)/r!` (the inner bias
+`attention_coefficient_tanh_bias` with `attention_coefficient_tanh_bias_initial`) with each prefactor match the blocked
+reference's. The fused and blocked models' logits are compared at 5e-4 of the largest: on a B200 one token of the
+degree-sixteen tanh query test model differs by 4.2e-5 (each evaluation deterministic), which failed the earlier
+2e-4 elementwise check. Acceptance's GPU stage for a shifted recipe takes this module's cases and leaves out the
+coefficient forms' Mosaic case (`test_coefficient_forms.py`), which qualifies kernels a shifted run never trains on
+and skips on a B200; on CPU the trainer resumes a pure tanh model with each prefactor to the uninterrupted state.
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head

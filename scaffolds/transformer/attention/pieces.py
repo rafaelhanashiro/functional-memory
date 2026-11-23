@@ -106,18 +106,37 @@ POLYNOMIAL_SHIFTS = ("none", "row_power")
 
 
 def polynomial_shift_problem(model) -> str | None:
-    """Why the row-power shift cannot evaluate this recipe's attention, or None. It evaluates the plain query
-    sum-of-squares polynomial (any input power) on the raw score or its softplus, unnormalized and without gates,
-    decay, score biases or a score prefactor, whose output goes straight into head RMSNorm with the max-abs prescale;
-    with RoPE or no positional encoding, on its blocked reference or fused kernel."""
+    """Why the row-power shift cannot evaluate this recipe's attention, or None. It evaluates a plain per-query
+    polynomial on the raw score or its softplus, unnormalized and without gates, decay, score biases or a score
+    prefactor other than softplus or exp of the raw score (with the raw score as its input), whose output goes straight
+    into head RMSNorm with the max-abs prescale; with RoPE or no positional encoding, on its blocked reference or fused
+    kernel. Its coefficients come from the diagonal tanh query generator, direct or sum of squares (any input power),
+    or direct pure tanh (with or without its inner bias), or are static direct coefficients, fixed (Taylor's or a
+    recipe's table) or learned, which every query takes alike."""
     if model.attention_mechanism != "dot_product" or model.attention_normalization:
         return "it applies to unnormalized polynomial attention alone"
-    if (model.attention_coefficients != "learned" or model.attention_coefficient_conditioning != "query"
-            or model.attention_coefficient_parameterization != "sum_of_squares"
-            or model.attention_coefficient_activation != "tanh" or model.attention_coefficient_readout != "diagonal"):
-        return "it evaluates diagonal tanh query sum-of-squares coefficients"
-    if model.attention_score_transform not in ("identity", "softplus") or model.attention_score_prefactor != "none":
-        return "it takes the raw score or its softplus, without a score prefactor"
+    query = (model.attention_coefficients == "learned" and model.attention_coefficient_conditioning == "query"
+             and model.attention_coefficient_readout == "diagonal"
+             and ((model.attention_coefficient_activation == "tanh"
+                   and model.attention_coefficient_parameterization in ("direct", "sum_of_squares"))
+                  or (model.attention_coefficient_activation == "pure_tanh"
+                      and model.attention_coefficient_parameterization == "direct")))
+    static = (model.attention_coefficients in ("fixed", "learned") and model.attention_coefficient_conditioning == "static"
+              and model.attention_coefficient_parameterization == "direct")
+    if not (query or static) or model.attention_degree is None:
+        return ("it evaluates diagonal tanh query coefficients (direct or sum of squares, or direct pure tanh) or "
+                "static direct coefficients, fixed or learned")
+    if model.attention_coefficient_parameterization == "direct" and (
+            model.attention_coefficient_input_power or model.attention_coefficient_zero_constant):
+        return "direct coefficients take every order from zero, without an input power or a zero constant"
+    if (model.attention_fixed_square_factors is not None or model.attention_kernel_basis != "polynomial"
+            or model.attention_score_mlp_width is not None or model.quadratic_mode != "fixed"):
+        return "it evaluates a polynomial from its coefficients, not square factors, splines, a score MLP or a quadratic"
+    if model.attention_score_transform not in ("identity", "softplus"):
+        return "it takes the raw score or its softplus"
+    if model.attention_score_prefactor not in ("none", "softplus", "exp") or (
+            model.attention_score_prefactor != "none" and model.attention_score_transform != "identity"):
+        return "its prefactors are softplus and exp of the raw score, which the polynomial then takes untransformed"
     if (model.attention_forget_gate or model.attention_score_bias != "none"
             or model.attention_coefficient_gate != "none" or model.attention_coefficient_orders is not None):
         return "it evaluates the plain polynomial, without gates, decay, score biases or selected orders"

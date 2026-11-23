@@ -280,17 +280,20 @@ class MultiHeadAttention(nnx.Module):
             and attention_coefficient_parameterization == "sum_of_squares"
             and attention_coefficient_input_power == 1))
         if attention_coefficient_input_normalization == "l2" and (
-                attention_coefficient_conditioning != "query" or attention_coefficient_activation != "tanh"
+                attention_coefficient_conditioning != "query"
+                or attention_coefficient_activation not in ("tanh", "pure_tanh")
                 or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
+                or (attention_coefficient_activation == "pure_tanh" and attention_coefficient_parameterization != "direct")
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_forget_gate
                 or attention_kernel_basis != "polynomial" or attention_score_bias != "none"
                 or not l2_score_supported or attention_normalization
                 or positional_encoding not in ("rope", "none")
                 or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"):
-            raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh query "
-                             "polynomial coefficients with RoPE or no positional encoding, without selected "
-                             "orders, gates or score biases; only softplus SoS with an input prefactor permits a score transform")
+            raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh (or direct pure "
+                             "tanh) query polynomial coefficients with RoPE or no positional encoding, without "
+                             "selected orders, gates or score biases; only softplus SoS with an input prefactor permits "
+                             "a score transform")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         self.attention_coefficient_input_source = attention_coefficient_input_source
         if not isinstance(attention_forget_gate, bool):
@@ -592,7 +595,7 @@ class MultiHeadAttention(nnx.Module):
                     problem = "the fused kernel is the unnormalized exponential without a forget gate"
                 if problem is not None:
                     raise ValueError(f"The fused backend cannot run these score functions: {problem}")
-        elif attention_score_prefactor != "none" and not blocked_polynomial and not (
+        elif attention_score_prefactor != "none" and not blocked_polynomial and attention_polynomial_shift == "none" and not (
                 backend == "mosaic" and attention_score_transform in ("identity", "softplus")
                 and (static_transformed or attention_coefficient_conditioning == "query"
                      and attention_coefficient_activation == "tanh")):
@@ -600,8 +603,9 @@ class MultiHeadAttention(nnx.Module):
                              "blocked backend to any unnormalized polynomial, or on the mosaic backend to diagonal "
                              "tanh query or static direct coefficients at identity or softplus scores")
         self.attention_score_prefactor = attention_score_prefactor
+        # The row-power shift's score functions and coefficient sources are its own guard's (below).
         if (validate_transform(attention_score_transform) != "identity" or attention_score_prefactor != "none") and (
-                not exponential_kernel and not blocked_polynomial) and (
+                not exponential_kernel and not blocked_polynomial and attention_polynomial_shift == "none") and (
                 not (fixed_pointwise or (attention_score_transform not in ("sigmoid", "swish")
                                         and (static_sos or static_transformed
                                              or (attention_coefficient_conditioning == "query"
@@ -641,19 +645,23 @@ class MultiHeadAttention(nnx.Module):
             raise ValueError("The max-abs prescale evaluates head RMSNorm output scaling, which this layer does "
                              "not use")
         self.attention_head_rms_prescale = attention_head_rms_prescale
-        # A query SoS polynomial in units of its row's largest power (attention/pieces.py polynomial_shift_problem,
+        # A per-query polynomial in units of its row's largest power (attention/pieces.py polynomial_shift_problem,
         # which ModelConfig states for recipes): exact only where max-abs head RMSNorm takes the output with its shift.
         from scaffolds.transformer.attention.pieces import POLYNOMIAL_SHIFTS
 
         if attention_polynomial_shift not in POLYNOMIAL_SHIFTS:
             raise ValueError(f"Unknown polynomial shift: {attention_polynomial_shift!r}")
         if attention_polynomial_shift != "none" and (
-                attention_normalization or attention_coefficient_parameterization != "sum_of_squares"
-                or attention_coefficient_conditioning != "query" or attention_score_transform not in ("identity", "softplus")
-                or attention_score_prefactor != "none" or attention_head_rms_prescale != "max_abs"
-                or backend not in ("blocked", "fused")):
-            raise ValueError("The row-power shift evaluates unnormalized query SoS polynomials on the raw or softplus "
-                             "score, without a prefactor, under max-abs head RMSNorm, on the blocked or fused backend")
+                attention_normalization or (attention_coefficient_conditioning, attention_coefficient_parameterization)
+                not in (("query", "sum_of_squares"), ("query", "direct"), ("static", "direct"))
+                or attention_score_transform not in ("identity", "softplus")
+                or attention_score_prefactor not in ("none", "softplus", "exp")
+                or (attention_score_prefactor != "none" and attention_score_transform != "identity")
+                or attention_head_rms_prescale != "max_abs" or backend not in ("blocked", "fused")):
+            raise ValueError("The row-power shift evaluates unnormalized per-query polynomials (tanh query coefficients, "
+                             "direct or sum of squares, or static direct ones) on the raw or softplus score, or times "
+                             "softplus or exp of the raw score, under max-abs head RMSNorm, on the blocked or fused "
+                             "backend")
         self.attention_polynomial_shift = attention_polynomial_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,
@@ -840,8 +848,10 @@ class MultiHeadAttention(nnx.Module):
                 raise ValueError("Dense readout replaces the diagonal amplitude parameter")
             effective_coefficients = query_coefficients
             if effective_coefficients is None:
-                if self.attention_coefficient_input_normalization == "l2" and query_tanh_bias is not None:
-                    raise ValueError("L2 coefficient input normalization does not support an inner tanh bias")
+                if (self.attention_coefficient_input_normalization == "l2" and query_tanh_bias is not None
+                        and self.attention_coefficient_activation != "pure_tanh"):
+                    raise ValueError("L2 coefficient input normalization supports the inner tanh bias of pure tanh "
+                                     "coefficients only")
                 coefficient_source = (coefficient_source_input
                                       if self.attention_coefficient_input_source == "pre_rmsnorm" else x)
                 coefficient_input = normalize_coefficient_input(
@@ -1087,7 +1097,9 @@ class MultiHeadAttention(nnx.Module):
                 and query_coefficients is None):
             from scaffolds.transformer.attention.input_dependent import coefficient_input_statistics
 
-            diagnostics.update(coefficient_input_statistics(coefficient_source, coefficient_input, query_kernel))
+            diagnostics.update(coefficient_input_statistics(
+                coefficient_source, coefficient_input, query_kernel,
+                query_tanh_bias if self.attention_coefficient_activation == "pure_tanh" else None))
         if gate_statistics is not None:
             diagnostics.update(gate_statistics)
         if return_diagnostics and log_alpha is not None:
@@ -1119,13 +1131,14 @@ class MultiHeadAttention(nnx.Module):
 
     def _coefficients_per_query(self, parameters, query_coefficients) -> bool:
         """Whether static or fixed polynomial coefficients run per query: when a forget gate, a score transform,
-        score biases or a prefactor meets them (static SoS factors keep their own kernel)."""
+        score biases, a prefactor or the row-power shift meets them (static SoS factors keep their own kernel)."""
         return (query_coefficients is None and self.attention_coefficient_conditioning == "static"
                 and self.attention_degree is not None and not self.attention_normalization
                 and "polynomial_square_factors" not in parameters and self.attention_fixed_square_factors is None
                 and self.score_mlp_width is None and self.attention_kernel_basis == "polynomial"
                 and (self.attention_forget_gate or self.attention_score_transform != "identity"
-                     or self.attention_score_bias != "none" or self.attention_score_prefactor != "none"))
+                     or self.attention_score_bias != "none" or self.attention_score_prefactor != "none"
+                     or self.attention_polynomial_shift != "none"))
 
     def _path_attention(self, x, q, k, v, parameters, path_parameters, output_norm_scale, return_diagnostics,
                         log_alpha=None):
