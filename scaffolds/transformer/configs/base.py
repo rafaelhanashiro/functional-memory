@@ -611,7 +611,6 @@ class ModelConfig:
                 or self.attention_coefficient_sharing != "per_head"
                 or self.attention_coefficient_conditioning != "query" or activation not in ("tanh", "pure_tanh")
                 or self.attention_coefficient_parameterization not in ("direct", "sum_of_squares")
-                or (activation == "pure_tanh" and self.attention_coefficient_parameterization != "direct")
                 or self.attention_coefficient_readout != "diagonal"
                 or self.attention_coefficient_orders is not None
                 or (self.attention_coefficient_tanh_bias and activation != "pure_tanh")
@@ -621,8 +620,8 @@ class ModelConfig:
                 or self.positional_encoding not in ("rope", "none")
                 or self.attention_degree is None or self.attention_degree < 1 or self.quadratic_mode != "fixed"):
             raise ValueError("L2 coefficient input normalization requires unnormalized learned per-head "
-                             "diagonal tanh query polynomial coefficients, direct or sum-of-squares (or direct pure "
-                             "tanh, with or without its inner bias), with RoPE or no positional encoding, without "
+                             "diagonal tanh or pure tanh query polynomial coefficients, direct or sum-of-squares "
+                             "(pure tanh with or without its inner bias), with RoPE or no positional encoding, without "
                              "selected orders, affine inner biases, gates, score biases; score transforms are "
                              "limited to softplus with a SoS input prefactor")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
@@ -665,12 +664,17 @@ class ModelConfig:
                 raise ValueError("Query-conditioned coefficients require unnormalized learned per_head polynomial "
                                  "attention, direct or sum-of-squares, with Taylor or Hermite initialization "
                                  "(or an affine/polynomial B-spline start)")
+            pure_square_factors = (square_factors and not hermite_start
+                                   and self.attention_coefficient_activation == "pure_tanh")
             if (square_factors or hermite_start) and (
-                    self.attention_coefficient_conditioning != "query" or self.attention_coefficient_activation != "tanh"
+                    self.attention_coefficient_conditioning != "query"
+                    or (self.attention_coefficient_activation != "tanh" and not pure_square_factors)
                     or self.attention_coefficient_readout != "diagonal" or self.attention_coefficient_orders is not None
-                    or self.attention_coefficient_gate != "none" or self.attention_coefficient_tanh_bias):
+                    or self.attention_coefficient_gate != "none"
+                    or (self.attention_coefficient_tanh_bias and not pure_square_factors)):
                 raise ValueError("Sum-of-squares factors and the Hermite start apply to diagonal tanh query coefficients "
-                                 "without selected orders, a coefficient gate, or an inner tanh bias")
+                                 "without selected orders, a coefficient gate, or an inner tanh bias; pure tanh square "
+                                 "factors F_j = f_j tanh(x_t W_j + beta_j) take their inner bias")
             if square_factors and (
                     hermite_start or self.attention_coefficient_scale != "none"
                     or self.attention_coefficient_amplitude_scale != "none"

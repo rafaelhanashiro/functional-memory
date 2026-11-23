@@ -56,6 +56,14 @@ degree-sixteen tanh query test model differs by 4.2e-5 (each evaluation determin
 coefficient forms' Mosaic case (`test_coefficient_forms.py`), which qualifies kernels a shifted run never trains on
 and skips on a B200; on CPU the trainer resumes a pure tanh model with each prefactor to the uninterrupted state.
 
+**Pure tanh square factors (2026-11-23).** The query SoS generator also takes pure tanh fractions of the Taylor
+factors, `F_j = f_j tanh(x_hat W_j + beta_j)` (`query_square_coefficients(..., pure=True)`), with or without the
+inner bias, on the blocked backend and the shifted fused kernel; the Mosaic kernels refuse it. On CPU the expansion
+matches the explicit `z (A(z)^2 + B(z)^2)` of those factors in FP64, the shifted `z h_t(z)` model with a
+degree-sixteen core matches the unshifted one (logits 1e-4, every gradient 1e-3) at its start and with a random
+`W`, and the trainer resumes it to the uninterrupted state. On a B200 (job 11890) the fused models match the blocked
+reference's in both cases.
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head

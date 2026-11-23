@@ -283,7 +283,6 @@ class MultiHeadAttention(nnx.Module):
                 attention_coefficient_conditioning != "query"
                 or attention_coefficient_activation not in ("tanh", "pure_tanh")
                 or attention_coefficient_parameterization not in ("direct", "sum_of_squares")
-                or (attention_coefficient_activation == "pure_tanh" and attention_coefficient_parameterization != "direct")
                 or attention_coefficient_readout != "diagonal" or attention_coefficient_orders is not None
                 or attention_coefficient_gate != "none" or attention_forget_gate
                 or attention_kernel_basis != "polynomial" or attention_score_bias != "none"
@@ -441,12 +440,13 @@ class MultiHeadAttention(nnx.Module):
                 "query", "query_key"):
             core_degree = attention_degree - attention_coefficient_input_power
             if (core_degree < 2 or core_degree % 2 or attention_coefficient_conditioning != "query"
-                    or attention_coefficient_activation != "tanh" or attention_coefficient_readout != "diagonal"
+                    or attention_coefficient_activation not in ("tanh", "pure_tanh")
+                    or attention_coefficient_readout != "diagonal"
                     or attention_coefficient_orders is not None or attention_coefficient_gate != "none"
                     or attention_coefficient_amplitude_scale != "none"
                     or attention_score_transform not in ("identity", "softplus")):
-                raise ValueError("Query sum-of-squares requires an even core degree and diagonal tanh query "
-                                 "coefficients without selected orders, coefficient gates, or amplitude scaling")
+                raise ValueError("Query sum-of-squares requires an even core degree and diagonal tanh or pure tanh "
+                                 "query coefficients without selected orders, coefficient gates, or amplitude scaling")
             if (attention_score_transform == "softplus" or attention_coefficient_input_power) and (
                     attention_forget_gate or attention_score_bias != "none"):
                 raise ValueError("Softplus sum-of-squares takes no forget gate or score biases")
@@ -866,10 +866,12 @@ class MultiHeadAttention(nnx.Module):
                 if self.attention_coefficient_parameterization == "sum_of_squares":
                     from scaffolds.transformer.attention.nonnegative_polynomial import query_square_coefficients
 
+                    # Pure tanh generates each factor's fraction of its Taylor factor, not the affine g.
                     effective_coefficients = query_square_coefficients(
                         effective_coefficients, self.attention_degree,
                         input_power=self.attention_coefficient_input_power,
-                        zero_constant=self.attention_coefficient_zero_constant)
+                        zero_constant=self.attention_coefficient_zero_constant,
+                        pure=self.attention_coefficient_activation == "pure_tanh")
             parameters["query_polynomial_coefficients"] = effective_coefficients
             if self.attention_coefficient_conditioning == "query_key":
                 if key_kernel is None or key_amplitude is None:
