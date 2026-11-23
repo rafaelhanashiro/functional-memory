@@ -67,6 +67,7 @@ README says otherwise.
 | [coefficient_input_norm](pretraining/other/coefficient_input_norm/README.md) | Does coefficient-input L2 reduce tanh saturation and improve query and SoS perplexity? It improves query m = 8 and regresses SoS m = 8 and both m = 12 forms. |
 | [zero_constant](pretraining/other/zero_constant/README.md) | Does a structurally zero constant help? On softplus inputs SoS reaches 14.128 (−1.47% against a learned constant), static 14.192, query 14.250 (a tie); on raw scores it hurts: query +18.4%, static +21.4%, SoS +3.7% against raw-score controls. |
 | [query_optimization](pretraining/other/query_optimization/README.md) | Does projection weight decay or 3× learning rate on a, b improve degree-four query attention? At 2.5×, W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8. |
+| [learning_rate](pretraining/other/learning_rate/README.md) | At `d_K` 4, is the recipe's learning rate the best one for exp and `z h_t(z)` with a degree-sixteen SoS core, and does their tie hold? Doubling the rate lowers both by 2.7–2.9% (18.667 and 18.637), halving raises them by 7.5–8.7%; the tie holds at the recipe's rate and at double. Opened 2026-11-22. |
 | [coefficient_release](pretraining/other/coefficient_release/README.md) | Do degree-eight learned coefficients held at Taylor through warmup, then released, reach fixed Taylor? None does; query released at update 455 ends 14.229, 0.011 above Taylor. |
 
 ## Diagnostics

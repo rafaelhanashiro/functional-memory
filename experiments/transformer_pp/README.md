@@ -3146,7 +3146,7 @@ Four runs at the reference shape and 1x budget (7,570 updates), requested 2026-1
 exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core
 (`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip after warmup. The recipe's
 learning rate was tuned at `d_K` 64, so each trains again at half and at double its schedule: is that rate the best
-one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
+one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate? [Results](results/pretraining/other/learning_rate/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
