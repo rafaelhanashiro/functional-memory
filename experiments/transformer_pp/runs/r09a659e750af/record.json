@@ -3,7 +3,10 @@
     "path": "experiments/transformer_pp/runs/r09a659e750af/config.yaml",
     "sha256": "340779eea76c6668f2de52935b604e82e2137bbb92c45434117b043056fcdf2d"
   },
+  "frozen_execution_sha256": "8b5a4a9a98ad0ddd551c7834d46beaca7cb9184043edf178f62b6f4c08f728fc",
+  "home_cluster": "kennel",
   "label": "dk64-query-sos-m8-negative-positive-quartic",
+  "log_path": "experiments/transformer_pp/runs/r09a659e750af/training.log",
   "name": "dk64-query-sos-m8-negative-positive-quartic",
   "receipt": {
     "arrays_count": 62,
@@ -13,5 +16,31 @@
   },
   "record_schema_version": 1,
   "run_id": "r09a659e750af",
-  "status": "planned"
+  "source_commit": "197d572728b8d61c93d5bd9d0d5140cc41a4f0fb",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--hold",
+      "--parsable",
+      "--partition=long",
+      "--time=2-00:00:00",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--exclude=collie,dogo,doodle,mastiff,samoyed,terrier",
+      "--job-name=r09a659e750af",
+      "--output=experiments/transformer_pp/runs/r09a659e750af/training.log",
+      "--error=experiments/transformer_pp/runs/r09a659e750af/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.split_score_acceptance",
+      "experiments/transformer_pp/runs/r09a659e750af/config.yaml",
+      "197d572728b8d61c93d5bd9d0d5140cc41a4f0fb",
+      "1",
+      "B200,B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "12178",
+    "submitted_utc": "2026-11-23T19:49:38.246310+00:00"
+  }
 }
