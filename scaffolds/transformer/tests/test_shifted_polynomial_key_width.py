@@ -49,7 +49,9 @@ def test_shifted_composition_and_all_gradients_at_width_64(backend, degree):
 
     y, pull = jax.vjp(jax.jit(normalized), *map(jnp.asarray, args))
     grads = pull(jnp.asarray(cot))
-    np.testing.assert_allclose(y, oracle, rtol=2e-4, atol=1e-5)
+    # At scores to about 20, a degree-16 row whose signed terms cancel resolves in FP32 (the fused kernel's TF32x3
+    # products) to about 1e-5 of the output's largest entry (H200, 2026-11-23): bound the error by 1e-4 of it.
+    np.testing.assert_allclose(y, oracle, rtol=2e-4, atol=1e-4 * float(jnp.max(jnp.abs(oracle))))
     for name, actual, expected in zip("qkvc", grads, oracle_grads, strict=True):
         scale = float(jnp.max(jnp.abs(expected)))
         np.testing.assert_allclose(actual, expected, rtol=2e-3, atol=1e-4 * max(1.0, scale), err_msg=name)
