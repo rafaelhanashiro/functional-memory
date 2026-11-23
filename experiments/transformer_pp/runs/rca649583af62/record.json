@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rca649583af62/config.yaml",
+    "sha256": "9055b3588f06d2b42f6b9f52f96940669f94e63f1cff372b94eee7a80231f474"
+  },
+  "label": "fixed-m16-head-scale-dk4",
+  "name": "fixed-m16-head-scale-dk4",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "2330b17583574ed4cba60a0ff7ecc42bc8b35d95701f8a9568a5eb90b0c63b5f",
+    "loss": 5.600582122802734,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rca649583af62",
+  "status": "planned"
+}

@@ -10,7 +10,7 @@ from scaffolds.transformer.configs import config_to_dict, load_config
 
 # Each allocated run: its label and partner.
 RUNS = {"raec1c513a51b": ("query-m16-dk4-w-decay", "query"),
-        "re125a8977319": ("fixed-m16-head-scale-dk4", "taylor")}
+        "rca649583af62": ("fixed-m16-head-scale-dk4", "taylor")}
 
 
 def changed(config, other):

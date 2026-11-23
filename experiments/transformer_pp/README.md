@@ -3143,7 +3143,7 @@ sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --ti
 ### Degree sixteen for the query polynomial and fixed Taylor at key width four
 
 `raec1c513a51b` is the tanh query polynomial `p_t(s)` at `d_K` 4 (`rd5e3ec5a4f02`) at degree sixteen, and
-`re125a8977319` fixed Taylor at `d_K` 4 (`r1eaa4a4c3c77`) as `T_16(s)`. Both are evaluated in units of each row's
+`rca649583af62` fixed Taylor at `d_K` 4 (`r1eaa4a4c3c77`) as `T_16(s)`. Both are evaluated in units of each row's
 largest power (`attention_polynomial_shift: row_power`) on its fused kernel, with head RMSNorm's max-abs prescale,
 which the query partner predates: the Mosaic kernels stop at degree twelve, and `s^16` overflows FP32 at the scores
 width 4 reaches ([kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
@@ -3153,7 +3153,7 @@ per update on B200, as the degree-sixteen SoS run, a run takes about 8 h; a 14-h
 two-hour reserve and room for a slower B300. dogo stays excluded while no placeholder holds its faulty H100:
 
 ```sh
-for run in raec1c513a51b re125a8977319; do
+for run in raec1c513a51b rca649583af62; do
   d="experiments/transformer_pp/runs/$run"
   sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=14:00:00 \
     --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \

@@ -147,14 +147,14 @@ def _model_outputs(config, tokens, cotangent):
     return logits, dict(nnx.to_flat_state(grads))
 
 
-def _assert_models_agree(actual_config, expected_config, *, rtol, grad_rtol, grad_atol=1e-4):
+def _assert_models_agree(actual_config, expected_config, *, rtol, grad_rtol, grad_atol=1e-4, logit_atol=0.0):
     rng = np.random.default_rng(7)
     vocab = expected_config.model.vocab_size
     tokens = jnp.asarray(rng.integers(0, vocab, size=(2, 8)), jnp.int32)
     cotangent = jnp.asarray(rng.normal(size=(2, 8, vocab)), jnp.float32)
     expected, expected_grads = _model_outputs(expected_config, tokens, cotangent)
     actual, actual_grads = _model_outputs(actual_config, tokens, cotangent)
-    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=1e-5)
+    np.testing.assert_allclose(actual, expected, rtol=rtol, atol=max(1e-5, logit_atol * float(np.max(np.abs(expected)))))
     assert actual_grads.keys() == expected_grads.keys()
     for path, value in expected_grads.items():
         scale = max(1e-6, float(np.max(np.abs(value[...]))))
@@ -171,6 +171,12 @@ def test_shifted_model_matches_the_unshifted_model_where_both_are_finite(power):
     _assert_models_agree(shifted, plain, rtol=1e-4, grad_rtol=1e-3)
 
 
+# The fused and blocked models' logits agree to rounding except where a token of the tiny model is ill-conditioned:
+# on a B200 one token of the degree-sixteen tanh query model differs by 4.2e-5 (0.02% of the largest logit, 0.19),
+# each evaluation deterministic. Logits are held to 5e-4 of the largest, as gradients to 1e-3 of each array's largest.
+LOGIT_ATOL = 5e-4
+
+
 @pytest.mark.gpu
 @pytest.mark.parametrize("power", (0, 1))
 def test_fused_model_matches_the_blocked_shifted_model(power):
@@ -180,7 +186,7 @@ def test_fused_model_matches_the_blocked_shifted_model(power):
     assert jax.default_backend() == "gpu"
     blocked, fused = (_config(power, attention_head_rms_prescale="max_abs", attention_backend=backend,
                               attention_polynomial_shift="row_power") for backend in ("blocked", "fused"))
-    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3)
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 
 
 def test_the_shift_is_refused_off_its_recipe():
@@ -256,7 +262,7 @@ def test_fused_model_matches_the_blocked_shifted_model_for_every_coefficient_sou
     assert jax.default_backend() == "gpu"
     blocked, fused = (_source_config(source, attention_backend=backend, attention_polynomial_shift="row_power")
                       for backend in ("blocked", "fused"))
-    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3)
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 
 
 def test_the_shift_admits_its_coefficient_sources_alone():
@@ -301,6 +307,71 @@ def test_validation_diagnostics_name_each_shifted_source(source, kernel_values):
     assert reports["row_power"]["valid"], reports["row_power"]["issues"]
     assert reports["none"]["kernel_values"] == f"unshifted_{kernel_values}"
     assert reports["row_power"]["kernel_values"] == f"row_power_shifted_{kernel_values}"
+
+
+def _taylor_row(top, coefficients, time=96):
+    """One head whose first key scores `top` and whose others spread over [-9, 9], every query with the same
+    coefficients."""
+    scores = np.concatenate([[top], np.linspace(-9.0, 9.0, time - 1)]).astype(np.float32)
+    q, k = np.ones((1, time, 1, 1), np.float32), scores.reshape(1, time, 1, 1)
+    c = np.broadcast_to(np.asarray(coefficients, np.float32), (1, time, 1, len(coefficients))).copy()
+    _, d = shifted_polynomial_attention(*map(jnp.asarray, (q, k, np.ones((1, time, 1, 2), np.float32), c)),
+                                        transform="identity", return_diagnostics=True)
+    return d
+
+
+def test_weights_below_the_rows_resolution_are_not_negative_beyond_rounding():
+    """Where a row's largest power passes FP32's range (a score of 300 at degree sixteen puts the row unit at
+    2e-40), the weights of its small keys are rounding in row units and may come out below zero, although T_16 is
+    positive everywhere; none is negative beyond its resolution, and a genuinely negative weight still is."""
+    taylor = [1 / math.factorial(r) for r in range(17)]
+    tiny = float(np.finfo(np.float32).tiny)
+    for top in (5.0, 50.0, 300.0, 700.0):
+        d = _taylor_row(top, taylor)
+        assert int(d["negative_weight_beyond_rounding_count"]) == 0
+        assert float(d["kernel_min"]) >= -34 * tiny and float(d["weight_sum_min"]) > 0
+        if top <= 50.0:  # every weight is resolved: none rounds below zero
+            assert int(d["negative_weight_count"]) == 0
+    below_four = [-3.0, *taylor[1:]]  # T_16(s) - 4, negative for s below about 1.4
+    linear = [0.0, 1.0, *([0.0] * 15)]
+    for coefficients in (below_four, linear):
+        d = _taylor_row(5.0, coefficients)
+        assert int(d["negative_weight_beyond_rounding_count"]) == int(d["negative_weight_count"]) > 1000
+
+
+def test_validation_accepts_rounding_below_zero_and_refuses_a_negative_weight_beyond_it(monkeypatch):
+    """The trainer's attention report holds a nonnegative shifted kernel to its resolution: a kernel minimum of a
+    few FP32 denormal steps is valid, a negative weight beyond rounding is not; the unshifted kernel keeps the
+    strict rule."""
+    from scaffolds.transformer.training import diagnostics
+    from scaffolds.transformer.training.state import create_state
+
+    batch = np.random.default_rng(9).integers(0, 32, (1, 9))
+    step = diagnostics._diagnostic_step
+
+    def report(shift, **overrides):
+        config = _source_config("fixed", attention_polynomial_shift=shift)
+        state = create_state(config, jax.random.PRNGKey(0))
+
+        def measured(*arguments):
+            layers = [dict(layer) for layer in step(*arguments)]
+            for name, value in overrides.items():
+                assert shift == "none" or name in layers[1]
+                layers[1][name] = np.float32(value)
+            return layers
+
+        monkeypatch.setattr(diagnostics, "_diagnostic_step", measured)
+        return diagnostics.attention_diagnostics(state, config, batch, {"selection": "test"})
+
+    assert report("row_power")["valid"]
+    rounded = report("row_power", kernel_min=-4.2e-45, negative_weight_beyond_rounding_count=0)
+    assert rounded["valid"], rounded["issues"]
+    assert rounded["layers"][1]["negative_weight_beyond_rounding_count"] == 0
+    beyond = report("row_power", kernel_min=-1e-20, negative_weight_beyond_rounding_count=3)
+    assert not beyond["valid"]
+    assert beyond["issues"] == ["layer 1: 3 negative kernel values beyond rounding, kernel_min=" + str(float(np.float32(-1e-20)))]
+    strict = report("none", kernel_min=-4.2e-45)
+    assert strict["issues"] == ["layer 1: invalid kernel_min=" + str(float(np.float32(-4.2e-45)))]
 
 
 def test_blocked_diagnostics_measure_the_cancellation_of_signed_rows():

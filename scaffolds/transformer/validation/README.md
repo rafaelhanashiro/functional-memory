@@ -39,6 +39,17 @@ model with the blocked reference's on GPU (`test_shifted_polynomial_attention.py
 cancellation ratio, `sum_i |w_ti| / |sum_i w_ti|` per row, is measured from the shifted weights, which the row factor
 leaves unchanged; it had been set to 1, right only for a nonnegative sum of squares.
 
+**Weights below a row's resolution (2026-11-22).** In row units a weight is a sum of `M + 1` rounded terms, which
+FP32 resolves to epsilon of their magnitudes and, where a key lies so far below its row's largest power that its
+terms underflow, to `FLT_MIN` a term. At degree sixteen the row unit `e^-m` is below `FLT_MIN` once a row's largest
+score passes about 235, and a positive kernel's small weights can then round below zero: fixed Taylor's validation at
+update 5,500 on a B300 measured a kernel minimum of -4.2e-45, three denormal steps, with largest scores above 400.
+The reference counts the weights below minus that resolution (`negative_weight_beyond_rounding_count`), and the
+trainer's validation rejects a nonnegative shifted kernel for those alone. On CPU a top score of 300 beside scores
+in [-9, 9] leaves 94 of `T_16`'s weights below zero, none beyond rounding, while `T_16(s) - 4` and `p(s) = s`
+count every negative weight. The fused and blocked models' logits are compared at 5e-4 of the largest: on a B200
+one token of the degree-sixteen tanh query test model differs by 4.2e-5, each evaluation deterministic.
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head

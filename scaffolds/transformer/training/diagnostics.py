@@ -1977,6 +1977,15 @@ def attention_diagnostics(state, config, sample, provenance) -> dict:
                 # Signed kernels and negative nonzero sums are permitted. Exact
                 # zeros are detected in invalid_normalizer_count, not extrema.
                 continue
+            if name == "kernel_min" and "negative_weight_beyond_rounding_count" in raw:
+                # The row-power shifted evaluation (attention/shifted_polynomial.py) resolves a weight to its
+                # terms' FP32 rounding in row units, so a key far below its row's largest power may round below
+                # zero; only a negative beyond that resolution is invalid.
+                beyond = int(float(raw["negative_weight_beyond_rounding_count"]))
+                if beyond:
+                    issues.append(f"layer {index}: {beyond} negative kernel values beyond rounding, "
+                                  f"kernel_min={value}")
+                continue
             # Stable exact softmax may underflow individual weights to zero, and a sum of
             # squares may be exactly zero at a common root; neither may be negative.
             invalid = (value < 0 if (not config.model.attention_normalization or name == "kernel_min" and (
