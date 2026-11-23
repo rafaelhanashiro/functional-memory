@@ -3176,7 +3176,7 @@ and every `beta_r` at atanh(1/2), so each coefficient starts at 0.5/r!, half the
 where tanh' = 3/4. Each recipe is the degree-eight tanh query run at `d_K` 4 (`rd5e3ec5a4f02`) with these settings, the
 degree and the prefactor (`pure_tanh_prefactor_acceptance.CHANGES`); the base learning rate applies at every order
 (the 1/r! gives the degree scaling), weight decay 0.1 to `w_r` and none to `beta_r`, and seed 42, data order and
-schedule are the partner's.
+schedule are the partner's. [Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | `m` |
 | --- | --- | --- | ---: |

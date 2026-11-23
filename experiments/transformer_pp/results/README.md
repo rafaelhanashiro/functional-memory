@@ -16,6 +16,7 @@ README says otherwise.
 | --- | --- |
 | [degree_scaling](pretraining/polynomial/degree_scaling/README.md) | Validation perplexity against degree `m = 1-8` and 12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with projection weight decay (Taylor and query only at 12), with softmax as the reference level. |
 | [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? At degree eight and `d_K` 4–16, exp with its row maximum subtracted is the best kernel (`d_K` 4) or 0.5% behind `z h_t(z)` (8 and 16); the raw-score polynomials trail exp by 1.2–6.2%. Learned coefficients beat fixed Taylor only at `d_K` 4 (static by 1.9%, query by 2.2%), and input dependence adds 0.3% to static there. |
+| [pure_tanh_prefactors](pretraining/polynomial/pure_tanh_prefactors/README.md) | At `d_K` 4, how close to exp does a signed query polynomial with bounded pure tanh coefficients come, at degrees 8 and 16, alone and under a softplus or exp prefactor? None reaches exp (19.190): `e^s P_t` at degree sixteen is closest at 19.483 (+1.5%), `P_t` 19.556; degree sixteen beats eight for each weight, the exp prefactor helps and the softplus prefactor hurts. Opened 2026-11-22. |
 
 ### Scalings
 
