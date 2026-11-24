@@ -3274,12 +3274,13 @@ done
 
 ### Learning rate at key width four
 
-Six runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22, four
-times 2026-11-23. At `d_K` 4 the exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with
-a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip
-after warmup. The recipe's learning rate was tuned at `d_K` 64, so each trains again at half, double and four times
-its schedule: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best
-rate? [Results](results/pretraining/other/learning_rate/README.md).
+Seven runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22, four
+times 2026-11-23, and eight times for `z h_t(z)` 2026-11-24. At `d_K` 4 the exponential (`r2739c80cc032`, best
+19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie,
+both with gradients that stay under the clip after warmup. The recipe's learning rate was tuned at `d_K` 64, so each
+trains again at half, double and four times its schedule, and `z h_t(z)`, which still improved at four times, at
+eight: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
+[Results](results/pretraining/other/learning_rate/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
@@ -3289,14 +3290,15 @@ rate? [Results](results/pretraining/other/learning_rate/README.md).
 | `rd5cc0aec9712` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `r2e7f5617fdf2` |
 | `r1ff405fe0926` | `exp-head-scale-row-max-dk4-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r2739c80cc032` |
 | `rdc43b5c9d2d0` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `r2e7f5617fdf2` |
+| `rda43ee639e0a` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple` | `z h_t(z)`, core 16 | 8e-3, 8e-4 | `r2e7f5617fdf2` |
 
 - **Recipe.** Each run is its partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
-  by 0.5, 2 or 4 (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
+  by 0.5, 2 or 4, or 8 for `z h_t(z)` (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
   decay, seed 42, data order and every model setting are the partner's, so a run starts from its partner's
   parameters. The exponential runs also take head RMSNorm's max-abs prescale, as every new run does: the same
   function as their partner's plain arithmetic, which `z h_t(z)` already has.
-- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at the
-  three scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at each
+  partner's scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
   backend, initialization pins): the exponential on a B300 or H100, `z h_t(z)` on a B200 or B300.
 - **Time limits.** The exponential partner trained in 2.9 h on a B300 and `z h_t(z)` in 7.8 h (3.6 s per update on
   a B200); 8 and 12 hours leave acceptance's two-hour reserve.
@@ -3324,6 +3326,8 @@ submit long 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:11991  # z h_t(z), four times
 submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
+# Eight times for z h_t(z), within the standard allowance, on the first free B200 or B300:
+submit standard,long 12:00:00 B200,B300 "$blackwell" rda43ee639e0a                # z h_t(z), eight times
 ```
 
 ### Pure tanh square factors for z h_t(z) at key width four

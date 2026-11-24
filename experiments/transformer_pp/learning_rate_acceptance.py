@@ -1,8 +1,8 @@
 """Qualify the Q/K width 4 exponential and z h_t(z) with a degree-sixteen SoS core at half, double and four times
-the learning-rate schedule.
+the learning-rate schedule, and z h_t(z) at eight times.
 
 Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by 0.5,
-2 or 4: the unnormalized exponential (r2739c80cc032, key_width_acceptance) and z h_t(z), z = softplus(s), with a
+2 or 4 (or 8 for z h_t(z)): the unnormalized exponential (r2739c80cc032, key_width_acceptance) and z h_t(z), z = softplus(s), with a
 degree-sixteen query SoS core (r2e7f5617fdf2, shifted_sos_acceptance). Warmup, horizon, clipping, seed, data order
 and every model setting are the partner's, so a run starts from its partner's parameters and differs from it by the
 step size alone; the exponential also takes head RMSNorm's max-abs prescale, as every new run does (the same function
@@ -30,7 +30,8 @@ PARTNERS = {
     "shifted_sos": ("r2e7f5617fdf2", "53e71c960ce46cbe21b420a810610ff8a80d4ec9484d0d8f4ca218b6a65473bf",
                     shifted_sos_acceptance),
 }
-SCALES = (0.5, 2.0, 4.0)
+# Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not.
+SCALES = {"exponential": (0.5, 2.0, 4.0), "shifted_sos": (0.5, 2.0, 4.0, 8.0)}
 # The schedule's peak and floor scale together; warmup and horizon stay.
 RATES = ("learning_rate", "min_learning_rate")
 # New runs' evaluation of head RMSNorm. The comparison leaves it to the run (acceptance.comparison_recipe), and the
@@ -54,8 +55,8 @@ def partner_config(key):
 
 
 def recipe(key, scale):
-    if scale not in SCALES:
-        raise ValueError(f"The learning-rate scales are {SCALES}, not {scale}")
+    if scale not in SCALES[key]:
+        raise ValueError(f"The {key} learning-rate scales are {SCALES[key]}, not {scale}")
     partner = partner_config(key)
     return replace(partner, model=replace(partner.model, attention_head_rms_prescale=PRESCALE), optim=replace(
         partner.optim, **{name: getattr(partner.optim, name) * scale for name in RATES}))
@@ -63,12 +64,12 @@ def recipe(key, scale):
 
 def scale_of(config) -> float:
     """The recipe's scale: its peak rate over its partner's."""
-    partner = partner_config(partner_key(config))
-    ratio = config.optim.learning_rate / partner.optim.learning_rate
-    for scale in SCALES:
+    key = partner_key(config)
+    ratio = config.optim.learning_rate / partner_config(key).optim.learning_rate
+    for scale in SCALES[key]:
         if math.isclose(ratio, scale, rel_tol=1e-9):
             return scale
-    raise ValueError(f"optim.learning_rate is {ratio:g} times its partner's; the scales are {SCALES}")
+    raise ValueError(f"optim.learning_rate is {ratio:g} times its partner's; the scales are {SCALES[key]}")
 
 
 def at_partner_rate(config):

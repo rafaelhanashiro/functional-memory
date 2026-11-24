@@ -1,5 +1,6 @@
 """The Q/K width 4 exponential and z h_t(z) with a degree-sixteen core at half, double and four times the
-learning-rate schedule: each partner's recipe with the peak and floor rates scaled alone."""
+learning-rate schedule, and z h_t(z) at eight times: each partner's recipe with the peak and floor rates scaled
+alone."""
 import hashlib
 import json
 
@@ -17,7 +18,11 @@ RUNS = {
     "r1ff405fe0926": ("exponential", 4.0, "exp-head-scale-row-max-dk4-lr-quadruple"),
     "rdc43b5c9d2d0": ("shifted_sos", 4.0,
                       "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple"),
+    "rda43ee639e0a": ("shifted_sos", 8.0,
+                      "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple"),
 }
+# Every partner's scales.
+PARTNER_SCALES = tuple((key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES[key])
 
 
 def changed(config, other):
@@ -30,8 +35,7 @@ def changed(config, other):
             if first.get(section, {}).get(name) != second.get(section, {}).get(name)}
 
 
-@pytest.mark.parametrize("key", adapter.PARTNERS)
-@pytest.mark.parametrize("scale", adapter.SCALES)
+@pytest.mark.parametrize("key, scale", PARTNER_SCALES)
 def test_a_recipe_scales_its_partners_peak_and_floor_rates_alone(key, scale):
     config, partner = adapter.recipe(key, scale), adapter.partner_config(key)
     # The exponential's partner predates the max-abs prescale; z h_t(z) has it.
@@ -70,14 +74,14 @@ def test_an_allocated_run_is_its_recipe(run):
 
 
 def test_the_runs_cover_both_partners_at_every_scale():
-    assert sorted((key, scale) for key, scale, _ in RUNS.values()) == sorted(
-        (key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES)
+    assert sorted((key, scale) for key, scale, _ in RUNS.values()) == sorted(PARTNER_SCALES)
 
 
 def test_other_recipes_are_refused():
-    for scale in (1.0, 0.25, 3.0, 8.0):
+    for key, scale in (("exponential", 1.0), ("exponential", 0.25), ("exponential", 3.0), ("exponential", 8.0),
+                       ("shifted_sos", 1.0), ("shifted_sos", 16.0)):
         with pytest.raises(ValueError):
-            adapter.recipe("exponential", scale)
+            adapter.recipe(key, scale)
     for key in adapter.PARTNERS:
         with pytest.raises(ValueError):  # the partner itself
             adapter.check_recipe(adapter.partner_config(key))
@@ -95,7 +99,7 @@ def test_other_recipes_are_refused():
             adapter.check_recipe(config)
 
 
-@pytest.mark.parametrize("scale", adapter.SCALES)
+@pytest.mark.parametrize("scale", adapter.SCALES["exponential"])
 def test_the_exponential_takes_either_evaluation_of_head_rms_norm_and_the_shift_only_the_prescale(scale):
     """The shared rule (test_adapters_head_rms_prescale): the comparison leaves the evaluation to the run, and the
     partner's adapter to its kernel."""
