@@ -2,8 +2,11 @@ Every run on ORCD not yet on the site.
 
 #### In progress
 
-- **Learning rate at two and four times the schedule**, $d_K = 64$
-  - $z\,h_t(z)$, core 8: $\times 2$, $\times 4$ (kernel qualified; waiting for your go-ahead)
+- **Learning rate at two and four times the schedule**, $d_K = 64$ (each kernel qualifying on ORCD's H100s first)
+  - $z\,h_t(z)$, core 8: $\times 2$, $\times 4$
+  - $e^s\,h_t(z)$, core 8: $\times 2$, $\times 4$
+  - $\sigma(s)\,h_t(z)$, core 8: $\times 2$, $\times 4$
+  - $\mathrm{softplus}(s)\,e^s$: $\times 2$, $\times 4$
 
 #### Finished
 
