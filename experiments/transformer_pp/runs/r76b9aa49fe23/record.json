@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r76b9aa49fe23/config.yaml",
+    "sha256": "5c64d067d8fd17d7abcf51127fb77c94c06e04d84e347842c9687a1e2bfeb03e"
+  },
+  "label": "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double",
+  "name": "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "5689bd4db9ed9a08d670e758f7bb7d3cf44e9a8e92b772b8ba6262552a9e0e10",
+    "loss": 5.5594964027404785,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r76b9aa49fe23",
+  "status": "planned"
+}

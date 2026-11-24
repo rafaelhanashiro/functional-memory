@@ -1,6 +1,6 @@
-"""The Q/K width 4 exponential and z h_t(z) with a degree-sixteen core at half, double and four times the
-learning-rate schedule, and z h_t(z) at eight times: each partner's recipe with the peak and floor rates scaled
-alone."""
+"""Learning-rate scalings of completed recipes: the Q/K width 4 exponential and z h_t(z) with a degree-sixteen core,
+and the Q/K width 64 degree-eight SoS core under a prefactor of the raw score; each partner's recipe with the peak
+and floor rates scaled alone."""
 import hashlib
 import json
 
@@ -20,6 +20,12 @@ RUNS = {
                       "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple"),
     "rda43ee639e0a": ("shifted_sos", 8.0,
                       "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple"),
+    "r76b9aa49fe23": ("exp_prefactor_sos", 2.0, "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double"),
+    "rbf850552cbba": ("exp_prefactor_sos", 4.0, "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-quadruple"),
+    "rf93d2b71f731": ("softplus_prefactor_sos", 2.0, "query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-double"),
+    "rb418110c763c": ("softplus_prefactor_sos", 4.0, "query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-quadruple"),
+    "r7d7504df667b": ("sigmoid_prefactor_sos", 2.0, "query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-double"),
+    "rb6eeed222062": ("sigmoid_prefactor_sos", 4.0, "query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-quadruple"),
 }
 # Every partner's scales.
 PARTNER_SCALES = tuple((key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES[key])
@@ -38,25 +44,32 @@ def changed(config, other):
 @pytest.mark.parametrize("key, scale", PARTNER_SCALES)
 def test_a_recipe_scales_its_partners_peak_and_floor_rates_alone(key, scale):
     config, partner = adapter.recipe(key, scale), adapter.partner_config(key)
-    # The exponential's partner predates the max-abs prescale; z h_t(z) has it.
-    prescale = {"model.attention_head_rms_prescale"} if key == "exponential" else set()
+    # The exponential's and the prefactor partners predate the max-abs prescale; z h_t(z) has it.
+    prescale = ({"model.attention_head_rms_prescale"} if partner.model.attention_head_rms_prescale != "max_abs"
+                else set())
     assert changed(config, partner) == {"optim.learning_rate", "optim.min_learning_rate"} | prescale
     assert config.model.attention_head_rms_prescale == "max_abs"
     assert config.optim.learning_rate == pytest.approx(scale * 1e-3, rel=1e-12)
     assert config.optim.min_learning_rate == pytest.approx(scale * 1e-4, rel=1e-12)
     assert (config.optim.warmup_steps, config.optim.total_steps, config.optim.grad_clip_norm) == (455, 7570, 1.0)
-    assert config.model.qk_head_dim == 4 and config.train.seed == partner.train.seed == 42
+    assert config.model.qk_head_dim == (64 if key.endswith("_prefactor_sos") else 4)
+    assert config.train.seed == partner.train.seed == 42
     assert adapter.partner_key(config) == key and adapter.scale_of(config) == scale
     adapter.check_recipe(config)
 
 
-def test_the_partners_are_the_exponential_and_the_degree_sixteen_core():
+def test_the_partners_are_the_exponential_and_the_sos_cores():
     exponential, sos = adapter.partner_config("exponential"), adapter.partner_config("shifted_sos")
     assert exponential.model.attention_degree is None and not exponential.model.attention_normalization
     assert exponential.model.attention_exp_shift == "row_max"
     assert (sos.model.attention_degree, sos.model.attention_coefficient_input_power) == (17, 1)
     assert sos.model.attention_coefficient_parameterization == "sum_of_squares"
     assert sos.model.attention_score_transform == "softplus" and sos.model.attention_polynomial_shift == "row_power"
+    for prefactor in ("exp", "softplus", "sigmoid"):
+        model = adapter.partner_config(f"{prefactor}_prefactor_sos").model
+        assert (model.attention_score_prefactor, model.attention_score_transform) == (prefactor, "identity")
+        assert (model.attention_degree, model.attention_coefficient_input_power, model.qk_head_dim) == (8, 0, 64)
+        assert model.attention_coefficient_parameterization == "sum_of_squares"
 
 
 @pytest.mark.parametrize("run", RUNS)
@@ -79,13 +92,14 @@ def test_the_runs_cover_both_partners_at_every_scale():
 
 def test_other_recipes_are_refused():
     for key, scale in (("exponential", 1.0), ("exponential", 0.25), ("exponential", 3.0), ("exponential", 8.0),
-                       ("shifted_sos", 1.0), ("shifted_sos", 16.0)):
+                       ("shifted_sos", 1.0), ("shifted_sos", 16.0), ("exp_prefactor_sos", 0.5),
+                       ("softplus_prefactor_sos", 8.0), ("sigmoid_prefactor_sos", 1.0)):
         with pytest.raises(ValueError):
             adapter.recipe(key, scale)
     for key in adapter.PARTNERS:
         with pytest.raises(ValueError):  # the partner itself
             adapter.check_recipe(adapter.partner_config(key))
-        config = adapter.recipe(key, 0.5)
+        config = adapter.recipe(key, adapter.SCALES[key][0])
         config.optim.min_learning_rate = 1e-4  # the floor must scale with the peak
         with pytest.raises(ValueError):
             adapter.check_recipe(config)
@@ -120,23 +134,26 @@ def test_the_exponential_takes_either_evaluation_of_head_rms_norm_and_the_shift_
 
 @pytest.mark.parametrize("key", adapter.PARTNERS)
 def test_a_run_qualifies_as_its_partner_does(key):
-    config = adapter.recipe(key, 0.5)
+    config = adapter.recipe(key, adapter.SCALES[key][0])
     spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
     partner = adapter.PARTNERS[key][2].experiment_spec(adapter.at_partner_rate(config), entry_module=adapter.__name__)
-    assert spec.required_backend == partner.required_backend == "fused"
+    assert spec.required_backend == partner.required_backend == ("mosaic" if key.endswith("_prefactor_sos")
+                                                                  else "fused")
     assert spec.gpu_tests == partner.gpu_tests and spec.pilot_steps == partner.pilot_steps
     assert spec.cpu_tests == (*partner.cpu_tests, "experiments/transformer_pp/tests/test_learning_rate_acceptance.py")
     assert spec.check_config is adapter.check_recipe
-    assert adapter.gpu_types(config) == {"exponential": ("H100", "B300"), "shifted_sos": ("B200", "B300")}[key]
+    assert adapter.gpu_types(config) == {"exponential": ("H100", "B300"), "shifted_sos": ("B200", "B300")}.get(
+        key, ("H100", "B200"))
 
 
 def test_the_gpu_type_rule(tmp_path):
     from scaffolds.transformer.configs import save_config
 
-    for key, refused in (("exponential", "B200"), ("shifted_sos", "H100")):
+    for key, allowed, refused in (("exponential", "B300", "B200"), ("shifted_sos", "B300", "H100"),
+                                  ("sigmoid_prefactor_sos", "B200", "B300")):
         path = tmp_path / f"{key}.yaml"
         save_config(adapter.recipe(key, 2.0), path)
-        adapter.require_gpu_type([str(path), "--gpu-type", "B300"])
+        adapter.require_gpu_type([str(path), "--gpu-type", allowed])
         adapter.require_gpu_type([str(path), "--runtime-env", "--gpu-type", refused])
         with pytest.raises(ValueError):
             adapter.require_gpu_type([str(path), "--gpu-type", refused])
