@@ -1,9 +1,44 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rb6eeed222062/training.log",
+      "sha256": "a15a322f964c4c2bdd70b79d742429fea68b096264017838e3ea7c8989f97a6b",
+      "size_bytes": 5238
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb6eeed222062/.runtime/acceptance/B200-1",
+      "allocation": "JobId=13015 JobName=rb6eeed222062 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20075 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=13:00:00 TimeMin=N/A SubmitTime=2026-11-24T08:37:06 EligibleTime=2026-11-24T08:37:06 AccrueTime=2026-11-24T08:37:06 StartTime=2026-11-24T15:40:54 EndTime=2026-11-25T04:40:54 Deadline=N/A PreemptEligibleTime=2026-11-24T15:40:54 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-24T15:40:54 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2204621 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb6eeed222062/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb6eeed222062/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 46800,
+      "config_path": "experiments/transformer_pp/runs/rb6eeed222062/config.yaml",
+      "config_sha256": "fd99b7dce41962b11afcfe9cf99e4e3b436169af7494dd8ce250fa39eba7b5fc",
+      "exit_code": 143,
+      "finished_utc": "2026-11-24T20:42:24.122382+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "ab145148136a174ec1248cbdace7476b0da09745",
+      "slurm_job_id": "13015",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-24T20:40:59.103570+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/rb6eeed222062/config.yaml",
     "sha256": "fd99b7dce41962b11afcfe9cf99e4e3b436169af7494dd8ce250fa39eba7b5fc"
   },
+  "frozen_execution_sha256": "809e76edaed4c64823f45e277328ae90e292372306636a572bfbbca93c0a3b65",
+  "home_cluster": "kennel",
   "label": "query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-quadruple",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rb6eeed222062/training.log",
+    "sha256": "a15a322f964c4c2bdd70b79d742429fea68b096264017838e3ea7c8989f97a6b",
+    "size_bytes": 5238
+  },
+  "log_path": "experiments/transformer_pp/runs/rb6eeed222062/training.log",
   "name": "query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-quadruple",
   "receipt": {
     "arrays_count": 56,
@@ -13,5 +48,6 @@
   },
   "record_schema_version": 1,
   "run_id": "rb6eeed222062",
-  "status": "planned"
+  "source_commit": "ab145148136a174ec1248cbdace7476b0da09745",
+  "status": "acceptance"
 }
