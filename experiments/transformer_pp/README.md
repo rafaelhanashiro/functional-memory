@@ -3326,6 +3326,54 @@ submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:1
 submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
 ```
 
+### Twice the Chinchilla budget at key width four
+
+Four runs at the reference shape and 2x Chinchilla (15,140 updates), requested 2026-11-24 on Kennel. At `d_K` 4 and
+1x, each kernel's best learning rate leaves `z h_t(z)` with a degree-sixteen SoS core 2.5% ahead of the exponential
+(18.203 at four times the schedule's rate against 18.667 at twice it): does more data widen or narrow that lead? A
+longer schedule usually prefers a lower rate, so each kernel also trains at half its best rate.
+
+| Run | Label | Kernel | Peak, floor rate | Partner |
+| --- | --- | --- | --- | --- |
+| `r41562d2eac42` | `exp-head-scale-row-max-dk4-lr-double-2x` | `exp(s)` | 2e-3, 2e-4 | `rcc51ed9dbca8` |
+| `r0303c5fcd9b6` | `exp-head-scale-row-max-dk4-2x` | `exp(s)` | 1e-3, 1e-4 | `rcc51ed9dbca8` |
+| `rc81683587538` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple-2x` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `rdc43b5c9d2d0` |
+| `r0ee4e14367df` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double-2x` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `rdc43b5c9d2d0` |
+
+- **Recipe.** Each run is its partner's recipe (the learning-rate sweep's best at 1x) with `derive_recipe.py
+  --budget 2`'s schedule (15,140 updates, warmup 910, validation every 200 updates through 3,000 and every 1,000
+  after), at the partner's peak and floor rates or half of them. Batch, seed 42, data order and every model setting
+  are the partner's, so a run starts from its partner's parameters.
+- **Acceptance.** The [adapter](narrow_key_budget_acceptance.py) pins both partners and admits their recipes at the
+  2x schedule and those two rates alone. Each run qualifies through the [learning-rate
+  adapter](learning_rate_acceptance.py) on the recipe at its partner's budget and rate: the exponential on its fused
+  kernel on a B300 or H100, `z h_t(z)` on the fused row-power kernel on a B200 or B300. The Mosaic row-power kernels
+  are a third faster on a B200 but take the output cotangent in BF16, which loses the gradient in rows one key
+  dominates, rows these runs reach (scores to 250 in seven of fifteen layers at 1x); the 1x partners trained on the
+  fused kernel.
+- **Time limits.** The partners trained in 3.1 h (B300) and 8.3 h (3.96 s per update on a B200), so these take about
+  6.5 and 17 hours: 10 and 24 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`. They were submitted held, and released once the degree-eight
+core's learning-rate runs ([learning rate](#learning-rate-at-key-width-four)) started:
+
+```sh
+submit() {  # partition, time limit, GPU types, excluded nodes, run
+  d="experiments/transformer_pp/runs/$5"
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$4" --hold \
+    --job-name="$5" --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.narrow_key_budget_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
+}
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # the fused exponential: B300 (akita)
+blackwell=dogo,mastiff,collie,samoyed,doodle,terrier   # the fused row-power kernel: B200 or B300
+submit standard,long 10:00:00 B300,H100 "$b300" r41562d2eac42
+submit standard,long 10:00:00 B300,H100 "$b300" r0303c5fcd9b6
+submit standard,long 24:00:00 B200,B300 "$blackwell" rc81683587538
+submit standard,long 24:00:00 B200,B300 "$blackwell" r0ee4e14367df
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,

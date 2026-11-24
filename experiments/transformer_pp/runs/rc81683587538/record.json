@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc81683587538/config.yaml",
+    "sha256": "1155ff1a0d3aa560e62d5fb841bf396a112672744232418fb00d7dd5562f5853"
+  },
+  "label": "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple-2x",
+  "name": "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple-2x",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "1151cd494e265cb0da39569c73f388a2d6f716588504138565328ee8fb7e691f",
+    "loss": 5.5987958908081055,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rc81683587538",
+  "status": "planned"
+}
