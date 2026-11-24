@@ -1,9 +1,30 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb418110c763c/.runtime/acceptance/B200-1",
+      "allocation": "JobId=13013 JobName=rb418110c763c UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20072 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:06 TimeLimit=13:00:00 TimeMin=N/A SubmitTime=2026-11-24T08:37:06 EligibleTime=2026-11-24T08:37:06 AccrueTime=2026-11-24T08:37:06 StartTime=2026-11-24T13:46:43 EndTime=2026-11-25T02:46:43 Deadline=N/A PreemptEligibleTime=2026-11-24T13:46:43 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-24T13:46:43 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2204621 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb418110c763c/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/rb418110c763c/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 46800,
+      "config_path": "experiments/transformer_pp/runs/rb418110c763c/config.yaml",
+      "config_sha256": "26f33b37c2884ce3fdaf67d0f2c3badff0dce525c9fd0ec20e4b1e5ad3ae434f",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "ab145148136a174ec1248cbdace7476b0da09745",
+      "slurm_job_id": "13013",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-24T18:46:49.365828+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/rb418110c763c/config.yaml",
     "sha256": "26f33b37c2884ce3fdaf67d0f2c3badff0dce525c9fd0ec20e4b1e5ad3ae434f"
   },
+  "frozen_execution_sha256": "809e76edaed4c64823f45e277328ae90e292372306636a572bfbbca93c0a3b65",
+  "home_cluster": "kennel",
   "label": "query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-quadruple",
+  "log_path": "experiments/transformer_pp/runs/rb418110c763c/training.log",
   "name": "query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-quadruple",
   "receipt": {
     "arrays_count": 56,
@@ -13,5 +34,6 @@
   },
   "record_schema_version": 1,
   "run_id": "rb418110c763c",
-  "status": "planned"
+  "source_commit": "ab145148136a174ec1248cbdace7476b0da09745",
+  "status": "acceptance"
 }
