@@ -27,7 +27,7 @@
       "--gres=gpu:1",
       "--cpus-per-task=16",
       "--mem=128G",
-      "--exclude=collie,dogo,doodle,mastiff,samoyed,terrier",
+      "--exclude=akita,collie,dogo,doodle,mastiff,samoyed,terrier",
       "--job-name=r1571399b4f27",
       "--output=experiments/transformer_pp/runs/r1571399b4f27/training.log",
       "--error=experiments/transformer_pp/runs/r1571399b4f27/training.log",
@@ -36,15 +36,14 @@
       "experiments/transformer_pp/runs/r1571399b4f27/config.yaml",
       "9db45ddea02e518f8eaec3c5ac509b3b5ecd099c",
       "1",
-      "B200,B300"
+      "B200"
     ],
     "eligible_gpu_types": [
-      "B200",
-      "B300"
+      "B200"
     ],
     "gpu_count": 1,
     "partition": "standard,long",
-    "slurm_job_id": "12750",
-    "submitted_utc": "2026-11-24T04:40:41.019639+00:00"
+    "slurm_job_id": "12755",
+    "submitted_utc": "2026-11-24T04:56:01.052628+00:00"
   }
 }
