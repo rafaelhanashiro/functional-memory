@@ -11,6 +11,25 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### ORCD H100 acceptance qualification (2026-11-23)
+
+`qualify_acceptance_orcd.sbatch` qualifies a run's kernels on one ORCD GPU before production. It runs the run's
+acceptance (CPU, distributed and GPU tests, initialization, a 20-update pilot and resume) in `orcd.sbatch`'s
+environment, without training. Passed test stages go to the worktree's test cache, which production at the same
+commit, environment, runtime and GPU model reuses.
+
+At commit `db4b0a35` it qualified the Transformer++ learning-rate runs at `d_K` 64 on H100 80GB HBM3 (driver
+595.112.07): the tanh query polynomial on Mosaic (job 30276124), the exponential on the fused kernel (30276129) and
+`z h_t(z)` on Mosaic (30293830). Every stage passed
+([study](../../../experiments/transformer_pp/README.md#two-and-four-times-the-learning-rate-at-key-width-64)).
+
+`orcd.sbatch` keeps TMPDIR inside the worktree, which puts pytest's tmp_path studies inside the checkout. The records
+store such a study's paths relative to the checkout (`.cache/...`) and cannot resolve them again. So
+`tests/test_gradient_events.py`, which acceptance adds for a recipe with `train.gradient_event_capture`, fails there:
+job 30276130, 1 of 920 CPU tests. Kennel's launcher keeps TMPDIR node-local. The qualification gives pytest a
+node-local base (`PYTEST_ADDOPTS=--basetemp`), with which all 920 pass. Neither location is part of a test stage's
+identity.
+
 ### Row-power shifted query polynomials (2026-11-21)
 
 `attention/shifted_polynomial.py` evaluates a per-query polynomial `sum_r c_r(t) z^r` of degree `M`, `z = s` or

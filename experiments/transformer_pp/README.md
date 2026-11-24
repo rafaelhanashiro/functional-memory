@@ -3274,6 +3274,64 @@ submit 8:00:00 B300,H100 "$b300" r03217591054b        # exp, half
 submit 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
 ```
 
+### Two and four times the learning rate at key width 64
+
+Six runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on ORCD. At `d_K` 4, doubling
+the schedule improved the exponential by 2.7% and `z h_t(z)` with a degree-sixteen core by 2.9%
+([results](results/pretraining/other/learning_rate/README.md)): is the recipe's 1e-3 peak too low at `d_K` 64 as well?
+Three `d_K` 64 partners train again at two and four times their schedule.
+
+| Run | Label | Kernel | Peak, floor rate | Partner (best) |
+| --- | --- | --- | --- | --- |
+| `r90776a5d4175` | `query-m8-dk64-w-decay-lr-double` | tanh query, m = 8, W decay | 2e-3, 2e-4 | `r25fffc16c2f3` (14.323) |
+| `r9e36ee87aa7e` | `query-m8-dk64-w-decay-lr-quadruple` | tanh query, m = 8, W decay | 4e-3, 4e-4 | `r25fffc16c2f3` |
+| `r19dfa87cb7ed` | `exp-head-scale-row-max-lr-double` | `exp(s)` | 2e-3, 2e-4 | `r6a76e7fbde45` (14.257) |
+| `r530a1bce3597` | `exp-head-scale-row-max-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r6a76e7fbde45` |
+| `r752878a0a030` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-double` | `z h_t(z)`, core 8 | 2e-3, 2e-4 | `r841f35a24241` (14.095) |
+| `r7924001c42f1` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple` | `z h_t(z)`, core 8 | 4e-3, 4e-4 | `r841f35a24241` |
+
+- **Recipe.** As at `d_K` 4: the partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
+  by 2 or 4. Warmup, horizon, clipping, weight decay, betas, seed 42, data order and every model setting are the
+  partner's; per-group multipliers such as `optim.query_coefficient_learning_rate_scale` are relative, so every
+  parameter's rate scales. Every run takes head RMSNorm's max-abs prescale, and the exponential its row-maximum
+  shift, which its partner predates: the same functions. The recipes read ORCD's copies of the dataset manifests
+  (`/home/rafah/projects/ofm/datasets/fineweb_12b`), which hash as the partners'. A numerical failure is a result: its
+  record, metrics and log are kept.
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins the three partners and admits each at 2 and 4. The
+  query and exponential runs qualify through the shared runtime checks and `z h_t(z)` through
+  `softplus_sos_acceptance`, each on the recipe at its partner's rate and manifest paths. All six train on ORCD's
+  H100s, where the Mosaic softplus-SoS kernels are qualified (H100 and B200 only). Before its runs launch, each
+  kernel qualifies on an ORCD H100 80GB HBM3 (driver 595.112.07) at `db4b0a35` through
+  `validation/qualify_acceptance_orcd.sbatch`, which runs the ×4 run's full acceptance without training: every test
+  stage, initialization, a 20-update pilot and resume
+  ([validation](../../scaffolds/transformer/validation/README.md#orcd-h100-acceptance-qualification-2026-11-23)).
+- **Time.** `orcd.sbatch` requeues each run before its time limit and after preemption; acceptance's pilot projects
+  each run against ORCD's 48-hour horizon.
+
+| Kernel | Qualification job, node | Backend | Tests passed: CPU, distributed, GPU | Pilot, s/update | Projected run |
+| --- | --- | --- | --- | ---: | ---: |
+| tanh query, m = 8 | 30276124, node4109 | Mosaic | 584, 10, 76 | 2.18 | 4.85 h |
+| `exp(s)` | 30276129, node2501 | fused | 478, 10, 88 | 2.11 | 4.66 h |
+| `z h_t(z)`, core 8 | 30293830, node2501 | Mosaic | 920, 11, 170 | 2.51 | 5.51 h |
+
+`z h_t(z)` captures gradient events, so its CPU stage includes `tests/test_gradient_events.py`, whose scratch studies
+the records cannot resolve inside the worktree, where `orcd.sbatch` keeps TMPDIR. Its qualification gives pytest a
+node-local base, as Kennel's launcher does.
+
+Submit from the study's worktree root after committing the frozen execution set, once each kernel's qualification
+has passed. Every run launches at `db4b0a35`, the commit its kernel qualified at: acceptance's cached test stages key
+on the source commit, so production reuses the qualification's test reports, and the six runs share one source
+commit.
+
+```sh
+for run in r90776a5d4175 r9e36ee87aa7e r19dfa87cb7ed r530a1bce3597 r752878a0a030 r7924001c42f1; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.learning_rate_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" db4b0a3538e2da7d2d3fc433b5851a96675ada32 1 H100
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
