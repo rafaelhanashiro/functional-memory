@@ -17,8 +17,9 @@ def check_recipe(config):
     control = load_config(RUNS / CONTROLS[config.model.attention_coefficient_parameterization] / "config.yaml")
     model = replace(control.model, qk_norm_type="rms_norm_cosine", qk_norm_head_scale=False,
                     attention_head_rms_prescale="max_abs")
+    # Acceptance sets the launch commit before it checks the recipe.
     train = replace(control.train, workdir=config.train.workdir, checkpoint_dir=config.train.checkpoint_dir,
-                    wandb_run_name=config.train.wandb_run_name)
+                    wandb_run_name=config.train.wandb_run_name, source_commit=config.train.source_commit)
     if config != replace(control, model=model, train=train):
         raise ValueError("The affine-query cosine recipe differs from its width-four control")
 
@@ -41,7 +42,8 @@ def experiment_spec(config):
         gpu_tests += ("scaffolds/transformer/tests/test_mosaic_score_transform.py",
                       "scaffolds/transformer/tests/test_mosaic_softplus_sos.py")
     return replace(shared, check_config=check_recipe, check_pilot=check_pilot, gpu_tests=gpu_tests,
-                   cpu_tests=(*shared.cpu_tests, "scaffolds/transformer/tests/test_qk_rms_cosine.py"))
+                   cpu_tests=(*shared.cpu_tests, "scaffolds/transformer/tests/test_qk_rms_cosine.py",
+                              "experiments/transformer_pp/tests/test_affine_query_cosine_acceptance.py"))
 
 
 if __name__ == "__main__":
