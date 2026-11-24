@@ -2,7 +2,7 @@ schema_version: 1
 opened: '2026-11-22'
 question: At Q/K width 4, is the recipe's learning rate, tuned at width 64, the best
   one for exp and for z h_t(z) with a degree-sixteen SoS core, and does their tie
-  hold at other rates?
+  hold at each kernel's best rate?
 study: transformer_pp
 settings:
   metric: validation perplexity
@@ -14,6 +14,7 @@ settings:
   - 0.5
   - 1.0
   - 2.0
+  - 4.0
   peak_learning_rate: 0.001
   floor_learning_rate: 0.0001
   warmup_steps: 455
@@ -143,3 +144,43 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rd5cc0aec9712/best_validation.json
       sha256: 3c2b31b04a0676ab09ac754a032154d837f842e3ffd60273c314d0c34562c943
+- study: transformer_pp
+  run_id: r1ff405fe0926
+  role: exp_quadruple
+  label: exp-head-scale-row-max-dk4-lr-quadruple
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1ff405fe0926/config.yaml
+      sha256: 644fcc33cd11231ec21b15c35111e34589fffcdb0b74fddfb7e01920b5f733e4
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1ff405fe0926/metrics.jsonl
+      sha256: b584e20f546864a91079b1b20474bbe1c8f98e06dfebd114902397b900d9db06
+    completion.json:
+      path: experiments/transformer_pp/runs/r1ff405fe0926/completion.json
+      sha256: fae79ee15353232b6f1f917992646310ebfb04a470f82a02cf68e3096b41f172
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1ff405fe0926/metadata.json
+      sha256: 12f0091af97f98b465aea2795f4983daf7bce2b4cdf29da976b6613cde0bc700
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1ff405fe0926/best_validation.json
+      sha256: 44c578eb3a067353fd418be001772f35792bad2081b3d2f5e5735d64d79f1a0a
+- study: transformer_pp
+  run_id: rdc43b5c9d2d0
+  role: sos_quadruple
+  label: query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rdc43b5c9d2d0/config.yaml
+      sha256: 9ebd4be8e725651b6c2488e827d9588150b12f06dffe8d5f0ac8f617e5502a9a
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rdc43b5c9d2d0/metrics.jsonl
+      sha256: cb2478fcbcf2a08597ebdc46533e1f7da5596b311c1e2f27a2c0144a26c944b3
+    completion.json:
+      path: experiments/transformer_pp/runs/rdc43b5c9d2d0/completion.json
+      sha256: db91bcc63e95068914ba125a72bb4d4a361e90f4a338dc9880bdd25c849d0208
+    metadata.json:
+      path: experiments/transformer_pp/runs/rdc43b5c9d2d0/metadata.json
+      sha256: ba9b66e8ae0b8a2991a047f95fcae9e7bc0c7f0ddec90f05ec773f17b52f69ed
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rdc43b5c9d2d0/best_validation.json
+      sha256: fa179f58c6ae5ae703369259bc00c0b984553f0a9e70193a62c0560dc0abcd84
