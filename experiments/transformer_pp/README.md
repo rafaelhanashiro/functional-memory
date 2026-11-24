@@ -3289,6 +3289,7 @@ in place of `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`. `x_hat_t` is the raw atte
 starts at half its Taylor factor and tanh' at 3/4, so each query's `z h_t(z)` starts at a quarter of `z T_16(z)`,
 a scale head RMSNorm removes wherever a head's output is well above its epsilon. Weight decay 0.1 applies to `w_j`
 and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's.
+[Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | Core degree |
 | --- | --- | --- | ---: |
