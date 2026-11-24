@@ -4,8 +4,8 @@ Every run on ORCD not yet on the site.
 
 - **Learning rate at two and four times the schedule**, $d_K = 64$
   - Query, $m = 8$: $\times 2$, $\times 4$
-  - Exp: $\times 2$, $\times 4$ (queued)
-  - $z\,h_t(z)$, core 8: $\times 2$, $\times 4$ (qualifying its kernel on ORCD's H100s first)
+  - Exp: $\times 2$, $\times 4$
+  - $z\,h_t(z)$, core 8: $\times 2$, $\times 4$ (kernel qualified; waiting for your go-ahead)
 
 #### Finished
 
