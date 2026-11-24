@@ -3,8 +3,10 @@
     "path": "experiments/transformer_pp/runs/r8609e3605f85/config.yaml",
     "sha256": "79c43a4cbace17165105c303df382e3bfb368f9d7a02955e3ea88d319f057a95"
   },
+  "frozen_execution_sha256": "e878a321f126585d914f22ba9d301b739cbd6de818318c4ca18b612f5658b518",
   "home_cluster": "kennel",
   "label": "dk4-affine-query-sos-m16-exp-prefactor-softplus-input-4x-lr",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-exp-softplus-sos-lr/experiments/transformer_pp/runs/r8609e3605f85/training.log",
   "name": "dk4-affine-query-sos-m16-exp-prefactor-softplus-input-4x-lr",
   "receipt": {
     "arrays_count": 56,
@@ -15,5 +17,12 @@
   "record_schema_version": 1,
   "run_id": "r8609e3605f85",
   "seed": 42,
-  "status": "planned"
+  "source_commit": "b75211cb7875fcf538c3f1349b8f28b094023204",
+  "status": "submitted",
+  "submission": {
+    "gpu_count": 1,
+    "slurm_job_id": "13110",
+    "slurm_partition": "long",
+    "submitted_utc": "2026-11-24T17:10:11.477633+00:00"
+  }
 }
