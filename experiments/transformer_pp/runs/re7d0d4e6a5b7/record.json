@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/re7d0d4e6a5b7/config.yaml",
+    "sha256": "977fad1c6f0f5fa8febb1d27e6bdced6fbd66c0aab94887759950364b09280a8"
+  },
+  "label": "exp-softplus-prefactor-lr-quadruple",
+  "name": "exp-softplus-prefactor-lr-quadruple",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "95efb2bea02212736777514e30394a8b9c16424a265b00db75a190db6b4c9a0c",
+    "loss": 5.562877655029297,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "re7d0d4e6a5b7",
+  "status": "planned"
+}

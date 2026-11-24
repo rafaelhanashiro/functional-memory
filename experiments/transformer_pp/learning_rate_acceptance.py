@@ -8,11 +8,14 @@ a run starts from its partner's parameters and differs from it by the step size 
 - Q/K width 4, at 0.5 and 2: the unnormalized exponential (r2739c80cc032, key_width_acceptance) and z h_t(z),
   z = softplus(s), with a degree-sixteen query SoS core (r2e7f5617fdf2, shifted_sos_acceptance).
 - Q/K width 64, at 2 and 4, on ORCD's H100s: the tanh query polynomial at degree 8 with W decay (r25fffc16c2f3), the
-  exponential (r6a76e7fbde45), both under the shared runtime checks, and z h_t(z) with a degree-eight core
-  (r841f35a24241, softplus_sos_acceptance).
+  exponential (r6a76e7fbde45) and softplus(s) exp(s) (rbd24b948a240), under the shared runtime checks, and the
+  degree-eight query SoS core on z = softplus(s) under each parameter-free prefactor f(s) h_t(z)
+  (softplus_sos_acceptance): softplus through the input power (z h_t(z), r841f35a24241), exp (raeaa47865867) and
+  sigmoid (r5d578a29f080).
 
-New runs take head RMSNorm's max-abs prescale, and the exponential its row-maximum shift where its partner predates
-it: the same functions as the partners' arithmetic. The partner's adapter qualifies a run on its recipe at the
+New runs take what scaffolds.records create gives a fresh copy of the partner: head RMSNorm's max-abs prescale, and
+the exponential's row-maximum shift where the shift applies (the plain exponential, not softplus(s) exp(s) on the
+fused kernel) and the partner predates it. Both are the same functions as the partners' arithmetic. The partner's adapter qualifies a run on its recipe at the
 partner's rate and manifest paths: tests, backend, initialization checks and GPU types do not read the learning rate,
 and a run on another cluster reads byte copies of its partner's dataset manifests.
 """
@@ -27,7 +30,9 @@ import sys
 from experiments.transformer_pp import key_width_acceptance, shifted_sos_acceptance, softplus_sos_acceptance
 from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
 from scaffolds.transformer.configs import load_config
-from scaffolds.transformer.configs.base import validate_config
+from scaffolds.transformer.configs.base import (
+    fresh_recipe_uses_exp_shift, fresh_recipe_uses_head_rms_prescale, validate_config,
+)
 
 RUNS = Path(__file__).resolve().parent / "runs"
 # Each partner: its run, recipe SHA256 and adapter (None: the shared runtime checks alone).
@@ -40,10 +45,16 @@ PARTNERS = {
     "exponential_dk64": ("r6a76e7fbde45", "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6", None),
     "softplus_sos_dk64": ("r841f35a24241", "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
                           softplus_sos_acceptance),
+    "exp_sos_dk64": ("raeaa47865867", "6225bc0496c3da72aa51b4be41540cd0f88219f1622364dad16b972058102a9c",
+                     softplus_sos_acceptance),
+    "sigmoid_sos_dk64": ("r5d578a29f080", "c127b0f3d79625d844d8b0e1c8ddec7028cf3cb703d393e038516e9d2266f9c7",
+                         softplus_sos_acceptance),
+    "softplus_exp_dk64": ("rbd24b948a240", "73cfbeb535da1ed1aa95e8642ad7df6d298bda6a19db9ecc8de97e4863daac0f", None),
 }
 # Each partner's learning-rate scales.
 GRID = {"exponential": (0.5, 2.0), "shifted_sos": (0.5, 2.0),
-        "query_dk64": (2.0, 4.0), "exponential_dk64": (2.0, 4.0), "softplus_sos_dk64": (2.0, 4.0)}
+        "query_dk64": (2.0, 4.0), "exponential_dk64": (2.0, 4.0), "softplus_sos_dk64": (2.0, 4.0),
+        "exp_sos_dk64": (2.0, 4.0), "sigmoid_sos_dk64": (2.0, 4.0), "softplus_exp_dk64": (2.0, 4.0)}
 SCALES = tuple(sorted({scale for scales in GRID.values() for scale in scales}))
 # The schedule's peak and floor scale together; warmup and horizon stay.
 RATES = ("learning_rate", "min_learning_rate")
@@ -56,21 +67,33 @@ MANIFEST_SHA256 = {
     "eval_manifest": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
 }
 # The Q/K width 64 runs' GPU: each kernel's qualification on ORCD (validation README), and H100 for the Mosaic
-# softplus-SoS kernels, which softplus_sos_acceptance qualifies on H100 and B200 only.
+# softplus-SoS and prefactor kernels, which softplus_sos_acceptance qualifies on H100 and B200 only.
 ORCD_GPU_TYPES = ("H100",)
 EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name",
                   "wandb_group", "wandb_dir", "wandb_mode")
 
 
+# At Q/K width 64, each family's partner by its score prefactor.
+WIDTH_64_PREFACTORS = {
+    "exponential": {"none": "exponential_dk64", "softplus": "softplus_exp_dk64"},
+    "sum_of_squares": {"none": "softplus_sos_dk64", "exp": "exp_sos_dk64", "sigmoid": "sigmoid_sos_dk64"},
+    "direct": {"none": "query_dk64"},
+}
+
+
 def partner_key(config) -> str:
-    """At Q/K width 4, the exponential has no degree and z h_t(z) its total degree; at width 64, the exponential, the
-    query SoS core and the direct tanh query polynomial."""
+    """At Q/K width 4, the exponential has no degree and z h_t(z) its total degree. At width 64, the exponential (no
+    degree) alone or under the softplus prefactor, the query SoS core through the input power or under an exp or
+    sigmoid prefactor, and the direct tanh query polynomial."""
     model = config.model
     if model.qk_head_dim == 4:
         return "exponential" if model.attention_degree is None else "shifted_sos"
-    if model.attention_degree is None:
-        return "exponential_dk64"
-    return "softplus_sos_dk64" if model.attention_coefficient_parameterization == "sum_of_squares" else "query_dk64"
+    family = "exponential" if model.attention_degree is None else model.attention_coefficient_parameterization
+    key = WIDTH_64_PREFACTORS.get(family, {}).get(model.attention_score_prefactor)
+    if key is None:
+        raise ValueError(f"No Q/K width 64 learning-rate partner is {family} with score prefactor "
+                         f"{model.attention_score_prefactor!r}")
+    return key
 
 
 def partner_config(key):
@@ -82,10 +105,13 @@ def partner_config(key):
 
 
 def fresh_settings(key) -> dict:
-    """What scaffolds.records create gives a fresh copy of the partner: the max-abs prescale, and the exponential's
-    row-maximum shift where the partner predates it."""
-    settings = {"attention_head_rms_prescale": PRESCALE}
-    if key == "exponential_dk64":
+    """What scaffolds.records create gives a fresh copy of the partner (configs.base): head RMSNorm's max-abs
+    prescale, and the row-maximum shift wherever it applies, which is the plain unnormalized exponential here."""
+    model = partner_config(key).model
+    settings = {}
+    if fresh_recipe_uses_head_rms_prescale(model):
+        settings["attention_head_rms_prescale"] = PRESCALE
+    if fresh_recipe_uses_exp_shift(model):
         settings["attention_exp_shift"] = "row_max"
     return settings
 

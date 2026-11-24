@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r2118e3531d89/config.yaml",
+    "sha256": "afab1ad894376df77102bb5a7a68e0f2f1716bdcac736831bdabb29fdef7253a"
+  },
+  "label": "exp-softplus-prefactor-lr-double",
+  "name": "exp-softplus-prefactor-lr-double",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "95efb2bea02212736777514e30394a8b9c16424a265b00db75a190db6b4c9a0c",
+    "loss": 5.562877655029297,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r2118e3531d89",
+  "status": "planned"
+}

@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r39d0469cc122/config.yaml",
+    "sha256": "71a089a89c67d4157aaeab4ef8f6f0fe25c199e924cf5b95ab44cb64108c27ab"
+  },
+  "label": "query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-double",
+  "name": "query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-double",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "e4e575958afbc470cabf27f2fb595f7892828c9f3fcd6737cf7ab7778003baf0",
+    "loss": 5.561884880065918,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r39d0469cc122",
+  "status": "planned"
+}

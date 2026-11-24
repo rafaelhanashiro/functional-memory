@@ -23,12 +23,12 @@ At commit `db4b0a35` it qualified the Transformer++ learning-rate runs at `d_K` 
 `z h_t(z)` on Mosaic (30293830). Every stage passed
 ([study](../../../experiments/transformer_pp/README.md#two-and-four-times-the-learning-rate-at-key-width-64)).
 
-`orcd.sbatch` keeps TMPDIR inside the worktree, which puts pytest's tmp_path studies inside the checkout. The records
-store such a study's paths relative to the checkout (`.cache/...`) and cannot resolve them again. So
-`tests/test_gradient_events.py`, which acceptance adds for a recipe with `train.gradient_event_capture`, fails there:
-job 30276130, 1 of 920 CPU tests. Kennel's launcher keeps TMPDIR node-local. The qualification gives pytest a
-node-local base (`PYTEST_ADDOPTS=--basetemp`), with which all 920 pass. Neither location is part of a test stage's
-identity.
+`orcd.sbatch` and the qualification keep temporary files in a node-local job directory, as Kennel's launcher does,
+removed at exit. Inside the worktree, where `orcd.sbatch` kept them at `db4b0a35`, pytest's tmp_path studies sit
+inside the checkout: the records store such a study's paths relative to the checkout (`.cache/...`) and cannot
+resolve them again. So `tests/test_gradient_events.py`, which acceptance adds for a recipe with
+`train.gradient_event_capture`, fails there (job 30276130, 1 of 920 CPU tests), and passes with a node-local pytest
+base (job 30293830, all 920).
 
 ### Row-power shifted query polynomials (2026-11-21)
 

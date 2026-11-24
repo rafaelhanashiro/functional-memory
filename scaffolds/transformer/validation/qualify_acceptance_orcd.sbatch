@@ -41,14 +41,11 @@ export SHARED_TRANSFORMER_SOURCE_COMMIT="$LAUNCH_COMMIT" TRANSFORMER_CLUSTER=orc
 export PYTHONPATH="$PWD" JAX_PLATFORMS=cuda TRANSFORMER_HOST_STAGING="${TRANSFORMER_HOST_STAGING:-0}"
 export XLA_PYTHON_CLIENT_PREALLOCATE=false PYTHONUNBUFFERED=1 PYTHONFAULTHANDLER=1 MPLBACKEND=Agg
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}" MKL_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}"
-export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg" TMPDIR="$CACHE/tmp/$SLURM_JOB_ID"
-# orcd.sbatch keeps TMPDIR inside the worktree, which puts pytest's tmp_path studies inside the checkout: the records
-# store such a study's paths relative to the checkout (.cache/...) and cannot resolve them again, so
-# test_gradient_events.py fails there. Kennel's launcher keeps TMPDIR node-local; give pytest a node-local base too.
-# Neither location is part of a test stage's identity, so production at the same commit reuses these reports.
-PYTEST_BASETEMP="${SLURM_TMPDIR:-/tmp}/functional-memory-pytest-$SLURM_JOB_ID"
-export PYTEST_ADDOPTS="--basetemp=$PYTEST_BASETEMP"
-trap 'rm -rf -- "$PYTEST_BASETEMP"' EXIT
+export JAX_COMPILATION_CACHE_DIR="$CACHE/jax" XDG_CACHE_HOME="$CACHE/xdg"
+# Node-local temporaries, as orcd.sbatch keeps them.
+TMPDIR="$(mktemp -d "${SLURM_TMPDIR:-/tmp}/functional-memory-${SLURM_JOB_ID}.XXXXXX")"
+export TMPDIR
+trap 'rm -rf -- "$TMPDIR"' EXIT
 CUDA_HOME="$("$PYTHON" -c 'import importlib.util; print(next(iter(importlib.util.find_spec("nvidia.cuda_nvcc").submodule_search_locations)))')"
 export CUDA_HOME
 eval "$("$PYTHON" -m "$ADAPTER" "$CONFIG" --runtime-env)"

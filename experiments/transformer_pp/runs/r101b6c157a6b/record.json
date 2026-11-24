@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r101b6c157a6b/config.yaml",
+    "sha256": "db0bb6202c661a7f8d950d964aea81dce853dc0fd71556d2ee6fdcc0a4d1a8b9"
+  },
+  "label": "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-quadruple",
+  "name": "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-quadruple",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "dc264f9a3c10027b93eb9410083971ec5ec93cdb728ced35cd5581d925e15655",
+    "loss": 5.572057723999023,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r101b6c157a6b",
+  "status": "planned"
+}
