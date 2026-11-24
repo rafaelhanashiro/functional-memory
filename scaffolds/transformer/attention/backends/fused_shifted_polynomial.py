@@ -330,6 +330,30 @@ def _bwd(transform, prefactor, interpret, saved, cotangents):
 _attention.defvjp(_fwd, _bwd)
 
 
+def _top_kernel(q_ref, k_ref, top_ref, *, time, dq, dv, bq, bk):
+    """Each query row's largest causal score, from the scores the programs above form."""
+    qi = pl.program_id(0) * bq + jnp.arange(bq)
+    q = plt.load(q_ref, mask=(qi[:, None] < time) & (jnp.arange(q_ref.shape[-1])[None, :] < dq), other=0)
+
+    def body(tile, top):
+        ki = tile * bk + jnp.arange(bk)
+        scores, causal = _scores(q, _load(k_ref, ki, dq, time), qi, ki, time, dq)
+        return jnp.maximum(top, jnp.max(jnp.where(causal, scores, -jnp.inf), axis=1))
+
+    end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
+    plt.store(top_ref, lax.fori_loop(0, end, body, jnp.full((bq,), -jnp.inf, jnp.float32)), mask=qi < time)
+
+
+def causal_score_max(q, k, *, interpret=False):
+    """Each query's largest causal score max_(i <= t) s_ti [B,T,H] in FP32, s = q.k / sqrt(d_K) as the programs above
+    form it: the row-power units of a kernel that takes its rows' units before its pass (mosaic/api.py)."""
+    bq = _tiling("forward", q.shape[-1], q.shape[-1])[0]
+    return lax.stop_gradient(_launch(
+        _top_kernel, "forward", (q, k), jax.ShapeDtypeStruct(q.shape[:3], jnp.float32),
+        (_spec(bq, q.shape[-1]), _full_spec(q.shape[1], k.shape[-1])), _shift_spec(bq), query_tiles=True, q=q, v=q,
+        interpret=interpret))
+
+
 def fused_shifted_polynomial(q, k, v, coefficients, *, transform="identity", prefactor="none", interpret=False):
     """The shifted output e^(-m) o [B,T,H,dv] in FP32 and the stopped shifts m [B,T,H]; coefficients [B,T,H,M+1]."""
     if transform not in TRANSFORMS:

@@ -110,7 +110,8 @@ def polynomial_shift_problem(model) -> str | None:
     polynomial on the raw score or its softplus, unnormalized and without gates, decay, score biases or a score
     prefactor other than softplus or exp of the raw score (with the raw score as its input), whose output goes straight
     into head RMSNorm with the max-abs prescale; with RoPE or no positional encoding, on its blocked reference or fused
-    kernel. Its coefficients come from the diagonal tanh or pure tanh query generator, direct or sum of squares (any
+    kernel, or for the softplus score alone on the Mosaic row-power kernels (``mosaic_row_power_problem``). Its
+    coefficients come from the diagonal tanh or pure tanh query generator, direct or sum of squares (any
     input power; pure tanh with or without its inner bias), or are static direct coefficients, fixed (Taylor's or a
     recipe's table) or learned, which every query takes alike."""
     if model.attention_mechanism != "dot_product" or model.attention_normalization:
@@ -142,9 +143,35 @@ def polynomial_shift_problem(model) -> str | None:
         return "head RMSNorm with the max-abs prescale divides out its row factor"
     if model.positional_encoding not in ("rope", "none"):
         return "PaTH runs its own kernels, which do not shift"
+    if model.attention_backend == "mosaic":
+        return mosaic_row_power_problem(model)
     if model.attention_backend not in ("blocked", "fused"):
-        return f"backend {model.attention_backend!r} does not implement it; its blocked reference and fused kernel do"
+        return (f"backend {model.attention_backend!r} does not implement it; its blocked reference and fused kernel do, "
+                "and for the softplus score the Mosaic kernels")
     return None
+
+
+def mosaic_row_power_problem(model) -> str | None:
+    """Why the Mosaic row-power kernels (mosaic/api.py ``row_power_query_polynomial_attention``) cannot run this
+    shifted recipe, or None: the transformed kernels' softplus query polynomial without a prefactor
+    (``mosaic_score_transform_problem``'s coefficient sources, RoPE, Q/K widths and value width), at the degrees
+    ``row_power_degree_supported`` holds at the recipe's width and length (through 17 at Q/K widths up to 16)."""
+    from scaffolds.transformer.attention.backends.mosaic.api import VALUE_WIDTH, WIDTHS, row_power_degree_supported
+
+    if model.attention_score_transform != "softplus" or model.attention_score_prefactor != "none":
+        return "the Mosaic row-power kernels evaluate the softplus score alone, without a prefactor"
+    problem = _base()._transformed_coefficient_problem(model)
+    if problem is None and model.positional_encoding != "rope":
+        problem = "the Mosaic query-polynomial kernels run RoPE recipes"
+    if problem is None and model.qk_head_dim not in WIDTHS:
+        problem = f"Q/K width {model.qk_head_dim} is not one of {WIDTHS}"
+    if problem is None and model.value_head_dim != VALUE_WIDTH:
+        problem = f"value width {model.value_head_dim} is not {VALUE_WIDTH}"
+    if problem is None and not row_power_degree_supported(model.attention_degree, model.qk_head_dim,
+                                                          model.max_seq_len):
+        problem = (f"the row-power kernels do not hold degree {model.attention_degree} at Q/K width "
+                   f"{model.qk_head_dim} and {model.max_seq_len} tokens")
+    return problem
 
 
 def head_rms_prescale_problem(model) -> str | None:

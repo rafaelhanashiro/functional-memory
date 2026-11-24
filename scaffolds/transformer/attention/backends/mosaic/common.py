@@ -199,6 +199,12 @@ def polynomial_and_derivative(s, coefficients):
 #                 large scores, which makes the row NaN. Masked entries enter at s = 0, where every f is finite,
 #                 and are zeroed; a nonfinite causal score makes its row NaN, since p(z) is nonfinite there
 #                 (and f too, but for exp at -inf, whose zero times the nonfinite p is NaN).
+#   query_softplus_row_power: query_softplus in units of its row's largest power (attention/shifted_polynomial.py):
+#                 sum_r a_r u^r at u = (z h) h, with a_0..a_m and h = e^(-m_t / (2m)) as vectors 0..m+1 (h twice,
+#                 as the fused kernel, so that no unit is subnormal), the caller forming a_r = c_r e^(-(m - r) m_t / m)
+#                 and m_t = m log max(1, max_i z_ti), so |u| <= 1 and every term stays within its coefficient's scale.
+#                 dS = G p_a'(u) h h phi'(s), and the dQ sums are sum_i G u^r, from which the caller forms
+#                 dc_r = e^(-(m - r) m_t / m) sum_i G u^r; m_t is a constant to differentiation.
 TAYLOR, QUERY = "taylor", "query"
 QUERY_SOFTPLUS, QUERY_ABS = "query_softplus", "query_abs"
 QUERY_SIGMOID, QUERY_SWISH = "query_sigmoid", "query_swish"
@@ -206,6 +212,9 @@ QUERY_SIGMOID, QUERY_SWISH = "query_sigmoid", "query_swish"
 # query family itself.
 TRANSFORM_BASES = {"identity": QUERY, "softplus": QUERY_SOFTPLUS, "abs": QUERY_ABS, "sigmoid": QUERY_SIGMOID,
                    "swish": QUERY_SWISH}
+QUERY_SOFTPLUS_ROW_POWER = "query_softplus_row_power"
+# The row-power family of each transformed family that has one.
+ROW_POWER_FAMILIES = {QUERY_SOFTPLUS: QUERY_SOFTPLUS_ROW_POWER}
 # Score prefactors of the transformed families, and the transforms whose families take one (the qualified ones).
 SCORE_PREFACTORS = ("softplus", "sigmoid", "exp", "swish")
 PREFACTOR_TRANSFORMS = ("identity", "softplus")
@@ -230,7 +239,8 @@ SCORE_FUNCTION_FAMILIES = {
     for transform in TRANSFORM_BASES for prefactor in ("none", *SCORE_PREFACTORS)
     if score_function_family(transform, prefactor) not in (None, QUERY)}
 FAMILY_SCORE_FUNCTIONS = {family: functions for functions, family in SCORE_FUNCTION_FAMILIES.items()}
-TRANSFORMED_QUERY_FAMILIES = tuple(SCORE_FUNCTION_FAMILIES.values())
+FAMILY_SCORE_FUNCTIONS.update({shifted: FAMILY_SCORE_FUNCTIONS[base] for base, shifted in ROW_POWER_FAMILIES.items()})
+TRANSFORMED_QUERY_FAMILIES = (*SCORE_FUNCTION_FAMILIES.values(), *ROW_POWER_FAMILIES.values())
 PREFACTOR_FAMILIES = tuple(family for (_, prefactor), family in SCORE_FUNCTION_FAMILIES.items() if prefactor != "none")
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
@@ -318,6 +328,8 @@ def vector_counts(family, degree):
         orders = degree + 1
         sums = {PER_ORDER_QUERY_DECAY: 2, PER_ORDER_ENDPOINT_DECAY: 3, PER_ORDER_CUMULATIVE_DECAY: 1}[family]
         return 2 * orders, 2 * orders, sums * orders
+    if family in ROW_POWER_FAMILIES.values():  # the coefficients a_r, then lambda; the sums are those of query
+        return degree + 2, degree + 2, degree + 1
     # Transformed families hold the query family's vectors: phi(s) and f(s) are evaluated in their tiles.
     extra = 0 if family == QUERY or family in TRANSFORMED_QUERY_FAMILIES else {QUERY_DECAY: 1, ENDPOINT_DECAY: 2}[family]
     return degree + 1 + extra, degree + 1 + extra, degree + 1 + extra
@@ -472,7 +484,12 @@ def _score_functions(family, s, *, derivatives):
 
 
 def _transformed_weights(family, s, vectors):
-    """W = f(s) p(phi(s)) of a transformed family's tile (f = 1 without a prefactor)."""
+    """W = f(s) p(phi(s)) of a transformed family's tile (f = 1 without a prefactor); a row-power family's is
+    sum_r a_r u^r at u = (phi(s) h) h."""
+    if family in ROW_POWER_FAMILIES.values():
+        degree = len(vectors) - 2
+        half = vectors[degree + 1]
+        return polynomial((transformed_score(family, s)[0] * half) * half, vectors[:degree + 1])
     if FAMILY_SCORE_FUNCTIONS[family][1] == "none":
         return polynomial(transformed_score(family, s)[0], vectors)
     z, _, value, _ = _score_functions(family, s, derivatives=False)
@@ -483,7 +500,15 @@ def _transformed_terms(family, degree, s, dp, vectors, *, rows):
     """(dS, dQ row sums or []) of a transformed query family's tile, dS = p'(z) (G phi'(s)). In program order the
     sums dc_r = sum_i G z^r come first, then G phi'(s), then the derivative's recurrence, which therefore holds
     neither G nor phi'(s) beside it. With a prefactor, G_f = G f(s) takes G's place in the sums and the chain
-    rule, and the product rule adds G f'(s) p(z): dS = p'(z) G_f phi'(s) + G f'(s) p(z)."""
+    rule, and the product rule adds G f'(s) p(z): dS = p'(z) G_f phi'(s) + G f'(s) p(z). A row-power family takes
+    u = (z h) h in z's place, its sums dc_r = sum_i G u^r and its chain rule h h phi'(s)."""
+    if family in ROW_POWER_FAMILIES.values():
+        z, slope = transformed_score(family, s, slope=True)
+        half = vectors[degree + 1]
+        u = (z * half) * half
+        sums = row_sums(QUERY, degree, u, dp) if rows else []
+        gradient = ((dp * slope) * half) * half
+        return polynomial_and_derivative(u, vectors[:degree + 1])[1] * gradient, sums
     if FAMILY_SCORE_FUNCTIONS[family][1] == "none":
         z, slope = transformed_score(family, s, slope=True)
         sums = row_sums(QUERY, degree, z, dp) if rows else []

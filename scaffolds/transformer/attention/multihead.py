@@ -657,11 +657,13 @@ class MultiHeadAttention(nnx.Module):
                 or attention_score_transform not in ("identity", "softplus")
                 or attention_score_prefactor not in ("none", "softplus", "exp")
                 or (attention_score_prefactor != "none" and attention_score_transform != "identity")
-                or attention_head_rms_prescale != "max_abs" or backend not in ("blocked", "fused")):
+                or attention_head_rms_prescale != "max_abs" or backend not in ("blocked", "fused", "mosaic")
+                or backend == "mosaic" and (attention_score_transform != "softplus" or attention_score_prefactor != "none"
+                                            or positional_encoding != "rope")):
             raise ValueError("The row-power shift evaluates unnormalized per-query polynomials (tanh query coefficients, "
                              "direct or sum of squares, or static direct ones) on the raw or softplus score, or times "
                              "softplus or exp of the raw score, under max-abs head RMSNorm, on the blocked or fused "
-                             "backend")
+                             "backend, or on the mosaic backend the softplus score alone, with RoPE")
         self.attention_polynomial_shift = attention_polynomial_shift
         if attention_coefficient_zero_constant and attention_coefficient_parameterization == "direct":
             # The same compact selection and factorial handling as explicit orders,

@@ -52,6 +52,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+from jax import lax
 
 from scaffolds.transformer.attention.backends.mosaic import common
 from scaffolds.transformer.attention.backends.mosaic.common import (
@@ -69,6 +70,9 @@ MAX_SOFTPLUS_QUERY_DEGREE = 13  # degree-12 SoS with one input prefactor, at the
 # (tests/test_mosaic_score_prefactor.py, test_mosaic_softplus_sos.py), so recipes take them up to degree eight; the
 # kernels themselves lower to their transform's limit, which qualification tests may exercise.
 MAX_PREFACTOR_QUERY_DEGREE = 8
+# The row-power families at Q/K widths up to MIN_WIDTH (zero-padded to it), where every query's m + 2 vectors still
+# fit beside the keys in Blackwell's dK/dV shared memory through degree 17 (``row_power_degree_supported``).
+MAX_ROW_POWER_QUERY_DEGREE = 17
 
 
 def _query_degree_limit(width, time, transform):
@@ -414,6 +418,83 @@ def transformed_query_polynomial_attention(q, k, v, coefficients, *, transform: 
     precision = default_precision(family, coefficients.shape[-1] - 1) if precision is None else precision
     _check_precision(precision)
     return _transformed_query(q, k, v, coefficients, family, precision)
+
+
+# ----------------------------------------------------------------------------------------
+# The transformed query polynomial in units of its row's largest power (attention/shifted_polynomial.py).
+
+def row_power_degree_supported(degree, width, time, *, transform="softplus"):
+    """Whether the row-power kernels run degree m at this key width and sequence length: through
+    ``MAX_ROW_POWER_QUERY_DEGREE`` at Q/K widths up to ``MIN_WIDTH``, else the transform's ordinary limit, within
+    both GPUs' shared memory. Softplus alone has a row-power family."""
+    family = common.ROW_POWER_FAMILIES.get(TRANSFORM_FAMILY.get(transform))
+    if family is None or time <= 0:
+        return False
+    limit = MAX_ROW_POWER_QUERY_DEGREE if width <= MIN_WIDTH else _query_degree_limit(width, time, transform)
+    return (1 <= degree <= limit and blackwell_supported(family, degree, width, time)
+            and hopper_supported(family, degree, width))
+
+
+def _row_power_forward(q, k, v, vectors, family, precision):
+    _, kernels = _kernels()
+    out, _ = kernels.forward(_pad(q), _pad(k), v, vectors, family=family, degree=vectors.shape[0] - 2,
+                             scale=_scale(q), precision=precision)
+    return jnp.where(jnp.all(jnp.isfinite(out), axis=-1, keepdims=True), out, jnp.nan)  # FP32; a nonfinite row NaN
+
+
+@partial(jax.custom_vjp, nondiff_argnums=(4, 5))
+def _row_power(q, k, v, vectors, family, precision):
+    return _row_power_forward(q, k, v, vectors, family, precision)
+
+
+def _row_power_fwd(q, k, v, vectors, family, precision):
+    return _row_power_forward(q, k, v, vectors, family, precision), (q, k, v, vectors)
+
+
+def _row_power_bwd(family, precision, residuals, do):
+    q, k, v, vectors = residuals
+    grad_q, sums, grad_k, grad_v = _backward(family, vectors.shape[0] - 2, precision, q, k, v, do.astype(v.dtype),
+                                             vectors)
+    return grad_q, grad_k, grad_v, jnp.concatenate([sums, jnp.zeros_like(vectors[-1:])])  # the units are constants
+
+
+def row_power_query_polynomial_attention(q, k, v, coefficients, *, transform: str = "softplus",
+                                         precision: str | None = None):
+    """The shifted output e^(-m) o [B,T,H,64] in FP32 and the stopped shifts m [B,T,H] of the unnormalized causal
+    sum_i p_t(phi(s_ti)) v_i with FP32 coefficients c[B, T, H, m+1], as the fused row-power kernel returns them
+    (attention/shifted_polynomial.py): m_t = m log max(1, max_i z_ti), and each term c_r z^r e^(-m_t) is a_r u^r
+    with a_r = c_r e^(-(m - r) m_t / m) and u = (z h) h, h = e^(-m_t / (2m)), so |u| <= 1 and the evaluation is
+    finite where z^m overflows FP32. Softplus alone: z >= 0, so a row's largest z is the softplus of its largest
+    causal score (``fused_shifted_polynomial.causal_score_max``, one pass before the kernels). Head RMSNorm takes the
+    shift (output_scaling.max_abs_head_rms). The output cotangent enters the kernels in V's BF16, as the transformed
+    kernels' does. Shapes, precisions and devices are those of ``transformed_query_polynomial_attention``, with
+    degrees to ``row_power_degree_supported``."""
+    name = "Mosaic row-power query-polynomial attention"
+    family = common.ROW_POWER_FAMILIES.get(TRANSFORM_FAMILY.get(transform))
+    if family is None:
+        raise ValueError(f"{name} takes the softplus transform, not {transform!r}")
+    _check_operands(q, k, v, name)
+    degree = coefficients.shape[-1] - 1
+    if (coefficients.ndim != 4 or coefficients.shape[:3] != q.shape[:3] or coefficients.dtype != jnp.float32
+            or not row_power_degree_supported(degree, q.shape[-1], q.shape[1], transform=transform)):
+        raise ValueError(f"{name} requires FP32 coefficients [batch, time, heads, m+1] with a degree it supports at "
+                         f"Q/K width {q.shape[-1]} and {q.shape[1]} tokens, got {coefficients.dtype} "
+                         f"{coefficients.shape}")
+    architecture = _kernels()[0]
+    if architecture not in TRANSFORM_ARCHITECTURES or (
+            architecture == "blackwell" and not transformed_compute_capability_supported(_device_compute_capability())):
+        raise ValueError(f"{name} admits H100 (sm90) and B200 (sm100) only; this {architecture} device is not admitted")
+    precision = default_precision(family, degree) if precision is None else precision
+    _check_precision(precision)
+    from scaffolds.transformer.attention.backends.fused_shifted_polynomial import causal_score_max
+
+    largest = jnp.logaddexp(causal_score_max(q, k), 0.0)  # the row's largest z
+    shift = lax.stop_gradient(degree * jnp.log(jnp.maximum(1.0, largest)))
+    orders = jnp.arange(degree + 1, dtype=jnp.float32)
+    units = jnp.exp(shift[..., None] * ((orders - degree) / degree))  # e^(-(m - r) m_t / m), one at r = m
+    half = jnp.exp(shift * (-0.5 / degree))
+    vectors = jnp.concatenate([_coefficient_vectors(coefficients * units), _token_vector(half)])
+    return _row_power(q, k, v, vectors, family, precision), shift
 
 
 # ----------------------------------------------------------------------------------------

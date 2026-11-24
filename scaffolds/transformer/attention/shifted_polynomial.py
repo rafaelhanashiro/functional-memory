@@ -192,10 +192,18 @@ def shifted_polynomial_attention(q, k, v, coefficients, *, transform="identity",
         raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, of the raw score with z = s")
     if backend == "blocked":
         return _reference(q, k, v, coefficients, transform, return_diagnostics, prefactor)
-    if backend != "fused" or max(q.shape[-1], v.shape[-1]) > 128:
-        raise ValueError("The shifted polynomial uses its blocked reference or fused kernel (width <= 128)")
-    from scaffolds.transformer.attention.backends.fused_shifted_polynomial import fused_shifted_polynomial
-    output = fused_shifted_polynomial(q, k, v, coefficients, transform=transform, prefactor=prefactor)
+    if backend == "mosaic":
+        # The softplus score alone: its Mosaic kernels take each row's units from a pass before them.
+        from scaffolds.transformer.attention.backends.mosaic.api import row_power_query_polynomial_attention
+        if prefactor != "none":
+            raise ValueError("The Mosaic row-power kernels evaluate the softplus score without a prefactor")
+        output = row_power_query_polynomial_attention(q, k, v, coefficients, transform=transform)
+    elif backend != "fused" or max(q.shape[-1], v.shape[-1]) > 128:
+        raise ValueError("The shifted polynomial uses its blocked reference, fused kernel (width <= 128) or, for the "
+                         "softplus score, Mosaic kernels")
+    else:
+        from scaffolds.transformer.attention.backends.fused_shifted_polynomial import fused_shifted_polynomial
+        output = fused_shifted_polynomial(q, k, v, coefficients, transform=transform, prefactor=prefactor)
     if not return_diagnostics:
         return output
     _, stats = _reference(q, k, v, coefficients, transform, True, prefactor)

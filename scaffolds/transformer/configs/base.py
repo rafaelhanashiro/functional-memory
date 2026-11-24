@@ -75,8 +75,8 @@ class ModelConfig:
     attention_exp_shift: Literal["none", "row_max"] = "none"
     # How a per-query polynomial p_t(z) of degree M, z = s or softplus(s), is evaluated before head
     # RMSNorm: "none" (historical) directly; "row_power" in units e^(-m_t), m_t = M log max(1, max_i |z_ti|), so every
-    # term stays finite where z^M overflows FP32, with RMSNorm's epsilon scaled by e^(-2 m_t). Blocked reference or
-    # fused kernel; attention/pieces.py polynomial_shift_problem.
+    # term stays finite where z^M overflows FP32, with RMSNorm's epsilon scaled by e^(-2 m_t). Blocked reference,
+    # fused kernel, or Mosaic kernels for the softplus score; attention/pieces.py polynomial_shift_problem.
     attention_polynomial_shift: Literal["none", "row_power"] = "none"
     # How head RMSNorm output scaling is evaluated: "none" (historical) as y / sqrt(mean(y^2) + eps), whose FP32
     # backward degrades once a head's output RMS passes about 3e13 and from 9e14 loses the term that removes the
