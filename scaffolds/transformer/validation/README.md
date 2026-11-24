@@ -11,6 +11,40 @@ for these synthetic checks. The authoritative record is
 
 ## Question and method
 
+### Row-power softplus polynomials on Mosaic (2026-11-24)
+
+`mosaic/api.py` `row_power_query_polynomial_attention` evaluates the softplus query polynomial in the fused
+row-power kernel's units (attention/shifted_polynomial.py): a Triton pass (`fused_shifted_polynomial.
+causal_score_max`, 0.20 ms per layer at the training micro-batch) finds each row's largest causal score, so
+`m_t = M log max(1, softplus(top))`, and the Mosaic family `query_softplus_row_power` evaluates `sum_r a_r u^r` at
+`u = (z h) h`, `h = e^(-m_t / (2M))`, `a_r = c_r e^(-(M - r) m_t / M)`, with `dS = G p_a'(u) h h sigmoid(s)` and dQ
+sums `sum_i G u^r`. Its `M + 2` per-query vectors fit B200 shared memory at Q/K widths up to 16 through degree 17
+(`row_power_degree_supported`); `attention_backend: mosaic` with `attention_polynomial_shift: row_power` and the
+softplus score routes to it (`pieces.mosaic_row_power_problem`).
+
+`tests/test_mosaic_row_power.py` on a B200 (shiba, job 13248): 18 of 20 pass, and the transformed kernels' and the
+shifted kernel's GPU suites pass (168). On CPU the tile arithmetic matches FP64 at score scales 0.5 to 400. On the
+GPU, before head RMSNorm and at a BF16 cotangent, the kernels match FP64 within the Mosaic softplus SoS
+qualification's tolerances at degrees 9 and 17, with scores to 1,100 (whose 17th powers overflow FP32) too; through
+max-abs head RMSNorm on ordinary inputs every gradient is within 0.3% (relative L2), and the kernels agree with the
+fused kernel at 2,048 tokens. The two failures are the stress rows through head RMSNorm: where one key dominates a row,
+the gradient is a near-cancellation that the BF16 output cotangent (as every Mosaic kernel and cuDNN take it; the fused
+kernel takes three BF16 parts, exact in FP32) resolves only to its rounding. There dQ errs by 2.7% (degree 9) and
+6.6% (degree 17) of its largest entry and the coefficient gradient by 2.2 and 160 times its largest. Such rows are
+common at degree 17 and `d_K` 4: `rdc43b5c9d2d0` reaches scores of 100-250 in seven of its fifteen layers. The
+degree-16 SoS runs therefore stay on the fused kernel; a split cotangent would not fit dK/dV's shared memory at degree
+17 with the vectors held whole.
+
+One layer's attention forward and backward through head RMSNorm at 16 x 2,048 tokens, 14 heads, Q/K width 4 and value
+width 64 (median of three rounds of 20; H100 on dogo, jobs 13207 and 13214):
+
+| GPU | Degree | Mosaic row-power | Fused row-power |
+| --- | ---: | ---: | ---: |
+| B200 | 9 | 6.3 ms | 9.3 ms |
+| B200 | 17 | 9.2 ms | 12.2 ms |
+| H100 | 9 | 7.6 ms | 14.0 ms |
+| H100 | 17 | 12.8 ms | 17.7 ms |
+
 ### Row-power shifted query polynomials (2026-11-21)
 
 `attention/shifted_polynomial.py` evaluates a per-query polynomial `sum_r c_r(t) z^r` of degree `M`, `z = s` or
