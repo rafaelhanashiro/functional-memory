@@ -3120,3 +3120,31 @@ b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 9:00:00 "$b200" rabfbab32a594 0
 submit standard 9:00:00 "$b200" r1eaa4a4c3c77 0
 ```
+
+### Unscaled cosine for affine-tanh query polynomials at key width four
+
+These two Kennel runs compare unscaled cosine with the learned-scale QK RMSNorm score.
+Both keep the control's Q/K channel gains and RoPE, normalize the resulting directions to
+unit length, and disable the learned head multiplier. They keep seed 42, the 0.001 peak LR,
+the 7,570-update schedule, and the affine-tanh query coefficient generator.
+
+| Run | Kernel | Matched QK RMSNorm control |
+| --- | --- | --- |
+| `r46c9b99d3338` | Degree-eight query polynomial on the cosine score | `rd5e3ec5a4f02` |
+| `r1571399b4f27` | Softplus of cosine times a degree-eight query SoS core on that same softplus input | `rabfbab32a594` |
+
+Both run on Mosaic with max-abs head RMSNorm arithmetic. The direct query control used
+plain arithmetic for the same output normalization. The [acceptance adapter](affine_query_cosine_acceptance.py)
+checks the recipes against their respective controls and the pilot's raw score extrema against
+the cosine bound with BF16 rounding tolerance.
+
+```bash
+for run in r46c9b99d3338 r1571399b4f27; do
+  dir="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=14:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+    --output="$dir/training.log" --error="$dir/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.affine_query_cosine_acceptance \
+    "$dir/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
+done
+```

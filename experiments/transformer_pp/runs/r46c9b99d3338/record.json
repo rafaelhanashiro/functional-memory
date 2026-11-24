@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r46c9b99d3338/config.yaml",
+    "sha256": "075b2d0447ae88f43b398f2a23ad5d164e11f1f3be16098b4bc0adcda4a9f086"
+  },
+  "home_cluster": "kennel",
+  "label": "query-m8-dk4-affine-tanh-unit-cosine",
+  "name": "query-m8-dk4-affine-tanh-unit-cosine",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "82d332aca423cfd7b3b8506159ecfb1312a04f5f4c2e8742598014cce5c366ce",
+    "loss": 5.602993488311768,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r46c9b99d3338",
+  "status": "planned"
+}

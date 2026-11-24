@@ -1,0 +1,18 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r1571399b4f27/config.yaml",
+    "sha256": "e81e56ac72026e807de6de6929508a0bf7c45cd72689396a8315c34ac3f62603"
+  },
+  "home_cluster": "kennel",
+  "label": "query-sos-core-m8-softplus-prefactor-dk4-affine-tanh-unit-cosine",
+  "name": "query-sos-core-m8-softplus-prefactor-dk4-affine-tanh-unit-cosine",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "be6df535416cc991c821a31cb44741282532c86e3c40d87512509142b1d64a8a",
+    "loss": 5.602762222290039,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r1571399b4f27",
+  "status": "planned"
+}
