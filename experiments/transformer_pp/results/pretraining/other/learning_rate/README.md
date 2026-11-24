@@ -6,7 +6,7 @@ Opened 2026-11-22.
 `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen SoS core, the two kernels that tie there, and does the tie hold
 at other rates? Each trains again with its whole schedule at half and at double: peak and floor scale together
 (1e-3 and 1e-4 at the recipe's rate), and the 455-update warmup, horizon, clipping at 1.0, weight decay, seed 42 and
-every model setting stay. The [study methods](../../../../README.md#half-and-double-learning-rate-at-key-width-four)
+every model setting stay. The [study methods](../../../../README.md#learning-rate-at-key-width-four)
 define the recipes and launch commands. Home cluster: Kennel.
 
 ## Runs

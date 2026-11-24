@@ -3228,14 +3228,14 @@ submit long 12:00:00 rfd16ec25202a      # P, m = 16
 submit long 10:00:00 rfd18b16513a0      # P, m = 8
 ```
 
-### Half and double learning rate at key width four
+### Learning rate at key width four
 
-Four runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-22 on Kennel. At `d_K` 4 the
-exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core
-(`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip after warmup. The recipe's
-learning rate was tuned at `d_K` 64, so each trains again at half and at double its schedule: is that rate the best
-one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
-[Results](results/pretraining/other/learning_rate/README.md).
+Six runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22, four
+times 2026-11-23. At `d_K` 4 the exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with
+a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip
+after warmup. The recipe's learning rate was tuned at `d_K` 64, so each trains again at half, double and four times
+its schedule: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best
+rate? [Results](results/pretraining/other/learning_rate/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
@@ -3243,14 +3243,16 @@ one for either kernel at `d_K` 4, and does the tie hold at each kernel's best ra
 | `rcc51ed9dbca8` | `exp-head-scale-row-max-dk4-lr-double` | `exp(s)` | 2e-3, 2e-4 | `r2739c80cc032` |
 | `r1934bca84bd4` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-half` | `z h_t(z)`, core 16 | 5e-4, 5e-5 | `r2e7f5617fdf2` |
 | `rd5cc0aec9712` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `r2e7f5617fdf2` |
+| `r1ff405fe0926` | `exp-head-scale-row-max-dk4-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r2739c80cc032` |
+| `rdc43b5c9d2d0` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `r2e7f5617fdf2` |
 
 - **Recipe.** Each run is its partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
-  by 0.5 or 2 (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
+  by 0.5, 2 or 4 (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
   decay, seed 42, data order and every model setting are the partner's, so a run starts from its partner's
   parameters. The exponential runs also take head RMSNorm's max-abs prescale, as every new run does: the same
   function as their partner's plain arithmetic, which `z h_t(z)` already has.
-- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at the two
-  scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at the
+  three scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
   backend, initialization pins): the exponential on a B300 or H100, `z h_t(z)` on a B200 or B300.
 - **Time limits.** The exponential partner trained in 2.9 h on a B300 and `z h_t(z)` in 7.8 h (3.6 s per update on
   a B200); 8 and 12 hours leave acceptance's two-hour reserve.
@@ -3259,19 +3261,22 @@ Submit from the study's worktree after committing the frozen execution set and c
 allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
 
 ```sh
-submit() {  # time limit, GPU types, excluded nodes, run
-  d="experiments/transformer_pp/runs/$4"
-  sbatch --parsable --partition=long --time="$1" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$3" \
-    --job-name="$4" --output="$d/training.log" --error="$d/training.log" \
+submit() {  # partition, time limit, GPU types, excluded nodes, run
+  d="experiments/transformer_pp/runs/$5"
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$4" \
+    --job-name="$5" --output="$d/training.log" --error="$d/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.learning_rate_acceptance \
-    "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$2"
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
 }
 b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # the fused exponential: B300 (akita)
 blackwell=dogo,mastiff,collie,samoyed,doodle,terrier   # the row-power shifted kernel: B200 or B300
-submit 12:00:00 B200,B300 "$blackwell" r1934bca84bd4  # z h_t(z), half
-submit 12:00:00 B200,B300 "$blackwell" rd5cc0aec9712  # z h_t(z), double
-submit 8:00:00 B300,H100 "$b300" r03217591054b        # exp, half
-submit 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
+submit long 12:00:00 B200,B300 "$blackwell" r1934bca84bd4  # z h_t(z), half
+submit long 12:00:00 B200,B300 "$blackwell" rd5cc0aec9712  # z h_t(z), double
+submit long 8:00:00 B300,H100 "$b300" r03217591054b        # exp, half
+submit long 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
+# Four times, on akita's free B300s within the standard allowance:
+submit standard 12:00:00 B200,B300 "$b300" rdc43b5c9d2d0   # z h_t(z), four times
+submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926    # exp, four times
 ```
 
 ## Max-abs ALiBi exp and 12-layer width-640 4x runs

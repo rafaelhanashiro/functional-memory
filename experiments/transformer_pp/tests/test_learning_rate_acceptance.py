@@ -1,5 +1,5 @@
-"""The Q/K width 4 exponential and z h_t(z) with a degree-sixteen core at half and double the learning-rate schedule:
-each partner's recipe with the peak and floor rates scaled alone."""
+"""The Q/K width 4 exponential and z h_t(z) with a degree-sixteen core at half, double and four times the
+learning-rate schedule: each partner's recipe with the peak and floor rates scaled alone."""
 import hashlib
 import json
 
@@ -14,6 +14,9 @@ RUNS = {
     "rcc51ed9dbca8": ("exponential", 2.0, "exp-head-scale-row-max-dk4-lr-double"),
     "r1934bca84bd4": ("shifted_sos", 0.5, "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-half"),
     "rd5cc0aec9712": ("shifted_sos", 2.0, "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double"),
+    "r1ff405fe0926": ("exponential", 4.0, "exp-head-scale-row-max-dk4-lr-quadruple"),
+    "rdc43b5c9d2d0": ("shifted_sos", 4.0,
+                      "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple"),
 }
 
 
@@ -66,13 +69,13 @@ def test_an_allocated_run_is_its_recipe(run):
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_the_runs_cover_both_partners_at_both_scales():
+def test_the_runs_cover_both_partners_at_every_scale():
     assert sorted((key, scale) for key, scale, _ in RUNS.values()) == sorted(
         (key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES)
 
 
 def test_other_recipes_are_refused():
-    for scale in (1.0, 0.25, 3.0):
+    for scale in (1.0, 0.25, 3.0, 8.0):
         with pytest.raises(ValueError):
             adapter.recipe("exponential", scale)
     for key in adapter.PARTNERS:
