@@ -11,7 +11,8 @@ z with the shift fixed is exp(-shift/M) sum_r r a_r u^(r-1), times dz/ds for sof
 exp(-(M - r) shift / M) times the row's moment sum_i dp_i u_i^r, accumulated from successive products dp u^k.
 
 With a prefactor f of the raw score (z = s) the row's units come from its largest score (shifted_polynomial.key_shift),
-which the query-tile program tracks online, and each pair is evaluated in one pass (shifted_polynomial.keyed_weights):
+which the query-tile program finds in a first pass over the keys, and each pair is evaluated in one pass
+(shifted_polynomial.keyed_weights):
 chunks of p by Horner's rule in s, staged by an n-th root g of the exponential part of f(s) e^(-shift), with no
 logarithm or reciprocal of a score. The slope stages the chunks F1 P_j + F P_j' for the factors F of f and F1 of f'
 outside g (for exp the chunks of p + p'), and coefficient r's derivative is the row sum of dp F g^n s^r
@@ -141,30 +142,36 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, prefactor, time, dq, 
     q = plt.load(q_ref, mask=qmask, other=0)
     coefficients = tuple(plt.load(ref, mask=qi < time, other=0) for ref in coefficient_refs)
 
+    end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
+    shift = jnp.zeros((bq,), jnp.float32)
+    if prefactor != "none":
+        # The row's units first, from its largest causal score: the weights are then evaluated once, in the units
+        # the backward programs recompute them in, with the same arithmetic. (Units raised online would rescale
+        # earlier tiles by exp(m_1 - m_2), which the approximate exponentials resolve less finely than a gradient
+        # that head RMSNorm leaves a near-cancellation needs.)
+        def top_body(tile, top):
+            ki = tile * bk + jnp.arange(bk)
+            return _row_top(*_scores(q, _load(k_ref, ki, dq, time), qi, ki, time, dq), top)
+
+        shift = key_shift(lax.fori_loop(0, end, top_body, jnp.full((bq,), NO_SCORE, jnp.float32)), prefactor, degree)
+
     def body(tile, carry):
-        output, previous, *top = carry
+        output, previous = carry
         ki = tile * bk + jnp.arange(bk)
         k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
         scores, causal = _scores(q, k, qi, ki, time, dq)
-        if prefactor == "none":
-            z, _ = _transformed(scores, transform)
-            shift = jnp.maximum(previous, _row_shift(z, degree))
-            half, _, horner = _row_units(shift, coefficients)
-            weights, _ = _polynomial(z, half, horner)
-        else:
-            # The units follow the row's largest causal score so far, which the carry holds; they never decrease.
-            top = [_row_top(scores, causal, *top)]
-            shift = jnp.maximum(previous, key_shift(*top, prefactor, degree))
-            weights, _ = _keyed(scores, coefficients, key_terms(scores, shift[:, None], prefactor, degree))
+        if prefactor != "none":
+            weights, _ = _keyed(scores, coefficients, key_terms(scores, previous[:, None], prefactor, degree))
+            return output + _dot(jnp.where(causal, weights, 0.0), v), previous
+        z, _ = _transformed(scores, transform)
+        shift = jnp.maximum(previous, _row_shift(z, degree))
+        half, _, horner = _row_units(shift, coefficients)
+        weights, _ = _polynomial(z, half, horner)
         weights = jnp.where(causal, weights, 0.0)
         output = output * jnp.exp(previous - shift)[:, None] + _dot(weights, v)
-        return output, shift, *top
+        return output, shift
 
-    end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
-    start = (jnp.zeros((bq, v_ref.shape[-1]), jnp.float32), jnp.zeros((bq,), jnp.float32))
-    if prefactor != "none":
-        start = (*start, jnp.full((bq,), NO_SCORE, jnp.float32))
-    output, shift, *_ = lax.fori_loop(0, end, body, start)
+    output, shift = lax.fori_loop(0, end, body, (jnp.zeros((bq, v_ref.shape[-1]), jnp.float32), shift))
     plt.store(output_ref, output, mask=(qi[:, None] < time) & (jnp.arange(output_ref.shape[-1])[None, :] < dv))
     plt.store(shift_ref, shift, mask=qi < time)
 
