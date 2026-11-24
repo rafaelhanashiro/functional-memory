@@ -344,14 +344,25 @@ def _top_kernel(q_ref, k_ref, top_ref, *, time, dq, dv, bq, bk):
     plt.store(top_ref, lax.fori_loop(0, end, body, jnp.full((bq,), -jnp.inf, jnp.float32)), mask=qi < time)
 
 
-def causal_score_max(q, k, *, interpret=False):
-    """Each query's largest causal score max_(i <= t) s_ti [B,T,H] in FP32, s = q.k / sqrt(d_K) as the programs above
-    form it: the row-power units of a kernel that takes its rows' units before its pass (mosaic/api.py)."""
+@partial(jax.custom_jvp, nondiff_argnums=(2,))
+def _causal_score_max(q, k, interpret):
     bq = _tiling("forward", q.shape[-1], q.shape[-1])[0]
-    q, k = lax.stop_gradient(q), lax.stop_gradient(k)  # a constant to differentiation: no tangent enters the program
     return _launch(_top_kernel, "forward", (q, k), jax.ShapeDtypeStruct(q.shape[:3], jnp.float32),
                    (_spec(bq, q.shape[-1]), _full_spec(q.shape[1], k.shape[-1])), _shift_spec(bq), query_tiles=True,
                    q=q, v=q, interpret=interpret)
+
+
+@_causal_score_max.defjvp
+def _causal_score_max_jvp(interpret, primals, tangents):
+    top = _causal_score_max(*primals, interpret)
+    return top, jnp.zeros_like(top)  # the units are a constant to differentiation: no tangent enters the program
+
+
+def causal_score_max(q, k, *, interpret=False):
+    """Each query's largest causal score max_(i <= t) s_ti [B,T,H] in FP32, s = q.k / sqrt(d_K) as the programs above
+    form it: the row-power units of a kernel that takes its rows' units before its pass (mosaic/api.py), a constant
+    to differentiation."""
+    return lax.stop_gradient(_causal_score_max(q, k, interpret))
 
 
 def fused_shifted_polynomial(q, k, v, coefficients, *, transform="identity", prefactor="none", interpret=False):
