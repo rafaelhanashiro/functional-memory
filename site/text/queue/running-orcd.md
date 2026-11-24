@@ -3,10 +3,10 @@ Every run on ORCD not yet on the site.
 #### In progress
 
 - **Learning rate at two and four times the schedule**, $d_K = 64$ (all four kernels qualified on ORCD's H100s). Query SoS core 8 on $z = \mathrm{softplus}(s)$ under each prefactor, and exp under the softplus prefactor:
+  - $\mathrm{softplus}(s)\,e^s$: $\times 2$, $\times 4$ (training, nearly done)
+  - $e^s\,h_t(z)$ (exp prefactor): $\times 2$ (training); $\times 4$ (queued)
   - $z\,h_t(z)$ (softplus prefactor): $\times 4$ (preempted at update 100, queued to resume)
-  - $e^s\,h_t(z)$ (exp prefactor): $\times 2$; $\times 4$ (queued)
   - $\sigma(s)\,h_t(z)$ (sigmoid prefactor): $\times 2$, $\times 4$ (queued)
-  - $\mathrm{softplus}(s)\,e^s$: $\times 2$, $\times 4$
 
 #### Finished
 
