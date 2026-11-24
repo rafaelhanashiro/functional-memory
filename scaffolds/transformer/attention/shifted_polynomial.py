@@ -1,5 +1,5 @@
 """Per-query polynomials p_t(z) = sum_r c_tr z^r of degree M, z = s or softplus(s), in common row units e^(-m_t), or
-f(s) p_t(s) for a prefactor f of the raw score (softplus or exp), in units of the row's largest key bound.
+f(s) p_t(s) for a prefactor f of the raw score (softplus or exp), in row units that bound every key's.
 
 m_t = M log max(1, max_i |z_ti|) over query t's causal row bounds every term: with half = e^(-m_t / (2M)) and
 u = (z half) half, |u| <= 1 and c_r z^r e^(-m_t) = c_r e^(-(M - r) m_t / M) u^r. Head RMSNorm divides the row factor
@@ -9,10 +9,17 @@ prefactor included), pure tanh, or static fixed or learned coefficients broadcas
 
 With a prefactor the key a weight is largest for need not be the key of largest |s|: f suppresses some keys (softplus
 and exp the far negative ones), so units set by the largest |s| alone could underflow every weight that matters. Each
-key i instead has the bound b_i = log f(s_i) + M log S_i, S_i = max(1, |s_i|), on |f(s_i) s_i^r| for every r <= M;
-m_t = max(0, max_i b_i), and f(s) p_t(s) e^(-m_t) = e^(b_i - m_t) h_i with h_i = p_t(s_i) / S_i^M, evaluated by
-Horner's rule in s where |s| <= 1 and in 1/s over the reversed coefficients (times sign(s)^M) elsewhere: every
-partial sum stays within the coefficients' scale.
+key i instead has the bound b_i = log f(s_i) + M log S_i, S_i = max(1, |s_i|), on |f(s_i) s_i^r| for every r <= M, and
+the row takes units m_t >= max(0, max_i b_i) from its largest score alone (key_shift).
+
+f(s) p_t(s) e^(-m_t) is then evaluated in one pass, without a logarithm or a reciprocal of a score. The polynomial
+splits into n >= 2 chunks of width d (chunking), p(s) = sum_j s^(j d) P_j(s), each chunk by Horner's rule in s. Each
+key takes g with g^n the exponential part of f(s) e^(-m_t) (key_stage): e^((s - m_t)/n) for exp and for softplus's
+tail s <= -20, where softplus is e^s within e^-20; e^(-m_t/n), with softplus(s) left as a factor F, elsewhere. Then
+f(s) p_t(s) e^(-m_t) = T_0 with T_(n-1) = g F P_(n-1) and T_j = T_(j+1) (g s^d) + g^(n-j) F P_j (staged): since
+F g^n S_i^M <= 1, every partial sum stays within the coefficients' scale, where direct evaluation overflows at
+|s|^M > FLT_MAX. A chunk's own powers pass FLT_MAX only at |s|^d, above 4e9 at width 4. The slope in s with m_t
+fixed stages the chunks F1 P_j + F P_j' likewise, F1 the factor of f' outside g (keyed_weights).
 """
 import math
 
@@ -24,6 +31,12 @@ import jax.numpy as jnp
 TRANSFORMS = ("identity", "softplus")
 # Multipliers f(s) of the raw score; a prefactor takes z = s.
 PREFACTORS = ("none", "softplus", "exp")
+# A prefactor's polynomial is evaluated in chunks of at most this width.
+CHUNK = 4
+# At and below this score softplus(s) is taken as e^s (within e^-20).
+SOFTPLUS_TAIL = -20.0
+# Stands for the largest score of a row without a causal key; its units are the floor, zero.
+NO_SCORE = -1e30
 
 
 def transformed(scores, transform):
@@ -56,19 +69,119 @@ def key_bound(scores, prefactor, degree):
     return log_prefactor(scores, prefactor) + degree * jnp.log(jnp.maximum(1.0, jnp.abs(scores)))
 
 
-def keyed_polynomial(scores, coefficients):
-    """p(s) / max(1, |s|)^M, coefficients [..., M+1] broadcasting against scores [..., keys] on their last axis."""
-    degree = coefficients.shape[-1] - 1
-    small = jnp.abs(scores) <= 1.0
-    inner = jnp.where(small, scores, 0.0)
-    inverse = 1.0 / jnp.where(small, 1.0, scores)
-    c = [coefficients[..., r, None] for r in range(degree + 1)]
-    low, high = c[degree], c[0]
-    for r in range(1, degree + 1):
-        low = low * inner + c[degree - r]
-        high = high * inverse + c[r]
-    # s^r / |s|^M = sign(s)^M (1/s)^(M - r) where |s| > 1.
-    return jnp.where(small, low, (jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0) * high)
+def key_shift(top, prefactor, degree):
+    """Row units m >= max(0, max_i b_i) from the row's largest causal score x alone. b increases on [-1, inf); on
+    (-inf, -1] it is at most s + M log(-s) (log softplus(s) <= s), which increases up to its peak M log M - M at
+    s = -M. So m = max(0, x + M log(-x)) for x <= -M and max(0, M log M - M, b(x)) above: the row's largest bound
+    itself unless -M < x and b(x) < M log M - M, where it exceeds that bound by at most M log M - M."""
+    if prefactor not in PREFACTORS[1:]:
+        raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, not {prefactor!r}")
+    magnitude = degree * jnp.log(jnp.maximum(1.0, jnp.abs(top)))
+    inner = jnp.maximum(top, -float(degree))
+    if prefactor == "softplus":
+        inner = jnp.log(jnp.maximum(inner, 0.0) + jnp.log1p(jnp.exp(-jnp.abs(inner))))
+    peak = degree * math.log(degree) - degree
+    return jnp.maximum(0.0, jnp.where(top <= -degree, top + magnitude, jnp.maximum(peak, inner + magnitude)))
+
+
+def chunking(degree):
+    """Chunk count n >= 2 and width d = ceil(M / n): chunk j holds orders j d to j d + d - 1, the last up to M. Two
+    chunks at least keep g, an n-th root, normal wherever a weight is."""
+    count = max(2, -(-degree // CHUNK))
+    return count, -(-degree // count)
+
+
+def key_chunks(values, count, width):
+    """The chunks of a sequence of per-order values; a derivative's top chunk may be empty."""
+    return [values[j * width:(j + 1) * width if j < count - 1 else len(values)] for j in range(count)]
+
+
+def integer_power(x, exponent):
+    """x^exponent for a static positive integer, by squaring."""
+    result, base = None, x
+    while exponent:
+        if exponent & 1:
+            result = base if result is None else result * base
+        exponent >>= 1
+        if exponent:
+            base = base * base
+    return result
+
+
+def key_stage(scores, shift, prefactor, count):
+    """Per key: g, with g^n the exponential part of f(s) e^(-m), and the factors F of f and F1 of f' that it leaves
+    out (None, None for exp, where both are one). Softplus takes e^(-|s|/n) once: its n-th power gives
+    softplus(s) = max(s, 0) + log1p(e^(-|s|)) and the logistic sigmoid, and on the tail it is e^(s/n) itself."""
+    if prefactor == "exp":
+        return jnp.exp((scores - shift) * (1.0 / count)), None, None
+    if prefactor != "softplus":
+        raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, not {prefactor!r}")
+    root = jnp.exp(jnp.abs(scores) * (-1.0 / count))
+    small = integer_power(root, count)
+    row = jnp.exp(shift * (-1.0 / count))
+    tail = scores <= SOFTPLUS_TAIL
+    softplus = jnp.maximum(scores, 0.0) + jnp.log1p(small)
+    sigmoid = jnp.where(scores >= 0, 1.0 / (1.0 + small), small / (1.0 + small))
+    return jnp.where(tail, root * row, row), jnp.where(tail, 1.0, softplus), jnp.where(tail, 1.0, sigmoid)
+
+
+def horner(coefficients, x):
+    """sum_k coefficients[k] x^k for coefficients that broadcast against x."""
+    value = coefficients[-1]
+    for coefficient in reversed(coefficients[:-1]):
+        value = value * x + coefficient
+    return value
+
+
+def chunk_values(coefficients, count, width, scores):
+    """Each chunk's polynomial P_j(s) by Horner's rule; None for an empty chunk."""
+    return [horner(part, scores) if part else None for part in key_chunks(coefficients, count, width)]
+
+
+def staged(values, g, w):
+    """g^n sum_j s^(j d) values[j] from the top chunk down: T_j = T_(j+1) w + g^(n-j) values[j] with w = g s^d. A
+    chunk meets g one factor at a time, so no power of g underflows before its product does."""
+    count, total = len(values), None
+    for j in range(count - 1, -1, -1):
+        if values[j] is None:
+            continue
+        term = values[j]
+        for _ in range(count - j):
+            term = term * g
+        total = term if total is None else total * w + term
+    return total
+
+
+def key_terms(scores, shift, prefactor, degree):
+    """A tile's shared terms (n, d, g, w, F, F1): the chunking, key_stage's factors, and w = g s^d. shift broadcasts
+    against scores."""
+    count, width = chunking(degree)
+    g, factor, factor_slope = key_stage(scores, shift, prefactor, count)
+    return count, width, g, g * integer_power(scores, width), factor, factor_slope
+
+
+def keyed_weights(scores, coefficients, terms, *, value=True, slope=False):
+    """(f(s) p(s) e^(-m), its slope in s with m fixed), each None unless asked for. coefficients holds the M + 1
+    orders, each broadcasting against scores; terms are key_terms'. The factors F and F1 enter the chunks before g
+    does, so a small weight is not lost through a smaller T_0; for exp the slope's chunks are those of p + p'."""
+    count, width, g, w, factor, factor_slope = terms
+    derivative = [r * c for r, c in enumerate(coefficients)][1:]
+    weights = slopes = None
+    if factor is None:
+        if value:
+            weights = staged(chunk_values(coefficients, count, width, scores), g, w)
+        if slope:
+            combined = [c + d for c, d in zip(coefficients, derivative)] + [coefficients[-1]]
+            slopes = staged(chunk_values(combined, count, width, scores), g, w)
+        return weights, slopes
+    own = chunk_values(coefficients, count, width, scores)
+    if value:
+        weights = staged([factor * x for x in own], g, w)
+    if slope:
+        other = chunk_values(derivative, count, width, scores)
+        slopes = staged([factor_slope * x if y is None else factor_slope * x + factor * y
+                         for x, y in zip(own, other, strict=True)], g, w)
+    return weights, slopes
 
 
 def shifted_terms(z, shift, degree):
@@ -101,11 +214,11 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
             terms = shifted_terms(z, shift[..., None], degree)
             weights = sum(coefficients[..., r, None] * term for r, term in enumerate(terms))
         else:
-            # z = s: each key in units of its own bound, the row in units of the largest.
-            bound = key_bound(scores, prefactor, degree)
-            shift = lax.stop_gradient(jnp.maximum(0.0, jnp.max(jnp.where(causal, bound, -jnp.inf), axis=-1)))
-            unit = jnp.exp(bound - shift[..., None])
-            weights = unit * keyed_polynomial(scores, coefficients)
+            # z = s: the row in units that bound every key's, from its largest causal score.
+            shift = lax.stop_gradient(key_shift(jnp.max(jnp.where(causal, scores, NO_SCORE), axis=-1), prefactor,
+                                                degree))
+            weights, _ = keyed_weights(scores, [coefficients[..., r, None] for r in range(degree + 1)],
+                                       key_terms(scores, shift[..., None], prefactor, degree))
         weights = jnp.where(causal, weights, 0.0)
         output = jnp.einsum("bhqk,bkhd->bqhd", weights, v.astype(jnp.float32), precision=lax.Precision.HIGHEST)
         outputs = output, shift.swapaxes(1, 2)
@@ -124,7 +237,8 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
         fp32 = jnp.finfo(jnp.float32)
         total = jnp.abs(coefficients).sum(axis=-1)[..., None]
         magnitude = (sum(jnp.abs(coefficients[..., r, None] * term) for r, term in enumerate(terms))
-                     if prefactor == "none" else unit * total)
+                     if prefactor == "none"
+                     else jnp.exp(key_bound(scores, prefactor, degree) - shift[..., None]) * total)
         resolution = (degree + 1) * float(fp32.eps) * magnitude + float(fp32.tiny) * (degree + 1 + total)
         min_measured = lambda x, mask: jnp.min(jnp.where(mask, x, jnp.inf))
         max_measured = lambda x, mask: jnp.max(jnp.where(mask, x, -jnp.inf))

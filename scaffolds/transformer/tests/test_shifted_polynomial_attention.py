@@ -714,43 +714,86 @@ def test_prefactors_are_refused_off_the_raw_score():
         _pure_tanh_config("sigmoid", attention_polynomial_shift="row_power")
 
 
-@pytest.mark.parametrize("degree", DEGREES)
+def _key_bounds64(scores, prefactor, degree):
+    """log f(s) and f'(s)/f(s) in FP64 (their limits s and 1 where softplus underflows FP64), and the key bounds b."""
+    tail = scores < -30
+    softplus = np.logaddexp(0.0, np.where(tail, 0.0, scores))
+    logf = scores if prefactor == "exp" else np.where(tail, scores, np.log(softplus))
+    ratio = (np.ones_like(scores) if prefactor == "exp"
+             else np.where(tail, 1.0, 1 / (1 + np.exp(-np.where(tail, 0.0, scores))) / softplus))
+    return logf, ratio, logf + degree * np.log(np.maximum(1.0, np.abs(scores)))
+
+
+@pytest.mark.parametrize("degree", (1, 2, 5, 8, *DEGREES, 16))
 @pytest.mark.parametrize("prefactor", ("softplus", "exp"))
 @pytest.mark.parametrize("scale", [0.5, 4.0, 40.0, 400.0])
 def test_keyed_arithmetic_matches_fp64(scale, prefactor, degree):
-    """The fused programs' per-key units: e^(b - m) h and its slope against f(s) p(s) e^(-m) and its derivative in
-    FP64, m the row's largest bound, on rows mixing far negative keys with moderate ones (where units set by the
-    largest |s| alone underflow the weights that matter)."""
-    from scaffolds.transformer.attention.backends.fused_shifted_polynomial import _key_bound, _keyed_polynomial
+    """The fused programs' one-pass prefactor arithmetic, run here over whole rows on CPU: the row units from the
+    largest score, f(s) p(s) e^(-m), its slope and every coefficient's moment against FP64, on rows mixing far
+    negative keys with moderate ones (where units set by the largest |s| alone underflow the weights that matter),
+    rows with a key at the negative bound's peak, and rows of far negative keys alone."""
+    from scaffolds.transformer.attention.backends.fused_shifted_polynomial import _keyed, _keyed_moments, _row_top
+    from scaffolds.transformer.attention.shifted_polynomial import NO_SCORE, key_shift, key_terms
 
     rng = np.random.default_rng(int(scale * 10) + degree)
     s = rng.normal(size=(8, 64)) * scale
     s[:, 0] = -25 * scale
+    s[4:, 1] = -float(degree)
+    s[6:] = -np.abs(s[6:]) - 30.0
     c = rng.uniform(-1, 1, size=(8, degree + 1)) / np.array([math.factorial(r) for r in range(degree + 1)])
     coefficients = tuple(jnp.asarray(c[:, r], jnp.float32) for r in range(degree + 1))
-    scores = jnp.asarray(s, jnp.float32)
-    bound, ratio = _key_bound(scores, prefactor, degree)
-    shift = jnp.maximum(0.0, jnp.max(bound, axis=1))
-    unit = jnp.exp(bound - shift[:, None])
-    value, slope = _keyed_polynomial(scores, coefficients, slope=True)
-    weight = unit * value
-    derivative = unit * (value + slope if ratio is None else ratio * value + slope)
-    s64 = np.asarray(scores, np.float64)
-    # log softplus(s) and sigmoid(s) / softplus(s), with their limits s and 1 where softplus underflows FP64.
-    tail = s64 < -30
-    softplus = np.logaddexp(0.0, np.where(tail, 0.0, s64))
-    logf = s64 if prefactor == "exp" else np.where(tail, s64, np.log(softplus))
-    fprime_over_f = (np.ones_like(s64) if prefactor == "exp"
-                     else np.where(tail, 1.0, 1 / (1 + np.exp(-np.where(tail, 0.0, s64))) / softplus))
-    powers = [s64 ** r for r in range(degree + 1)]
-    p = sum(c[:, r, None] * powers[r] for r in range(degree + 1))
-    dp = sum(r * c[:, r, None] * powers[r - 1] for r in range(1, degree + 1))
+    scores, upstream = jnp.asarray(s, jnp.float32), jnp.asarray(rng.normal(size=s.shape), jnp.float32)
+    top = _row_top(scores, jnp.ones(s.shape, bool), jnp.full((8,), NO_SCORE, jnp.float32))
+    shift = key_shift(top, prefactor, degree)
+    terms = key_terms(scores, shift[:, None], prefactor, degree)
+    weight, slope = _keyed(scores, coefficients, terms, slope=True)
+    moments = _keyed_moments(scores, upstream, terms, degree)
+
+    s64, up = np.asarray(scores, np.float64), np.asarray(upstream, np.float64)
     m = np.asarray(shift, np.float64)[:, None]
-    exact = np.exp(logf - m) * p
-    exact_derivative = np.exp(logf - m) * (fprime_over_f * p + dp)
-    # Each key's terms reach |c_r| e^(b - m): signed sums resolve to FP32 relative to them.
-    size = np.exp(np.minimum(np.asarray(bound, np.float64) - m, 0)) * np.abs(c).sum(1, keepdims=True)
-    np.testing.assert_array_less(np.abs(np.asarray(weight, np.float64) - exact), 2e-5 * size + 1e-30)
-    np.testing.assert_array_less(np.abs(np.asarray(derivative, np.float64) - exact_derivative),
-                                 2e-5 * size * (degree + 1) + 1e-30)
+    logf, ratio, bound = _key_bounds64(s64, prefactor, degree)
+    # The units bound every key's, and exceed the row's largest bound by at most the negative peak's height (both
+    # within FP32's resolution of the bound's terms).
+    largest = np.maximum(0.0, bound.max(axis=1))
+    peak = max(0.0, degree * math.log(degree) - degree)
+    slack = 1e-6 * (1.0 + np.abs(bound - degree * np.log(np.maximum(1.0, np.abs(s64)))).max(axis=1) + largest)
+    assert np.all(m[:, 0] >= largest - slack)
+    assert np.all(m[:, 0] <= largest + peak + slack)
+    unit = np.exp(logf - m)
+    powers = [s64 ** r for r in range(degree + 1)]
+    magnitude = sum(np.abs(c[:, r, None] * powers[r]) for r in range(degree + 1))
+    slope_magnitude = sum(np.abs(r * c[:, r, None] * powers[r - 1]) for r in range(1, degree + 1))
+    exact = unit * sum(c[:, r, None] * powers[r] for r in range(degree + 1))
+    exact_slope = unit * (ratio * sum(c[:, r, None] * powers[r] for r in range(degree + 1))
+                          + sum(r * c[:, r, None] * powers[r - 1] for r in range(1, degree + 1)))
+    # Signed sums resolve to FP32 relative to their terms' magnitudes; below FLT_MIN a result is zero.
+    floor = 64 * float(np.finfo(np.float32).tiny)
+    np.testing.assert_array_less(np.abs(np.asarray(weight, np.float64) - exact), 2e-5 * unit * magnitude + floor)
+    np.testing.assert_array_less(np.abs(np.asarray(slope, np.float64) - exact_slope),
+                                 2e-5 * unit * (ratio * magnitude + slope_magnitude) + floor)
+    assert len(moments) == degree + 1
+    for r, got in enumerate(moments):
+        base = unit * powers[r]
+        np.testing.assert_array_less(np.abs(np.asarray(got, np.float64) - np.sum(up * base, axis=1)),
+                                     2e-5 * np.sum(np.abs(up * base), axis=1) + s.shape[1] * floor, err_msg=str(r))
     assert float(jnp.max(jnp.abs(weight))) > 0
+
+
+@pytest.mark.parametrize("degree", (1, 2, 3, 8, 16, 17))
+@pytest.mark.parametrize("prefactor", ("softplus", "exp"))
+def test_key_units_bound_every_key_at_or_below_the_rows_largest_score(prefactor, degree):
+    """key_shift(x) is at least b(s) for every s <= x, never decreases with x, and is zero without a causal key."""
+    from scaffolds.transformer.attention.shifted_polynomial import NO_SCORE, key_shift
+
+    grid = np.unique(np.concatenate([-np.logspace(-3, 4, 1500), [0.0], np.logspace(-3, 4, 1500),
+                                     [-degree, -degree - 1e-3, -degree + 1e-3, -1.0, 1.0]]))
+    units = np.asarray(key_shift(jnp.asarray(grid, jnp.float32), prefactor, degree), np.float64)
+    scores = np.asarray(np.float32(grid), np.float64)
+    _, _, bound = _key_bounds64(scores, prefactor, degree)
+    envelope = np.maximum(0.0, np.maximum.accumulate(bound))
+    # FP32 resolves a bound to its terms' magnitudes, |s| and M log |s|.
+    slack = 1e-6 * (1.0 + np.abs(scores) + degree * np.log(np.maximum(1.0, np.abs(scores))))
+    assert np.all(units >= envelope - slack)
+    assert np.all(units <= envelope + max(0.0, degree * math.log(degree) - degree) + slack)
+    assert np.all(np.diff(units) >= -slack[1:])
+    assert float(key_shift(jnp.asarray(NO_SCORE, jnp.float32), prefactor, degree)) == 0.0

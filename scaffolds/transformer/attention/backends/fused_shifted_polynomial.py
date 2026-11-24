@@ -10,11 +10,12 @@ a_r = c_r exp(-(M - r) shift / M) per query row, evaluated by Horner's rule in M
 z with the shift fixed is exp(-shift/M) sum_r r a_r u^(r-1), times dz/ds for softplus. Coefficient r's derivative is
 exp(-(M - r) shift / M) times the row's moment sum_i dp_i u_i^r, accumulated from successive products dp u^k.
 
-With a prefactor f of the raw score (z = s) each key takes its own units (shifted_polynomial.key_bound and
-keyed_polynomial): the weight is e^(b - shift) h, b = log f(s) + M log max(1, |s|), shift the row's largest b (at least
-zero), h = p(s) / max(1, |s|)^M by Horner's rule in s where |s| <= 1 and in 1/s over the reversed coefficients
-elsewhere. The slope is e^(b - shift) ((f'/f) h + p'(s) / max(1, |s|)^M), and coefficient r's derivative the row sum of
-dp e^(b - shift) s^r / max(1, |s|)^M: ascending powers of s where |s| <= 1, descending powers of 1/s elsewhere.
+With a prefactor f of the raw score (z = s) the row's units come from its largest score (shifted_polynomial.key_shift),
+which the query-tile program tracks online, and each pair is evaluated in one pass (shifted_polynomial.keyed_weights):
+chunks of p by Horner's rule in s, staged by an n-th root g of the exponential part of f(s) e^(-shift), with no
+logarithm or reciprocal of a score. The slope stages the chunks F1 P_j + F P_j' for the factors F of f and F1 of f'
+outside g (for exp the chunks of p + p'), and coefficient r's derivative is the row sum of dp F g^n s^r
+(_keyed_moments).
 """
 from functools import partial
 import math
@@ -29,7 +30,9 @@ from scaffolds.transformer.attention.backends.fused_unnormalized import (
     NUM_STAGES, NUM_WARPS, _bf16_components, _dot, _full_shift_spec, _full_spec, _load, _shift_spec, _spec,
     _tile_sizes,
 )
-from scaffolds.transformer.attention.shifted_polynomial import PREFACTORS, TRANSFORMS
+from scaffolds.transformer.attention.shifted_polynomial import (
+    NO_SCORE, PREFACTORS, TRANSFORMS, key_shift, key_terms, keyed_weights,
+)
 
 
 def _scores(q, k, qi, ki, time, dq):
@@ -52,33 +55,37 @@ def _row_shift(z, degree):
     return degree * jnp.log(jnp.maximum(1.0, jnp.max(jnp.abs(z), axis=1)))
 
 
-def _key_bound(scores, prefactor, degree):
-    """b = log f(s) + M log max(1, |s|) and f'(s)/f(s) (None for exp, where it is one). For softplus below s = -20 both
-    take their limits, s and one, within e^-20."""
-    magnitude = degree * jnp.log(jnp.maximum(1.0, jnp.abs(scores)))
-    if prefactor == "exp":
-        return scores + magnitude, None
-    softplus, sigmoid = _transformed(scores, "softplus")
-    tail = scores <= -20.0
-    safe = jnp.maximum(softplus, 1e-30)
-    return (jnp.where(tail, scores, jnp.log(safe)) + magnitude,
-            jnp.where(tail, 1.0, sigmoid / safe))
+def _row_top(scores, causal, previous):
+    """The largest causal score of each row so far."""
+    return jnp.maximum(previous, jnp.max(jnp.where(causal, scores, NO_SCORE), axis=1))
 
 
-def _keyed_polynomial(scores, coefficients, *, slope=False):
-    """h = p(s) / max(1, |s|)^M and, if asked, p'(s) / max(1, |s|)^M: Horner in s where |s| <= 1, in 1/s over the
-    reversed coefficients elsewhere, times sign(s)^M."""
-    degree = len(coefficients) - 1
-    small = jnp.abs(scores) <= 1.0
-    inner = jnp.where(small, scores, 0.0)
-    inverse = 1.0 / jnp.where(small, 1.0, scores)
-    sign = jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0
-    value = jnp.where(small, _horner(coefficients, inner), sign * _horner(coefficients[::-1], inverse))
-    if not slope:
-        return value
-    weighted = tuple(r * c for r, c in enumerate(coefficients))
-    derivative = jnp.where(small, _horner(weighted[1:], inner), sign * inverse * _horner(weighted[::-1], inverse))
-    return value, derivative
+def _keyed(scores, coefficients, terms, *, value=True, slope=False):
+    """(The weights f(s) p(s) e^(-shift) of a tile, their slopes in s), each None unless asked for; terms are
+    key_terms'."""
+    return keyed_weights(scores, [c[:, None] for c in coefficients], terms, value=value, slope=slope)
+
+
+def _keyed_moments(scores, dp, terms, degree):
+    """Coefficient r's row sum of dp f(s) e^(-shift) s^r, r = j d + i. Chunk j starts from dp F (g s^d)^j g^a, steps
+    by s, and meets the remaining g^b at each sum (a + b = n - j, b = ceil((n - j) / 2)): no factor underflows before
+    the product does."""
+    count, width, g, w, factor, _ = terms
+    powers = [None, g]
+    for _ in range(count - count // 2 - 1):
+        powers.append(powers[-1] * g)
+    scaled, lift, moments = dp if factor is None else dp * factor, None, []
+    for j in range(count):
+        a = (count - j) // 2
+        product = scaled if lift is None else scaled * lift
+        if a:
+            product = product * powers[a]
+        for i in range(width if j < count - 1 else degree + 1 - j * width):
+            if i:
+                product = product * scores
+            moments.append(jnp.sum(product * powers[count - j - a], axis=1))
+        lift = w if lift is None else lift * w
+    return moments
 
 
 def _cotangent_dot(do, v):
@@ -135,7 +142,7 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, prefactor, time, dq, 
     coefficients = tuple(plt.load(ref, mask=qi < time, other=0) for ref in coefficient_refs)
 
     def body(tile, carry):
-        output, previous = carry
+        output, previous, *top = carry
         ki = tile * bk + jnp.arange(bk)
         k, v = _load(k_ref, ki, dq, time), _load(v_ref, ki, dv, time)
         scores, causal = _scores(q, k, qi, ki, time, dq)
@@ -145,17 +152,19 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, prefactor, time, dq, 
             half, _, horner = _row_units(shift, coefficients)
             weights, _ = _polynomial(z, half, horner)
         else:
-            # A masked score is zero; its bound, at most zero, never raises the shift above its floor.
-            bound, _ = _key_bound(scores, prefactor, degree)
-            shift = jnp.maximum(previous, jnp.max(bound, axis=1))
-            weights = jnp.exp(bound - shift[:, None]) * _keyed_polynomial(scores, coefficients)
+            # The units follow the row's largest causal score so far, which the carry holds; they never decrease.
+            top = [_row_top(scores, causal, *top)]
+            shift = jnp.maximum(previous, key_shift(*top, prefactor, degree))
+            weights, _ = _keyed(scores, coefficients, key_terms(scores, shift[:, None], prefactor, degree))
         weights = jnp.where(causal, weights, 0.0)
         output = output * jnp.exp(previous - shift)[:, None] + _dot(weights, v)
-        return output, shift
+        return output, shift, *top
 
     end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
-    output, shift = lax.fori_loop(0, end, body, (jnp.zeros((bq, v_ref.shape[-1]), jnp.float32),
-                                                 jnp.zeros((bq,), jnp.float32)))
+    start = (jnp.zeros((bq, v_ref.shape[-1]), jnp.float32), jnp.zeros((bq,), jnp.float32))
+    if prefactor != "none":
+        start = (*start, jnp.full((bq,), NO_SCORE, jnp.float32))
+    output, shift, *_ = lax.fori_loop(0, end, body, start)
     plt.store(output_ref, output, mask=(qi[:, None] < time) & (jnp.arange(output_ref.shape[-1])[None, :] < dv))
     plt.store(shift_ref, shift, mask=qi < time)
 
@@ -190,23 +199,12 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, dq
                 product = product * u
                 updated.append(moment + jnp.sum(product, axis=1))
             return grad_q, tuple(updated)
-        bound, ratio = _key_bound(scores, prefactor, degree)
-        value, slope = _keyed_polynomial(scores, coefficients, slope=True)
-        dp = jnp.where(causal, _cotangent_dot(do, v), 0.0) * jnp.exp(bound - shift[:, None])
-        ds = dp * (value + slope if ratio is None else ratio * value + slope)
-        grad_q += _dot(ds, k) * (1.0 / math.sqrt(dq))
-        # Coefficient r's moment of s^r / max(1, |s|)^M: s^r where |s| <= 1, sign(s)^M (1/s)^(M - r) elsewhere.
-        small = jnp.abs(scores) <= 1.0
-        inverse = 1.0 / jnp.where(small, 1.0, scores)
-        ascending = jnp.where(small, dp, 0.0)
-        descending = jnp.where(small, 0.0, dp) * (jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0)
-        updated = list(moments)
-        for step in range(degree + 1):
-            if step:
-                ascending, descending = ascending * scores, descending * inverse
-            updated[step] = updated[step] + jnp.sum(ascending, axis=1)
-            updated[degree - step] = updated[degree - step] + jnp.sum(descending, axis=1)
-        return grad_q, tuple(updated)
+        terms = key_terms(scores, shift[:, None], prefactor, degree)
+        _, slope = _keyed(scores, coefficients, terms, value=False, slope=True)
+        dp = jnp.where(causal, _cotangent_dot(do, v), 0.0)
+        grad_q += _dot(dp * slope, k) * (1.0 / math.sqrt(dq))
+        return grad_q, tuple(moment + update for moment, update in
+                             zip(moments, _keyed_moments(scores, dp, terms, degree), strict=True))
 
     end = lax.div((pl.program_id(0) + 1) * bq + bk - 1, bk)
     grad_q, moments = lax.fori_loop(0, end, body, (jnp.zeros(q_ref.shape, jnp.float32),
@@ -239,11 +237,9 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, d
             weights, _, slope = _polynomial(z, half, horner, slope=True)
             ds = jnp.where(causal, dp * slope if dz is None else dp * slope * dz, 0.0)
         else:
-            bound, ratio = _key_bound(scores, prefactor, len(coefficients) - 1)
-            unit = jnp.exp(bound - shift[:, None])
-            value, slope = _keyed_polynomial(scores, coefficients, slope=True)
-            weights = unit * value
-            ds = jnp.where(causal, dp * unit * (value + slope if ratio is None else ratio * value + slope), 0.0)
+            weights, slope = _keyed(scores, coefficients,
+                                    key_terms(scores, shift[:, None], prefactor, len(coefficients) - 1), slope=True)
+            ds = jnp.where(causal, dp * slope, 0.0)
         weights = jnp.where(causal, weights, 0.0)
         return grad_k + _dot(ds.T, q) * (1.0 / math.sqrt(dq)), grad_v + _dot(weights.T, _cotangent(do))
 
