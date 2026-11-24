@@ -1,12 +1,14 @@
 """Qualify learning-rate scalings of completed recipes: at Q/K width 4 the exponential and z h_t(z) with a
-degree-sixteen SoS core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that core under a
-prefactor of the raw score.
+degree-sixteen or degree-eight SoS core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that
+core under a prefactor of the raw score.
 
 Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by one of
 its partner's scales (SCALES): the unnormalized exponential at width 4 (r2739c80cc032, key_width_acceptance) at half,
 double and four times; z h_t(z), z = softplus(s), with a degree-sixteen query SoS core at width 4 (r2e7f5617fdf2,
-shifted_sos_acceptance) also at eight times; and f(s) h_t(s), f = exp, softplus or sigmoid, with a degree-eight query
-SoS core at width 64 (r6525664e6696, r41662adb22fa, r8f56a5b7e525; softplus_sos_acceptance) at double and four times;
+shifted_sos_acceptance) also at eight times, and with a degree-eight core (rabfbab32a594, key_width_acceptance, on
+the Mosaic transformed kernels) at double, four and eight times; and f(s) h_t(s), f = exp, softplus or sigmoid, with
+a degree-eight query SoS core at width 64 (r6525664e6696, r41662adb22fa, r8f56a5b7e525; softplus_sos_acceptance) at
+double and four times;
 and at width 64 the exponential (r6a76e7fbde45, the shared acceptance) and z h_t(z) with a degree-eight core
 (r841f35a24241, softplus_sos_acceptance) at half. A partner may also take a newer run's settings of the same function
 (PARTNER_CHANGES): the exponential at width 64 its row-maximum shift.
@@ -66,6 +68,9 @@ PARTNERS = {
                     key_width_acceptance),
     "shifted_sos": ("r2e7f5617fdf2", "53e71c960ce46cbe21b420a810610ff8a80d4ec9484d0d8f4ca218b6a65473bf",
                     shifted_sos_acceptance),
+    # At Q/K width 4, z h_t(z) with a degree-eight core.
+    "softplus_sos_m8": ("rabfbab32a594", "77f89f17c19a9f29d154807c3824586064d29491a6c9f814e7d973dbcadfd543",
+                        key_width_acceptance),
     # At Q/K width 64, the degree-eight SoS core times a prefactor of the raw score.
     "exp_prefactor_sos": ("r6525664e6696", "6a67ae627625f3ba560cd7169835848db9a330270c4f18d80156c7964d98e856",
                           softplus_sos_acceptance),
@@ -84,7 +89,7 @@ PARTNER_CHANGES = {"exponential_dk64": {"attention_exp_shift": "row_max"}}
 # Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not.
 SCALES = {"exponential": (0.5, 2.0, 4.0), "shifted_sos": (0.5, 2.0, 4.0, 8.0), "exp_prefactor_sos": (2.0, 4.0),
           "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0), "exponential_dk64": (0.5,),
-          "softplus_sos_dk64": (0.5,)}
+          "softplus_sos_dk64": (0.5,), "softplus_sos_m8": (2.0, 4.0, 8.0)}
 # The Mosaic transformed query-polynomial kernels of the prefactor partners admit these GPUs alone.
 MOSAIC_TRANSFORMED_GPUS = ("H100", "B200")
 # The schedule's peak and floor scale together; warmup and horizon stay.
@@ -98,13 +103,16 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
 
 def partner_key(config) -> str:
     """The exponential has no degree; a prefactor of the raw score names its partner; z h_t(z) has neither. The Q/K
-    width tells the exponential and z h_t(z) at 4 from those at 64."""
+    width tells the exponential and z h_t(z) at 4 from those at 64, and at 4 the degree tells z h_t(z)'s cores apart
+    (17 for sixteen, 9 for eight)."""
     model = config.model
     wide = model.qk_head_dim == 64
     if model.attention_degree is None:
         return "exponential_dk64" if wide else "exponential"
     if model.attention_score_prefactor == "none":
-        return "softplus_sos_dk64" if wide else "shifted_sos"
+        if wide:
+            return "softplus_sos_dk64"
+        return "softplus_sos_m8" if model.attention_degree == 9 else "shifted_sos"
     key = f"{model.attention_score_prefactor}_prefactor_sos"
     if key not in PARTNERS:
         raise ValueError(f"No learning-rate partner takes the {model.attention_score_prefactor} prefactor")
@@ -162,7 +170,7 @@ def check_recipe(config):
 def gpu_types(config) -> tuple:
     """The partner's kernels train only on the GPUs they are qualified on."""
     key = partner_key(config)
-    if key == "exponential":
+    if key in ("exponential", "softplus_sos_m8"):
         return key_width_acceptance.gpu_types(key_width_acceptance.partner_key(config), config.model.qk_head_dim)
     if key == "exponential_dk64":
         # The fused exponential, as at the narrower widths.

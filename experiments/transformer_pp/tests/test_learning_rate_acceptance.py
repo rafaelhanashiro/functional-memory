@@ -1,6 +1,6 @@
-"""Learning-rate scalings of completed recipes: the Q/K width 4 exponential and z h_t(z) with a degree-sixteen core,
-and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that core under a prefactor of the raw
-score; each partner's recipe with the peak and floor rates scaled alone."""
+"""Learning-rate scalings of completed recipes: the Q/K width 4 exponential and z h_t(z) with a degree-sixteen or
+degree-eight core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that core under a
+prefactor of the raw score; each partner's recipe with the peak and floor rates scaled alone."""
 import hashlib
 import json
 
@@ -28,6 +28,12 @@ RUNS = {
     "rb6eeed222062": ("sigmoid_prefactor_sos", 4.0, "query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-quadruple"),
     "rc44dc19a9972": ("exponential_dk64", 0.5, "exp-head-scale-row-max-lr-half"),
     "rd1baa331563c": ("softplus_sos_dk64", 0.5, "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-half"),
+    "rfc577a90377d": ("softplus_sos_m8", 2.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-double"),
+    "r9814496cc661": ("softplus_sos_m8", 4.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-quadruple"),
+    "r7cbb2c7ca07d": ("softplus_sos_m8", 8.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-octuple"),
 }
 # The partners at Q/K width 64, and their backends.
 WIDE = ("exp_prefactor_sos", "softplus_prefactor_sos", "sigmoid_prefactor_sos", "exponential_dk64",
@@ -78,6 +84,10 @@ def test_the_partners_are_the_exponential_and_the_sos_cores():
         assert (model.attention_score_prefactor, model.attention_score_transform) == (prefactor, "identity")
         assert (model.attention_degree, model.attention_coefficient_input_power, model.qk_head_dim) == (8, 0, 64)
         assert model.attention_coefficient_parameterization == "sum_of_squares"
+    narrow_sos = adapter.partner_config("softplus_sos_m8").model
+    assert (narrow_sos.attention_degree, narrow_sos.attention_coefficient_input_power,
+            narrow_sos.qk_head_dim) == (9, 1, 4)
+    assert narrow_sos.attention_score_transform == "softplus" and narrow_sos.attention_backend == "mosaic"
     wide_exp = adapter.partner_config("exponential_dk64").model
     wide_sos = adapter.partner_config("softplus_sos_dk64").model
     assert wide_exp.attention_degree is None and not wide_exp.attention_normalization and wide_exp.qk_head_dim == 64
