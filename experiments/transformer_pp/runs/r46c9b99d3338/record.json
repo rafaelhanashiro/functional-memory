@@ -3,7 +3,7 @@
     "path": "experiments/transformer_pp/runs/r46c9b99d3338/config.yaml",
     "sha256": "075b2d0447ae88f43b398f2a23ad5d164e11f1f3be16098b4bc0adcda4a9f086"
   },
-  "frozen_execution_sha256": "704feb700fca0bec8dd4ec69e11c381e2dfcbdbb7d102f1406592c4158933318",
+  "frozen_execution_sha256": "1fca0cc22337020a55be2b145323dfe5f98b8a27c3d03ace59edb516a9cc9fca",
   "home_cluster": "kennel",
   "label": "query-m8-dk4-affine-tanh-unit-cosine",
   "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-affine-query-cosine/experiments/transformer_pp/runs/r46c9b99d3338/training.log",
@@ -16,7 +16,7 @@
   },
   "record_schema_version": 1,
   "run_id": "r46c9b99d3338",
-  "source_commit": "df1b48908cfea676805bd7d7f12b97077775e062",
+  "source_commit": "9db45ddea02e518f8eaec3c5ac509b3b5ecd099c",
   "status": "submitted",
   "submission": {
     "command": [
@@ -34,7 +34,7 @@
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_pp.affine_query_cosine_acceptance",
       "experiments/transformer_pp/runs/r46c9b99d3338/config.yaml",
-      "df1b48908cfea676805bd7d7f12b97077775e062",
+      "9db45ddea02e518f8eaec3c5ac509b3b5ecd099c",
       "1",
       "B200,B300"
     ],
@@ -44,7 +44,7 @@
     ],
     "gpu_count": 1,
     "partition": "standard,long",
-    "slurm_job_id": "12684",
-    "submitted_utc": "2026-11-24T02:07:46.562265+00:00"
+    "slurm_job_id": "12749",
+    "submitted_utc": "2026-11-24T04:40:41.018660+00:00"
   }
 }
