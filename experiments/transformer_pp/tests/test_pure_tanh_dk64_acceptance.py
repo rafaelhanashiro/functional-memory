@@ -55,8 +55,17 @@ def test_the_allocated_runs_are_the_recipes(run_id):
     label, activation, degree = RUNS[run_id]
     path = adapter.PARTNER.parents[1] / run_id / "config.yaml"
     config = load_config(path)
-    adapter.check_recipe(config)
     assert adapter.recipe_key(config) == (activation, degree)
+    # The runs read ORCD's copies of the partner's manifests: compare each with its recipe at its own paths, and check
+    # it with the repository's byte copies in their place, which every cluster holds.
+    expected = adapter.recipe(activation, degree)
+    partner_manifests = (expected.data.train_manifest, expected.data.eval_manifest)
+    expected.data.train_manifest, expected.data.eval_manifest = config.data.train_manifest, config.data.eval_manifest
+    assert changed(config, expected) == set()
+    if (config.data.train_manifest, config.data.eval_manifest) != partner_manifests:
+        config.data.train_manifest = str(CORPUS / "train/manifest.json")
+        config.data.eval_manifest = str(CORPUS / "eval/manifest.json")
+    adapter.check_recipe(config)
     record = json.loads((path.parent / "record.json").read_text())
     assert record["run_id"] == run_id and record["label"] == label == config.train.wandb_run_name
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
