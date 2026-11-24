@@ -3,8 +3,10 @@
     "path": "experiments/transformer_pp/runs/r1571399b4f27/config.yaml",
     "sha256": "e81e56ac72026e807de6de6929508a0bf7c45cd72689396a8315c34ac3f62603"
   },
+  "frozen_execution_sha256": "704feb700fca0bec8dd4ec69e11c381e2dfcbdbb7d102f1406592c4158933318",
   "home_cluster": "kennel",
   "label": "query-sos-core-m8-softplus-prefactor-dk4-affine-tanh-unit-cosine",
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-affine-query-cosine/experiments/transformer_pp/runs/r1571399b4f27/training.log",
   "name": "query-sos-core-m8-softplus-prefactor-dk4-affine-tanh-unit-cosine",
   "receipt": {
     "arrays_count": 54,
@@ -14,5 +16,35 @@
   },
   "record_schema_version": 1,
   "run_id": "r1571399b4f27",
-  "status": "planned"
+  "source_commit": "df1b48908cfea676805bd7d7f12b97077775e062",
+  "status": "submitted",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=standard,long",
+      "--time=14:00:00",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--exclude=collie,dogo,doodle,mastiff,samoyed,terrier",
+      "--job-name=r1571399b4f27",
+      "--output=experiments/transformer_pp/runs/r1571399b4f27/training.log",
+      "--error=experiments/transformer_pp/runs/r1571399b4f27/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.affine_query_cosine_acceptance",
+      "experiments/transformer_pp/runs/r1571399b4f27/config.yaml",
+      "df1b48908cfea676805bd7d7f12b97077775e062",
+      "1",
+      "B200,B300"
+    ],
+    "eligible_gpu_types": [
+      "B200",
+      "B300"
+    ],
+    "gpu_count": 1,
+    "partition": "standard,long",
+    "slurm_job_id": "12685",
+    "submitted_utc": "2026-11-24T02:07:46.596468+00:00"
+  }
 }
