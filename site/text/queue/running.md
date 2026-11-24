@@ -2,30 +2,41 @@ Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's a
 
 #### In progress
 
-- **Learning rate ×4**, $d_K = 4$
-  - Exp
-  - $z\,h_t(z)$ with a degree-16 core
-- **Pure tanh square factors** $F_j = f_j \tanh(\hat x\, w_j + \beta_j)$ **for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
-  - Learning rate ×2
-- **Query SoS with separate negative-score branches**, $m = 8$, $d_K = 64$ · Codex. All use $h(s)$ for $s \ge 0$; for $s < 0$, with $u = -s$:
-  - $e^s h(s)$ (queued)
-  - $e^s h(0)$
-  - $h(0)/D(u)$, positive quartic coefficients (queued)
-  - $h(0)/D(u)$, quartic SoS denominator
-  - $h(0)/D(u)$, unrestricted quartic coefficients
+- **Learning rate ×8 for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
+- **Learning rate ×2 and ×4 for $f(s)\,h_t(s)$**, query SoS core 8 on the raw score, $d_K = 64$ (ORCD runs the softplus-input counterparts)
+  - Exp prefactor ×2
+  - Exp prefactor ×4
+  - Softplus prefactor ×2 (queued)
+  - Softplus prefactor ×4 (queued)
+  - Sigmoid prefactor ×2 (queued)
+  - Sigmoid prefactor ×4 (queued)
+- **Query SoS with separate negative-score branches**, $m = 8$, $d_K = 64$ · Codex
+  - $h(0)/D(u)$ for $s < 0$, positive quartic coefficients
 
 #### Finished
 
+- **Learning rate ×½, ×2 and ×4**, $d_K = 4$
+  - Exp ×½
+  - Exp ×2
+  - Exp ×4
+  - $z\,h_t(z)$ with a degree-16 core ×½
+  - $z\,h_t(z)$ with a degree-16 core ×2
+  - $z\,h_t(z)$ with a degree-16 core ×4
+- **Unscaled cosine score** (queries and keys unit-normalized, no head scale), $d_K = 4$
+  - Exp
+  - Affine tanh query, $m = 8$ · Codex
+  - $z\,h_t(z)$, core 8 · Codex
+- **Query SoS with separate negative-score branches**, $m = 8$, $d_K = 64$ · Codex. All use $h(s)$ for $s \ge 0$; for $s < 0$, with $u = -s$:
+  - $e^s h(s)$
+  - $e^s h(0)$
+  - $h(0)/D(u)$, quartic SoS denominator
+  - $h(0)/D(u)$, unrestricted quartic coefficients (numerical failure at update 2,136)
+- **Pure tanh square factors** $F_j = f_j \tanh(\hat x\, w_j + \beta_j)$ **for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
+  - Learning rate as the partner's
+  - Learning rate ×2
 - **Degree 16 on the shifted kernel**, $d_K = 4$
   - Query
   - Fixed Taylor (restarted after an over-strict validation check stopped it at update 5,500)
-- **Learning rate ×½ and ×2**, $d_K = 4$
-  - Exp ×½
-  - Exp ×2
-  - $z\,h_t(z)$ with a degree-16 core ×½
-  - $z\,h_t(z)$ with a degree-16 core ×2
-- **Pure tanh square factors** $F_j = f_j \tanh(\hat x\, w_j + \beta_j)$ **for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
-  - Learning rate as the partner's
 - **Pure tanh query coefficients** $c_r = \tanh(\hat x\, w_r + \beta_r)/r!$, $d_K = 4$
   - $P_t(s)$, $m = 8$
   - $P_t(s)$, $m = 16$
