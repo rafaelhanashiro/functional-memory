@@ -104,7 +104,8 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
             # z = s: each key in units of its own bound, the row in units of the largest.
             bound = key_bound(scores, prefactor, degree)
             shift = lax.stop_gradient(jnp.maximum(0.0, jnp.max(jnp.where(causal, bound, -jnp.inf), axis=-1)))
-            weights = jnp.exp(bound - shift[..., None]) * keyed_polynomial(scores, coefficients)
+            unit = jnp.exp(bound - shift[..., None])
+            weights = unit * keyed_polynomial(scores, coefficients)
         weights = jnp.where(causal, weights, 0.0)
         output = jnp.einsum("bhqk,bkhd->bqhd", weights, v.astype(jnp.float32), precision=lax.Precision.HIGHEST)
         outputs = output, shift.swapaxes(1, 2)
@@ -115,6 +116,16 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
         weight_sums = weights.sum(axis=-1)
         # sum_i |w_ti| / |sum_i w_ti| per row, unchanged by the row's factor; 1 for nonnegative weights.
         cancellation = jnp.abs(weights).sum(axis=-1) / jnp.abs(weight_sums)
+        # A weight is a sum of M + 1 rounded terms, so FP32 resolves it to epsilon of their magnitudes, and, where
+        # a key lies so far below its row's largest power that its terms underflow, to the smallest normal number
+        # a term (FLT_MIN where underflow flushes to zero, less where it is gradual). A nonnegative polynomial may
+        # round below zero within that resolution, never beyond it. Under a prefactor a key's terms are at most
+        # |c_r| in its own units.
+        fp32 = jnp.finfo(jnp.float32)
+        total = jnp.abs(coefficients).sum(axis=-1)[..., None]
+        magnitude = (sum(jnp.abs(coefficients[..., r, None] * term) for r, term in enumerate(terms))
+                     if prefactor == "none" else unit * total)
+        resolution = (degree + 1) * float(fp32.eps) * magnitude + float(fp32.tiny) * (degree + 1 + total)
         min_measured = lambda x, mask: jnp.min(jnp.where(mask, x, jnp.inf))
         max_measured = lambda x, mask: jnp.max(jnp.where(mask, x, -jnp.inf))
         stats = {"score_min": min_measured(scores, measured), "score_max": max_measured(scores, measured),
@@ -128,6 +139,7 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
                  "invalid_output_count": jnp.sum(actual[None, :, None, None] & ~jnp.isfinite(output)),
                  "causal_entry_count": jnp.sum(measured) * batch * heads,
                  "negative_weight_count": jnp.sum(measured & (weights < 0)),
+                 "negative_weight_beyond_rounding_count": jnp.sum(measured & (weights < -resolution)),
                  "cancellation_ratio_max": max_measured(cancellation, actual[None, None, :]),
                  "cancellation_sum": jnp.sum(jnp.where(actual[None, None, :], cancellation, 0.0)),
                  "row_count": jnp.sum(actual) * batch * heads}

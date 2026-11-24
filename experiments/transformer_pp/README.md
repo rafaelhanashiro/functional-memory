@@ -3143,17 +3143,18 @@ sbatch --partition=standard,long --gres=gpu:1 --cpus-per-task=16 --mem=128G --ti
 ### Degree sixteen for the query polynomial and fixed Taylor at key width four
 
 `raec1c513a51b` is the tanh query polynomial `p_t(s)` at `d_K` 4 (`rd5e3ec5a4f02`) at degree sixteen, and
-`re125a8977319` fixed Taylor at `d_K` 4 (`r1eaa4a4c3c77`) as `T_16(s)`. Both are evaluated in units of each row's
+`rca649583af62` fixed Taylor at `d_K` 4 (`r1eaa4a4c3c77`) as `T_16(s)`. Both are evaluated in units of each row's
 largest power (`attention_polynomial_shift: row_power`) on its fused kernel, with head RMSNorm's max-abs prescale,
 which the query partner predates: the Mosaic kernels stop at degree twelve, and `s^16` overflows FP32 at the scores
 width 4 reaches ([kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
 The [adapter](shifted_polynomial_acceptance.py) derives both recipes and requires the fused backend; acceptance runs
 the shifted kernel's GPU cases for each coefficient source on the allocated GPU. Home cluster Kennel. At about 3.6 s
 per update on B200, as the degree-sixteen SoS run, a run takes about 8 h; a 14-hour limit leaves acceptance's
-two-hour reserve and room for a slower B300. dogo stays excluded while no placeholder holds its faulty H100:
+two-hour reserve and room for a slower B300. dogo stays excluded while no placeholder holds its faulty H100
+([results](results/pretraining/polynomial/pure_tanh_prefactors/README.md)):
 
 ```sh
-for run in raec1c513a51b re125a8977319; do
+for run in raec1c513a51b rca649583af62; do
   d="experiments/transformer_pp/runs/$run"
   sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=14:00:00 \
     --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
@@ -3176,7 +3177,7 @@ and every `beta_r` at atanh(1/2), so each coefficient starts at 0.5/r!, half the
 where tanh' = 3/4. Each recipe is the degree-eight tanh query run at `d_K` 4 (`rd5e3ec5a4f02`) with these settings, the
 degree and the prefactor (`pure_tanh_prefactor_acceptance.CHANGES`); the base learning rate applies at every order
 (the 1/r! gives the degree scaling), weight decay 0.1 to `w_r` and none to `beta_r`, and seed 42, data order and
-schedule are the partner's.
+schedule are the partner's. [Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | `m` |
 | --- | --- | --- | ---: |
@@ -3225,6 +3226,52 @@ submit long 18:00:00 rfa8c0b2f748f      # softplus, m = 8
 submit long 13:00:00 r6621b4589a3b      # exp, m = 8
 submit long 12:00:00 rfd16ec25202a      # P, m = 16
 submit long 10:00:00 rfd18b16513a0      # P, m = 8
+```
+
+### Half and double learning rate at key width four
+
+Four runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-22 on Kennel. At `d_K` 4 the
+exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core
+(`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip after warmup. The recipe's
+learning rate was tuned at `d_K` 64, so each trains again at half and at double its schedule: is that rate the best
+one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
+[Results](results/pretraining/other/learning_rate/README.md).
+
+| Run | Label | Kernel | Peak, floor rate | Partner |
+| --- | --- | --- | --- | --- |
+| `r03217591054b` | `exp-head-scale-row-max-dk4-lr-half` | `exp(s)` | 5e-4, 5e-5 | `r2739c80cc032` |
+| `rcc51ed9dbca8` | `exp-head-scale-row-max-dk4-lr-double` | `exp(s)` | 2e-3, 2e-4 | `r2739c80cc032` |
+| `r1934bca84bd4` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-half` | `z h_t(z)`, core 16 | 5e-4, 5e-5 | `r2e7f5617fdf2` |
+| `rd5cc0aec9712` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `r2e7f5617fdf2` |
+
+- **Recipe.** Each run is its partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
+  by 0.5 or 2 (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
+  decay, seed 42, data order and every model setting are the partner's, so a run starts from its partner's
+  parameters. The exponential runs also take head RMSNorm's max-abs prescale, as every new run does: the same
+  function as their partner's plain arithmetic, which `z h_t(z)` already has.
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at the two
+  scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
+  backend, initialization pins): the exponential on a B300 or H100, `z h_t(z)` on a B200 or B300.
+- **Time limits.** The exponential partner trained in 2.9 h on a B300 and `z h_t(z)` in 7.8 h (3.6 s per update on
+  a B200); 8 and 12 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
+
+```sh
+submit() {  # time limit, GPU types, excluded nodes, run
+  d="experiments/transformer_pp/runs/$4"
+  sbatch --parsable --partition=long --time="$1" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$3" \
+    --job-name="$4" --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.learning_rate_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$2"
+}
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # the fused exponential: B300 (akita)
+blackwell=dogo,mastiff,collie,samoyed,doodle,terrier   # the row-power shifted kernel: B200 or B300
+submit 12:00:00 B200,B300 "$blackwell" r1934bca84bd4  # z h_t(z), half
+submit 12:00:00 B200,B300 "$blackwell" rd5cc0aec9712  # z h_t(z), double
+submit 8:00:00 B300,H100 "$b300" r03217591054b        # exp, half
+submit 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
 ```
 
 ### Pure tanh square factors for z h_t(z) at key width four

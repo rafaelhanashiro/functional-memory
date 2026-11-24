@@ -168,6 +168,13 @@ It completed 7,570 updates without numerical failure:
   degree-eight core sat 1.4–1.6% above exp.
 - One seed; the tie is within one seed's noise.
 
+### Degree sixteen at `d_K` 4
+
+The tanh query polynomial at degree sixteen (`raec1c513a51b`) reaches 19.777, 0.7% below its degree-eight run
+(19.925), and fixed Taylor `T_16` (`rca649583af62`) 19.829, 2.7% below `T_8` (20.378); exp stays ahead at 19.190.
+Both train on the row-power shifted kernel and are pinned, with the pure tanh polynomials at the same degrees, in
+[pure_tanh_prefactors](../pure_tanh_prefactors/README.md).
+
 ### Numerics at narrow keys
 
 Narrow keys train much larger scores (the largest score at the final validation grows from 21–90 at `d_K` 64 to

@@ -1,20 +1,86 @@
-**Launched after the In progress runs.** All at $d_K = 4$; stability reruns left out. All finished except where marked running.
+Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's are marked), without the stability reruns.
 
-- **Even powers 2–8 with query sigmoid gates**
+#### In progress
+
+- **Fixed Taylor, degree 16 on the shifted kernel**, $d_K = 4$ (restarted after an over-strict validation check stopped it at update 5,500)
+- **Learning rate ×½ and ×2 for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
+  - ×½
+  - ×2 (queued)
+- **Pure tanh square factors** $F_j = f_j \tanh(\hat x\, w_j + \beta_j)$ **for $z\,h_t(z)$ with a degree-16 core**, $d_K = 4$
+  - Learning rate as the partner's
+  - Learning rate ×2
+- **Query SoS with separate negative-score branches**, $m = 8$, $d_K = 64$ · Codex. All use $h(s)$ for $s \ge 0$; for $s < 0$, with $u = -s$ (all queued):
+  - $e^s h(s)$
+  - $e^s h(0)$
+  - $h(0)/D(u)$, positive quartic coefficients
+  - $h(0)/D(u)$, quartic SoS denominator
+  - $h(0)/D(u)$, unrestricted quartic coefficients
+
+#### Finished
+
+- **Query, degree 16 on the shifted kernel**, $d_K = 4$
+- **Pure tanh query coefficients** $c_r = \tanh(\hat x\, w_r + \beta_r)/r!$, $d_K = 4$
+  - $P_t(s)$, $m = 8$
+  - $P_t(s)$, $m = 16$
+  - $\mathrm{softplus}(s)\,P_t(s)$, $m = 8$
+  - $\mathrm{softplus}(s)\,P_t(s)$, $m = 16$
+  - $e^s P_t(s)$, $m = 8$
+  - $e^s P_t(s)$, $m = 16$
+- **Query SoS with the softplus prefactor** $z\,h_t(z)$, $d_K = 64$ · Codex
+  - Core 4
+  - Core 2
+- **Learning rate ×½ and ×2 for exp**, $d_K = 4$
+  - ×½
+  - ×2
+- **Even powers 2–8 with query sigmoid gates**, $d_K = 4$ · Codex
   - QK score, gates from 1/2
   - Cosine score, gates from 1/2
   - QK score, gates from Taylor
-- **The same three plus a gated exponential**
+- **The same three plus a gated exponential**, $d_K = 4$
   - $m = 8$: all three
-  - $m = 16$, even powers to 16: all three
-- **Cosine score, gates from 1/2, gate learning rate by order**
+  - $m = 16$, even powers to 16: all three · Codex
+- **Cosine score, gates from 1/2, gate learning rate by order**, $d_K = 4$
   - $2/r$
   - $r/2$
-- **Parts of $z\,h_t(z)$**
+- **Parts of $z\,h_t(z)$**, $d_K = 4$
   - $h_t(s)$
   - $h_t(z)$
   - $z\,h_t(z)$ with a degree-16 core
-- **Static $z\,h(z)$**
-- **Cosine score with a sigmoid gate on every power**
+- **Static $z\,h(z)$**, $d_K = 4$ · Codex
+- **Cosine score with a sigmoid gate on every power**, $d_K = 4$ · Codex
   - $m = 8$
-  - $m = 16$ (running)
+  - $m = 16$
+
+#### Cancelled before training (at your request)
+
+- **Exponential prefactors**, $d_K = 4$ · Codex
+  - $\mathrm{softplus}(s)\,e^s$
+  - $\mathrm{sigmoid}(s)\,e^s$
+- **Endpoint gates, NoPE**, $d_K = 4$ · Codex
+  - Exp with a query–key distance gate
+  - Query, $m = 4$, with per-order query–key gates
+
+#### The yellow box's runs (all finished)
+
+- **Fixed kernels**
+  - Swish
+- **Scaling $d_K = 4, 8, 16$**, each at all three widths
+  - Query
+  - Static
+  - Taylor
+  - SoS + prefactor
+  - Exp
+  - Softmax
+- **Query**
+  - Softplus + prefactor
+- **Static**
+  - Softplus + prefactor
+  - Softplus
+- **Prefactor**
+  - softplus · SoS(score)
+  - exp · SoS(score)
+  - exp · SoS(softplus)
+  - sigmoid · SoS(score)
+  - sigmoid · SoS(softplus)
+  - swish · SoS(score)
+  - swish · SoS(softplus)

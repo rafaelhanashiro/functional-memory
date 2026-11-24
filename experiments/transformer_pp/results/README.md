@@ -16,6 +16,7 @@ README says otherwise.
 | --- | --- |
 | [degree_scaling](pretraining/polynomial/degree_scaling/README.md) | Validation perplexity against degree `m = 1-8` and 12 for fixed Taylor, fixed Hermite, learned static, and query coefficients with projection weight decay (Taylor and query only at 12), with softmax as the reference level. |
 | [query_width_degree](pretraining/polynomial/query_width_degree/README.md) | How do key width `d_K` (8–64) and degree `m` shape decayed-W tanh query coefficients? At degree eight and `d_K` 4–16, exp with its row maximum subtracted is the best kernel (`d_K` 4) or 0.5% behind `z h_t(z)` (8 and 16); the raw-score polynomials trail exp by 1.2–6.2%. Learned coefficients beat fixed Taylor only at `d_K` 4 (static by 1.9%, query by 2.2%), and input dependence adds 0.3% to static there. |
+| [pure_tanh_prefactors](pretraining/polynomial/pure_tanh_prefactors/README.md) | At `d_K` 4, how close to exp does a signed query polynomial with bounded pure tanh coefficients come, at degrees 8 and 16, alone and under a softplus or exp prefactor? None reaches exp (19.190): `e^s P_t` at degree sixteen is closest at 19.483 (+1.5%), `P_t` 19.556; degree sixteen beats eight for each weight, the exp prefactor helps and the softplus prefactor hurts. Opened 2026-11-22. |
 
 ### Scalings
 
@@ -67,6 +68,7 @@ README says otherwise.
 | [coefficient_input_norm](pretraining/other/coefficient_input_norm/README.md) | Does coefficient-input L2 reduce tanh saturation and improve query and SoS perplexity? It improves query m = 8 and regresses SoS m = 8 and both m = 12 forms. |
 | [zero_constant](pretraining/other/zero_constant/README.md) | Does a structurally zero constant help? On softplus inputs SoS reaches 14.128 (−1.47% against a learned constant), static 14.192, query 14.250 (a tie); on raw scores it hurts: query +18.4%, static +21.4%, SoS +3.7% against raw-score controls. |
 | [query_optimization](pretraining/other/query_optimization/README.md) | Does projection weight decay or 3× learning rate on a, b improve degree-four query attention? At 2.5×, W decay lowers query perplexity by 0.1–0.3% at m = 4 and 8. |
+| [learning_rate](pretraining/other/learning_rate/README.md) | At `d_K` 4, is the recipe's learning rate the best one for exp and `z h_t(z)` with a degree-sixteen SoS core, and does their tie hold? Doubling the rate lowers both by 2.7–2.9% (18.667 and 18.637), halving raises them by 7.5–8.7%; the tie holds at the recipe's rate and at double. Opened 2026-11-22. |
 | [coefficient_release](pretraining/other/coefficient_release/README.md) | Do degree-eight learned coefficients held at Taylor through warmup, then released, reach fixed Taylor? None does; query released at update 455 ends 14.229, 0.011 above Taylor. |
 
 ## Diagnostics

@@ -39,6 +39,16 @@ model with the blocked reference's on GPU (`test_shifted_polynomial_attention.py
 cancellation ratio, `sum_i |w_ti| / |sum_i w_ti|` per row, is measured from the shifted weights, which the row factor
 leaves unchanged; it had been set to 1, right only for a nonnegative sum of squares.
 
+**Weights below a row's resolution (2026-11-22).** In row units a weight is a sum of `M + 1` rounded terms, which
+FP32 resolves to epsilon of their magnitudes and, where a key lies so far below its row's largest power that its
+terms underflow, to `FLT_MIN` a term. At degree sixteen the row unit `e^-m` is below `FLT_MIN` once a row's largest
+score passes about 235, and a positive kernel's small weights can then round below zero: fixed Taylor's validation at
+update 5,500 on a B300 measured a kernel minimum of -4.2e-45, three denormal steps, with largest scores above 400.
+The reference counts the weights below minus that resolution (`negative_weight_beyond_rounding_count`), and the
+trainer's validation rejects a nonnegative shifted kernel for those alone. On CPU a top score of 300 beside scores
+in [-9, 9] leaves 94 of `T_16`'s weights below zero, none beyond rounding, while `T_16(s) - 4` and `p(s) = s`
+count every negative weight.
+
 **Prefactors and pure tanh (2026-11-22).** The kernel also evaluates `f(s) p_t(s)` for `f = softplus` or `exp` of the
 raw score. Each key takes its own units: the bound `b_i = log f(s_i) + M log max(1, |s_i|)` on every `|f(s_i) s_i^r|`,
 the row the largest (at least zero), and `p_t(s_i) / max(1, |s_i|)^M` by Horner's rule in `s` where `|s| <= 1` and
