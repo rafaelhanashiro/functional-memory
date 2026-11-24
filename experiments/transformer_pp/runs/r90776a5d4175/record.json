@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r90776a5d4175/config.yaml",
+    "sha256": "359f489b5f78dc047ee290354150f7d336f27acdc08586c9ea16cfb458f062bd"
+  },
+  "label": "query-m8-dk64-w-decay-lr-double",
+  "name": "query-m8-dk64-w-decay-lr-double",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "c21b48924551c73e0a2c3f355807dda084fb3d7e3ff2fabeff175bad8f5e0687",
+    "loss": 5.572040557861328,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r90776a5d4175",
+  "status": "planned"
+}

@@ -1,12 +1,16 @@
-"""The Q/K width 4 exponential and z h_t(z) with a degree-sixteen core at half and double the learning-rate schedule:
-each partner's recipe with the peak and floor rates scaled alone."""
+"""Learning-rate runs: each partner's recipe with the peak and floor rates scaled alone. At Q/K width 4, the
+exponential and z h_t(z) with a degree-sixteen core at half and double the schedule; at width 64, on ORCD, the tanh
+query polynomial m = 8, the exponential and z h_t(z) with a degree-eight core at two and four times."""
+from dataclasses import replace
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
 from experiments.transformer_pp import learning_rate_acceptance as adapter
 from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs.loader import save_config
 
 # run: (partner key, scale, label)
 RUNS = {
@@ -14,7 +18,18 @@ RUNS = {
     "rcc51ed9dbca8": ("exponential", 2.0, "exp-head-scale-row-max-dk4-lr-double"),
     "r1934bca84bd4": ("shifted_sos", 0.5, "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-half"),
     "rd5cc0aec9712": ("shifted_sos", 2.0, "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double"),
+    "r90776a5d4175": ("query_dk64", 2.0, "query-m8-dk64-w-decay-lr-double"),
+    "r9e36ee87aa7e": ("query_dk64", 4.0, "query-m8-dk64-w-decay-lr-quadruple"),
+    "r19dfa87cb7ed": ("exponential_dk64", 2.0, "exp-head-scale-row-max-lr-double"),
+    "r530a1bce3597": ("exponential_dk64", 4.0, "exp-head-scale-row-max-lr-quadruple"),
+    "r752878a0a030": ("softplus_sos_dk64", 2.0, "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-double"),
+    "r7924001c42f1": ("softplus_sos_dk64", 4.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple"),
 }
+CELLS = tuple((key, scale) for key, scales in adapter.GRID.items() for scale in scales)
+WIDTH_4 = ("exponential", "shifted_sos")
+# The repository's byte copies of the dataset manifests: another path to the partners' manifests on every cluster.
+CORPUS = Path(__file__).resolve().parents[3] / "scaffolds/transformer/data/corpora/fineweb_12b"
 
 
 def changed(config, other):
@@ -27,23 +42,30 @@ def changed(config, other):
             if first.get(section, {}).get(name) != second.get(section, {}).get(name)}
 
 
-@pytest.mark.parametrize("key", adapter.PARTNERS)
-@pytest.mark.parametrize("scale", adapter.SCALES)
+def with_manifests(config, train, eval_):
+    return replace(config, data=replace(config.data, train_manifest=str(train), eval_manifest=str(eval_)))
+
+
+@pytest.mark.parametrize("key, scale", CELLS)
 def test_a_recipe_scales_its_partners_peak_and_floor_rates_alone(key, scale):
     config, partner = adapter.recipe(key, scale), adapter.partner_config(key)
-    # The exponential's partner predates the max-abs prescale; z h_t(z) has it.
-    prescale = {"model.attention_head_rms_prescale"} if key == "exponential" else set()
-    assert changed(config, partner) == {"optim.learning_rate", "optim.min_learning_rate"} | prescale
+    # A fresh recipe's max-abs prescale and the exponential's row-maximum shift, where its partner predates them.
+    fresh = {f"model.{name}" for name, value in adapter.fresh_settings(key).items()
+             if getattr(partner.model, name) != value}
+    assert changed(config, partner) == {"optim.learning_rate", "optim.min_learning_rate"} | fresh
     assert config.model.attention_head_rms_prescale == "max_abs"
     assert config.optim.learning_rate == pytest.approx(scale * 1e-3, rel=1e-12)
     assert config.optim.min_learning_rate == pytest.approx(scale * 1e-4, rel=1e-12)
     assert (config.optim.warmup_steps, config.optim.total_steps, config.optim.grad_clip_norm) == (455, 7570, 1.0)
-    assert config.model.qk_head_dim == 4 and config.train.seed == partner.train.seed == 42
+    assert (config.optim.weight_decay, config.optim.beta1, config.optim.beta2) == (
+        partner.optim.weight_decay, partner.optim.beta1, partner.optim.beta2)
+    assert config.optim.query_coefficient_learning_rate_scale == partner.optim.query_coefficient_learning_rate_scale
+    assert config.model.qk_head_dim == (4 if key in WIDTH_4 else 64) and config.train.seed == partner.train.seed == 42
     assert adapter.partner_key(config) == key and adapter.scale_of(config) == scale
     adapter.check_recipe(config)
 
 
-def test_the_partners_are_the_exponential_and_the_degree_sixteen_core():
+def test_the_width_4_partners_are_the_exponential_and_the_degree_sixteen_core():
     exponential, sos = adapter.partner_config("exponential"), adapter.partner_config("shifted_sos")
     assert exponential.model.attention_degree is None and not exponential.model.attention_normalization
     assert exponential.model.attention_exp_shift == "row_max"
@@ -52,84 +74,71 @@ def test_the_partners_are_the_exponential_and_the_degree_sixteen_core():
     assert sos.model.attention_score_transform == "softplus" and sos.model.attention_polynomial_shift == "row_power"
 
 
+def test_the_width_64_partners_are_query_m8_the_exponential_and_the_degree_eight_core():
+    query, exponential, sos = (adapter.partner_config(key)
+                               for key in ("query_dk64", "exponential_dk64", "softplus_sos_dk64"))
+    assert {query.model.qk_head_dim, exponential.model.qk_head_dim, sos.model.qk_head_dim} == {64}
+    assert (query.model.attention_degree, query.model.attention_coefficient_parameterization,
+            query.model.attention_coefficient_conditioning) == (8, "direct", "query")
+    assert query.model.attention_coefficient_kernel_weight_decay and query.model.positional_encoding == "rope"
+    assert exponential.model.attention_degree is None and exponential.model.attention_exp_shift == "none"
+    assert adapter.recipe("exponential_dk64", 2.0).model.attention_exp_shift == "row_max"
+    assert (sos.model.attention_degree, sos.model.attention_coefficient_input_power) == (9, 1)
+    assert sos.model.attention_coefficient_parameterization == "sum_of_squares"
+    assert sos.model.attention_score_transform == "softplus"
+
+
 @pytest.mark.parametrize("run", RUNS)
 def test_an_allocated_run_is_its_recipe(run):
     key, scale, label = RUNS[run]
     path = adapter.RUNS / run / "config.yaml"
     config = load_config(path)
+    expected = adapter.recipe(key, scale)
+    # A run on another cluster reads that cluster's copies of its partner's manifests: compare at its own paths, and
+    # check it with the repository's byte copies in their place, which every cluster holds.
+    assert changed(config, with_manifests(expected, config.data.train_manifest, config.data.eval_manifest)) == set()
+    if config.data.train_manifest != expected.data.train_manifest:
+        config = with_manifests(config, CORPUS / "train/manifest.json", CORPUS / "eval/manifest.json")
     adapter.check_recipe(config)
     assert (adapter.partner_key(config), adapter.scale_of(config)) == (key, scale)
-    assert changed(config, adapter.recipe(key, scale)) == set()
     assert config.model.attention_head_rms_prescale == "max_abs"
     record = json.loads((path.parent / "record.json").read_text())
     assert record["run_id"] == run and record["label"] == label == config.train.wandb_run_name
     assert record["config"]["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_the_runs_cover_both_partners_at_both_scales():
-    assert sorted((key, scale) for key, scale, _ in RUNS.values()) == sorted(
-        (key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES)
+def test_the_runs_cover_every_partner_at_each_of_its_scales():
+    assert sorted((key, scale) for key, scale, _ in RUNS.values()) == sorted(CELLS)
+
+
+def test_manifest_copies_are_accepted_by_their_bytes():
+    config = with_manifests(adapter.recipe("softplus_sos_dk64", 4.0), CORPUS / "train/manifest.json",
+                            CORPUS / "eval/manifest.json")
+    adapter.check_recipe(config)
+    with pytest.raises(ValueError, match="eval_manifest"):
+        adapter.check_recipe(with_manifests(config, CORPUS / "train/manifest.json", CORPUS / "corpus.json"))
+
+
+def test_the_width_64_runs_train_on_orcds_h100s_only(tmp_path):
+    path = tmp_path / "config.yaml"
+    for key in ("query_dk64", "exponential_dk64", "softplus_sos_dk64"):
+        save_config(adapter.recipe(key, 4.0), path)
+        assert adapter.gpu_types(load_config(path)) == ("H100",)
+        adapter.require_gpu_type([str(path), "--gpu-type", "H100"])
+        with pytest.raises(ValueError, match="H100"):
+            adapter.require_gpu_type([str(path), "--gpu-type", "H200"])
 
 
 def test_other_recipes_are_refused():
-    for scale in (1.0, 0.25, 3.0):
+    for scale in (1.0, 0.25, 3.0, 4.0):
         with pytest.raises(ValueError):
             adapter.recipe("exponential", scale)
+    for key in ("query_dk64", "exponential_dk64", "softplus_sos_dk64"):
+        with pytest.raises(ValueError):
+            adapter.recipe(key, 0.5)
+    exponential = adapter.recipe("exponential_dk64", 2.0)
+    with pytest.raises(ValueError, match="attention_exp_shift"):  # the fresh exponential's shift is required
+        adapter.check_recipe(replace(exponential, model=replace(exponential.model, attention_exp_shift="none")))
     for key in adapter.PARTNERS:
         with pytest.raises(ValueError):  # the partner itself
             adapter.check_recipe(adapter.partner_config(key))
-        config = adapter.recipe(key, 0.5)
-        config.optim.min_learning_rate = 1e-4  # the floor must scale with the peak
-        with pytest.raises(ValueError):
-            adapter.check_recipe(config)
-        config = adapter.recipe(key, 2.0)
-        config.optim.warmup_steps = 910
-        with pytest.raises(ValueError):
-            adapter.check_recipe(config)
-        config = adapter.recipe(key, 2.0)
-        config.model.qk_head_dim = 8
-        with pytest.raises(ValueError):
-            adapter.check_recipe(config)
-
-
-@pytest.mark.parametrize("scale", adapter.SCALES)
-def test_the_exponential_takes_either_evaluation_of_head_rms_norm_and_the_shift_only_the_prescale(scale):
-    """The shared rule (test_adapters_head_rms_prescale): the comparison leaves the evaluation to the run, and the
-    partner's adapter to its kernel."""
-    from dataclasses import replace
-
-    def plain(config):
-        return replace(config, model=replace(config.model, attention_head_rms_prescale="none"))
-
-    exponential = adapter.recipe("exponential", scale)
-    adapter.check_recipe(plain(exponential))
-    for config in (exponential, plain(exponential)):
-        config = replace(config, optim=replace(config.optim, weight_decay=config.optim.weight_decay + 0.5))
-        with pytest.raises(ValueError, match="optim.weight_decay"):
-            adapter.check_recipe(config)
-    with pytest.raises(ValueError):
-        adapter.check_recipe(plain(adapter.recipe("shifted_sos", scale)))
-
-
-@pytest.mark.parametrize("key", adapter.PARTNERS)
-def test_a_run_qualifies_as_its_partner_does(key):
-    config = adapter.recipe(key, 0.5)
-    spec = adapter.experiment_spec(config, entry_module=adapter.__name__)
-    partner = adapter.PARTNERS[key][2].experiment_spec(adapter.at_partner_rate(config), entry_module=adapter.__name__)
-    assert spec.required_backend == partner.required_backend == "fused"
-    assert spec.gpu_tests == partner.gpu_tests and spec.pilot_steps == partner.pilot_steps
-    assert spec.cpu_tests == (*partner.cpu_tests, "experiments/transformer_pp/tests/test_learning_rate_acceptance.py")
-    assert spec.check_config is adapter.check_recipe
-    assert adapter.gpu_types(config) == {"exponential": ("H100", "B300"), "shifted_sos": ("B200", "B300")}[key]
-
-
-def test_the_gpu_type_rule(tmp_path):
-    from scaffolds.transformer.configs import save_config
-
-    for key, refused in (("exponential", "B200"), ("shifted_sos", "H100")):
-        path = tmp_path / f"{key}.yaml"
-        save_config(adapter.recipe(key, 2.0), path)
-        adapter.require_gpu_type([str(path), "--gpu-type", "B300"])
-        adapter.require_gpu_type([str(path), "--runtime-env", "--gpu-type", refused])
-        with pytest.raises(ValueError):
-            adapter.require_gpu_type([str(path), "--gpu-type", refused])

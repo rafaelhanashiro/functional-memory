@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7924001c42f1/config.yaml",
+    "sha256": "f7ef86f3e66b27e199d18407565f1fd674ed3b9d034f3d9350cf5a7619cb1098"
+  },
+  "label": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple",
+  "name": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "0d601409f665ac5d797559e8c58873b20e1f8bd5e07642b6abc2aca256df2e82",
+    "loss": 5.567205429077148,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r7924001c42f1",
+  "status": "planned"
+}
