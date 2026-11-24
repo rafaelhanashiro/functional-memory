@@ -74,6 +74,19 @@ degree-sixteen core matches the unshifted one (logits 1e-4, every gradient 1e-3)
 `W`, and the trainer resumes it to the uninterrupted state. On a B200 (job 11890) the fused models match the blocked
 reference's in both cases.
 
+**Q/K width 64 on H200 (2026-11-23).** The kernel's tiles hold Q/K and value widths up to 64 unchanged.
+`tests/test_shifted_polynomial_key_width.py` runs it at Q/K and value width 64: the fused programs against FP64 at degrees
+8 and 16 over 257 tokens (five query tiles, a masked tail) with scores to about 20 and coefficients
+`tanh(g + atanh(1/2))/r!` of either sign, and the fused pure tanh (degrees 8 and 16) and tanh query (degree 16) models
+against the blocked reference's. On an ORCD H200 (job 30217370, `qualify_shifted_polynomial_width.sbatch`) they pass
+with the module's width-4 GPU cases. The largest errors against FP64, relative to each reference's largest entry, are
+1.4e-6 (output) and 3.7e-6 (gradients) at degree 8 and 9.4e-6 and 2.7e-5 at degree 16; a degree-16 row whose signed
+terms cancel resolves its smaller outputs to 2.9e-5 (job 30214311), so the output check bounds the error by 1e-4 of the
+largest entry. One layer's forward and backward at 16 x 2,048 tokens, 14 heads and BF16 Q/K/V
+(`benchmarks/benchmark_shifted_polynomial_width.py`) took 3.1 / 10.9 ms at degree 8 and 4.2 / 14.7 ms at degree 16.
+H100 is qualified only by a run's own acceptance, whose GPU stage takes these cases for a width-64 shifted run
+(`experiments/transformer_pp/pure_tanh_dk64_acceptance.py`).
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head
