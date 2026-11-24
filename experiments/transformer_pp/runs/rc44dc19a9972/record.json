@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rc44dc19a9972/config.yaml",
+    "sha256": "cc0d5147779f616b79be9de06302c8cb3fae5210112c32565f5e1e460135e799"
+  },
+  "label": "exp-head-scale-row-max-lr-half",
+  "name": "exp-head-scale-row-max-lr-half",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "a9766bf70b642f63249f27dfd0c6ea36c0d1e63f18415fbb8137a5cd5a96326d",
+    "loss": 5.572049140930176,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rc44dc19a9972",
+  "status": "planned"
+}

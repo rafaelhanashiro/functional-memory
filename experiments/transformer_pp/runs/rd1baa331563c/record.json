@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rd1baa331563c/config.yaml",
+    "sha256": "50d95aa8b118fcaf09af193936d8571ce4f773d62382133cf3103a73ce85c392"
+  },
+  "label": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-half",
+  "name": "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-half",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "14f7b814f90d34424d09e45f04e48734f63c8c2f0c5a84569eaeabe32cd14f9d",
+    "loss": 5.567205429077148,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rd1baa331563c",
+  "status": "planned"
+}
