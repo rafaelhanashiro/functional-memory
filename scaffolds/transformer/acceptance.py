@@ -580,8 +580,12 @@ def attention_test_paths(config: dict, resolved_backend: str, cpu: bool) -> tupl
             tests.append("exp_row_max_shift")
         if model.get("attention_polynomial_shift", "none") != "none":
             # The row-power shift: CPU, the blocked reference and the fused programs' arithmetic against FP64; GPU,
-            # the fused kernel against FP64 (its own kernel; no generic fused polynomial suite applies).
+            # the fused kernel against FP64 (its own kernel; no generic fused polynomial suite applies). On Mosaic,
+            # its row-power kernels' module too: CPU, their tile arithmetic against FP64; GPU, the kernels against FP64
+            # and the fused kernel.
             tests.append("shifted_polynomial_attention")
+            if resolved_backend == "mosaic":
+                tests.append("mosaic_row_power")
         if model.get("attention_head_rms_prescale", "none") != "none":
             # Head RMSNorm's max-abs prescale: CPU, against the plain arithmetic and FP64 at output RMS 1e-25 to 1e30;
             # GPU, the device's own FP32 arithmetic at the scales where the plain backward fails and through the

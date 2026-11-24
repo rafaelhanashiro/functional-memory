@@ -458,6 +458,9 @@ def _row_power_bwd(family, precision, residuals, do):
     return grad_q, grad_k, grad_v, jnp.concatenate([sums, jnp.zeros_like(vectors[-1:])])  # the units are constants
 
 
+_row_power.defvjp(_row_power_fwd, _row_power_bwd)
+
+
 def row_power_query_polynomial_attention(q, k, v, coefficients, *, transform: str = "softplus",
                                          precision: str | None = None):
     """The shifted output e^(-m) o [B,T,H,64] in FP32 and the stopped shifts m [B,T,H] of the unnormalized causal
