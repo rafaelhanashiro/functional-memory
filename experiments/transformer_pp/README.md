@@ -3148,3 +3148,35 @@ for run in r46c9b99d3338 r1571399b4f27; do
     "$dir/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 done
 ```
+
+### Exponential on the unscaled cosine score at key width four
+
+One Kennel run, requested 2026-11-23, gives the exponential the score of the unscaled-cosine pair above: the
+exponential at `d_K` 4 (`r2739c80cc032`, best 19.190) with QK RMSNorm's rotated queries and keys unit-normalized
+(`qk_norm_type: rms_norm_cosine`) and no learned head multiplier, so every score is a cosine in [-1, 1] and each
+weight `e^s` lies within `e^-1` and `e`. Head RMSNorm takes the max-abs prescale. Seed 42, the 0.001 peak learning
+rate, the 7,570-update schedule and every other setting are the partner's.
+
+| Run | Label | Kernel | Partner |
+| --- | --- | --- | --- |
+| `r15f803273258` | `exp-row-max-dk4-unit-cosine` | `exp(s)`, `s = cos(q, k)` | `r2739c80cc032` |
+
+- **Acceptance.** The [adapter](exp_cosine_acceptance.py) pins the partner and admits its recipe with the three score
+  settings alone; the initial parameters are the partner's without its head multipliers, bit for bit. It runs the
+  fused exponential's GPU cases and the cosine tests, and holds the pilot's raw scores to the cosine bound with BF16
+  rounding tolerance.
+- **Time limit.** The partner trained in 2.9 h on a B300; 8 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`. The fused exponential is qualified at this width on B300 and
+H100, and dogo stays excluded while no placeholder holds its faulty H100:
+
+```bash
+run=r15f803273258
+dir="experiments/transformer_pp/runs/$run"
+sbatch --parsable --partition=standard,long --time=8:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+  --exclude=shiba,dogo,mastiff,collie,samoyed,doodle,terrier --job-name="$run" \
+  --output="$dir/training.log" --error="$dir/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.exp_cosine_acceptance \
+  "$dir/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100
+```

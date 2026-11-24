@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r15f803273258/config.yaml",
+    "sha256": "ef81efe9f62f8a7c2f16472de543fdbf112e493087005c52a95b1393ccd09ebc"
+  },
+  "label": "exp-row-max-dk4-unit-cosine",
+  "name": "exp-row-max-dk4-unit-cosine",
+  "receipt": {
+    "arrays_count": 48,
+    "digest": "9ada640e339dd33c11f4e7541c5d45f9be67f403dce9e187e09145f2632a9b20",
+    "loss": 5.602993488311768,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r15f803273258",
+  "status": "planned"
+}
