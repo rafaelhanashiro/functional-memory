@@ -239,8 +239,9 @@ SCORE_FUNCTION_FAMILIES = {
     for transform in TRANSFORM_BASES for prefactor in ("none", *SCORE_PREFACTORS)
     if score_function_family(transform, prefactor) not in (None, QUERY)}
 FAMILY_SCORE_FUNCTIONS = {family: functions for functions, family in SCORE_FUNCTION_FAMILIES.items()}
+TRANSFORMED_QUERY_FAMILIES = tuple(SCORE_FUNCTION_FAMILIES.values())
+# A row-power family evaluates its base's score functions; it holds one vector more than the query family.
 FAMILY_SCORE_FUNCTIONS.update({shifted: FAMILY_SCORE_FUNCTIONS[base] for base, shifted in ROW_POWER_FAMILIES.items()})
-TRANSFORMED_QUERY_FAMILIES = (*SCORE_FUNCTION_FAMILIES.values(), *ROW_POWER_FAMILIES.values())
 PREFACTOR_FAMILIES = tuple(family for (_, prefactor), family in SCORE_FUNCTION_FAMILIES.items() if prefactor != "none")
 QUERY_DECAY, ENDPOINT_DECAY = "query_decay", "endpoint_decay"
 PER_ORDER_QUERY_DECAY, PER_ORDER_ENDPOINT_DECAY = "per_order_query_decay", "per_order_endpoint_decay"
@@ -789,7 +790,7 @@ def forward_weights(family, degree, s, vectors, pair=None, terms=None):
     if family in DECAY_FAMILIES:
         terms = decay(family, degree, vectors, pair) if terms is None else terms
         return polynomial(s, vectors[:degree + 1]) * terms.factor
-    if family in TRANSFORMED_QUERY_FAMILIES:
+    if family in FAMILY_SCORE_FUNCTIONS:
         return _transformed_weights(family, s, vectors)
     return taylor(s, degree) if family == TAYLOR else polynomial(s, vectors)
 
@@ -826,7 +827,7 @@ def value_weights(family, degree, s, vectors, pair=None, terms=None):
         return forward_weights(family, degree, s, vectors, pair, terms)
     if family == TAYLOR:
         return taylor(s, degree) * vectors[1]
-    if family in TRANSFORMED_QUERY_FAMILIES:
+    if family in FAMILY_SCORE_FUNCTIONS:
         return _transformed_weights(family, s, vectors)
     return polynomial(s, vectors)
 
@@ -863,7 +864,7 @@ def dq_terms(family, degree, s, dp, vectors, pair=None, sums=None):
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=True)
         return ds, sums
-    if family in TRANSFORMED_QUERY_FAMILIES:
+    if family in FAMILY_SCORE_FUNCTIONS:
         return _transformed_terms(family, degree, s, dp, vectors, rows=True)
     if family not in DECAY_FAMILIES:
         return score_gradient(family, degree, s, dp, vectors), row_sums(family, degree, s, dp)
@@ -883,7 +884,7 @@ def dk_terms(family, degree, s, dp, vectors, pair=None, terms=None, sums=None):
     if family in PER_ORDER_FAMILIES:
         ds, _, sums = _per_order_backward(family, degree, s, dp, vectors, pair, rows=False)
         return ds, sums
-    if family in TRANSFORMED_QUERY_FAMILIES:
+    if family in FAMILY_SCORE_FUNCTIONS:
         return _transformed_terms(family, degree, s, dp, vectors, rows=False)
     if family not in DECAY_FAMILIES:
         return score_gradient(family, degree, s, dp, vectors), []

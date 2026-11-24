@@ -217,9 +217,12 @@ def test_fused_model_matches_the_blocked_shifted_model(power):
 def test_the_shift_is_refused_off_its_recipe():
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(0, attention_head_rms_prescale="none", attention_polynomial_shift="row_power")
-    with pytest.raises(ValueError, match="attention_polynomial_shift"):
+    with pytest.raises(ValueError, match="mosaic"):
         _config(0, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
-                attention_backend="mosaic", value_head_dim=64)
+                attention_backend="mosaic", value_head_dim=64, attention_score_transform="identity")
+    # The softplus score has Mosaic row-power kernels (test_mosaic_row_power.py).
+    _config(0, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
+            attention_backend="mosaic", value_head_dim=64)
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(0, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
                 attention_coefficient_parameterization="direct", attention_score_transform="identity",
