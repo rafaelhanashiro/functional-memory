@@ -671,11 +671,20 @@ def attention_identity(config) -> dict:
         core_degree = degree - power
         transform = getattr(config.model, "attention_score_transform", "identity")
         polynomial = "z * h_t(z)" if power else "h_t(z)"
+        pure_factors = config.model.attention_coefficient_activation == "pure_tanh"
+        inner_bias = pure_factors and config.model.attention_coefficient_tanh_bias
+        # Pure tanh generates each factor's fraction of its Taylor factor; the affine generator its offset from it.
+        factors = ("F_j(x_t) = f_j tanh(W_j^T x_t" + (" + beta_j" if inner_bias else "") + "); fixed f factorizes T_"
+                   f"{core_degree}, W initially "
+                   + ("zero" if config.model.attention_coefficient_projection_initial_std == 0 else
+                      f"N(0, {config.model.attention_coefficient_projection_initial_std:g}^2)")
+                   + (f", beta initially {config.model.attention_coefficient_tanh_bias_initial:.9g}" if inner_bias else "")
+                   if pure_factors else
+                   "F_j(x_t) = f_j (1 + g_j(x_t))/2, g_j = b_j + a_j tanh(W_j^T x_t); fixed f factorizes T_"
+                   f"{core_degree}, b initially 1, a initially {config.model.attention_coefficient_amplitude_initial:g}")
         formula = (f"sum_(i<=t) p_t(z_ti) v_i; p_t(z) = {polynomial}; "
                    f"h_t(z) = A_t(z)^2 + B_t(z)^2, deg A = {core_degree // 2}, "
-                   f"deg B = {core_degree // 2 - 1}; square factors F_j(x_t) = f_j (1 + g_j(x_t))/2, "
-                   "g_j = b_j + a_j tanh(W_j^T x_t); fixed f factorizes T_"
-                   f"{core_degree}, b initially 1, a initially {config.model.attention_coefficient_amplitude_initial:g}; "
+                   f"deg B = {core_degree // 2 - 1}; square factors {factors}; "
                    f"z = {'softplus(s)' if transform == 'softplus' else 's'}, s = Q_t K_i^T / sqrt(d_k); "
                    "x_t is the pre-attention RMSNorm activation; factors and expanded coefficients computed in FP32")
         if getattr(config.model, "attention_coefficient_zero_constant", False):
@@ -697,7 +706,9 @@ def attention_identity(config) -> dict:
             attention_coefficient_core_degree=core_degree,
             attention_coefficient_factor_count=core_degree + 1,
             attention_coefficient_effective_count=degree + 1,
-            attention_coefficient_count=(core_degree + 1) * (config.model.hidden_size + 2)
+            # W with b and a, or pure tanh's W with its inner bias if any.
+            attention_coefficient_count=(core_degree + 1) * (
+                config.model.hidden_size + (int(inner_bias) if pure_factors else 2))
             * config.model.num_layers * config.model.num_heads,
             attention_coefficient_numerical_note=("The expanded polynomial is algebraically nonnegative on its "
                                                 "input domain but can round negative near roots."),

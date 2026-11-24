@@ -299,12 +299,16 @@ def test_the_shift_admits_its_coefficient_sources_alone():
 
     for source in SOURCES:
         assert polynomial_shift_problem(_source_config(source).model) is None, source
+    # Pure tanh generates direct coefficients or square factors alike.
+    for pure in (_pure_tanh_config(attention_polynomial_shift="row_power"),
+                 _pure_tanh_sos_config(attention_polynomial_shift="row_power")):
+        assert polynomial_shift_problem(pure.model) is None
     query, fixed = _source_config("query").model, _source_config("fixed").model
     for model, changes, reason in (
-            (query, dict(attention_coefficient_conditioning="query_key"), "diagonal tanh query"),
-            (query, dict(attention_coefficient_readout="dense"), "diagonal tanh query"),
-            (query, dict(attention_coefficient_activation="sigmoid"), "diagonal tanh query"),
-            (fixed, dict(attention_coefficient_parameterization="sum_of_squares"), "diagonal tanh query"),
+            (query, dict(attention_coefficient_conditioning="query_key"), "diagonal tanh or pure tanh query"),
+            (query, dict(attention_coefficient_readout="dense"), "diagonal tanh or pure tanh query"),
+            (query, dict(attention_coefficient_activation="sigmoid"), "diagonal tanh or pure tanh query"),
+            (fixed, dict(attention_coefficient_parameterization="sum_of_squares"), "diagonal tanh or pure tanh query"),
             (query, dict(attention_coefficient_input_power=1), "every order from zero"),
             (query, dict(attention_coefficient_zero_constant=True), "every order from zero"),
             (fixed, dict(attention_fixed_square_factors=(1.0, 1.0)), "square factors"),
@@ -527,6 +531,155 @@ def test_training_resumes_a_pure_tanh_model_exactly(tmp_path, prefactor):
 def test_fused_pure_tanh_models_match_the_blocked_shifted_models(prefactor):
     assert jax.default_backend() == "gpu"
     blocked, fused = (_pure_tanh_config(prefactor, attention_backend=backend, attention_polynomial_shift="row_power")
+                      for backend in ("blocked", "fused"))
+    _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
+
+
+# z h_t(z), z = softplus(s), with pure tanh square factors F_j = f_j tanh(w_j^T x_hat + beta_j), from the L2-normalized
+# raw block input, W at zero and beta at atanh(1/2), as the Q/K width 4 run with a degree-sixteen core sets them.
+PURE_TANH_SOS = dict(attention_coefficient_activation="pure_tanh", attention_coefficient_tanh_bias=True,
+                     attention_coefficient_tanh_bias_initial=math.atanh(0.5),
+                     attention_coefficient_projection_initial_std=0.0, attention_coefficient_amplitude_initial=1.0,
+                     attention_coefficient_input_source="pre_rmsnorm", attention_coefficient_input_normalization="l2")
+# A random W, so that the factors differ between queries.
+RANDOM_W = dict(attention_coefficient_projection_initial_std=0.25)
+
+
+def _pure_tanh_sos_config(**changes):
+    return _config(1, core_degree=16, **{"attention_head_rms_prescale": "max_abs", **PURE_TANH_SOS, **changes})
+
+
+def test_pure_tanh_square_factors_are_fractions_of_the_taylor_factors():
+    """Pure fractions g_j give the factors f_j g_j: a common fraction starts z h(z) at g^2 z T_16(z), and any
+    fractions expand to the explicit z (A(z)^2 + B(z)^2) of those factors, which is never negative for z >= 0."""
+    from scaffolds.transformer.attention.nonnegative_polynomial import (
+        query_square_coefficients, split_factors, taylor_square_factors,
+    )
+
+    taylor = np.array([0.0, *(1 / math.factorial(r) for r in range(17))])  # z T_16(z)
+    affine = query_square_coefficients(jnp.ones((17,), jnp.float32), 17, input_power=1)
+    half = query_square_coefficients(jnp.full((17,), 0.5, jnp.float32), 17, input_power=1, pure=True)
+    np.testing.assert_allclose(affine, taylor, rtol=1e-5)
+    np.testing.assert_allclose(half, 0.25 * taylor, rtol=1e-5)
+    assert float(half[0]) == 0.0
+    fractions = np.random.default_rng(5).uniform(-1.0, 1.0, size=(6, 17))
+    expanded = np.asarray(query_square_coefficients(jnp.asarray(fractions, jnp.float32), 17, input_power=1, pure=True),
+                          np.float64)
+    a, b = split_factors(np.asarray(taylor_square_factors(16), np.float64) * fractions, 16)
+    z = np.linspace(0.0, 4.0, 17)
+    powers = z[:, None] ** np.arange(18)
+    explicit = z[:, None] * ((powers[:, :9] @ a.T) ** 2 + (powers[:, :8] @ b.T) ** 2)
+    np.testing.assert_allclose(powers @ expanded.T, explicit, rtol=2e-5, atol=1e-7)
+    assert np.all(explicit >= 0)
+    with pytest.raises(ValueError, match="every factor constant"):
+        query_square_coefficients(jnp.ones((15,), jnp.float32), 16, zero_constant=True, pure=True)
+
+
+def test_the_pure_tanh_square_factor_model_starts_at_a_quarter_of_the_taylor_kernel():
+    """W at zero and beta at atanh(1/2): every factor starts at half its Taylor factor, so each query's z h_t(z)
+    starts at a quarter of z T_16(z), the affine generator's start scaled; tanh' = 3/4, and only W decays. (Head
+    RMSNorm removes the scale wherever a head's output is well above its epsilon.)"""
+    from scaffolds.transformer.attention.input_dependent import project_coefficients
+    from scaffolds.transformer.attention.nonnegative_polynomial import query_square_coefficients
+    from scaffolds.transformer.attention.parameters import attention_parameter_specs
+
+    config = _pure_tanh_sos_config()
+    params = {"/".join(map(str, key)): np.asarray(value[...])
+              for key, value in nnx.to_flat_state(nnx.state(build_model(config.model, 42), nnx.Param))}
+    kernel = next(value for key, value in params.items() if key.endswith("query_polynomial_kernel"))
+    bias = next(value for key, value in params.items() if key.endswith("query_polynomial_tanh_bias"))
+    assert kernel.shape[-1] == bias.shape[-1] == 17 and not np.any(kernel) and np.allclose(bias, math.atanh(0.5))
+    assert not any(key.endswith(("query_polynomial_bias", "query_polynomial_amplitude")) for key in params)
+    decays = {spec.name: spec.weight_decay for spec in attention_parameter_specs(config.model)}
+    assert decays["query_polynomial_kernel"] and not decays["query_polynomial_tanh_bias"]
+    x = jnp.asarray(np.random.default_rng(3).normal(size=(1, 3, 16)), jnp.float32)
+    fractions = project_coefficients(x, jnp.asarray(kernel[0]), None, activation="pure_tanh",
+                                     tanh_bias=jnp.asarray(bias[0]))
+    np.testing.assert_allclose(fractions, 0.5, rtol=1e-6)
+    coefficients = query_square_coefficients(fractions, 17, input_power=1, pure=True)
+    taylor = np.array([0.0, *(1 / math.factorial(r) for r in range(17))])
+    np.testing.assert_allclose(coefficients, np.broadcast_to(0.25 * taylor, coefficients.shape), rtol=1e-5)
+
+
+@pytest.mark.parametrize("changes", ({}, RANDOM_W), ids=("start", "random-w"))
+def test_the_pure_tanh_square_factor_shifted_model_matches_the_unshifted_one(changes):
+    _assert_models_agree(_pure_tanh_sos_config(attention_polynomial_shift="row_power", **changes),
+                         _pure_tanh_sos_config(**changes), rtol=1e-4, grad_rtol=1e-3)
+
+
+def test_acceptance_and_validation_take_the_pure_tanh_square_factors():
+    """The fused recipe builds, acceptance's initialization check and selection hold as for the direct pure tanh
+    recipes, and after a training step the trainer's report is valid, nonnegative, and names the factors' form."""
+    from scaffolds.transformer import acceptance
+    from scaffolds.transformer.configs import config_to_dict
+    from scaffolds.transformer.training import loop
+    from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity
+    from scaffolds.transformer.training.state import create_state
+
+    fused = _pure_tanh_sos_config(attention_backend="fused", attention_polynomial_shift="row_power")
+    build_model(fused.model, 0)
+    spec = acceptance.attention_spec(fused, entry_module="tests")
+    facts = spec.check_initialization(fused)
+    assert set(facts["mechanism_parameters"]["query_polynomial_tanh_bias"]["initial"]) == {math.atanh(0.5)}
+    selected = {cpu: acceptance.test_paths(spec, config_to_dict(fused), resolved_backend="fused", cpu=cpu)
+                for cpu in (True, False)}
+    module = "scaffolds/transformer/tests/test_shifted_polynomial_attention.py"
+    assert module in selected[True] and module in selected[False]
+    assert acceptance.COEFFICIENT_FORM_TESTS in selected[True]
+    assert acceptance.COEFFICIENT_FORM_TESTS not in selected[False]
+
+    config = _pure_tanh_sos_config(attention_polynomial_shift="row_power", **RANDOM_W)
+    batch = jnp.asarray(np.random.default_rng(9).integers(0, 32, (2, 9)), jnp.int32)
+    state, *_ = loop.train_step(create_state(config, jax.random.PRNGKey(0)), batch, jax.random.PRNGKey(0))
+    report = attention_diagnostics(state, config, np.asarray(batch[:1]), {"selection": "test"})
+    assert report["valid"], report["issues"]
+    assert report["kernel_values"] == "row_power_shifted_query_polynomial_of_softplus_scores"
+    assert all(layer["negative_weight_count"] == 0 for layer in report["layers"])
+    assert report["coefficients"]["activation"] == "pure_tanh"
+    identity = attention_identity(config)
+    assert "square factors F_j(x_t) = f_j tanh(W_j^T x_t + beta_j); fixed f factorizes T_16" in identity["attention_formula"]
+    assert "beta initially 0.549306144" in identity["attention_formula"]
+    assert identity["attention_coefficient_input"] == "unit_l2_of_pre_attention_residual_activation"
+    assert identity["attention_coefficient_count"] == 2 * 2 * 17 * (16 + 1)  # layers, heads, factors, W and beta
+
+
+def test_training_resumes_a_pure_tanh_square_factor_model_exactly(tmp_path):
+    from scaffolds.transformer.training import loop
+
+    def config(name):
+        current = _pure_tanh_sos_config(attention_polynomial_shift="row_power")
+        current.train.workdir = tmp_path / name
+        current.train.eval_every, current.train.eval_batches = 2, 1
+        current.train.ckpt_every, current.train.log_every = 2, 1
+        return current
+
+    full = loop.run_training(config("full"), audit_checkpoint=True)
+    before = loop.run_training(config("restart"), stop_after_step=2, audit_checkpoint=True)
+    after = loop.run_training(config("restart"), audit_checkpoint=True)
+    first, second = before["checkpoint_audit"], after["checkpoint_audit"]
+    assert first["final_state_sha256"] == first["checkpoint_state_sha256"] == second["start_state_sha256"]
+    assert first["next_update"] == second["first_update"]
+    assert second["final_state_sha256"] == full["checkpoint_audit"]["final_state_sha256"]
+    rows = [json.loads(line) for line in (tmp_path / "full" / "metrics.jsonl").read_text().splitlines()]
+    assert all(math.isfinite(row["validation_nll"]) for row in rows if "validation_nll" in row)
+
+
+def test_pure_tanh_square_factors_are_refused_off_their_recipe():
+    """They take every factor constant and no factorial scale, need the inner bias or a random W to start, and run
+    on the blocked backend or the shifted fused kernel, not the Mosaic kernels."""
+    for changes in (dict(attention_backend="mosaic"), dict(attention_coefficient_amplitude_scale="factorial"),
+                    dict(attention_coefficient_tanh_bias=False, attention_coefficient_tanh_bias_initial=0.0),
+                    dict(attention_backend="fused")):  # the fused kernel is the shifted one
+        with pytest.raises(ValueError):
+            _pure_tanh_sos_config(**changes)
+    _pure_tanh_sos_config(attention_coefficient_tanh_bias=False, attention_coefficient_tanh_bias_initial=0.0, **RANDOM_W)
+
+
+@pytest.mark.gpu
+@pytest.mark.parametrize("changes", ({}, RANDOM_W), ids=("start", "random-w"))
+def test_fused_pure_tanh_square_factor_model_matches_the_blocked_shifted_model(changes):
+    assert jax.default_backend() == "gpu"
+    blocked, fused = (_pure_tanh_sos_config(attention_backend=backend, attention_polynomial_shift="row_power", **changes)
                       for backend in ("blocked", "fused"))
     _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 

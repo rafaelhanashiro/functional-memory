@@ -110,21 +110,19 @@ def polynomial_shift_problem(model) -> str | None:
     polynomial on the raw score or its softplus, unnormalized and without gates, decay, score biases or a score
     prefactor other than softplus or exp of the raw score (with the raw score as its input), whose output goes straight
     into head RMSNorm with the max-abs prescale; with RoPE or no positional encoding, on its blocked reference or fused
-    kernel. Its coefficients come from the diagonal tanh query generator, direct or sum of squares (any input power),
-    or direct pure tanh (with or without its inner bias), or are static direct coefficients, fixed (Taylor's or a
+    kernel. Its coefficients come from the diagonal tanh or pure tanh query generator, direct or sum of squares (any
+    input power; pure tanh with or without its inner bias), or are static direct coefficients, fixed (Taylor's or a
     recipe's table) or learned, which every query takes alike."""
     if model.attention_mechanism != "dot_product" or model.attention_normalization:
         return "it applies to unnormalized polynomial attention alone"
     query = (model.attention_coefficients == "learned" and model.attention_coefficient_conditioning == "query"
              and model.attention_coefficient_readout == "diagonal"
-             and ((model.attention_coefficient_activation == "tanh"
-                   and model.attention_coefficient_parameterization in ("direct", "sum_of_squares"))
-                  or (model.attention_coefficient_activation == "pure_tanh"
-                      and model.attention_coefficient_parameterization == "direct")))
+             and model.attention_coefficient_activation in ("tanh", "pure_tanh")
+             and model.attention_coefficient_parameterization in ("direct", "sum_of_squares"))
     static = (model.attention_coefficients in ("fixed", "learned") and model.attention_coefficient_conditioning == "static"
               and model.attention_coefficient_parameterization == "direct")
     if not (query or static) or model.attention_degree is None:
-        return ("it evaluates diagonal tanh query coefficients (direct or sum of squares, or direct pure tanh) or "
+        return ("it evaluates diagonal tanh or pure tanh query coefficients (direct or sum of squares) or "
                 "static direct coefficients, fixed or learned")
     if model.attention_coefficient_parameterization == "direct" and (
             model.attention_coefficient_input_power or model.attention_coefficient_zero_constant):

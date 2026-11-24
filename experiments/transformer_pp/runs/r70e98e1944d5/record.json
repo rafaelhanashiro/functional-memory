@@ -1,0 +1,772 @@
+{
+  "acceptance": {
+    "sha256": "b8148f75209a9455135d62315c88e556e4abab6e8efe002952644e95802ac440",
+    "summary": {
+      "allocation_seconds": 43200,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-23T16:17:10.662943+00:00",
+      "hardware": {
+        "attention_backend": "fused",
+        "device_kinds": [
+          "NVIDIA B200"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "97d5a03d9b988c83c0d85692ad6b5f53041cdb0c2f362eccf73628ccdf2fcc36",
+      "slurm_job_id": "11991",
+      "slurm_restart_count": "0",
+      "source_commit": "bc04468ab7b2b93be7be0e4bfc29e1ed792a36a9",
+      "status": "passed"
+    }
+  },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/best_validation.json",
+      "sha256": "f85de2aacf5d30b2975f537deb0521ba3e02cbfc96c61f603b99ba71f5672233",
+      "size_bytes": 183
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/completion.json",
+      "sha256": "4ac8d4fb790d05422a2d0aefcf470de1a457384e9d9aab2d8270ce5a982d4fc3",
+      "size_bytes": 1555727
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/config.json",
+      "sha256": "bc840616822cb605d5df04202c571204f840c06bd4f299b0fad70cb0ceb43569",
+      "size_bytes": 6495
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/gradient_events.jsonl",
+      "sha256": "8dbc1f900585ac6effab0cf3a41f7759afda8be5aec6789574a993912503bf5d",
+      "size_bytes": 60584
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/metadata.json",
+      "sha256": "aa1749d9a6fadd260e391c5367d35e7ffefb3db254bc379ee31370625e158bf2",
+      "size_bytes": 1556570
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/metrics.jsonl",
+      "sha256": "77d2cdf4c34538206a71d9f489ebb1deceab860c2b882f222fc95b3ac1e2ef73",
+      "size_bytes": 20799144
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/retention.json",
+      "sha256": "047c12557c5e3aa8d424a49a22725803fb4021241a03a55d2c468a298e713a36",
+      "size_bytes": 509
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r70e98e1944d5/wandb_run.json",
+      "sha256": "9353d13316b0c1d39701aa0a3d444602fa9a1ef079dbc13fb5048fc16eda5a28",
+      "size_bytes": 238
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/training.log",
+      "sha256": "32965fb0230467b1239c81c12ea8f01aa60a8910d327521435956be13b209232",
+      "size_bytes": 729132
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/experiments/transformer_pp/runs/r70e98e1944d5/.runtime/acceptance/B200-1",
+      "allocation": "JobId=11991 JobName=r70e98e1944d5 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20065 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:10 TimeLimit=12:00:00 TimeMin=N/A SubmitTime=2026-11-23T10:22:58 EligibleTime=2026-11-23T10:22:58 AccrueTime=2026-11-23T10:22:58 StartTime=2026-11-23T10:39:00 EndTime=2026-11-23T22:39:00 Deadline=N/A PreemptEligibleTime=2026-11-23T10:39:00 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-23T10:39:00 Scheduler=Main Partition=standard AllocNode:Sid=kennel:3965040 ReqNodeList=(null) ExcNodeList=collie,dogo,doodle,mastiff,samoyed,terrier,akita NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4 StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/experiments/transformer_pp/runs/r70e98e1944d5/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/experiments/transformer_pp/runs/r70e98e1944d5/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 43200,
+      "config_path": "experiments/transformer_pp/runs/r70e98e1944d5/config.yaml",
+      "config_sha256": "13fd0096ea3b42f63cc83eeb14dff939574197d28e5a6d2f76d942bef0dc7f26",
+      "exit_code": 0,
+      "finished_utc": "2026-11-24T00:43:49.536883+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "bc04468ab7b2b93be7be0e4bfc29e1ed792a36a9",
+      "slurm_job_id": "11991",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-23T15:39:10.493967+00:00",
+      "stop_after_step": null
+    }
+  ],
+  "best_validation": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/best_validation.json",
+    "sha256": "f85de2aacf5d30b2975f537deb0521ba3e02cbfc96c61f603b99ba71f5672233",
+    "size_bytes": 183
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 7500,
+    "completion_sha256": "4ac8d4fb790d05422a2d0aefcf470de1a457384e9d9aab2d8270ce5a982d4fc3",
+    "format": "shared-transformer-checkpoint-retention",
+    "retained_gradient_event_updates": [
+      1388,
+      5987,
+      6376
+    ],
+    "seed": 42,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "bc04468ab7b2b93be7be0e4bfc29e1ed792a36a9",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 7570,
+    "validation_nll": 2.9645235695336996,
+    "version": 1
+  },
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/completion.json",
+    "sha256": "4ac8d4fb790d05422a2d0aefcf470de1a457384e9d9aab2d8270ce5a982d4fc3",
+    "size_bytes": 1555727
+  },
+  "config": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/config.yaml",
+    "sha256": "13fd0096ea3b42f63cc83eeb14dff939574197d28e5a6d2f76d942bef0dc7f26"
+  },
+  "data_identity": {
+    "batch_size": 256,
+    "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+    "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/data_identity.json",
+    "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
+    "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "version": 2
+  },
+  "diagnostic_checkpoints": [
+    {
+      "event": "gradient_spike",
+      "file_count": 16,
+      "files": [
+        {
+          "path": "1387/default/_CHECKPOINT_METADATA",
+          "sha256": "c679c37f92c892f13c201411a7fdeab84357eee9c8fcbd70fa547ddbbf32827b",
+          "size_bytes": 262
+        },
+        {
+          "path": "1387/default/_METADATA",
+          "sha256": "46d1c77482d2b40a0f94afd7758a3343e71faa064925e38606cbf2e93dd44588",
+          "size_bytes": 217678
+        },
+        {
+          "path": "1387/default/_sharding",
+          "sha256": "df65e66cc5845a42756b0ac1afc7cac7ed5420c655ad49b5e03f54f41aef92d8",
+          "size_bytes": 68358
+        },
+        {
+          "path": "1387/default/array_metadatas/process_0",
+          "sha256": "b974bb297223ac4c024f881515b1781cd63b867e888de7483871fc45441bae97",
+          "size_bytes": 74589
+        },
+        {
+          "path": "1387/default/d/e366ba172f17f55a084f096f499ffa06",
+          "sha256": "7f7049d20dd3b15560890e9bc3274bf0322e3332ac2f59b844631022746ec672",
+          "size_bytes": 8761
+        },
+        {
+          "path": "1387/default/manifest.ocdbt",
+          "sha256": "60c70b3fee325d6d3730d18094ccefdff6efd486c6d9ad2b6db8147799d86466",
+          "size_bytes": 118
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/18ff261ed732e24533c1d3e239a3f935",
+          "sha256": "ad92bdd1b97f1642b9310e12f519fe9ab5a5e9befe1ff4b27a823b880eab40d0",
+          "size_bytes": 883122176
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/5d7a1914b7bd08404e5a5ee398f4b457",
+          "sha256": "88051346956dbc7771001d4ed198dab35ccbb856304cef044ab3352fcb3ea131",
+          "size_bytes": 753
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/61d2f3ad62d37d9597305e0844f34361",
+          "sha256": "09d817e88e7c31ecc0aa08bd70fa738293afd0365daee4f61230fc4e7b3cbe08",
+          "size_bytes": 3537326
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/75243ed441d80711ba0f6975306330e4",
+          "sha256": "80562eaf1fc4e713c4a084f2fa10872b7078921b9442f830f2d5f69beb20f245",
+          "size_bytes": 54091776
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/99698ffc1992dc8d757f040d06ef1903",
+          "sha256": "b14310bbf4e0ff4ea241bd1b5e55727a748e3f85c8420344bd0c3dc7654f205c",
+          "size_bytes": 1041059840
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/ab696ef08258ee88d3e4f90ba5d6246a",
+          "sha256": "6c98ff5d7fa4a900ed8095102df857afbd0dfc929d6bcb444ef817288f9c9e68",
+          "size_bytes": 456
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/d7891341e726a956cdcfdc967a1a28b6",
+          "sha256": "e2d161eaf492c1a5a9e72b6244c674bc19d04b064b26c2d1155f84d64e0c898e",
+          "size_bytes": 8745
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/d/d8f3cfb1a28c4c0c197d3b338c93570d",
+          "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+          "size_bytes": 196
+        },
+        {
+          "path": "1387/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "9215b9a3f0425355c47c77e656bd43cc77204dd40c3e706813b5ae5c4a19c515",
+          "size_bytes": 438
+        },
+        {
+          "path": "event.json",
+          "sha256": "b493b0ca35180270a8810c4241c9b51054e978a6aa83ef6f4aada6898f19c8e3",
+          "size_bytes": 16333
+        }
+      ],
+      "gradient_norm_pre_clip": 1.8608653545379639,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 1388, norm 1.86087",
+      "kind": "directory",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/checkpoints/gradient_events/1388",
+      "pre_update_state_sha256": "4a2782b794145de116b491e3491da74202c83db905b8fd24f948636bee5234b7",
+      "pre_update_step": 1387,
+      "sha256": "1058f6510aee639e666dd9c1a4fae110d266d12aa43b9f2a3833823d496d4000",
+      "size_bytes": 1982207805,
+      "update": 1388
+    },
+    {
+      "event": "gradient_spike",
+      "file_count": 12,
+      "files": [
+        {
+          "path": "5986/default/_CHECKPOINT_METADATA",
+          "sha256": "fd70295f43e9fc3282d8556a853adda575eb925494f5341c220dd3dfa08f292b",
+          "size_bytes": 262
+        },
+        {
+          "path": "5986/default/_METADATA",
+          "sha256": "46d1c77482d2b40a0f94afd7758a3343e71faa064925e38606cbf2e93dd44588",
+          "size_bytes": 217678
+        },
+        {
+          "path": "5986/default/_sharding",
+          "sha256": "df65e66cc5845a42756b0ac1afc7cac7ed5420c655ad49b5e03f54f41aef92d8",
+          "size_bytes": 68358
+        },
+        {
+          "path": "5986/default/array_metadatas/process_0",
+          "sha256": "b974bb297223ac4c024f881515b1781cd63b867e888de7483871fc45441bae97",
+          "size_bytes": 74589
+        },
+        {
+          "path": "5986/default/d/dfbb4c819babb05318ab484bc3317695",
+          "sha256": "bfcb50d747b15d6156d31c577f0e7512c602fb6333d883cdfce92fd50ad34fbb",
+          "size_bytes": 8808
+        },
+        {
+          "path": "5986/default/manifest.ocdbt",
+          "sha256": "f81108d02e2ba1c6c4d18279dd672d4e2e52372e81bb520fa5f30ccac50c67ea",
+          "size_bytes": 118
+        },
+        {
+          "path": "5986/default/ocdbt.process_0/d/0860391632797ebb75cee6ffc98e9472",
+          "sha256": "f23f9068f64ede51e299b80a54bde24ebe2a7dd9d09a4f69a346a58b00e7810a",
+          "size_bytes": 1790201856
+        },
+        {
+          "path": "5986/default/ocdbt.process_0/d/bbb67583f14e7263c17f3701fbc745bf",
+          "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+          "size_bytes": 196
+        },
+        {
+          "path": "5986/default/ocdbt.process_0/d/bbc313a8276fd22e52b1e65b096b618b",
+          "sha256": "5411e772caf5ac2c88541c86931ac90b96199dc69e99af62e8c5f396e68babed",
+          "size_bytes": 188157952
+        },
+        {
+          "path": "5986/default/ocdbt.process_0/d/f6a7fc63cf7eca6e1ffa43c165281383",
+          "sha256": "0ae4141020b34f0450558332c87345f83966fab058feaea642ed4f6d704086cb",
+          "size_bytes": 3811
+        },
+        {
+          "path": "5986/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "c398cbb6870afa2a5a100cc5ffbbd4aee5b7bf99e379626ca3cea71c771edfe1",
+          "size_bytes": 266
+        },
+        {
+          "path": "event.json",
+          "sha256": "ed695a90fe771fb87f385099f211bf20858c8db0354b28973d88c4359fa39718",
+          "size_bytes": 16327
+        }
+      ],
+      "gradient_norm_pre_clip": 2.5085601806640625,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 5987, norm 2.50856",
+      "kind": "directory",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/checkpoints/gradient_events/5987",
+      "pre_update_state_sha256": "103e76c9237b8ffe38d4256d69a79491ac37843ac9a98e0c9d69eee8cc6eb8f8",
+      "pre_update_step": 5986,
+      "sha256": "b176491a38f949b2fc56834d3ad841df5ca8a7d5e5bacf54e97fc7e8654274b2",
+      "size_bytes": 1978750221,
+      "update": 5987
+    },
+    {
+      "event": "gradient_spike",
+      "file_count": 15,
+      "files": [
+        {
+          "path": "6375/default/_CHECKPOINT_METADATA",
+          "sha256": "0a117a92588f761f18e8e9d00dfafaff451b37950eadf766e194595cea3d0550",
+          "size_bytes": 262
+        },
+        {
+          "path": "6375/default/_METADATA",
+          "sha256": "46d1c77482d2b40a0f94afd7758a3343e71faa064925e38606cbf2e93dd44588",
+          "size_bytes": 217678
+        },
+        {
+          "path": "6375/default/_sharding",
+          "sha256": "df65e66cc5845a42756b0ac1afc7cac7ed5420c655ad49b5e03f54f41aef92d8",
+          "size_bytes": 68358
+        },
+        {
+          "path": "6375/default/array_metadatas/process_0",
+          "sha256": "b974bb297223ac4c024f881515b1781cd63b867e888de7483871fc45441bae97",
+          "size_bytes": 74589
+        },
+        {
+          "path": "6375/default/d/c1d0e16c5c9064df06519d9f5b46fa3d",
+          "sha256": "64742dd11ab5f6b017a9e91bab1735ec9a9c9d673b8b595cbd998ad21f0099ca",
+          "size_bytes": 8828
+        },
+        {
+          "path": "6375/default/manifest.ocdbt",
+          "sha256": "f3a59fec9f8e562865bde255a839f1706da12a8790918155956f953bd8a00a7e",
+          "size_bytes": 118
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/0b1657b44c15ae71dc0fdf080d6f9f68",
+          "sha256": "45eb139366826bd5b7113bd38e83417cac6ac3adb8e487aa3c08a07dba7c2807",
+          "size_bytes": 611
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/3500a74bd0cd36d91963084e7435eb00",
+          "sha256": "d1795d7814a5816f65df02b63f11f612f3d1ab6807136fe3bf0aeb33cdf8bc45",
+          "size_bytes": 242
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/459ddf18a3284738982d657aa08ff6cb",
+          "sha256": "f6c942996331d6e52bdb7f5b73e2a9d842b8ce089c2e2b25714e4755274d5ce4",
+          "size_bytes": 1109676032
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/8215947c546c9c60b42d1af6a4f8191c",
+          "sha256": "070245221d680ba0e5f152e6944fe7f50d515073b22c00fbfa047cfe35fe71ec",
+          "size_bytes": 839
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/89c4d8a958bd302b17de9a8f97997bd5",
+          "sha256": "7765c739556e79646080864a9ac749825025abe357d7f3fa99ade3f12d0e022a",
+          "size_bytes": 432
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/edcbe02642c47c5de0868fb209318f3b",
+          "sha256": "7d156e2c9e6cd5d4541411a44043e764b5efe37016e209515c9c76ec49443df8",
+          "size_bytes": 70217728
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/f096c3dbe779f290e505404d2a46986c",
+          "sha256": "1037f37cf5196e2813f07bcf4b9982a434a9e9099852b442429de5c0cd6b600c",
+          "size_bytes": 798715904
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "06309c8b48b6571ed7d0ba9490acdb2094c998b28426bd74d2a6868a1805b955",
+          "size_bytes": 400
+        },
+        {
+          "path": "event.json",
+          "sha256": "18bfb724ba78192ebfb4b035c000bc34aca9dc9049d4b5416a7fd9077de528b3",
+          "size_bytes": 16283
+        }
+      ],
+      "gradient_norm_pre_clip": 5.395658016204834,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 6376, norm 5.39566",
+      "kind": "directory",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/checkpoints/gradient_events/6376",
+      "pre_update_state_sha256": "876eae119a1c2b1eacc4375b0be3073b8dddde20f1fe95acc7dfee1ef1a43c38",
+      "pre_update_step": 6375,
+      "sha256": "849d8b52a7309fd80f6e36d133d03d3c41a5903222d1901a22b498a837087a70",
+      "size_bytes": 1978998304,
+      "update": 6376
+    }
+  ],
+  "error": null,
+  "execution": {
+    "attention_backend": "fused",
+    "raw_config": {
+      "path": "config.json",
+      "sha256": "bc840616822cb605d5df04202c571204f840c06bd4f299b0fad70cb0ceb43569"
+    },
+    "raw_metadata": {
+      "path": "metadata.json",
+      "sha256": "aa1749d9a6fadd260e391c5367d35e7ffefb3db254bc379ee31370625e158bf2"
+    },
+    "resolved_config": {
+      "continuation": {
+        "new_parameter_learning_rate": null,
+        "parent_checkpoint": "",
+        "parent_checkpoint_sha256": "",
+        "parent_config": "",
+        "parent_config_sha256": "",
+        "parent_data_identity_sha256": "",
+        "parent_step": 0,
+        "preserve_all_parameters": false
+      },
+      "data": {
+        "batch_size": 256,
+        "dataset_config": "sample-100BT",
+        "dataset_name": "HuggingFaceFW/fineweb-edu",
+        "eval_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/eval/manifest.json",
+        "sequence_length": 2049,
+        "shuffle_seed": 0,
+        "source": "packed",
+        "split": "train",
+        "synthetic_vocab_size": 32000,
+        "text_field": "text",
+        "tokenizer_name": "NousResearch/Llama-2-7b-hf",
+        "train_manifest": "/data/cl/u/rafah/home/datasets/fineweb_12b/train/manifest.json"
+      },
+      "model": {
+        "attention_backend": "fused",
+        "attention_blocked_implementation": "scan",
+        "attention_coefficient_activation": "pure_tanh",
+        "attention_coefficient_amplitude_initial": 1.0,
+        "attention_coefficient_amplitude_scale": "none",
+        "attention_coefficient_conditioning": "query",
+        "attention_coefficient_constant_initial": null,
+        "attention_coefficient_feature_count": null,
+        "attention_coefficient_gate": "none",
+        "attention_coefficient_initialization": "taylor",
+        "attention_coefficient_input_normalization": "l2",
+        "attention_coefficient_input_power": 1,
+        "attention_coefficient_input_source": "pre_rmsnorm",
+        "attention_coefficient_kernel_weight_decay": true,
+        "attention_coefficient_orders": null,
+        "attention_coefficient_parameterization": "sum_of_squares",
+        "attention_coefficient_projection_initial_std": 0.0,
+        "attention_coefficient_readout": "diagonal",
+        "attention_coefficient_readout_scale": 1.0,
+        "attention_coefficient_scale": "none",
+        "attention_coefficient_sharing": "per_head",
+        "attention_coefficient_tanh_bias": true,
+        "attention_coefficient_tanh_bias_initial": 0.5493061443340548,
+        "attention_coefficient_zero_constant": false,
+        "attention_coefficients": "learned",
+        "attention_degree": 17,
+        "attention_denominator_constant": "fixed",
+        "attention_denominator_degree": null,
+        "attention_denominator_parameterization": "direct",
+        "attention_exp_shift": "none",
+        "attention_fixed_coefficients": null,
+        "attention_fixed_square_factors": null,
+        "attention_forget_gate": false,
+        "attention_forget_gate_conditioning": "query",
+        "attention_forget_gate_constant_rate": "learned",
+        "attention_forget_gate_form": "input",
+        "attention_forget_gate_mode": "cumulative",
+        "attention_forget_gate_per_order": false,
+        "attention_forget_gate_rate_activation": "softplus",
+        "attention_head_rms_prescale": "max_abs",
+        "attention_kernel_basis": "polynomial",
+        "attention_mechanism": "dot_product",
+        "attention_normalization": false,
+        "attention_output_scaling": "head_rms_norm",
+        "attention_polynomial_shift": "row_power",
+        "attention_score_bias": "none",
+        "attention_score_mlp_activation": "silu",
+        "attention_score_mlp_amplitude_initial": null,
+        "attention_score_mlp_architecture": "dynamic_readout",
+        "attention_score_mlp_form": "kernel",
+        "attention_score_mlp_kernel_weight_decay": false,
+        "attention_score_mlp_offset_initial": null,
+        "attention_score_mlp_slope_initial": null,
+        "attention_score_mlp_width": null,
+        "attention_score_prefactor": "none",
+        "attention_score_transform": "softplus",
+        "attention_spline_initial_intercept": null,
+        "attention_spline_initial_power_coefficients": null,
+        "attention_spline_initial_slope": null,
+        "attention_spline_knots": null,
+        "attention_static_sos_parameterization": "direct",
+        "dropout": 0.0,
+        "gdn_conv_size": 4,
+        "gdn_erase_mode": "tied",
+        "gdn_polynomial_degree": 1,
+        "gdn_write_activation": "sigmoid",
+        "gla_chunk_size": 64,
+        "gla_gate_rank": 16,
+        "gla_gate_tau": 16.0,
+        "gla_inner_chunk_size": 16,
+        "gla_use_rope": true,
+        "hidden_size": 896,
+        "initialization": "transformer_truncated_reference",
+        "intermediate_size": 2304,
+        "kind": "transformer",
+        "max_seq_len": 2048,
+        "num_heads": 14,
+        "num_kv_heads": 14,
+        "num_layers": 15,
+        "path_conv_size": 3,
+        "path_w_rank": 32,
+        "positional_encoding": "rope",
+        "qk_head_dim": 4,
+        "qk_norm": true,
+        "qk_norm_eps": 1e-06,
+        "qk_norm_head_scale": true,
+        "qk_norm_initial_scale": null,
+        "qk_norm_sharing": "per_layer",
+        "qk_norm_token_scale": "none",
+        "qk_norm_token_scale_kernel_weight_decay": false,
+        "qk_norm_type": "rms_norm",
+        "quadratic_mode": "fixed",
+        "quadratic_sharing": "global",
+        "remat": false,
+        "rms_norm_eps": 1e-06,
+        "rms_norm_fp32": true,
+        "rope_theta": 10000.0,
+        "tie_embeddings": false,
+        "value_head_dim": 64,
+        "vocab_size": 32000
+      },
+      "optim": {
+        "beta1": 0.9,
+        "beta2": 0.95,
+        "coefficient_penalty": 0.0,
+        "coefficient_penalty_denominator": true,
+        "coefficient_release_end_step": null,
+        "coefficient_release_schedule": null,
+        "coefficient_release_step": null,
+        "grad_clip_norm": 1.0,
+        "learning_rate": 0.001,
+        "min_learning_rate": 0.0001,
+        "query_coefficient_learning_rate_scale": 1.0,
+        "total_steps": 7570,
+        "warmup_steps": 455,
+        "weight_decay": 0.1,
+        "weight_decay_policy": "exclude_embeddings_norms_biases_v1"
+      },
+      "train": {
+        "checkpoint_dir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/experiments/transformer_pp/runs/r70e98e1944d5/checkpoints",
+        "ckpt_every": 500,
+        "dtype": "bfloat16",
+        "eval_batches": 19,
+        "eval_early_every": 100,
+        "eval_early_until": 1500,
+        "eval_every": 500,
+        "gradient_event_capture": true,
+        "gradient_event_factor": 5.0,
+        "gradient_event_history": 100,
+        "gradient_event_max_states": 3,
+        "gradient_event_min_history": 20,
+        "gradient_event_min_norm": 1.0,
+        "log_every": 10,
+        "micro_batch_size": 16,
+        "seed": 42,
+        "source_commit": "bc04468ab7b2b93be7be0e4bfc29e1ed792a36a9",
+        "wandb_dir": null,
+        "wandb_entity": "rafah-massachusetts-institute-of-technology",
+        "wandb_group": "transformer_pp",
+        "wandb_mode": "online",
+        "wandb_project": "functional-memory",
+        "wandb_run_name": "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4",
+        "workdir": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/pure-tanh-sos-dk4/experiments/transformer_pp/runs/r70e98e1944d5"
+      }
+    },
+    "resolved_config_sha256": "539d3653ef48ef1820ca6fce9aa1df7471f4fdc4801470cef6f19c19a43fbdbc",
+    "runtime": {
+      "batch_transfer": "host_to_shard",
+      "devices": [
+        {
+          "id": 0,
+          "kind": "NVIDIA B200",
+          "platform": "gpu"
+        }
+      ],
+      "environment": {
+        "NCCL_P2P_DISABLE": null,
+        "TRANSFORMER_HOST_STAGING": "0",
+        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+        "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+      },
+      "state_transfer": "direct"
+    },
+    "runtime_history": [
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA B200",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "11991",
+        "timestamp_utc": "2026-11-23T16:17:43.610277+00:00"
+      }
+    ]
+  },
+  "frozen_execution_sha256": "3d52ad16ff08a14f7b95c411da6714687027a0c79646d31cb6d21ba089ffd142",
+  "home_cluster": "kennel",
+  "label": "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/training.log",
+    "sha256": "32965fb0230467b1239c81c12ea8f01aa60a8910d327521435956be13b209232",
+    "size_bytes": 729132
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/metadata.json",
+    "sha256": "aa1749d9a6fadd260e391c5367d35e7ffefb3db254bc379ee31370625e158bf2",
+    "size_bytes": 1556570
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/metrics.jsonl",
+    "sha256": "77d2cdf4c34538206a71d9f489ebb1deceab860c2b882f222fc95b3ac1e2ef73",
+    "size_bytes": 20799144
+  },
+  "name": "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4",
+  "numerical_failure_path": null,
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "da18697073d62e8e4917a66455b1d7c2c1d45e28208b2660354c22c4035247e5",
+    "loss": 5.598801612854004,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "retained_best_checkpoint_step": 7500,
+  "retained_terminal_checkpoint_step": null,
+  "retention": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/retention.json",
+    "sha256": "047c12557c5e3aa8d424a49a22725803fb4021241a03a55d2c468a298e713a36",
+    "size_bytes": 509
+  },
+  "run_id": "r70e98e1944d5",
+  "seed": 42,
+  "selected_checkpoint": {
+    "file_count": 14,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "e7de52367a8827831df02165c1afbc318609db1a44d5c4189173bf3fbe20b540",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "46d1c77482d2b40a0f94afd7758a3343e71faa064925e38606cbf2e93dd44588",
+        "size_bytes": 217678
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "df65e66cc5845a42756b0ac1afc7cac7ed5420c655ad49b5e03f54f41aef92d8",
+        "size_bytes": 68358
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "b974bb297223ac4c024f881515b1781cd63b867e888de7483871fc45441bae97",
+        "size_bytes": 74589
+      },
+      {
+        "path": "default/d/cc1e0973970d6fc3dd67945dcade46c6",
+        "sha256": "ef4172fa5058af8fd151bca4688024f2a9ce1595ba79535a47991c07038ad1a9",
+        "size_bytes": 8675
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "82041e26995f88cd5c36f4aa10197eba4b7c22de00cc0d97bcc4fc2c3c5b25d0",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/7dd2e143b6ede01a930d5d6b0ed3fdd4",
+        "sha256": "0d1342f08457a3a981cb1d45d689536c00a29591a5ed369e8c102d5f1d098966",
+        "size_bytes": 747
+      },
+      {
+        "path": "default/ocdbt.process_0/d/a9075253043af304ab0da56b4f76ada5",
+        "sha256": "a6f503b53d035c20af4d404f4ab3b779f5190bfd306232aea082f4262714cc7c",
+        "size_bytes": 156667904
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c3b128a291a50cf7f21a0580067c84eb",
+        "sha256": "d1795d7814a5816f65df02b63f11f612f3d1ab6807136fe3bf0aeb33cdf8bc45",
+        "size_bytes": 242
+      },
+      {
+        "path": "default/ocdbt.process_0/d/c5521485e3ab68901d84baf15ebec1f2",
+        "sha256": "f8fb58dbacd591f8408300ab7735bf255c88b985de0f9bf74fe4cf261f0f3d5d",
+        "size_bytes": 883
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e1aff3bd122d8bf58f3c089257e66e6c",
+        "sha256": "fbc6abcc13732b50fe4a2b6b8cd5a508da802df63622e5e80820a6e6773cf814",
+        "size_bytes": 1375633408
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ec1f69646d75b55380352cf993ea8f8b",
+        "sha256": "f651acd53cb02e3d4d7f4b24dc0b97a707b659044811b51abc3e2400775dbcd3",
+        "size_bytes": 446308352
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "804390c9f5388df8f94a21010b14803dd3721ccc9a6cf4f334dc24bdad693850",
+        "size_bytes": 363
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "48be2e17f67fab1afc459900c26d0b9c1eff0ea090148f0f43bd2db617470a97",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r70e98e1944d5/checkpoints/7500",
+    "sha256": "cf85c542b17de3709b8f2859f8d945332549c64f1f6b95fd217160bb7589d18e",
+    "size_bytes": 1978981820,
+    "step": 7500,
+    "validation_nll": 2.9645235695336996
+  },
+  "source_commit": "bc04468ab7b2b93be7be0e4bfc29e1ed792a36a9",
+  "status": "complete",
+  "step": 7570,
+  "training_tokens": 3968860160,
+  "updated_utc": "2026-11-24T00:43:16.863154+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_pp/runs/r70e98e1944d5/wandb_run.json",
+    "sha256": "9353d13316b0c1d39701aa0a3d444602fa9a1ef079dbc13fb5048fc16eda5a28",
+    "size_bytes": 238
+  }
+}

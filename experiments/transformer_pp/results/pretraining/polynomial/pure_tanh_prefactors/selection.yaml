@@ -244,3 +244,23 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/rca649583af62/best_validation.json
       sha256: 114f3bc4c9c4736fe957581ca7674725c1e0d0a2c4195e47bb10ae39dc763d27
+- study: transformer_pp
+  run_id: r70e98e1944d5
+  role: softplus_sos_core16_pure_tanh_factors
+  label: query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r70e98e1944d5/config.yaml
+      sha256: 13fd0096ea3b42f63cc83eeb14dff939574197d28e5a6d2f76d942bef0dc7f26
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r70e98e1944d5/metrics.jsonl
+      sha256: 77d2cdf4c34538206a71d9f489ebb1deceab860c2b882f222fc95b3ac1e2ef73
+    completion.json:
+      path: experiments/transformer_pp/runs/r70e98e1944d5/completion.json
+      sha256: 4ac8d4fb790d05422a2d0aefcf470de1a457384e9d9aab2d8270ce5a982d4fc3
+    metadata.json:
+      path: experiments/transformer_pp/runs/r70e98e1944d5/metadata.json
+      sha256: aa1749d9a6fadd260e391c5367d35e7ffefb3db254bc379ee31370625e158bf2
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r70e98e1944d5/best_validation.json
+      sha256: f85de2aacf5d30b2975f537deb0521ba3e02cbfc96c61f603b99ba71f5672233

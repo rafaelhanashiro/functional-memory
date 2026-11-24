@@ -12,6 +12,11 @@ every power 0..m, `x_hat_t` the raw attention-block input at unit L2 norm, `w_r`
 atanh(1/2). The [study methods](../../../../README.md#pure-tanh-coefficients-with-softplus-and-exp-prefactors-at-key-width-four)
 define the recipe and launch commands. Home cluster: Kennel.
 
+A seventh run gives the same generator to the SoS kernel that ties exp, `z h_t(z)` with `z = softplus(s)` and a
+degree-sixteen core: each square factor is `f_j tanh(w_j^T x_hat_t + beta_j)`, a fraction of its Taylor factor
+`f_j`, in place of the affine `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`
+([methods](../../../../README.md#pure-tanh-square-factors-for-z-h_tz-at-key-width-four)).
+
 All runs use the 15-layer width-896 shape, RoPE, QK RMSNorm with head scales, per-head output RMSNorm with the
 max-abs prescale, seed 42, 7,570 updates and the recipe's learning rate (peak 1e-3), on the row-power shifted fused
 kernel.
@@ -30,6 +35,7 @@ after update 500, with the largest pre-clip gradient norm.
 | `r1a0e7b80c588` | `softplus(s) P_t(s)` | 16 | 19.815 (19.821) | +3.25% | −11.3% | +2.1% | 2.0%, 4.6 |
 | `r6621b4589a3b` | `e^s P_t(s)` | 8 | 19.664 (19.673) | +2.47% | −15.0% | +0.9% | 0.2%, 5.7 |
 | `rf51ad9acc005` | `e^s P_t(s)` | 16 | 19.483 (19.488) | +1.52% | −16.8% | −0.0% | 1.6%, 22 |
+| `r70e98e1944d5` | `z h_t(z)`, pure tanh square factors | core 16 | 19.385 (19.388) | +1.02% | −14.1% | −0.1% | 4.0%, 5.4 |
 
 References at `d_K` 4, on the same recipe and learning rate:
 
@@ -38,12 +44,15 @@ References at `d_K` 4, on the same recipe and learning rate:
 | Affine tanh query polynomial, `(b_r + a_r tanh(W_r^T x_t)) / r!` | `rd5e3ec5a4f02` | 8 | 19.925 (19.939) | +3.83% |
 | Affine tanh query polynomial | `raec1c513a51b` | 16 | 19.777 (19.779) | +3.06% |
 | Fixed Taylor `T_16(s)` | `rca649583af62` | 16 | 19.829 (19.835) | +3.33% |
-| `z h_t(z)`, `z = softplus(s)`, SoS core | `r2e7f5617fdf2` | 16 | 19.192 (19.197) | +0.01% |
+| `z h_t(z)`, `z = softplus(s)`, SoS core with affine tanh factors | `r2e7f5617fdf2` | 16 | 19.192 (19.197) | +0.01% |
 
 ## Findings
 
-- **None reaches exp.** The closest is `e^s P_t` at degree sixteen, 1.52% above. Every run leads exp by 11–17% at
-  update 1,000 and is level with it or behind by update 3,000.
+- **None reaches exp.** The closest are the SoS core with pure tanh factors, 1.02% above, and `e^s P_t` at degree
+  sixteen, 1.52% above. Every run leads exp by 11–17% at update 1,000 and is level with it or behind by update
+  3,000.
+- **Pure tanh square factors do not help the SoS core:** 19.385 against 19.192 with the affine factors (+1.01%).
+  The run leads the affine one by 8.8% at update 1,000 and trails it from update 3,000, by 1.0% from update 5,000.
 - **Degree sixteen beats eight for each weight:** by 1.6% without a prefactor, 1.0% under softplus and 0.9% under
   exp.
 - **The exp prefactor helps and the softplus prefactor hurts.** Against no prefactor, exp is 1.0% lower at degree
@@ -55,8 +64,8 @@ References at `d_K` 4, on the same recipe and learning rate:
   in the validation windows between updates 2,000 and 3,500 and none from update 5,000.
 - **Learned coefficients beat fixed Taylor at degree sixteen** without a prefactor (19.556 against 19.829) and
   under exp.
-- **The softplus-prefactor SoS kernel stays ahead of every signed polynomial here:** it ties exp at core degree
-  sixteen, 1.5% below the best of these.
+- **The softplus-prefactor SoS kernel stays ahead of every signed polynomial here:** with affine factors it ties
+  exp at core degree sixteen, 1.5% below the best of them, and with pure tanh factors it is 0.5% below.
 
 ## Limits
 
@@ -66,7 +75,7 @@ References at `d_K` 4, on the same recipe and learning rate:
   recipe had no clipped update through update 5,000 and was 2.4% above exp there, 1.1% below this run, so 19.829
   is probably that much too high.
 - Hardware: the degree-sixteen runs trained on a B300. Each degree-eight run trained on a B300 and a B200 across
-  preemptions (`rfa8c0b2f748f` mostly on the B200).
+  preemptions (`rfa8c0b2f748f` mostly on the B200). The SoS run with pure tanh factors trained on a B200.
 - The prefactor kernel evaluates each key in units of its own bound and takes 1.4–2.3 times the plain kernel's time
   per update: 3.3 and 5.0 s (exp, degrees 8 and 16) and 5.1 and 6.9 s (softplus) against 2.4 and 3.0 s.
 

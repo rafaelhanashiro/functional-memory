@@ -152,7 +152,7 @@ def unnormalized_square_attention(q, k, v, factors, *, attention_degree: int, in
 
 
 def query_square_coefficients(generated: jax.Array, degree: int, *, input_power: int = 0,
-                              zero_constant: bool = False) -> jax.Array:
+                              zero_constant: bool = False, pure: bool = False) -> jax.Array:
     """Actual coefficients of z^input_power (q1(z)^2 + q2(z)^2), of TOTAL degree ``degree``.
 
     ``generated`` contains g_j=b_j+a_j tanh(W_j^T x), with core_degree+1 factors,
@@ -166,6 +166,11 @@ def query_square_coefficients(generated: jax.Array, degree: int, *, input_power:
     U_0,V_0 are structural zeros before expansion. Both expanded c_0 and c_1
     therefore stay exactly zero. This variant has no prefactor and does not
     initialize to T_core_degree: it removes the original factors' constants.
+
+    With ``pure=True``, ``generated`` is each factor's fraction of its Taylor factor,
+    g_j=tanh(W_j^T x+beta_j), so the factor is f_j g_j with |f_j g_j| < |f_j|. A common
+    start g (tanh(beta) for W=0) starts h at g^2 T_core_degree, which per-head RMSNorm
+    output scaling does not distinguish from T_core_degree.
     """
     if type(input_power) is not int or input_power not in (0, 1):
         raise ValueError("input_power must be the integer 0 or 1")
@@ -175,6 +180,8 @@ def query_square_coefficients(generated: jax.Array, degree: int, *, input_power:
     _validate_degree(core_degree)
     if type(zero_constant) is not bool or (zero_constant and input_power):
         raise ValueError("Zero factor constants require a boolean flag and no input prefactor")
+    if type(pure) is not bool or (pure and zero_constant):
+        raise ValueError("Pure factor fractions require a boolean flag and every factor constant")
     if generated.shape[-1] != core_degree + 1 - 2 * int(zero_constant):
         raise ValueError("Generated square factors must match the active factor coordinates" if zero_constant else
                          "Generated square factors must have core_degree + 1 entries")
@@ -183,6 +190,8 @@ def query_square_coefficients(generated: jax.Array, degree: int, *, input_power:
         indices = jnp.asarray([j for j in range(core_degree + 1) if j not in (0, core_degree // 2 + 1)])
         active = fixed[indices] * (1 + generated.astype(jnp.float32)) / 2
         factors = jnp.zeros((*generated.shape[:-1], core_degree + 1), jnp.float32).at[..., indices].set(active)
+    elif pure:
+        factors = fixed * generated.astype(jnp.float32)
     else:
         factors = fixed * (1 + generated.astype(jnp.float32)) / 2
     terms = [jnp.zeros(factors.shape[:-1], jnp.float32) for _ in range(core_degree + 1)]

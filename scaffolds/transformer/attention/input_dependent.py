@@ -104,10 +104,11 @@ def parameter_specs(*, hidden_size: int, degree: int = 1, activation: str = "ide
     if parameterization not in ("direct", "sum_of_squares"):
         raise ValueError(f"Unknown query coefficient parameterization: {parameterization}")
     if parameterization == "sum_of_squares" and (constant_initial is not None or degree < 2 or degree % 2
-                                                or activation != "tanh" or readout != "diagonal"
-                                                or conditioning != "query" or tanh_bias or gate != "none"):
-        raise ValueError("Query square factors require an even core degree, diagonal tanh query conditioning, "
-                         "and no constant override, inner bias, or coefficient gate")
+                                                or activation not in ("tanh", "pure_tanh") or readout != "diagonal"
+                                                or conditioning != "query" or gate != "none"
+                                                or (tanh_bias and activation != "pure_tanh")):
+        raise ValueError("Query square factors require an even core degree, diagonal tanh or pure tanh query "
+                         "conditioning, and no constant override, affine inner bias, or coefficient gate")
     count = degree + 1
     features = count if feature_count is None else feature_count
     if features != count and (readout != "dense" or amplitude_initial != 0):

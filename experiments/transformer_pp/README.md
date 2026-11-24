@@ -3228,6 +3228,50 @@ submit long 12:00:00 rfd16ec25202a      # P, m = 16
 submit long 10:00:00 rfd18b16513a0      # P, m = 8
 ```
 
+### Pure tanh coefficients at key width 64
+
+Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on ORCD: the pure tanh query
+coefficients of the Q/K width 4 runs above at `d_K` 64, degrees 8 and 16, and the degree-sixteen tanh query polynomial
+`b + a tanh(w^T x_t)`, their affine counterpart, which `d_K` 64 did not have. Each is the degree-eight tanh query + W decay
+run at `d_K` 64 (`r25fffc16c2f3`, the pure tanh m = 8 run's control) at its degree.
+
+| Run | Label | Coefficients | `m` |
+| --- | --- | --- | ---: |
+| `re0af7abe427b` | `query-pure-tanh-m8-dk64` | `tanh(w_r^T x_hat_t + beta_r) / r!` | 8 |
+| `rcb74ec29ab5f` | `query-pure-tanh-m16-dk64` | `tanh(w_r^T x_hat_t + beta_r) / r!` | 16 |
+| `rbb09d696a5b0` | `query-m16-dk64-w-decay` | `b + a tanh(w^T x_t)`, the partner's | 16 |
+
+- **Recipe.** All three train on the row-power shifted fused kernel with head RMSNorm's max-abs prescale: the Mosaic
+  kernels stop at degree twelve and take no inner bias. The pure tanh runs also take `pure_tanh_prefactor_acceptance.CHANGES`
+  (every order from the raw attention-block input at unit L2 norm, W at zero, every `beta_r` at atanh(1/2)). The
+  optimizer (the base learning rate at every order, weight decay 0.1 on W), seed, data order and schedule are the
+  partner's. The recipes read ORCD's copies of the dataset manifests (`/home/rafah/projects/ofm/datasets/fineweb_12b`),
+  which hash as the partner's.
+- **Kernel at width 64.** The shifted kernel was tuned and qualified at Q/K width 4 on a B200. On an ORCD H200
+  (`validation/qualify_shifted_polynomial_width.sbatch`) its width-64 cases (`tests/test_shifted_polynomial_key_width.py`)
+  run the fused programs against FP64 at degrees 8 and 16 with scores to about 20, and the fused pure tanh and tanh
+  query models against the blocked reference's, beside the module's own GPU cases: all pass (job 30217370), the
+  largest errors within 9.4e-6 (output) and 2.7e-5 (gradients) of each reference's largest entry
+  ([validation](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
+- **Time.** One attention layer's forward and backward at the 16 x 2,048-token micro-batch took 10.9 ms at degree 8
+  and 14.7 ms at degree 16 on the H200, so the 240 such calls of an update take about 2.6 and 3.5 s; acceptance's
+  pilot projects each run against ORCD's 48-hour horizon.
+- **Acceptance.** The [adapter](pure_tanh_dk64_acceptance.py) derives the three recipes from the pinned partner,
+  accepts another cluster's manifest copies by their bytes, requires the fused backend on an H100 or H200, and adds the
+  width-64 cases to the CPU and GPU stages, so each run qualifies the kernel on its allocated GPU. Home cluster ORCD.
+
+Submit from the study's worktree root after committing the frozen execution set; `orcd.sbatch` requeues each run
+before its time limit and after preemption:
+
+```sh
+for run in re0af7abe427b rcb74ec29ab5f rbb09d696a5b0; do
+  sbatch --parsable --job-name="$run" --output="experiments/transformer_pp/runs/$run/training.log" \
+    --gres=gpu:h200:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.pure_tanh_dk64_acceptance \
+    "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 H200
+done
+```
+
 ### Learning rate at key width four
 
 Six runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22, four
@@ -3280,6 +3324,50 @@ submit long 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:11991  # z h_t(z), four times
 submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
+```
+
+### Pure tanh square factors for z h_t(z) at key width four
+
+One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
+`z = softplus(s)`, `h_t = A_t^2 + B_t^2` of core degree sixteen at `d_K` 4 (`r2e7f5617fdf2`, which ties the
+exponential), with its factor generator alone changed. Each factor is a pure tanh fraction of its fixed Taylor
+factor,
+
+`F_j(x_t) = f_j tanh(w_j^T x_hat_t + beta_j)`,
+
+in place of `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`. `x_hat_t` is the raw attention-block input at unit L2 norm,
+`w_j` start at zero and every `beta_j` at atanh(1/2), as in the
+[pure tanh direct runs](#pure-tanh-coefficients-with-softplus-and-exp-prefactors-at-key-width-four): every factor
+starts at half its Taylor factor and tanh' at 3/4, so each query's `z h_t(z)` starts at a quarter of `z T_16(z)`,
+a scale head RMSNorm removes wherever a head's output is well above its epsilon. Weight decay 0.1 applies to `w_j`
+and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's.
+[Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
+
+| Run | Label | Weight | Core degree |
+| --- | --- | --- | ---: |
+| `r70e98e1944d5` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4` | `z h_t(z)`, pure tanh factors | 16 |
+
+- **Kernel.** The row-power shifted fused kernel
+  ([validation](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)),
+  which evaluates any per-query coefficients; the generator expands the factors in FP32 as the affine one does. The
+  Mosaic kernels take no pure tanh inner bias.
+- **Acceptance.** The [adapter](pure_tanh_sos_acceptance.py) pins the partner and admits its recipe with the seven
+  generator settings alone, on the fused backend on a B200 or B300. The kernel's GPU cases with this generator
+  passed on a B200 (job 11890).
+- **Time limit.** The partner trained in 7.8 h (3.6 s per update on a B200); 12 hours leave acceptance's two-hour
+  reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
+
+```sh
+run=r70e98e1944d5
+d="experiments/transformer_pp/runs/$run"
+sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=12:00:00 \
+  --exclude=collie,dogo,doodle,mastiff,samoyed,terrier --job-name="$run" \
+  --output="$d/training.log" --error="$d/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.pure_tanh_sos_acceptance \
+  "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 ```
 
 ## Max-abs ALiBi exp and 12-layer width-640 4x runs

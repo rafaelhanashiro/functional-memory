@@ -917,3 +917,7 @@ header { position: relative; }
 .queue-icon:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 .queue-run.dragging, .queue-group.dragging { border-radius: 9px; background: #fff; box-shadow: 0 14px 36px rgba(24, 24, 27, 0.16); }
 .queue-slot { border: 1.5px dashed #d4d4d8; border-radius: 9px; }
+
+/* The Notes tab: one text of the user's (text/notes/page.md), with a hint while it is empty. */
+.notes-hint { display: none; color: var(--muted); }
+.notes:has(> .text-block:empty) > .notes-hint { display: block; }
