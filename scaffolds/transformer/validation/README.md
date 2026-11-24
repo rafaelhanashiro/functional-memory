@@ -23,6 +23,10 @@ At commit `db4b0a35` it qualified the Transformer++ learning-rate runs at `d_K` 
 `z h_t(z)` on Mosaic (30293830). Every stage passed
 ([study](../../../experiments/transformer_pp/README.md#two-and-four-times-the-learning-rate-at-key-width-64)).
 
+At commit `a189117e`, with node-local temporaries, it qualified the prefactor learning-rate runs on the same H100s:
+`z h_t(z)` (job 30341125), `exp(s) h_t(z)` (30341126) and `sigmoid(s) h_t(z)` (30341127) on Mosaic, and
+`softplus(s) exp(s)` on the fused kernel (30341128). Every stage passed, `tests/test_gradient_events.py` included.
+
 `orcd.sbatch` and the qualification keep temporary files in a node-local job directory, as Kennel's launcher does,
 removed at exit. Inside the worktree, where `orcd.sbatch` kept them at `db4b0a35`, pytest's tmp_path studies sit
 inside the checkout: the records store such a study's paths relative to the checkout (`.cache/...`) and cannot
