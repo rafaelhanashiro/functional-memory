@@ -3327,3 +3327,37 @@ for run in r2772a578f438 r1c5a4f7eec48 r09a659e750af r8232fb2003bf r789a0220b8d8
     "$run_dir/config.yaml" "$launch_commit" 1 B200,B300
 done
 ```
+
+### Query polynomial with negative-score branches at key width 64
+
+Three Kennel runs, requested 2026-11-24, give the degree-eight query polynomial with direct coefficients the SoS
+runs' first three negative-score branches above. The control is `r25fffc16c2f3` (`query-m8-dk64-w-decay`, best
+14.323), whose tanh query coefficients `(b_r + a_r tanh(W_r^T x_t))/r!` start at Taylor's `T_8`; it is the SoS
+control `reeefbcc19abf`'s partner. For `s >= 0` each run uses the control's `h_t(s)`; for `s < 0`:
+
+| Run | Label | Weight for a negative score |
+| --- | --- | --- |
+| `r0d95b6ee7e66` | `query-m8-dk64-w-decay-negative-exp-times-query` | `exp(s) h_t(s)` |
+| `r19c58fc28b21` | `query-m8-dk64-w-decay-negative-exp-times-origin` | `exp(s) h_t(0)` |
+| `rdd7def8722ca` | `query-m8-dk64-w-decay-negative-positive-quartic` | `h_t(0)/D(u)` with positive quartic coefficients |
+
+- **Recipe.** The control's, with the branch, the blocked backend's causal strips (as the SoS runs) and head
+  RMSNorm's max-abs prescale. Seed 42, data order, schedule and every other setting are the control's, so the
+  initial parameters are its own, bit for bit; the quartic adds its generator. `split_score.validate` admits the
+  direct coefficients beside the SoS.
+- **Acceptance.** The [adapter](split_score_query_acceptance.py) pins the control and admits these three branches
+  alone, and the shared stages run `tests/test_split_score.py`, whose model cases cover both parameterizations.
+- **Time limit.** The SoS runs took 11.0-11.2 h on a B200 (5.2 s per update); 24 hours, standard's limit, leaves
+  acceptance's two-hour reserve.
+
+```bash
+launch_commit=$(git rev-parse HEAD)
+for run in r0d95b6ee7e66 r19c58fc28b21 rdd7def8722ca; do
+  run_dir="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=24:00:00 --gres=gpu:1 \
+    --cpus-per-task=16 --mem=128G --exclude=collie,dogo,doodle,mastiff,samoyed,terrier \
+    --job-name="$run" --output="$run_dir/training.log" --error="$run_dir/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.split_score_query_acceptance \
+    "$run_dir/config.yaml" "$launch_commit" 1 B200,B300
+done
+```

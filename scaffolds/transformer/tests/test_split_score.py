@@ -91,15 +91,21 @@ def test_signed_denominator_is_not_clamped():
     assert out[0] == -1 and jnp.isinf(out[1])
 
 
+# The query polynomial with direct coefficients takes the factorial scales of its control (r25fffc16c2f3).
+DIRECT = dict(attention_coefficient_parameterization="direct", attention_coefficient_scale="factorial",
+              attention_coefficient_amplitude_scale="factorial")
+
+
+@pytest.mark.parametrize("parameterization", ("sum_of_squares", "direct"))
 @pytest.mark.parametrize("branch", split_score.BRANCHES[1:])
-def test_model_updates_and_reports_each_branch(branch):
+def test_model_updates_and_reports_each_branch(branch, parameterization):
     from scaffolds.transformer.tests.test_softplus_sos import _config
     from scaffolds.transformer.training import loop
     from scaffolds.transformer.training.diagnostics import attention_diagnostics, attention_identity
     from scaffolds.transformer.training.state import create_state
 
     config = _config(attention_score_transform="identity", attention_negative_score_branch=branch,
-                     attention_head_rms_prescale="max_abs")
+                     attention_head_rms_prescale="max_abs", **(DIRECT if parameterization == "direct" else {}))
     state = create_state(config, jax.random.PRNGKey(1))
     batch = jnp.asarray(np.random.default_rng(9).integers(0, 32, (2, 9)), jnp.int32)
     after, *_ = loop.train_step(state, batch, jax.random.PRNGKey(0))
@@ -113,3 +119,32 @@ def test_model_updates_and_reports_each_branch(branch):
         assert np.any(value != np.asarray(state.params[name][...]))
     report = attention_diagnostics(after, config, np.asarray(batch[:1]), {"selection": "test"})
     assert report["valid"], report["issues"]
+
+
+def test_the_direct_query_polynomial_starts_at_taylor_on_both_sides():
+    """With direct coefficients h_t starts at T_8; e^s h_t(s), e^s h_t(0) and h_t(0)/D(-s) with D's initial quartic
+    T_4(-s) start at e^s T_8(s), e^s and 1/T_4(-s)."""
+    from scaffolds.transformer.tests.test_softplus_sos import _config
+    from scaffolds.transformer.models import build_model
+    from flax import nnx
+
+    s = jnp.asarray([-3., -1., -.25, 0., .5, 2.])
+    taylor = [1 / math.factorial(r) for r in range(9)]
+    t8 = sum(c * s ** r for r, c in enumerate(taylor))
+    for branch, expected in (("exp_times_sos", jnp.where(s < 0, jnp.exp(s) * t8, t8)),
+                             ("exp_times_origin", jnp.where(s < 0, jnp.exp(s), t8)),
+                             ("positive_quartic", jnp.where(s < 0, 1 / sum((-s) ** r / math.factorial(r)
+                                                                         for r in range(5)), t8))):
+        config = _config(attention_score_transform="identity", attention_negative_score_branch=branch,
+                         attention_head_rms_prescale="max_abs", **DIRECT)
+        params = nnx.state(build_model(config.model, rngs=nnx.Rngs(0)), nnx.Param)
+        # Layers stack on the first axis and heads on the second; the factorial scale divides b_r = 1 by r!.
+        bias = np.asarray(params["query_polynomial_bias"][...])
+        np.testing.assert_allclose(bias, np.ones(bias.shape), rtol=1e-6)
+        quartic = None
+        if branch in split_score.DENOMINATORS:
+            raw = jnp.asarray(params["negative_quartic_bias"][...])[0, 0]
+            quartic = split_score.denominator_parameters(raw, branch)
+        coefficients = [jnp.asarray(c) for c in taylor]
+        weights, _ = split_score.weights(s, coefficients, quartic, branch)
+        np.testing.assert_allclose(weights, expected, rtol=2e-6)

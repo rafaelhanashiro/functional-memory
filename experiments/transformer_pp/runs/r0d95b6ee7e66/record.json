@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r0d95b6ee7e66/config.yaml",
+    "sha256": "a2fdd6ab3d99427500aa2491978133c2aae9ee550eb423eaf823fb5952dee097"
+  },
+  "label": "query-m8-dk64-w-decay-negative-exp-times-query",
+  "name": "query-m8-dk64-w-decay-negative-exp-times-query",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "e088e31177452d4ad4c548879d9bc52167df8abe0bf11cca1d32ab765715f7b4",
+    "loss": 5.569648742675781,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r0d95b6ee7e66",
+  "status": "planned"
+}

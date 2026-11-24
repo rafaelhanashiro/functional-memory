@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdd7def8722ca/config.yaml",
+    "sha256": "191ceec449b36fe97cf66fa66851e885923a3e99e4c81dabd0b0b26bebc4125a"
+  },
+  "label": "query-m8-dk64-w-decay-negative-positive-quartic",
+  "name": "query-m8-dk64-w-decay-negative-positive-quartic",
+  "receipt": {
+    "arrays_count": 62,
+    "digest": "fb337dfd5c06586c4dfd967b990ce2f8ca2fa97bbd6297c6eda8c8491651b3e8",
+    "loss": 5.5720906257629395,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rdd7def8722ca",
+  "status": "planned"
+}

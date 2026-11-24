@@ -1,4 +1,5 @@
-"""Negative-score branches for a learned query SoS; the positive side is the original polynomial."""
+"""Negative-score branches for a learned degree-eight query polynomial, a sum of squares or direct coefficients;
+the positive side is the original polynomial."""
 from dataclasses import replace
 import math
 
@@ -21,7 +22,7 @@ def validate(model):
     if not (model.attention_backend == "blocked" and model.attention_degree == 8
             and model.attention_coefficients == "learned" and not model.attention_normalization
             and model.attention_coefficient_conditioning == "query"
-            and model.attention_coefficient_parameterization == "sum_of_squares"
+            and model.attention_coefficient_parameterization in ("sum_of_squares", "direct")
             and model.attention_coefficient_activation == "tanh"
             and model.attention_coefficient_readout == "diagonal"
             and model.attention_coefficient_input_normalization == "none"
@@ -31,7 +32,8 @@ def validate(model):
             and model.attention_score_prefactor == "none" and model.attention_score_transform == "identity"
             and model.attention_score_bias == "none" and model.attention_coefficient_gate == "none"
             and not model.attention_forget_gate and model.attention_polynomial_shift == "none"):
-        raise ValueError("The split score kernels take an unnormalized raw degree-eight query SoS on blocked RoPE")
+        raise ValueError("The split score kernels take an unnormalized raw degree-eight query polynomial (SoS or "
+                         "direct) on blocked RoPE")
 
 
 def initial_bias(branch):
