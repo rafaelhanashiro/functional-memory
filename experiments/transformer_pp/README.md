@@ -3261,9 +3261,9 @@ Submit from the study's worktree after committing the frozen execution set and c
 allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
 
 ```sh
-submit() {  # partition, time limit, GPU types, excluded nodes, run
+submit() {  # partition, time limit, GPU types, excluded nodes, run, further sbatch option
   d="experiments/transformer_pp/runs/$5"
-  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$4" \
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$4" $6 \
     --job-name="$5" --output="$d/training.log" --error="$d/training.log" \
     scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.learning_rate_acceptance \
     "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
@@ -3274,9 +3274,12 @@ submit long 12:00:00 B200,B300 "$blackwell" r1934bca84bd4  # z h_t(z), half
 submit long 12:00:00 B200,B300 "$blackwell" rd5cc0aec9712  # z h_t(z), double
 submit long 8:00:00 B300,H100 "$b300" r03217591054b        # exp, half
 submit long 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
-# Four times, on akita's free B300s within the standard allowance:
-submit standard 12:00:00 B200,B300 "$b300" rdc43b5c9d2d0   # z h_t(z), four times
-submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926    # exp, four times
+# Four times, within the standard allowance and with both Blackwell nodes full: z h_t(z) takes the B200 that job
+# 11991 (r70e98e1944d5) frees on shiba, and the exponential stays held until akita shows a free B300, so that
+# neither evicts a long job.
+b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
+submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:11991  # z h_t(z), four times
+submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
 ```
 
 ## Max-abs ALiBi exp and 12-layer width-640 4x runs
