@@ -656,7 +656,7 @@ class MultiHeadAttention(nnx.Module):
                 not in (("query", "sum_of_squares"), ("query", "direct"), ("static", "direct"))
                 or attention_score_transform not in ("identity", "softplus")
                 or attention_score_prefactor not in ("none", "softplus", "exp")
-                or (attention_score_prefactor != "none" and attention_score_transform != "identity")
+                or (attention_score_prefactor == "softplus" and attention_score_transform != "identity")
                 or attention_head_rms_prescale != "max_abs" or backend not in ("blocked", "fused")):
             raise ValueError("The row-power shift evaluates unnormalized per-query polynomials (tanh query coefficients, "
                              "direct or sum of squares, or static direct ones) on the raw or softplus score, or times "

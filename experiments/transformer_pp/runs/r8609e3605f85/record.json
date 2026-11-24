@@ -1,0 +1,19 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8609e3605f85/config.yaml",
+    "sha256": "79c43a4cbace17165105c303df382e3bfb368f9d7a02955e3ea88d319f057a95"
+  },
+  "home_cluster": "kennel",
+  "label": "dk4-affine-query-sos-m16-exp-prefactor-softplus-input-4x-lr",
+  "name": "dk4-affine-query-sos-m16-exp-prefactor-softplus-input-4x-lr",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "9d8d072f8f560bdfdd0a691f217b8d473dcc488e8b4ffe9e7aad66ec5e4ae7c4",
+    "loss": 5.596585273742676,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r8609e3605f85",
+  "seed": 42,
+  "status": "planned"
+}

@@ -10,11 +10,10 @@ a_r = c_r exp(-(M - r) shift / M) per query row, evaluated by Horner's rule in M
 z with the shift fixed is exp(-shift/M) sum_r r a_r u^(r-1), times dz/ds for softplus. Coefficient r's derivative is
 exp(-(M - r) shift / M) times the row's moment sum_i dp_i u_i^r, accumulated from successive products dp u^k.
 
-With a prefactor f of the raw score (z = s) each key takes its own units (shifted_polynomial.key_bound and
-keyed_polynomial): the weight is e^(b - shift) h, b = log f(s) + M log max(1, |s|), shift the row's largest b (at least
-zero), h = p(s) / max(1, |s|)^M by Horner's rule in s where |s| <= 1 and in 1/s over the reversed coefficients
-elsewhere. The slope is e^(b - shift) ((f'/f) h + p'(s) / max(1, |s|)^M), and coefficient r's derivative the row sum of
-dp e^(b - shift) s^r / max(1, |s|)^M: ascending powers of s where |s| <= 1, descending powers of 1/s elsewhere.
+With a raw-score prefactor f the key bound is b = log f(s) + M log S with S = max(1, |z|).
+In units of the largest causal bound the weight is exp(b - shift) p(z)/S^M. Its score
+slope in these units is exp(b - shift) [(f'/f) p(z) + p'(z) dz/ds]/S^M. Coefficient
+derivatives use z^r/S^M, with reversed powers of 1/z where |z| > 1.
 """
 from functools import partial
 import math
@@ -52,10 +51,11 @@ def _row_shift(z, degree):
     return degree * jnp.log(jnp.maximum(1.0, jnp.max(jnp.abs(z), axis=1)))
 
 
-def _key_bound(scores, prefactor, degree):
-    """b = log f(s) + M log max(1, |s|) and f'(s)/f(s) (None for exp, where it is one). For softplus below s = -20 both
+def _key_bound(scores, prefactor, degree, *, z=None):
+    """b = log f(s) + M log max(1, |z|) and f'(s)/f(s) (None for exp, where it is one). For softplus below s = -20 both
     take their limits, s and one, within e^-20."""
-    magnitude = degree * jnp.log(jnp.maximum(1.0, jnp.abs(scores)))
+    z = scores if z is None else z
+    magnitude = degree * jnp.log(jnp.maximum(1.0, jnp.abs(z)))
     if prefactor == "exp":
         return scores + magnitude, None
     softplus, sigmoid = _transformed(scores, "softplus")
@@ -146,9 +146,10 @@ def _forward_kernel(q_ref, k_ref, v_ref, *refs, transform, prefactor, time, dq, 
             weights, _ = _polynomial(z, half, horner)
         else:
             # A masked score is zero; its bound, at most zero, never raises the shift above its floor.
-            bound, _ = _key_bound(scores, prefactor, degree)
+            z, _ = _transformed(scores, transform)
+            bound, _ = _key_bound(scores, prefactor, degree, z=z)
             shift = jnp.maximum(previous, jnp.max(bound, axis=1))
-            weights = jnp.exp(bound - shift[:, None]) * _keyed_polynomial(scores, coefficients)
+            weights = jnp.exp(bound - shift[:, None]) * _keyed_polynomial(z, coefficients)
         weights = jnp.where(causal, weights, 0.0)
         output = output * jnp.exp(previous - shift)[:, None] + _dot(weights, v)
         return output, shift
@@ -190,20 +191,22 @@ def _dq_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, dq
                 product = product * u
                 updated.append(moment + jnp.sum(product, axis=1))
             return grad_q, tuple(updated)
-        bound, ratio = _key_bound(scores, prefactor, degree)
-        value, slope = _keyed_polynomial(scores, coefficients, slope=True)
+        z, dz = _transformed(scores, transform)
+        bound, ratio = _key_bound(scores, prefactor, degree, z=z)
+        value, slope = _keyed_polynomial(z, coefficients, slope=True)
         dp = jnp.where(causal, _cotangent_dot(do, v), 0.0) * jnp.exp(bound - shift[:, None])
+        slope = slope if dz is None else slope * dz
         ds = dp * (value + slope if ratio is None else ratio * value + slope)
         grad_q += _dot(ds, k) * (1.0 / math.sqrt(dq))
-        # Coefficient r's moment of s^r / max(1, |s|)^M: s^r where |s| <= 1, sign(s)^M (1/s)^(M - r) elsewhere.
-        small = jnp.abs(scores) <= 1.0
-        inverse = 1.0 / jnp.where(small, 1.0, scores)
+        # Coefficient r's moment of z^r / max(1, |z|)^M: z^r where |z| <= 1, sign(z)^M (1/z)^(M - r) elsewhere.
+        small = jnp.abs(z) <= 1.0
+        inverse = 1.0 / jnp.where(small, 1.0, z)
         ascending = jnp.where(small, dp, 0.0)
-        descending = jnp.where(small, 0.0, dp) * (jnp.where(scores < 0, -1.0, 1.0) if degree % 2 else 1.0)
+        descending = jnp.where(small, 0.0, dp) * (jnp.where(z < 0, -1.0, 1.0) if degree % 2 else 1.0)
         updated = list(moments)
         for step in range(degree + 1):
             if step:
-                ascending, descending = ascending * scores, descending * inverse
+                ascending, descending = ascending * z, descending * inverse
             updated[step] = updated[step] + jnp.sum(ascending, axis=1)
             updated[degree - step] = updated[degree - step] + jnp.sum(descending, axis=1)
         return grad_q, tuple(updated)
@@ -239,10 +242,12 @@ def _dkv_kernel(q_ref, k_ref, v_ref, *refs, parts, transform, prefactor, time, d
             weights, _, slope = _polynomial(z, half, horner, slope=True)
             ds = jnp.where(causal, dp * slope if dz is None else dp * slope * dz, 0.0)
         else:
-            bound, ratio = _key_bound(scores, prefactor, len(coefficients) - 1)
+            z, dz = _transformed(scores, transform)
+            bound, ratio = _key_bound(scores, prefactor, len(coefficients) - 1, z=z)
             unit = jnp.exp(bound - shift[:, None])
-            value, slope = _keyed_polynomial(scores, coefficients, slope=True)
+            value, slope = _keyed_polynomial(z, coefficients, slope=True)
             weights = unit * value
+            slope = slope if dz is None else slope * dz
             ds = jnp.where(causal, dp * unit * (value + slope if ratio is None else ratio * value + slope), 0.0)
         weights = jnp.where(causal, weights, 0.0)
         return grad_k + _dot(ds.T, q) * (1.0 / math.sqrt(dq)), grad_v + _dot(weights.T, _cotangent(do))
@@ -334,7 +339,8 @@ def fused_shifted_polynomial(q, k, v, coefficients, *, transform="identity", pre
     """The shifted output e^(-m) o [B,T,H,dv] in FP32 and the stopped shifts m [B,T,H]; coefficients [B,T,H,M+1]."""
     if transform not in TRANSFORMS:
         raise ValueError(f"The shifted polynomial takes the transforms {TRANSFORMS}, not {transform!r}")
-    if prefactor not in PREFACTORS or (prefactor != "none" and transform != "identity"):
-        raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, of the raw score with z = s")
+    if prefactor not in PREFACTORS or (prefactor == "softplus" and transform != "identity"):
+        raise ValueError(f"The shifted polynomial takes raw-score prefactors {PREFACTORS}; "
+                         "the softplus prefactor requires identity polynomial input")
     rows = tuple(coefficients[..., r] for r in range(coefficients.shape[-1]))
     return _attention(q, k, v, rows, transform, prefactor, interpret)
