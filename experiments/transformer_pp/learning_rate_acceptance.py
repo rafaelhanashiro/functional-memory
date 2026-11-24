@@ -1,8 +1,8 @@
-"""Qualify the Q/K width 4 exponential and z h_t(z) with a degree-sixteen SoS core at half and double the
-learning-rate schedule.
+"""Qualify the Q/K width 4 exponential and z h_t(z) with a degree-sixteen SoS core at half, double and four times
+the learning-rate schedule.
 
-Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by 0.5
-or 2: the unnormalized exponential (r2739c80cc032, key_width_acceptance) and z h_t(z), z = softplus(s), with a
+Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by 0.5,
+2 or 4: the unnormalized exponential (r2739c80cc032, key_width_acceptance) and z h_t(z), z = softplus(s), with a
 degree-sixteen query SoS core (r2e7f5617fdf2, shifted_sos_acceptance). Warmup, horizon, clipping, seed, data order
 and every model setting are the partner's, so a run starts from its partner's parameters and differs from it by the
 step size alone; the exponential also takes head RMSNorm's max-abs prescale, as every new run does (the same function
@@ -30,7 +30,7 @@ PARTNERS = {
     "shifted_sos": ("r2e7f5617fdf2", "53e71c960ce46cbe21b420a810610ff8a80d4ec9484d0d8f4ca218b6a65473bf",
                     shifted_sos_acceptance),
 }
-SCALES = (0.5, 2.0)
+SCALES = (0.5, 2.0, 4.0)
 # The schedule's peak and floor scale together; warmup and horizon stay.
 RATES = ("learning_rate", "min_learning_rate")
 # New runs' evaluation of head RMSNorm. The comparison leaves it to the run (acceptance.comparison_recipe), and the

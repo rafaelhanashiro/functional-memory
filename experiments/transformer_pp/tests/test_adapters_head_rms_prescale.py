@@ -52,7 +52,8 @@ PRESCALED_ONLY = {"shifted_sos_acceptance": ("r2e7f5617fdf2",),
                   "shifted_polynomial_acceptance": ("raec1c513a51b", "rca649583af62"),
                   "pure_tanh_prefactor_acceptance": ("rfd18b16513a0", "rfa8c0b2f748f", "r6621b4589a3b"),
                   "learning_rate_acceptance": ("r1934bca84bd4",),
-                  "pure_tanh_sos_acceptance": ("r70e98e1944d5",)}
+                  "pure_tanh_sos_acceptance": ("r70e98e1944d5",),
+                  "pure_tanh_dk64_acceptance": ("re0af7abe427b", "rcb74ec29ab5f", "rbb09d696a5b0")}
 CASES = (*((name, run) for name, runs in RUNS.items() for run in runs), *((name, None) for name in CONSTRUCTED))
 
 
