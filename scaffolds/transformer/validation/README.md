@@ -87,6 +87,32 @@ largest entry. One layer's forward and backward at 16 x 2,048 tokens, 14 heads a
 H100 is qualified only by a run's own acceptance, whose GPU stage takes these cases for a width-64 shifted run
 (`experiments/transformer_pp/pure_tanh_dk64_acceptance.py`).
 
+**One-pass prefactor evaluation (2026-11-24).** The kernel now evaluates `f(s) p_t(s)` without a logarithm or a
+reciprocal of a score, and without the second Horner chain in `1/s`. A row's units `m` come from its largest causal
+score `x` alone (`shifted_polynomial.key_shift`): `max(0, x + M log(-x))` for `x <= -M`, otherwise the larger of `x`'s
+bound and `M log M - M`, an upper bound on every key's `b_i` that equals the largest one unless `x` lies in `(-M, 4.5)`
+or so. `p_t` splits into `n = max(2, ceil(M/4))` chunks of width `ceil(M/n)`, each by Horner's rule in `s`, staged
+from the top by `g`, an `n`-th root of the exponential part of `f(s) e^-m` (`e^((s-m)/n)` for exp and for softplus
+below `s = -20`, `e^(-m/n)` with softplus itself a factor elsewhere): `T_j = T_(j+1) (g s^d) + g^(n-j) F P_j`, every
+partial sum within the coefficients' scale. The slope stages `F' P_j + F P_j'`, and coefficient `r`'s derivative
+sums `dp F g^n s^r` along each chunk. The forward program finds a row's units in a first pass over its keys, so the
+backward programs recompute the weights with the same arithmetic; with units raised online, earlier tiles' rescaling
+by `exp(m_1 - m_2)` differed from that by about 1e-5 under the approximate exponentials, and the stress row's
+near-cancelled top-coefficient gradient (softplus, degree 9) missed its FP64 tolerance on a B200 (1.23 of it, job
+12989). On CPU the arithmetic matches FP64 at degrees 1 to 17 and score scales 0.5 to 400, relative to its terms'
+magnitudes (largest 8e-6 against 6.5e-5 for the two-branch evaluation at scale 400), the units bound every key's,
+and the blocked reference matches dense FP64. On a B200 (job 12990) the module's GPU cases pass, that gradient at
+0.63 of its tolerance (0.42 for the two-branch kernel), and at 2 x 2,048 tokens, 14 heads, Q/K width 4 and BF16 the
+one-pass and two-branch kernels agree to BF16 rounding (job 12991). One layer's forward and backward at 16 x 2,048
+tokens on the B200, against 7.81 ms (degree 8) and 10.38 ms (degree 16) without a prefactor:
+
+| Prefactor | Degree | Two-branch | One-pass |
+| --- | ---: | ---: | ---: |
+| exp | 8 | 11.59 ms | 8.27 ms |
+| exp | 16 | 18.98 ms | 11.28 ms |
+| softplus | 8 | 19.20 ms | 11.54 ms |
+| softplus | 16 | 27.17 ms | 15.36 ms |
+
 ### Head RMSNorm max-abs prescale (2026-11-20)
 
 `model.attention_head_rms_prescale: max_abs` ([README](../README.md#unnormalized-output-scaling)) evaluates head
