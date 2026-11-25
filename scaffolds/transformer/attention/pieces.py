@@ -310,12 +310,12 @@ def mosaic_score_transform_problem(model) -> str | None:
     ``common.score_function_family``: any transform without a prefactor; a softplus, sigmoid, exp or swish
     prefactor with the identity or softplus transform), on H100 and B200, so they take the recipes those kernels
     take (``mosaic_supported``'s query case: RoPE, Q/K widths 4-128, value width 64, the degrees
-    ``query_degree_supported`` fits at the recipe's length; with a prefactor, the GPU-qualified degrees up to
-    ``MAX_PREFACTOR_QUERY_DEGREE``) with diagonal tanh query coefficients, learned static direct coefficients
+    ``query_degree_supported`` fits at the recipe's length; with a prefactor, the GPU-qualified degrees
+    ``prefactor_degree_limit`` gives) with diagonal tanh query coefficients, learned static direct coefficients
     (every query's equal) or fixed degree-one (0, 1) coefficients and no forget gate, score biases or key
     factors. Backend resolution checks the GPU and length."""
     from scaffolds.transformer.attention.backends.mosaic.api import (
-        MAX_PREFACTOR_QUERY_DEGREE, VALUE_WIDTH, WIDTHS, query_degree_supported,
+        VALUE_WIDTH, WIDTHS, prefactor_degree_limit, query_degree_supported,
     )
     from scaffolds.transformer.attention.backends.mosaic.common import SCORE_FUNCTION_FAMILIES
 
@@ -335,8 +335,9 @@ def mosaic_score_transform_problem(model) -> str | None:
         problem = f"Q/K width {model.qk_head_dim} is not one of {WIDTHS}"
     if problem is None and model.value_head_dim != VALUE_WIDTH:
         problem = f"value width {model.value_head_dim} is not {VALUE_WIDTH}"
-    if problem is None and prefactor != "none" and model.attention_degree > MAX_PREFACTOR_QUERY_DEGREE:
-        problem = (f"the prefactor kernels are GPU-qualified at degrees up to {MAX_PREFACTOR_QUERY_DEGREE}, not "
+    limit = prefactor_degree_limit(transform, prefactor, model.qk_head_dim)
+    if problem is None and prefactor != "none" and model.attention_degree > limit:
+        problem = (f"the prefactor kernels are GPU-qualified at degrees up to {limit}, not "
                    f"{model.attention_degree}; the blocked backend takes any degree")
     if problem is None and not query_degree_supported(model.attention_degree, model.qk_head_dim, model.max_seq_len,
                                                       transform=transform, prefactor=prefactor):

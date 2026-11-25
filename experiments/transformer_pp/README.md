@@ -3361,6 +3361,44 @@ for run in rdb8deaab4c91 r7aa6c853dafd; do
 done
 ```
 
+### A degree-twelve SoS core under exp of the raw score at key width 64
+
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-25 on Kennel: `e^s h_t(z)`,
+`z = softplus(s)`, with a degree-twelve query SoS core at `d_K` 64, at one and two times the schedule's learning
+rate. Its degree-eight core is the best RoPE polynomial at this shape (`raeaa47865867`, 14.067; 14.001 at twice the
+rate, on ORCD). With the factor `z` in exp's place, the degree-twelve core tied the degree-eight one (`rf637de9b65b1`
+14.093, `r841f35a24241` 14.095): does exp of the raw score gain from the higher degree?
+
+| Run | Label | Peak, floor rate | Partner |
+| --- | --- | --- | --- |
+| `r99fe75016666` | `query-sos-m12-exp-prefactor-softplus-input-w-decay` | 1e-3, 1e-4 | `rf637de9b65b1` |
+| `rafbba8d1794f` | `query-sos-m12-exp-prefactor-softplus-input-w-decay-lr-double` | 2e-3, 2e-4 | `rf637de9b65b1` |
+
+- **Recipe.** The degree-twelve `z h_t(z)` recipe (`rf637de9b65b1`) with exp of the raw score in place of the factor
+  `z` (`model.attention_score_prefactor: exp`, `attention_coefficient_input_power: 0`, total degree twelve), head
+  RMSNorm's max-abs prescale, and its peak and floor rates multiplied by 1 or 2. The factor adds no parameter, so each
+  run starts from the partner's parameters.
+- **Kernels.** The Mosaic `query_softplus_times_exp` kernels, qualified to degree twelve at `d_K` 64 for this family
+  alone (`mosaic.api.PREFACTOR_DEGREE_LIMITS`; the GPU suite's degree-twelve cases run in each run's acceptance on
+  its GPU); every other prefactor family stops at degree eight. At this width the scores stay below 15, where
+  `z^12 e^s` is far inside FP32.
+- **Acceptance.** The [adapter](wide_exp_prefactor_sos_acceptance.py) pins the partner, admits the two rates alone and
+  checks every initial array against the partner's; on a B200 or H100. The partner took 6.3 h on a B200: 12 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in r99fe75016666 rafbba8d1794f; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.wide_exp_prefactor_sos_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,

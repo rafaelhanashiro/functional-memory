@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r99fe75016666/config.yaml",
+    "sha256": "0cb40dd62ea706d3efa6dff8750382ea27b36dda97605eb2820927b3cdba6225"
+  },
+  "label": "query-sos-m12-exp-prefactor-softplus-input-w-decay",
+  "name": "query-sos-m12-exp-prefactor-softplus-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "3103eedd38586a4e2186f3bfbe0281abf59ae6e1a619a83073efe8deb40303f5",
+    "loss": 5.561885356903076,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r99fe75016666",
+  "status": "planned"
+}
