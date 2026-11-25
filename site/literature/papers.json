@@ -1,5 +1,70 @@
 [
   {
+    "id": "2103.02143",
+    "title": "Random Feature Attention",
+    "authors": [
+      "Hao Peng",
+      "Nikolaos Pappas",
+      "Dani Yogatama",
+      "Roy Schwartz",
+      "Noah A. Smith",
+      "Lingpeng Kong"
+    ],
+    "year": 2021,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2103.02143",
+    "arxiv": "2103.02143",
+    "seen": false,
+    "category": "state-space",
+    "added": "2026-11-25"
+  },
+  {
+    "id": "2009.14794",
+    "title": "Rethinking Attention with Performers",
+    "authors": [
+      "Krzysztof Choromanski",
+      "Valerii Likhosherstov",
+      "David Dohan",
+      "Xingyou Song",
+      "Andreea Gane",
+      "Tamas Sarlos",
+      "Peter Hawkins",
+      "Jared Davis",
+      "Afroz Mohiuddin",
+      "Lukasz Kaiser",
+      "David Belanger",
+      "Lucy Colwell",
+      "Adrian Weller"
+    ],
+    "year": 2020,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2009.14794",
+    "arxiv": "2009.14794",
+    "seen": true,
+    "category": "state-space",
+    "added": "2026-11-25"
+  },
+  {
+    "id": "2410.05258",
+    "title": "Differential Transformer",
+    "authors": [
+      "Tianzhu Ye",
+      "Li Dong",
+      "Yuqing Xia",
+      "Yutao Sun",
+      "Yi Zhu",
+      "Gao Huang",
+      "Furu Wei"
+    ],
+    "year": 2024,
+    "source": "arXiv",
+    "url": "https://arxiv.org/pdf/2410.05258",
+    "arxiv": "2410.05258",
+    "seen": true,
+    "added": "2026-11-25",
+    "category": "attention-mixtures"
+  },
+  {
     "id": "2402.04347",
     "title": "The Hedgehog & the Porcupine: Expressive Linear Attentions with Softmax Mimicry",
     "authors": [
@@ -118,7 +183,8 @@
     "url": "https://arxiv.org/pdf/2404.19756",
     "arxiv": "2404.19756",
     "seen": true,
-    "added": "2026-11-18"
+    "added": "2026-11-18",
+    "category": "learning-non-poly-kernels"
   },
   {
     "id": "2610.14219",
