@@ -2,8 +2,9 @@
 // categories (literature/categories.json, in their order), each split into seen and not seen yet;
 // resources under no category come last, under no heading while there are no categories. A new
 // link goes to the top of the category picked beside it. The grip on each card drags it within its
-// list, into the other half, or into another category (the arrow keys move it within its list). A
-// category's name renames in place, its arrows move it, and deleting it leaves its resources under
+// list, into the other half, or into another category (the arrow keys move it within its list); the
+// folder beside its check files it under another category picked from a list, and the bin removes
+// it, write-up and all, after asking. A category's name renames in place, its arrows move it, and deleting it leaves its resources under
 // no category. The chevron before a name hides that category down to its heading, in this browser
 // only. Adding, moving, renaming, and saving a write-up (literature/<id>.md, shown when its
 // card opens) all go through serve.py.
@@ -18,6 +19,8 @@ const GRIP = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="5
 const UP = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 15V5M5.5 9.5L10 5l4.5 4.5"/></svg>';
 const DOWN = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5v10M5.5 10.5L10 15l4.5-4.5"/></svg>';
 const CROSS = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg>';
+const FOLDER = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3.1a1.5 1.5 0 0 1 1.1.5L10 7h5.5A1.5 1.5 0 0 1 17 8.5v5.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14z"/></svg>';
+const BIN = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 6h11M8 6V4.5h4V6M6 6l.7 9.2a1.5 1.5 0 0 0 1.5 1.3h3.6a1.5 1.5 0 0 0 1.5-1.3L14 6M8.6 9v4.4M11.4 9v4.4"/></svg>';
 const HALVES = [["seen", "Seen"], ["unseen", "Not seen yet"]];
 const PICKED = "literature-category";  // this browser's last pick for new links
 const FOLDED = "literature-hidden";  // the categories this browser hides
@@ -46,8 +49,19 @@ function writeupPath(paper) {
   return `literature/${paper.id}.md`;
 }
 
+// A card's link: an arXiv resource's opens its PDF, whichever of its pages was added (at the
+// version that link names, if any).
+function linkOf(paper) {
+  if (!paper.arxiv) return paper.url;
+  const version = paper.url.split(paper.arxiv)[1]?.match(/^v\d+/)?.[0] ?? "";
+  return `https://arxiv.org/pdf/${paper.arxiv}${version}`;
+}
+
 // A resource's category, or "" when it has none or names one that no longer exists.
 const categoryOf = (paper) => categories.some((category) => category.id === paper.category) ? paper.category : "";
+
+// The choices of a category picker: the categories in order, then none.
+const categoryOptions = () => [...categories.map((category) => new Option(category.name, category.id)), new Option("No category", "")];
 
 async function request(method, url, body) {
   const response = await fetch(url, {
@@ -90,7 +104,7 @@ function createCard(paper) {
     if (part) meta.append(part, " · ");
   }
   const link = element("a", "", paper.source || "Link");
-  link.href = paper.url;
+  link.href = linkOf(paper);
   link.target = "_blank";
   link.rel = "noopener";
   meta.append(link);
@@ -110,10 +124,34 @@ function createCard(paper) {
   handle.addEventListener("click", (event) => event.preventDefault());
   handle.addEventListener("pointerdown", (event) => drag(event, card, handle));
   handle.addEventListener("keydown", (event) => nudge(event, card, handle));
-  summary.append(handle, head, toggle);
+  // The folder: a native picker, unseen over the icon, filled with the categories as they are when
+  // it opens.
+  const folder = element("span", "move-category");
+  folder.innerHTML = FOLDER;
+  const menu = element("select");
+  menu.title = "Move to another category";
+  menu.setAttribute("aria-label", "Move to another category");
+  for (const type of ["pointerdown", "focus"]) {
+    menu.addEventListener(type, () => {
+      menu.replaceChildren(...categoryOptions());
+      menu.value = categoryOf(paper);
+    });
+  }
+  menu.addEventListener("change", () => moveTo(paper, menu.value));
+  folder.append(menu);
+  const bin = element("button", "remove-resource");
+  bin.type = "button";
+  bin.innerHTML = BIN;
+  bin.title = "Remove from the list";
+  bin.setAttribute("aria-label", "Remove from the list");
+  bin.addEventListener("click", (event) => {
+    event.preventDefault();
+    removeResource(paper);
+  });
+  summary.append(handle, head, bin, folder, toggle);
   summary.insertAdjacentHTML("beforeend", CHEVRON);
   summary.addEventListener("click", (event) => {
-    if (event.target.closest("a, button") || !card.open || !dirty.has(card)) return;
+    if (event.target.closest("a, button, select") || !card.open || !dirty.has(card)) return;
     if (confirm("Discard unsaved changes?")) dirty.delete(card);
     else event.preventDefault();
   });
@@ -256,7 +294,7 @@ function fillPicker() {
   if (!picker.options.length) {
     try { chosen = localStorage.getItem(PICKED) ?? ""; } catch { chosen = ""; }
   }
-  picker.replaceChildren(...categories.map((category) => new Option(category.name, category.id)), new Option("No category", ""));
+  picker.replaceChildren(...categoryOptions());
   picker.value = categories.some((category) => category.id === chosen) ? chosen : "";
   picker.hidden = categories.length === 0;
 }
@@ -474,6 +512,35 @@ function drop(card, category, seen) {
   }
   saveOrder(card);
   layout();
+}
+
+// A card's folder files it under the category picked there, at the top of its half, where a new
+// link would go; it is saved as if dragged there.
+function moveTo(paper, category) {
+  const card = cards.get(paper.id);
+  sections.get(category).querySelector(`[data-group="${paper.seen ? "seen" : "unseen"}"] .papers`).prepend(card);
+  drop(card, category, paper.seen);
+}
+
+// A card's bin removes its resource after asking, and its write-up with it (the question says so
+// when there is one).
+async function removeResource(paper) {
+  const text = await fetch(writeupPath(paper), {cache: "no-store"}).then((response) => (response.ok ? response.text() : ""), () => "");
+  if (!confirm(`Remove "${paper.title}" from the list?${text.trim() ? " Its write-up is deleted too." : ""}`)) return;
+  saving = saving.then(async () => {
+    try {
+      await request("DELETE", `${API}/${encodeURIComponent(paper.id)}`);
+      const card = cards.get(paper.id);
+      papers = papers.filter((other) => other !== paper);
+      cards.delete(paper.id);
+      dirty.delete(card);
+      card.remove();
+      layout();
+      status.textContent = "";
+    } catch (error) {
+      status.textContent = `Not removed: ${error.message}`;
+    }
+  });
 }
 
 function nudge(event, card, handle) {

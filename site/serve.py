@@ -30,6 +30,7 @@ accepts:
     PATCH  /api/literature/<id>     {"seen": true or false} moves a resource between the two
                                     groups; {"title": ...} renames it; {"category": id or null}
                                     files it under a category, or under none
+    DELETE /api/literature/<id>     remove a resource and its write-up
     GET    /api/categories          {"categories": [{"id": ..., "name": ...}]}: the Literature page's
                                     categories, in its order, kept in literature/categories.json
     POST   /api/categories          {"name": ...}: add a category, first in the order
@@ -601,6 +602,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def _delete_resource(self, identifier: str):
+        with LOCK:
+            papers = load_list()
+            if not any(paper["id"] == identifier for paper in papers):
+                self._json(404, {"error": f"No resource {identifier}"})
+                return
+            save_list([paper for paper in papers if paper["id"] != identifier])
+            (LITERATURE / f"{identifier}.md").unlink(missing_ok=True)
+        self.send_response(204)
+        self.end_headers()
+
     def _upload(self):
         kind = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
         length = int(self.headers.get("Content-Length") or 0)
@@ -728,6 +740,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         if category := CATEGORY_API.fullmatch(self._route()):
             self._delete_category(category.group(1))
+            return
+        if resource := RESOURCE.fullmatch(self._route()):
+            self._delete_resource(resource.group(1))
             return
         match = MEETING_API.fullmatch(self._route())
         if not match:

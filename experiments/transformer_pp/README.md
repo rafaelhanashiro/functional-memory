@@ -3347,6 +3347,41 @@ for run in r76b9aa49fe23 rbf850552cbba rf93d2b71f731 rb418110c763c r7d7504df667b
 done
 ```
 
+### Prefactors of the raw score on the query polynomial at key width 64
+
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-24 on Kennel: the degree-eight tanh
+query polynomial (`r25fffc16c2f3`, best 14.323) with `W = f(s) p_t(s)` over the whole score range, `f` = exp or
+softplus of the raw score. The split-score query runs apply `e^s` to negative scores alone; on the degree-eight SoS
+core, `e^s` over the whole range (`r6525664e6696`, 14.089) beat every such split (14.196-14.205), which tied the plain
+core (14.196). Do the query polynomial's splits (14.258 and below) trail its whole-range prefactors the same way?
+[Results](results/pretraining/parametrizations/sos/softplus_inputs/README.md#prefactors-of-the-raw-score).
+
+| Run | Label | Kernel | Partner |
+| --- | --- | --- | --- |
+| `rdb8deaab4c91` | `query-m8-exp-prefactor-raw-input-w-decay` | `exp(s) p_t(s)` | `r25fffc16c2f3` |
+| `r7aa6c853dafd` | `query-m8-softplus-prefactor-raw-input-w-decay` | `softplus(s) p_t(s)` | `r25fffc16c2f3` |
+
+- **Recipe.** The partner's recipe with `model.attention_score_prefactor`, head RMSNorm's max-abs prescale and
+  gradient-event capture, as every new run takes them; the prefactor adds no parameter, so each run starts from the
+  partner's parameters.
+- **Acceptance.** The [adapter](query_prefactor_acceptance.py) pins the partner, admits the two prefactors alone and
+  checks every initial array against the partner's. They train on the Mosaic `query_times_exp` and
+  `query_times_softplus` kernels, on a B200 or H100, as the SoS prefactor runs did; 12 hours, about 4 h on a B200.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in rdb8deaab4c91 r7aa6c853dafd; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.query_prefactor_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
