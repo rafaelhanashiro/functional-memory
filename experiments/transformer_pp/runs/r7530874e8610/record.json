@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7530874e8610/config.yaml",
+    "sha256": "c9a235fb0f431406572d672adda3e0981c104342fd3513b207bb945f0f557542"
+  },
+  "label": "exp-head-scale-row-max-sigmoid-prefactor-dk4",
+  "name": "exp-head-scale-row-max-sigmoid-prefactor-dk4",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "88fb1dc1133709331fd230d35c3e44009c28dd5294fca6671b0acb22b9b669c5",
+    "loss": 5.597625732421875,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r7530874e8610",
+  "status": "planned"
+}

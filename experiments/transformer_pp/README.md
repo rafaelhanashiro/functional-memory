@@ -3326,6 +3326,39 @@ submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:1
 submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
 ```
 
+### Exponential prefactors at key width four
+
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-25 on Kennel: `f(s) e^s`, f = softplus
+or sigmoid of the raw score, at `d_K` 4. At `d_K` 64 they gained 0.88% and 0.50% over the exponential
+(`rbd24b948a240`, 14.132; `rd7c9f610e9dc`, 14.186; exp `r6a76e7fbde45`, 14.257): do they at `d_K` 4, against the
+exponential's 19.190 at the same rate?
+
+| Run | Label | Kernel | Partner |
+| --- | --- | --- | --- |
+| `r8aead78ffa55` | `exp-head-scale-row-max-softplus-prefactor-dk4` | `softplus(s) e^s` | `r2739c80cc032` |
+| `r7530874e8610` | `exp-head-scale-row-max-sigmoid-prefactor-dk4` | `sigmoid(s) e^s` | `r2739c80cc032` |
+
+- **Recipe.** The shifted exponential's recipe at `d_K` 4 (`r2739c80cc032`) with `model.attention_score_prefactor`,
+  head RMSNorm's max-abs prescale and the blocked backend's causal strips, the one implementation that applies the
+  row-maximum shift to a score function: the fused kernel shifts the plain exponential alone, and at `d_K` 4 the scores
+  pass `e^s`'s FP32 range. The prefactor adds no parameter, so each run starts from the partner's parameters.
+- **Acceptance.** The [adapter](narrow_exp_prefactor_acceptance.py) pins the partner, admits the two prefactors alone
+  and checks every initial array against the partner's. The strips are plain JAX, on a B200, B300 or H100; 23 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in r8aead78ffa55 r7530874e8610; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=23:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.narrow_exp_prefactor_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,

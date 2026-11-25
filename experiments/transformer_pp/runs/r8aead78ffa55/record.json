@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r8aead78ffa55/config.yaml",
+    "sha256": "d735338e510d200ab1bafd8d61d04a10f8eb6f70cda7b9e5da7e2521ce595d80"
+  },
+  "label": "exp-head-scale-row-max-softplus-prefactor-dk4",
+  "name": "exp-head-scale-row-max-softplus-prefactor-dk4",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "6104a9752049b73afbd88edff55322bda7401c2207c4ceb6ed112387bc06d735",
+    "loss": 5.596438407897949,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r8aead78ffa55",
+  "status": "planned"
+}
