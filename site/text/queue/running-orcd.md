@@ -3,9 +3,9 @@ Every run on ORCD not yet on the site.
 #### In progress
 
 - **Learning rate at two and four times the schedule**, $d_K = 64$ (all four kernels qualified on ORCD's H100s). Query SoS core 8 on $z = \mathrm{softplus}(s)$ under each prefactor, and exp under the softplus prefactor:
-  - $e^s\,h_t(z)$ (exp prefactor): $\times 4$ (training)
-  - $z\,h_t(z)$ (softplus prefactor): $\times 4$ (preempted twice, queued to resume from update 100)
-  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor): $\times 2$ (training); $\times 4$ (preempted, queued to resume from update 200)
+  - $e^s\,h_t(z)$ (exp prefactor): $\times 4$
+  - $z\,h_t(z)$ (softplus prefactor): $\times 4$ (resumed after two preemptions)
+  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor): $\times 4$ (resumed after a preemption)
 
 #### Finished
 
@@ -15,6 +15,7 @@ Every run on ORCD not yet on the site.
   - $z\,h_t(z)$ (softplus prefactor), core 8: $\times 2$
   - $\mathrm{softplus}(s)\,e^s$: $\times 2$, $\times 4$
   - $e^s\,h_t(z)$ (exp prefactor), core 8: $\times 2$
+  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor), core 8: $\times 2$
 - **Pure tanh query coefficients** $c_r = \tanh(\hat x\, w_r + \beta_r)/r!$, $d_K = 64$
   - $P_t(s)$, $m = 8$
   - $P_t(s)$, $m = 16$
