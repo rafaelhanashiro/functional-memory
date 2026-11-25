@@ -1,11 +1,15 @@
 """Qualify learning-rate scalings of completed recipes: at Q/K width 4 the exponential and z h_t(z) with a
-degree-sixteen SoS core, and at Q/K width 64 the degree-eight SoS core under a prefactor of the raw score.
+degree-sixteen SoS core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that core under a
+prefactor of the raw score.
 
 Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by one of
 its partner's scales (SCALES): the unnormalized exponential at width 4 (r2739c80cc032, key_width_acceptance) at half,
 double and four times; z h_t(z), z = softplus(s), with a degree-sixteen query SoS core at width 4 (r2e7f5617fdf2,
 shifted_sos_acceptance) also at eight times; and f(s) h_t(s), f = exp, softplus or sigmoid, with a degree-eight query
-SoS core at width 64 (r6525664e6696, r41662adb22fa, r8f56a5b7e525; softplus_sos_acceptance) at double and four times.
+SoS core at width 64 (r6525664e6696, r41662adb22fa, r8f56a5b7e525; softplus_sos_acceptance) at double and four times;
+and at width 64 the exponential (r6a76e7fbde45, the shared acceptance) and z h_t(z) with a degree-eight core
+(r841f35a24241, softplus_sos_acceptance) at half. A partner may also take a newer run's settings of the same function
+(PARTNER_CHANGES): the exponential at width 64 its row-maximum shift.
 Warmup, horizon, clipping, seed, data order and every model setting are the partner's, so a run starts from its
 partner's parameters and differs from it by the step size alone; a partner that predates head RMSNorm's max-abs
 prescale takes it, as every new run does (the same function as its plain arithmetic). The partner's adapter qualifies
@@ -21,11 +25,41 @@ from pathlib import Path
 import sys
 
 from experiments.transformer_pp import key_width_acceptance, shifted_sos_acceptance, softplus_sos_acceptance
-from scaffolds.transformer.acceptance import comparison_recipe, main as run_acceptance
+from scaffolds.transformer.acceptance import attention_spec, comparison_recipe, main as run_acceptance
 from scaffolds.transformer.configs import load_config
 from scaffolds.transformer.configs.base import validate_config
 
 RUNS = Path(__file__).resolve().parent / "runs"
+
+
+class SharedPartner:
+    """A partner the shared acceptance qualified: the run's initial parameters must be the partner's, bit for bit."""
+
+    def __init__(self, run_id, gpu_tests=()):
+        self.run_id, self.gpu_tests = run_id, tuple(gpu_tests)
+
+    def check_recipe(self, config):
+        validate_config(config)
+
+    def experiment_spec(self, config, *, entry_module):
+        import numpy as np
+
+        shared = attention_spec(config, entry_module=entry_module)
+
+        def check_initialization(current):
+            actual = key_width_acceptance.flat_initial_parameters(current)
+            original = key_width_acceptance.flat_initial_parameters(load_config(RUNS / self.run_id / "config.yaml"))
+            if set(actual) != set(original) or any(
+                    actual[path].shape != value.shape or not np.array_equal(actual[path], value)
+                    for path, value in original.items()):
+                raise RuntimeError(f"Initial parameters differ from the partner {self.run_id}'s")
+            return {"partner_run_id": self.run_id, "all_partner_arrays_identical": True}
+
+        return replace(shared, required_backend=config.model.attention_backend,
+                       check_initialization=check_initialization,
+                       gpu_tests=(*shared.gpu_tests,
+                                  *(test for test in self.gpu_tests if test not in shared.gpu_tests)))
+
 # Each partner: its run, recipe SHA256 and adapter.
 PARTNERS = {
     "exponential": ("r2739c80cc032", "73ecd43b5132131762344ef4aba26c9b84d688f5d96dd8354f9b28646aefa4e1",
@@ -39,10 +73,18 @@ PARTNERS = {
                                softplus_sos_acceptance),
     "sigmoid_prefactor_sos": ("r8f56a5b7e525", "d0d05d4e9228f50190231025306db861cf0f9c5977a860aa299080d0396eb579",
                               softplus_sos_acceptance),
+    # At Q/K width 64, the exponential and z h_t(z) with a degree-eight core.
+    "exponential_dk64": ("r6a76e7fbde45", "599dc40917e12a8308ae41fcb39623e1871e43fbd6d35402692d25f02450eee6",
+                         SharedPartner("r6a76e7fbde45", key_width_acceptance.GPU_TESTS["exponential"])),
+    "softplus_sos_dk64": ("r841f35a24241", "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
+                          softplus_sos_acceptance),
 }
+# A newer run's settings of the partner's function, as every new run takes them (scaffolds.records create).
+PARTNER_CHANGES = {"exponential_dk64": {"attention_exp_shift": "row_max"}}
 # Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not.
 SCALES = {"exponential": (0.5, 2.0, 4.0), "shifted_sos": (0.5, 2.0, 4.0, 8.0), "exp_prefactor_sos": (2.0, 4.0),
-          "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0)}
+          "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0), "exponential_dk64": (0.5,),
+          "softplus_sos_dk64": (0.5,)}
 # The Mosaic transformed query-polynomial kernels of the prefactor partners admit these GPUs alone.
 MOSAIC_TRANSFORMED_GPUS = ("H100", "B200")
 # The schedule's peak and floor scale together; warmup and horizon stay.
@@ -55,12 +97,14 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
 
 
 def partner_key(config) -> str:
-    """The exponential has no degree; a prefactor of the raw score names its partner; z h_t(z) has neither."""
+    """The exponential has no degree; a prefactor of the raw score names its partner; z h_t(z) has neither. The Q/K
+    width tells the exponential and z h_t(z) at 4 from those at 64."""
     model = config.model
+    wide = model.qk_head_dim == 64
     if model.attention_degree is None:
-        return "exponential"
+        return "exponential_dk64" if wide else "exponential"
     if model.attention_score_prefactor == "none":
-        return "shifted_sos"
+        return "softplus_sos_dk64" if wide else "shifted_sos"
     key = f"{model.attention_score_prefactor}_prefactor_sos"
     if key not in PARTNERS:
         raise ValueError(f"No learning-rate partner takes the {model.attention_score_prefactor} prefactor")
@@ -79,7 +123,8 @@ def recipe(key, scale):
     if scale not in SCALES[key]:
         raise ValueError(f"The {key} learning-rate scales are {SCALES[key]}, not {scale}")
     partner = partner_config(key)
-    return replace(partner, model=replace(partner.model, attention_head_rms_prescale=PRESCALE), optim=replace(
+    model = replace(partner.model, attention_head_rms_prescale=PRESCALE, **PARTNER_CHANGES.get(key, {}))
+    return replace(partner, model=model, optim=replace(
         partner.optim, **{name: getattr(partner.optim, name) * scale for name in RATES}))
 
 
@@ -119,6 +164,9 @@ def gpu_types(config) -> tuple:
     key = partner_key(config)
     if key == "exponential":
         return key_width_acceptance.gpu_types(key_width_acceptance.partner_key(config), config.model.qk_head_dim)
+    if key == "exponential_dk64":
+        # The fused exponential, as at the narrower widths.
+        return key_width_acceptance.PARTNERS["exponential"]["gpu_types"][4]
     return shifted_sos_acceptance.GPU_TYPES if key == "shifted_sos" else MOSAIC_TRANSFORMED_GPUS
 
 
