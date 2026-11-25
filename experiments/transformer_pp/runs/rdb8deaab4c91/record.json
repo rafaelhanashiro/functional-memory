@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rdb8deaab4c91/config.yaml",
+    "sha256": "a0b428981c98e9ceef5be1d0f823d138d3a07b0cb8973593c37ce9e8a7c36654"
+  },
+  "label": "query-m8-exp-prefactor-raw-input-w-decay",
+  "name": "query-m8-exp-prefactor-raw-input-w-decay",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "67a1c09dcbc3ddc7fe96aef3dd0e1ba58b887c7ccaaaf0dd888d93f8b02b20a1",
+    "loss": 5.5594964027404785,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rdb8deaab4c91",
+  "status": "planned"
+}
