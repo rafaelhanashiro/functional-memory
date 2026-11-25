@@ -1,3 +1,5 @@
+*Updated 2026-11-25 at 16:25 EST.*
+
 Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's are marked), without the stability reruns.
 
 #### In progress
