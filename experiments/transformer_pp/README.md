@@ -3333,6 +3333,7 @@ query polynomial (`r25fffc16c2f3`, best 14.323) with `W = f(s) p_t(s)` over the 
 softplus of the raw score. The split-score query runs apply `e^s` to negative scores alone; on the degree-eight SoS
 core, `e^s` over the whole range (`r6525664e6696`, 14.089) beat every such split (14.196-14.205), which tied the plain
 core (14.196). Do the query polynomial's splits (14.258 and below) trail its whole-range prefactors the same way?
+[Results](results/pretraining/parametrizations/sos/softplus_inputs/README.md#prefactors-of-the-raw-score).
 
 | Run | Label | Kernel | Partner |
 | --- | --- | --- | --- |
