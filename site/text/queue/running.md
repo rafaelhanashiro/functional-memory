@@ -1,4 +1,4 @@
-*Updated 2026-11-25 at 16:25 EST.*
+*Updated 2026-11-25 at 18:05 EST.*
 
 Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's are marked), without the stability reruns.
 
@@ -20,6 +20,9 @@ Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's a
   - Learning rate as the recipe's
   - Learning rate ×2
   - Learning rate ×4
+- **$e^s\,h_t(z)$ with a degree-12 core** ($z = \mathrm{softplus}(s)$), $d_K = 64$
+  - Learning rate as the recipe's (queued)
+  - Learning rate ×2 (queued)
 - **Fixed Taylor $e^s\,T_8(z)$**, $z = \mathrm{softplus}(s)$, learning rate ×2, $d_K = 64$ · Codex (queued)
 
 #### Finished
