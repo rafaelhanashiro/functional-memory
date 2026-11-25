@@ -113,6 +113,22 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-11-24T20:00:58.165800+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/r7d7504df667b/.runtime/acceptance/B200-1",
+      "allocation": "JobId=13014 JobName=r7d7504df667b UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20059 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=13:00:00 TimeMin=N/A SubmitTime=2026-11-24T15:38:25 EligibleTime=2026-11-24T15:40:26 AccrueTime=2026-11-24T15:40:26 StartTime=2026-11-24T18:39:23 EndTime=2026-11-25T07:39:23 Deadline=N/A PreemptEligibleTime=2026-11-24T18:39:23 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-24T18:39:23 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2204621 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/r7d7504df667b/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-learning-rate-8x/experiments/transformer_pp/runs/r7d7504df667b/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 46800,
+      "config_path": "experiments/transformer_pp/runs/r7d7504df667b/config.yaml",
+      "config_sha256": "81bafbb139c464871eec6ee181ab1cd9b85095f8d9e06606714b330deaa75422",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "ab145148136a174ec1248cbdace7476b0da09745",
+      "slurm_job_id": "13014",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-11-24T23:39:28.480588+00:00",
+      "stop_after_step": null
     }
   ],
   "best_validation": {
@@ -145,7 +161,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "21ac1b584a6f19ecec1134284c7b93d242824cc82e16f414f960bb08662fe8fb"
+      "sha256": "24ba1bbcddc84c6ddd90c030ef342247a91a6d1f2ad56475486a5e61c5ec4e76"
     },
     "resolved_config": {
       "continuation": {
@@ -394,9 +410,9 @@
   "seed": 42,
   "source_commit": "ab145148136a174ec1248cbdace7476b0da09745",
   "status": "running",
-  "step": 500,
-  "training_tokens": 262144000,
-  "updated_utc": "2026-11-24T20:35:42.965997+00:00",
+  "step": 1500,
+  "training_tokens": 786432000,
+  "updated_utc": "2026-11-25T00:36:58.711619+00:00",
   "wandb_run": {
     "path": "experiments/transformer_pp/runs/r7d7504df667b/wandb_run.json",
     "sha256": "837b4ffe271038d3c7cc31825f6a65aa0259e0a1f6b7096025ff5febf8040054",
