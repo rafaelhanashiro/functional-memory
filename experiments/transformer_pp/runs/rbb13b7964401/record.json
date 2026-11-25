@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/rbb13b7964401/config.yaml",
+    "sha256": "f0d2253754dc660f855bcce1da6fd84b0c0503b193423896d3cb6e20e15b562f"
+  },
+  "label": "query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-quadruple",
+  "name": "query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-quadruple",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "5bf52da350322431d411c67d8fd292924437ac62fbbb9a76c2e62cd7ff40df09",
+    "loss": 5.596439361572266,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "rbb13b7964401",
+  "status": "planned"
+}
