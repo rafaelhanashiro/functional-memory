@@ -1,4 +1,4 @@
-# Pure tanh query coefficients with softplus and exp prefactors at Q/K width 4 (Transformer++)
+# Pure tanh query coefficients with softplus and exp prefactors at Q/K width 4, and at width 64 (Transformer++)
 
 Opened 2026-11-22.
 
@@ -16,6 +16,12 @@ A seventh run gives the same generator to the SoS kernel that ties exp, `z h_t(z
 degree-sixteen core: each square factor is `f_j tanh(w_j^T x_hat_t + beta_j)`, a fraction of its Taylor factor
 `f_j`, in place of the affine `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`
 ([methods](../../README.md#pure-tanh-square-factors-for-z-h_tz-at-key-width-four)).
+
+At `d_K` 64, three runs ask whether the pure tanh generator still beats the affine one: `P_t(s)` at degrees 8 and
+16, and the affine degree-sixteen query polynomial `p_t(s)`, `(b_r + a_r tanh(w_r^T x_t)) / r!`, as its control,
+which `d_K` 64 did not have. The degree-eight control is the affine run `r25fffc16c2f3`. All three take the affine
+partner's recipe, with weight decay 0.1 on `W`
+([methods](../../README.md#pure-tanh-coefficients-at-key-width-64)). Home cluster: ORCD.
 
 All runs use the 15-layer width-896 shape, RoPE, QK RMSNorm with head scales, per-head output RMSNorm with the
 max-abs prescale, seed 42, 7,570 updates and the recipe's learning rate (peak 1e-3), on the row-power shifted fused
@@ -46,6 +52,21 @@ References at `d_K` 4, on the same recipe and learning rate:
 | Fixed Taylor `T_16(s)` | `rca649583af62` | 16 | 19.829 (19.835) | +3.33% |
 | `z h_t(z)`, `z = softplus(s)`, SoS core with affine tanh factors | `r2e7f5617fdf2` | 16 | 19.192 (19.197) | +0.01% |
 
+## Runs at `d_K` 64
+
+Validation perplexity, best with terminal in parentheses; exp `r6a76e7fbde45` reaches 14.257 (14.262). The lead is
+the gap to exp at the same update. Spikes counts gradient spikes over the whole run; the control's trainer predates
+the counter (–). The last column is the largest share of updates clipped in one validation window after update 500,
+with the largest pre-clip gradient norm. `rbb09d696a5b0` also fills the degree-sixteen query-coefficients cell of the
+placed [sum of squares table](../../results/pretraining/parametrizations/sos/sum_of_squares/README.md#findings).
+
+| Run | Weight | `m` | Best (terminal) | vs exp | vs exp at update 1,000 | at 3,000 | Spikes | Clipped, largest norm |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `re0af7abe427b` | `P_t(s)`, pure tanh | 8 | 14.543 (14.550) | +2.00% | −1.0% | +1.9% | 25 | 2%, 5.9 |
+| `rcb74ec29ab5f` | `P_t(s)`, pure tanh | 16 | 14.320 (14.326) | +0.44% | −1.5% | +0.3% | 14 | 3%, 5.9 |
+| `rbb09d696a5b0` | `p_t(s)`, affine tanh | 16 | 14.286 (14.290) | +0.20% | −1.8% | +0.0% | 5 | 0.2%, 3.9 |
+| `r25fffc16c2f3` | `p_t(s)`, affine tanh (control) | 8 | 14.323 (14.328) | +0.46% | −0.9% | +0.4% | – | 1%, 3.8 |
+
 ## Findings
 
 - **None reaches exp.** The closest are the SoS core with pure tanh factors, 1.02% above, and `e^s P_t` at degree
@@ -61,11 +82,20 @@ References at `d_K` 4, on the same recipe and learning rate:
   (`P_t`, degree sixteen); the prefactor runs stay at or below 3.0%.
 - **The pure tanh generator ties the affine one at degree eight and beats it at sixteen:** 19.870 against 19.925
   (−0.28%) and 19.556 against 19.777 (−1.1%). The affine run at degree sixteen had 14–42% of its updates clipped
-  in the validation windows between updates 2,000 and 3,500 and none from update 5,000.
+  in the validation windows between updates 2,000 and 3,500 and at most 1.6% per window after update 5,000
+  (largest norm 153).
 - **Learned coefficients beat fixed Taylor at degree sixteen** without a prefactor (19.556 against 19.829) and
   under exp.
 - **The softplus-prefactor SoS kernel stays ahead of every signed polynomial here:** with affine factors it ties
   exp at core degree sixteen, 1.5% below the best of them, and with pure tanh factors it is 0.5% below.
+- **At `d_K` 64 pure tanh does not beat the affine generator:** 14.543 against 14.323 at degree eight (+1.53%) and
+  14.320 against 14.286 at sixteen (+0.23%). At `d_K` 4 it was 0.28% and 1.1% ahead.
+- **At `d_K` 64 the affine generator is the stable one at degree sixteen:** 5 gradient spikes and at most 0.2% of a
+  window's updates clipped after update 500, against 14 and 3% for pure tanh. At degree eight pure tanh has 25 spikes
+  and up to 2% clipped (largest norm 5.9), against 1% and 3.8 for the control. At `d_K` 4 it was the affine
+  degree-sixteen run that clipped 14–42% of its updates in some windows.
+- **Among this topic's `d_K` 64 runs the affine degree-sixteen query polynomial is the best:** 14.286, 0.25% below
+  degree eight and 0.20% above exp.
 
 ## Limits
 
@@ -78,6 +108,9 @@ References at `d_K` 4, on the same recipe and learning rate:
   preemptions (`rfa8c0b2f748f` mostly on the B200). The SoS run with pure tanh factors trained on a B200.
 - The prefactor kernel evaluates each key in units of its own bound and takes 1.4–2.3 times the plain kernel's time
   per update: 3.3 and 5.0 s (exp, degrees 8 and 16) and 5.1 and 6.9 s (softplus) against 2.4 and 3.0 s.
+- At `d_K` 64 the three runs trained on ORCD H200s and resumed from checkpoints across preemptions (3–4 attempts
+  each). The degree-eight control `r25fffc16c2f3` trained on a Kennel B300 on the Mosaic kernel, with head RMSNorm's
+  plain arithmetic (the same function), so the degree-eight comparison also changes the hardware and the kernel.
 
 ## Open question
 

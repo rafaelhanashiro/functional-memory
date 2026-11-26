@@ -3234,6 +3234,7 @@ Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-
 coefficients of the Q/K width 4 runs above at `d_K` 64, degrees 8 and 16, and the degree-sixteen tanh query polynomial
 `b + a tanh(w^T x_t)`, their affine counterpart, which `d_K` 64 did not have. Each is the degree-eight tanh query + W decay
 run at `d_K` 64 (`r25fffc16c2f3`, the pure tanh m = 8 run's control) at its degree.
+[Results](staging/pure_tanh_prefactors/README.md#runs-at-d_k-64).
 
 | Run | Label | Coefficients | `m` |
 | --- | --- | --- | ---: |
