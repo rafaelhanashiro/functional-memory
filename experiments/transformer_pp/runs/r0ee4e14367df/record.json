@@ -91,7 +91,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "67745fe62b287ea3178cb245ccb7cbe88124275b636d86080b0735b1465c2bbc"
+      "sha256": "f75fe6567b10eb0bc2395869c8d41b50a77739f9c20a516a2735f594d16484d3"
     },
     "resolved_config": {
       "continuation": {
@@ -325,7 +325,7 @@
   "seed": 42,
   "source_commit": "27f6c23e5fd245849112e1b6b8ffe50a227f96bf",
   "status": "running",
-  "step": 4000,
-  "training_tokens": 2097152000,
-  "updated_utc": "2026-11-26T00:59:39.849579+00:00"
+  "step": 14000,
+  "training_tokens": 7340032000,
+  "updated_utc": "2026-11-26T11:46:39.758486+00:00"
 }
