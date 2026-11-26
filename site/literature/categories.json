@@ -1,5 +1,17 @@
 [
   {
+    "id": "attention-mixtures",
+    "name": "Attention mixtures"
+  },
+  {
+    "id": "learning-non-poly-kernels",
+    "name": "Learning non-poly kernels"
+  },
+  {
+    "id": "poly-learning",
+    "name": "Poly learning"
+  },
+  {
     "id": "state-space",
     "name": "State-space"
   }
