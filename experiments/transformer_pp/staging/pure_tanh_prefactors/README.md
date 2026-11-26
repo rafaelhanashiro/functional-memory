@@ -9,13 +9,13 @@ Opened 2026-11-22.
 `P_t(s) = sum_r tanh(w_r^T x_hat_t + beta_r) / r! s^r`,
 
 every power 0..m, `x_hat_t` the raw attention-block input at unit L2 norm, `w_r` starting at zero and `beta_r` at
-atanh(1/2). The [study methods](../../../../README.md#pure-tanh-coefficients-with-softplus-and-exp-prefactors-at-key-width-four)
+atanh(1/2). The [study methods](../../README.md#pure-tanh-coefficients-with-softplus-and-exp-prefactors-at-key-width-four)
 define the recipe and launch commands. Home cluster: Kennel.
 
 A seventh run gives the same generator to the SoS kernel that ties exp, `z h_t(z)` with `z = softplus(s)` and a
 degree-sixteen core: each square factor is `f_j tanh(w_j^T x_hat_t + beta_j)`, a fraction of its Taylor factor
 `f_j`, in place of the affine `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`
-([methods](../../../../README.md#pure-tanh-square-factors-for-z-h_tz-at-key-width-four)).
+([methods](../../README.md#pure-tanh-square-factors-for-z-h_tz-at-key-width-four)).
 
 All runs use the 15-layer width-896 shape, RoPE, QK RMSNorm with head scales, per-head output RMSNorm with the
 max-abs prescale, seed 42, 7,570 updates and the recipe's learning rate (peak 1e-3), on the row-power shifted fused

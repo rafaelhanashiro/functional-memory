@@ -7,7 +7,7 @@ Opened 2026-11-22.
 hold at each kernel's best rate? At `d_K` 64, does it stay the best one for exp, `z h_t(z)` and the degree-eight SoS
 core under a prefactor of the raw score? Each run is its partner's recipe with the whole schedule's peak and floor
 scaled together (1e-3 and 1e-4 at the recipe's rate); the 455-update warmup, horizon, clipping at 1.0, weight decay,
-seed 42 and every model setting stay. The [study methods](../../../../README.md#learning-rate-at-key-width-four)
+seed 42 and every model setting stay. The [study methods](../../README.md#learning-rate-at-key-width-four)
 define the recipes and launch commands. Home cluster: Kennel.
 
 ## Runs at `d_K` 4
@@ -75,5 +75,5 @@ Whether a larger rate keeps the SoS's lead over exp at `d_K` 4 with more data: r
 Refresh the selection after the runs' scientific files change:
 
 ```bash
-scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/results/pretraining/other/learning_rate
+scaffolds/transformer/.venv/bin/python -m scaffolds.records refresh experiments/transformer_pp/staging/learning_rate
 ```

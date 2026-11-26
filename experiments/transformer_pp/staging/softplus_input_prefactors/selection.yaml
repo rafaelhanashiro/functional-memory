@@ -1,0 +1,83 @@
+question: At degree eight, do static coefficients or a factor z help the direct polynomial
+  of z = softplus(s)?
+study: transformer_pp
+settings:
+  metric: held-out validation perplexity
+runs:
+- study: transformer_pp
+  run_id: ra3b54e2489f8
+  role: primary_query_m8_rope_w_decay_softplus_input
+  label: softplus input, query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/config.yaml
+      sha256: adcdb8b7e740ccba18fb7f2bb58fa61fbfdbd14b8012af7d340084b9230387e8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metrics.jsonl
+      sha256: 5140f6c7616d040a3d42f2c160ae9bd1dbf05af71d9d1e18d7004417bea55376
+    completion.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/completion.json
+      sha256: c18bfc1c6c466880e0fb95b821bde777a4f80b67d628d1f763f19b4459e5f9b0
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/metadata.json
+      sha256: 1acd67f9b01c47658e98407080f6c300a255c6082130e1c193b46d298f679617
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra3b54e2489f8/best_validation.json
+      sha256: f87bb399b3dd68ae8abec08b14a8225198bef5069e04288208fcb056b2584ad3
+- study: transformer_pp
+  run_id: r2026eaa99f9a
+  role: primary_static_m8_softplus_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r2026eaa99f9a/config.yaml
+      sha256: 543780135f62eb4d38d65577fc8919acff02100a2a8e84c6f074ab84466d3983
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r2026eaa99f9a/metrics.jsonl
+      sha256: 58035a8492156113176df870c27239bfb37944546f789b0a24ff3f5465bb1d65
+    completion.json:
+      path: experiments/transformer_pp/runs/r2026eaa99f9a/completion.json
+      sha256: 07bb9949c3a31a8cec18c2c29268f108d42e389dd9bee49b0eacfd8e583c3814
+    metadata.json:
+      path: experiments/transformer_pp/runs/r2026eaa99f9a/metadata.json
+      sha256: 8aa00b15dbe1644c7fed2651774b674d707fafd6a63f5c877356f70814828ef4
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r2026eaa99f9a/best_validation.json
+      sha256: 31207dae8e31af6e1555defea6d93eb0234c58e9c5e01d516caae99abbdfd75a
+- study: transformer_pp
+  run_id: rd00848e00f1d
+  role: primary_static_m8_softplus_input_times_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rd00848e00f1d/config.yaml
+      sha256: 1e2ea5ee84f63e955eea3c918cddccc0a1c9a90c4cc53b82b5f82cd9515e86b9
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rd00848e00f1d/metrics.jsonl
+      sha256: 602dd2fb7a4a13a2ccf2ac5eddbe5df44b98f2d9e5205103bc42155b75cdcdd8
+    completion.json:
+      path: experiments/transformer_pp/runs/rd00848e00f1d/completion.json
+      sha256: fbd6ee81f28127ce07ac0f6cbb79d1d15abfcc2c7f2ea8802c23c51ff402ac5a
+    metadata.json:
+      path: experiments/transformer_pp/runs/rd00848e00f1d/metadata.json
+      sha256: 2178369c428b5c0037cc6c13a96c3858b1dc6f521b7f8d226d712fe6877674da
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rd00848e00f1d/best_validation.json
+      sha256: f7c5057bdd3a533ccf41231fe596681fae45d91dde2d0a846215a4f93494b0e3
+- study: transformer_pp
+  run_id: r7f80334aafbd
+  role: primary_query_m8_softplus_input_times_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/config.yaml
+      sha256: 233b6145f8ae39a735d8d99db39120cfdf58e8498a1c76823257c6dfc6599468
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/metrics.jsonl
+      sha256: f998a01a7c23ddba44106dcf4bfbece1d2840d08896804f6d524786a2530f4d8
+    completion.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/completion.json
+      sha256: da16be5459a3f070a03a9564b6d1ac68006942e917851275e1acd94f777b111e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/metadata.json
+      sha256: 41385bf272eca568447120b2790140071dafe4eec711f079b70ad01d79047083
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/best_validation.json
+      sha256: 3795b447ba51560348b3145c2e87b6ea751384e7c6e21b6cfa47bc30bfd6dbd3

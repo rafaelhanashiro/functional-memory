@@ -2813,23 +2813,23 @@ decay are the partner's.
 - **A, fixed kernel.** `swish(s) = s sigmoid(s)` after the new swish transform on the fixed degree-one coefficients
   `[0, 1]`, as the sigmoid (`r88d8654a8a1d`, 16.135) and softplus (`r266c5dd1f935`, 15.744) baselines; its weights
   are signed (minimum -0.2785). Initialization and decay mask are the exp control `r6a76e7fbde45`'s (198,453,586
-  parameters). Results: the [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md).
+  parameters). Results: [staging/swish](staging/swish/README.md).
 - **B, key width.** `qk_head_dim` 8 or 16 (`value_head_dim` stays 64) for `z h_t(z)` (`r841f35a24241`, the
   Mosaic `query_softplus` kernel at degree nine). Narrower keys drop 18-21 M Q/K parameters and run QK RMSNorm over
-  8 or 16 channels; every other initial array is the partner's, bit for bit. Results: the
-  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside the query
+  8 or 16 channels; every other initial array is the partner's, bit for bit. Results:
+  [staging/narrow_keys](staging/narrow_keys/README.md), beside the query
   polynomial at `d_K` 8 and 16 (`r16b23893884d`, 16.854; `rd10c2ebe1181`, 15.413).
 - **C, direct coefficients of z.** Static `p(z)` keeps a learnable constant (`r9c69dd7cfc8d`'s Taylor start
   `c_r = 1/r!` including `c_0 = 1`, so `p` starts at `T_8(z)`, about `1 + e^s`; a zero-start static control would
   need a new scaffold option); static `z p(z)` and query `z p_t(z)` multiply by the prefactor `f = softplus` on
   `phi = softplus`, the latter from `ra3b54e2489f8`'s exact start `z (T_8(z) - 1)`, about `softplus(s) e^s`.
-  Results: the [softplus inputs topic](results/pretraining/parametrizations/sos/softplus_inputs/README.md).
+  Results: [staging/softplus_input_prefactors](staging/softplus_input_prefactors/README.md).
 - **D, prefactor times SoS.** `W = f(s) h_t(g(s))` with input power zero, `f` a parameter-free prefactor of the raw
   score and `g` the identity or softplus, from `reeefbcc19abf`'s recipe and exact initial parameters (`h_t(s)`,
   14.196). The control `softplus(s) h_t(softplus(s))` is `r841f35a24241` itself, trained through the input power
   (degree nine with a structural zero); the general prefactor computes the same function in exact arithmetic and
-  differs only by FP32 rounding (`tests/test_mosaic_score_prefactor.py` compares the two kernels). Results: the
-  [softplus SoS topic](results/pretraining/parametrizations/sos/softplus_sos/README.md), beside softplus(s) exp(s)
+  differs only by FP32 rounding (`tests/test_mosaic_score_prefactor.py` compares the two kernels). Results:
+  [staging/sos_score_prefactors](staging/sos_score_prefactors/README.md), beside softplus(s) exp(s)
   (`rbd24b948a240`, 14.132) and sigmoid(s) exp(s) (`rd7c9f610e9dc`, 14.186).
 
 Home cluster: Kennel; every record states it.
@@ -2924,8 +2924,8 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
   its October partner predates; the shift adds no parameter (175,872,586).
 - **S, softmax.** Normalized softmax (`r9040f12f3d80`, best 14.543) at the narrow widths, with no output scaling,
   like its partner. Narrower keys drop 18.1-22.6 M Q/K parameters (175,859,146, 177,364,546 and 180,375,346 against
-  198,440,146); every other initial array is the partner's, bit for bit. Results: the
-  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside E1, B2 and B3.
+  198,440,146); every other initial array is the partner's, bit for bit. Results:
+  [staging/narrow_keys](staging/narrow_keys/README.md), beside E1, B2 and B3.
 - **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461)
   and H100 (job 8464, `dogo`) by the same 80 cases
   ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
@@ -2974,7 +2974,7 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   start (`r9c69dd7cfc8d`, 14.294); and tanh query coefficients `p_t(s)` with W decay, the
   [key-width grid](#query-coefficients-across-key-width-and-degree)'s degree-eight column (`r16b23893884d` at
   `d_K` 8, 16.854), which Q4 extends to `d_K` 4. The partners use the current canonical settings for their
-  mechanism. Results: the [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md).
+  mechanism. Results: [staging/narrow_keys](staging/narrow_keys/README.md).
 - **X, shifted exp.** X8 and X16 are E1 at widths 8 and 16, so the shifted exp control spans `d_K` 4-16. Without
   the shift, exp's scores at these widths reach 67 and 54, past the row maxima (about 34) beyond which FP32 head
   RMSNorm's backward departs from FP64 in the Q/K gradients
@@ -3103,7 +3103,7 @@ and `reea3d6436271` (`h_t(s)`, without the softplus too). Each is its `d_K` 64 p
 `reeefbcc19abf`, at width 4 with the max-abs prescale; the raw-score partner also takes the study's gradient-event
 capture. The [key-width adapter](key_width_acceptance.py) checks them and runs `h_t(z)`'s width-4 cases in
 `test_mosaic_softplus_sos.py`; both kernels are qualified at width 4 on B200 and H100
-([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4)).
+([comparison](staging/narrow_keys/README.md#the-parts-of-z-h_tz-at-d_k-4)).
 Home cluster Kennel. The `d_K` 4 SoS runs trained at 1.3 to 1.6 s per update on B200, so a 6-hour limit leaves
 acceptance's two-hour reserve; dogo stays excluded while no placeholder holds its faulty H100. Submit from this
 worktree after committing the frozen execution set:
@@ -3124,7 +3124,7 @@ done
 `r2e7f5617fdf2` is `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) with a degree-sixteen core (total seventeen), evaluated
 in units of each row's largest power (`attention_polynomial_shift: row_power`) on its fused kernel: the Mosaic
 kernels stop at degree twelve, and `z^17` overflows FP32 at the scores width 4 reaches
-([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4),
+([comparison](staging/narrow_keys/README.md#the-parts-of-z-h_tz-at-d_k-4),
 [kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
 The [adapter](shifted_sos_acceptance.py) derives the recipe and requires the fused backend. Home cluster Kennel.
 At about 3.6 s per update on B200 the run takes about 8 h, so a 12-hour limit leaves acceptance's two-hour reserve;
@@ -3151,7 +3151,7 @@ The [adapter](shifted_polynomial_acceptance.py) derives both recipes and require
 the shifted kernel's GPU cases for each coefficient source on the allocated GPU. Home cluster Kennel. At about 3.6 s
 per update on B200, as the degree-sixteen SoS run, a run takes about 8 h; a 14-hour limit leaves acceptance's
 two-hour reserve and room for a slower B300. dogo stays excluded while no placeholder holds its faulty H100
-([results](results/pretraining/polynomial/pure_tanh_prefactors/README.md)):
+([results](staging/pure_tanh_prefactors/README.md)):
 
 ```sh
 for run in raec1c513a51b rca649583af62; do
@@ -3177,7 +3177,7 @@ and every `beta_r` at atanh(1/2), so each coefficient starts at 0.5/r!, half the
 where tanh' = 3/4. Each recipe is the degree-eight tanh query run at `d_K` 4 (`rd5e3ec5a4f02`) with these settings, the
 degree and the prefactor (`pure_tanh_prefactor_acceptance.CHANGES`); the base learning rate applies at every order
 (the 1/r! gives the degree scaling), weight decay 0.1 to `w_r` and none to `beta_r`, and seed 42, data order and
-schedule are the partner's. [Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
+schedule are the partner's. [Results](staging/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | `m` |
 | --- | --- | --- | ---: |
@@ -3289,7 +3289,7 @@ times: its softplus-input counterparts were slightly better at the recipe's rate
 14.067; `r841f35a24241` `z h_t(z)`, 14.095), the sigmoid one worse (`r5d578a29f080`, 14.271); does that carry over?
 At `d_K` 64 the exponential (`r6a76e7fbde45`, 14.257) and `z h_t(z)` with a degree-eight core (`r841f35a24241`) also
 train at half the rate, below the recipe's, where 3e-4 was 6.5-8.5% worse at degree four (diagnostic notes).
-[Results](results/pretraining/other/learning_rate/README.md).
+[Results](staging/learning_rate/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
@@ -3378,7 +3378,7 @@ query polynomial (`r25fffc16c2f3`, best 14.323) with `W = f(s) p_t(s)` over the 
 softplus of the raw score. The split-score query runs apply `e^s` to negative scores alone; on the degree-eight SoS
 core, `e^s` over the whole range (`r6525664e6696`, 14.089) beat every such split (14.196-14.205), which tied the plain
 core (14.196). Do the query polynomial's splits (14.258 and below) trail its whole-range prefactors the same way?
-[Results](results/pretraining/parametrizations/sos/softplus_inputs/README.md#prefactors-of-the-raw-score).
+[Results](staging/raw_score_prefactors/README.md).
 
 | Run | Label | Kernel | Partner |
 | --- | --- | --- | --- |
@@ -3411,7 +3411,7 @@ done
 Twelve runs at the reference shape and 1x budget (7,570 updates), requested on ORCD: the tanh query polynomial,
 the exponential and `z h_t(z)` on 2026-11-23, and the exp and sigmoid prefactors on the same SoS core of `z`, and
 `softplus(s) exp(s)`, on 2026-11-24. At `d_K` 4, doubling the schedule improved the exponential by 2.7% and
-`z h_t(z)` with a degree-sixteen core by 2.9% ([results](results/pretraining/other/learning_rate/README.md)): is the
+`z h_t(z)` with a degree-sixteen core by 2.9% ([results](staging/learning_rate/README.md)): is the
 recipe's 1e-3 peak too low at `d_K` 64 as well? Six `d_K` 64 partners train again at two and four times their
 schedule: the best score prefactor `f(s)` on each kernel family, `f(s) h_t(z)` with `z = softplus(s)` (softplus,
 exp and sigmoid) and `softplus(s) exp(s)`, beside the query polynomial and the exponential. Kennel trains the
@@ -3503,7 +3503,7 @@ in place of `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`. `x_hat_t` is the raw atte
 starts at half its Taylor factor and tanh' at 3/4, so each query's `z h_t(z)` starts at a quarter of `z T_16(z)`,
 a scale head RMSNorm removes wherever a head's output is well above its epsilon. Weight decay 0.1 applies to `w_j`
 and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's.
-[Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
+[Results](staging/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | Core degree |
 | --- | --- | --- | ---: |

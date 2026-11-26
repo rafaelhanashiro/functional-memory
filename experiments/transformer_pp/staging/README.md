@@ -1,0 +1,24 @@
+# Staging
+
+Finished Transformer++ results not yet placed in [results](../results/README.md), the folders that mirror the
+results site. Each topic holds what a results folder holds: a README (question, runs, findings, limits, date opened),
+a selection pinned by `scaffolds.records refresh`, and any figures with the code and tests that regenerate them, so
+placing a topic is a move. The user places topics, in a session together; until then nothing here is on the site.
+The suggested homes are starting points for that session, not decisions.
+
+## New results
+
+| Topic | Question | Result | Opened | Suggested home |
+| --- | --- | --- | --- | --- |
+| [learning_rate](learning_rate/README.md) | Is the recipe's learning rate the best one at `d_K` 4 and 64? | At `d_K` 4 a larger rate helps, the SoS cores most: exp is best at double (−2.7%), `z h_t(z)` reaches 18.203 at four times, 2.5% below exp's best. At `d_K` 64 the recipe's rate is about right: no kernel gains more than 0.2% from double. | 2026-11-22 | Scalings, as a learning-rate page; or Other runs |
+| [narrow_keys](narrow_keys/README.md) | How do exp, softmax, `z h_t(z)` and a degree-eight ladder compare as the Q/K width narrows to 16, 8 and 4? | exp is best at `d_K` 4 and 0.5% behind `z h_t(z)` at 8 and 16; the raw-score polynomials trail exp by 1.2–6.2%. With a degree-16 core, `z h_t(z)` ties exp at `d_K` 4 (19.192). | 2026-11-20 | Scalings, as a key-width page; or Polynomial, beside query_width_degree |
+| [pure_tanh_prefactors](pure_tanh_prefactors/README.md) | At `d_K` 4, how close to exp do bounded pure tanh coefficients come, alone or under a prefactor? | None reaches exp (19.190); the closest, `e^s P_t(s)` at degree 16, is 19.483 (+1.5%). | 2026-11-22 | Polynomial parametrizations: Activations |
+| [sos_score_prefactors](sos_score_prefactors/README.md) | Is softplus the best prefactor `f(s)` in front of a query SoS core? | exp and softplus tie (14.067–14.097); sigmoid is 0.4–1.2% worse; swish 17% worse and unstable. | 2026-11-20 | SoS / Softplus, beside softplus_sos |
+| [softplus_input_prefactors](softplus_input_prefactors/README.md) | Do static coefficients or a factor `z` help the direct polynomial of `z = softplus(s)`? | The factor helps: static `z p(z)` 14.114 and query `z p_t(z)` 14.159 beat exp by 1.00% and 0.69%; static `p(z)` (14.351) does not. | 2026-11-20 | SoS / Softplus, beside softplus_inputs |
+| [raw_score_prefactors](raw_score_prefactors/README.md) | Does a prefactor of the raw score help the query polynomial `p_t(s)`? | `e^s p_t(s)` and `softplus(s) p_t(s)` both reach 14.118: 1.43% below the control and 0.98% below exp. | 2026-11-25 | SoS / Softplus, beside softplus_inputs |
+| [swish](swish/README.md) | Does swish, `s sigmoid(s)`, replace exp as a fixed score function? | No: 18.393, 29% behind exp. | 2026-11-20 | Fixed kernels, beside pointwise_attention |
+
+## Replacements
+
+Reruns that replace a run already placed in `results/`, staged under `replacements/<topic>/` so a changed result is
+seen before it is taken in; they are resolved with the user right away. None is waiting.
