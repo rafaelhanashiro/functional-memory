@@ -129,9 +129,11 @@ Kennel launchers default to `XLA_PYTHON_CLIENT_PREALLOCATE=false` and preserve
 explicit allocator settings supplied with `sbatch --export`. Acceptance records
 the resolved preallocation setting and memory fraction and qualifies that runtime.
 
-Kennel launchers put disposable compiler and test-capture temporary files in a
-unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
-Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU.
+Kennel and ORCD launchers put disposable compiler and test-capture temporary files
+in a unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
+Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU,
+and inside the worktree a test's scratch study is recorded with paths relative to
+the checkout, which the records cannot resolve again.
 Recipes, logs, checkpoints, environments, and persistent compilation caches stay
 in the worktree on NFS.
 

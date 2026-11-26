@@ -25,10 +25,13 @@ internet, to read the link's title.
 `literature/papers.json` lists the literature resources in the page's order (title,
 authors, year, link, whether the user has seen it, and the category it is filed under, if
 any), and `literature/categories.json` the user's own categories in theirs (an id and a name).
-The page shows each category's seen and not-seen-yet resources, then those under no category.
+The page shows each category's seen and not-seen-yet resources, then those under no category;
+an arXiv resource's card links to its PDF, whichever arXiv page was added.
 On the page the user adds a resource from a link (it goes to the top of the category picked
 beside the link, with metadata read from the link), reorders resources and drags them into
-another category or half, renames them and switches them between seen and not seen, makes,
+another category or half (or files one under another category with the folder on its card),
+renames them and switches them between seen and not seen, removes them with the bin on their
+card (after asking; the write-up goes too), makes,
 renames, moves, and deletes categories (a deleted category's resources stay, under no
 category), and edits each resource's write-up, their own Markdown file `literature/<id>.md`
 (math in `$...$` and `$$...$$`). The chevron before a category's name hides it down to its
