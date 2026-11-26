@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/re92a9fc818e5/config.yaml",
+    "sha256": "4076d31d1396cc475612e4e96bc1d9f049983860c44812c39379b1e43619745e"
+  },
+  "label": "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-plain-input-lr-quadruple",
+  "name": "query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-plain-input-lr-quadruple",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "9c6a1cc57592742dcb73d04169ef70a7bcf2ea5be7508edacaa254f4441d9deb",
+    "loss": 5.598801612854004,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "re92a9fc818e5",
+  "status": "planned"
+}

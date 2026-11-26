@@ -3595,6 +3595,49 @@ sbatch --partition=standard --gres=gpu:1 --cpus-per-task=16 --mem=128G --time=12
   "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
 ```
 
+### Prefactors and the plain coefficient input for the pure tanh SoS core at key width four
+
+Four runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-26 on Kennel: the pure tanh
+square-factor SoS core of degree sixteen at `d_K` 4 ([above](#pure-tanh-square-factors-for-z-h_tz-at-key-width-four),
+`r70e98e1944d5`, 19.385 at the recipe's rate) at four times the rate, where the affine core does best
+(`rdc43b5c9d2d0`, 18.203), under the softplus input prefactor (`z h_t(z)`) or exp of the raw score (`e^s h_t(z)`,
+codex's affine `r8609e3605f85`), each with its partner's raw-input L2 coefficient normalization or with the affine
+runs' plain input, the gain-applied pre-attention RMSNorm activation.
+
+| Run | Label | Weight | Coefficient input |
+| --- | --- | --- | --- |
+| `rab2bd658a26f` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)` | raw, unit L2 |
+| `r7d5720ce44c8` | `query-pure-tanh-sos-core-m16-exp-prefactor-softplus-input-rope-w-decay-dk4-lr-quadruple` | `e^s h_t(z)` | raw, unit L2 |
+| `re92a9fc818e5` | `query-pure-tanh-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-plain-input-lr-quadruple` | `z h_t(z)` | post-RMSNorm |
+| `rdd3a1dfc453f` | `query-pure-tanh-sos-core-m16-exp-prefactor-softplus-input-rope-w-decay-dk4-plain-input-lr-quadruple` | `e^s h_t(z)` | post-RMSNorm |
+
+- **Recipe.** `r70e98e1944d5` with its peak and floor rates multiplied by 4 (4e-3, 4e-4) and, for `e^s h_t(z)`,
+  `model.attention_score_prefactor: exp` with input power 0 (total degree sixteen); for the plain input,
+  `attention_coefficient_input_source: post_rmsnorm` and `attention_coefficient_input_normalization: none`.
+  Neither change alters a parameter, so every run starts from the partner's parameters.
+- **Kernels.** The row-power shifted fused kernel on a B200 or B300. Its shift of exp of the raw score comes from
+  codex's branch `codex/dk4-exp-softplus-sos-lr` (`b75211cb`), merged into this one, which therefore merges after
+  it. Raw-input L2 under a score prefactor is admitted here: the generator normalizes its input before projection
+  for any score function (`configs/base.py`, `attention/multihead.py`, test in `test_softplus_sos_raw_input.py`).
+- **Acceptance.** The [adapter](pure_tanh_sos_prefactor_acceptance.py) pins the partner, admits the four variants
+  alone and checks every initial array against the partner's.
+- **Time limit.** `z h_t(z)` trains at 3.9 s per update on a B300 (8.2 h) and codex's `e^s h_t(z)` at 5.9 s
+  (12.4 h); 20 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`. While shiba and dogo load a 620.70.06 kernel module under
+620.70.10 libraries (NVML version mismatch from 2026-11-26), akita is the only node that starts these runs:
+
+```sh
+for run in rab2bd658a26f r7d5720ce44c8 re92a9fc818e5 rdd3a1dfc453f; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=20:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=collie,dogo,doodle,mastiff,samoyed,shiba,terrier --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.pure_tanh_sos_prefactor_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300
+done
+```
+
 ## Max-abs ALiBi exp and 12-layer width-640 4x runs
 
 Four runs, requested 2026-11-21 on Kennel, with the settings `scaffolds.records create` gives a fresh recipe: head

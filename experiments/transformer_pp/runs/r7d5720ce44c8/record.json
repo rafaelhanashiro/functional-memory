@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r7d5720ce44c8/config.yaml",
+    "sha256": "27bd676178fbdc3e8471ff58f00e445e7407a7cd453c737dacd532112e470b9f"
+  },
+  "label": "query-pure-tanh-sos-core-m16-exp-prefactor-softplus-input-rope-w-decay-dk4-lr-quadruple",
+  "name": "query-pure-tanh-sos-core-m16-exp-prefactor-softplus-input-rope-w-decay-dk4-lr-quadruple",
+  "receipt": {
+    "arrays_count": 54,
+    "digest": "5af73f64578bdc43347e177d39fe63b812880bbe9d950c84f061fba64c08ef64",
+    "loss": 5.596591949462891,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r7d5720ce44c8",
+  "status": "planned"
+}

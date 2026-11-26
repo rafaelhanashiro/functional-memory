@@ -30,7 +30,8 @@ PARTNER_SHA256 = "13fd0096ea3b42f63cc83eeb14dff939574197d28e5a6d2f76d942bef0dc7f
 SCALE = 4.0
 RATES = ("learning_rate", "min_learning_rate")
 EXP_PREFACTOR = {"attention_score_prefactor": "exp", "attention_coefficient_input_power": 0, "attention_degree": 16}
-PLAIN_INPUT = {"attention_coefficient_input_source": "post_rmsnorm", "attention_coefficient_input_normalization": "none"}
+PLAIN_INPUT = {"attention_coefficient_input_source": "post_rmsnorm",
+               "attention_coefficient_input_normalization": "none"}
 VARIANTS = {"softplus_l2": {}, "exp_l2": EXP_PREFACTOR, "softplus_plain": PLAIN_INPUT,
             "exp_plain": {**EXP_PREFACTOR, **PLAIN_INPUT}}
 # The fused shifted kernel's GPU qualification (validation README, "Row-power shifted query polynomials").
