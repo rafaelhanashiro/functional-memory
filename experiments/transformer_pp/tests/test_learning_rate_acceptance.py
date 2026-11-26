@@ -1,13 +1,17 @@
 """Learning-rate scalings of completed recipes: the Q/K width 4 exponential and z h_t(z) with a degree-sixteen or
-degree-eight core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that core under a
-prefactor of the raw score; each partner's recipe with the peak and floor rates scaled alone."""
+degree-eight core, and at Q/K width 64 the exponential, softplus(s) exp(s), the tanh query polynomial, z h_t(z) with a
+degree-eight core and that core under a prefactor of the raw score on the raw score or on z = softplus(s); each
+partner's recipe with the peak and floor rates scaled alone."""
+from dataclasses import replace
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
 from experiments.transformer_pp import learning_rate_acceptance as adapter
 from scaffolds.transformer.configs import config_to_dict, load_config
+from scaffolds.transformer.configs.base import fresh_recipe_uses_exp_shift, fresh_recipe_uses_head_rms_prescale
 
 # run: (partner key, scale, label)
 RUNS = {
@@ -34,14 +38,40 @@ RUNS = {
                       "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-quadruple"),
     "r7cbb2c7ca07d": ("softplus_sos_m8", 8.0,
                       "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-octuple"),
+    # On ORCD, reading byte copies of the partners' manifests.
+    "r90776a5d4175": ("query_dk64", 2.0, "query-m8-dk64-w-decay-lr-double"),
+    "r9e36ee87aa7e": ("query_dk64", 4.0, "query-m8-dk64-w-decay-lr-quadruple"),
+    "r19dfa87cb7ed": ("exponential_dk64", 2.0, "exp-head-scale-row-max-lr-double"),
+    "r530a1bce3597": ("exponential_dk64", 4.0, "exp-head-scale-row-max-lr-quadruple"),
+    "r752878a0a030": ("softplus_sos_dk64", 2.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-double"),
+    "r7924001c42f1": ("softplus_sos_dk64", 4.0,
+                      "query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple"),
+    "r39d0469cc122": ("exp_prefactor_softplus_sos", 2.0, "query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-double"),
+    "r365f0c30f632": ("exp_prefactor_softplus_sos", 4.0,
+                      "query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-quadruple"),
+    "rf0053d2b3b45": ("sigmoid_prefactor_softplus_sos", 2.0,
+                      "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-double"),
+    "r101b6c157a6b": ("sigmoid_prefactor_softplus_sos", 4.0,
+                      "query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-quadruple"),
+    "r2118e3531d89": ("softplus_exp_dk64", 2.0, "exp-softplus-prefactor-lr-double"),
+    "re7d0d4e6a5b7": ("softplus_exp_dk64", 4.0, "exp-softplus-prefactor-lr-quadruple"),
 }
 # The partners at Q/K width 64, and their backends.
 WIDE = ("exp_prefactor_sos", "softplus_prefactor_sos", "sigmoid_prefactor_sos", "exponential_dk64",
-        "softplus_sos_dk64")
-BACKENDS = {"exponential": "fused", "shifted_sos": "fused", "exponential_dk64": "fused"}
-GPUS = {"exponential": ("H100", "B300"), "shifted_sos": ("B200", "B300"), "exponential_dk64": ("H100", "B300")}
+        "softplus_sos_dk64", "query_dk64", "softplus_exp_dk64", "exp_prefactor_softplus_sos",
+        "sigmoid_prefactor_softplus_sos")
+BACKENDS = {"exponential": "fused", "shifted_sos": "fused", "exponential_dk64": "fused", "softplus_exp_dk64": "fused"}
+GPUS = {"exponential": ("H100", "B300"), "shifted_sos": ("B200", "B300"), "exponential_dk64": ("H100", "B300"),
+        "query_dk64": ("H100",), "softplus_exp_dk64": ("H100",)}
+# The repository's byte copies of the dataset manifests: another path to the partners' manifests on every cluster.
+CORPUS = Path(__file__).resolve().parents[3] / "scaffolds/transformer/data/corpora/fineweb_12b"
 # Every partner's scales.
 PARTNER_SCALES = tuple((key, scale) for key in adapter.PARTNERS for scale in adapter.SCALES[key])
+
+
+def with_manifests(config, train, eval_):
+    return replace(config, data=replace(config.data, train_manifest=str(train), eval_manifest=str(eval_)))
 
 
 def changed(config, other):
@@ -93,6 +123,24 @@ def test_the_partners_are_the_exponential_and_the_sos_cores():
     assert wide_exp.attention_degree is None and not wide_exp.attention_normalization and wide_exp.qk_head_dim == 64
     assert (wide_sos.attention_degree, wide_sos.attention_coefficient_input_power, wide_sos.qk_head_dim) == (9, 1, 64)
     assert wide_sos.attention_score_transform == "softplus" and wide_sos.attention_score_prefactor == "none"
+    for prefactor in ("exp", "sigmoid"):
+        model = adapter.partner_config(f"{prefactor}_prefactor_softplus_sos").model
+        assert (model.attention_score_prefactor, model.attention_score_transform) == (prefactor, "softplus")
+        assert (model.attention_degree, model.attention_coefficient_input_power, model.qk_head_dim) == (8, 0, 64)
+        assert model.attention_coefficient_parameterization == "sum_of_squares"
+        # The Mosaic softplus-SoS and prefactor kernels qualify through their own adapter's GPU tests.
+        assert model.attention_backend == "mosaic"
+        assert adapter.PARTNERS[f"{prefactor}_prefactor_softplus_sos"][2] is adapter.softplus_sos_acceptance
+    for key in ("query_dk64", "softplus_exp_dk64"):
+        shared = adapter.PARTNERS[key][2]
+        assert isinstance(shared, adapter.SharedPartner) and shared.run_id == adapter.PARTNERS[key][0]
+    query = adapter.partner_config("query_dk64").model
+    assert (query.qk_head_dim, query.attention_degree, query.attention_coefficient_parameterization,
+            query.attention_coefficient_conditioning) == (64, 8, "direct", "query")
+    assert query.attention_coefficient_kernel_weight_decay and query.attention_score_prefactor == "none"
+    softplus_exp = adapter.partner_config("softplus_exp_dk64").model
+    assert softplus_exp.qk_head_dim == 64 and softplus_exp.attention_degree is None
+    assert (softplus_exp.attention_score_prefactor, softplus_exp.attention_score_transform) == ("softplus", "identity")
 
 
 @pytest.mark.parametrize("run", RUNS)
@@ -100,9 +148,14 @@ def test_an_allocated_run_is_its_recipe(run):
     key, scale, label = RUNS[run]
     path = adapter.RUNS / run / "config.yaml"
     config = load_config(path)
-    adapter.check_recipe(config)
     assert (adapter.partner_key(config), adapter.scale_of(config)) == (key, scale)
-    assert changed(config, adapter.recipe(key, scale)) == set()
+    expected = adapter.recipe(key, scale)
+    # A run on another cluster reads that cluster's copies of its partner's manifests: compare at its own paths, and
+    # check it with the repository's byte copies in their place, which every cluster holds.
+    assert changed(config, with_manifests(expected, config.data.train_manifest, config.data.eval_manifest)) == set()
+    if config.data.train_manifest != expected.data.train_manifest:
+        config = with_manifests(config, CORPUS / "train/manifest.json", CORPUS / "eval/manifest.json")
+    adapter.check_recipe(config)
     assert config.model.attention_head_rms_prescale == "max_abs"
     record = json.loads((path.parent / "record.json").read_text())
     assert record["run_id"] == run and record["label"] == label == config.train.wandb_run_name
@@ -119,6 +172,16 @@ def test_other_recipes_are_refused():
                        ("softplus_prefactor_sos", 8.0), ("sigmoid_prefactor_sos", 1.0)):
         with pytest.raises(ValueError):
             adapter.recipe(key, scale)
+    # A width-64 family under a prefactor without a partner: sigmoid(s) exp(s), the SoS core under swish, the query
+    # polynomial under softplus, and softplus(s) h_t(softplus(s)) through a prefactor (the input power's z h_t(z)).
+    for key, prefactor in (("softplus_exp_dk64", "sigmoid"), ("exp_prefactor_softplus_sos", "swish"),
+                           ("query_dk64", "softplus"), ("exp_prefactor_softplus_sos", "softplus")):
+        config = adapter.recipe(key, 2.0)
+        with pytest.raises(ValueError, match="partner"):
+            adapter.partner_key(replace(config, model=replace(config.model, attention_score_prefactor=prefactor)))
+    exponential = adapter.recipe("exponential_dk64", 2.0)
+    with pytest.raises(ValueError, match="attention_exp_shift"):  # the fresh exponential's shift is required
+        adapter.check_recipe(replace(exponential, model=replace(exponential.model, attention_exp_shift="none")))
     for key in adapter.PARTNERS:
         with pytest.raises(ValueError):  # the partner itself
             adapter.check_recipe(adapter.partner_config(key))
@@ -134,6 +197,25 @@ def test_other_recipes_are_refused():
         config.model.qk_head_dim = 8
         with pytest.raises(ValueError):
             adapter.check_recipe(config)
+
+
+@pytest.mark.parametrize("key", adapter.PARTNERS)
+def test_a_recipe_takes_what_records_create_gives_a_fresh_copy_of_its_partner(key):
+    """The max-abs prescale wherever head RMSNorm runs, and the row-maximum shift wherever it applies: the plain
+    exponential, not softplus(s) exp(s) on the fused kernel nor a prefactor on the SoS kernels."""
+    partner, config = adapter.partner_config(key), adapter.recipe(key, adapter.SCALES[key][-1])
+    assert fresh_recipe_uses_head_rms_prescale(partner.model) and config.model.attention_head_rms_prescale == "max_abs"
+    shifted = fresh_recipe_uses_exp_shift(partner.model)
+    assert shifted == (key in ("exponential", "exponential_dk64"))
+    assert config.model.attention_exp_shift == ("row_max" if shifted else partner.model.attention_exp_shift)
+
+
+def test_manifest_copies_are_accepted_by_their_bytes():
+    config = with_manifests(adapter.recipe("sigmoid_prefactor_softplus_sos", 4.0), CORPUS / "train/manifest.json",
+                            CORPUS / "eval/manifest.json")
+    adapter.check_recipe(config)
+    with pytest.raises(ValueError, match="eval_manifest"):
+        adapter.check_recipe(with_manifests(config, CORPUS / "train/manifest.json", CORPUS / "corpus.json"))
 
 
 @pytest.mark.parametrize("scale", adapter.SCALES["exponential"])
@@ -171,7 +253,9 @@ def test_the_gpu_type_rule(tmp_path):
     from scaffolds.transformer.configs import save_config
 
     for key, allowed, refused in (("exponential", "B300", "B200"), ("shifted_sos", "B300", "H100"),
-                                  ("sigmoid_prefactor_sos", "B200", "B300")):
+                                  ("sigmoid_prefactor_sos", "B200", "B300"), ("query_dk64", "H100", "H200"),
+                                  ("softplus_exp_dk64", "H100", "B300"),
+                                  ("exp_prefactor_softplus_sos", "H100", "H200")):
         path = tmp_path / f"{key}.yaml"
         save_config(adapter.recipe(key, 2.0), path)
         adapter.require_gpu_type([str(path), "--gpu-type", allowed])

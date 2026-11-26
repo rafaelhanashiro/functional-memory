@@ -3406,6 +3406,88 @@ for run in rdb8deaab4c91 r7aa6c853dafd; do
 done
 ```
 
+### Two and four times the learning rate at key width 64
+
+Twelve runs at the reference shape and 1x budget (7,570 updates), requested on ORCD: the tanh query polynomial,
+the exponential and `z h_t(z)` on 2026-11-23, and the exp and sigmoid prefactors on the same SoS core of `z`, and
+`softplus(s) exp(s)`, on 2026-11-24. At `d_K` 4, doubling the schedule improved the exponential by 2.7% and
+`z h_t(z)` with a degree-sixteen core by 2.9% ([results](results/pretraining/other/learning_rate/README.md)): is the
+recipe's 1e-3 peak too low at `d_K` 64 as well? Six `d_K` 64 partners train again at two and four times their
+schedule: the best score prefactor `f(s)` on each kernel family, `f(s) h_t(z)` with `z = softplus(s)` (softplus,
+exp and sigmoid) and `softplus(s) exp(s)`, beside the query polynomial and the exponential. Kennel trains the
+raw-score counterparts `f(s) h_t(s)` at the same rates, and the exponential and `z h_t(z)` at half
+([learning rate at key width four](#learning-rate-at-key-width-four)).
+
+| Run | Label | Kernel | Peak, floor rate | Partner (best) |
+| --- | --- | --- | --- | --- |
+| `r90776a5d4175` | `query-m8-dk64-w-decay-lr-double` | tanh query, m = 8, W decay | 2e-3, 2e-4 | `r25fffc16c2f3` (14.323) |
+| `r9e36ee87aa7e` | `query-m8-dk64-w-decay-lr-quadruple` | tanh query, m = 8, W decay | 4e-3, 4e-4 | `r25fffc16c2f3` |
+| `r19dfa87cb7ed` | `exp-head-scale-row-max-lr-double` | `exp(s)` | 2e-3, 2e-4 | `r6a76e7fbde45` (14.257) |
+| `r530a1bce3597` | `exp-head-scale-row-max-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r6a76e7fbde45` |
+| `r752878a0a030` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-double` | `z h_t(z)`, core 8 | 2e-3, 2e-4 | `r841f35a24241` (14.095) |
+| `r7924001c42f1` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple` | `z h_t(z)`, core 8 | 4e-3, 4e-4 | `r841f35a24241` |
+| `r39d0469cc122` | `query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-double` | `exp(s) h_t(z)`, core 8 | 2e-3, 2e-4 | `raeaa47865867` (14.067) |
+| `r365f0c30f632` | `query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-quadruple` | `exp(s) h_t(z)`, core 8 | 4e-3, 4e-4 | `raeaa47865867` |
+| `rf0053d2b3b45` | `query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-double` | `sigmoid(s) h_t(z)`, core 8 | 2e-3, 2e-4 | `r5d578a29f080` (14.271) |
+| `r101b6c157a6b` | `query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-quadruple` | `sigmoid(s) h_t(z)`, core 8 | 4e-3, 4e-4 | `r5d578a29f080` |
+| `r2118e3531d89` | `exp-softplus-prefactor-lr-double` | `softplus(s) exp(s)` | 2e-3, 2e-4 | `rbd24b948a240` (14.132) |
+| `re7d0d4e6a5b7` | `exp-softplus-prefactor-lr-quadruple` | `softplus(s) exp(s)` | 4e-3, 4e-4 | `rbd24b948a240` |
+
+- **Recipe.** As at `d_K` 4: the partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
+  by 2 or 4. Warmup, horizon, clipping, weight decay, betas, seed 42, data order and every model setting are the
+  partner's; per-group multipliers such as `optim.query_coefficient_learning_rate_scale` are relative, so every
+  parameter's rate scales. Every run takes what `scaffolds.records create` gives a fresh copy of its partner, which
+  predates both: head RMSNorm's max-abs prescale and, for the plain exponential, its row-maximum shift, the same
+  functions. `softplus(s) exp(s)` keeps the unshifted exponential: the fused kernel shifts the plain one alone. The
+  recipes read ORCD's copies of the dataset manifests (`/home/rafah/projects/ofm/datasets/fineweb_12b`), which hash
+  as the partners'. A numerical failure is a result: its record, metrics and log are kept.
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins these six partners and admits each at 2 and 4. The
+  query, exponential and `softplus(s) exp(s)` runs qualify through the shared runtime checks and the SoS runs through
+  `softplus_sos_acceptance`, each on the recipe at its partner's rate and manifest paths. All train on ORCD's H100s,
+  where the Mosaic softplus-SoS and prefactor kernels are qualified (H100 and B200 only). Before its runs launch,
+  each kernel qualifies on an ORCD H100 80GB HBM3 (driver 595.112.07) at its runs' launch commit through
+  `validation/qualify_acceptance_orcd.sbatch`, which runs the ×4 run's full acceptance without training: every test
+  stage, initialization, a 20-update pilot and resume
+  ([validation](../../scaffolds/transformer/validation/README.md#orcd-h100-acceptance-qualification-2026-11-23)).
+- **Time.** `orcd.sbatch` requeues each run before its time limit and after preemption; acceptance's pilot projects
+  each run against ORCD's 48-hour horizon.
+
+| Kernel | Launch commit | Qualification job, node | Backend | Tests passed: CPU, distributed, GPU | Pilot, s/update | Projected run |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| tanh query, m = 8 | `db4b0a35` | 30276124, node4109 | Mosaic | 584, 10, 76 | 2.18 | 4.85 h |
+| `exp(s)` | `db4b0a35` | 30276129, node2501 | fused | 478, 10, 88 | 2.11 | 4.66 h |
+| `z h_t(z)`, core 8 | `a189117e` | 30341125, node2501 | Mosaic | 941, 11, 170 | 2.54 | 5.53 h |
+| `exp(s) h_t(z)`, core 8 | `a189117e` | 30341126, node2501 | Mosaic | 1,249, 11, 258 | 2.58 | 5.64 h |
+| `sigmoid(s) h_t(z)`, core 8 | `a189117e` | 30341127, node2501 | Mosaic | 1,249, 11, 258 | 2.70 | 5.88 h |
+| `softplus(s) exp(s)` | `a189117e` | 30341128, node2501 | fused | 511, 11, 124 | 3.16 | 6.87 h |
+
+The SoS and `softplus(s) exp(s)` runs capture gradient events, so their CPU stage includes
+`tests/test_gradient_events.py`. ORCD's launcher keeps temporary files node-local, as Kennel's does: inside the
+worktree, that test's scratch study is recorded with paths relative to the checkout, which the records cannot
+resolve again ([validation](../../scaffolds/transformer/validation/README.md#orcd-h100-acceptance-qualification-2026-11-23)).
+
+Submit from the study's worktree root after committing the frozen execution set, once each kernel's qualification
+has passed. Each run launches at the commit its kernel qualified at: acceptance's cached test stages key on the
+source commit, so production reuses the qualification's test reports. The query and exponential runs launched at
+`db4b0a35`; the SoS and `softplus(s) exp(s)` runs launch at `a189117e`, which keeps the launcher's temporary
+files node-local.
+
+```sh
+submit() {  # run, launch commit
+  sbatch --parsable --job-name="$1" --output="experiments/transformer_pp/runs/$1/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.learning_rate_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$2" 1 H100
+}
+for run in r90776a5d4175 r9e36ee87aa7e r19dfa87cb7ed r530a1bce3597; do
+  submit "$run" db4b0a3538e2da7d2d3fc433b5851a96675ada32
+done
+for run in r752878a0a030 r7924001c42f1 r39d0469cc122 r365f0c30f632 rf0053d2b3b45 r101b6c157a6b r2118e3531d89 \
+    re7d0d4e6a5b7; do
+  submit "$run" a189117e2773fb5053ad1b687c58ec00b522da71
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,

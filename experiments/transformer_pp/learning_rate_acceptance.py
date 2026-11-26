@@ -1,6 +1,7 @@
 """Qualify learning-rate scalings of completed recipes: at Q/K width 4 the exponential and z h_t(z) with a
-degree-sixteen or degree-eight SoS core, and at Q/K width 64 the exponential, z h_t(z) with a degree-eight core and that
-core under a prefactor of the raw score.
+degree-sixteen or degree-eight SoS core, and at Q/K width 64 the exponential, softplus(s) exp(s), the tanh query
+polynomial, z h_t(z) with a degree-eight core and that core under a prefactor of the raw score, on the raw score or on
+z = softplus(s).
 
 Each run is a completed run's recipe with ``optim.learning_rate`` and ``optim.min_learning_rate`` multiplied by one of
 its partner's scales (SCALES): the unnormalized exponential at width 4 (r2739c80cc032, key_width_acceptance) at half,
@@ -10,8 +11,13 @@ the Mosaic transformed kernels) at double, four and eight times; and f(s) h_t(s)
 a degree-eight query SoS core at width 64 (r6525664e6696, r41662adb22fa, r8f56a5b7e525; softplus_sos_acceptance) at
 double and four times;
 and at width 64 the exponential (r6a76e7fbde45, the shared acceptance) and z h_t(z) with a degree-eight core
-(r841f35a24241, softplus_sos_acceptance) at half. A partner may also take a newer run's settings of the same function
-(PARTNER_CHANGES): the exponential at width 64 its row-maximum shift.
+(r841f35a24241, softplus_sos_acceptance) at half, double and four times. Also at width 64, at double and four times on
+ORCD's H100s: the tanh query polynomial at degree eight with W decay (r25fffc16c2f3) and softplus(s) exp(s)
+(rbd24b948a240), both under the shared acceptance, and the degree-eight SoS core on z = softplus(s) under the exp
+and sigmoid prefactors, f(s) h_t(z) (raeaa47865867, r5d578a29f080; softplus_sos_acceptance). A partner may also take
+a newer run's settings of the same function (PARTNER_CHANGES): the exponential at width 64 its row-maximum shift. A
+run on another cluster reads byte copies of its partner's dataset manifests (MANIFEST_SHA256), which the partner's
+adapter sees at the partner's paths.
 Warmup, horizon, clipping, seed, data order and every model setting are the partner's, so a run starts from its
 partner's parameters and differs from it by the step size alone; a partner that predates head RMSNorm's max-abs
 prescale takes it, as every new run does (the same function as its plain arithmetic). The partner's adapter qualifies
@@ -83,15 +89,35 @@ PARTNERS = {
                          SharedPartner("r6a76e7fbde45", key_width_acceptance.GPU_TESTS["exponential"])),
     "softplus_sos_dk64": ("r841f35a24241", "1643696258e0267ecba603c8e11cbfe9228cfcc43d9a9af91341d9b9a094a62b",
                           softplus_sos_acceptance),
+    # At Q/K width 64, on ORCD: the tanh query polynomial at degree eight with W decay, softplus(s) exp(s), and the
+    # degree-eight SoS core on z = softplus(s) times a prefactor of the raw score.
+    "query_dk64": ("r25fffc16c2f3", "ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2",
+                   SharedPartner("r25fffc16c2f3")),
+    "softplus_exp_dk64": ("rbd24b948a240", "73cfbeb535da1ed1aa95e8642ad7df6d298bda6a19db9ecc8de97e4863daac0f",
+                          SharedPartner("rbd24b948a240")),
+    "exp_prefactor_softplus_sos": ("raeaa47865867", "6225bc0496c3da72aa51b4be41540cd0f88219f1622364dad16b972058102a9c",
+                                   softplus_sos_acceptance),
+    "sigmoid_prefactor_softplus_sos": ("r5d578a29f080",
+                                       "c127b0f3d79625d844d8b0e1c8ddec7028cf3cb703d393e038516e9d2266f9c7",
+                                       softplus_sos_acceptance),
 }
 # A newer run's settings of the partner's function, as every new run takes them (scaffolds.records create).
 PARTNER_CHANGES = {"exponential_dk64": {"attention_exp_shift": "row_max"}}
 # Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not.
 SCALES = {"exponential": (0.5, 2.0, 4.0), "shifted_sos": (0.5, 2.0, 4.0, 8.0), "exp_prefactor_sos": (2.0, 4.0),
-          "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0), "exponential_dk64": (0.5,),
-          "softplus_sos_dk64": (0.5,), "softplus_sos_m8": (2.0, 4.0, 8.0)}
+          "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0),
+          "exponential_dk64": (0.5, 2.0, 4.0), "softplus_sos_dk64": (0.5, 2.0, 4.0), "softplus_sos_m8": (2.0, 4.0, 8.0),
+          "query_dk64": (2.0, 4.0), "softplus_exp_dk64": (2.0, 4.0), "exp_prefactor_softplus_sos": (2.0, 4.0),
+          "sigmoid_prefactor_softplus_sos": (2.0, 4.0)}
 # The Mosaic transformed query-polynomial kernels of the prefactor partners admit these GPUs alone.
 MOSAIC_TRANSFORMED_GPUS = ("H100", "B200")
+# The tanh query polynomial and softplus(s) exp(s) at width 64 are qualified for these runs on ORCD's H100s.
+ORCD_GPU_TYPES = ("H100",)
+# The partners read Kennel's manifests; another cluster's runs read byte copies of them.
+MANIFEST_SHA256 = {
+    "train_manifest": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
+    "eval_manifest": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+}
 # The schedule's peak and floor scale together; warmup and horizon stay.
 RATES = ("learning_rate", "min_learning_rate")
 # New runs' evaluation of head RMSNorm. The comparison leaves it to the run (acceptance.comparison_recipe), and the
@@ -102,20 +128,27 @@ EXECUTION_KEYS = ("workdir", "checkpoint_dir", "source_commit", "wandb_run_name"
 
 
 def partner_key(config) -> str:
-    """The exponential has no degree; a prefactor of the raw score names its partner; z h_t(z) has neither. The Q/K
+    """The exponential has no degree, and at width 64 the softplus prefactor marks softplus(s) exp(s). The query SoS
+    core is z h_t(z) without a prefactor, and a prefactor of the raw score names its partner by the core's input: the
+    raw score, or z = softplus(s). The direct (tanh) query polynomial is the width-64 degree-eight partner. The Q/K
     width tells the exponential and z h_t(z) at 4 from those at 64, and at 4 the degree tells z h_t(z)'s cores apart
     (17 for sixteen, 9 for eight)."""
     model = config.model
     wide = model.qk_head_dim == 64
+    prefactor = model.attention_score_prefactor
     if model.attention_degree is None:
-        return "exponential_dk64" if wide else "exponential"
-    if model.attention_score_prefactor == "none":
-        if wide:
-            return "softplus_sos_dk64"
-        return "softplus_sos_m8" if model.attention_degree == 9 else "shifted_sos"
-    key = f"{model.attention_score_prefactor}_prefactor_sos"
+        key = ({"none": "exponential_dk64", "softplus": "softplus_exp_dk64"}.get(prefactor) if wide
+               else "exponential" if prefactor == "none" else None)
+    elif model.attention_coefficient_parameterization != "sum_of_squares":
+        key = "query_dk64" if wide and prefactor == "none" else None
+    elif prefactor == "none":
+        key = "softplus_sos_dk64" if wide else "softplus_sos_m8" if model.attention_degree == 9 else "shifted_sos"
+    else:
+        core_input = {"identity": "", "softplus": "softplus_"}.get(model.attention_score_transform)
+        key = None if core_input is None else f"{prefactor}_prefactor_{core_input}sos"
     if key not in PARTNERS:
-        raise ValueError(f"No learning-rate partner takes the {model.attention_score_prefactor} prefactor")
+        raise ValueError(f"No learning-rate partner at Q/K width {model.qk_head_dim} takes this kernel with the "
+                         f"{prefactor} prefactor")
     return key
 
 
@@ -146,16 +179,28 @@ def scale_of(config) -> float:
     raise ValueError(f"optim.learning_rate is {ratio:g} times its partner's; the scales are {SCALES[key]}")
 
 
-def at_partner_rate(config):
-    """The recipe with its partner's schedule, as the partner's adapter takes it."""
+def with_partner_manifests(config):
+    """The recipe with its partner's manifest paths, once its own are byte copies of the partner's manifests."""
     partner = partner_config(partner_key(config))
-    return replace(config, optim=replace(config.optim, **{name: getattr(partner.optim, name) for name in RATES}))
+    for name, digest in MANIFEST_SHA256.items():
+        path, partner_path = getattr(config.data, name), getattr(partner.data, name)
+        if str(path) != str(partner_path) and hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
+            raise ValueError(f"data.{name} is not a copy of the partner's dataset manifest")
+    return replace(config, data=replace(config.data, **{name: getattr(partner.data, name) for name in MANIFEST_SHA256}))
+
+
+def at_partner_rate(config):
+    """The recipe with its partner's schedule and manifest paths, as the partner's adapter takes it."""
+    partner = partner_config(partner_key(config))
+    local = with_partner_manifests(config)
+    return replace(local, optim=replace(local.optim, **{name: getattr(partner.optim, name) for name in RATES}))
 
 
 def check_recipe(config):
     validate_config(config)
     key = partner_key(config)
-    actual, expected = comparison_recipe(config), comparison_recipe(recipe(key, scale_of(config)))
+    actual = comparison_recipe(with_partner_manifests(config))
+    expected = comparison_recipe(recipe(key, scale_of(config)))
     for entry in (actual, expected):
         for name in EXECUTION_KEYS:
             entry["train"].pop(name, None)
@@ -175,6 +220,8 @@ def gpu_types(config) -> tuple:
     if key == "exponential_dk64":
         # The fused exponential, as at the narrower widths.
         return key_width_acceptance.PARTNERS["exponential"]["gpu_types"][4]
+    if key in ("query_dk64", "softplus_exp_dk64"):
+        return ORCD_GPU_TYPES
     return shifted_sos_acceptance.GPU_TYPES if key == "shifted_sos" else MOSAIC_TRANSFORMED_GPUS
 
 
