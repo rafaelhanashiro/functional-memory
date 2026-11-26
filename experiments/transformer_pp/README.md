@@ -3528,6 +3528,7 @@ Four runs at the reference shape and 2x Chinchilla (15,140 updates), requested 2
 1x, each kernel's best learning rate leaves `z h_t(z)` with a degree-sixteen SoS core 2.5% ahead of the exponential
 (18.203 at four times the schedule's rate against 18.667 at twice it): does more data widen or narrow that lead? A
 longer schedule usually prefers a lower rate, so each kernel also trains at half its best rate.
+[Results](staging/narrow_key_budget/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
