@@ -1,5 +1,5 @@
 """Per-query polynomials p_t(z) = sum_r c_tr z^r of degree M, z = s or softplus(s), in common row units e^(-m_t), or
-f(s) p_t(s) for a prefactor f of the raw score (softplus or exp), in units of the row's largest key bound.
+f(s) p_t(z) for a prefactor f of the raw score (softplus or exp), in units of the row's largest key bound.
 
 m_t = M log max(1, max_i |z_ti|) over query t's causal row bounds every term: with half = e^(-m_t / (2M)) and
 u = (z half) half, |u| <= 1 and c_r z^r e^(-m_t) = c_r e^(-(M - r) m_t / M) u^r. Head RMSNorm divides the row factor
@@ -7,12 +7,10 @@ out when its epsilon is scaled by e^(-2 m_t) (attention/output_scaling.py); m_t 
 The layer supplies c per query: the tanh query generator, direct or sum of squares (attention/nonnegative_polynomial.py,
 prefactor included), pure tanh, or static fixed or learned coefficients broadcast to every query.
 
-With a prefactor the key a weight is largest for need not be the key of largest |s|: f suppresses some keys (softplus
-and exp the far negative ones), so units set by the largest |s| alone could underflow every weight that matters. Each
-key i instead has the bound b_i = log f(s_i) + M log S_i, S_i = max(1, |s_i|), on |f(s_i) s_i^r| for every r <= M;
-m_t = max(0, max_i b_i), and f(s) p_t(s) e^(-m_t) = e^(b_i - m_t) h_i with h_i = p_t(s_i) / S_i^M, evaluated by
-Horner's rule in s where |s| <= 1 and in 1/s over the reversed coefficients (times sign(s)^M) elsewhere: every
-partial sum stays within the coefficients' scale.
+With a prefactor each key has bound b = log f(s) + M log S, S = max(1, |z|).
+The row shift is its largest causal bound with a floor of zero. Evaluate p_t(z) / S^M
+by Horner in z for |z| <= 1 and by reversed Horner in 1/z otherwise, then multiply
+by exp(b - shift). This keeps both the prefactor and the powers representable.
 """
 import math
 
@@ -22,7 +20,7 @@ import jax.numpy as jnp
 
 
 TRANSFORMS = ("identity", "softplus")
-# Multipliers f(s) of the raw score; a prefactor takes z = s.
+# Multipliers f(s) always take the raw score.
 PREFACTORS = ("none", "softplus", "exp")
 
 
@@ -51,9 +49,10 @@ def log_prefactor(scores, prefactor):
     raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, not {prefactor!r}")
 
 
-def key_bound(scores, prefactor, degree):
-    """b = log f(s) + M log max(1, |s|): the log of f(s) |s|^r's largest value over r <= M."""
-    return log_prefactor(scores, prefactor) + degree * jnp.log(jnp.maximum(1.0, jnp.abs(scores)))
+def key_bound(scores, prefactor, degree, *, z=None):
+    """b = log f(s) + M log max(1, |z|): the log of f(s) |z|^r's largest value over r <= M."""
+    z = scores if z is None else z
+    return log_prefactor(scores, prefactor) + degree * jnp.log(jnp.maximum(1.0, jnp.abs(z)))
 
 
 def keyed_polynomial(scores, coefficients):
@@ -101,11 +100,11 @@ def _reference(q, k, v, c, transform, return_diagnostics, prefactor="none"):
             terms = shifted_terms(z, shift[..., None], degree)
             weights = sum(coefficients[..., r, None] * term for r, term in enumerate(terms))
         else:
-            # z = s: each key in units of its own bound, the row in units of the largest.
-            bound = key_bound(scores, prefactor, degree)
+            # Each key in units of its own bound, the row in units of the largest.
+            bound = key_bound(scores, prefactor, degree, z=z)
             shift = lax.stop_gradient(jnp.maximum(0.0, jnp.max(jnp.where(causal, bound, -jnp.inf), axis=-1)))
             unit = jnp.exp(bound - shift[..., None])
-            weights = unit * keyed_polynomial(scores, coefficients)
+            weights = unit * keyed_polynomial(z, coefficients)
         weights = jnp.where(causal, weights, 0.0)
         output = jnp.einsum("bhqk,bkhd->bqhd", weights, v.astype(jnp.float32), precision=lax.Precision.HIGHEST)
         outputs = output, shift.swapaxes(1, 2)
@@ -188,8 +187,9 @@ def shifted_polynomial_attention(q, k, v, coefficients, *, transform="identity",
         raise ValueError("The shifted polynomial requires BF16 or FP32 Q/K/V and FP32 coefficients")
     if transform not in TRANSFORMS:
         raise ValueError(f"The shifted polynomial takes the transforms {TRANSFORMS}, not {transform!r}")
-    if prefactor not in PREFACTORS or (prefactor != "none" and transform != "identity"):
-        raise ValueError(f"The shifted polynomial takes the prefactors {PREFACTORS}, of the raw score with z = s")
+    if prefactor not in PREFACTORS or (prefactor == "softplus" and transform != "identity"):
+        raise ValueError(f"The shifted polynomial takes raw-score prefactors {PREFACTORS}; "
+                         "the softplus prefactor requires identity polynomial input")
     if backend == "blocked":
         return _reference(q, k, v, coefficients, transform, return_diagnostics, prefactor)
     if backend != "fused" or max(q.shape[-1], v.shape[-1]) > 128:

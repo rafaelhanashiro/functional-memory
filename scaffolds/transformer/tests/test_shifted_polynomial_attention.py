@@ -71,8 +71,10 @@ def _inputs(time, stress, degree, prefactor="none"):
 SCORE_FUNCTIONS = (*((transform, "none") for transform in TRANSFORMS), ("identity", "softplus"), ("identity", "exp"))
 
 
-@pytest.mark.parametrize("degree", DEGREES)
-@pytest.mark.parametrize("transform, prefactor", SCORE_FUNCTIONS)
+@pytest.mark.parametrize("transform,prefactor,degree", [
+    *((transform, prefactor, degree) for transform, prefactor in SCORE_FUNCTIONS for degree in DEGREES),
+    ("softplus", "exp", 16),
+])
 @pytest.mark.parametrize("stress", [False, True])
 @pytest.mark.parametrize("backend", ["blocked", pytest.param("fused", marks=pytest.mark.gpu)])
 def test_shifted_composition_and_all_gradients(backend, stress, transform, prefactor, degree):
@@ -214,6 +216,17 @@ def test_fused_model_matches_the_blocked_shifted_model(power):
     _assert_models_agree(fused, blocked, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
 
 
+@pytest.mark.parametrize("backend", ["blocked", pytest.param("fused", marks=pytest.mark.gpu)])
+def test_exp_prefactor_on_softplus_affine_query_sos_model(backend):
+    # Compare the actual width-four, degree-sixteen factor generator, logits and every parameter gradient.
+    options = dict(core_degree=16, qk_head_dim=4, attention_head_rms_prescale="max_abs", attention_score_prefactor="exp")
+    plain = _config(0, **options)
+    shifted = _config(0, **options, attention_polynomial_shift="row_power", attention_backend=backend)
+    if backend == "fused":
+        plain = _config(0, **options, attention_polynomial_shift="row_power")
+    _assert_models_agree(shifted, plain, rtol=2e-4, grad_rtol=2e-3, grad_atol=1e-3, logit_atol=LOGIT_ATOL)
+
+
 def test_the_shift_is_refused_off_its_recipe():
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(0, attention_head_rms_prescale="none", attention_polynomial_shift="row_power")
@@ -314,7 +327,7 @@ def test_the_shift_admits_its_coefficient_sources_alone():
             (fixed, dict(attention_fixed_square_factors=(1.0, 1.0)), "square factors"),
             (query, dict(attention_normalization=True), "unnormalized"),
             (query, dict(attention_score_prefactor="sigmoid"), "prefactor"),
-            (query, dict(attention_score_prefactor="exp", attention_score_transform="softplus"), "prefactor"),
+            (query, dict(attention_score_prefactor="softplus", attention_score_transform="softplus"), "prefactor"),
             (fixed, dict(attention_head_rms_prescale="none"), "max-abs prescale")):
         assert reason in polynomial_shift_problem(SimpleNamespace(**{**vars(model), **changes})), changes
 
@@ -706,10 +719,10 @@ def test_validation_diagnostics_name_the_prefactor(prefactor):
     assert report["kernel_values"] == f"row_power_shifted_query_polynomial_times_{prefactor}_of_raw_scores"
 
 
-def test_prefactors_are_refused_off_the_raw_score():
+def test_unsupported_shifted_prefactors_are_refused():
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _config(1, attention_head_rms_prescale="max_abs", attention_polynomial_shift="row_power",
-                attention_score_prefactor="exp")
+                attention_score_prefactor="softplus")
     with pytest.raises(ValueError, match="attention_polynomial_shift"):
         _pure_tanh_config("sigmoid", attention_polynomial_shift="row_power")
 

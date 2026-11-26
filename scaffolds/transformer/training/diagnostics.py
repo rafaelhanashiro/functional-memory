@@ -800,17 +800,19 @@ def attention_identity(config) -> dict:
         if identity["attention_implementation"] == "pallas_triton":
             identity["attention_implementation"] = "pallas_triton_row_max_shifted"
     if getattr(config.model, "attention_polynomial_shift", "none") != "none":
-        # How the per-query polynomial is evaluated (attention/shifted_polynomial.py), on its own kernels.
+        # Each causal key bounds the prefactor at s times the polynomial powers of z.
+        prefactor = getattr(config.model, "attention_score_prefactor", "none")
+        shift = ("M log max(1, max_i |z_ti|) over its transformed scores" if prefactor == "none" else
+                 "max(0, max_i [log f(s_ti) + M log max(1, |z_ti|)]) over its causal keys")
         identity.update(
             attention_polynomial_shift=config.model.attention_polynomial_shift,
             attention_implementation=("triton_row_power_shifted_polynomial"
                                       if config.model.attention_backend == "fused"
                                       else "blocked_row_power_shifted_polynomial") + (
-                "" if getattr(config.model, "attention_score_prefactor", "none") == "none"
-                else f"_times_{config.model.attention_score_prefactor}"),
+                "" if prefactor == "none" else f"_times_{prefactor}"),
             attention_formula=identity["attention_formula"] + (
-                "; each row evaluated in units e^(-m_t), m_t = M log max(1, max_i |z_ti|) over its transformed "
-                "scores, a constant to differentiation, with the RMSNorm epsilon scaled by e^(-2 m_t): the same "
+                f"; each row evaluated in units e^(-m_t), m_t = {shift}, a constant to differentiation, "
+                "with the RMSNorm epsilon scaled by e^(-2 m_t): the same "
                 "function, finite where z^M overflows FP32"))
     if getattr(config.model, "attention_head_rms_prescale", "none") != "none":
         # How the formula's head RMSNorm is evaluated (attention/output_scaling.py), after every other clause.

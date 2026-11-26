@@ -133,8 +133,8 @@ def polynomial_shift_problem(model) -> str | None:
     if model.attention_score_transform not in ("identity", "softplus"):
         return "it takes the raw score or its softplus"
     if model.attention_score_prefactor not in ("none", "softplus", "exp") or (
-            model.attention_score_prefactor != "none" and model.attention_score_transform != "identity"):
-        return "its prefactors are softplus and exp of the raw score, which the polynomial then takes untransformed"
+            model.attention_score_prefactor == "softplus" and model.attention_score_transform != "identity"):
+        return "its prefactors are exp of the raw score, or softplus of the raw score with identity polynomial input"
     if (model.attention_forget_gate or model.attention_score_bias != "none"
             or model.attention_coefficient_gate != "none" or model.attention_coefficient_orders is not None):
         return "it evaluates the plain polynomial, without gates, decay, score biases or selected orders"
