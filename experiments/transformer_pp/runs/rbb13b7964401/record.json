@@ -1,9 +1,89 @@
 {
+  "acceptance": {
+    "sha256": "d7aa007a50398ec6200fb40042944e722cab51bd1fd548aa776a9cc09b07e94a",
+    "summary": {
+      "allocation_seconds": 32400,
+      "checks": [
+        "cpu-tests",
+        "cpu-distributed-tests",
+        "gpu-tests",
+        "initialization",
+        "pilot",
+        "resume"
+      ],
+      "completed_utc": "2026-11-26T02:03:24.252873+00:00",
+      "hardware": {
+        "attention_backend": "mosaic",
+        "device_kinds": [
+          "NVIDIA B200"
+        ],
+        "devices": [
+          "cuda:0"
+        ],
+        "runtime_test_paths": [],
+        "versions": {
+          "flax": "0.12.7",
+          "jax": "0.10.0",
+          "optax": "0.2.8",
+          "orbax-checkpoint": "0.11.40"
+        }
+      },
+      "identity": "6f6373d9a4d42bffdceb065b0b5498f9528678bc37ad2556129cead1ae944a3c",
+      "reused_tests": {
+        "cpu-distributed-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/r382ea631f6f4/.runtime/acceptance/B200-1",
+          "completed_utc": "2026-11-25T19:37:26.846955+00:00",
+          "junit_sha256": "868ddb9209f41695a10946fc4bd6c5d4ad4b3ad968178c3ba62f5d8ef10ec029",
+          "slurm_job_id": "13996",
+          "test_identity": "d4380e92bf4d6a8563318f27a09edada446f40349600038079b7182d6250fb24"
+        },
+        "cpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/r382ea631f6f4/.runtime/acceptance/B200-1",
+          "completed_utc": "2026-11-25T19:36:43.564680+00:00",
+          "junit_sha256": "c07e59b369fabc054f38b650c1e92116eabdc8add2e889c18a67ad6a7d08d40c",
+          "slurm_job_id": "13996",
+          "test_identity": "b46d2d212ed65fefc09308de80a4269f32bf6ce86259ca86174df04f12d2ff8e"
+        },
+        "gpu-tests": {
+          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/r382ea631f6f4/.runtime/acceptance/B200-1",
+          "completed_utc": "2026-11-25T20:06:17.254127+00:00",
+          "junit_sha256": "cde45ba173dc04b838cb35e167c9526ddfb578f526603858c8ca56c95a81c92e",
+          "slurm_job_id": "13996",
+          "test_identity": "ed4bcada84a7e97768c4768040ff4ab41391a328bc8037f21b3855571a7aa61b"
+        }
+      },
+      "slurm_job_id": "13998",
+      "slurm_restart_count": "0",
+      "source_commit": "a69054eded2f75b305e04558857351382770d865",
+      "status": "passed"
+    }
+  },
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/rbb13b7964401/.runtime/acceptance/B200-1",
+      "allocation": "JobId=13998 JobName=rbb13b7964401 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20072 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:05 TimeLimit=09:00:00 TimeMin=N/A SubmitTime=2026-11-25T09:35:37 EligibleTime=2026-11-25T09:35:37 AccrueTime=2026-11-25T09:35:37 StartTime=2026-11-25T20:57:46 EndTime=2026-11-26T05:57:46 Deadline=N/A PreemptEligibleTime=2026-11-25T20:57:46 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-25T20:57:46 Scheduler=Main Partition=standard AllocNode:Sid=kennel:547489 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/rbb13b7964401/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-softplus-prefactor-sos/experiments/transformer_pp/runs/rbb13b7964401/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 32400,
+      "config_path": "experiments/transformer_pp/runs/rbb13b7964401/config.yaml",
+      "config_sha256": "f0d2253754dc660f855bcce1da6fd84b0c0503b193423896d3cb6e20e15b562f",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "a69054eded2f75b305e04558857351382770d865",
+      "slurm_job_id": "13998",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-26T01:57:51.955246+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/rbb13b7964401/config.yaml",
     "sha256": "f0d2253754dc660f855bcce1da6fd84b0c0503b193423896d3cb6e20e15b562f"
   },
+  "frozen_execution_sha256": "9975f35e1f66660127ee6bbe37389239cafeab3fbe76b42a35cb8ac395ffa6f7",
+  "home_cluster": "kennel",
   "label": "query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-quadruple",
+  "log_path": "experiments/transformer_pp/runs/rbb13b7964401/training.log",
   "name": "query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-quadruple",
   "receipt": {
     "arrays_count": 56,
@@ -13,5 +93,6 @@
   },
   "record_schema_version": 1,
   "run_id": "rbb13b7964401",
-  "status": "planned"
+  "source_commit": "a69054eded2f75b305e04558857351382770d865",
+  "status": "acceptance"
 }
