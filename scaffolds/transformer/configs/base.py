@@ -602,10 +602,11 @@ class ModelConfig:
         if (self.attention_coefficient_input_source == "pre_rmsnorm"
                 and self.attention_coefficient_input_normalization != "l2"):
             raise ValueError("pre_rmsnorm coefficient input source requires L2 coefficient input normalization")
+        # Softplus SoS with a prefactor: the input's (z h_t(z), input power 1) or the raw score's (e^s h_t(z)).
         l2_score_supported = (self.attention_score_transform == "identity" or (
             self.attention_score_transform == "softplus"
             and self.attention_coefficient_parameterization == "sum_of_squares"
-            and self.attention_coefficient_input_power == 1))
+            and (self.attention_coefficient_input_power == 1 or self.attention_score_prefactor != "none")))
         if self.attention_coefficient_input_normalization == "l2" and (
                 self.attention_mechanism != "dot_product" or self.attention_coefficients != "learned"
                 or self.attention_coefficient_sharing != "per_head"
@@ -623,7 +624,7 @@ class ModelConfig:
                              "diagonal tanh or pure tanh query polynomial coefficients, direct or sum-of-squares "
                              "(pure tanh with or without its inner bias), with RoPE or no positional encoding, without "
                              "selected orders, affine inner biases, gates, score biases; score transforms are "
-                             "limited to softplus with a SoS input prefactor")
+                             "limited to softplus SoS with an input or score prefactor")
         if self.attention_coefficient_readout not in ("diagonal", "dense"):
             raise ValueError(f"Unknown attention coefficient readout: {self.attention_coefficient_readout}")
         if self.attention_coefficient_readout == "dense" and (

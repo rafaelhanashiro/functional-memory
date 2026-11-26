@@ -88,6 +88,50 @@ def test_raw_l2_preserves_parameters_and_changes_only_generator_inputs(core_degr
         assert not np.allclose(first, second, rtol=1e-5, atol=1e-7)
 
 
+@pytest.mark.parametrize("activation", ("tanh", "pure_tanh"))
+def test_raw_l2_takes_the_exp_prefactor_of_an_input_power_zero_core(activation, monkeypatch):
+    """e^s h_t(z): the softplus SoS core of input power zero under exp of the raw score takes raw-input L2 like
+    z h_t(z) does; its parameters are the plain-input run's and only the generator's input changes. Without a
+    prefactor the input-power-zero core stays refused."""
+    core_degree = 8
+    pure = dict(attention_coefficient_activation="pure_tanh", attention_coefficient_tanh_bias=True,
+                attention_coefficient_tanh_bias_initial=math.atanh(.5), attention_coefficient_projection_initial_std=0.,
+                attention_coefficient_amplitude_initial=1.) if activation == "pure_tanh" else {}
+    configs = [_sos_config(0, core_degree, num_layers=1, attention_score_prefactor="exp", **pure,
+                           attention_coefficient_input_normalization=normalization,
+                           attention_coefficient_input_source=source)
+               for normalization, source in (("none", "post_rmsnorm"), ("l2", "pre_rmsnorm"))]
+    assert attention_parameter_specs(configs[0].model) == attention_parameter_specs(configs[1].model)
+    models = [build_model(c.model, 19) for c in configs]
+    params = [dict(nnx.to_flat_state(nnx.state(model, nnx.Param))) for model in models]
+    assert params[0].keys() == params[1].keys()
+    for key in params[0]:
+        np.testing.assert_array_equal(params[0][key][...], params[1][key][...])
+    raw = jnp.asarray(np.random.default_rng(313).normal(size=(2, 8, 16)) * 3., jnp.float32)
+    inputs, prefactors = [], []
+    project, attend = input_dependent.project_coefficients, multihead.attention_core
+
+    def capture_projection(x, *args, **kwargs):
+        inputs.append(np.asarray(x))
+        return project(x, *args, **kwargs)
+
+    def capture_attention(q, k, v, **kwargs):
+        prefactors.append((kwargs["score_transform"], kwargs["score_prefactor"]))
+        assert kwargs["query_polynomial_coefficients"].shape[-1] == core_degree + 1
+        return attend(q, k, v, **kwargs)
+
+    monkeypatch.setattr(input_dependent, "project_coefficients", capture_projection)
+    monkeypatch.setattr(multihead, "attention_core", capture_attention)
+    for model in models:
+        model.layers_0(raw, attention_parameters=_parameters(model))
+    np.testing.assert_array_equal(inputs[0], models[0].layers_0.attention_norm(raw))
+    np.testing.assert_allclose(inputs[1], _unit_numpy(raw), rtol=3e-6, atol=1e-7)
+    assert prefactors == [("softplus", "exp")] * 2
+    with pytest.raises(ValueError, match="softplus SoS with an input or score prefactor"):
+        _sos_config(0, core_degree, num_layers=1, **pure, attention_coefficient_input_normalization="l2",
+                    attention_coefficient_input_source="pre_rmsnorm")
+
+
 def _direct_squares(q, k, v, x, w, a, b, core_degree):
     """Independent FP64 attention: no production normalizer or polynomial expansion."""
     unit = x / jnp.maximum(jnp.linalg.norm(x, axis=-1, keepdims=True), EPS)
