@@ -1,11 +1,5 @@
 {
-  "artifacts": [
-    {
-      "path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
-      "sha256": "94220ba36f3b5a1961001f42cc6f4b1f564cf1fe86938519b09a1daae1ff3b6b",
-      "size_bytes": 1565
-    }
-  ],
+  "artifacts": [],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/.runtime/acceptance/B300-1",
@@ -24,21 +18,33 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-11-27T02:13:23.416984+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/.runtime/acceptance/H100-1",
+      "allocation": "JobId=15731 JobName=r1422e8000207 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20065 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=1-12:00:00 TimeMin=N/A SubmitTime=2026-11-27T00:03:24 EligibleTime=2026-11-27T00:03:24 AccrueTime=2026-11-27T00:03:24 StartTime=2026-11-27T00:03:39 EndTime=2026-11-28T12:03:39 Deadline=N/A PreemptEligibleTime=2026-11-27T00:03:39 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-27T00:03:39 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:4128274 ReqNodeList=(null) ExcNodeList=collie,doodle,mastiff,samoyed,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 129600,
+      "config_path": "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
+      "config_sha256": "c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "f5f392e6f824a761d3fd02223bc3817e18c6a271",
+      "slurm_job_id": "15731",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-27T05:03:46.103110+00:00",
+      "stop_after_step": null
     }
   ],
   "config": {
     "path": "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
     "sha256": "c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025"
   },
-  "error": "Job process exited with code 1; see training.log",
-  "frozen_execution_sha256": "fecd70b29dbbfa6cb0da3a9ea43bc9e1ff698d77e357bb58aeae97f3c5d40a1f",
+  "error": null,
+  "frozen_execution_sha256": "c670f0a694477a37d244d69a5ddf991a17da8841b68fb95df17dfd87a408ec69",
   "home_cluster": "kennel",
   "label": "query-m8-dk64-gradient-dynamics",
-  "log": {
-    "path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
-    "sha256": "94220ba36f3b5a1961001f42cc6f4b1f564cf1fe86938519b09a1daae1ff3b6b",
-    "size_bytes": 1565
-  },
+  "log": null,
   "log_path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
   "name": "query-m8-dk64-gradient-dynamics",
   "parent_checkpoint_probe": {
@@ -47,9 +53,11 @@
     "bias_relative_error": 6.658986274906867e-08,
     "gpu_type": "B300",
     "job_id": "15614",
+    "measurement": "native coefficient readout cotangent versus parameter autodiff",
     "nll": 1.8375544548034668,
     "parent": "r25fffc16c2f3",
     "sequence_start": 1632210,
+    "source_commit": "e9440842fd4724db8824beb99f41bdc67ea84fac",
     "step": 7500
   },
   "receipt": {
@@ -61,27 +69,33 @@
   "record_schema_version": 1,
   "run_id": "r1422e8000207",
   "seed": 42,
-  "source_commit": "e9440842fd4724db8824beb99f41bdc67ea84fac",
-  "status": "failed",
+  "source_commit": "f5f392e6f824a761d3fd02223bc3817e18c6a271",
+  "status": "acceptance",
   "submission": {
     "command": [
       "sbatch",
       "--parsable",
       "--partition=long",
+      "--nice=0",
       "--gres=gpu:1",
-      "--nodelist=akita",
-      "--time=24:00:00",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=36:00:00",
+      "--exclude=mastiff,collie,samoyed,doodle,terrier",
+      "--export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06",
       "--job-name=r1422e8000207",
       "--output=experiments/transformer_pp/runs/r1422e8000207/training.log",
+      "--error=experiments/transformer_pp/runs/r1422e8000207/training.log",
       "scaffolds/transformer/launchers/kennel.sbatch",
       "experiments.transformer_pp.query_dynamics_acceptance",
       "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
-      "e9440842fd4724db8824beb99f41bdc67ea84fac",
+      "f5f392e6f824a761d3fd02223bc3817e18c6a271",
       "1",
-      "B300"
+      "B300,H100,B200"
     ],
+    "nice": 0,
     "partition": "long",
-    "slurm_job_id": "15615",
-    "submitted_utc": "2026-11-27T01:13:01.881901+00:00"
+    "slurm_job_id": "15731",
+    "submitted_utc": "2026-11-27T05:03:24.891321+00:00"
   }
 }

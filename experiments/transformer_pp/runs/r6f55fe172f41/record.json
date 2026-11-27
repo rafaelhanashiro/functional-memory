@@ -1,10 +1,42 @@
 {
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r6f55fe172f41/.runtime/acceptance/H100-1",
+      "allocation": "JobId=15732 JobName=r6f55fe172f41 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20064 Nice=1 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=1-12:00:00 TimeMin=N/A SubmitTime=2026-11-27T00:04:17 EligibleTime=2026-11-27T00:04:17 AccrueTime=2026-11-27T00:04:17 StartTime=2026-11-27T00:04:39 EndTime=2026-11-28T12:04:39 Deadline=N/A PreemptEligibleTime=2026-11-27T00:04:39 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-27T00:04:39 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:4130425 ReqNodeList=(null) ExcNodeList=mastiff,collie,samoyed,doodle,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r6f55fe172f41/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r6f55fe172f41/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 129600,
+      "config_path": "experiments/transformer_pp/runs/r6f55fe172f41/config.yaml",
+      "config_sha256": "a8eae04faf8d420670615f08701384d7e0a7c2df3b1f8433f7ace328dc94f8f8",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "f5f392e6f824a761d3fd02223bc3817e18c6a271",
+      "slurm_job_id": "15732",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-27T05:04:43.707540+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r6f55fe172f41/config.yaml",
     "sha256": "a8eae04faf8d420670615f08701384d7e0a7c2df3b1f8433f7ace328dc94f8f8"
   },
+  "frozen_execution_sha256": "c670f0a694477a37d244d69a5ddf991a17da8841b68fb95df17dfd87a408ec69",
+  "home_cluster": "kennel",
   "label": "static-m8-dk64-gradient-dynamics",
+  "log_path": "experiments/transformer_pp/runs/r6f55fe172f41/training.log",
   "name": "static-m8-dk64-gradient-dynamics",
+  "parent_checkpoint_probe": {
+    "batch_sha256": "da12f2a6a73efdd4e0478a8e15203073dabfa7ae532be23cd0a4ac529284e06e",
+    "bias_relative_error": 5.329421130351381e-07,
+    "gpu_type": "H100",
+    "job_id": "15728",
+    "measurement": "sum of FP32 key contributions versus native parameter autodiff",
+    "nll": 1.7807669639587402,
+    "parent": "r9c69dd7cfc8d",
+    "sequence_start": 1632210,
+    "step": 7500
+  },
   "receipt": {
     "arrays_count": 52,
     "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
@@ -13,5 +45,35 @@
   },
   "record_schema_version": 1,
   "run_id": "r6f55fe172f41",
-  "status": "planned"
+  "seed": 42,
+  "source_commit": "f5f392e6f824a761d3fd02223bc3817e18c6a271",
+  "status": "acceptance",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--nice=1",
+      "--gres=gpu:1",
+      "--cpus-per-task=16",
+      "--mem=128G",
+      "--time=36:00:00",
+      "--exclude=dogo,mastiff,collie,samoyed,doodle,terrier",
+      "--export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06",
+      "--job-name=r6f55fe172f41",
+      "--output=experiments/transformer_pp/runs/r6f55fe172f41/training.log",
+      "--error=experiments/transformer_pp/runs/r6f55fe172f41/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.query_dynamics_acceptance",
+      "experiments/transformer_pp/runs/r6f55fe172f41/config.yaml",
+      "f5f392e6f824a761d3fd02223bc3817e18c6a271",
+      "1",
+      "B300,H100,B200"
+    ],
+    "eligible_nodes_exclude": "mastiff,collie,samoyed,doodle,terrier",
+    "nice": 1,
+    "partition": "long",
+    "slurm_job_id": "15732",
+    "submitted_utc": "2026-11-27T05:04:17.511145+00:00"
+  }
 }
