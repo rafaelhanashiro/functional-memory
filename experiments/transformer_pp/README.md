@@ -661,6 +661,67 @@ scaffolds/transformer/.venv/bin/python -m experiments.transformer_pp.launch_cont
 Each allocation qualifies the actual configuration, parameter decay policy, checkpoint
 restoration, finite training pilot, and fresh-process resume before production begins.
 
+### Forks of the exponential at its terminal update
+
+Requested on ORCD on 2026-11-27: does a trained exponential model gain from switching to a Taylor-initialized query
+polynomial when both branches get the same next 4B tokens? Two runs fork the completed exponential run `r19dfa87cb7ed`
+(the 15-layer width-896 shape, `d_K = d_V = 64`, seed 42, peak rate 2e-3; [two and four times the learning rate at key
+width 64](#two-and-four-times-the-learning-rate-at-key-width-64)) at its terminal update, 7,570:
+
+| Run | Label | Branch | Attention |
+| --- | --- | --- | --- |
+| `rda011906861b` | `exp-lr-double-terminal-fork-exp` | exp -> exp | the parent's: unnormalized `exp(s)`, row-maximum shift, fused kernel |
+| `r68f1cbfed2ef` | `exp-lr-double-terminal-fork-query-m8-w-decay` | exp -> query | `r90776a5d4175`'s: degree-8 tanh query coefficients on raw scores, W decay, Mosaic |
+
+- **Parent state.** Only the parent's validation-best checkpoint (update 7,500) survived retention. The terminal state was
+  rebuilt by replaying the parent's last 70 updates once from it, with the parent's launch commit (`db4b0a35`), recipe,
+  optimizer state, schedule, data order and runtime environment on an ORCD H100 (job 30686778, node node2501),
+  outside the parent's run and artifacts. The replay reproduced the recorded step-7,500 validation NLL exactly (2.6540640561204207), each logged train NLL of updates 7,510-7,570 within 4.4e-5 (the spread between batches is 0.025), and the terminal validation within 2.4e-6 in NLL (perplexity 14.2150923 against the recorded 14.2151265). It is not bit-identical, and separate GPU executions of training are not bitwise reproducible, so the original terminal bits cannot be recovered. Of the 2,130 QK RMSNorm gains and head scales the parent recorded at update 7,570, 32 differ by more than the 1e-4 set before the replay ran, at most 7.1e-4 (a layer-0 head scale). Over the 70 updates these parameters moved by a median of about 5e-4. The replay's movements correlate with the parent's at 0.9995 for the gains and 0.9925 for the head scales, and most of the larger differences are in layer 0. The rebuilt checkpoint is kept at
+  `/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570`
+  (tree SHA256 `59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94`), with the replay's log and comparison beside it in `7570-replay/`.
+- **Fork.** Each child is a fork (`continuation.optimizer: fresh`; [scaffold](../../scaffolds/transformer/README.md#forks-the-parents-weights-with-a-fresh-optimizer)):
+  the parent's weights with a fresh AdamW at update 0 on the parent's own schedule (455 warmup updates, peak 2e-3,
+  cosine to 2e-4 over 7,570 updates), reading the parent's packed stream from sequence 1,937,920, the first after the
+  parent's last update: 7,570 batches of 256 x 2,048 prediction tokens, 3,968,860,160 tokens per branch, the same in
+  both. The exp child keeps every parameter (`preserve_all_parameters`). The query child takes every shared array from
+  the parent (Q/K/V and output projections, QK RMSNorm gains and head scales, head RMSNorm gains, MLP, norms and
+  embeddings) and starts its new coefficient arrays at `r90776a5d4175`'s own initial draw: bias 1 and amplitude 0
+  under the factorial scales, so every query starts at `T_8(s) = sum_{r<=8} s^r / r!`. No SoS, softplus or prefactor;
+  attention stays unnormalized with per-head RMSNorm. Every parameter trains, including the gains and the new
+  coefficients, with one AdamW. Each child evaluates the parent's full validation set (19 x 256 sequences) before its
+  first update, as its update-0 validation; the switch cost is the query child's update-0 perplexity minus the exp
+  child's. Validation then follows the parent's cadence (every 100 updates to 1,500, then every 500, and the
+  terminal update).
+- **Recipe.** A child is its partner's recipe (`r19dfa87cb7ed` or `r90776a5d4175`) plus the pinned fork and
+  `train.retain_terminal_checkpoint: true`, which keeps the terminal checkpoint, the full resumable state, beside the
+  validation best for future continuation (the user's request; AGENTS.md otherwise keeps the best alone). At close-out
+  both the validation-best and the terminal checkpoint move to the artifact root (`selected_checkpoint` and
+  `terminal_checkpoint` in each record). `terminal_fork_acceptance.fork_recipe` derives the recipes, allocated with
+  `scaffolds.records create`.
+- **Acceptance.** The [adapter](terminal_fork_acceptance.py) refuses any other difference from the partner and pins
+  the fork: the parent recipe, data identity, the rebuilt checkpoint's tree hash, the parent step and the data
+  position. Its CPU initialization check restores the rebuilt checkpoint and requires every shared array to be the
+  parent's bit for bit, and the query child's new arrays to be `r90776a5d4175`'s initial arrays. Its pilot check pins
+  the batches the pilot records and reads, the parent's last (sequences 1,937,664-1,937,919) and the fork's first
+  (1,937,920-1,938,175), which the trainer also checks its first update against in every execution that runs it. Both
+  children train on one ORCD H100, the partners' GPU; each kernel qualifies at the launch commit through
+  `validation/qualify_acceptance_orcd.sbatch` first.
+
+Each kernel's qualification at the launch commit is listed here once it passes.
+
+Submit from the study's worktree root at the qualification commit:
+
+```sh
+submit() {  # run, launch commit
+  sbatch --parsable --job-name="$1" --output="experiments/transformer_pp/runs/$1/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.terminal_fork_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$2" 1 H100
+}
+LAUNCH=<the commit both kernels qualified at>
+for run in rda011906861b r68f1cbfed2ef; do submit "$run" "$LAUNCH"; done
+```
+
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/diagnostics/overfitting/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)

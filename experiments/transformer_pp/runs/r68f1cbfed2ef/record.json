@@ -1,0 +1,162 @@
+{
+  "condition": "exp_to_query_polynomial",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r68f1cbfed2ef/config.yaml",
+    "sha256": "85396e8846d1a1390ce36cfecbd53f954382212cc041e96354687d05ef1d9017"
+  },
+  "experiment_kind": "terminal_fork",
+  "fork": {
+    "data_start_sequence": 1937920,
+    "first_batch": {
+      "sequence_start": 1937920,
+      "sequence_stop": 1938176,
+      "sha256": "fbe146caa7ab17d437febf8ddcfe7a695bc9c8d21a9fe60f9c9bba81ead9371d"
+    },
+    "new_prediction_tokens": 3968860160,
+    "optimizer": "fresh AdamW at update 0: zero moments and counts",
+    "parent_last_batch": {
+      "sequence_start": 1937664,
+      "sequence_stop": 1937920,
+      "sha256": "53233277115349feb7834876817e2c0952fdf6bbba3b3a390a5f0d2e812e6631"
+    },
+    "schedule": "455 warmup updates to 2e-3, cosine to 2e-4 over 7,570 updates",
+    "start_step": 0,
+    "updates": 7570
+  },
+  "label": "exp-lr-double-terminal-fork-query-m8-w-decay",
+  "name": "exp-lr-double-terminal-fork-query-m8-w-decay",
+  "parent_run_id": "r19dfa87cb7ed",
+  "partner_run_id": "r90776a5d4175",
+  "receipt": {
+    "arrays_count": 56,
+    "digest": "c21b48924551c73e0a2c3f355807dda084fb3d7e3ff2fabeff175bad8f5e0687",
+    "loss": 5.572040557861328,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r68f1cbfed2ef",
+  "source_checkpoint": {
+    "file_count": 18,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "ea0b7b3d2d6b96d6cdc7bfeaf07df04b57c8d762181c55d20e27e0bf7a9371e2",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "fd1a8124568e271f65b9ca65e5b21269f435a1a24a04a6a611c60c7a5039acd9",
+        "size_bytes": 215303
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "5f13b7362b78fb38bffa2b7daa32f24d61f4976b4c0dc28dc51cc64b3db65f27",
+        "size_bytes": 67472
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "769bb156a5036d45863a32cde14e34b64718e018d5845dd6353bb2b35e5386bf",
+        "size_bytes": 73730
+      },
+      {
+        "path": "default/d/8a9dae463b2ceb2fb7b41c1e52266fcb",
+        "sha256": "d60d44e94ee4ded11caacc150f1bee7005916506c553f541bf6d2ff8cd5265ff",
+        "size_bytes": 7281
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "e53f1fa9fcec174a60a67ba1646f627b2d4fed469d020a301376289b559b5e74",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/176e3762eeb70421bbb65e0ccdfb690f",
+        "sha256": "1c78acfc20d16c608bb07a16346ee773a84f98eb8abcf8fcb6cbe2439a6f2750",
+        "size_bytes": 637042688
+      },
+      {
+        "path": "default/ocdbt.process_0/d/17cee29268965fff7c172b34c42fc172",
+        "sha256": "ca5879d2a0a2396500a176b9a5177937ea21769aa633617255f87a74e94bdda5",
+        "size_bytes": 411
+      },
+      {
+        "path": "default/ocdbt.process_0/d/2688ab908b9391c589fc5b41c75cd31c",
+        "sha256": "9a4e215b6d57f57095187ec28950fe9af7cf199872e5a7cb4957682430c6adab",
+        "size_bytes": 809
+      },
+      {
+        "path": "default/ocdbt.process_0/d/471910b9aa32255cb76084f373254a73",
+        "sha256": "f8507005fc5cc9d9e3ac89efe48e38458a991b6186e351bf16ca1dbf3bafa83c",
+        "size_bytes": 7249
+      },
+      {
+        "path": "default/ocdbt.process_0/d/5e8e6250b19f51055edf7f6b9f84582d",
+        "sha256": "151fcdc1be4a2c719c9346a7562896e92d95c37fabeaef89f636a0cdc81a4879",
+        "size_bytes": 336
+      },
+      {
+        "path": "default/ocdbt.process_0/d/7920ee2919692fc57a0a137268cb88df",
+        "sha256": "ba50e9025a83c75880b1ac29974b2d052e7a850812cb31df2834935ab28db249",
+        "size_bytes": 1037475840
+      },
+      {
+        "path": "default/ocdbt.process_0/d/a97a8d3c9f23bbfa02dda621f2f41ee0",
+        "sha256": "7890fde3434b17a35932860c14de906fef76185e3d4c4a58a20c1d24f461d014",
+        "size_bytes": 11285
+      },
+      {
+        "path": "default/ocdbt.process_0/d/bcef792358ee10781e063fca2f3316e2",
+        "sha256": "bf13e5b20e227b26363f04cb6ab22ccf22685c94a082d94efde6a423b87369b5",
+        "size_bytes": 814
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e329e522f9cf1984aa71ec86f4a19b53",
+        "sha256": "d00d8d187a891685ef6743af45993d902c51bb6af45efbf543fb7b4949fe987d",
+        "size_bytes": 510111744
+      },
+      {
+        "path": "default/ocdbt.process_0/d/e69d3acc4fdae008b262ab6149e507ea",
+        "sha256": "2e7c78b4bec81e073731c3f1fc7efee6f24be964d592591b084b4665ca4c38bf",
+        "size_bytes": 24024
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "982b38fb0d4f1d705a47b7d72dff9e9234756ae44f1be1cfc72799a73941fad0",
+        "size_bytes": 505
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "9b4df200429dabc7aea5447b369ea48e68a717a43abdab29291e26f86526eb52",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "origin": "reconstructed",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570",
+    "reconstruction": {
+      "checks": {
+        "final_step": true,
+        "from_disk_equals_in_loop": true,
+        "qk_parameters": false,
+        "restored_7500": true,
+        "terminal_7570": true,
+        "train_nll": true
+      },
+      "from_checkpoint_sha256": "555354c2e53714816b8a75f0ee95e4a4d8f7af2619388f22116ac0c5b0ab7905",
+      "gpu": "NVIDIA H100 80GB HBM3",
+      "node": "node2501",
+      "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570.json",
+      "recorded_terminal_validation_nll": 2.6543066446718417,
+      "sha256": "d02a6deaeef875234a7f18ea11cf5b7da59f4505359c6b29628ae457022e754b",
+      "slurm_job_id": "30686778",
+      "source_commit": "db4b0a3538e2da7d2d3fc433b5851a96675ada32",
+      "terminal_validation_nll": 2.654304237742173,
+      "verified_within_preset_tolerances": false
+    },
+    "run_id": "r19dfa87cb7ed",
+    "sha256": "59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94",
+    "size_bytes": 2185040112,
+    "step": 7570
+  },
+  "status": "planned"
+}

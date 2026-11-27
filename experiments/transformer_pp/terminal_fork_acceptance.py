@@ -38,10 +38,11 @@ PARENT_DATA_IDENTITY_SHA256 = "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb1565663
 PARENT_STEP = 7570
 BATCH_SIZE = 256
 DATA_START_SEQUENCE = PARENT_STEP * BATCH_SIZE
-# The parent's step-7,570 state, rebuilt by replaying its last 70 updates from its retained step-7,500 state.
+# The parent's step-7,570 state, rebuilt by replaying its last 70 updates once from its retained step-7,500 state
+# (Slurm job 30686778; reconstructed_checkpoints/7570.json beside it records the replay and its comparison).
 PARENT_CHECKPOINT = (f"/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/{PARENT}/"
                      f"reconstructed_checkpoints/{PARENT_STEP}")
-PARENT_CHECKPOINT_SHA256 = None  # Pinned once the replay is verified.
+PARENT_CHECKPOINT_SHA256 = "59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94"
 # Each branch's partner: its run, recipe SHA256, and whether the child keeps every parent parameter.
 PARTNERS = {
     "exp": (PARENT, PARENT_CONFIG_SHA256, True),
