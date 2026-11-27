@@ -27,7 +27,7 @@ results/diagnostics/
 results/simplified/
   README.md                 purpose, sources, regeneration commands
   <analysis>/               presentation figures simplifying results/<analysis>/, plot.py
-results/temp/               untracked temporary files made for the user to view; never staged
+temp/                       untracked temporary files made for the user to view; never staged
 experiments/<study>/
   README.md                 scientific question, methods, launch instructions
   sweep.yaml                common recipe and study provenance; run membership
@@ -39,7 +39,10 @@ experiments/<study>/
     checkpoints/            ignored, on the run's home cluster
     training.log            ignored, retained execution log
   results/                  Transformer++ only: pretraining/<group>/ and diagnostics/<group>/,
-                            grouped as on the results site; README.md indexes them
+                            grouped as on the results site; README.md indexes them; the user places
+                            results here
+  staging/                  Transformer++ only: finished results not yet placed in results/;
+                            README.md lists them
   acceptance.py, ...        optional experiment-specific execution code
 scaffolds/<capability>/      shared implementation, tests, and environment
 ```
@@ -64,11 +67,15 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   runs, findings, limits, the date opened, any open question) and a selection pinned by
   `scaffolds.records refresh`; a folder with figures or tables also holds the code that
   regenerates them byte-identically, with tests; the only other decision about a folder
-  is deleting it with its runs and their artifacts. A new result goes into the group it
-  belongs to (ask the user when none fits), except that pretraining comparisons at the
-  12-layer width-640 shape go under `results/pretraining/scalings/l12_d640/` whatever their
-  mechanism; a comparison spanning shapes splits by shape, each part linking the other.
-  Folders not yet grouped wait in `results/exploratory/`. Old studies and result selections retain their recipes.
+  is deleting it with its runs and their artifacts. Finished results never go straight into
+  `results/`: at close-out they go to `staging/<topic>/`, one folder per question holding what a
+  results folder holds, with a row in `staging/README.md` (question, result, date opened, a
+  suggested home). A rerun that replaces a placed run goes to `staging/replacements/<topic>/`, so a
+  changed result is seen before it is taken in; a run that fills a planned cell of a placed table
+  is a new result. Only the user moves a topic into `results/`, in a session together; there,
+  pretraining comparisons at the 12-layer width-640 shape go under
+  `results/pretraining/scalings/l12_d640/` whatever their mechanism, and a comparison spanning
+  shapes splits by shape, each part linking the other. Old studies and result selections retain their recipes.
   Attention family, normalization, QK normalization,
   degree, key width, model shape (depth and width), token budget, coefficient
   parameterization, sharing, and seed distinguish runs within this study; do not create
@@ -143,10 +150,10 @@ scaffolds/<capability>/      shared implementation, tests, and environment
   source collection changes. Findings and discussion stay in the source collection.
   No other file (root README, study or result READMEs, records) links to or cites
   them unless the user asks.
-- `results/temp/` holds temporary, ad-hoc files (for example a quick figure) made for
-  the user to view. It is deliberately untracked but not ignored, so file browsers show
-  it: never stage or commit its files (add files by explicit path, never `git add -A` or
-  `git add results`), never reference or cite them anywhere (READMEs, records,
+- `temp/` holds temporary, ad-hoc files (for example a quick figure) made for the user to
+  view, outside `results/`, which mirrors the results site. It is deliberately untracked but not
+  ignored, so file browsers show it: never stage or commit its files (add files by explicit path,
+  never `git add -A`), never reference or cite them anywhere (READMEs, records,
   selections, memory), keep no copies elsewhere, and delete them when the user asks or
   at periodic cleanup.
 - Keep figures and analysis files directly in the result directory. Keep each run's
@@ -416,7 +423,8 @@ scaffolds/<capability>/      shared implementation, tests, and environment
      `python -m scaffolds.records validate experiments/<study> <run_id>... --checkpoint-hashes`.
      Without `--checkpoint-hashes`, `validate` checks checkpoints by file names and sizes
      and reads none of them; that suffices for routine record changes.
-  3. Record the final locations in the run records and regenerate the study index.
+  3. Record the final locations in the run records and regenerate the study index. A
+     Transformer++ study writes its results into `staging/`, not `results/`.
   4. Merge the branch into `main`, reconciling any scaffold changes `main` made in the
      meantime.
   5. Only then remove the worktree and delete the branch. `git worktree remove`

@@ -80,7 +80,7 @@ def _array_roles(selection: dict[str, Any]) -> dict[str, str]:
 
 
 def _repository_root(directory: Path) -> Path:
-    """Resolve root or study-local results without requiring Git metadata."""
+    """Resolve root or study-local results, or a study's staged results, without requiring Git metadata."""
     for parent in (directory, *directory.parents):
         if parent.name == "results":
             # A self-contained setup keeps its results beside runs, under
@@ -89,7 +89,11 @@ def _repository_root(directory: Path) -> Path:
             if parent.parent.parent.name == "experiments":
                 return parent.parent.parent.parent
             return parent.parent
-    raise ValueError(f"A result collection must live under results/ or experiments/<study>/results/: {directory}")
+        if parent.name == "staging" and parent.parent.parent.name == "experiments":
+            # Finished results wait under experiments/<study>/staging/<topic> until placed in results/.
+            return parent.parent.parent.parent
+    raise ValueError("A result collection must live under results/, experiments/<study>/results/ or "
+                     f"experiments/<study>/staging/: {directory}")
 
 
 def refresh_selection(directory: str | Path) -> list[str]:

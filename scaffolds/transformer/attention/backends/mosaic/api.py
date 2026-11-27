@@ -45,7 +45,7 @@ unchanged; the scale is that of the unpadded width; narrower tiles use narrower 
 multiple of 128 (H100) or 256 (Blackwell). Softplus additionally admits degree 13 at width
 64 and 512/2,048 tokens; transformed kernels admit H100 and B200 only. Unsupported shapes
 or architectures raise ValueError. Recipe admission (``query_degree_supported``) takes a score
-prefactor at degrees up to ``MAX_PREFACTOR_QUERY_DEGREE``, the ones its GPU qualification covers.
+prefactor at the degrees its GPU qualification covers (``prefactor_degree_limit``).
 """
 import math
 from functools import partial
@@ -69,6 +69,9 @@ MAX_SOFTPLUS_QUERY_DEGREE = 13  # degree-12 SoS with one input prefactor, at the
 # (tests/test_mosaic_score_prefactor.py, test_mosaic_softplus_sos.py), so recipes take them up to degree eight; the
 # kernels themselves lower to their transform's limit, which qualification tests may exercise.
 MAX_PREFACTOR_QUERY_DEGREE = 8
+# Prefactor families the GPU suites qualify above it, by (transform, prefactor, Q/K width): exp of the raw score times
+# the polynomial of softplus(s), through degree twelve at width 64 (``prefactor_degree_limit``).
+PREFACTOR_DEGREE_LIMITS = {("softplus", "exp", 64): 12}
 
 
 def _query_degree_limit(width, time, transform):
@@ -103,7 +106,7 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
     "none" (``common.score_function_family``) takes no gate and holds the coefficients alone, as the
     untransformed polynomial does. Softplus alone additionally supports degree 13 at width 64 and
     512/2,048 tokens for a degree-12 SoS prefactor; a score prefactor admits degrees up to
-    ``MAX_PREFACTOR_QUERY_DEGREE``, the ones its GPU qualification covers, within its transform's limit."""
+    ``prefactor_degree_limit``, the ones its GPU qualification covers, within its transform's limit."""
     if mode not in ("query_distance", "cumulative"):
         raise ValueError(f"Unknown decay mode: {mode!r}")
     if gate is None:
@@ -120,11 +123,16 @@ def query_degree_supported(degree, width, time, *, gate=None, per_order=False, m
             return False
     if not (1 <= degree <= _query_degree_limit(width, time, transform) and time > 0):
         return False
-    if prefactor != "none" and degree > MAX_PREFACTOR_QUERY_DEGREE:
+    if prefactor != "none" and degree > prefactor_degree_limit(transform, prefactor, width):
         return False
     if family in common.PER_ORDER_FAMILIES:
         return hopper_supported(family, degree, width)
     return blackwell_supported(family, degree, width, time)
+
+
+def prefactor_degree_limit(transform, prefactor, width):
+    """The highest degree a prefactor family's GPU qualification covers at this Q/K width."""
+    return PREFACTOR_DEGREE_LIMITS.get((transform, prefactor, width), MAX_PREFACTOR_QUERY_DEGREE)
 
 
 def blackwell_supported(family, degree, width, time):

@@ -203,6 +203,7 @@ body:not(.has-categories) .uncategorized > .category-head { display: none; }
 .category-name { margin: 0; font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .category-name[tabindex] { cursor: text; }  /* a name that renames in place */
 .category-name:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; border-radius: 4px; }
+.category-name:has(> .category-input) { flex: 1; max-width: 32rem; }  /* a name being typed gets room */
 .uncategorized .category-name { color: var(--muted); cursor: default; }
 .category-count { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
 .category-actions { display: flex; gap: 2px; margin-left: auto; opacity: 0; transition: opacity 0.15s; }
@@ -345,6 +346,35 @@ body.reordering, body.reordering * { cursor: grabbing !important; user-select: n
 .seen-toggle[aria-pressed="true"] svg { stroke: #fff; }
 .seen-toggle:active { transform: scale(0.92); }
 .seen-toggle:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* The bin and the folder beside the check (literature.js) show on hover, like the grip. The bin
+   removes a card after asking; the folder files it under another category, through an unseen
+   native picker over its icon. */
+.remove-resource, .move-category {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.has-categories .remove-resource { margin-right: -12px; }
+.remove-resource svg, .move-category svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.move-category select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; font: inherit; font-size: 0.9rem; opacity: 0; cursor: pointer; }
+.paper:hover :is(.remove-resource, .move-category), .remove-resource:focus-visible, .move-category:focus-within { opacity: 1; }
+.move-category:hover, .move-category:focus-within { color: var(--text); background: rgba(24, 24, 27, 0.06); }
+.remove-resource:hover { color: #dc2626; background: #fef2f2; }
+.remove-resource:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+body:not(.has-categories) .move-category { display: none; }
+@media (hover: none) { .remove-resource, .move-category { opacity: 0.55; } }
 .paper summary:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 2px;
