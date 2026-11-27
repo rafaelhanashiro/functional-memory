@@ -3,8 +3,21 @@
     "path": "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
     "sha256": "c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025"
   },
+  "frozen_execution_sha256": "fecd70b29dbbfa6cb0da3a9ea43bc9e1ff698d77e357bb58aeae97f3c5d40a1f",
+  "home_cluster": "kennel",
   "label": "query-m8-dk64-gradient-dynamics",
   "name": "query-m8-dk64-gradient-dynamics",
+  "parent_checkpoint_probe": {
+    "amplitude_relative_error": 5.56390263085938e-08,
+    "batch_sha256": "da12f2a6a73efdd4e0478a8e15203073dabfa7ae532be23cd0a4ac529284e06e",
+    "bias_relative_error": 6.658986274906867e-08,
+    "gpu_type": "B300",
+    "job_id": "15614",
+    "nll": 1.8375544548034668,
+    "parent": "r25fffc16c2f3",
+    "sequence_start": 1632210,
+    "step": 7500
+  },
   "receipt": {
     "arrays_count": 56,
     "digest": "06c866fe4989c0a5d606da4ea14f65999832b7abb69d4fc0d9bbeed739549fff",
@@ -13,5 +26,28 @@
   },
   "record_schema_version": 1,
   "run_id": "r1422e8000207",
-  "status": "planned"
+  "seed": 42,
+  "source_commit": "e9440842fd4724db8824beb99f41bdc67ea84fac",
+  "status": "queued",
+  "submission": {
+    "command": [
+      "sbatch",
+      "--parsable",
+      "--partition=long",
+      "--gres=gpu:1",
+      "--nodelist=akita",
+      "--time=24:00:00",
+      "--job-name=r1422e8000207",
+      "--output=experiments/transformer_pp/runs/r1422e8000207/training.log",
+      "scaffolds/transformer/launchers/kennel.sbatch",
+      "experiments.transformer_pp.query_dynamics_acceptance",
+      "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
+      "e9440842fd4724db8824beb99f41bdc67ea84fac",
+      "1",
+      "B300"
+    ],
+    "partition": "long",
+    "slurm_job_id": "15615",
+    "submitted_utc": "2026-11-27T01:13:01.881901+00:00"
+  }
 }
