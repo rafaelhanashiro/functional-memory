@@ -1,4 +1,4 @@
-*Updated 2026-11-27 at 06:39 EST.*
+*Updated 2026-11-27 at 17:56 EST.*
 
 Every run on ORCD not yet on the site.
 
@@ -6,7 +6,7 @@ Every run on ORCD not yet on the site.
 
 - **Forks of the trained exp run at its terminal update**, $d_K = 64$, from exp $\times 2$ at update 7,570 (rebuilt by
   replaying its last 70 updates); both get the same next 7,570 batches with a fresh AdamW and the parent's schedule
-  - Exp $\to$ exp (queued)
+  - Exp $\to$ exp
   - Exp $\to$ query, $m = 8$, Taylor-initialized (queued)
 
 #### Finished
