@@ -1,11 +1,45 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
+      "sha256": "94220ba36f3b5a1961001f42cc6f4b1f564cf1fe86938519b09a1daae1ff3b6b",
+      "size_bytes": 1565
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/.runtime/acceptance/B300-1",
+      "allocation": "JobId=15615 JobName=r1422e8000207 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20068 Nice=0 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:29 TimeLimit=1-00:00:00 TimeMin=N/A SubmitTime=2026-11-26T20:13:01 EligibleTime=2026-11-26T20:13:01 AccrueTime=2026-11-26T20:13:01 StartTime=2026-11-26T21:12:54 EndTime=2026-11-27T21:12:54 Deadline=N/A PreemptEligibleTime=2026-11-26T21:12:54 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-26T21:12:54 Scheduler=Main Partition=long AllocNode:Sid=kennel:3768234 ReqNodeList=akita ExcNodeList=collie,doodle,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=32 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=1 AllocTRES=cpu=32,mem=256G,node=1,billing=32,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=32 MinMemoryNode=256G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/query-m8-dynamics-rerun/experiments/transformer_pp/runs/r1422e8000207/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:32",
+      "allocation_seconds": 86400,
+      "config_path": "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
+      "config_sha256": "c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025",
+      "exit_code": 1,
+      "finished_utc": "2026-11-27T02:13:26.286240+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "e9440842fd4724db8824beb99f41bdc67ea84fac",
+      "slurm_job_id": "15615",
+      "slurm_partition": "long",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-27T02:13:23.416984+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r1422e8000207/config.yaml",
     "sha256": "c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025"
   },
+  "error": "Job process exited with code 1; see training.log",
   "frozen_execution_sha256": "fecd70b29dbbfa6cb0da3a9ea43bc9e1ff698d77e357bb58aeae97f3c5d40a1f",
   "home_cluster": "kennel",
   "label": "query-m8-dk64-gradient-dynamics",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
+    "sha256": "94220ba36f3b5a1961001f42cc6f4b1f564cf1fe86938519b09a1daae1ff3b6b",
+    "size_bytes": 1565
+  },
+  "log_path": "experiments/transformer_pp/runs/r1422e8000207/training.log",
   "name": "query-m8-dk64-gradient-dynamics",
   "parent_checkpoint_probe": {
     "amplitude_relative_error": 5.56390263085938e-08,
@@ -28,7 +62,7 @@
   "run_id": "r1422e8000207",
   "seed": 42,
   "source_commit": "e9440842fd4724db8824beb99f41bdc67ea84fac",
-  "status": "queued",
+  "status": "failed",
   "submission": {
     "command": [
       "sbatch",

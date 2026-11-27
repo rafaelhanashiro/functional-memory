@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r6f55fe172f41/config.yaml",
+    "sha256": "a8eae04faf8d420670615f08701384d7e0a7c2df3b1f8433f7ace328dc94f8f8"
+  },
+  "label": "static-m8-dk64-gradient-dynamics",
+  "name": "static-m8-dk64-gradient-dynamics",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+    "loss": 5.572040557861328,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r6f55fe172f41",
+  "status": "planned"
+}

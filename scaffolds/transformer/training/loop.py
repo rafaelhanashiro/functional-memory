@@ -1005,6 +1005,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                     retained_event = event_record["retained"]
                 if dynamics is not None:
                     dynamics.observe(step, query_update, pre_update.params, state.params, consumed_batches(),
+                                     gradient_norm=gradient_norm, clip_scale=clip_scale,
                                      checkpoint=is_checkpoint, evaluation=is_eval, event=retained_event)
                 # Release the pre-update state before validation or the next update allocates.
                 pre_update = None
