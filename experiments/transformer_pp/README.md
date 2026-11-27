@@ -2401,6 +2401,50 @@ for run in r35805940a380 r5198d688e9d4; do
 done
 ```
 
+### Raw-input L2 for e^s h_t(z)
+
+Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-26 on Kennel: `e^s h_t(z)`,
+`z = softplus(s)`, with the degree-eight affine tanh SoS core at `d_K` 64, the best RoPE polynomial at this shape
+(`raeaa47865867`, 14.067; 14.001 at twice the rate), with its coefficient generator reading the raw attention input
+at unit L2 norm, at one, two and four times the schedule's learning rate. With the factor `z` raw-input L2 did not
+help at the recipe's rate (above); at `d_K` 4 it keeps the pure tanh `e^s h_t(z)` core stable at four times the
+rate, where the plain input spikes. Does it help `e^s h_t(z)` here, at the recipe's rate or a larger one?
+
+| Run | Label | Peak, floor rate | Plain-input run |
+| --- | --- | --- | --- |
+| `rd5daec72b8e7` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay` | 1e-3, 1e-4 | `raeaa47865867` (14.067) |
+| `r2c608f03d08c` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-double` | 2e-3, 2e-4 | `r39d0469cc122` (14.001, ORCD) |
+| `rdd827b2c2b7d` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-quadruple` | 4e-3, 4e-4 | `r365f0c30f632` (14.179, ORCD) |
+
+- **Recipe.** `raeaa47865867` with `attention_coefficient_input_source: pre_rmsnorm` and
+  `attention_coefficient_input_normalization: l2` (the projection receives the raw attention input divided by
+  `max(||input||_2, 1e-6)` in FP32; Q/K/V keep the RMSNorm path), head RMSNorm's max-abs prescale, and its peak and
+  floor rates multiplied by 1, 2 or 4. Each run differs from its plain-input run in the coefficient input alone and
+  starts from the partner's parameters.
+- **Kernels.** The Mosaic `query_softplus_times_exp` kernels on a B200 or H100. Raw-input L2 under a score prefactor
+  is admitted here (`configs/base.py`, `attention/multihead.py`): the generator normalizes its input before
+  projection, for any score function. `test_softplus_sos_raw_input.py` gains its CPU case and the Mosaic
+  `e^s h_t(z)` case of the composed forward and gradient check against FP64, which a one-GPU job runs before the
+  three runs start and each run's acceptance repeats on its GPU.
+- **Acceptance.** The [adapter](wide_exp_prefactor_sos_l2_acceptance.py) pins the partner, admits the three rates
+  alone, checks every initial array against the partner's and adds the L2 feature tests to both stages.
+- **Time limit.** The partner trained in 6.3 h on a B200; 12 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and while nodes' driver libraries mismatch their kernel module the jobs carry the
+[library-path override](../../CLUSTERS.md):
+
+```sh
+for run in rd5daec72b8e7 r2c608f03d08c rdd827b2c2b7d; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.wide_exp_prefactor_sos_l2_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
 ## Softplus and sum-of-squares composition
 
 The two runs opened on 2026-11-13 test query-conditioned degree-eight sum-of-squares

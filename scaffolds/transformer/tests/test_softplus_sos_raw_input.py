@@ -88,6 +88,50 @@ def test_raw_l2_preserves_parameters_and_changes_only_generator_inputs(core_degr
         assert not np.allclose(first, second, rtol=1e-5, atol=1e-7)
 
 
+@pytest.mark.parametrize("activation", ("tanh", "pure_tanh"))
+def test_raw_l2_takes_the_exp_prefactor_of_an_input_power_zero_core(activation, monkeypatch):
+    """e^s h_t(z): the softplus SoS core of input power zero under exp of the raw score takes raw-input L2 like
+    z h_t(z) does; its parameters are the plain-input run's and only the generator's input changes. Without a
+    prefactor the input-power-zero core stays refused."""
+    core_degree = 8
+    pure = dict(attention_coefficient_activation="pure_tanh", attention_coefficient_tanh_bias=True,
+                attention_coefficient_tanh_bias_initial=math.atanh(.5), attention_coefficient_projection_initial_std=0.,
+                attention_coefficient_amplitude_initial=1.) if activation == "pure_tanh" else {}
+    configs = [_sos_config(0, core_degree, num_layers=1, attention_score_prefactor="exp", **pure,
+                           attention_coefficient_input_normalization=normalization,
+                           attention_coefficient_input_source=source)
+               for normalization, source in (("none", "post_rmsnorm"), ("l2", "pre_rmsnorm"))]
+    assert attention_parameter_specs(configs[0].model) == attention_parameter_specs(configs[1].model)
+    models = [build_model(c.model, 19) for c in configs]
+    params = [dict(nnx.to_flat_state(nnx.state(model, nnx.Param))) for model in models]
+    assert params[0].keys() == params[1].keys()
+    for key in params[0]:
+        np.testing.assert_array_equal(params[0][key][...], params[1][key][...])
+    raw = jnp.asarray(np.random.default_rng(313).normal(size=(2, 8, 16)) * 3., jnp.float32)
+    inputs, prefactors = [], []
+    project, attend = input_dependent.project_coefficients, multihead.attention_core
+
+    def capture_projection(x, *args, **kwargs):
+        inputs.append(np.asarray(x))
+        return project(x, *args, **kwargs)
+
+    def capture_attention(q, k, v, **kwargs):
+        prefactors.append((kwargs["score_transform"], kwargs["score_prefactor"]))
+        assert kwargs["query_polynomial_coefficients"].shape[-1] == core_degree + 1
+        return attend(q, k, v, **kwargs)
+
+    monkeypatch.setattr(input_dependent, "project_coefficients", capture_projection)
+    monkeypatch.setattr(multihead, "attention_core", capture_attention)
+    for model in models:
+        model.layers_0(raw, attention_parameters=_parameters(model))
+    np.testing.assert_array_equal(inputs[0], models[0].layers_0.attention_norm(raw))
+    np.testing.assert_allclose(inputs[1], _unit_numpy(raw), rtol=3e-6, atol=1e-7)
+    assert prefactors == [("softplus", "exp")] * 2
+    with pytest.raises(ValueError, match="softplus SoS with an input or score prefactor"):
+        _sos_config(0, core_degree, num_layers=1, **pure, attention_coefficient_input_normalization="l2",
+                    attention_coefficient_input_source="pre_rmsnorm")
+
+
 def _direct_squares(q, k, v, x, w, a, b, core_degree):
     """Independent FP64 attention: no production normalizer or polynomial expansion."""
     unit = x / jnp.maximum(jnp.linalg.norm(x, axis=-1, keepdims=True), EPS)
@@ -170,10 +214,17 @@ def test_raw_l2_diagnostics_name_core_coordinates_and_native_routing(core_degree
     assert mosaic.mosaic_score_transform_supported()
 
 
+# z h_t(z) at both cores, and e^s h_t(z) (input power zero under exp of the raw score) at the degree the
+# prefactor kernels are qualified to.
+MOSAIC_FORMS = (*(pytest.param(core, 1, "none", id=f"z-core{core}") for core in CORES),
+                pytest.param(8, 0, "exp", id="exp-core8"))
+
+
 @pytest.mark.gpu
-@pytest.mark.parametrize("core_degree", CORES)
+@pytest.mark.parametrize("core_degree,input_power,prefactor", MOSAIC_FORMS)
 @pytest.mark.parametrize("precision", ("bf16", "bf16x3"))
-def test_mosaic_raw_l2_softplus_sos_shared_branches_match_direct_fp64(core_degree, precision):
+def test_mosaic_raw_l2_softplus_sos_shared_branches_match_direct_fp64(core_degree, input_power, prefactor,
+                                                                      precision):
     """Independent factors plus analytic unit-L2 VJP, including summed shared-input dx."""
     if jax.default_backend() != "gpu" or jax.devices()[0].compute_capability not in ("9.0", "10.0"):
         pytest.skip("Requires the admitted H100/B200 transformed Mosaic backend")
@@ -202,8 +253,9 @@ def test_mosaic_raw_l2_softplus_sos_shared_branches_match_direct_fp64(core_degre
         q, k, v = qkv_branch(x, scale, wq, wk, wv)
         unit = input_dependent.normalize_coefficient_input(x, "l2")
         factors = input_dependent.project_coefficients(unit, w, b, amplitude=a, activation="tanh")
-        coefficients = query_square_coefficients(factors, core_degree + 1, input_power=1)
-        return transformed_query_polynomial_attention(q, k, v, coefficients, transform="softplus", precision=precision)
+        coefficients = query_square_coefficients(factors, core_degree + input_power, input_power=input_power)
+        return transformed_query_polynomial_attention(q, k, v, coefficients, transform="softplus",
+                                                      prefactor=prefactor, precision=precision)
 
     def compute(*args):
         output, backward = jax.vjp(composed, *args)
@@ -213,7 +265,8 @@ def test_mosaic_raw_l2_softplus_sos_shared_branches_match_direct_fp64(core_degre
     actual, gradients = jax.jit(compute)(*operands)
     qkv = qkv_branch(*operands[:5])
     unit = _unit_numpy(raw)
-    expected, attention_gradients = _numpy_fp64(1, (*qkv, unit, *operands[5:]), cotangent)
+    expected, attention_gradients = _numpy_fp64(input_power, (*qkv, unit, *operands[5:]), cotangent,
+                                                prefactor=prefactor)
     with jax.enable_x64():
         wide = tuple(jnp.asarray(value, jnp.float64) for value in arrays)
 

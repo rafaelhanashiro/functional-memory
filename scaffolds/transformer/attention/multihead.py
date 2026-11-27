@@ -278,7 +278,7 @@ class MultiHeadAttention(nnx.Module):
         l2_score_supported = (attention_score_transform == "identity" or (
             attention_score_transform == "softplus"
             and attention_coefficient_parameterization == "sum_of_squares"
-            and attention_coefficient_input_power == 1))
+            and (attention_coefficient_input_power == 1 or attention_score_prefactor != "none")))
         if attention_coefficient_input_normalization == "l2" and (
                 attention_coefficient_conditioning != "query"
                 or attention_coefficient_activation not in ("tanh", "pure_tanh")
@@ -291,8 +291,8 @@ class MultiHeadAttention(nnx.Module):
                 or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"):
             raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh (or direct pure "
                              "tanh) query polynomial coefficients with RoPE or no positional encoding, without "
-                             "selected orders, gates or score biases; only softplus SoS with an input prefactor permits "
-                             "a score transform")
+                             "selected orders, gates or score biases; only softplus SoS with an input or score "
+                             "prefactor permits a score transform")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         self.attention_coefficient_input_source = attention_coefficient_input_source
         if not isinstance(attention_forget_gate, bool):
