@@ -3578,6 +3578,7 @@ Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11
 rate. Its degree-eight core is the best RoPE polynomial at this shape (`raeaa47865867`, 14.067; 14.001 at twice the
 rate, on ORCD). With the factor `z` in exp's place, the degree-twelve core tied the degree-eight one (`rf637de9b65b1`
 14.093, `r841f35a24241` 14.095): does exp of the raw score gain from the higher degree?
+[Results](staging/exp_prefactor_core_degree/README.md).
 
 | Run | Label | Peak, floor rate | Partner |
 | --- | --- | --- | --- |
