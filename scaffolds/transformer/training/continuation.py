@@ -1,4 +1,10 @@
-"""Initialize a fresh continuation while retaining pretrained Adam history and data time."""
+"""Initialize a fresh continuation from a pinned parent checkpoint.
+
+A continuation on its parent's optimizer retains the pretrained Adam history and data time.
+A fork (``continuation.optimizer: fresh``) takes the parent's weights only: its AdamW, update
+clock and schedule start at zero, and it reads the parent's packed stream from the sequence
+after the parent's last update.
+"""
 
 from dataclasses import asdict
 import hashlib
@@ -12,6 +18,7 @@ from flax import nnx
 
 from scaffolds.records import _tree_descriptor
 from scaffolds.transformer.configs import load_config, validate_config
+from scaffolds.transformer.configs.base import continuation_is_fork, packed_data_offset
 from scaffolds.transformer.training.checkpointing import state_sha256
 from scaffolds.transformer.training.optim import (
     ContinuationAdamState, continuation_introduces_parameters, split_continuation_parameters,
@@ -76,6 +83,10 @@ def _parent_config(config):
             raise ValueError(f"Continuation changes parent train.{key}")
     if continuation.parent_step > parent.optim.total_steps:
         raise ValueError("Continuation parent step exceeds its training budget")
+    if continuation.optimizer == "fresh" and continuation.data_start_sequence != (
+            packed_data_offset(parent.continuation) + continuation.parent_step * config.data.batch_size):
+        # The sequence after the parent's last update, wherever the parent's own stream started.
+        raise ValueError("A fork's data_start_sequence must follow its parent's last update")
     # Acceptance restores on CPU with the blocked reference; backend is execution,
     # and does not change any checkpoint parameter or optimizer shape. An exp parent
     # keeps a backend that evaluates exp, which the child's polynomial kernel may not.
@@ -142,16 +153,19 @@ def _check_token_scale_initialization(parameters):
 
 
 def initialize_continuation_state(config, state=None):
-    """Return the child state and verified audit; new coefficient Adam starts at zero.
+    """Return the child state and verified audit.
 
-    Existing backbone moments and their bias-correction count are preserved exactly.
-    The child's global step is the parent's step, so batch order and RNG continue at
-    the next pretrained update. Checkpoint resumptions use the usual trainer restore.
+    On the parent's optimizer, existing backbone moments and their bias-correction count are
+    preserved exactly and new coefficient Adam starts at zero; the child's global step is the
+    parent's step, so batch order and RNG continue at the next pretrained update. A fork keeps
+    the fresh optimizer state and the zero step of ``state`` (a new state of the child's recipe),
+    replacing only the parameters. Checkpoint resumptions use the usual trainer restore.
     """
     validate_config(config)
     continuation = config.continuation
     if not continuation.parent_checkpoint:
         raise ValueError("No continuation parent is configured")
+    fork = continuation_is_fork(continuation)
     parent_config = _parent_config(config)
     checkpoint = Path(continuation.parent_checkpoint).resolve()
     if _tree_descriptor(checkpoint)["sha256"] != continuation.parent_checkpoint_sha256:
@@ -166,7 +180,8 @@ def initialize_continuation_state(config, state=None):
     if state is None:
         state = create_state(config, rng)
     new_coefficient_count = None
-    if continuation_introduces_parameters(config):
+    introduces = continuation_introduces_parameters(config)
+    if introduces:
         coefficients, backbone = split_continuation_parameters(state.params)
         if not jax.tree.leaves(coefficients):
             raise ValueError("Continuation did not introduce its new parameter arrays")
@@ -174,33 +189,86 @@ def initialize_continuation_state(config, state=None):
             raise ValueError("Continuation backbone parameter tree differs from parent")
         _check_taylor_initialization(config, coefficients)
         params = nnx.State.merge(parent.params, coefficients)
+    else:
+        if jax.tree.structure(state.params) != jax.tree.structure(parent.params):
+            raise ValueError("Continuation parameter tree differs from parent")
+        params = parent.params
+    if fork:
+        # The child's own new state supplies the optimizer: AdamW initialized at count zero, with
+        # zero moments, for exactly these parameters.
+        if int(state.step) != 0:
+            raise ValueError("A fork starts from a new state at update zero")
+        opt_state = state.opt_state
+        step = state.step
+    elif introduces:
         new_adam = state.opt_state[1].coefficients
         new_coefficient_count = int(new_adam[0].count)
         if new_coefficient_count != 0:
             raise ValueError("New coefficient optimizer must have zero history")
         opt_state = (parent.opt_state[0], ContinuationAdamState(parent.opt_state[1], new_adam))
+        step = parent.step
     else:
-        if jax.tree.structure(state.params) != jax.tree.structure(parent.params):
-            raise ValueError("Continuation parameter tree differs from parent")
-        params, opt_state = parent.params, parent.opt_state
-    state = state.replace(params=params, opt_state=opt_state, step=parent.step)
-    backbone = split_continuation_parameters(state.params)[1] if new_coefficient_count is not None else state.params
-    backbone_adam = state.opt_state[1].backbone if new_coefficient_count is not None else state.opt_state[1]
+        opt_state, step = parent.opt_state, parent.step
+    state = state.replace(params=params, opt_state=opt_state, step=step)
+    backbone = split_continuation_parameters(state.params)[1] if introduces else state.params
     audit = {
         "parent_step": int(parent.step),
         "parent_config_sha256": continuation.parent_config_sha256,
         "parent_checkpoint_sha256": continuation.parent_checkpoint_sha256,
         "parent_parameters_sha256": state_sha256(parent.params),
         "backbone_parameters_sha256": state_sha256(backbone),
-        "parent_optimizer_sha256": state_sha256(parent.opt_state[1]),
-        "backbone_optimizer_sha256": state_sha256(backbone_adam),
-        "backbone_optimizer_count": int(backbone_adam[0].count),
-        "new_coefficient_optimizer_count": new_coefficient_count,
-        "data_start_sequence": int(parent.step) * config.data.batch_size,
-        "seed": config.train.seed,
     }
+    if fork:
+        counts = [int(leaf) for path, leaf in jax.tree_util.tree_flatten_with_path(state.opt_state)[0]
+                  if getattr(path[-1], "name", None) == "count"]
+        audit.update({
+            "optimizer": "fresh",
+            "start_step": int(state.step),
+            "optimizer_sha256": state_sha256(state.opt_state),
+            "fresh_optimizer_sha256": state_sha256(state.tx.init(state.params)),
+            "optimizer_counts": counts,
+            "data_start_sequence": packed_data_offset(continuation) + int(state.step) * config.data.batch_size,
+            "seed": config.train.seed,
+        })
+        if audit["optimizer_sha256"] != audit["fresh_optimizer_sha256"] or not counts or any(counts):
+            raise AssertionError("A fork's optimizer is not a fresh AdamW at update zero")
+        if audit["data_start_sequence"] != continuation.data_start_sequence:
+            raise AssertionError("A fork's data cursor differs from its pinned start sequence")
+    else:
+        backbone_adam = state.opt_state[1].backbone if introduces else state.opt_state[1]
+        audit.update({
+            "parent_optimizer_sha256": state_sha256(parent.opt_state[1]),
+            "backbone_optimizer_sha256": state_sha256(backbone_adam),
+            "backbone_optimizer_count": int(backbone_adam[0].count),
+            "new_coefficient_optimizer_count": new_coefficient_count,
+            "data_start_sequence": int(parent.step) * config.data.batch_size,
+            "seed": config.train.seed,
+        })
+        if audit["parent_optimizer_sha256"] != audit["backbone_optimizer_sha256"]:
+            raise AssertionError("Continuation modified the pretrained optimizer history")
     if audit["parent_parameters_sha256"] != audit["backbone_parameters_sha256"]:
         raise AssertionError("Continuation modified the pretrained backbone")
-    if audit["parent_optimizer_sha256"] != audit["backbone_optimizer_sha256"]:
-        raise AssertionError("Continuation modified the pretrained optimizer history")
     return state, audit
+
+
+def packed_batch_sha256(batch) -> str:
+    """One update's packed rows as int32 ``(batch_size, sequence_length)``, however micro-batched."""
+    rows = np.asarray(batch, dtype=np.int32)
+    return state_sha256(rows.reshape(-1, rows.shape[-1]))
+
+
+def fork_batch_provenance(config, *, validated_manifest=None) -> dict:
+    """The parent's last batch and the fork's first, read from the packed stream they share."""
+    from scaffolds.transformer.data.packed import PackedBatchIterator
+
+    if not continuation_is_fork(config.continuation):
+        raise ValueError("Batch provenance describes a fork")
+    batch_size, start = config.data.batch_size, config.continuation.data_start_sequence
+    batches = {}
+    for name, first in (("parent_last_batch", start - batch_size), ("first_batch", start)):
+        rows = next(PackedBatchIterator(config.data.train_manifest, batch_size=batch_size,
+                                        sequence_length=config.data.sequence_length, start_sequence=first,
+                                        validated_manifest=validated_manifest))
+        batches[name] = {"sequence_start": first, "sequence_stop": first + batch_size,
+                         "sha256": packed_batch_sha256(rows)}
+    return batches

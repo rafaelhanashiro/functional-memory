@@ -53,6 +53,7 @@ import time
 import jax
 import numpy as np
 
+from scaffolds.transformer.configs.base import packed_data_offset
 from scaffolds.transformer.training.checkpointing import (
     GRADIENT_EVENT_DIRECTORY,
     gradient_event_directory,
@@ -259,6 +260,8 @@ class GradientEventCapture:
         self.root = gradient_event_directory(config)
         self.log_path = event_log_path(config)
         self.batch_size = layout.global_batch_size
+        # A fork's update k reads its parent's stream from data_start_sequence + (k - 1) x batch_size.
+        self.first_sequence = packed_data_offset(config.continuation)
         self.clip_norm = config.optim.grad_clip_norm
         self.attempt_id = attempt_id
         self.context = {"rule": self.rule.describe(), **_execution_context(config, layout, device_kind)}
@@ -399,7 +402,7 @@ class GradientEventCapture:
             state_hash, hash_error = state_sha256(pre_update), None
         except FloatingPointError as error:
             state_hash, hash_error = None, str(error)
-        first = (update - 1) * self.batch_size
+        first = self.first_sequence + (update - 1) * self.batch_size
         record = {
             "schema_version": VERSION, "event": event, "update": update, "pre_update_step": update - 1,
             "timestamp_utc": datetime.now(UTC).isoformat(), "attempt_id": self.attempt_id,

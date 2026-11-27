@@ -33,10 +33,12 @@ def make_optimizer(config: Config):
             weight_decay=config.optim.weight_decay,
             mask=partial(attention_weight_decay_mask, excluded_names=excluded),
         )
-    if config.continuation.parent_checkpoint and continuation_introduces_parameters(config):
+    if (config.continuation.parent_checkpoint and config.continuation.optimizer == "parent"
+            and continuation_introduces_parameters(config)):
         # Newly introduced parameters have their own Adam clock; using the backbone's
         # old count with zero moments would misapply bias correction. They may also
-        # use their own constant learning rate.
+        # use their own constant learning rate. A fork (optimizer: fresh) restarts every
+        # parameter's AdamW together, so it keeps the plain optimizer and its state layout.
         # Weight decay follows each array's declaration, as in pretraining: only arrays
         # declared with decay (the query coefficient projection W under
         # attention_coefficient_kernel_weight_decay, or the forget gate's w_alpha) decay.

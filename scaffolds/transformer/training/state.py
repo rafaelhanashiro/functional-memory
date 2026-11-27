@@ -9,7 +9,8 @@ from scaffolds.transformer.training.optim import make_optimizer
 
 
 class TrainState(nnx.TrainState):
-    """Parameters, optimizer moments, and completed update count (the RNG/cursor clock)."""
+    """Parameters, optimizer moments, and completed update count (the RNG/cursor clock; a fork's data
+    cursor adds its continuation.data_start_sequence)."""
 
 
 def create_state(config: Config, rng: jax.Array) -> TrainState:

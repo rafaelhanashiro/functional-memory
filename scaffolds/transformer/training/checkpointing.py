@@ -7,6 +7,7 @@ import orbax.checkpoint as ocp
 from orbax.checkpoint import checkpoint_managers as ocp_managers
 
 from scaffolds.transformer.configs import Config
+from scaffolds.transformer.configs.base import continuation_start_step
 from scaffolds.transformer.training.state import TrainState
 
 
@@ -89,8 +90,9 @@ def validate_resume_progress(config: Config, latest_checkpoint_step: int | None)
         if metadata.get("status") in {"running", "paused"}:
             recorded_step = max(recorded_step, int(metadata.get("step", 0)))
 
+    # Without a checkpoint, a fresh continuation starts at its parent's step, a fork at zero.
     available_step = (latest_checkpoint_step if latest_checkpoint_step is not None
-                      else config.continuation.parent_step)
+                      else continuation_start_step(config.continuation))
     if recorded_step > available_step:
         available = "no checkpoint is available" if latest_checkpoint_step is None else (
             f"the latest available checkpoint is step {latest_checkpoint_step}"

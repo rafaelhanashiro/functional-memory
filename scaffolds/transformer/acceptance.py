@@ -38,6 +38,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 from scaffolds.transformer.configs import config_to_dict, load_config, validate_config
+from scaffolds.transformer.configs.base import continuation_is_fork, packed_data_offset
+from scaffolds.transformer.configs.base import continuation_start_step as start_step_of
 from scaffolds.transformer.training.cadence import evaluation_due, scheduled_work_counts
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,6 +191,8 @@ def test_paths(spec: AcceptanceSpec, config: dict, *, resolved_backend: str, cpu
     if cpu and config.get("continuation", {}).get("parent_checkpoint"):
         paths.extend(("scaffolds/transformer/tests/test_continuation.py",
                       "scaffolds/transformer/tests/test_continuation_acceptance.py"))
+        if continuation_is_fork(config["continuation"]):
+            paths.append("scaffolds/transformer/tests/test_continuation_fork.py")
     if cpu and config.get("optim", {}).get("coefficient_release_schedule") is not None:
         paths.append(COEFFICIENT_RELEASE_TESTS)
     if cpu and config.get("train", {}).get("gradient_event_capture", False):
@@ -641,7 +645,7 @@ def attention_spec(config, *, entry_module: str) -> AcceptanceSpec:
         check_config=validate_config,
         required_backend=None if request == "auto" else request,
         check_initialization=(None if (config.model.attention_mechanism in ("gla", "gated_deltanet")
-                                      or continuation_start_step(config))
+                                      or config.continuation.parent_checkpoint)
                               else matches_softmax_backbone_initialization),
         runtime_env=runtime_env,
         select_tests=attention_test_paths,
@@ -832,17 +836,21 @@ def validate_resume_audit(initial: dict, resumed: dict) -> None:
 
 
 def continuation_start_step(config) -> int:
-    """The absolute update at which a fresh child starts; ordinary runs start at zero."""
+    """The update at which a fresh child starts: its parent's step when it continues the parent's
+    optimizer and clock, zero for a fork; ordinary runs start at zero."""
+    return start_step_of(config.get("continuation", {}) if isinstance(config, dict) else config.continuation)
+
+
+def is_continuation(config) -> bool:
     continuation = config.get("continuation", {}) if isinstance(config, dict) else config.continuation
-    if isinstance(continuation, dict):
-        return int(continuation["parent_step"]) if continuation.get("parent_checkpoint") else 0
-    return int(continuation.parent_step) if continuation.parent_checkpoint else 0
+    return bool(continuation.get("parent_checkpoint") if isinstance(continuation, dict)
+                else continuation.parent_checkpoint)
 
 
 def remaining_work_counts(config) -> tuple[int, int]:
     """Count the child's baseline and scheduled evaluations/checkpoint writes."""
     start = continuation_start_step(config)
-    if start == 0:
+    if not is_continuation(config):
         return scheduled_work_counts(config)
     total = config.optim.total_steps
     evaluations = {step for step in range(start + 1, total + 1) if evaluation_due(config, step)}
@@ -918,21 +926,29 @@ def initialization_facts(config) -> dict:
 
     config.model.attention_backend = "blocked"  # Initialization does not depend on the backend.
     continuation = None
-    if continuation_start_step(config):
+    if is_continuation(config):
         from scaffolds.transformer.training.continuation import initialize_continuation_state
 
         state, continuation = initialize_continuation_state(config)
         params = state.params
         if int(state.step) != continuation_start_step(config):
-            raise RuntimeError("Continuation initialization did not preserve the parent step")
-        for kind in ("parameters", "optimizer"):
-            if continuation[f"parent_{kind}_sha256"] != continuation[f"backbone_{kind}_sha256"]:
-                raise RuntimeError(f"Continuation changed the parent's backbone {kind}")
-        from scaffolds.transformer.training.optim import continuation_introduces_parameters
+            raise RuntimeError("Continuation initialization did not start at its start step")
+        if continuation["parent_parameters_sha256"] != continuation["backbone_parameters_sha256"]:
+            raise RuntimeError("Continuation changed the parent's backbone parameters")
+        if continuation_is_fork(config.continuation):
+            # A fork keeps the parent's weights only: AdamW starts fresh at update zero.
+            if (continuation.get("optimizer_sha256") != continuation.get("fresh_optimizer_sha256")
+                    or not continuation.get("optimizer_counts") or any(continuation["optimizer_counts"])
+                    or continuation.get("data_start_sequence") != packed_data_offset(config.continuation)):
+                raise RuntimeError("A fork must start a fresh AdamW at update zero at its pinned data position")
+        else:
+            if continuation["parent_optimizer_sha256"] != continuation["backbone_optimizer_sha256"]:
+                raise RuntimeError("Continuation changed the parent's backbone optimizer")
+            from scaffolds.transformer.training.optim import continuation_introduces_parameters
 
-        if (continuation_introduces_parameters(config)
-                and continuation.get("new_coefficient_optimizer_count") != 0):
-            raise RuntimeError("New parameters must start with a fresh optimizer clock")
+            if (continuation_introduces_parameters(config)
+                    and continuation.get("new_coefficient_optimizer_count") != 0):
+                raise RuntimeError("New parameters must start with a fresh optimizer clock")
     else:
         rng = jax.random.PRNGKey(config.train.seed)  # Same derivation as training/state.py create_state.
         params = nnx.state(build_model(config.model, nnx.Rngs(params=rng, dropout=jax.random.fold_in(rng, 0))), nnx.Param)
@@ -1224,9 +1240,10 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
     directory = args.directory
     directory.mkdir(parents=True, exist_ok=True)
     start_step = continuation_start_step(experiment["config"])
+    data_offset = packed_data_offset(experiment["config"].get("continuation", {}))
     pilot_stop = start_step + spec.pilot_steps
     resume_stop = pilot_stop + 1
-    if start_step and resume_stop > experiment["config"]["optim"]["total_steps"]:
+    if is_continuation(experiment["config"]) and resume_stop > experiment["config"]["optim"]["total_steps"]:
         raise ValueError("The remaining training budget must include the pilot and its resume update")
     hardware = _run_worker(spec, args, "hardware", directory / "hardware.json", stop=spec.pilot_steps)
     experiment = on_devices(experiment, hardware["device_kinds"])
@@ -1309,7 +1326,8 @@ def _run(spec: AcceptanceSpec, args, experiment: dict) -> None:
             restored = outcome["restored_step"]
             # A retry after the resumed checkpoint was committed can already be at the next step.
             if (restored not in (pilot_stop, resume_stop) or outcome["final_step"] != resume_stop
-                    or outcome["data_start_sequence"] != restored * experiment["config"]["data"]["batch_size"]):
+                    or outcome["data_start_sequence"]
+                    != data_offset + restored * experiment["config"]["data"]["batch_size"]):
                 raise RuntimeError(f"Pilot resume did not preserve optimizer and data position: {outcome}")
             if restored == pilot_stop:
                 validate_resume_audit(json.loads((directory / "pilot.json").read_text())["outcome"], outcome)

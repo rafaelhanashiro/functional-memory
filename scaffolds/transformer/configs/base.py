@@ -1531,11 +1531,21 @@ class TrainConfig:
     gradient_event_history: int = 100
     gradient_event_min_history: int = 20
     gradient_event_max_states: int = 3
+    # At completion keep the terminal checkpoint, which holds the full resumable state, beside the
+    # validation best (scaffolds/transformer/retention.py); by default only the best is kept.
+    retain_terminal_checkpoint: bool = False
 
 
 @dataclass
 class ContinuationConfig:
-    """A new run initialized from a pinned pretrained state, including Adam history."""
+    """A new run initialized from a pinned pretrained state.
+
+    With ``optimizer: parent`` the child keeps the parent's Adam history and update clock, so its
+    schedule, RNG and data cursor continue at the parent's step. With ``optimizer: fresh`` it is a
+    fork: it takes the parent's weights only and trains with a fresh AdamW whose update clock (and
+    so its learning-rate schedule and RNG) starts at zero, reading the parent's packed training
+    stream from ``data_start_sequence``, the parent's own next sequence.
+    """
     parent_config: str = ""
     parent_config_sha256: str = ""
     parent_checkpoint: str = ""
@@ -1545,8 +1555,44 @@ class ContinuationConfig:
     # Constant learning rate of the parameters the continuation introduces, which have their
     # own Adam clock; null gives them the backbone's optim.learning_rate.
     new_parameter_learning_rate: float | None = None
-    # Continue the identical architecture, retaining every parameter and Adam moment.
+    # Continue the identical architecture, retaining every parameter (and, with the parent's
+    # optimizer, every Adam moment).
     preserve_all_parameters: bool = False
+    # "parent": keep the parent's AdamW state and update clock. "fresh": a fork, as above.
+    optimizer: Literal["parent", "fresh"] = "parent"
+    # A fork's first packed training sequence: parent_step x data.batch_size, the sequence after
+    # the parent's last update. Null for every other run.
+    data_start_sequence: int | None = None
+
+
+def _continuation_value(continuation, name: str, default):
+    if isinstance(continuation, dict):
+        return continuation.get(name, default)
+    return getattr(continuation, name, default)
+
+
+def continuation_is_fork(continuation) -> bool:
+    """A fork restarts AdamW and the update clock from its parent's weights (ContinuationConfig)."""
+    return (bool(_continuation_value(continuation, "parent_checkpoint", ""))
+            and _continuation_value(continuation, "optimizer", "parent") == "fresh")
+
+
+def continuation_start_step(continuation) -> int:
+    """The update count at which a fresh child starts: the parent's step when it keeps the
+    parent's optimizer and clock, zero for a fork and for an ordinary run. Accepts a
+    ContinuationConfig or its dictionary."""
+    if not _continuation_value(continuation, "parent_checkpoint", "") or continuation_is_fork(continuation):
+        return 0
+    return int(_continuation_value(continuation, "parent_step", 0))
+
+
+def packed_data_offset(continuation) -> int:
+    """Packed training sequences before the run's first update: a fork's data_start_sequence.
+    Every other run reads update k from sequence (k - 1) x batch_size; a continuation that keeps
+    its parent's clock reaches the parent's next sequence through its step."""
+    if not continuation_is_fork(continuation):
+        return 0
+    return int(_continuation_value(continuation, "data_start_sequence", 0) or 0)
 
 
 @dataclass
@@ -1655,6 +1701,10 @@ def validate_config(config: Config) -> None:
             raise ValueError("train.gradient_event_min_history cannot exceed train.gradient_event_history")
     if not isinstance(continuation.preserve_all_parameters, bool):
         raise ValueError("continuation.preserve_all_parameters must be a boolean")
+    if not isinstance(train.retain_terminal_checkpoint, bool):
+        raise ValueError("train.retain_terminal_checkpoint must be a boolean")
+    if continuation.optimizer not in ("parent", "fresh"):
+        raise ValueError("continuation.optimizer must be parent or fresh")
     if continuation.parent_checkpoint:
         if not continuation.parent_config:
             raise ValueError("Continuation requires its parent_config")
@@ -1666,11 +1716,28 @@ def validate_config(config: Config) -> None:
             digest = continuation.parent_data_identity_sha256
             if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
                 raise ValueError("Packed continuation requires parent_data_identity_sha256")
-        if type(continuation.parent_step) is not int or not 0 < continuation.parent_step < optim.total_steps:
-            raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
-        if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
-            raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
         rate = continuation.new_parameter_learning_rate
+        if continuation.optimizer == "fresh":
+            # A fork: its own update clock, schedule and horizon from zero, at the parent's next sequence.
+            if type(continuation.parent_step) is not int or continuation.parent_step < 1:
+                raise ValueError("A fork requires a positive integer parent_step")
+            if data.source != "packed":
+                raise ValueError("A fork continues its parent's packed training stream")
+            start = continuation.data_start_sequence
+            if type(start) is not int or start != continuation.parent_step * data.batch_size:
+                raise ValueError("A fork requires data_start_sequence = parent_step x data.batch_size, "
+                                 "the sequence after its parent's last update")
+            if rate is not None:
+                raise ValueError("A fork trains every parameter with one fresh AdamW on optim's schedule; "
+                                 "continuation.new_parameter_learning_rate must be null")
+        else:
+            if continuation.data_start_sequence is not None:
+                raise ValueError("continuation.data_start_sequence applies to a fork (optimizer: fresh) only; "
+                                 "a continuation on its parent's clock continues at parent_step x batch_size")
+            if type(continuation.parent_step) is not int or not 0 < continuation.parent_step < optim.total_steps:
+                raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
+            if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
+                raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
         if continuation.preserve_all_parameters and rate is not None:
             raise ValueError("Preserving all parameters introduces no new parameter learning rate")
         if rate is not None and (not isinstance(rate, (int, float)) or isinstance(rate, bool)
@@ -1705,7 +1772,8 @@ def validate_config(config: Config) -> None:
     elif any((continuation.parent_config, continuation.parent_config_sha256,
               continuation.parent_checkpoint_sha256, continuation.parent_data_identity_sha256,
               continuation.parent_step, continuation.new_parameter_learning_rate is not None,
-              continuation.preserve_all_parameters)):
+              continuation.preserve_all_parameters, continuation.optimizer != "parent",
+              continuation.data_start_sequence is not None)):
         raise ValueError("Incomplete continuation specification")
     if optim.weight_decay_policy != "exclude_embeddings_norms_biases_v1":
         raise ValueError("optim.weight_decay_policy must be exclude_embeddings_norms_biases_v1")
@@ -1727,7 +1795,8 @@ def validate_config(config: Config) -> None:
         if continuation.parent_checkpoint:
             raise ValueError("optim.query_coefficient_learning_rate_scale is not supported for "
                              "checkpoint continuations; their introduced parameters use "
-                             "continuation.new_parameter_learning_rate")
+                             "continuation.new_parameter_learning_rate, and a fork trains every "
+                             "parameter on optim's schedule")
     if data.source not in ("synthetic", "packed"):
         raise ValueError("data.source must be synthetic or packed")
     for name, value in (

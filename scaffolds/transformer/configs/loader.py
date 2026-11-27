@@ -107,6 +107,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("qk_norm_token_scale_kernel_weight_decay", False)
         value["continuation"].setdefault("new_parameter_learning_rate", None)
         value["continuation"].setdefault("preserve_all_parameters", False)
+        value["continuation"].setdefault("optimizer", "parent")
+        value["continuation"].setdefault("data_start_sequence", None)
         value["model"].setdefault("attention_coefficients", "fixed")
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
         if isinstance(fixed_coefficients, (tuple, list)):
@@ -182,7 +184,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
             value["train"].setdefault(key, None)
         for key, default in (("gradient_event_capture", False), ("gradient_event_factor", 5.0),
                              ("gradient_event_min_norm", 1.0), ("gradient_event_history", 100),
-                             ("gradient_event_min_history", 20), ("gradient_event_max_states", 3)):
+                             ("gradient_event_min_history", 20), ("gradient_event_max_states", 3),
+                             ("retain_terminal_checkpoint", False)):
             value["train"].setdefault(key, default)
         value["model"].setdefault("attention_score_bias", "none")
         value["model"].setdefault("attention_score_transform", "identity")

@@ -28,6 +28,9 @@ def prepare(run: Path, checkpoint: int, scratch: Path) -> Path:
                            gradient_event_capture=False)
     (scratch / "config.yaml").write_text(yaml.safe_dump(recipe, sort_keys=False))
     shutil.copy2(run / "data_identity.json", scratch / "data_identity.json")
+    # A fork replayed from its update-0 baseline checks its first update against the recorded first batch.
+    if (run / "continuation.json").exists():
+        shutil.copy2(run / "continuation.json", scratch / "continuation.json")
     # A run that failed before its first validation has no validation history yet.
     if (run / "best_validation.json").exists():
         shutil.copy2(run / "best_validation.json", scratch / "best_validation.json")

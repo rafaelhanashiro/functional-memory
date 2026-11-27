@@ -299,6 +299,7 @@ def run_pilot(args, spec, experiment) -> dict:
     """Acceptance's pilot stage with its projection and budget gate, the uninterrupted run, and the
     in-process continuation of the pilot's checkpoint."""
     from scaffolds.transformer import acceptance
+    from scaffolds.transformer.configs.base import packed_data_offset
     from scaffolds.transformer.configs import load_config
 
     root = args.directory / "acceptance"
@@ -379,8 +380,9 @@ def run_pilot(args, spec, experiment) -> dict:
     with StepRecorder() as recorder:
         continued = acceptance._worker(spec, _worker_args(args, root, end), experiment)
         continuation = recorder.finish()
+    offset = packed_data_offset(experiment["config"].get("continuation", {}))
     if (continued["restored_step"] != stop or continued["final_step"] != end
-            or continued["data_start_sequence"] != stop * batch_size):
+            or continued["data_start_sequence"] != offset + stop * batch_size):
         raise RuntimeError(f"Continuation did not start from the pilot's checkpoint: {continued}")
     acceptance.validate_resume_audit(outcome, continued)
     _replace_directory(root / PILOT, root / "pilot.continued")
@@ -413,6 +415,7 @@ def _validation_nll(workdir: Path, step: int) -> float | None:
 def run_resume(args, spec, experiment) -> dict:
     """Acceptance's resume stage in this fresh process, compared with both references."""
     from scaffolds.transformer import acceptance
+    from scaffolds.transformer.configs.base import packed_data_offset
 
     root = args.directory / "acceptance"
     pilot = json.loads((args.directory / "pilot.json").read_text())["pilot"]
@@ -431,8 +434,9 @@ def run_resume(args, spec, experiment) -> dict:
               "timing_summary": _timing_summary(resumed["timing"]),
               "compile_cache": CACHE_LOG.summary(f"resume-{args.tag}")}
     # Acceptance's resume checks (acceptance._run): restored at the pilot's stop, data position, audit.
+    offset = packed_data_offset(experiment["config"].get("continuation", {}))
     if (resumed["restored_step"] != stop or resumed["final_step"] != end
-            or resumed["data_start_sequence"] != stop * batch_size):
+            or resumed["data_start_sequence"] != offset + stop * batch_size):
         raise RuntimeError(f"Pilot resume did not preserve optimizer and data position: {resumed}")
     acceptance.validate_resume_audit(pilot_outcome, resumed)
     report["acceptance_resume_audit"] = "passed"

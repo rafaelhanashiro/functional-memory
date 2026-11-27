@@ -3,10 +3,12 @@
 The trainer retains the latest and best checkpoints while a run can resume.
 After completion, :func:`finalize_run` verifies the terminal record, prunes every
 other checkpoint step, and records the selection in `retention.json` and the
-run metadata. A run with gradient-event capture also keeps its kept pre-update
-states (`training/gradient_events.py`), recorded as diagnostic checkpoints, and
-nothing else of its capture root. It is idempotent, so a requeue after pruning
-is harmless.
+run metadata. A recipe with ``train.retain_terminal_checkpoint`` also keeps the
+terminal step, the full resumable state, recorded as the run's terminal checkpoint
+beside the validation-best selected checkpoint. A run with gradient-event capture
+also keeps its kept pre-update states (`training/gradient_events.py`), recorded as
+diagnostic checkpoints, and nothing else of its capture root. It is idempotent, so
+a requeue after pruning is harmless.
 """
 from __future__ import annotations
 
@@ -21,7 +23,7 @@ from scaffolds.transformer.training.checkpointing import checkpoint_directory
 from scaffolds.transformer.training.diagnostics import attention_identity
 from scaffolds.transformer.training.gradient_events import prune_unrecorded_captures, recorded_captures
 from scaffolds.transformer.training.metrics import write_json_atomic
-from scaffolds.records import capture_artifacts, update_record
+from scaffolds.records import _tree_descriptor, capture_artifacts, update_record
 
 # Completion fields that must agree with the recipe when the completion records them.
 IDENTITY_KEYS = ("attention_degree", "attention_mechanism", "quadratic_mode", "quadratic_sharing", "qk_head_dim",
@@ -46,6 +48,10 @@ def finalize_run(config) -> dict:
     checkpoints = checkpoint_directory(config).resolve()
     if not (checkpoints / str(best["step"])).is_dir():
         raise ValueError("Validation-best checkpoint is missing from checkpoint storage")
+    terminal = completion["final_step"]
+    retain_terminal = config.train.retain_terminal_checkpoint
+    if retain_terminal and not (checkpoints / str(terminal)).is_dir():
+        raise ValueError("The terminal checkpoint the recipe retains is missing from checkpoint storage")
     records = [json.loads(line) for line in (workdir / "metrics.jsonl").read_text().splitlines() if line.strip()]
     if not any(row["step"] == completion["final_step"] and row["validation_nll"] == completion["validation_nll"]
                for row in records):
@@ -62,6 +68,9 @@ def finalize_run(config) -> dict:
         "validation_nll": best["validation_nll"], "terminal_step": completion["final_step"],
         "terminal_metrics_preserved": True,
     }
+    if retain_terminal:
+        record["terminal_checkpoint_retained"] = True
+    kept = {best["step"], terminal} if retain_terminal else {best["step"]}
     captures = recorded_captures(config)
     if captures is not None:
         record["retained_gradient_event_updates"] = [capture["update"] for capture in captures]
@@ -69,7 +78,7 @@ def finalize_run(config) -> dict:
     # recognizes that terminal metrics are complete even when the best step is earlier.
     write_json_atomic(workdir / "retention.json", record)
     for path in checkpoints.iterdir():
-        if path.is_dir() and ((path.name.isdigit() and int(path.name) != best["step"])
+        if path.is_dir() and ((path.name.isdigit() and int(path.name) not in kept)
                               or path.name.endswith(".orbax-checkpoint-tmp")):
             shutil.rmtree(path)
     if captures is not None:
@@ -77,11 +86,15 @@ def finalize_run(config) -> dict:
     metadata_path = workdir / "metadata.json"
     metadata = json.loads(metadata_path.read_text())
     metadata.update(checkpoint_retention=record,
-                    retained_terminal_checkpoint_step=best["step"] if best["step"] == completion["final_step"] else None)
+                    retained_terminal_checkpoint_step=terminal if retain_terminal or best["step"] == terminal else None)
     write_json_atomic(metadata_path, metadata)
     artifacts = capture_artifacts(workdir, checkpoint_directory=checkpoints / str(best["step"]),
                                   diagnostic_checkpoints=captures)
     artifacts["selected_checkpoint"].update(step=best["step"], validation_nll=best["validation_nll"])
+    if retain_terminal:
+        tree = (artifacts["selected_checkpoint"] if terminal == best["step"]
+                else _tree_descriptor(checkpoints / str(terminal)))
+        artifacts["terminal_checkpoint"] = {**tree, "step": terminal, "validation_nll": completion["validation_nll"]}
     update_record(workdir, {
         **artifacts,
         "status": "complete", "checkpoint_retention": record,

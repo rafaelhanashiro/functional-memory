@@ -69,6 +69,43 @@ Backbone/data recipe changes are rejected, and `continuation.json` records verif
 parent/backbone hashes. Subsequent resumptions restore the child's full checkpoint
 through the normal trainer. Acceptance pilots are offset by the parent step.
 
+### Forks: the parent's weights with a fresh optimizer
+
+`continuation.optimizer: fresh` makes the child a fork. The default, `parent`, is
+the continuation above. A fork takes only the parent's parameters. With
+`preserve_all_parameters: true` it takes every array of an identical model;
+otherwise the introduced coefficients start at Taylor as above. Everything else
+starts fresh:
+
+- **Optimizer and clock.** The fork trains every array with one AdamW: moments and
+  counts at zero, the same optimizer and state layout as a new run of its recipe.
+  Its update clock starts at zero, so its own `optim` schedule runs from update 1
+  with any warmup and cosine, and so does the RNG. `optim.total_steps` counts the
+  fork's own updates, and `new_parameter_learning_rate` must be null.
+- **Data.** `continuation.data_start_sequence` must equal `parent_step x
+  data.batch_size`, the parent's next packed sequence. Update `k` reads from
+  `data_start_sequence + (k - 1) x batch_size`, and the manifest must hold
+  `data_start_sequence + total_steps x batch_size` sequences. Forks require packed
+  data. A requeue resumes the fork's own optimizer, schedule and cursor from its
+  checkpoint.
+- **Provenance and checks.** `continuation.json` records:
+  - that the optimizer equals a fresh initialization;
+  - its counts;
+  - the hashes of the parent's last batch and of the fork's first batch, as
+    int32 `(batch_size, sequence_length)` rows.
+
+  The fork's first update, in whichever execution runs it, must consume that
+  first batch. Before update 1 it evaluates and checkpoints its starting state as
+  update 0, so two forks of one parent can be compared at the fork.
+- **Acceptance.** The pilot starts at update 0, and the resume check includes the
+  offset. The CPU stage adds `tests/test_continuation_fork.py`.
+
+`train.retain_terminal_checkpoint: true` makes `scaffolds.transformer.retention`
+keep the terminal step, the full resumable state, beside the validation best.
+`retention.json` marks it, and the record describes it as `terminal_checkpoint`.
+`selected_checkpoint` remains the validation best. By default only the best is
+kept.
+
 ## Model, runtime, and launch scripts
 
 The model and trainer share one implementation across clusters. Generic device

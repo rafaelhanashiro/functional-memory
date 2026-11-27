@@ -20,7 +20,9 @@ from scaffolds.transformer.configs import Config, config_to_dict, load_config
 from scaffolds.transformer.configs.loader import save_config
 from scaffolds.transformer.configs.loader import config_dicts_equal
 from scaffolds.transformer.attention.backends.selection import resolve_config_backend
-from scaffolds.transformer.configs.base import OFM_SOURCE_COMMIT, validate_config
+from scaffolds.transformer.configs.base import (
+    OFM_SOURCE_COMMIT, continuation_is_fork, continuation_start_step, packed_data_offset, validate_config,
+)
 from scaffolds.transformer.data.loaders import make_eval_iterator, make_train_iterator
 from scaffolds.transformer.data.packed import (
     LoadedPackedManifest,
@@ -324,8 +326,9 @@ def resolve_packed_data_cursor(
     validated_train_manifest: LoadedPackedManifest | None = None,
     validated_eval_manifest: LoadedPackedManifest | None = None,
 ) -> int:
+    offset = packed_data_offset(config.continuation)
     if config.data.source != "packed":
-        return start_step * config.data.batch_size
+        return offset + start_step * config.data.batch_size
     if not config.data.train_manifest:
         raise ValueError("data.train_manifest is required for packed data")
 
@@ -338,7 +341,7 @@ def resolve_packed_data_cursor(
             f"Configured sequence length {config.data.sequence_length} does not match packed-data "
             f"length {train_manifest['sequence_length']}"
         )
-    required_sequences = config.optim.total_steps * config.data.batch_size
+    required_sequences = offset + config.optim.total_steps * config.data.batch_size
     if train_manifest["num_sequences"] < required_sequences:
         raise ValueError(
             f"Packed training data has {train_manifest['num_sequences']} sequences, but "
@@ -383,7 +386,7 @@ def resolve_packed_data_cursor(
                 f"Packed-data identity does not match the existing run: {identity_path}"
             )
     else:
-        if config.continuation.parent_checkpoint and start_step == config.continuation.parent_step:
+        if config.continuation.parent_checkpoint and start_step == continuation_start_step(config.continuation):
             parent_identity_path = Path(config.continuation.parent_config).parent / "data_identity.json"
             parent_identity_bytes = parent_identity_path.read_bytes()
             if hashlib.sha256(parent_identity_bytes).hexdigest() != config.continuation.parent_data_identity_sha256:
@@ -396,7 +399,7 @@ def resolve_packed_data_cursor(
             )
         write_json_atomic(identity_path, identity)
 
-    return start_step * config.data.batch_size
+    return offset + start_step * config.data.batch_size
 
 
 def evaluate(
@@ -484,9 +487,9 @@ def _write_status(config: Config, **updates) -> None:
     if retention_path.exists():
         retention = json.loads(retention_path.read_text())
         metadata["checkpoint_retention"] = retention
+        terminal = retention.get("terminal_step", config.optim.total_steps)
         metadata["retained_terminal_checkpoint_step"] = (
-            retention["best_checkpoint_step"]
-            if retention["best_checkpoint_step"] == retention.get("terminal_step", config.optim.total_steps)
+            terminal if retention.get("terminal_checkpoint_retained") or retention["best_checkpoint_step"] == terminal
             else None
         )
     identity_path = config.train.workdir / "data_identity.json"
@@ -665,7 +668,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
         validated_eval_manifest = load_packed_manifest(config.data.eval_manifest)
     # Check data identity on all entries, including an already completed run.
     start_sequence = resolve_packed_data_cursor(
-        config, latest_before if latest_before is not None else config.continuation.parent_step,
+        config, latest_before if latest_before is not None else continuation_start_step(config.continuation),
         validated_train_manifest=validated_train_manifest,
         validated_eval_manifest=validated_eval_manifest,
     )
@@ -704,17 +707,31 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     if resume:
         state, restored_step = restore_latest_checkpoint(manager, state)
     fresh_continuation = restored_step is None and bool(config.continuation.parent_checkpoint)
+    fork = continuation_is_fork(config.continuation)
     if fresh_continuation:
-        from scaffolds.transformer.training.continuation import initialize_continuation_state
+        from scaffolds.transformer.training.continuation import fork_batch_provenance, initialize_continuation_state
         state, continuation_audit = initialize_continuation_state(config, state)
+        if fork:
+            # The parent's last batch and this fork's first, hashed as one update's rows; the
+            # first update below must consume exactly the recorded first batch.
+            continuation_audit.update(fork_batch_provenance(config, validated_manifest=validated_train_manifest))
         write_json_atomic(config.train.workdir / "continuation.json", continuation_audit)
     start_step = int(state.step)
     if end_step < start_step:
         raise ValueError("stop_after_step precedes restored training step")
     if restored_step is not None and start_step != restored_step:
         raise ValueError("Checkpoint state step differs from checkpoint directory")
-    if start_sequence != start_step * config.data.batch_size:
+    data_offset = packed_data_offset(config.continuation)
+    if start_sequence != data_offset + start_step * config.data.batch_size:
         raise ValueError("Checkpoint step and data cursor disagree")
+    # A fork's first update, in whichever execution runs it, checks its batch against continuation.json.
+    expected_first_batch = None
+    if fork and start_step == 0:
+        provenance_path = config.train.workdir / "continuation.json"
+        if not provenance_path.is_file():
+            raise ValueError(f"A fork restored at update 0 needs its run's continuation.json, which records the "
+                             f"first batch its first update must read: {provenance_path}")
+        expected_first_batch = json.loads(provenance_path.read_text())["first_batch"]
     audit = {"start_state_sha256": state_sha256(state)} if audit_checkpoint else None
     parameter_count = param_count(state)
     tokens_per_step = config.data.batch_size * (config.data.sequence_length - 1)
@@ -931,6 +948,15 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                else accumulated_train_step(state, batches, micro_rngs, **penalty_options,
                                                            **telemetry_options))
             state, loss, *numerical_metrics = step_result
+            if expected_first_batch is not None and step == 1:
+                from scaffolds.transformer.training.continuation import packed_batch_sha256
+
+                consumed = packed_batch_sha256(np.asarray(consumed_batches()))
+                if consumed != expected_first_batch["sha256"]:
+                    raise RuntimeError(f"A fork's first update consumed batch {consumed}, not its recorded first "
+                                       f"batch {expected_first_batch}")
+                print(f"fork_first_batch_verified sequences={expected_first_batch['sequence_start']}-"
+                      f"{expected_first_batch['sequence_stop'] - 1} sha256={consumed}", flush=True)
             telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
             if telemetry_vector is not None and data_parallel is None:
                 # The single-device step returns its statistics by name; pack them for one transfer.
@@ -1089,7 +1115,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                 _write_status(config, step=step, training_tokens=step * tokens_per_step,
                               validation_nll=eval_loss, validation_perplexity=eval_ppl,
                               attention_diagnostics=diagnostics,
-                              next_train_sequence=step * config.data.batch_size,
+                              next_train_sequence=data_offset + step * config.data.batch_size,
                               rng_state={"seed": config.train.seed, "completed_updates": step})
                 print(f"step={step} val_nll={eval_loss:.6f} val_ppl={eval_ppl:.4f} best={is_best}", flush=True)
                 window_time, window_step, train_losses = time.perf_counter(), step, []
@@ -1117,6 +1143,8 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             "timing": timing,
             **attention_identity(config),
         }
+        if fresh_continuation and fork:
+            result["fork_batches"] = {name: continuation_audit[name] for name in ("parent_last_batch", "first_batch")}
         if audit is not None:
             # Compare the live arrays to durable checkpoint bytes, independently
             # of nondeterministic GPU arithmetic in separate training executions.
@@ -1171,7 +1199,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
             result.update(completion)
         else:
             _write_status(config, status="paused", step=final_step, training_tokens=final_step * tokens_per_step,
-                          next_train_sequence=final_step * config.data.batch_size,
+                          next_train_sequence=data_offset + final_step * config.data.batch_size,
                           rng_state={"seed": config.train.seed, "completed_updates": final_step})
         return result
     finally:
