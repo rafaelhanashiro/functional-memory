@@ -2407,8 +2407,8 @@ Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-
 `z = softplus(s)`, with the degree-eight affine tanh SoS core at `d_K` 64, the best RoPE polynomial at this shape
 (`raeaa47865867`, 14.067; 14.001 at twice the rate), with its coefficient generator reading the raw attention input
 at unit L2 norm, at one, two and four times the schedule's learning rate. With the factor `z` raw-input L2 did not
-help at the recipe's rate (above); at `d_K` 4 it keeps the pure tanh `e^s h_t(z)` core stable at four times the
-rate, where the plain input spikes. Does it help `e^s h_t(z)` here, at the recipe's rate or a larger one?
+help at the recipe's rate (above). Does it help `e^s h_t(z)`, at the recipe's rate or a larger one?
+[Results](staging/exp_prefactor_raw_l2/README.md).
 
 | Run | Label | Peak, floor rate | Plain-input run |
 | --- | --- | --- | --- |
@@ -2424,8 +2424,8 @@ rate, where the plain input spikes. Does it help `e^s h_t(z)` here, at the recip
 - **Kernels.** The Mosaic `query_softplus_times_exp` kernels on a B200 or H100. Raw-input L2 under a score prefactor
   is admitted here (`configs/base.py`, `attention/multihead.py`): the generator normalizes its input before
   projection, for any score function. `test_softplus_sos_raw_input.py` gains its CPU case and the Mosaic
-  `e^s h_t(z)` case of the composed forward and gradient check against FP64, which a one-GPU job runs before the
-  three runs start and each run's acceptance repeats on its GPU.
+  `e^s h_t(z)` case of the composed forward and gradient check against FP64, which passed on a B200 before the
+  three runs started (job 15649) and in each run's acceptance on its GPU.
 - **Acceptance.** The [adapter](wide_exp_prefactor_sos_l2_acceptance.py) pins the partner, admits the three rates
   alone, checks every initial array against the partner's and adds the L2 feature tests to both stages.
 - **Time limit.** The partner trained in 6.3 h on a B200; 12 hours leave acceptance's two-hour reserve.
