@@ -193,7 +193,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "fe80ef97c0175f8f96dcce38598527d98382b0a91621c6ddb69db43afe546fc0"
+      "sha256": "4862a6b53bb066058ed5938210a28086dfdb154b7ffdca67dc6307e67afe09c1"
     },
     "resolved_config": {
       "continuation": {
@@ -442,9 +442,9 @@
   "seed": 42,
   "source_commit": "5bc053c2b8fc393cbc069d5ee3fe5a91eb52f6df",
   "status": "running",
-  "step": 2500,
-  "training_tokens": 1310720000,
-  "updated_utc": "2026-11-27T09:37:45.624613+00:00",
+  "step": 3000,
+  "training_tokens": 1572864000,
+  "updated_utc": "2026-11-27T10:29:53.058897+00:00",
   "wandb_run": {
     "path": "experiments/transformer_pp/runs/rdd3a1dfc453f/wandb_run.json",
     "sha256": "0c123ed95a860c71781cc79173e5a955edacc0f6457d00ab647c5acd1842853a",
