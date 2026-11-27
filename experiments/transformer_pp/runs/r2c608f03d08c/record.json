@@ -58,6 +58,58 @@
       "status": "passed"
     }
   },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/best_validation.json",
+      "sha256": "2646a6c1633c693fbc450572debc7c90efc274519f878209227ee2249bb41da3",
+      "size_bytes": 184
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/completion.json",
+      "sha256": "6e0609aa9b7f8ef0472ebd1f06ec146d83aca1d7c63783c213cdd0f782ef4e85",
+      "size_bytes": 1134591
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/config.json",
+      "sha256": "77b8794e901c93eebe06a6baea2baa216cc22d84a2a502e58e969512688b9c65",
+      "size_bytes": 6493
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/gradient_events.jsonl",
+      "sha256": "ac66f5405f0634d02f66d9398c3ca9e653f4522f6c59c45e592f25802fd6073d",
+      "size_bytes": 13311
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/metadata.json",
+      "sha256": "9c7ab0102700bcba6fcdfbde352d3bc9b8d3f0a3b0787d03073c7f5763d80d77",
+      "size_bytes": 1135419
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/metrics.jsonl",
+      "sha256": "32ccbaa9333458079f5d8ce22bdfa89d9388085a3f2ce0325085c78952de5683",
+      "size_bytes": 14850928
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/retention.json",
+      "sha256": "e3fb642f908b8824e1131668304b05ea1c9f07379751410b3d409c07b9844489",
+      "size_bytes": 489
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r2c608f03d08c/wandb_run.json",
+      "sha256": "77e1afcd85ec6ecd3e053067c12a22ece17b7cea78d8a4aa1b64b978ea1d5018",
+      "size_bytes": 228
+    },
+    {
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2c608f03d08c/training.log",
+      "sha256": "380d05933fd0266bf8c25aecc2044246b785c703652663c4d974ee3e4e0ad166",
+      "size_bytes": 722627
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/r2c608f03d08c/.runtime/acceptance/B200-1",
@@ -65,6 +117,8 @@
       "allocation_seconds": 43200,
       "config_path": "experiments/transformer_pp/runs/r2c608f03d08c/config.yaml",
       "config_sha256": "76d2dcf59f3f739e38ac5266fb87b39756a1f4e47967e6c5dc9a2d6964c762ee",
+      "exit_code": 0,
+      "finished_utc": "2026-11-27T18:09:06.642065+00:00",
       "gpu_count": 1,
       "gpu_type": "B200",
       "home_cluster": "kennel",
@@ -76,6 +130,31 @@
       "stop_after_step": null
     }
   ],
+  "best_validation": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/best_validation.json",
+    "sha256": "2646a6c1633c693fbc450572debc7c90efc274519f878209227ee2249bb41da3",
+    "size_bytes": 184
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 7500,
+    "completion_sha256": "6e0609aa9b7f8ef0472ebd1f06ec146d83aca1d7c63783c213cdd0f782ef4e85",
+    "format": "shared-transformer-checkpoint-retention",
+    "retained_gradient_event_updates": [
+      6376
+    ],
+    "seed": 42,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "4455e690ebc081bd7de2147d795864309599d533",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 7570,
+    "validation_nll": 2.6426116753565636,
+    "version": 1
+  },
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/completion.json",
+    "sha256": "6e0609aa9b7f8ef0472ebd1f06ec146d83aca1d7c63783c213cdd0f782ef4e85",
+    "size_bytes": 1134591
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r2c608f03d08c/config.yaml",
     "sha256": "76d2dcf59f3f739e38ac5266fb87b39756a1f4e47967e6c5dc9a2d6964c762ee"
@@ -84,11 +163,96 @@
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/data_identity.json",
     "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "version": 2
   },
-  "diagnostic_checkpoints": [],
+  "diagnostic_checkpoints": [
+    {
+      "event": "gradient_spike",
+      "file_count": 13,
+      "files": [
+        {
+          "path": "6375/default/_CHECKPOINT_METADATA",
+          "sha256": "97050d93492a2503ea93ede42e61c5ca62f1137d65d99fc10652e7adb850094d",
+          "size_bytes": 262
+        },
+        {
+          "path": "6375/default/_METADATA",
+          "sha256": "da58a2c0504f0867c781f4cc1142882b08cc4d86645820f396d4b022b1c4fbc6",
+          "size_bytes": 218972
+        },
+        {
+          "path": "6375/default/_sharding",
+          "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+          "size_bytes": 68787
+        },
+        {
+          "path": "6375/default/array_metadatas/process_0",
+          "sha256": "88d50fff15d39110ade923cf4dedfa1da6db118f38fdc9b1f47f6a60ab46bad4",
+          "size_bytes": 75263
+        },
+        {
+          "path": "6375/default/d/38d48d55724fdedb33c84b04cee54979",
+          "sha256": "d5bd844786999c66a12049001f806dd3134186d124aa53fadbb727c0db2d8d5b",
+          "size_bytes": 7388
+        },
+        {
+          "path": "6375/default/manifest.ocdbt",
+          "sha256": "e4a940309718486d47ef0bde3fbce502a620fab5b1a6e5604dcacea6ae312a77",
+          "size_bytes": 118
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/2b4d06420767e49a98d3421cbc92988b",
+          "sha256": "bafad1e290e7d38c7a6bc4dbe1b0bc661cfd5e6db1ad371e1d0154dd2ae64279",
+          "size_bytes": 2975197
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/43a49a51d22e42a8f0b50b1e97b9cbfa",
+          "sha256": "2ca1626e007e334458308550ab3c18ae7cf2427c42b20cf6d2cd60e3417897be",
+          "size_bytes": 914
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/7a5f674601d1a4edb119fd7c056dec53",
+          "sha256": "cfe86a6cc3afa14f291e4636cee95e17d8e6d333fa84e8076c2dd3783034e6c7",
+          "size_bytes": 1606918144
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/bb7e04fbc4b9a25a35a7471d8843b729",
+          "sha256": "e229dc6a811c22fb65ae17d8cab39d13f949ea266a7a5da1de67994bef0c63a7",
+          "size_bytes": 592773120
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/d/eff3b54c7d4c1c7ef890d5eb0c8c559a",
+          "sha256": "0d74c325ab4ec92b13c91beab924c5a514b7c53bbca40c673c766ba2daf501f7",
+          "size_bytes": 239
+        },
+        {
+          "path": "6375/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "da2e53e03f4a1aeba98a5a5e3c5f986883330ea2819c743d9a249d4fab432110",
+          "size_bytes": 320
+        },
+        {
+          "path": "event.json",
+          "sha256": "cccd2d660c190a0b3292b0429e8ad0fbaa049acb04a17facb8e7b92c205f5cc4",
+          "size_bytes": 14349
+        }
+      ],
+      "gradient_norm_pre_clip": 1.4577821493148804,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 6376, norm 1.45778",
+      "kind": "directory",
+      "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2c608f03d08c/checkpoints/gradient_events/6376",
+      "pre_update_state_sha256": "aa44fda9bfdc60567f324f53ba8c671b828fade9cf2d9a9a856c502344898876",
+      "pre_update_step": 6375,
+      "sha256": "269859612cf85be798938e21ec51b5e9102bd2eaa09d62cf84b839d44f0433a4",
+      "size_bytes": 2203053073,
+      "update": 6376
+    }
+  ],
   "error": null,
   "execution": {
     "attention_backend": "mosaic",
@@ -98,7 +262,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "e1e2af5f0e8f23b4b23ec9eea07287d67bb7149d8c4bfbbea4c7bf56e6093108"
+      "sha256": "9c7ab0102700bcba6fcdfbde352d3bc9b8d3f0a3b0787d03073c7f5763d80d77"
     },
     "resolved_config": {
       "continuation": {
@@ -318,7 +482,22 @@
   "frozen_execution_sha256": "1225031dc1bf032b94ed508a5ccf2325a17f53f9e67b9474d849ad67fd3520a7",
   "home_cluster": "kennel",
   "label": "query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-double",
-  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/r2c608f03d08c/training.log",
+  "log": {
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2c608f03d08c/training.log",
+    "sha256": "380d05933fd0266bf8c25aecc2044246b785c703652663c4d974ee3e4e0ad166",
+    "size_bytes": 722627
+  },
+  "log_path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2c608f03d08c/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/metadata.json",
+    "sha256": "9c7ab0102700bcba6fcdfbde352d3bc9b8d3f0a3b0787d03073c7f5763d80d77",
+    "size_bytes": 1135419
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/metrics.jsonl",
+    "sha256": "32ccbaa9333458079f5d8ce22bdfa89d9388085a3f2ce0325085c78952de5683",
+    "size_bytes": 14850928
+  },
   "name": "query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-double",
   "numerical_failure_path": null,
   "receipt": {
@@ -328,11 +507,115 @@
     "version": 1
   },
   "record_schema_version": 1,
+  "retained_best_checkpoint_step": 7500,
+  "retained_terminal_checkpoint_step": null,
+  "retention": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/retention.json",
+    "sha256": "e3fb642f908b8824e1131668304b05ea1c9f07379751410b3d409c07b9844489",
+    "size_bytes": 489
+  },
   "run_id": "r2c608f03d08c",
   "seed": 42,
+  "selected_checkpoint": {
+    "file_count": 16,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "b36978beba573d34bb25d7a02f39354dab5ffc307bf9e7c194d860cf2ba092c5",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "da58a2c0504f0867c781f4cc1142882b08cc4d86645820f396d4b022b1c4fbc6",
+        "size_bytes": 218972
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+        "size_bytes": 68787
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "88d50fff15d39110ade923cf4dedfa1da6db118f38fdc9b1f47f6a60ab46bad4",
+        "size_bytes": 75263
+      },
+      {
+        "path": "default/d/1e6cd40516480905c2229374f14613db",
+        "sha256": "cce16d75a122ed5d17d3f2845b3fccc9344f5bfa71f6e0bb2a760cad3d6976eb",
+        "size_bytes": 7436
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "48539ccbcbed381bcee1f2ccf2b9cdcfe61fc31faac859b90d97e018a0fb566f",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/002778de70de5ee24662285a1ad56cf9",
+        "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+        "size_bytes": 196
+      },
+      {
+        "path": "default/ocdbt.process_0/d/1dc06080e6510b882dbb180071dc2caa",
+        "sha256": "3d0946a5057c0e6f0ee363da24a6342902b2c00801f2d9237fbc9060cd2d3483",
+        "size_bytes": 1784131584
+      },
+      {
+        "path": "default/ocdbt.process_0/d/47e6ee020d8532865dda55cbff64a083",
+        "sha256": "8c1c129b96284e367cdebd881838d2a68cc7e83f618a0bb80194184ab2e57119",
+        "size_bytes": 377274368
+      },
+      {
+        "path": "default/ocdbt.process_0/d/7b4c395ed2e4b03b9129510e84aace95",
+        "sha256": "b3e5f1e7cabc25b12621efbb74c719e2534220b6bd181429e60b08ee86648c4f",
+        "size_bytes": 793
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b68685de97ebf4ef2bb0f819047de91a",
+        "sha256": "12831714b99db80384f80338390b21a586c1f1cb7a4ac5a2ef3d944e7a7811c0",
+        "size_bytes": 17854464
+      },
+      {
+        "path": "default/ocdbt.process_0/d/bde0f770b4a85e792c40cfcc7fdea902",
+        "sha256": "00ac6084e5b62bcae074871ffbd54ec0ee837c649857663f2a4999eafe87f9fe",
+        "size_bytes": 912
+      },
+      {
+        "path": "default/ocdbt.process_0/d/d2876d983ac501961c6c97254a75e5bd",
+        "sha256": "ad5f230a4879894f03463b4656ceb91f939d76d363e74517b112e0d1ac0bf79b",
+        "size_bytes": 431
+      },
+      {
+        "path": "default/ocdbt.process_0/d/ff0dc0993197075a2ca547ebf49eee81",
+        "sha256": "08384c69de8db1acf7ffb9bb4fa00bdd82a447df2a0b44a057b38b645480a939",
+        "size_bytes": 22630400
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "1c5ffd4d0caebfdca1fe30e9c1c0d65f83f44b3bad8f20830d3137424252d6a1",
+        "size_bytes": 428
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "579a8ddbe7e015923f005d611f7596543efa05a40bf1b51705ce33c24bf93b27",
+        "size_bytes": 138
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "/data/cl/u/rafah/home/projects/functional-memory/experiments/transformer_pp/runs/r2c608f03d08c/checkpoints/7500",
+    "sha256": "5f6606c32175c40577538ec1aaaeba16373e4687e7476d20180a8c678561489f",
+    "size_bytes": 2202264656,
+    "step": 7500,
+    "validation_nll": 2.6426116753565636
+  },
   "source_commit": "4455e690ebc081bd7de2147d795864309599d533",
-  "status": "running",
-  "step": 5500,
-  "training_tokens": 2883584000,
-  "updated_utc": "2026-11-27T16:32:40.782813+00:00"
+  "status": "complete",
+  "step": 7570,
+  "training_tokens": 3968860160,
+  "updated_utc": "2026-11-27T18:08:50.501120+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_pp/runs/r2c608f03d08c/wandb_run.json",
+    "sha256": "77e1afcd85ec6ecd3e053067c12a22ece17b7cea78d8a4aa1b64b978ea1d5018",
+    "size_bytes": 228
+  }
 }

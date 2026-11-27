@@ -58,6 +58,43 @@
       "status": "passed"
     }
   },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/best_validation.json",
+      "sha256": "f1623e51b5d797b433b94b009ca8c7462c88ff18c21d910974bcc4beb57646ff",
+      "size_bytes": 183
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/config.json",
+      "sha256": "5416cca5d34cfd39932d1c11e6ce18c294f789ab6bfe3bd164b92c9dbb8b1c49",
+      "size_bytes": 6496
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/metadata.json",
+      "sha256": "265846e2821f08fbbd5be4b195ae4159e5cb1e6c362575bb04d9fda099c361d0",
+      "size_bytes": 1134928
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/metrics.jsonl",
+      "sha256": "e0f37e8d382573ba176c55a11c8e11abdd4628a12ed092a042882c0c7ac0b162",
+      "size_bytes": 11116692
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/wandb_run.json",
+      "sha256": "771da911eb2eeaf9d4c9fc800765eaa14d0c5bb3b0f4030d601c12adfa293a98",
+      "size_bytes": 231
+    },
+    {
+      "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/training.log",
+      "sha256": "ba275b72241dea4b9eff2a9f02e2b3644034e80e88085088e79b77bad6957513",
+      "size_bytes": 454687
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/rdd827b2c2b7d/.runtime/acceptance/B200-1",
@@ -65,6 +102,8 @@
       "allocation_seconds": 43200,
       "config_path": "experiments/transformer_pp/runs/rdd827b2c2b7d/config.yaml",
       "config_sha256": "dcd311d2bac5fb6c84c469812638d705004036b1f620644f5e8d4527fb7cab03",
+      "exit_code": 143,
+      "finished_utc": "2026-11-27T17:20:31.791776+00:00",
       "gpu_count": 1,
       "gpu_type": "B200",
       "home_cluster": "kennel",
@@ -74,8 +113,29 @@
       "slurm_restart_count": "0",
       "started_utc": "2026-11-27T13:19:35.773251+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/rdd827b2c2b7d/.runtime/acceptance/B200-1",
+      "allocation": "JobId=15652 JobName=rdd827b2c2b7d UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20056 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=12:00:00 TimeMin=N/A SubmitTime=2026-11-27T12:20:33 EligibleTime=2026-11-27T12:22:34 AccrueTime=2026-11-27T12:22:34 StartTime=2026-11-27T13:11:07 EndTime=2026-11-28T01:11:07 Deadline=N/A PreemptEligibleTime=2026-11-27T13:11:07 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-27T13:11:07 Scheduler=Backfill Partition=standard AllocNode:Sid=kennel:3893113 ReqNodeList=(null) ExcNodeList=akita,collie,dogo,doodle,mastiff,samoyed,terrier NodeList=shiba BatchHost=shiba NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2 StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/rdd827b2c2b7d/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/rdd827b2c2b7d/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 43200,
+      "config_path": "experiments/transformer_pp/runs/rdd827b2c2b7d/config.yaml",
+      "config_sha256": "dcd311d2bac5fb6c84c469812638d705004036b1f620644f5e8d4527fb7cab03",
+      "gpu_count": 1,
+      "gpu_type": "B200",
+      "home_cluster": "kennel",
+      "launch_commit": "4455e690ebc081bd7de2147d795864309599d533",
+      "slurm_job_id": "15652",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-11-27T18:11:14.033856+00:00",
+      "stop_after_step": null
     }
   ],
+  "best_validation": {
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/best_validation.json",
+    "sha256": "f1623e51b5d797b433b94b009ca8c7462c88ff18c21d910974bcc4beb57646ff",
+    "size_bytes": 183
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/config.yaml",
     "sha256": "dcd311d2bac5fb6c84c469812638d705004036b1f620644f5e8d4527fb7cab03"
@@ -84,7 +144,10 @@
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/data_identity.json",
     "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "version": 2
   },
@@ -98,7 +161,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "4bcc926714530d531acfdb3ee1997be1fc2012461a93d541f63e8a336280b862"
+      "sha256": "3b1ef150e2943a63f5a3e81ce6959e18e1adaa0626c18160d1c30e42c8c0c222"
     },
     "resolved_config": {
       "continuation": {
@@ -318,7 +381,22 @@
   "frozen_execution_sha256": "1225031dc1bf032b94ed508a5ccf2325a17f53f9e67b9474d849ad67fd3520a7",
   "home_cluster": "kennel",
   "label": "query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-quadruple",
+  "log": {
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/training.log",
+    "sha256": "ba275b72241dea4b9eff2a9f02e2b3644034e80e88085088e79b77bad6957513",
+    "size_bytes": 454687
+  },
   "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk64-exp-prefactor-sos-l2/experiments/transformer_pp/runs/rdd827b2c2b7d/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/metadata.json",
+    "sha256": "265846e2821f08fbbd5be4b195ae4159e5cb1e6c362575bb04d9fda099c361d0",
+    "size_bytes": 1134928
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/metrics.jsonl",
+    "sha256": "e0f37e8d382573ba176c55a11c8e11abdd4628a12ed092a042882c0c7ac0b162",
+    "size_bytes": 11116692
+  },
   "name": "query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-quadruple",
   "numerical_failure_path": null,
   "receipt": {
@@ -332,7 +410,12 @@
   "seed": 42,
   "source_commit": "4455e690ebc081bd7de2147d795864309599d533",
   "status": "running",
-  "step": 4000,
-  "training_tokens": 2097152000,
-  "updated_utc": "2026-11-27T16:37:23.040931+00:00"
+  "step": 4500,
+  "training_tokens": 2359296000,
+  "updated_utc": "2026-11-27T18:11:51.682198+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_pp/runs/rdd827b2c2b7d/wandb_run.json",
+    "sha256": "771da911eb2eeaf9d4c9fc800765eaa14d0c5bb3b0f4030d601c12adfa293a98",
+    "size_bytes": 231
+  }
 }
