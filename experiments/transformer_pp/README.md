@@ -3618,6 +3618,7 @@ the schedule's learning rate. At `d_K` 64 the prefactor helped as much on the ra
 `z = softplus(s)` (`r841f35a24241` `z h_t(z)`, 14.095), and on its own the input made no difference at `d_K` 4 (`h_t(s)`
 19.762, `h_t(z)` 19.753). At `d_K` 4 only `z h_t(z)` has run with a prefactor (`rabfbab32a594`, 19.463; four times
 18.569): does the raw score serve as well there?
+[Results](staging/narrow_softplus_prefactor_sos/README.md).
 
 | Run | Label | Peak, floor rate | Partner |
 | --- | --- | --- | --- |
