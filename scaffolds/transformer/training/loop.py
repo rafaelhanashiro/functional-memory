@@ -61,6 +61,7 @@ from scaffolds.transformer.training.metrics import (
     ValidationMetricsStore,
     write_json_atomic,
 )
+from scaffolds.transformer.training.query_dynamics import QueryDynamics, coordinate_update
 from scaffolds.transformer.training.coefficient_release import coefficient_release, mask_frozen_gradients
 from scaffolds.transformer.training.gradient_events import GradientEventCapture, device_copy, recorded_captures
 from scaffolds.transformer.training.optim import make_learning_rate_schedule
@@ -143,10 +144,10 @@ def _telemetry_options(collect_telemetry: bool) -> tuple[dict[str, str] | None, 
 
 
 @partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
-                                   "collect_telemetry"))
+                                   "collect_telemetry", "query_gradient_dynamics"))
 def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all_gradients=False,
                coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
-               collect_telemetry: bool = False):
+               collect_telemetry: bool = False, query_gradient_dynamics: bool = False):
     """One update. With ``collect_telemetry``, also return, last, the update's named statistics."""
     reductions, recording = _telemetry_options(collect_telemetry)
     loss, grads, *statistics = loss_and_grads(state, batch, rng, **recording,
@@ -160,6 +161,8 @@ def train_step(state: TrainState, batch: jax.Array, rng: jax.Array, *, check_all
         outputs += (update_numerics(grads, updated.params, loss),)
     if collect_telemetry:
         outputs += (telemetry.single_device_statistics(statistics[0], reductions, state.params, grads, updated.params),)
+    if query_gradient_dynamics:
+        outputs += (coordinate_update(state.params, grads, updated.params),)
     return outputs
 
 
@@ -173,10 +176,10 @@ def microbatch_loss_and_grads(state: TrainState, batch: jax.Array, rng: jax.Arra
 
 
 @partial(nnx.jit, static_argnames=("check_all_gradients", "coefficient_penalty", "coefficient_penalty_denominator",
-                                   "collect_telemetry"))
+                                   "collect_telemetry", "query_gradient_dynamics"))
 def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Array, *, check_all_gradients=False,
                            coefficient_penalty: float = 0.0, coefficient_penalty_denominator: bool = True,
-                           collect_telemetry: bool = False):
+                           collect_telemetry: bool = False, query_gradient_dynamics: bool = False):
     """One compiled update over ``batches`` (``[microbatches, sequences, tokens]``) and their ``rngs``.
 
     A scan accumulates the microbatch gradients on the device, so the host dispatches one
@@ -209,6 +212,8 @@ def accumulated_train_step(state: TrainState, batches: jax.Array, rngs: jax.Arra
     if collect_telemetry:
         outputs += (telemetry.single_device_statistics(stacked_statistics, reductions, state.params, grads,
                                                        updated.params),)
+    if query_gradient_dynamics:
+        outputs += (coordinate_update(state.params, grads, updated.params),)
     return outputs
 
 
@@ -745,6 +750,12 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
     # Telemetry is standard on one GPU and several; recording cannot cross remat.
     collect_telemetry = not config.model.remat
     telemetry_options = {"collect_telemetry": True} if collect_telemetry else {}
+    dynamics = None
+    if config.train.query_gradient_dynamics:
+        if layout.device_count != 1:
+            raise ValueError("Query gradient dynamics is qualified for single-device training")
+        dynamics = QueryDynamics(config, state.graphdef, start_step, validated_train_manifest)
+        telemetry_options["query_gradient_dynamics"] = True
     telemetry_keys: list[str] = []
     if layout.device_count > 1:
         data_parallel = make_data_parallel_functions(state, devices, check_all_gradients=check_all_gradients,
@@ -931,6 +942,7 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                                else accumulated_train_step(state, batches, micro_rngs, **penalty_options,
                                                            **telemetry_options))
             state, loss, *numerical_metrics = step_result
+            query_update = numerical_metrics.pop() if dynamics is not None else None
             telemetry_vector = numerical_metrics.pop() if collect_telemetry else None
             if telemetry_vector is not None and data_parallel is None:
                 # The single-device step returns its statistics by name; pack them for one transfer.
@@ -984,11 +996,16 @@ def _run_training(config, manager, layout, devices, *, resume, end_step, audit_c
                           flush=True)
             if events is not None:
                 decision = events.observe(step, gradient_norm)
+                retained_event = False
                 if decision is not None:
-                    events.capture(decision, pre_update, loss=loss_value, update_numerics=numerical_metrics[0],
+                    event_record = events.capture(decision, pre_update, loss=loss_value, update_numerics=numerical_metrics[0],
                                    clip_scale=clip_scale, learning_rate=float(schedule(step - 1)),
                                    audit=lambda: _update_audit(step, consumed_batches(), step_rng),
                                    telemetry=telemetry_values, preceding_telemetry=previous_telemetry)
+                    retained_event = event_record["retained"]
+                if dynamics is not None:
+                    dynamics.observe(step, query_update, pre_update.params, state.params, consumed_batches(),
+                                     checkpoint=is_checkpoint, evaluation=is_eval, event=retained_event)
                 # Release the pre-update state before validation or the next update allocates.
                 pre_update = None
             if (is_log or is_eval) and penalty_sum is not None:

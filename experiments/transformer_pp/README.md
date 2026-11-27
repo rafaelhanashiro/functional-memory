@@ -3685,3 +3685,37 @@ submit standard 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7
 submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
 submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
 ```
+
+## Degree-eight query gradient dynamics
+
+Run `r1422e8000207` repeats the regular query polynomial `r25fffc16c2f3` on Kennel's B300. It keeps
+the original initialization, seed 42, order and averaging of the packed training examples, 7,570 updates,
+factorial scaling, Mosaic kernel and original head RMSNorm arithmetic. The fresh run enables gradient-event
+capture and query measurements. The original run and its validation result are independent records.
+
+Each update saves signed pre-clip gradients and applied AdamW displacements of every stored amplitude and
+bias and the L2 norms of both vectors for each projection. The `query_dynamics_updates_<last-step>.npz`
+arrays are indexed by update, layer, head and degree. The global gradient and clipping history stays in
+the standard trainer telemetry. Full post-update projection vectors, amplitudes and biases are saved
+at step 1 and all validation steps in `query_dynamics_parameters_<step>.npz`.
+
+At updates 1, 100, 455, 1,500, 4,000, 6,376 and 7,500, and on each newly retained spike, a separate
+backward pass measures each query's bias and amplitude contributions using the pre-update weights
+and actual full batch. The `query_dynamics_queries_<step>.npz` files hold the signed sums, absolute
+sums and maximum magnitudes per coordinate, tanh means and saturation fractions, batch SHA256,
+and errors against direct parameter differentiation and the training gradients. These contributions use
+the stored parameters' units, including the factorial, and the full batch's mean loss. On a retained
+spike and at update 6,376 the next full batch is measured at the same frozen parameters, without
+advancing training. The checkpoint preflight checks these reductions against autodiff on four
+full-length sequences using the original step-7,500 checkpoint. The CPU test also compares the
+instrumented and standard optimizer steps.
+
+From this experiment worktree, after committing the run and its execution source:
+
+```bash
+run=experiments/transformer_pp/runs/r1422e8000207
+sbatch --partition=long --gres=gpu:1 --nodelist=akita --time=24:00:00 \
+  --job-name=r1422e8000207 --output="$run/training.log" \
+  scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.query_dynamics_acceptance \
+  "$run/config.yaml" "$(git rev-parse HEAD)" 1 B300
+```

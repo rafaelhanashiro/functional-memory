@@ -6,11 +6,15 @@ and RoPE, retain the ordinary dot-product path. Coefficient projection and basis
 combination use FP32; the final attention output has V's dtype.
 """
 
+from contextvars import ContextVar
 from functools import partial
 import math
 
 import jax
 import jax.numpy as jnp
+
+# A separate per-query gradient replay may perturb each feature readout at trace time.
+readout_probe = ContextVar("query_dynamics_readout_probe", default=None)
 
 # The feature f of affine generators c = b + a*f(x W) and of pure generators c = f(x W).
 AFFINE_FEATURES = {"tanh": jnp.tanh, "affine_sigmoid": jax.nn.sigmoid}
@@ -228,7 +232,9 @@ def _diagonal_readout(features, amplitude, bias, amplitude_scale, orders=None):
     # cannot reassociate scaling or contract a different expression in one arm.
     amplitude, bias = jax.lax.optimization_barrier((amplitude, bias.astype(jnp.float32)))
     product = jax.lax.optimization_barrier(amplitude * features)
-    return jax.lax.optimization_barrier(product + bias)
+    coefficients = jax.lax.optimization_barrier(product + bias)
+    probe = readout_probe.get()
+    return coefficients if probe is None else probe(coefficients, features)
 
 
 def _pure_coefficients(x, kernel, mixing, amplitude_scale, readout_scale, feature, tanh_bias=None):

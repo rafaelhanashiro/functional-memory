@@ -1525,6 +1525,7 @@ class TrainConfig:
     # gradient norm exceeds max(min_norm, factor x median of the previous `history` norms, once at
     # least `min_history` exist). At most `max_states` states are retained: the first event and the
     # largest later ones. Every trigger is logged (training/gradient_events.py).
+    query_gradient_dynamics: bool = False
     gradient_event_capture: bool = False
     gradient_event_factor: float = 5.0
     gradient_event_min_norm: float = 1.0
@@ -1640,6 +1641,19 @@ def validate_config(config: Config) -> None:
         if continuation.parent_checkpoint:
             raise ValueError("Checkpoint continuations are not qualified with a score transform, a polynomial "
                              "prefactor or a constant-coefficient start")
+    model = config.model
+    if not isinstance(train.query_gradient_dynamics, bool):
+        raise ValueError("train.query_gradient_dynamics must be a boolean")
+    if train.query_gradient_dynamics and not (
+        train.gradient_event_capture and data.source == "packed" and model.dropout == 0 and not model.remat
+        and model.attention_coefficient_conditioning == "query" and model.attention_coefficient_readout == "diagonal"
+        and model.attention_coefficient_activation == "tanh" and model.attention_coefficient_sharing == "per_head"
+        and model.attention_coefficient_parameterization == "direct" and model.attention_coefficient_scale == "factorial"
+        and model.attention_coefficient_amplitude_scale == "factorial" and model.attention_coefficient_gate == "none"
+        and model.attention_coefficient_orders is None and optim.coefficient_penalty == 0
+        and not model.attention_coefficient_tanh_bias
+    ):
+        raise ValueError("Query gradient dynamics requires packed, dropout-free direct factorial tanh training with event capture")
     if not isinstance(train.gradient_event_capture, bool):
         raise ValueError("train.gradient_event_capture must be a boolean")
     if train.gradient_event_capture:
