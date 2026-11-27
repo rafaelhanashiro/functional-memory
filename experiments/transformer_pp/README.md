@@ -673,12 +673,21 @@ width 64](#two-and-four-times-the-learning-rate-at-key-width-64)) at its termina
 | `rda011906861b` | `exp-lr-double-terminal-fork-exp` | exp -> exp | the parent's: unnormalized `exp(s)`, row-maximum shift, fused kernel |
 | `r68f1cbfed2ef` | `exp-lr-double-terminal-fork-query-m8-w-decay` | exp -> query | `r90776a5d4175`'s: degree-8 tanh query coefficients on raw scores, W decay, Mosaic |
 
-- **Parent state.** Only the parent's validation-best checkpoint (update 7,500) survived retention. The terminal state was
-  rebuilt by replaying the parent's last 70 updates once from it, with the parent's launch commit (`db4b0a35`), recipe,
-  optimizer state, schedule, data order and runtime environment on an ORCD H100 (job 30686778, node node2501),
-  outside the parent's run and artifacts. The replay reproduced the recorded step-7,500 validation NLL exactly (2.6540640561204207), each logged train NLL of updates 7,510-7,570 within 4.4e-5 (the spread between batches is 0.025), and the terminal validation within 2.4e-6 in NLL (perplexity 14.2150923 against the recorded 14.2151265). It is not bit-identical, and separate GPU executions of training are not bitwise reproducible, so the original terminal bits cannot be recovered. Of the 2,130 QK RMSNorm gains and head scales the parent recorded at update 7,570, 32 differ by more than the 1e-4 set before the replay ran, at most 7.1e-4 (a layer-0 head scale). Over the 70 updates these parameters moved by a median of about 5e-4. The replay's movements correlate with the parent's at 0.9995 for the gains and 0.9925 for the head scales, and most of the larger differences are in layer 0. The rebuilt checkpoint is kept at
+- **Parent state.** Only the parent's validation-best checkpoint (update 7,500) survived retention. The terminal state
+  was rebuilt by replaying the parent's last 70 updates once from it, with the parent's launch commit (`db4b0a35`),
+  recipe, optimizer state, schedule, data order and runtime environment on an ORCD H100 (job 30686778, node node2501),
+  outside the parent's run and artifacts. The replay reproduced the recorded step-7,500 validation NLL exactly
+  (2.6540640561204207), each logged train NLL of updates 7,510-7,570 within 4.4e-5 (the spread between batches is
+  0.025), and the terminal validation within 2.4e-6 in NLL (perplexity 14.2150923 against the recorded 14.2151265). It
+  is not bit-identical, and separate GPU executions of training are not bitwise reproducible, so the original terminal
+  bits cannot be recovered. Of the 2,130 QK RMSNorm gains and head scales the parent recorded at update 7,570, 32
+  differ by more than the 1e-4 set before the replay ran, at most 7.1e-4 (a layer-0 head scale). Over the 70 updates
+  these parameters moved by a median of about 5e-4. The replay's movements correlate with the parent's at 0.9995 for
+  the gains and 0.9925 for the head scales, and most of the larger differences are in layer 0. The rebuilt checkpoint
+  is kept at
   `/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570`
-  (tree SHA256 `59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94`), with the replay's log and comparison beside it in `7570-replay/`.
+  (tree SHA256 `59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94`), with the replay's log and
+  comparison beside it in `7570-replay/`.
 - **Fork.** Each child is a fork (`continuation.optimizer: fresh`; [scaffold](../../scaffolds/transformer/README.md#forks-the-parents-weights-with-a-fresh-optimizer)):
   the parent's weights with a fresh AdamW at update 0 on the parent's own schedule (455 warmup updates, peak 2e-3,
   cosine to 2e-4 over 7,570 updates), reading the parent's packed stream from sequence 1,937,920, the first after the
@@ -707,7 +716,14 @@ width 64](#two-and-four-times-the-learning-rate-at-key-width-64)) at its termina
   children train on one ORCD H100, the partners' GPU; each kernel qualifies at the launch commit through
   `validation/qualify_acceptance_orcd.sbatch` first.
 
-Each kernel's qualification at the launch commit is listed here once it passes.
+Each kernel qualified on an ORCD H100 80GB HBM3 (driver 595.112.07) at the launch commit `798cf1b6`, through
+`validation/qualify_acceptance_orcd.sbatch`: every test stage, the initialization check, a 20-update pilot from update
+0 and its resume. The two qualifications shared node4109, so the pilots' rates are upper bounds.
+
+| Run | Branch | Qualification job, node | Backend | Tests passed: CPU, distributed, GPU | Pilot, s/update | Projected run |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| `rda011906861b` | exp -> exp | 30695067, node4109 | fused | 526, 10, 88 | 2.16 | 4.78 h |
+| `r68f1cbfed2ef` | exp -> query | 30695068, node4109 | Mosaic | 632, 10, 76 | 3.36 | 7.32 h |
 
 Submit from the study's worktree root at the qualification commit:
 
@@ -718,8 +734,7 @@ submit() {  # run, launch commit
     scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.terminal_fork_acceptance \
     "experiments/transformer_pp/runs/$1/config.yaml" "$2" 1 H100
 }
-LAUNCH=<the commit both kernels qualified at>
-for run in rda011906861b r68f1cbfed2ef; do submit "$run" "$LAUNCH"; done
+for run in rda011906861b r68f1cbfed2ef; do submit "$run" 798cf1b6f989b60a47f2cd7b7c7bb8ce123a87fe; done
 ```
 
 ## Teacher-activation coefficient distillation
