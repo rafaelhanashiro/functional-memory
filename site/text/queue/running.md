@@ -1,8 +1,25 @@
-*Updated 2026-11-25 at 16:25 EST.*
+*Updated 2026-11-26 at 20:52 EST.*
 
 Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's are marked), without the stability reruns.
 
 #### In progress
+
+- **Pure tanh square-factor SoS core of degree 16, learning rate ×4**, $d_K = 4$
+  - $z\,h_t(z)$, raw-input L2
+  - $z\,h_t(z)$, plain input
+  - $e^s\,h_t(z)$, raw-input L2
+  - $e^s\,h_t(z)$, plain input
+- **$e^s\,h_t(z)$ with a degree-12 core** ($z = \mathrm{softplus}(s)$), $d_K = 64$
+  - Learning rate as the recipe's
+  - Learning rate ×2
+- **$e^s\,h_t(z)$ with a degree-16 core** (affine query SoS on $z = \mathrm{softplus}(s)$), $d_K = 4$ · Codex
+  - Learning rate as the recipe's
+  - Learning rate ×2
+- **$\mathrm{softplus}(s)\,h_t(s)$**, query SoS core 8 on the raw score, learning rate ×2, $d_K = 4$
+- **Query, $m = 8$, $d_K = 64$, retrained to record its coefficient gradients and optimizer steps** · Codex (queued)
+- **Fixed Taylor $e^s\,T_8(z)$**, $z = \mathrm{softplus}(s)$, learning rate ×2, $d_K = 64$ · Codex (its job failed at start-up on 11-26 and has not been resubmitted)
+
+#### Finished
 
 - **Twice the Chinchilla budget**, $d_K = 4$ (15,140 updates)
   - Exp
@@ -11,19 +28,11 @@ Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's a
   - $z\,h_t(z)$ with a degree-16 core, learning rate ×4
 - **$\mathrm{softplus}(s)\,h_t(s)$**, query SoS core 8 on the raw score, $d_K = 4$
   - Learning rate as the recipe's
-  - Learning rate ×2 (queued)
-  - Learning rate ×4 (queued)
-- **Exponential prefactors**, $d_K = 4$ (the two cancelled recipes, now training)
-  - $\mathrm{softplus}(s)\,e^s$
-  - $\mathrm{sigmoid}(s)\,e^s$ (queued)
-- **$e^s\,h_t(z)$ with a degree-16 core** (affine query SoS on $z = \mathrm{softplus}(s)$), $d_K = 4$ · Codex
-  - Learning rate as the recipe's
-  - Learning rate ×2
   - Learning rate ×4
-- **Fixed Taylor $e^s\,T_8(z)$**, $z = \mathrm{softplus}(s)$, learning rate ×2, $d_K = 64$ · Codex (queued)
-
-#### Finished
-
+- **Exponential prefactors**, $d_K = 4$
+  - $\mathrm{softplus}(s)\,e^s$
+  - $\mathrm{sigmoid}(s)\,e^s$
+- **$e^s\,h_t(z)$ with a degree-16 core** (affine query SoS on $z = \mathrm{softplus}(s)$), learning rate ×4, $d_K = 4$ · Codex
 - **Learning rate**, $d_K = 4$
   - Exp ×½
   - Exp ×2
@@ -86,6 +95,16 @@ Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's a
 - **Cosine score with a sigmoid gate on every power**, $d_K = 4$ · Codex
   - $m = 8$
   - $m = 16$
+
+#### Diagnostics (checkpoint probes, no training)
+
+- **Query-gradient attribution** · Codex: raw query, softplus input, exp prefactor and softplus prefactor on the blocked backend; exp prefactor on Mosaic
+- **Score tails** · Codex
+  - Gradient groups: raw query, exp prefactor, softplus input, softplus prefactor
+  - Score tails: raw query, exp prefactor, exp, $\mathrm{softplus}(s)\,e^s$, $e^s$ times SoS
+  - Learned tail scale: raw query, exp, $\mathrm{softplus}(s)\,e^s$, $e^s$ times SoS
+  - Tail distance: static polynomial, exp
+- **Layer-8 operand capture** for the learned-polynomials figure
 
 #### Cancelled before training (at your request)
 

@@ -1,0 +1,83 @@
+question: Does a prefactor of the raw score, e^s or softplus(s), help the degree-eight
+  tanh query polynomial p_t(s)?
+study: transformer_pp
+settings:
+  metric: held-out validation perplexity
+runs:
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: control_query_m8_rope_w_decay
+  label: query m = 8 + RoPE + W decay
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: r7f80334aafbd
+  role: primary_query_m8_softplus_input_times_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/config.yaml
+      sha256: 233b6145f8ae39a735d8d99db39120cfdf58e8498a1c76823257c6dfc6599468
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/metrics.jsonl
+      sha256: f998a01a7c23ddba44106dcf4bfbece1d2840d08896804f6d524786a2530f4d8
+    completion.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/completion.json
+      sha256: da16be5459a3f070a03a9564b6d1ac68006942e917851275e1acd94f777b111e
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/metadata.json
+      sha256: 41385bf272eca568447120b2790140071dafe4eec711f079b70ad01d79047083
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7f80334aafbd/best_validation.json
+      sha256: 3795b447ba51560348b3145c2e87b6ea751384e7c6e21b6cfa47bc30bfd6dbd3
+- study: transformer_pp
+  run_id: rdb8deaab4c91
+  role: primary_query_m8_exp_prefactor_raw_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/rdb8deaab4c91/config.yaml
+      sha256: a0b428981c98e9ceef5be1d0f823d138d3a07b0cb8973593c37ce9e8a7c36654
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/rdb8deaab4c91/metrics.jsonl
+      sha256: 5cb89d0286902644e934f0b37ba2995c577b9be39825bff6981d77bf11588ac3
+    completion.json:
+      path: experiments/transformer_pp/runs/rdb8deaab4c91/completion.json
+      sha256: 1668f52497a42df5cf90170da8973e5572bdba8f120c0f8276b22bf3765535f7
+    metadata.json:
+      path: experiments/transformer_pp/runs/rdb8deaab4c91/metadata.json
+      sha256: 9fd9fd8a92e89576fffc20bd4f53dfbddefe90286117b25521a04634a2482ed1
+    best_validation.json:
+      path: experiments/transformer_pp/runs/rdb8deaab4c91/best_validation.json
+      sha256: bd543ba97b03b2be4339f98da5d9e8584062f8cbb6c61f22d970c8ac2bc83199
+- study: transformer_pp
+  run_id: r7aa6c853dafd
+  role: primary_query_m8_softplus_prefactor_raw_input
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r7aa6c853dafd/config.yaml
+      sha256: a5a52d24412d4ec6b62706802cddc148bc9e02398b275e23d923624efdf55cf7
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r7aa6c853dafd/metrics.jsonl
+      sha256: 1fbab2332cbeb5418a34bed9d48e6ec643464c4871fe32618a5e46a545f3a1be
+    completion.json:
+      path: experiments/transformer_pp/runs/r7aa6c853dafd/completion.json
+      sha256: 0e60e15c0f924d2af7ed4fbe9011e2b9aa5c1a6d2afec00e00e9271197b1a961
+    metadata.json:
+      path: experiments/transformer_pp/runs/r7aa6c853dafd/metadata.json
+      sha256: d9aeca47389fa2ac7867bb705f8747a9b73059e43192a7be5fd83afffd0ebe10
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r7aa6c853dafd/best_validation.json
+      sha256: 829a462cbb5d6cce9b9993c532e36c66ba72e595e9eb5bf0868416f5b6aeaadd

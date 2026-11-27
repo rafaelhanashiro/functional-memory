@@ -19,7 +19,7 @@ from scaffolds.records.selections import verify_pinned_runs
 TOPIC = Path(__file__).resolve().parent
 ROOT = next(path for path in Path(__file__).resolve().parents if (path / "AGENTS.md").exists())
 INK, MUTED = "#172334", "#5b6573"
-# The heatmap and summary.csv are the query-coefficient grid; the selection also pins the narrow-key comparison.
+# The heatmap and summary.csv are the query-coefficient grid.
 GRID_ROLE = "query_decay_"
 
 

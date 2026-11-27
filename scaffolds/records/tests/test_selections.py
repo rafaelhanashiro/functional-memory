@@ -172,7 +172,8 @@ def test_refresh_finds_the_checkout_from_an_exploratory_topic(tmp_path):
 
 
 @pytest.mark.parametrize("relative", ["results", "results/comparison", "results/exploratory/topic",
-                                      "experiments/toy/results", "experiments/toy/results/comparison"])
+                                      "experiments/toy/results", "experiments/toy/results/comparison",
+                                      "experiments/toy/staging/topic", "experiments/toy/staging/replacements/topic"])
 def test_refresh_handles_root_and_study_local_results_without_git(tmp_path, relative):
     source = run(tmp_path, "toy", "r000000000001", **{"metrics.jsonl": "1\n"})
     # A local comparison may also explicitly include a control from another study.

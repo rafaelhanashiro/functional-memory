@@ -2813,23 +2813,23 @@ decay are the partner's.
 - **A, fixed kernel.** `swish(s) = s sigmoid(s)` after the new swish transform on the fixed degree-one coefficients
   `[0, 1]`, as the sigmoid (`r88d8654a8a1d`, 16.135) and softplus (`r266c5dd1f935`, 15.744) baselines; its weights
   are signed (minimum -0.2785). Initialization and decay mask are the exp control `r6a76e7fbde45`'s (198,453,586
-  parameters). Results: the [pointwise attention topic](results/pretraining/alternative_attention/fixed_kernels/pointwise_attention/README.md).
+  parameters). Results: [staging/swish](staging/swish/README.md).
 - **B, key width.** `qk_head_dim` 8 or 16 (`value_head_dim` stays 64) for `z h_t(z)` (`r841f35a24241`, the
   Mosaic `query_softplus` kernel at degree nine). Narrower keys drop 18-21 M Q/K parameters and run QK RMSNorm over
-  8 or 16 channels; every other initial array is the partner's, bit for bit. Results: the
-  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside the query
+  8 or 16 channels; every other initial array is the partner's, bit for bit. Results:
+  [staging/narrow_keys](staging/narrow_keys/README.md), beside the query
   polynomial at `d_K` 8 and 16 (`r16b23893884d`, 16.854; `rd10c2ebe1181`, 15.413).
 - **C, direct coefficients of z.** Static `p(z)` keeps a learnable constant (`r9c69dd7cfc8d`'s Taylor start
   `c_r = 1/r!` including `c_0 = 1`, so `p` starts at `T_8(z)`, about `1 + e^s`; a zero-start static control would
   need a new scaffold option); static `z p(z)` and query `z p_t(z)` multiply by the prefactor `f = softplus` on
   `phi = softplus`, the latter from `ra3b54e2489f8`'s exact start `z (T_8(z) - 1)`, about `softplus(s) e^s`.
-  Results: the [softplus inputs topic](results/pretraining/parametrizations/sos/softplus_inputs/README.md).
+  Results: [staging/softplus_input_prefactors](staging/softplus_input_prefactors/README.md).
 - **D, prefactor times SoS.** `W = f(s) h_t(g(s))` with input power zero, `f` a parameter-free prefactor of the raw
   score and `g` the identity or softplus, from `reeefbcc19abf`'s recipe and exact initial parameters (`h_t(s)`,
   14.196). The control `softplus(s) h_t(softplus(s))` is `r841f35a24241` itself, trained through the input power
   (degree nine with a structural zero); the general prefactor computes the same function in exact arithmetic and
-  differs only by FP32 rounding (`tests/test_mosaic_score_prefactor.py` compares the two kernels). Results: the
-  [softplus SoS topic](results/pretraining/parametrizations/sos/softplus_sos/README.md), beside softplus(s) exp(s)
+  differs only by FP32 rounding (`tests/test_mosaic_score_prefactor.py` compares the two kernels). Results:
+  [staging/sos_score_prefactors](staging/sos_score_prefactors/README.md), beside softplus(s) exp(s)
   (`rbd24b948a240`, 14.132) and sigmoid(s) exp(s) (`rd7c9f610e9dc`, 14.186).
 
 Home cluster: Kennel; every record states it.
@@ -2924,8 +2924,8 @@ data order, QK RMSNorm with per-head scale, reference initialization and RoPE ar
   its October partner predates; the shift adds no parameter (175,872,586).
 - **S, softmax.** Normalized softmax (`r9040f12f3d80`, best 14.543) at the narrow widths, with no output scaling,
   like its partner. Narrower keys drop 18.1-22.6 M Q/K parameters (175,859,146, 177,364,546 and 180,375,346 against
-  198,440,146); every other initial array is the partner's, bit for bit. Results: the
-  [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md), beside E1, B2 and B3.
+  198,440,146); every other initial array is the partner's, bit for bit. Results:
+  [staging/narrow_keys](staging/narrow_keys/README.md), beside E1, B2 and B3.
 - **Kernels and GPUs.** E1 trains on the fused Pallas-Triton kernel's shifted variant, qualified on B300 (job 8461)
   and H100 (job 8464, `dogo`) by the same 80 cases
   ([validation](../../scaffolds/transformer/validation/README.md#row-maximum-shifted-exponential-2026-11-20)).
@@ -2974,7 +2974,7 @@ initialization, RoPE, head RMSNorm and the backend are the partner's. `scaffolds
   start (`r9c69dd7cfc8d`, 14.294); and tanh query coefficients `p_t(s)` with W decay, the
   [key-width grid](#query-coefficients-across-key-width-and-degree)'s degree-eight column (`r16b23893884d` at
   `d_K` 8, 16.854), which Q4 extends to `d_K` 4. The partners use the current canonical settings for their
-  mechanism. Results: the [query width-degree topic](results/pretraining/polynomial/query_width_degree/README.md).
+  mechanism. Results: [staging/narrow_keys](staging/narrow_keys/README.md).
 - **X, shifted exp.** X8 and X16 are E1 at widths 8 and 16, so the shifted exp control spans `d_K` 4-16. Without
   the shift, exp's scores at these widths reach 67 and 54, past the row maxima (about 34) beyond which FP32 head
   RMSNorm's backward departs from FP64 in the Q/K gradients
@@ -3103,7 +3103,7 @@ and `reea3d6436271` (`h_t(s)`, without the softplus too). Each is its `d_K` 64 p
 `reeefbcc19abf`, at width 4 with the max-abs prescale; the raw-score partner also takes the study's gradient-event
 capture. The [key-width adapter](key_width_acceptance.py) checks them and runs `h_t(z)`'s width-4 cases in
 `test_mosaic_softplus_sos.py`; both kernels are qualified at width 4 on B200 and H100
-([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4)).
+([comparison](staging/narrow_keys/README.md#the-parts-of-z-h_tz-at-d_k-4)).
 Home cluster Kennel. The `d_K` 4 SoS runs trained at 1.3 to 1.6 s per update on B200, so a 6-hour limit leaves
 acceptance's two-hour reserve; dogo stays excluded while no placeholder holds its faulty H100. Submit from this
 worktree after committing the frozen execution set:
@@ -3124,7 +3124,7 @@ done
 `r2e7f5617fdf2` is `z h_t(z)` at `d_K` 4 (`rabfbab32a594`) with a degree-sixteen core (total seventeen), evaluated
 in units of each row's largest power (`attention_polynomial_shift: row_power`) on its fused kernel: the Mosaic
 kernels stop at degree twelve, and `z^17` overflows FP32 at the scores width 4 reaches
-([comparison](results/pretraining/polynomial/query_width_degree/README.md#the-parts-of-z-h_tz-at-d_k-4),
+([comparison](staging/narrow_keys/README.md#the-parts-of-z-h_tz-at-d_k-4),
 [kernel](../../scaffolds/transformer/validation/README.md#row-power-shifted-query-polynomials-2026-11-21)).
 The [adapter](shifted_sos_acceptance.py) derives the recipe and requires the fused backend. Home cluster Kennel.
 At about 3.6 s per update on B200 the run takes about 8 h, so a 12-hour limit leaves acceptance's two-hour reserve;
@@ -3151,7 +3151,7 @@ The [adapter](shifted_polynomial_acceptance.py) derives both recipes and require
 the shifted kernel's GPU cases for each coefficient source on the allocated GPU. Home cluster Kennel. At about 3.6 s
 per update on B200, as the degree-sixteen SoS run, a run takes about 8 h; a 14-hour limit leaves acceptance's
 two-hour reserve and room for a slower B300. dogo stays excluded while no placeholder holds its faulty H100
-([results](results/pretraining/polynomial/pure_tanh_prefactors/README.md)):
+([results](staging/pure_tanh_prefactors/README.md)):
 
 ```sh
 for run in raec1c513a51b rca649583af62; do
@@ -3177,7 +3177,7 @@ and every `beta_r` at atanh(1/2), so each coefficient starts at 0.5/r!, half the
 where tanh' = 3/4. Each recipe is the degree-eight tanh query run at `d_K` 4 (`rd5e3ec5a4f02`) with these settings, the
 degree and the prefactor (`pure_tanh_prefactor_acceptance.CHANGES`); the base learning rate applies at every order
 (the 1/r! gives the degree scaling), weight decay 0.1 to `w_r` and none to `beta_r`, and seed 42, data order and
-schedule are the partner's. [Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
+schedule are the partner's. [Results](staging/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | `m` |
 | --- | --- | --- | ---: |
@@ -3234,6 +3234,7 @@ Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-
 coefficients of the Q/K width 4 runs above at `d_K` 64, degrees 8 and 16, and the degree-sixteen tanh query polynomial
 `b + a tanh(w^T x_t)`, their affine counterpart, which `d_K` 64 did not have. Each is the degree-eight tanh query + W decay
 run at `d_K` 64 (`r25fffc16c2f3`, the pure tanh m = 8 run's control) at its degree.
+[Results](staging/pure_tanh_prefactors/README.md#runs-at-d_k-64).
 
 | Run | Label | Coefficients | `m` |
 | --- | --- | --- | ---: |
@@ -3274,12 +3275,22 @@ done
 
 ### Learning rate at key width four
 
-Six runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22, four
-times 2026-11-23. At `d_K` 4 the exponential (`r2739c80cc032`, best 19.190) and `z h_t(z)`, `z = softplus(s)`, with
-a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie, both with gradients that stay under the clip
-after warmup. The recipe's learning rate was tuned at `d_K` 64, so each trains again at half, double and four times
-its schedule: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best
-rate? [Results](results/pretraining/other/learning_rate/README.md).
+Eighteen runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22,
+four times 2026-11-23, and eight times for `z h_t(z)`, the eight `d_K` 64 runs and the three degree-eight core runs
+below 2026-11-24. At `d_K` 4 the exponential (`r2739c80cc032`, best
+19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie,
+both with gradients that stay under the clip after warmup. The recipe's learning rate was tuned at `d_K` 64, so each
+trains again at half, double and four times its schedule, and `z h_t(z)`, which still improved at four times, at
+eight: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
+`z h_t(z)` with a degree-eight core (`rabfbab32a594`, best 19.463) trains at double, four and eight times: does the
+lower degree gain from the larger rates as the degree-sixteen core did?
+At `d_K` 64 the degree-eight SoS core under a prefactor of the raw score, `f(s) h_t(s)` for `f` = exp, softplus and
+sigmoid (`r6525664e6696`, 14.089; `r41662adb22fa`, 14.097; `r8f56a5b7e525`, 14.148), trains at double and four
+times: its softplus-input counterparts were slightly better at the recipe's rate (`raeaa47865867` `e^s h_t(z)`,
+14.067; `r841f35a24241` `z h_t(z)`, 14.095), the sigmoid one worse (`r5d578a29f080`, 14.271); does that carry over?
+At `d_K` 64 the exponential (`r6a76e7fbde45`, 14.257) and `z h_t(z)` with a degree-eight core (`r841f35a24241`) also
+train at half the rate, below the recipe's, where 3e-4 was 6.5-8.5% worse at degree four (diagnostic notes).
+[Results](staging/learning_rate/README.md).
 
 | Run | Label | Kernel | Peak, floor rate | Partner |
 | --- | --- | --- | --- | --- |
@@ -3289,17 +3300,39 @@ rate? [Results](results/pretraining/other/learning_rate/README.md).
 | `rd5cc0aec9712` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `r2e7f5617fdf2` |
 | `r1ff405fe0926` | `exp-head-scale-row-max-dk4-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r2739c80cc032` |
 | `rdc43b5c9d2d0` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `r2e7f5617fdf2` |
+| `rda43ee639e0a` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple` | `z h_t(z)`, core 16 | 8e-3, 8e-4 | `r2e7f5617fdf2` |
+| `r76b9aa49fe23` | `query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double` | `exp(s) h_t(s)`, `d_K` 64 | 2e-3, 2e-4 | `r6525664e6696` |
+| `rbf850552cbba` | `query-sos-m8-exp-prefactor-raw-input-w-decay-lr-quadruple` | `exp(s) h_t(s)`, `d_K` 64 | 4e-3, 4e-4 | `r6525664e6696` |
+| `rf93d2b71f731` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-double` | `softplus(s) h_t(s)`, `d_K` 64 | 2e-3, 2e-4 | `r41662adb22fa` |
+| `rb418110c763c` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-quadruple` | `softplus(s) h_t(s)`, `d_K` 64 | 4e-3, 4e-4 | `r41662adb22fa` |
+| `r7d7504df667b` | `query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-double` | `sigmoid(s) h_t(s)`, `d_K` 64 | 2e-3, 2e-4 | `r8f56a5b7e525` |
+| `rb6eeed222062` | `query-sos-m8-sigmoid-prefactor-raw-input-w-decay-lr-quadruple` | `sigmoid(s) h_t(s)`, `d_K` 64 | 4e-3, 4e-4 | `r8f56a5b7e525` |
+| `rc44dc19a9972` | `exp-head-scale-row-max-lr-half` | `exp(s)`, `d_K` 64 | 5e-4, 5e-5 | `r6a76e7fbde45` |
+| `rd1baa331563c` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-half` | `z h_t(z)`, core 8, `d_K` 64 | 5e-4, 5e-5 | `r841f35a24241` |
+| `rfc577a90377d` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-double` | `z h_t(z)`, core 8 | 2e-3, 2e-4 | `rabfbab32a594` |
+| `r9814496cc661` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)`, core 8 | 4e-3, 4e-4 | `rabfbab32a594` |
+| `r7cbb2c7ca07d` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-octuple` | `z h_t(z)`, core 8 | 8e-3, 8e-4 | `rabfbab32a594` |
 
 - **Recipe.** Each run is its partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
-  by 0.5, 2 or 4 (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
+  by 0.5, 2 or 4, or 8 for `z h_t(z)` (2, 4 or 8 with the degree-eight core), and at `d_K` 64 by 2 or 4 for the prefactors and 0.5 for the exponential and
+  `z h_t(z)` (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
   decay, seed 42, data order and every model setting are the partner's, so a run starts from its partner's
-  parameters. The exponential runs also take head RMSNorm's max-abs prescale, as every new run does: the same
-  function as their partner's plain arithmetic, which `z h_t(z)` already has.
-- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at the
-  three scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests, fused
-  backend, initialization pins): the exponential on a B300 or H100, `z h_t(z)` on a B200 or B300.
+  parameters. The exponential and `d_K` 64 runs also take head RMSNorm's max-abs prescale, as every new run does:
+  the same function as their partners' plain arithmetic, which `z h_t(z)` at `d_K` 4 already has; the exponential at
+  `d_K` 64 also takes the row-maximum shift, the same function again.
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins both partners and admits their recipes at each
+  partner's scales alone. Each run qualifies through its partner's adapter on the recipe at the partner's rate (tests,
+  backend, initialization pins): the exponential on a B300 or H100, `z h_t(z)` on a B200 or B300 (with the
+  degree-eight core through the [key-width adapter](key_width_acceptance.py), on the Mosaic `query_softplus` kernels,
+  on a B200 or H100), and the `d_K` 64
+  runs through the [softplus SoS adapter](softplus_sos_acceptance.py) on the Mosaic `query_times_<f>` and
+  `query_softplus` kernels, on an H100 or B200; the exponential at `d_K` 64 through the shared acceptance, its initial
+  parameters checked against its partner's, on the fused kernel on a B300 or H100.
 - **Time limits.** The exponential partner trained in 2.9 h on a B300 and `z h_t(z)` in 7.8 h (3.6 s per update on
-  a B200); 8 and 12 hours leave acceptance's two-hour reserve.
+  a B200); 8 and 12 hours leave acceptance's two-hour reserve. The `d_K` 64 runs take their partners' 13 hours
+  ([score prefactors](#score-prefactors-swish-and-narrow-keys)): about 6 h on a B200; `z h_t(z)` at `d_K` 64 its 12
+  hours (5.25-5.58 h on a B200), and the exponential at `d_K` 64 8 hours (about 3 h on a B300). The degree-eight
+  core at `d_K` 4 took 4.7 h on a B200 (2.2 s per update): 9 hours.
 
 Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
 allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100:
@@ -3324,6 +3357,19 @@ submit long 8:00:00 B300,H100 "$b300" rcc51ed9dbca8        # exp, double
 b200=akita,dogo,mastiff,collie,samoyed,doodle,terrier
 submit standard 12:00:00 B200,B300 "$b200" rdc43b5c9d2d0 --dependency=afterany:11991  # z h_t(z), four times
 submit standard 8:00:00 B300,H100 "$b300" r1ff405fe0926 --hold                        # exp, four times
+# Eight times for z h_t(z), within the standard allowance, on the first free B200 or B300:
+submit standard,long 12:00:00 B200,B300 "$blackwell" rda43ee639e0a                # z h_t(z), eight times
+# The d_K 64 prefactor runs on the Mosaic transformed kernels: B200 (shiba) or H100 (dogo, excluded as above).
+for run in r76b9aa49fe23 rbf850552cbba rf93d2b71f731 rb418110c763c r7d7504df667b rb6eeed222062; do
+  submit standard,long 13:00:00 B200,H100 "$blackwell,akita" "$run"
+done
+# Half the rate at d_K 64: the exponential on a B300 (akita), z h_t(z) on a B200 (shiba).
+submit standard,long 8:00:00 B300,H100 "$b300" rc44dc19a9972
+submit standard,long 12:00:00 B200,H100 "$blackwell,akita" rd1baa331563c
+# The degree-eight core at d_K 4 on the Mosaic query_softplus kernels: B200 (shiba) or H100 (dogo, excluded as above).
+for run in rfc577a90377d r9814496cc661 r7cbb2c7ca07d; do
+  submit standard,long 9:00:00 B200,H100 "$blackwell,akita" "$run"
+done
 ```
 
 ### Prefactors of the raw score on the query polynomial at key width 64
@@ -3333,7 +3379,7 @@ query polynomial (`r25fffc16c2f3`, best 14.323) with `W = f(s) p_t(s)` over the 
 softplus of the raw score. The split-score query runs apply `e^s` to negative scores alone; on the degree-eight SoS
 core, `e^s` over the whole range (`r6525664e6696`, 14.089) beat every such split (14.196-14.205), which tied the plain
 core (14.196). Do the query polynomial's splits (14.258 and below) trail its whole-range prefactors the same way?
-[Results](results/pretraining/parametrizations/sos/softplus_inputs/README.md#prefactors-of-the-raw-score).
+[Results](staging/raw_score_prefactors/README.md).
 
 | Run | Label | Kernel | Partner |
 | --- | --- | --- | --- |
@@ -3359,6 +3405,170 @@ for run in rdb8deaab4c91 r7aa6c853dafd; do
     --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
     experiments.transformer_pp.query_prefactor_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
 done
+```
+
+### Two and four times the learning rate at key width 64
+
+Twelve runs at the reference shape and 1x budget (7,570 updates), requested on ORCD: the tanh query polynomial,
+the exponential and `z h_t(z)` on 2026-11-23, and the exp and sigmoid prefactors on the same SoS core of `z`, and
+`softplus(s) exp(s)`, on 2026-11-24. At `d_K` 4, doubling the schedule improved the exponential by 2.7% and
+`z h_t(z)` with a degree-sixteen core by 2.9% ([results](staging/learning_rate/README.md)): is the
+recipe's 1e-3 peak too low at `d_K` 64 as well? Six `d_K` 64 partners train again at two and four times their
+schedule: the best score prefactor `f(s)` on each kernel family, `f(s) h_t(z)` with `z = softplus(s)` (softplus,
+exp and sigmoid) and `softplus(s) exp(s)`, beside the query polynomial and the exponential. Kennel trains the
+raw-score counterparts `f(s) h_t(s)` at the same rates, and the exponential and `z h_t(z)` at half
+([learning rate at key width four](#learning-rate-at-key-width-four)).
+
+| Run | Label | Kernel | Peak, floor rate | Partner (best) |
+| --- | --- | --- | --- | --- |
+| `r90776a5d4175` | `query-m8-dk64-w-decay-lr-double` | tanh query, m = 8, W decay | 2e-3, 2e-4 | `r25fffc16c2f3` (14.323) |
+| `r9e36ee87aa7e` | `query-m8-dk64-w-decay-lr-quadruple` | tanh query, m = 8, W decay | 4e-3, 4e-4 | `r25fffc16c2f3` |
+| `r19dfa87cb7ed` | `exp-head-scale-row-max-lr-double` | `exp(s)` | 2e-3, 2e-4 | `r6a76e7fbde45` (14.257) |
+| `r530a1bce3597` | `exp-head-scale-row-max-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r6a76e7fbde45` |
+| `r752878a0a030` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-double` | `z h_t(z)`, core 8 | 2e-3, 2e-4 | `r841f35a24241` (14.095) |
+| `r7924001c42f1` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-lr-quadruple` | `z h_t(z)`, core 8 | 4e-3, 4e-4 | `r841f35a24241` |
+| `r39d0469cc122` | `query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-double` | `exp(s) h_t(z)`, core 8 | 2e-3, 2e-4 | `raeaa47865867` (14.067) |
+| `r365f0c30f632` | `query-sos-m8-exp-prefactor-softplus-input-w-decay-lr-quadruple` | `exp(s) h_t(z)`, core 8 | 4e-3, 4e-4 | `raeaa47865867` |
+| `rf0053d2b3b45` | `query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-double` | `sigmoid(s) h_t(z)`, core 8 | 2e-3, 2e-4 | `r5d578a29f080` (14.271) |
+| `r101b6c157a6b` | `query-sos-m8-sigmoid-prefactor-softplus-input-w-decay-lr-quadruple` | `sigmoid(s) h_t(z)`, core 8 | 4e-3, 4e-4 | `r5d578a29f080` |
+| `r2118e3531d89` | `exp-softplus-prefactor-lr-double` | `softplus(s) exp(s)` | 2e-3, 2e-4 | `rbd24b948a240` (14.132) |
+| `re7d0d4e6a5b7` | `exp-softplus-prefactor-lr-quadruple` | `softplus(s) exp(s)` | 4e-3, 4e-4 | `rbd24b948a240` |
+
+- **Recipe.** As at `d_K` 4: the partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
+  by 2 or 4. Warmup, horizon, clipping, weight decay, betas, seed 42, data order and every model setting are the
+  partner's; per-group multipliers such as `optim.query_coefficient_learning_rate_scale` are relative, so every
+  parameter's rate scales. Every run takes what `scaffolds.records create` gives a fresh copy of its partner, which
+  predates both: head RMSNorm's max-abs prescale and, for the plain exponential, its row-maximum shift, the same
+  functions. `softplus(s) exp(s)` keeps the unshifted exponential: the fused kernel shifts the plain one alone. The
+  recipes read ORCD's copies of the dataset manifests (`/home/rafah/projects/ofm/datasets/fineweb_12b`), which hash
+  as the partners'. A numerical failure is a result: its record, metrics and log are kept.
+- **Acceptance.** The [adapter](learning_rate_acceptance.py) pins these six partners and admits each at 2 and 4. The
+  query, exponential and `softplus(s) exp(s)` runs qualify through the shared runtime checks and the SoS runs through
+  `softplus_sos_acceptance`, each on the recipe at its partner's rate and manifest paths. All train on ORCD's H100s,
+  where the Mosaic softplus-SoS and prefactor kernels are qualified (H100 and B200 only). Before its runs launch,
+  each kernel qualifies on an ORCD H100 80GB HBM3 (driver 595.112.07) at its runs' launch commit through
+  `validation/qualify_acceptance_orcd.sbatch`, which runs the ×4 run's full acceptance without training: every test
+  stage, initialization, a 20-update pilot and resume
+  ([validation](../../scaffolds/transformer/validation/README.md#orcd-h100-acceptance-qualification-2026-11-23)).
+- **Time.** `orcd.sbatch` requeues each run before its time limit and after preemption; acceptance's pilot projects
+  each run against ORCD's 48-hour horizon.
+
+| Kernel | Launch commit | Qualification job, node | Backend | Tests passed: CPU, distributed, GPU | Pilot, s/update | Projected run |
+| --- | --- | --- | --- | --- | ---: | ---: |
+| tanh query, m = 8 | `db4b0a35` | 30276124, node4109 | Mosaic | 584, 10, 76 | 2.18 | 4.85 h |
+| `exp(s)` | `db4b0a35` | 30276129, node2501 | fused | 478, 10, 88 | 2.11 | 4.66 h |
+| `z h_t(z)`, core 8 | `a189117e` | 30341125, node2501 | Mosaic | 941, 11, 170 | 2.54 | 5.53 h |
+| `exp(s) h_t(z)`, core 8 | `a189117e` | 30341126, node2501 | Mosaic | 1,249, 11, 258 | 2.58 | 5.64 h |
+| `sigmoid(s) h_t(z)`, core 8 | `a189117e` | 30341127, node2501 | Mosaic | 1,249, 11, 258 | 2.70 | 5.88 h |
+| `softplus(s) exp(s)` | `a189117e` | 30341128, node2501 | fused | 511, 11, 124 | 3.16 | 6.87 h |
+
+The SoS and `softplus(s) exp(s)` runs capture gradient events, so their CPU stage includes
+`tests/test_gradient_events.py`. ORCD's launcher keeps temporary files node-local, as Kennel's does: inside the
+worktree, that test's scratch study is recorded with paths relative to the checkout, which the records cannot
+resolve again ([validation](../../scaffolds/transformer/validation/README.md#orcd-h100-acceptance-qualification-2026-11-23)).
+
+Submit from the study's worktree root after committing the frozen execution set, once each kernel's qualification
+has passed. Each run launches at the commit its kernel qualified at: acceptance's cached test stages key on the
+source commit, so production reuses the qualification's test reports. The query and exponential runs launched at
+`db4b0a35`; the SoS and `softplus(s) exp(s)` runs launch at `a189117e`, which keeps the launcher's temporary
+files node-local.
+
+```sh
+submit() {  # run, launch commit
+  sbatch --parsable --job-name="$1" --output="experiments/transformer_pp/runs/$1/training.log" \
+    --gres=gpu:h100:1 --exclude=node3009,node3209,node2900,node1708,node1709,node4508,node2801,node3409 \
+    scaffolds/transformer/launchers/orcd.sbatch experiments.transformer_pp.learning_rate_acceptance \
+    "experiments/transformer_pp/runs/$1/config.yaml" "$2" 1 H100
+}
+for run in r90776a5d4175 r9e36ee87aa7e r19dfa87cb7ed r530a1bce3597; do
+  submit "$run" db4b0a3538e2da7d2d3fc433b5851a96675ada32
+done
+for run in r752878a0a030 r7924001c42f1 r39d0469cc122 r365f0c30f632 rf0053d2b3b45 r101b6c157a6b r2118e3531d89 \
+    re7d0d4e6a5b7; do
+  submit "$run" a189117e2773fb5053ad1b687c58ec00b522da71
+done
+```
+
+### Exponential prefactors at key width four
+
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-25 on Kennel: `f(s) e^s`, f = softplus
+or sigmoid of the raw score, at `d_K` 4. At `d_K` 64 they gained 0.88% and 0.50% over the exponential
+(`rbd24b948a240`, 14.132; `rd7c9f610e9dc`, 14.186; exp `r6a76e7fbde45`, 14.257): do they at `d_K` 4, against the
+exponential's 19.190 at the same rate?
+
+| Run | Label | Kernel | Partner |
+| --- | --- | --- | --- |
+| `r8aead78ffa55` | `exp-head-scale-row-max-softplus-prefactor-dk4` | `softplus(s) e^s` | `r2739c80cc032` |
+| `r7530874e8610` | `exp-head-scale-row-max-sigmoid-prefactor-dk4` | `sigmoid(s) e^s` | `r2739c80cc032` |
+
+- **Recipe.** The shifted exponential's recipe at `d_K` 4 (`r2739c80cc032`) with `model.attention_score_prefactor`,
+  head RMSNorm's max-abs prescale and the blocked backend's causal strips, the one implementation that applies the
+  row-maximum shift to a score function: the fused kernel shifts the plain exponential alone, and at `d_K` 4 the scores
+  pass `e^s`'s FP32 range. The prefactor adds no parameter, so each run starts from the partner's parameters.
+- **Acceptance.** The [adapter](narrow_exp_prefactor_acceptance.py) pins the partner, admits the two prefactors alone
+  and checks every initial array against the partner's. The strips are plain JAX, on a B200, B300 or H100; 23 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in r8aead78ffa55 r7530874e8610; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=23:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.narrow_exp_prefactor_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,B300,H100
+done
+```
+
+### Twice the Chinchilla budget at key width four
+
+Four runs at the reference shape and 2x Chinchilla (15,140 updates), requested 2026-11-24 on Kennel. At `d_K` 4 and
+1x, each kernel's best learning rate leaves `z h_t(z)` with a degree-sixteen SoS core 2.5% ahead of the exponential
+(18.203 at four times the schedule's rate against 18.667 at twice it): does more data widen or narrow that lead? A
+longer schedule usually prefers a lower rate, so each kernel also trains at half its best rate.
+[Results](staging/narrow_key_budget/README.md).
+
+| Run | Label | Kernel | Peak, floor rate | Partner |
+| --- | --- | --- | --- | --- |
+| `r41562d2eac42` | `exp-head-scale-row-max-dk4-lr-double-2x` | `exp(s)` | 2e-3, 2e-4 | `rcc51ed9dbca8` |
+| `r0303c5fcd9b6` | `exp-head-scale-row-max-dk4-2x` | `exp(s)` | 1e-3, 1e-4 | `rcc51ed9dbca8` |
+| `rc81683587538` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple-2x` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `rdc43b5c9d2d0` |
+| `r0ee4e14367df` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-double-2x` | `z h_t(z)`, core 16 | 2e-3, 2e-4 | `rdc43b5c9d2d0` |
+
+- **Recipe.** Each run is its partner's recipe (the learning-rate sweep's best at 1x) with `derive_recipe.py
+  --budget 2`'s schedule (15,140 updates, warmup 910, validation every 200 updates through 3,000 and every 1,000
+  after), at the partner's peak and floor rates or half of them. Batch, seed 42, data order and every model setting
+  are the partner's, so a run starts from its partner's parameters.
+- **Acceptance.** The [adapter](narrow_key_budget_acceptance.py) pins both partners and admits their recipes at the
+  2x schedule and those two rates alone. Each run qualifies through the [learning-rate
+  adapter](learning_rate_acceptance.py) on the recipe at its partner's budget and rate: the exponential on its fused
+  kernel on a B300 or H100, `z h_t(z)` on the fused row-power kernel on a B200 or B300. The Mosaic row-power kernels
+  are a third faster on a B200 but take the output cotangent in BF16, which loses the gradient in rows one key
+  dominates, rows these runs reach (scores to 250 in seven of fifteen layers at 1x); the 1x partners trained on the
+  fused kernel.
+- **Time limits.** The partners trained in 3.1 h (B300) and 8.3 h (3.96 s per update on a B200), so these take about
+  6.5 and 17 hours: 10 and 24 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`. They were submitted held, and released once the degree-eight
+core's learning-rate runs ([learning rate](#learning-rate-at-key-width-four)) started:
+
+```sh
+submit() {  # partition, time limit, GPU types, excluded nodes, run
+  d="experiments/transformer_pp/runs/$5"
+  sbatch --parsable --partition="$1" --time="$2" --gres=gpu:1 --cpus-per-task=16 --mem=128G --exclude="$4" --hold \
+    --job-name="$5" --output="$d/training.log" --error="$d/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.narrow_key_budget_acceptance \
+    "$d/config.yaml" "$(git rev-parse HEAD)" 1 "$3"
+}
+b300=shiba,dogo,mastiff,collie,samoyed,doodle,terrier  # the fused exponential: B300 (akita)
+blackwell=dogo,mastiff,collie,samoyed,doodle,terrier   # the fused row-power kernel: B200 or B300
+submit standard,long 10:00:00 B300,H100 "$b300" r41562d2eac42
+submit standard,long 10:00:00 B300,H100 "$b300" r0303c5fcd9b6
+submit standard,long 24:00:00 B200,B300 "$blackwell" rc81683587538
+submit standard,long 24:00:00 B200,B300 "$blackwell" r0ee4e14367df
 ```
 
 ### A degree-twelve SoS core under exp of the raw score at key width 64
@@ -3414,7 +3624,7 @@ in place of `f_j (1 + b_j + a_j tanh(W_j^T x_t)) / 2`. `x_hat_t` is the raw atte
 starts at half its Taylor factor and tanh' at 3/4, so each query's `z h_t(z)` starts at a quarter of `z T_16(z)`,
 a scale head RMSNorm removes wherever a head's output is well above its epsilon. Weight decay 0.1 applies to `w_j`
 and none to `beta_j`; seed 42, data order, schedule and every other setting are the partner's.
-[Results](results/pretraining/polynomial/pure_tanh_prefactors/README.md).
+[Results](staging/pure_tanh_prefactors/README.md).
 
 | Run | Label | Weight | Core degree |
 | --- | --- | --- | ---: |

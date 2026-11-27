@@ -79,6 +79,22 @@ cannot start, and the failing GPU goes to the next job placed on `dogo`.
 On 2026-11-20 `mastiff`'s H100 at bus `21:00.0` (UUID `GPU-cea82b77-b090-2e61-f425-c4b1608e8739`, Slurm GPU
 index 7) failed the same way (`cuInit` `CUDA_ERROR_UNKNOWN`, with `nvidia-smi` answering); it was the node's only
 idle GPU, so a one-GPU job on `mastiff` lands on it while the other seven are busy.
+From 2026-11-26 06:57 `dogo`, `shiba`, `doodle` and `terrier` have NVIDIA user-space libraries 620.70.10 under
+the loaded 620.70.06 kernel module (`akita` and `samoyed` have 620.70.06 for both). Every new GPU process there
+fails: `nvidia-smi` prints "Failed to initialize NVML: Driver/library version mismatch" and exits 18, so the launcher
+stops at its GPU query within seconds. Running jobs are unaffected, and a job requeued onto such a node fails. Until
+the admins reload the module, submit with the module's own libraries first on the library path:
+
+```bash
+sbatch --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 ...
+```
+
+The directory holds Ubuntu's `libnvidia-compute`, `libnvidia-cfg1` and `libnvidia-gpucomp` 620.70.06-1ubuntu1
+packages, unpacked (the `.deb` files are in its `debs/`). With it a run resumed and trained on a `shiba` B200 on
+2026-11-26 (job 15568); on `akita` it changes nothing. On a node whose module has been reloaded to 620.70.10 the
+override is the mismatch: jobs carrying it fail there with the same message and are resubmitted without it. A
+CPU-only job checks a node: `srun -p standard -w <node> -c 1 --mem=1G -t 2 nvidia-smi -L` answers "No devices found."
+when its libraries match the module.
 
 **Scheduling policy:** use the full permitted `standard` and `long` allowances before
 `sweep`. Prefer `standard` for jobs that fit its time limit and use `long` capacity
@@ -129,9 +145,11 @@ Kennel launchers default to `XLA_PYTHON_CLIENT_PREALLOCATE=false` and preserve
 explicit allocator settings supplied with `sbatch --export`. Acceptance records
 the resolved preallocation setting and memory fraction and qualifies that runtime.
 
-Kennel launchers put disposable compiler and test-capture temporary files in a
-unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
-Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU.
+Kennel and ORCD launchers put disposable compiler and test-capture temporary files
+in a unique job directory under `SLURM_TMPDIR` or `/tmp`, and remove it at exit.
+Using NFS for these files can leave processes waiting on NFS RPCs with an idle GPU,
+and inside the worktree a test's scratch study is recorded with paths relative to
+the checkout, which the records cannot resolve again.
 Recipes, logs, checkpoints, environments, and persistent compilation caches stay
 in the worktree on NFS.
 

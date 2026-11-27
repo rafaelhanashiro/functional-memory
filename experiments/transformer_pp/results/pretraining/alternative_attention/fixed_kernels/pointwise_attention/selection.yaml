@@ -131,22 +131,3 @@ runs:
     best_validation.json:
       path: experiments/transformer_pp/runs/r0dd96f88d9f8/best_validation.json
       sha256: b407cbc12cdbe7c2b7c45a9f016709fb00bb767e635680215f9a1620768f4a6f
-- study: transformer_pp
-  run_id: r8a9fd53dacfd
-  role: swish
-  sources:
-    config.yaml:
-      path: experiments/transformer_pp/runs/r8a9fd53dacfd/config.yaml
-      sha256: d239e76d4fc0a1fa0dd151d9d2125c2a00d1f178677767df96bd3ae32b3dff18
-    metrics.jsonl:
-      path: experiments/transformer_pp/runs/r8a9fd53dacfd/metrics.jsonl
-      sha256: cdb420d4a3963cc24eef2afa994e1775a9b18d5da6a9433a6280324b6991493b
-    completion.json:
-      path: experiments/transformer_pp/runs/r8a9fd53dacfd/completion.json
-      sha256: 8f062744565fdcb524478f8e84bf464660fba309c37d75269bfa2cc1ac5f2954
-    metadata.json:
-      path: experiments/transformer_pp/runs/r8a9fd53dacfd/metadata.json
-      sha256: bb1fef1a31f376e5d7c6d4baabe75c30aaf8f30a9dad51220f5025c9c3fa7f8d
-    best_validation.json:
-      path: experiments/transformer_pp/runs/r8a9fd53dacfd/best_validation.json
-      sha256: 6dead4918bf700e1b248d22a91e928c7d4d551041e72469d7813cb655c4f8fdc

@@ -1,11 +1,13 @@
-*Updated 2026-11-25 at 16:26 EST.*
+*Updated 2026-11-27 at 06:39 EST.*
 
 Every run on ORCD not yet on the site.
 
 #### In progress
 
-- **Learning rate at two and four times the schedule**, $d_K = 64$ (all four kernels qualified on ORCD's H100s). Query SoS core 8 on $z = \mathrm{softplus}(s)$ under each prefactor, and exp under the softplus prefactor:
-  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor): $\times 4$ (preempted a third time at update 6,057; queued to resume from update 6,000)
+- **Forks of the trained exp run at its terminal update**, $d_K = 64$, from exp $\times 2$ at update 7,570 (rebuilt by
+  replaying its last 70 updates); both get the same next 7,570 batches with a fresh AdamW and the parent's schedule
+  - Exp $\to$ exp (queued)
+  - Exp $\to$ query, $m = 8$, Taylor-initialized (queued)
 
 #### Finished
 
@@ -15,7 +17,7 @@ Every run on ORCD not yet on the site.
   - $z\,h_t(z)$ (softplus prefactor), core 8: $\times 2$, $\times 4$
   - $\mathrm{softplus}(s)\,e^s$: $\times 2$, $\times 4$
   - $e^s\,h_t(z)$ (exp prefactor), core 8: $\times 2$, $\times 4$
-  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor), core 8: $\times 2$
+  - $\sigma(s)\,h_t(z)$ (sigmoid prefactor), core 8: $\times 2$, $\times 4$
 - **Pure tanh query coefficients** $c_r = \tanh(\hat x\, w_r + \beta_r)/r!$, $d_K = 64$
   - $P_t(s)$, $m = 8$
   - $P_t(s)$, $m = 16$
