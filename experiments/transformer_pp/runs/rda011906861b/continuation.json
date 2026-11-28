@@ -1,0 +1,27 @@
+{
+  "backbone_parameters_sha256": "b0f0a32263aa73f3bffce446db318ddee8d4cdc584c4a30704ab7faa8b6a0b99",
+  "data_start_sequence": 1937920,
+  "first_batch": {
+    "sequence_start": 1937920,
+    "sequence_stop": 1938176,
+    "sha256": "fbe146caa7ab17d437febf8ddcfe7a695bc9c8d21a9fe60f9c9bba81ead9371d"
+  },
+  "fresh_optimizer_sha256": "ab90e4bded1495d3efa54b4c200e8ad5f620da8953b4023363ad4ffb02bf0579",
+  "optimizer": "fresh",
+  "optimizer_counts": [
+    0,
+    0
+  ],
+  "optimizer_sha256": "ab90e4bded1495d3efa54b4c200e8ad5f620da8953b4023363ad4ffb02bf0579",
+  "parent_checkpoint_sha256": "59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94",
+  "parent_config_sha256": "358e43cd6e2e507f3995d6c17245e2bf8fe20116491edb18766ba49ae6ee64c5",
+  "parent_last_batch": {
+    "sequence_start": 1937664,
+    "sequence_stop": 1937920,
+    "sha256": "53233277115349feb7834876817e2c0952fdf6bbba3b3a390a5f0d2e812e6631"
+  },
+  "parent_parameters_sha256": "b0f0a32263aa73f3bffce446db318ddee8d4cdc584c4a30704ab7faa8b6a0b99",
+  "parent_step": 7570,
+  "seed": 42,
+  "start_step": 0
+}
