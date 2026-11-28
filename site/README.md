@@ -89,6 +89,7 @@ the group of the same name on the other side. Every change saves both lists thro
 the meetings' files below: never write, reset, or regenerate it, and commit it only when asked.
 A blue box under both lists holds another of the user's texts (`text/queue/running.md`), hidden
 while empty, and a violet box under it does the same for ORCD's runs (`text/queue/running-orcd.md`).
+The last box tracks the polynomial gradient-dynamics diagnostics (`text/queue/polynomial-gradient-dynamics.md`).
 
 The Notes tab (`notes.html`) holds one text of the user's, `text/notes/page.md`, for current
 thoughts, edited with the pencil like the pages' texts; while it is empty the page says how to start.

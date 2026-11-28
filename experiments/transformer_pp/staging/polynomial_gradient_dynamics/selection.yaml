@@ -1,0 +1,159 @@
+question: How do polynomial coefficients and their gradients change during training,
+  and how does the learned backbone depend on them?
+study: transformer_pp
+settings:
+  checkpoint_step: 7500
+  packed_sequences: 4864
+  targets_per_sequence: 2048
+  interval: paired normal 95% interval on mean packed-sequence NLL differences
+  training_steps:
+  - 400
+  - 1500
+  - 7500
+  static_orders:
+  - 4
+  - 7
+runs:
+- study: transformer_pp
+  run_id: ra4d05272d53c
+  role: paired_evaluation
+  label: Three validation passes on matched sequences
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra4d05272d53c/config.yaml
+      sha256: d5d6426a4fcab370ebdba3a87d39390f688c5e028b8202909d1606295dc7fcad
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra4d05272d53c/metrics.jsonl
+      sha256: 7731d64bb4663c6d2913cda013a931ab1a2c0b569de109593b380858f675b1b4
+    completion.json:
+      path: experiments/transformer_pp/runs/ra4d05272d53c/completion.json
+      sha256: 9b512194312e9dbd3137daf52a88a5164c08f01e9ba0a0ebadd8f0bc185c2ad3
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra4d05272d53c/metadata.json
+      sha256: 788c2191271604d5c0de9eb7729ce65cd317298a6233190222d75177a42a5c30
+- study: transformer_pp
+  run_id: r9c69dd7cfc8d
+  role: learned_static_parent
+  label: Original learned-static checkpoint
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/config.yaml
+      sha256: f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metrics.jsonl
+      sha256: 7994e681ec0020b763e35ec84df2e4174fe5e87e0be81e427d59b95e59161652
+    completion.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/completion.json
+      sha256: 537356576ae1b09299fc6d9f0042718f58ddfdbe14cd9ed1ce318ceb5e358db2
+    metadata.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/metadata.json
+      sha256: 727c612235e3a51db9f1549c44a63e11ddb55470e9a93ad2cf69b38e26b16d57
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r9c69dd7cfc8d/best_validation.json
+      sha256: 7167b5c06e3836695633f652f3926ea4207438153e88b9ed1d16632b774071fb
+- study: transformer_pp
+  run_id: ra7ee8a4b2544
+  role: fixed_taylor_parent
+  label: Fixed-Taylor checkpoint
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/ra7ee8a4b2544/config.yaml
+      sha256: ad685b374e7caa940ebed20c5a696747e142b3ec252a6811cda322898c484a02
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/ra7ee8a4b2544/metrics.jsonl
+      sha256: e14d16cbbd2f78ec3239aca8e52b60e3231a0914a1a2021da87f33bab8be63e3
+    completion.json:
+      path: experiments/transformer_pp/runs/ra7ee8a4b2544/completion.json
+      sha256: 8a39002416a508c4c5e839eb193e9285442a6493a332803ce658fd043052380d
+    metadata.json:
+      path: experiments/transformer_pp/runs/ra7ee8a4b2544/metadata.json
+      sha256: 76004697a85a8a31da1d09f33fc09e8941ef9ae9c32c715d1c64b6860344b4b8
+    best_validation.json:
+      path: experiments/transformer_pp/runs/ra7ee8a4b2544/best_validation.json
+      sha256: aed0989fd08f1d9b134287e10d61b3baf008ad39b40ee0790e88ef651923c6db
+- study: transformer_pp
+  run_id: r1422e8000207
+  role: query_dynamics
+  label: Instrumented direct query polynomial
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r1422e8000207/config.yaml
+      sha256: c84cc69cb68b2538ae91245906dd0033ae1c4d3c274850c1e580ea57a513c025
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r1422e8000207/metrics.jsonl
+      sha256: 9a60ade806d514749c1f505fb22bb5f19686520d3b9540236b3f5194c2d89d5d
+    completion.json:
+      path: experiments/transformer_pp/runs/r1422e8000207/completion.json
+      sha256: f17c28fe68e5b62e360872507c4fcb1165f5e29ae63973dbd6fb6e645b4e9883
+    metadata.json:
+      path: experiments/transformer_pp/runs/r1422e8000207/metadata.json
+      sha256: 0adcd904ab4ffcd7f015563078d6e7e83ab44881cb7b75eb4eb79a70caf5bc40
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r1422e8000207/best_validation.json
+      sha256: 270fe467cd045bf6706dc105d29c1e77381a67bc61cb01ca61a2751a9cb5e252
+- study: transformer_pp
+  run_id: r6f55fe172f41
+  role: static_dynamics
+  label: Instrumented learned static polynomial
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r6f55fe172f41/config.yaml
+      sha256: a8eae04faf8d420670615f08701384d7e0a7c2df3b1f8433f7ace328dc94f8f8
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r6f55fe172f41/metrics.jsonl
+      sha256: b12bdfb4bedc8e6404ad14bc19a560dc2a998d6517fc45a3d98a6fd6770b1ed4
+    completion.json:
+      path: experiments/transformer_pp/runs/r6f55fe172f41/completion.json
+      sha256: c7ba75ca590dc8dec7754cf171acfa3cf785d1303cd7d2275565908244390266
+    metadata.json:
+      path: experiments/transformer_pp/runs/r6f55fe172f41/metadata.json
+      sha256: 12e2f8db04abd89092259a3062071eb5e4271b1091ec70cf828b601e711a017d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r6f55fe172f41/best_validation.json
+      sha256: ec3569b303c2f9c30444ffa8aaeceace126353e57e90bd1ab8b4a50f8635d45e
+- study: transformer_pp
+  run_id: r25fffc16c2f3
+  role: query_parent
+  label: Original direct query polynomial
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/config.yaml
+      sha256: ffa72e4d99f016bedfd07b7b858199734d71596b3af18a325813bd810e3620b2
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metrics.jsonl
+      sha256: c96c70fccb1c871768e0ad6492289c731db4d31f7ce29d22ef933538f1a0743f
+    completion.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/completion.json
+      sha256: 12867b69419f3ee117455b34cd6d03d3cf047d99b88f28d48cec734ae3675005
+    metadata.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/metadata.json
+      sha256: eb313e0bb5a720bff2f9227dc2c1a69770b64ee878b35ccb67dbba1ee834828d
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r25fffc16c2f3/best_validation.json
+      sha256: 9431d13c1677d2ae10666dd31c31ca4cd674019caad4e7c072a2f082d37d36cc
+- study: transformer_pp
+  run_id: r39d0469cc122
+  role: sos_parent
+  label: Original exp-prefactored query sum of squares at twice the base rate
+  sources:
+    config.yaml:
+      path: experiments/transformer_pp/runs/r39d0469cc122/config.yaml
+      sha256: 71a089a89c67d4157aaeab4ef8f6f0fe25c199e924cf5b95ab44cb64108c27ab
+    metrics.jsonl:
+      path: experiments/transformer_pp/runs/r39d0469cc122/metrics.jsonl
+      sha256: be3a82f5f251fc5d396fe21283e7b0f44b9f5faf4e9469585349de00394788fd
+    completion.json:
+      path: experiments/transformer_pp/runs/r39d0469cc122/completion.json
+      sha256: ad44ad5d423926e20aead9fded83fe97507cabfac814607d9a47f5c348765706
+    metadata.json:
+      path: experiments/transformer_pp/runs/r39d0469cc122/metadata.json
+      sha256: 5ec85e56251f02aa2394cc4fa0718a04cc04a9e55957b8ce8e617a23e77a8084
+    best_validation.json:
+      path: experiments/transformer_pp/runs/r39d0469cc122/best_validation.json
+      sha256: 02ca7fde6eb575be1ada9ad24640a369728c5f3f57cd0ee3890eee4d6d02db84
+in_progress:
+- study: transformer_pp
+  run_id: r11215998f5f6
+  role: sos_dynamics
+  source_run_id: r39d0469cc122
+  label: Instrumented exp-prefactored query sum of squares
