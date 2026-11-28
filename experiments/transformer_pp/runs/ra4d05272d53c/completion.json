@@ -1,0 +1,22 @@
+{
+  "status": "complete",
+  "evaluation_sequences": 4864,
+  "evaluation_tokens": 9961472,
+  "optimizer_updates": 0,
+  "comparisons": {
+    "reset_minus_static_native": {
+      "left": "static_reset",
+      "right": "static_native",
+      "delta_nll": 0.08302709639170452,
+      "paired_sequence_se": 0.00031435974665322997,
+      "delta_perplexity": 1.2374559977504003
+    },
+    "reset_minus_taylor_native": {
+      "left": "static_reset",
+      "right": "taylor_native",
+      "delta_nll": 0.08834220929757546,
+      "paired_sequence_se": 0.0003723005800395307,
+      "delta_perplexity": 1.3132290739007058
+    }
+  }
+}

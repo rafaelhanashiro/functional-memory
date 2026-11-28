@@ -1,0 +1,35 @@
+{
+  "source_commit": "6455f789572159f05d2ef83cc2b760321d4632fb",
+  "frozen_execution_sha256": "28e3b189ed5bf8696784b185c504eb2e38a344ca1558c8196389fd74c4fc3657",
+  "started_utc": "2026-11-28T00:17:37.977346+00:00",
+  "partition": "standard",
+  "slurm_job_id": "16331",
+  "node": "dogo.csail.mit.edu",
+  "gpu_count": 1,
+  "gpu_type": "NVIDIA H100 80GB HBM3",
+  "resolved_attention_backend": "mosaic",
+  "optimizer_updates": 0,
+  "start_sequence": 0,
+  "context_length": 2048,
+  "evaluation_sequences": 4864,
+  "microbatch": 16,
+  "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
+  "parent_checkpoints": {
+    "static": {
+      "parent_run_id": "r9c69dd7cfc8d",
+      "parent_config_sha256": "f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f",
+      "checkpoint_step": 7500,
+      "checkpoint_sha256": "3542744274506232dce3cbde2afdce9c2f7ffe70e876638fde4d5b712ab67ed1",
+      "validation_nll": 2.6598546834368455
+    },
+    "taylor": {
+      "parent_run_id": "ra7ee8a4b2544",
+      "parent_config_sha256": "ad685b374e7caa940ebed20c5a696747e142b3ec252a6811cda322898c484a02",
+      "checkpoint_step": 7500,
+      "checkpoint_sha256": "71f5a7f92ac8405f994fbb41e12f360606a1139c39fa5f62140f868eec3cf79c",
+      "validation_nll": 2.6545306004975973
+    }
+  },
+  "sequence_order": "ascending packed validation row",
+  "replay_nll_atol": 0.002
+}

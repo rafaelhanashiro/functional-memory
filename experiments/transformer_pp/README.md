@@ -2216,7 +2216,8 @@ To run a registered repetition from its Kennel worktree, use its fresh evaluatio
 
 ```bash
 study=experiments/transformer_pp
-sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=8 --mem=64G \
+sbatch --parsable --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G \
+  --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
   --time=01:00:00 --job-name="${run_id:?registered evaluation ID}" \
   --output="$study/runs/$run_id/training.log" \
   "$study/evaluate_static_taylor_reset.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"

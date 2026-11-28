@@ -21,6 +21,7 @@ The suggested homes are starting points for that session, not decisions.
 | [sos_score_prefactors](sos_score_prefactors/README.md) | Is softplus the best prefactor `f(s)` in front of a query SoS core? | exp and softplus tie (14.067–14.097); sigmoid is 0.4–1.2% worse; swish 17% worse and unstable. | 2026-11-20 | SoS / Softplus, beside softplus_sos |
 | [softplus_input_prefactors](softplus_input_prefactors/README.md) | Do static coefficients or a factor `z` help the direct polynomial of `z = softplus(s)`? | The factor helps: static `z p(z)` 14.114 and query `z p_t(z)` 14.159 beat exp by 1.00% and 0.69%; static `p(z)` (14.351) does not. | 2026-11-20 | SoS / Softplus, beside softplus_inputs |
 | [raw_score_prefactors](raw_score_prefactors/README.md) | Does a prefactor of the raw score help the query polynomial `p_t(s)`? | `e^s p_t(s)` and `softplus(s) p_t(s)` both reach 14.118: 1.43% below the control and 0.98% below exp. | 2026-11-25 | SoS / Softplus, beside softplus_inputs |
+| [static_taylor_reset](static_taylor_reset/README.md) | Do learned static coefficients improve predictions on the backbone that learned them? | At degree eight, resetting the static checkpoint to Taylor raises PPL from 14.294 to 15.532. The Taylor-trained backbone reaches 14.218 with the same Taylor coefficients. | 2026-11-27 | Learning dynamics |
 | [swish](swish/README.md) | Does swish, `s sigmoid(s)`, replace exp as a fixed score function? | No: 18.393, 29% behind exp. | 2026-11-20 | Fixed kernels, beside pointwise_attention |
 
 ## Replacements
