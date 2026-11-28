@@ -5,7 +5,7 @@ How do attention coefficients and the backbone adapt to each other during traini
 #### In progress
 
 - **Exponential prefactor with a query-conditioned sum of squares** (`r11215998f5f6`). Recording coefficient gradients and optimizer updates for $e^s h_t(\mathrm{softplus}(s))$ at twice the base learning rate.
-- **Freeze or continue learning the static coefficients.** Kennel job 16363 (`r14145c364f8c`) is producing the common step-500 checkpoint. Two H100 jobs are queued to start from it. Job 16366 trains the entire model. Job 16367 holds the learned polynomial coefficients fixed and trains every other parameter. Both use the same batches and optimizer schedule through step 2,000.
+- **Freeze or continue learning the static coefficients.** Both arms start at step 500 with validation PPL **49.520**. Kennel job 16393 (`r3c1d740f28d1`) trains the whole model. Job 16397 (`r8111c7eda7d3`) freezes the learned polynomial coefficients and trains everything else. Both use the same batches and optimizer schedule through step 2,000. [Shared checkpoint on W&B](https://wandb.ai/rafah-massachusetts-institute-of-technology/functional-memory/runs/eb6e2da7cfb5469db8c7a5ebbcec548c)
 
 #### Finished
 
