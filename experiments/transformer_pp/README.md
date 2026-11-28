@@ -2210,7 +2210,7 @@ One scores the learned-static checkpoint with its trained coefficients, one sets
 stored factorial-scaled coefficient in that checkpoint to one, and one scores the
 fixed-Taylor checkpoint. Resetting these coefficients implements the same truncated
 Taylor polynomial in every head and layer. Native held-out losses are checked against
-each parent's recorded NLL.
+each parent's recorded NLL. The comparison is part of the [polynomial gradient dynamics topic](staging/polynomial_gradient_dynamics/README.md#frozen-taylor-reset).
 
 To run a registered repetition from its Kennel worktree, use its fresh evaluation ID:
 
@@ -3828,4 +3828,61 @@ submit long 12:00:00 coefficient_forms_acceptance B300,H100 "$b300" r775f6499974
 submit standard 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7 500  # z h_t(z), job 10347
 submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
 submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
+```
+
+## Degree-eight polynomial gradient dynamics
+
+The [diagnostic topic](staging/polynomial_gradient_dynamics/README.md) collects the training measurements, checkpoint reset, and active sum-of-squares run.
+
+Two independent Kennel reruns compare the learned static and query-conditioned polynomials on the same
+packed batches. Each repeats its own source recipe, including seed 42, 7,570 updates, factorial scaling,
+Mosaic attention and the original per-head RMSNorm arithmetic.
+
+| Coefficients | Source | Instrumented run |
+| --- | --- | --- |
+| Query, diagonal tanh | `r25fffc16c2f3` | `r1422e8000207` |
+| Learned static | `r9c69dd7cfc8d` | `r6f55fe172f41` |
+
+Every update records each stored coefficient's signed pre-clip gradient and actual AdamW displacement,
+the global gradient norm and clip multiplier. The query run also records each projection vector's gradient
+and displacement norms. The per-coordinate arrays in `query_dynamics_updates_<last-step>.npz` have axes
+update, layer, head, degree. Full parameter snapshots use `query_dynamics_parameters_<step>.npz` at step
+1 and each evaluation.
+
+At updates 1, 100, 455, 1,500, 4,000, 6,376 and 7,500, and at newly retained post-warmup gradient events,
+a separate backward pass replays the complete batch on the pre-update parameters. The replay uses the
+training kernel and differentiates through the actual head RMSNorm, including epsilon and gain.
+The archive `query_dynamics_queries_<step>.npz` records signed and absolute contribution sums, largest
+and top-eight absolute contributions and the batch hash. Gradients use stored-parameter units, including
+the inverse factorial, and the batch-mean loss. Query runs also measure the tanh gate mean, saturation
+fraction, summed projection-gradient norms and norm of the summed projection gradient. Each replay
+compares its sums with both parameter autodiff and the pre-clip training gradient. Retained events and
+update 6,376 also replay the next batch at identical parameters.
+
+For each order in layers 0, 1, 7 and 14, the archive keeps the largest absolute single-query contribution
+across the batch and heads, and a query from a different sequence at the same position and head. Selection
+is separate for bias and amplitude. Each selected row includes the native head output before normalization,
+its incoming and outgoing loss gradients, normalization gain, the order's factorial-scaled value moment,
+the sum of absolute weighted value norms, and each causal key's score, weight and gradient contribution. Query rows also retain the tanh gate, its amplitude,
+the incoming activation vector and its multiplier in the projection gradient.
+The key decomposition recomputes score/value products in FP32. Both the reconstructed output and native
+output are retained. The query model additionally measures each native coefficient readout's cotangent.
+A checkpoint replay on four full-length sequences from the original step-7,500 model qualifies each
+decomposition against native parameter autodiff. Numerical errors are saved alongside every sampled batch.
+
+Submit from this worktree at the frozen launch commit. Both jobs use one GPU, and the slightly lower
+static priority lets the query run claim the first available GPU when they compete for the same slot.
+
+```bash
+for id in r1422e8000207 r6f55fe172f41; do
+  nice=0
+  if [ "$id" = r6f55fe172f41 ]; then nice=1; fi
+  run=experiments/transformer_pp/runs/$id
+  sbatch --parsable --partition=long --nice="$nice" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=36:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier \
+    --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
+    --job-name="$id" --output="$run/training.log" --error="$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.query_dynamics_acceptance \
+    "$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100,B200
+done
 ```

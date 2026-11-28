@@ -1,5 +1,6 @@
 """Shared Q/K/V projections, positional encoding, and output projection."""
 
+from contextvars import ContextVar
 from functools import partial
 from typing import Literal
 import math
@@ -109,6 +110,9 @@ def _forget_gate_diagnostics(log_alpha):
         "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
     })
 
+
+# Set only while differentiating a diagnostic replay. The training forward has no probes.
+head_output_probe = ContextVar("head_output_probe", default=None)
 
 class MultiHeadAttention(nnx.Module):
     def __init__(
@@ -1117,9 +1121,14 @@ class MultiHeadAttention(nnx.Module):
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None,
             **shifted)
+        probe = head_output_probe.get()
+        if probe is not None:
+            y = probe.before_norm(q, k, v, y, parameters, output_norm_scale, x)
         y = scale_attention_output(y, self.attention_output_scaling,
                                    output_norm_scale=output_norm_scale, eps=self.rms_norm_eps, **shifted,
                                    **self._head_rms_prescale())
+        if probe is not None:
+            y = probe.after_norm(y)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         if return_coefficients:
             return output, effective_coefficients
