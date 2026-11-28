@@ -1,9 +1,96 @@
 {
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r57fa34df51d2/training.log",
+      "sha256": "6cd8a6360681ed19004c1518c5fd1aa2f075ca4143310c43696b84e3b2552eeb",
+      "size_bytes": 13651
+    }
+  ],
+  "attempts": [
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/.runtime/acceptance/B300-1",
+      "allocation": "JobId=16510 JobName=r57fa34df51d2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20055 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:27 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-11-28T02:21:17 EligibleTime=2026-11-28T02:21:17 AccrueTime=2026-11-28T02:21:17 StartTime=2026-11-28T02:45:23 EndTime=2026-11-28T10:45:23 Deadline=N/A PreemptEligibleTime=2026-11-28T02:45:23 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-28T02:45:23 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2192839 ReqNodeList=(null) ExcNodeList=collie,dogo,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 28800,
+      "config_path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+      "config_sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519",
+      "exit_code": 143,
+      "finished_utc": "2026-11-28T07:47:45.904380+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+      "slurm_job_id": "16510",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "0",
+      "started_utc": "2026-11-28T07:45:50.838176+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/.runtime/acceptance/B300-1",
+      "allocation": "JobId=16510 JobName=r57fa34df51d2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20063 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=1 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:04 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-11-28T02:47:48 EligibleTime=2026-11-28T02:49:49 AccrueTime=2026-11-28T02:49:49 StartTime=2026-11-28T08:36:38 EndTime=2026-11-28T16:36:38 Deadline=N/A PreemptEligibleTime=2026-11-28T08:36:38 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-28T08:36:38 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2192839 ReqNodeList=(null) ExcNodeList=collie,dogo,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 28800,
+      "config_path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+      "config_sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519",
+      "exit_code": 143,
+      "finished_utc": "2026-11-28T13:38:38.979730+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+      "slurm_job_id": "16510",
+      "slurm_partition": "long",
+      "slurm_restart_count": "1",
+      "started_utc": "2026-11-28T13:36:42.098085+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/.runtime/acceptance/B300-1",
+      "allocation": "JobId=16510 JobName=r57fa34df51d2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20056 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=2 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:07 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-11-28T08:38:40 EligibleTime=2026-11-28T08:40:41 AccrueTime=2026-11-28T08:40:41 StartTime=2026-11-28T09:47:08 EndTime=2026-11-28T17:47:08 Deadline=N/A PreemptEligibleTime=2026-11-28T09:47:08 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-28T09:47:08 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2192839 ReqNodeList=(null) ExcNodeList=collie,dogo,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 28800,
+      "config_path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+      "config_sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519",
+      "exit_code": 143,
+      "finished_utc": "2026-11-28T14:48:45.052202+00:00",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+      "slurm_job_id": "16510",
+      "slurm_partition": "long",
+      "slurm_restart_count": "2",
+      "started_utc": "2026-11-28T14:47:15.112438+00:00",
+      "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/.runtime/acceptance/B300-1",
+      "allocation": "JobId=16510 JobName=r57fa34df51d2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20056 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=3 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:11 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-11-28T09:48:48 EligibleTime=2026-11-28T09:50:49 AccrueTime=2026-11-28T09:50:49 StartTime=2026-11-28T09:51:08 EndTime=2026-11-28T17:51:08 Deadline=N/A PreemptEligibleTime=2026-11-28T09:51:08 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-28T09:51:08 Scheduler=Backfill Partition=long AllocNode:Sid=kennel:2192839 ReqNodeList=(null) ExcNodeList=collie,dogo,doodle,mastiff,samoyed,shiba,terrier NodeList=akita BatchHost=akita NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 28800,
+      "config_path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+      "config_sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519",
+      "gpu_count": 1,
+      "gpu_type": "B300",
+      "home_cluster": "kennel",
+      "launch_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+      "slurm_job_id": "16510",
+      "slurm_partition": "long",
+      "slurm_restart_count": "3",
+      "started_utc": "2026-11-28T14:51:19.944903+00:00",
+      "stop_after_step": null
+    }
+  ],
   "config": {
     "path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
     "sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519"
   },
+  "frozen_execution_sha256": "e8ac4a9993f99b848a09f4792d2bd7e1fbe1961b477530f6f9110d2406b772b5",
+  "home_cluster": "kennel",
   "label": "exp-head-scale-row-max-dk4-lr-triple",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r57fa34df51d2/training.log",
+    "sha256": "6cd8a6360681ed19004c1518c5fd1aa2f075ca4143310c43696b84e3b2552eeb",
+    "size_bytes": 13651
+  },
+  "log_path": "experiments/transformer_pp/runs/r57fa34df51d2/training.log",
   "name": "exp-head-scale-row-max-dk4-lr-triple",
   "receipt": {
     "arrays_count": 50,
@@ -13,5 +100,6 @@
   },
   "record_schema_version": 1,
   "run_id": "r57fa34df51d2",
-  "status": "planned"
+  "source_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+  "status": "acceptance"
 }
