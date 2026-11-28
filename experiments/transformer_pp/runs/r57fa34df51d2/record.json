@@ -1,6 +1,6 @@
 {
   "acceptance": {
-    "sha256": "e687f49cece494fe6c9cefebaf96fe1acd626db093473c171b6f3c27aaf4387a",
+    "sha256": "236c5163ddfac3b123a3531f63725d60c279fdfe0970616e134298476ae36fbf",
     "summary": {
       "allocation_seconds": 28800,
       "checks": [
@@ -11,11 +11,11 @@
         "pilot",
         "resume"
       ],
-      "completed_utc": "2026-11-28T14:54:20.958124+00:00",
+      "completed_utc": "2026-11-28T17:33:03.657031+00:00",
       "hardware": {
         "attention_backend": "fused",
         "device_kinds": [
-          "NVIDIA B300 SXM6 AC"
+          "NVIDIA H100 80GB HBM3"
         ],
         "devices": [
           "cuda:0"
@@ -28,32 +28,9 @@
           "orbax-checkpoint": "0.11.40"
         }
       },
-      "identity": "63935497c7348e32595914e1d599f61ae25019b1de0523f02646e338b7fb2568",
-      "reused_tests": {
-        "cpu-distributed-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r73c86839450f/.runtime/acceptance/B300-1",
-          "completed_utc": "2026-11-28T10:38:08.127948+00:00",
-          "junit_sha256": "07d830cac70e9fd3e9c260a7360a2f669423e79a447d19292f81cfa457039a9d",
-          "slurm_job_id": "16511",
-          "test_identity": "005394a929acadeff26b80747876f940c16512d38479701e3467d0de64e765e6"
-        },
-        "cpu-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r73c86839450f/.runtime/acceptance/B300-1",
-          "completed_utc": "2026-11-28T10:37:16.064388+00:00",
-          "junit_sha256": "e60873f8b2b3a332081d9f0fa4400c82d98f83232d997cbd07b8ec0690d2262d",
-          "slurm_job_id": "16511",
-          "test_identity": "b004fbf4c731df3b80758d429b2a22ea6092bd8b9fe5e8d188319f0fb4b1d4b8"
-        },
-        "gpu-tests": {
-          "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r73c86839450f/.runtime/acceptance/B300-1",
-          "completed_utc": "2026-11-28T10:48:28.395474+00:00",
-          "junit_sha256": "961af8d04d98107c2a83f88b95a2f634c7217070d541613ccca2fd13bcd92409",
-          "slurm_job_id": "16511",
-          "test_identity": "d39b2f33e6173e25d0a693cdcfdf1a465e75d390bb91906aa1ef655b3f94cb96"
-        }
-      },
+      "identity": "d2196783ba960388c999fda77b36daeb5001089348ce7ec96b2bafe44072b559",
       "slurm_job_id": "16510",
-      "slurm_restart_count": "3",
+      "slurm_restart_count": "4",
       "source_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
       "status": "passed"
     }
@@ -167,6 +144,22 @@
       "slurm_restart_count": "3",
       "started_utc": "2026-11-28T14:51:19.944903+00:00",
       "stop_after_step": null
+    },
+    {
+      "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/.runtime/acceptance/H100-1",
+      "allocation": "JobId=16510 JobName=r57fa34df51d2 UserId=rafah(29176) GroupId=rafah(29176) MCS_label=N/A Priority=20057 Nice=10 Account=rafah QOS=normal JobState=RUNNING Reason=None Dependency=(null) Requeue=1 Restarts=4 BatchFlag=1 Reboot=0 ExitCode=0:0 RunTime=00:00:32 TimeLimit=08:00:00 TimeMin=N/A SubmitTime=2026-11-28T10:24:39 EligibleTime=2026-11-28T10:26:40 AccrueTime=2026-11-28T10:26:40 StartTime=2026-11-28T12:05:11 EndTime=2026-11-28T20:05:11 Deadline=N/A PreemptEligibleTime=2026-11-28T12:05:11 PreemptTime=None SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-11-28T12:05:11 Scheduler=Main Partition=standard AllocNode:Sid=kennel:2192839 ReqNodeList=(null) ExcNodeList=shiba,mastiff,collie,samoyed,doodle,terrier NodeList=dogo BatchHost=dogo NumNodes=1 NumCPUs=16 NumTasks=1 CPUs/Task=16 ReqB:S:C:T=0:0:*:* ReqTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 AllocTRES=cpu=16,mem=128G,node=1,billing=16,gres/gpu=1 Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=* MinCPUsNode=16 MinMemoryNode=128G MinTmpDiskNode=0 Features=(null) DelayBoot=00:00:00 OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null) Command=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/scaffolds/transformer/launchers/kennel.sbatch WorkDir=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine StdErr=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log StdIn=/dev/null StdOut=/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r57fa34df51d2/training.log Power= MemPerTres=gpu:32000 TresPerNode=gres/gpu:1 TresPerTask=cpu:16",
+      "allocation_seconds": 28800,
+      "config_path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+      "config_sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519",
+      "gpu_count": 1,
+      "gpu_type": "H100",
+      "home_cluster": "kennel",
+      "launch_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+      "slurm_job_id": "16510",
+      "slurm_partition": "standard",
+      "slurm_restart_count": "4",
+      "started_utc": "2026-11-28T17:05:43.337599+00:00",
+      "stop_after_step": null
     }
   ],
   "best_validation": {
@@ -199,7 +192,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "9cf14377080e2daba4e538eead74b9d38d0786389bcd2cea2b10a5b932eb7015"
+      "sha256": "e86d14ce33e43b02c714364b66ee947a1a4ab0987eeaa69784f218b267bfe87d"
     },
     "resolved_config": {
       "continuation": {
@@ -379,14 +372,14 @@
       "devices": [
         {
           "id": 0,
-          "kind": "NVIDIA B300 SXM6 AC",
+          "kind": "NVIDIA H100 80GB HBM3",
           "platform": "gpu"
         }
       ],
       "environment": {
         "NCCL_P2P_DISABLE": null,
         "TRANSFORMER_HOST_STAGING": "0",
-        "XLA_FLAGS": "--xla_gpu_disable_async_collectives=ALLCOLLECTIVES",
+        "XLA_FLAGS": null,
         "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
         "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
       },
@@ -414,6 +407,28 @@
         },
         "slurm_job_id": "16510",
         "timestamp_utc": "2026-11-28T14:54:55.993316+00:00"
+      },
+      {
+        "runtime": {
+          "batch_transfer": "host_to_shard",
+          "devices": [
+            {
+              "id": 0,
+              "kind": "NVIDIA H100 80GB HBM3",
+              "platform": "gpu"
+            }
+          ],
+          "environment": {
+            "NCCL_P2P_DISABLE": null,
+            "TRANSFORMER_HOST_STAGING": "0",
+            "XLA_FLAGS": null,
+            "XLA_PYTHON_CLIENT_MEM_FRACTION": null,
+            "XLA_PYTHON_CLIENT_PREALLOCATE": "false"
+          },
+          "state_transfer": "direct"
+        },
+        "slurm_job_id": "16510",
+        "timestamp_utc": "2026-11-28T17:34:18.703029+00:00"
       }
     ]
   },
@@ -449,9 +464,9 @@
   "seed": 42,
   "source_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
   "status": "running",
-  "step": 1100,
-  "training_tokens": 576716800,
-  "updated_utc": "2026-11-28T15:24:19.753449+00:00",
+  "step": 2500,
+  "training_tokens": 1310720000,
+  "updated_utc": "2026-11-28T18:29:51.747781+00:00",
   "wandb_run": {
     "path": "experiments/transformer_pp/runs/r57fa34df51d2/wandb_run.json",
     "sha256": "76f4cfd36693d691aba5c7f9f8dacf5f65690e56a7a9b432e1ce7e324683cad1",
