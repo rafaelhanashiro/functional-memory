@@ -51,6 +51,58 @@
       "status": "passed"
     }
   },
+  "artifacts": [
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/best_validation.json",
+      "sha256": "15032d5180b0f93f7641a41c325a7ecd81faaedb69d8be691016e7f6d40c1b5b",
+      "size_bytes": 183
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/completion.json",
+      "sha256": "52b615c54514df6f007f3a17b0a07d1ddb2a7b14703b54cd4b2280507935648d",
+      "size_bytes": 1069404
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/config.json",
+      "sha256": "77d5565bcfecb02f801bb664f0d89ea09d5e4f8bb8bed9e06ddc8bf533399a8a",
+      "size_bytes": 6538
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/data_identity.json",
+      "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+      "size_bytes": 291
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/gradient_events.jsonl",
+      "sha256": "0504bf62b4de7049f652f24a9d4bb61e8340795776163916a53887f500528362",
+      "size_bytes": 1376466
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/metadata.json",
+      "sha256": "b00e271bfa6335ea4723f81871fc386c7145644cea8dd35d40de7f3f4c73d322",
+      "size_bytes": 1070247
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/metrics.jsonl",
+      "sha256": "c3093b57ff5e60750ddafa7635817f9a67794407aee5c6ce540ac72d1ca17317",
+      "size_bytes": 17170927
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/retention.json",
+      "sha256": "85312533feb05af993313c0a221aebcbc50ce35feea5e443a72e8ca3ec85afbd",
+      "size_bytes": 507
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/wandb_run.json",
+      "sha256": "e13c505b564d8f1317c1184909d01914bfb016273d583f4fb03417914c136054",
+      "size_bytes": 240
+    },
+    {
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/training.log",
+      "sha256": "71ad21bb251ee54406b719a6eecab83118cd1d527fdcdb260da19f86ef4503e7",
+      "size_bytes": 755576
+    }
+  ],
   "attempts": [
     {
       "acceptance_directory": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r60b2eb520c6b/.runtime/acceptance/B200-1",
@@ -58,6 +110,8 @@
       "allocation_seconds": 43200,
       "config_path": "experiments/transformer_pp/runs/r60b2eb520c6b/config.yaml",
       "config_sha256": "3080087c666fa82d82ab8e112fd818d506080e4eb6a4d1251c5f5cc0ff51cef9",
+      "exit_code": 0,
+      "finished_utc": "2026-11-28T16:23:20.805698+00:00",
       "gpu_count": 1,
       "gpu_type": "B200",
       "home_cluster": "kennel",
@@ -69,6 +123,33 @@
       "stop_after_step": null
     }
   ],
+  "best_validation": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/best_validation.json",
+    "sha256": "15032d5180b0f93f7641a41c325a7ecd81faaedb69d8be691016e7f6d40c1b5b",
+    "size_bytes": 183
+  },
+  "checkpoint_retention": {
+    "best_checkpoint_step": 7500,
+    "completion_sha256": "52b615c54514df6f007f3a17b0a07d1ddb2a7b14703b54cd4b2280507935648d",
+    "format": "shared-transformer-checkpoint-retention",
+    "retained_gradient_event_updates": [
+      707,
+      5869,
+      5912
+    ],
+    "seed": 42,
+    "selection_rule": "lowest_validation_nll_latest_on_tie",
+    "source_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
+    "terminal_metrics_preserved": true,
+    "terminal_step": 7570,
+    "validation_nll": 2.918909639120102,
+    "version": 1
+  },
+  "completion": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/completion.json",
+    "sha256": "52b615c54514df6f007f3a17b0a07d1ddb2a7b14703b54cd4b2280507935648d",
+    "size_bytes": 1069404
+  },
   "config": {
     "path": "experiments/transformer_pp/runs/r60b2eb520c6b/config.yaml",
     "sha256": "3080087c666fa82d82ab8e112fd818d506080e4eb6a4d1251c5f5cc0ff51cef9"
@@ -77,11 +158,273 @@
     "batch_size": 256,
     "eval_manifest_sha256": "0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f",
     "format": "ofm-packed-run-data",
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/data_identity.json",
     "sequence_length": 2049,
+    "sha256": "6aad8549d983f9bc8dfb2e3bd7ff15954d112c6aeb15656635a91019c0b2c1ba",
+    "size_bytes": 291,
     "train_manifest_sha256": "9de775ed836ab7c61857207335a981c09630caa3226d2dc0ee0b799cdcb2f4f4",
     "version": 2
   },
-  "diagnostic_checkpoints": [],
+  "diagnostic_checkpoints": [
+    {
+      "event": "gradient_spike",
+      "file_count": 15,
+      "files": [
+        {
+          "path": "706/default/_CHECKPOINT_METADATA",
+          "sha256": "a1179e3762c91ccdd298600ed179054bec2d4cacb6ad617a0e0c1723a4f3e6c1",
+          "size_bytes": 262
+        },
+        {
+          "path": "706/default/_METADATA",
+          "sha256": "dc4487a4903c0c7f82ae4b4de94c394499d1f40efd24eefb589e861b99c188b8",
+          "size_bytes": 218885
+        },
+        {
+          "path": "706/default/_sharding",
+          "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+          "size_bytes": 68787
+        },
+        {
+          "path": "706/default/array_metadatas/process_0",
+          "sha256": "3beb02afb8a0fbaff59cf370befcde524237613b74191b3aebe1b1a2119209a8",
+          "size_bytes": 75089
+        },
+        {
+          "path": "706/default/d/51733be9d0c7fe9bd8d140a055632e76",
+          "sha256": "be7e0294d8182ae492869dbc505ad585fb62011a69a5642f9bf1649533f95624",
+          "size_bytes": 8899
+        },
+        {
+          "path": "706/default/manifest.ocdbt",
+          "sha256": "7a4f47be95b650c357a2bd3e3f395d21a0eb83bdb2739bf324cb6594d9b8e64a",
+          "size_bytes": 118
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/013b5d73df0fc6d562d46d02a328fa67",
+          "sha256": "eb6b1f9b0e08dfcf14b372e32d37c9f2194db039ae9802dbf071739d719cb3df",
+          "size_bytes": 3549615
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/42952cc82da166e5871da8cfef911e4e",
+          "sha256": "d961bf1b85388bde3773ba2a5331946a2f872214995e4f69cab103f56972c609",
+          "size_bytes": 41848832
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/7003f15434bb3858afe3e1b3447c6825",
+          "sha256": "69c0e59a26fa8e25692e76d26edb5d96f2b867aad793fcd18849c296713d1a84",
+          "size_bytes": 1018781696
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/7a90790174fcc01a32742eb0bc7102f3",
+          "sha256": "fde737e2015b57176ce49b9edf6f3755143a3c7921601074034df377024cc24c",
+          "size_bytes": 906
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/8be1160da590c4438baf5a004f0354fc",
+          "sha256": "14f600ab615f7b0a6f0aa627b5b83407e9a792cc0f9f39cfb60254c5967db97e",
+          "size_bytes": 784
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/9678a285455b6ea74b634a64238afd72",
+          "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+          "size_bytes": 196
+        },
+        {
+          "path": "706/default/ocdbt.process_0/d/a2ad4e5101bf5b1e2b69a8fb73aa8fca",
+          "sha256": "a3568b48fb36c1d56a41a68eb7d3bfe82c961e9d6f3950d344a7303c394ac55e",
+          "size_bytes": 932876288
+        },
+        {
+          "path": "706/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "132288f8abfbe7d7e82d9e74a714c0c6f5bd9f88eb8defd9e379196037e1f5fb",
+          "size_bytes": 408
+        },
+        {
+          "path": "event.json",
+          "sha256": "554fe7bf02d8b1bc95412852a3a3e1208ba4356b36626fe2a9c014a47e7aab60",
+          "size_bytes": 16344
+        }
+      ],
+      "gradient_norm_pre_clip": 1.0366294384002686,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 707, norm 1.03663",
+      "kind": "directory",
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/checkpoints/gradient_events/707",
+      "pre_update_state_sha256": "137db8198b99dbb87e64e21c93d8726ab43b303ab8d21279cfb8ce476c6f6faf",
+      "pre_update_step": 706,
+      "sha256": "a85d91658a93c58e2c112322653859cc9340d735324776f04864695801e72571",
+      "size_bytes": 1997447109,
+      "update": 707
+    },
+    {
+      "event": "gradient_spike",
+      "file_count": 13,
+      "files": [
+        {
+          "path": "5868/default/_CHECKPOINT_METADATA",
+          "sha256": "c2843c2b3f7f10411e259a41e81d4f84ef0937534cd7514ac9a99cbf705e16eb",
+          "size_bytes": 262
+        },
+        {
+          "path": "5868/default/_METADATA",
+          "sha256": "dc4487a4903c0c7f82ae4b4de94c394499d1f40efd24eefb589e861b99c188b8",
+          "size_bytes": 218885
+        },
+        {
+          "path": "5868/default/_sharding",
+          "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+          "size_bytes": 68787
+        },
+        {
+          "path": "5868/default/array_metadatas/process_0",
+          "sha256": "3beb02afb8a0fbaff59cf370befcde524237613b74191b3aebe1b1a2119209a8",
+          "size_bytes": 75089
+        },
+        {
+          "path": "5868/default/d/b88912cde7a9c62561993bc2a505d37b",
+          "sha256": "3fd7ca7b820b62115726042caf5a0cdd5908e51dc00dc81b9872a839a8d6d031",
+          "size_bytes": 8895
+        },
+        {
+          "path": "5868/default/manifest.ocdbt",
+          "sha256": "4bf14a5cc81f5d33663e655afe4534cbc43d3c72a7c384b5977a490094e26fbc",
+          "size_bytes": 118
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/d/6be6801f4e1a52d7ddbe1d6c3f0324ec",
+          "sha256": "e636772dee0b83574a925a6a6b547bafc5b14cb6cd1827dee84376885a3dd0be",
+          "size_bytes": 315944960
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/d/7d2d690dafd9bff3aa2d21740345ff96",
+          "sha256": "7cdd7c308a6de6bba5b83a203146dae16f1b141115656aa5fb7747c5ab833bb5",
+          "size_bytes": 3876
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/d/7e88975fe00597ed9941ae1343be50a6",
+          "sha256": "bba6f35e699c93074e4a55bd3e558bbc5e0ea91bf561a716e30296944b71d4fc",
+          "size_bytes": 1678225408
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/d/7f9ef8cf31bb8e4ed153b16188bc11ce",
+          "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+          "size_bytes": 196
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/d/db0a8b24aeb8fccace9a1226b1960b95",
+          "sha256": "2c7bc62c6ef174449a498695a28858b3ad883e948a96f795c9b305abe5671bed",
+          "size_bytes": 903
+        },
+        {
+          "path": "5868/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "8b03b6955a341c195992a8f87360dc3058c3bfff8a771aab0f467d0735ffdc5b",
+          "size_bytes": 317
+        },
+        {
+          "path": "event.json",
+          "sha256": "5ce68ed27dfebbd7866635f0d661910bb335ca00ca6c030ac42337f8e60fa22d",
+          "size_bytes": 16273
+        }
+      ],
+      "gradient_norm_pre_clip": 176.3756103515625,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 5869, norm 176.376",
+      "kind": "directory",
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/checkpoints/gradient_events/5869",
+      "pre_update_state_sha256": "c5c98bd69d822c17dad6a93edf7eb64bc61dc3bf7ccf6c78262ab649430c8963",
+      "pre_update_step": 5868,
+      "sha256": "3fd1663cdc14bc15eb732cc57826a1506ea7d8df5a395fc704368c8244a512e7",
+      "size_bytes": 1994563969,
+      "update": 5869
+    },
+    {
+      "event": "gradient_spike",
+      "file_count": 14,
+      "files": [
+        {
+          "path": "5911/default/_CHECKPOINT_METADATA",
+          "sha256": "37c836660995fdf2bfde82fb8b4d7ab5c3386f8a992e2dfeff8b65835ef1ac99",
+          "size_bytes": 262
+        },
+        {
+          "path": "5911/default/_METADATA",
+          "sha256": "dc4487a4903c0c7f82ae4b4de94c394499d1f40efd24eefb589e861b99c188b8",
+          "size_bytes": 218885
+        },
+        {
+          "path": "5911/default/_sharding",
+          "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+          "size_bytes": 68787
+        },
+        {
+          "path": "5911/default/array_metadatas/process_0",
+          "sha256": "3beb02afb8a0fbaff59cf370befcde524237613b74191b3aebe1b1a2119209a8",
+          "size_bytes": 75089
+        },
+        {
+          "path": "5911/default/d/1302cff2f63db8784b362f85e4bdb048",
+          "sha256": "99b6c98f2b028448c260f59065076fcc8982f3f9821988d52e402b5e92643237",
+          "size_bytes": 8814
+        },
+        {
+          "path": "5911/default/manifest.ocdbt",
+          "sha256": "1c5c6ad59193ce553968c4925b4b5808547f2be72680d035367801a63df73b26",
+          "size_bytes": 118
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/4d24f97bb6ac65938ca986045fa292bc",
+          "sha256": "4d91a774b3abfbe635f41d7c4a6d36e8adc6879d6e329e8c260681d8ae2d066c",
+          "size_bytes": 744665088
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/60445c619ae316d303cae2b08516de40",
+          "sha256": "202c850561ebc9d8750e09fdf5f8054b8ca7900a1217f75bfbdb38cfa70ebf3c",
+          "size_bytes": 744
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/6982a550864e966a27c105f626f5db2b",
+          "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+          "size_bytes": 196
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/abe8665c0e44da7b8c577b1e1f70a33f",
+          "sha256": "6fa2ebae5f23e30a393f30c21ae6e00cbc850efc8d6845fcfc2f69f97d8df303",
+          "size_bytes": 489
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/af6dbb0f85e3eb0d85a9cbd04ab2405f",
+          "sha256": "73db10d5b83c4d70f856021b4dd92cd38e2cca2cbd952b28b37a1dbcd8b1311a",
+          "size_bytes": 1168994304
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/d/edf92099d8e5f0bafc2140563ee69bf5",
+          "sha256": "53b0a0a769a94954ba5475406041dc05961c22f4b0d17e04935600fea01615be",
+          "size_bytes": 81088512
+        },
+        {
+          "path": "5911/default/ocdbt.process_0/manifest.ocdbt",
+          "sha256": "a0f2c6140e9eb1379682c98302c864e3ec4781ee4023d70c8719d9b4e642992b",
+          "size_bytes": 366
+        },
+        {
+          "path": "event.json",
+          "sha256": "fdd2c328ec3ca15dff686b357eb9f0dda9399cb803b6bf7cd64f49627442dab1",
+          "size_bytes": 16300
+        }
+      ],
+      "gradient_norm_pre_clip": 4241.08056640625,
+      "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+      "justification": "pre-update state of gradient event at update 5912, norm 4241.08",
+      "kind": "directory",
+      "path": "experiments/transformer_pp/runs/r60b2eb520c6b/checkpoints/gradient_events/5912",
+      "pre_update_state_sha256": "95a0fdf04175fba0eef95c09b41ec29320f30222cc17afbdde8493c8727b1f10",
+      "pre_update_step": 5911,
+      "sha256": "33cf34fc0a7a6087d354eefba9f03caf8992f48c5a4be308b04b5cff12827331",
+      "size_bytes": 1995137954,
+      "update": 5912
+    }
+  ],
   "error": null,
   "execution": {
     "attention_backend": "fused",
@@ -91,7 +434,7 @@
     },
     "raw_metadata": {
       "path": "metadata.json",
-      "sha256": "f887eadaba7ec2b5fe0c38fa01bf23fd6e061724a5744cc8aa5f76491ec251ce"
+      "sha256": "b00e271bfa6335ea4723f81871fc386c7145644cea8dd35d40de7f3f4c73d322"
     },
     "resolved_config": {
       "continuation": {
@@ -312,7 +655,22 @@
   "frozen_execution_sha256": "e8ac4a9993f99b848a09f4792d2bd7e1fbe1961b477530f6f9110d2406b772b5",
   "home_cluster": "kennel",
   "label": "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-sextuple",
+  "log": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/training.log",
+    "sha256": "71ad21bb251ee54406b719a6eecab83118cd1d527fdcdb260da19f86ef4503e7",
+    "size_bytes": 755576
+  },
   "log_path": "/data/cl/u/rafah/home/projects/functional-memory/worktrees/dk4-lr-fine/experiments/transformer_pp/runs/r60b2eb520c6b/training.log",
+  "metadata": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/metadata.json",
+    "sha256": "b00e271bfa6335ea4723f81871fc386c7145644cea8dd35d40de7f3f4c73d322",
+    "size_bytes": 1070247
+  },
+  "metrics": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/metrics.jsonl",
+    "sha256": "c3093b57ff5e60750ddafa7635817f9a67794407aee5c6ce540ac72d1ca17317",
+    "size_bytes": 17170927
+  },
   "name": "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-sextuple",
   "numerical_failure_path": null,
   "receipt": {
@@ -322,11 +680,110 @@
     "version": 1
   },
   "record_schema_version": 1,
+  "retained_best_checkpoint_step": 7500,
+  "retained_terminal_checkpoint_step": null,
+  "retention": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/retention.json",
+    "sha256": "85312533feb05af993313c0a221aebcbc50ce35feea5e443a72e8ca3ec85afbd",
+    "size_bytes": 507
+  },
   "run_id": "r60b2eb520c6b",
   "seed": 42,
+  "selected_checkpoint": {
+    "file_count": 15,
+    "files": [
+      {
+        "path": "_CHECKPOINT_METADATA",
+        "sha256": "262d963a5c13ef8f65af80524198b7617d4f73af65bed9b9442439062df11e14",
+        "size_bytes": 366
+      },
+      {
+        "path": "default/_METADATA",
+        "sha256": "dc4487a4903c0c7f82ae4b4de94c394499d1f40efd24eefb589e861b99c188b8",
+        "size_bytes": 218885
+      },
+      {
+        "path": "default/_sharding",
+        "sha256": "685fc0fda7fc9d09df558b2be4e60758098c7d454a93c829c5e55f8ca5f1896c",
+        "size_bytes": 68787
+      },
+      {
+        "path": "default/array_metadatas/process_0",
+        "sha256": "3beb02afb8a0fbaff59cf370befcde524237613b74191b3aebe1b1a2119209a8",
+        "size_bytes": 75089
+      },
+      {
+        "path": "default/d/9a1be1b3e8445ef1f23d4a6e43bf6ea8",
+        "sha256": "3492b6a12a73e2d8e79195ce8e22fe782dcbaf64d6b76a6811b236e103f485a2",
+        "size_bytes": 8848
+      },
+      {
+        "path": "default/manifest.ocdbt",
+        "sha256": "47de3f9fcb38098d8ec5575d347718c2248545d76ce677dcde26280828f0da02",
+        "size_bytes": 118
+      },
+      {
+        "path": "default/ocdbt.process_0/d/005d12b99e72be34c58edd184b341d11",
+        "sha256": "2326ef6c6c2bbed1b59c608b1a879f1700b31ebb6cdc8354a390e611adfadf78",
+        "size_bytes": 1489580032
+      },
+      {
+        "path": "default/ocdbt.process_0/d/28b1516ee7282423fe3b2dc75639af0a",
+        "sha256": "e7eaae6fd716d09dd5275cf4988c7b634554f9435e3462a284076952502ae2ae",
+        "size_bytes": 12546048
+      },
+      {
+        "path": "default/ocdbt.process_0/d/38b2286c8c65b32a117cd73b3d42d8f0",
+        "sha256": "d9d6c995903eb7ec0521293657057ca315da586284d9c47f6764e2b75a11a26e",
+        "size_bytes": 196
+      },
+      {
+        "path": "default/ocdbt.process_0/d/88f8d7319f0837db52addf889204c7f2",
+        "sha256": "ffa93d0dc5b7836cad90a17a59d5f0b885a6a89beaf69a045d992a10f3427edf",
+        "size_bytes": 611
+      },
+      {
+        "path": "default/ocdbt.process_0/d/9633f50e8841be23baa8d53da3aa086e",
+        "sha256": "97ec6f70ec2c06e5f02f3182f27b3ddd45bd27f79f923376134ddf42548473a9",
+        "size_bytes": 189952
+      },
+      {
+        "path": "default/ocdbt.process_0/d/b46555ae7aadaee592d1221ea7036572",
+        "sha256": "abeaf19e11fd49b3a2a7a31414d7de085821835d96e0cc885c0f358a0e4904c4",
+        "size_bytes": 489410560
+      },
+      {
+        "path": "default/ocdbt.process_0/d/f54cf2b42d073ead1cafaa00bcc75f8a",
+        "sha256": "c22c10be4b07f817e6a9cea594588716a85394ea911e128d0ddb4f2795bfd570",
+        "size_bytes": 446
+      },
+      {
+        "path": "default/ocdbt.process_0/manifest.ocdbt",
+        "sha256": "3347a5e1cc0aef34348a68c1201435d600e22fabdcbd9e1a18fee749c37cbeac",
+        "size_bytes": 389
+      },
+      {
+        "path": "metrics/metrics",
+        "sha256": "d575abb073599e8c226f30ff2cb3bdf0db59c7f47c9b631859ccd28c7a073496",
+        "size_bytes": 137
+      }
+    ],
+    "hash_format": "sha256(relative-path NUL file-sha256 NEWLINE), sorted by relative path",
+    "kind": "directory",
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/checkpoints/7500",
+    "sha256": "36419e553106fb0637f44854cc25c84081cb929f6d87e38f4851e7eed880269a",
+    "size_bytes": 1992100464,
+    "step": 7500,
+    "validation_nll": 2.918909639120102
+  },
   "source_commit": "0c16a309b7d6a89370d37c96d61eec2d26a87f30",
-  "status": "running",
-  "step": 6000,
-  "training_tokens": 3145728000,
-  "updated_utc": "2026-11-28T14:40:47.761750+00:00"
+  "status": "complete",
+  "step": 7570,
+  "training_tokens": 3968860160,
+  "updated_utc": "2026-11-28T16:22:56.516296+00:00",
+  "wandb_run": {
+    "path": "experiments/transformer_pp/runs/r60b2eb520c6b/wandb_run.json",
+    "sha256": "e13c505b564d8f1317c1184909d01914bfb016273d583f4fb03417914c136054",
+    "size_bytes": 240
+  }
 }
