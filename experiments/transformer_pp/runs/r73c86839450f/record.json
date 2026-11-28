@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r73c86839450f/config.yaml",
+    "sha256": "1457425f72330ab434a554a86b0e2630540bb16c783c3b83df11fcc353b56c76"
+  },
+  "label": "exp-head-scale-row-max-dk4-lr-quintuple",
+  "name": "exp-head-scale-row-max-dk4-lr-quintuple",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "1c893a9edfbf531e4e5eca47c683e3c32b802cbb6dc10e6176d697d897d7a1c8",
+    "loss": 5.600582122802734,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r73c86839450f",
+  "status": "planned"
+}

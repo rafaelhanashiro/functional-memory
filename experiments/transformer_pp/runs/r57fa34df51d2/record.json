@@ -1,0 +1,17 @@
+{
+  "config": {
+    "path": "experiments/transformer_pp/runs/r57fa34df51d2/config.yaml",
+    "sha256": "4bcb5016059710dae3830b0dc3eebc945b93ec196d2db0c0ab8c24b2ac98a519"
+  },
+  "label": "exp-head-scale-row-max-dk4-lr-triple",
+  "name": "exp-head-scale-row-max-dk4-lr-triple",
+  "receipt": {
+    "arrays_count": 50,
+    "digest": "1c893a9edfbf531e4e5eca47c683e3c32b802cbb6dc10e6176d697d897d7a1c8",
+    "loss": 5.600582122802734,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r57fa34df51d2",
+  "status": "planned"
+}

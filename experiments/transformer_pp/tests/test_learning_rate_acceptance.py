@@ -24,6 +24,15 @@ RUNS = {
                       "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple"),
     "rda43ee639e0a": ("shifted_sos", 8.0,
                       "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple"),
+    "r57fa34df51d2": ("exponential", 3.0, "exp-head-scale-row-max-dk4-lr-triple"),
+    "r73c86839450f": ("exponential", 5.0, "exp-head-scale-row-max-dk4-lr-quintuple"),
+    "r9bb10a10547d": ("exponential", 6.0, "exp-head-scale-row-max-dk4-lr-sextuple"),
+    "r533793a0833f": ("shifted_sos", 3.0,
+                      "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-triple"),
+    "r24629147e7fe": ("shifted_sos", 5.0,
+                      "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quintuple"),
+    "r60b2eb520c6b": ("shifted_sos", 6.0,
+                      "query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-sextuple"),
     "r76b9aa49fe23": ("exp_prefactor_sos", 2.0, "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double"),
     "rbf850552cbba": ("exp_prefactor_sos", 4.0, "query-sos-m8-exp-prefactor-raw-input-w-decay-lr-quadruple"),
     "rf93d2b71f731": ("softplus_prefactor_sos", 2.0, "query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-double"),
@@ -167,7 +176,7 @@ def test_the_runs_cover_both_partners_at_every_scale():
 
 
 def test_other_recipes_are_refused():
-    for key, scale in (("exponential", 1.0), ("exponential", 0.25), ("exponential", 3.0), ("exponential", 8.0),
+    for key, scale in (("exponential", 1.0), ("exponential", 0.25), ("exponential", 7.0), ("exponential", 8.0),
                        ("shifted_sos", 1.0), ("shifted_sos", 16.0), ("exp_prefactor_sos", 0.5),
                        ("softplus_prefactor_sos", 8.0), ("sigmoid_prefactor_sos", 1.0)):
         with pytest.raises(ValueError):

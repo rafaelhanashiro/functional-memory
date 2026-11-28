@@ -3342,13 +3342,14 @@ done
 
 ### Learning rate at key width four
 
-Eighteen runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22,
-four times 2026-11-23, and eight times for `z h_t(z)`, the eight `d_K` 64 runs and the three degree-eight core runs
-below 2026-11-24. At `d_K` 4 the exponential (`r2739c80cc032`, best
+Twenty-four runs at the reference shape and 1x budget (7,570 updates) on Kennel: half and double requested 2026-11-22,
+four times 2026-11-23, eight times for `z h_t(z)`, the eight `d_K` 64 runs and the three degree-eight core runs
+below 2026-11-24, and three, five and six times for the exponential and `z h_t(z)` 2026-11-28. At `d_K` 4 the exponential (`r2739c80cc032`, best
 19.190) and `z h_t(z)`, `z = softplus(s)`, with a degree-sixteen query SoS core (`r2e7f5617fdf2`, best 19.192) tie,
 both with gradients that stay under the clip after warmup. The recipe's learning rate was tuned at `d_K` 64, so each
 trains again at half, double and four times its schedule, and `z h_t(z)`, which still improved at four times, at
 eight: is that rate the best one for either kernel at `d_K` 4, and does the tie hold at each kernel's best rate?
+Three, five and six times then bracket each kernel's best (double for the exponential, four times for `z h_t(z)`).
 `z h_t(z)` with a degree-eight core (`rabfbab32a594`, best 19.463) trains at double, four and eight times: does the
 lower degree gain from the larger rates as the degree-sixteen core did?
 At `d_K` 64 the degree-eight SoS core under a prefactor of the raw score, `f(s) h_t(s)` for `f` = exp, softplus and
@@ -3368,6 +3369,12 @@ train at half the rate, below the recipe's, where 3e-4 was 6.5-8.5% worse at deg
 | `r1ff405fe0926` | `exp-head-scale-row-max-dk4-lr-quadruple` | `exp(s)` | 4e-3, 4e-4 | `r2739c80cc032` |
 | `rdc43b5c9d2d0` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quadruple` | `z h_t(z)`, core 16 | 4e-3, 4e-4 | `r2e7f5617fdf2` |
 | `rda43ee639e0a` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-octuple` | `z h_t(z)`, core 16 | 8e-3, 8e-4 | `r2e7f5617fdf2` |
+| `r57fa34df51d2` | `exp-head-scale-row-max-dk4-lr-triple` | `exp(s)` | 3e-3, 3e-4 | `r2739c80cc032` |
+| `r73c86839450f` | `exp-head-scale-row-max-dk4-lr-quintuple` | `exp(s)` | 5e-3, 5e-4 | `r2739c80cc032` |
+| `r9bb10a10547d` | `exp-head-scale-row-max-dk4-lr-sextuple` | `exp(s)` | 6e-3, 6e-4 | `r2739c80cc032` |
+| `r533793a0833f` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-triple` | `z h_t(z)`, core 16 | 3e-3, 3e-4 | `r2e7f5617fdf2` |
+| `r24629147e7fe` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-quintuple` | `z h_t(z)`, core 16 | 5e-3, 5e-4 | `r2e7f5617fdf2` |
+| `r60b2eb520c6b` | `query-sos-core-m16-softplus-times-input-total-m17-rope-w-decay-dk4-lr-sextuple` | `z h_t(z)`, core 16 | 6e-3, 6e-4 | `r2e7f5617fdf2` |
 | `r76b9aa49fe23` | `query-sos-m8-exp-prefactor-raw-input-w-decay-lr-double` | `exp(s) h_t(s)`, `d_K` 64 | 2e-3, 2e-4 | `r6525664e6696` |
 | `rbf850552cbba` | `query-sos-m8-exp-prefactor-raw-input-w-decay-lr-quadruple` | `exp(s) h_t(s)`, `d_K` 64 | 4e-3, 4e-4 | `r6525664e6696` |
 | `rf93d2b71f731` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-lr-double` | `softplus(s) h_t(s)`, `d_K` 64 | 2e-3, 2e-4 | `r41662adb22fa` |
@@ -3381,7 +3388,7 @@ train at half the rate, below the recipe's, where 3e-4 was 6.5-8.5% worse at deg
 | `r7cbb2c7ca07d` | `query-sos-core-m8-softplus-times-input-total-m9-rope-w-decay-dk4-lr-octuple` | `z h_t(z)`, core 8 | 8e-3, 8e-4 | `rabfbab32a594` |
 
 - **Recipe.** Each run is its partner's recipe with `optim.learning_rate` and `optim.min_learning_rate` multiplied
-  by 0.5, 2 or 4, or 8 for `z h_t(z)` (2, 4 or 8 with the degree-eight core), and at `d_K` 64 by 2 or 4 for the prefactors and 0.5 for the exponential and
+  by 0.5, 2, 3, 4, 5 or 6, or 8 for `z h_t(z)` (2, 4 or 8 with the degree-eight core), and at `d_K` 64 by 2 or 4 for the prefactors and 0.5 for the exponential and
   `z h_t(z)` (the partners train at 1e-3 and 1e-4). The 455-update warmup, cosine horizon, clipping at 1.0, weight
   decay, seed 42, data order and every model setting are the partner's, so a run starts from its partner's
   parameters. The exponential and `d_K` 64 runs also take head RMSNorm's max-abs prescale, as every new run does:
@@ -3436,6 +3443,15 @@ submit standard,long 12:00:00 B200,H100 "$blackwell,akita" rd1baa331563c
 # The degree-eight core at d_K 4 on the Mosaic query_softplus kernels: B200 (shiba) or H100 (dogo, excluded as above).
 for run in rfc577a90377d r9814496cc661 r7cbb2c7ca07d; do
   submit standard,long 9:00:00 B200,H100 "$blackwell,akita" "$run"
+done
+# Three, five and six times at d_K 4, with the 620.70.06 driver libraries on the library path while shiba's kernel
+# module and libraries differ (CLUSTERS.md; on akita the override changes nothing):
+override="--nice=10 --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06"
+for run in r57fa34df51d2 r73c86839450f r9bb10a10547d; do
+  submit standard,long 8:00:00 B300,H100 "$b300" "$run" "$override"         # exp
+done
+for run in r533793a0833f r24629147e7fe r60b2eb520c6b; do
+  submit standard,long 12:00:00 B200,B300 "$blackwell" "$run" "$override"   # z h_t(z), core 16
 done
 ```
 

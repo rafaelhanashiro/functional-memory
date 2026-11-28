@@ -103,8 +103,10 @@ PARTNERS = {
 }
 # A newer run's settings of the partner's function, as every new run takes them (scaffolds.records create).
 PARTNER_CHANGES = {"exponential_dk64": {"attention_exp_shift": "row_max"}}
-# Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not.
-SCALES = {"exponential": (0.5, 2.0, 4.0), "shifted_sos": (0.5, 2.0, 4.0, 8.0), "exp_prefactor_sos": (2.0, 4.0),
+# Each partner's scales: z h_t(z) still improved from double to four times, and the exponential did not; three, five
+# and six times bracket each one's best (double for the exponential, four times for z h_t(z)) more finely.
+SCALES = {"exponential": (0.5, 2.0, 3.0, 4.0, 5.0, 6.0), "shifted_sos": (0.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0),
+          "exp_prefactor_sos": (2.0, 4.0),
           "softplus_prefactor_sos": (2.0, 4.0), "sigmoid_prefactor_sos": (2.0, 4.0),
           "exponential_dk64": (0.5, 2.0, 4.0), "softplus_sos_dk64": (0.5, 2.0, 4.0), "softplus_sos_m8": (2.0, 4.0, 8.0),
           "query_dk64": (2.0, 4.0), "softplus_exp_dk64": (2.0, 4.0), "exp_prefactor_softplus_sos": (2.0, 4.0),
