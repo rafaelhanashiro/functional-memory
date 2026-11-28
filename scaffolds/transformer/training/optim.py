@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import optax
 from functools import partial
 from flax import nnx
@@ -16,7 +17,7 @@ def make_learning_rate_schedule(config: Config):
         init_value=0.0,
         peak_value=config.optim.learning_rate,
         warmup_steps=config.optim.warmup_steps,
-        decay_steps=max(1, config.optim.total_steps),
+        decay_steps=max(1, config.optim.schedule_horizon),
         end_value=config.optim.min_learning_rate,
     )
 
@@ -80,6 +81,16 @@ def make_optimizer(config: Config):
         # moments, and counters, including the unchanged default checkpoint format.
         adam = optax.GradientTransformation(adam.init, update_query_coefficients)
     optimizer = optax.chain(optax.clip_by_global_norm(config.optim.grad_clip_norm), adam)
+    if config.continuation.freeze_static_coefficients:
+        # The control and frozen arm feed exactly the same gradients into clipping
+        # and AdamW. Keep the optimizer tree (including pretrained moments) intact.
+        def update_without_coefficients(grads, state, params=None):
+            updates, next_state = optimizer.update(grads, state, params)
+            updates["polynomial_coefficients"] = jax.tree.map(
+                lambda array: jnp.full_like(array, -0.0), updates["polynomial_coefficients"])
+            return updates, next_state
+
+        return optax.GradientTransformation(optimizer.init, update_without_coefficients)
     release = coefficient_release(config)
     if release is None:
         return optimizer

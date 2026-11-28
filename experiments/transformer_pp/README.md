@@ -3886,3 +3886,28 @@ for id in r1422e8000207 r6f55fe172f41; do
     "$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100,B200
 done
 ```
+
+## Matched freeze of the learned static coefficients
+
+The [polynomial gradient dynamics topic](staging/polynomial_gradient_dynamics/README.md) houses this degree-eight experiment. A shared prefix replays the learned static training recipe `r6f55fe172f41` from initialization through step 500. Its validation and checkpoint at 500 supply the common starting model, Adam state, data position and absolute optimizer step. Both children use fresh packed batches starting at row 128,000 and finish at global step 2,000. One trains all parameters and the other holds the 1,890 learned polynomial coefficients at their step-500 values. Both compute the same full gradients for global clipping and use the source’s 7,570-step learning-rate schedule and 455-step warmup. Training records the native full validation at 500, 501 and every 100 updates from 600 to 2,000. Each child retains the actual stored-coordinate gradients and Adam displacements.
+
+Registration has two phases. The child configurations pin the measured hash of the shared prefix checkpoint after it is sealed. From the experiment worktree on Kennel:
+
+```bash
+study=experiments/transformer_pp
+python=scaffolds/transformer/.venv/bin/python
+adapter=experiments.transformer_pp.static_coefficient_fork
+"$python" -m "$adapter" prepare prefix
+# Commit the prefix recipe, code, and sweep membership before submission.
+submit_static_fork() {
+  run="$study/runs/$1"
+  sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+    --time=04:00:00 --nodelist=dogo --job-name="$1" --output="$run/training.log" --error="$run/training.log" \
+    --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
+    scaffolds/transformer/launchers/kennel.sbatch "$adapter" "$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
+}
+submit_static_fork r14145c364f8c
+# After the prefix exits successfully:
+"$python" -m "$adapter" prepare arms r14145c364f8c
+# Commit the two new recipes and membership, then submit both printed IDs.
+```

@@ -71,6 +71,11 @@ def _parent_config(config):
                 "query_coefficient_learning_rate_scale"):
         if getattr(parent.optim, key) != getattr(config.optim, key):
             raise ValueError(f"Continuation changes parent optim.{key}")
+    if preserve and config.optim.schedule_steps is not None:
+        # Truncating parent or child training must not compress the LR curve.
+        for key in ("schedule_horizon", "warmup_steps", "learning_rate", "min_learning_rate"):
+            if getattr(parent.optim, key) != getattr(config.optim, key):
+                raise ValueError(f"Continuation changes parent optim.{key}")
     for key in ("seed", "dtype"):
         if getattr(parent.train, key) != getattr(config.train, key):
             raise ValueError(f"Continuation changes parent train.{key}")

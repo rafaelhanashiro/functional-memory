@@ -1497,6 +1497,13 @@ class OptimConfig:
     grad_clip_norm: float = 1.0
     warmup_steps: int = 1
     total_steps: int = 10
+    # An abbreviated run can use the same learning rate at every absolute update
+    # as a longer training run. total_steps still controls training and retention.
+    schedule_steps: int | None = None
+
+    @property
+    def schedule_horizon(self) -> int:
+        return self.total_steps if self.schedule_steps is None else self.schedule_steps
 
 
 @dataclass
@@ -1549,6 +1556,9 @@ class ContinuationConfig:
     new_parameter_learning_rate: float | None = None
     # Continue the identical architecture, retaining every parameter and Adam moment.
     preserve_all_parameters: bool = False
+    # Discard only the trained static polynomial's final AdamW displacement. Its
+    # gradient still enters the common clip norm and its moments advance normally.
+    freeze_static_coefficients: bool = False
 
 
 @dataclass
@@ -1673,6 +1683,16 @@ def validate_config(config: Config) -> None:
                 raise ValueError(f"train.{name} must be a positive integer")
         if train.gradient_event_min_history > train.gradient_event_history:
             raise ValueError("train.gradient_event_min_history cannot exceed train.gradient_event_history")
+    if not isinstance(continuation.freeze_static_coefficients, bool):
+        raise ValueError("continuation.freeze_static_coefficients must be a boolean")
+    if continuation.freeze_static_coefficients and not (
+            continuation.parent_checkpoint and continuation.preserve_all_parameters
+            and config.model.attention_kernel_basis == "polynomial"
+            and config.model.attention_coefficients == "learned"
+            and config.model.attention_coefficient_conditioning == "static"
+            and config.model.attention_coefficient_parameterization == "direct"
+            and config.model.attention_denominator_degree is None):
+        raise ValueError("Freezing static coefficients requires a state-preserving learned static polynomial continuation")
     if not isinstance(continuation.preserve_all_parameters, bool):
         raise ValueError("continuation.preserve_all_parameters must be a boolean")
     if continuation.parent_checkpoint:
@@ -1688,7 +1708,8 @@ def validate_config(config: Config) -> None:
                 raise ValueError("Packed continuation requires parent_data_identity_sha256")
         if type(continuation.parent_step) is not int or not 0 < continuation.parent_step < optim.total_steps:
             raise ValueError("Continuation requires 0 < parent_step < optim.total_steps")
-        if optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate:
+        if (not (continuation.preserve_all_parameters and optim.schedule_steps is not None)
+                and (optim.warmup_steps != 0 or optim.min_learning_rate != optim.learning_rate)):
             raise ValueError("Continuation currently requires a constant learning rate with zero warmup")
         rate = continuation.new_parameter_learning_rate
         if continuation.preserve_all_parameters and rate is not None:
@@ -1798,8 +1819,12 @@ def validate_config(config: Config) -> None:
             raise ValueError("Fused GLA and Gated DeltaNet require prediction sequence length divisible by 64")
     if train.wandb_mode not in ("online", "offline", "disabled"):
         raise ValueError("Invalid train.wandb_mode")
-    if not 0 <= optim.warmup_steps <= optim.total_steps:
-        raise ValueError("warmup_steps must be between zero and total_steps")
+    if optim.schedule_steps is not None and (
+            type(optim.schedule_steps) is not int or optim.schedule_steps < optim.total_steps):
+        raise ValueError("optim.schedule_steps must be an integer at least as large as optim.total_steps")
+    if not 0 <= optim.warmup_steps <= optim.schedule_horizon:
+        limit = "total_steps" if optim.schedule_steps is None else "schedule_steps"
+        raise ValueError(f"warmup_steps must be between zero and {limit}")
     if not 0 <= optim.min_learning_rate <= optim.learning_rate or optim.learning_rate <= 0:
         raise ValueError("Require 0 <= min_learning_rate <= learning_rate and learning_rate > 0")
     if not 0 <= optim.beta1 < 1 or not 0 <= optim.beta2 < 1:

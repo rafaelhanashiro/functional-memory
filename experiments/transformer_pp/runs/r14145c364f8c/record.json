@@ -1,0 +1,26 @@
+{
+  "condition": "prefix",
+  "config": {
+    "path": "experiments/transformer_pp/runs/r14145c364f8c/config.yaml",
+    "sha256": "d6578e8cbd8e13ba91bbbcb9cda8f03dcc59453e478d3d5caa3d80aa40cea256"
+  },
+  "experiment_kind": "static_coefficient_fork",
+  "home_cluster": "kennel",
+  "label": "static-fork-prefix-m8-step500",
+  "name": "static-fork-prefix-m8-step500",
+  "receipt": {
+    "arrays_count": 52,
+    "digest": "111712b10d5454f495827e3a0b69c0fd3163f63cfb808ba9aee4e8a9e073ffe2",
+    "loss": 5.572040557861328,
+    "version": 1
+  },
+  "record_schema_version": 1,
+  "run_id": "r14145c364f8c",
+  "seed": 42,
+  "source_configuration": {
+    "path": "experiments/transformer_pp/runs/r6f55fe172f41/config.yaml",
+    "sha256": "a8eae04faf8d420670615f08701384d7e0a7c2df3b1f8433f7ace328dc94f8f8"
+  },
+  "source_run_id": "r6f55fe172f41",
+  "status": "planned"
+}

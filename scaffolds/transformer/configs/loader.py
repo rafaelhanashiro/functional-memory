@@ -107,6 +107,8 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["model"].setdefault("qk_norm_token_scale_kernel_weight_decay", False)
         value["continuation"].setdefault("new_parameter_learning_rate", None)
         value["continuation"].setdefault("preserve_all_parameters", False)
+        value["continuation"].setdefault("freeze_static_coefficients", False)
+        value["optim"].setdefault("schedule_steps", None)
         value["model"].setdefault("attention_coefficients", "fixed")
         fixed_coefficients = value["model"].setdefault("attention_fixed_coefficients", None)
         if isinstance(fixed_coefficients, (tuple, list)):
