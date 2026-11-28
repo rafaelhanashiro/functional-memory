@@ -1,0 +1,24 @@
+schema_version: 1
+experiment_kind: static_taylor_checkpoint_reset
+condition: learning_dynamics/static_taylor_checkpoint_reset
+output_directory: experiments/transformer_pp/runs/ra4d05272d53c
+evaluation:
+  models:
+    static:
+      parent_run_id: r9c69dd7cfc8d
+      parent_config_sha256: f17be1f96b471b36d6c0369b4e4e7dc1ac93b0960376c920b8b40972760c9b8f
+      checkpoint_step: 7500
+      checkpoint_sha256: 3542744274506232dce3cbde2afdce9c2f7ffe70e876638fde4d5b712ab67ed1
+      validation_nll: 2.6598546834368455
+    taylor:
+      parent_run_id: ra7ee8a4b2544
+      parent_config_sha256: ad685b374e7caa940ebed20c5a696747e142b3ec252a6811cda322898c484a02
+      checkpoint_step: 7500
+      checkpoint_sha256: 71f5a7f92ac8405f994fbb41e12f360606a1139c39fa5f62140f868eec3cf79c
+      validation_nll: 2.6545306004975973
+  eval_manifest_sha256: 0e8615538d9dccad17956d8d9839394d05a56f8ec210dc67716db829a543634f
+  evaluation_sequences: 4864
+  start_sequence: 0
+  context_length: 2048
+  microbatch: 16
+  replay_nll_atol: 0.002

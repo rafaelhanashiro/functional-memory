@@ -2200,6 +2200,28 @@ sbatch --partition=standard --gres="gpu:${gpu_type:?b200 or b300}:1" --cpus-per-
   "$study/evaluate_calibration_mean.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
 ```
 
+## Static coefficient reset to Taylor
+
+Evaluation `ra4d05272d53c` compares the validation-best checkpoints of learned static
+polynomial attention (`r9c69dd7cfc8d`) and fixed Taylor attention (`ra7ee8a4b2544`).
+Both have degree eight, key width 64, and 7,500 optimizer updates. The three forward passes
+score the original 4,864 packed validation sequences (9,961,472 next-token predictions).
+One scores the learned-static checkpoint with its trained coefficients, one sets every
+stored factorial-scaled coefficient in that checkpoint to one, and one scores the
+fixed-Taylor checkpoint. Resetting these coefficients implements the same truncated
+Taylor polynomial in every head and layer. Native held-out losses are checked against
+each parent's recorded NLL.
+
+To run a registered repetition from its Kennel worktree, use its fresh evaluation ID:
+
+```bash
+study=experiments/transformer_pp
+sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=8 --mem=64G \
+  --time=01:00:00 --job-name="${run_id:?registered evaluation ID}" \
+  --output="$study/runs/$run_id/training.log" \
+  "$study/evaluate_static_taylor_reset.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
+```
+
 ## Regular-query coefficient activation diagnostic
 
 `r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
