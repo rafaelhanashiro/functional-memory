@@ -170,7 +170,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", required=True, type=Path)
     run = parser.parse_args().run.resolve()
-    with (run / "config.yaml").open("rb") as lock:
+    with (run / "config.yaml").open("r+b") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         run_evaluation(run)
 
