@@ -737,6 +737,12 @@ submit() {  # run, launch commit
 for run in rda011906861b r68f1cbfed2ef; do submit "$run" 798cf1b6f989b60a47f2cd7b7c7bb8ce123a87fe; done
 ```
 
+`mit_preemptable` preempted `rda011906861b` once and `r68f1cbfed2ef` twice before its first production update; each
+requeue reused the passed acceptance stages. The third start of `r68f1cbfed2ef` (job 30704725, node2906, 2026-11-27
+22:04) exited with status 18 at the launcher's GPU query, one second in, before any training step. That is `nvidia-smi`'s
+status for a driver/library version mismatch; a probe of the node did not start in time to confirm it. Slurm does not
+requeue a failed job, so the run was submitted again (job 30774057) with `node2906` added to the excluded nodes.
+
 ## Teacher-activation coefficient distillation
 
 The open [coefficient-oracle topic](results/diagnostics/overfitting/coefficient_oracle/README.md#dense-distillation-from-the-free-teacher)
