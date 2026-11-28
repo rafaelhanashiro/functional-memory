@@ -157,3 +157,8 @@ in_progress:
   role: sos_dynamics
   source_run_id: r39d0469cc122
   label: Instrumented exp-prefactored query sum of squares
+- study: transformer_pp
+  run_id: r14145c364f8c
+  role: static_fork_prefix
+  source_run_id: r6f55fe172f41
+  label: Common learned-static checkpoint at update 500
