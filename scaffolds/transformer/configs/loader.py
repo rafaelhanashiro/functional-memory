@@ -182,7 +182,7 @@ def config_dicts_equal(left: dict, right: dict) -> bool:
         value["train"].setdefault("eval_early_until", 0)
         for key in ("wandb_group", "wandb_dir"):
             value["train"].setdefault(key, None)
-        for key, default in (("gradient_event_capture", False), ("gradient_event_factor", 5.0),
+        for key, default in (("query_gradient_dynamics", False), ("gradient_event_capture", False), ("gradient_event_factor", 5.0),
                              ("gradient_event_min_norm", 1.0), ("gradient_event_history", 100),
                              ("gradient_event_min_history", 20), ("gradient_event_max_states", 3),
                              ("retain_terminal_checkpoint", False)):

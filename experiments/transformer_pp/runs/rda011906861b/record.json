@@ -657,30 +657,30 @@
     "kind": "directory",
     "origin": "reconstructed",
     "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570",
-    "reconstruction": {
-      "checks": {
-        "final_step": true,
-        "from_disk_equals_in_loop": true,
-        "qk_parameters": false,
-        "restored_7500": true,
-        "terminal_7570": true,
-        "train_nll": true
-      },
-      "from_checkpoint_sha256": "555354c2e53714816b8a75f0ee95e4a4d8f7af2619388f22116ac0c5b0ab7905",
-      "gpu": "NVIDIA H100 80GB HBM3",
-      "node": "node2501",
-      "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570.json",
-      "recorded_terminal_validation_nll": 2.6543066446718417,
-      "sha256": "d02a6deaeef875234a7f18ea11cf5b7da59f4505359c6b29628ae457022e754b",
-      "slurm_job_id": "30686778",
-      "source_commit": "db4b0a3538e2da7d2d3fc433b5851a96675ada32",
-      "terminal_validation_nll": 2.654304237742173,
-      "verified_within_preset_tolerances": false
-    },
     "run_id": "r19dfa87cb7ed",
     "sha256": "59c7f06fb08eae083959bba7978293ff6d4acb1fb5ba4e41f58a2e9c8b965e94",
     "size_bytes": 2185040112,
     "step": 7570
+  },
+  "source_checkpoint_reconstruction": {
+    "checks": {
+      "final_step": true,
+      "from_disk_equals_in_loop": true,
+      "qk_parameters": false,
+      "restored_7500": true,
+      "terminal_7570": true,
+      "train_nll": true
+    },
+    "from_checkpoint_sha256": "555354c2e53714816b8a75f0ee95e4a4d8f7af2619388f22116ac0c5b0ab7905",
+    "gpu": "NVIDIA H100 80GB HBM3",
+    "node": "node2501",
+    "path": "/orcd/pool/006/rafah/functional_memory/artifacts/experiments/transformer_pp/runs/r19dfa87cb7ed/reconstructed_checkpoints/7570.json",
+    "recorded_terminal_validation_nll": 2.6543066446718417,
+    "sha256": "d02a6deaeef875234a7f18ea11cf5b7da59f4505359c6b29628ae457022e754b",
+    "slurm_job_id": "30686778",
+    "source_commit": "db4b0a3538e2da7d2d3fc433b5851a96675ada32",
+    "terminal_validation_nll": 2.654304237742173,
+    "verified_within_preset_tolerances": false
   },
   "source_commit": "798cf1b6f989b60a47f2cd7b7c7bb8ce123a87fe",
   "status": "complete",

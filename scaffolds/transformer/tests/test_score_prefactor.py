@@ -129,14 +129,15 @@ def test_families_count_like_the_query_family():
 
 def test_support_is_the_transform_support():
     """A prefactor takes its transform's support (the query family's shared memory at every width, Q/K width 4
-    included) at the degrees its GPU qualification covers, up to eight (``MAX_PREFACTOR_QUERY_DEGREE``), not the
-    transform's limit (softplus 13 at width 64 and 512 or 2,048 tokens); no family takes a gate, and transforms
-    that take no prefactor are refused."""
+    included) at the degrees its GPU qualification covers, up to eight (``MAX_PREFACTOR_QUERY_DEGREE``) or a
+    family's own limit at a width (``PREFACTOR_DEGREE_LIMITS``: exp times softplus's polynomial to twelve at width
+    64), not the transform's limit (softplus 13 at width 64 and 512 or 2,048 tokens); no family takes a gate, and
+    transforms that take no prefactor are refused."""
     assert api.WIDTHS == (4, 8, 16, 32, 64, 128)
-    assert api.MAX_PREFACTOR_QUERY_DEGREE == 8
+    assert api.MAX_PREFACTOR_QUERY_DEGREE == 8 and api.PREFACTOR_DEGREE_LIMITS == {("softplus", "exp", 64): 12}
     for (transform, prefactor), family in NEW_FAMILIES.items():
-        qualified = api.MAX_PREFACTOR_QUERY_DEGREE if prefactor != "none" else 99
         for width in api.WIDTHS:
+            qualified = api.prefactor_degree_limit(transform, prefactor, width) if prefactor != "none" else 99
             for time in (256, 512, 2048, 4096):
                 for degree in range(0, 15):
                     assert api.query_degree_supported(degree, width, time, transform=transform, prefactor=prefactor) == (
@@ -144,7 +145,7 @@ def test_support_is_the_transform_support():
                         family, degree, width)
         assert api.query_degree_supported(8, 64, 2048, transform=transform, prefactor=prefactor)
         nine = api.query_degree_supported(9, 64, 2048, transform=transform, prefactor=prefactor)
-        assert nine == (prefactor == "none")
+        assert nine == (prefactor == "none" or (transform, prefactor, 64) in api.PREFACTOR_DEGREE_LIMITS)
         assert not api.query_degree_supported(8, 64, 2048, transform=transform, prefactor=prefactor, gate="query")
     for transform in ("abs", "sigmoid", "swish"):
         assert not api.query_degree_supported(8, 64, 2048, transform=transform, prefactor="exp")
@@ -210,7 +211,7 @@ def test_entry_point_lowers_with_every_gradient(monkeypatch, transform, prefacto
 
     for degree, width in ((8, 4), (8, 8), (8, 16), (8, 64), (9, 4), (9, 64)):
         assert api.query_degree_supported(degree, width, 2048, transform=transform, prefactor=prefactor) == (
-            prefactor == "none" or degree <= api.MAX_PREFACTOR_QUERY_DEGREE)
+            prefactor == "none" or degree <= api.prefactor_degree_limit(transform, prefactor, width))
         q = jax.ShapeDtypeStruct((1, 2048, 2, width), jnp.bfloat16)
         v = jax.ShapeDtypeStruct((1, 2048, 2, 64), jnp.bfloat16)
         c = jax.ShapeDtypeStruct((1, 2048, 2, degree + 1), jnp.float32)
@@ -594,6 +595,20 @@ def test_unsupported_recipes_are_refused(name):
     run, changes = REFUSED[name]
     with pytest.raises(ValueError):
         validate_config(_mosaic_recipe(run, **changes))
+
+
+def test_mosaic_takes_exp_times_softplus_to_degree_twelve_at_width_64():
+    """The one family qualified above degree eight: exp(s) times the polynomial of softplus(s), through degree twelve
+    at Q/K width 64 (the GPU suite's degree-twelve cases); degree thirteen and other widths stop at their limits."""
+    from scaffolds.transformer.configs import validate_config
+
+    changes = dict(attention_score_transform="softplus", attention_score_prefactor="exp")
+    for degree in (9, 12):
+        validate_config(_mosaic_recipe("ra3b54e2489f8", **changes, attention_degree=degree))
+    with pytest.raises(ValueError, match="GPU-qualified at degrees up to 12"):
+        validate_config(_mosaic_recipe("ra3b54e2489f8", **changes, attention_degree=13))
+    assert not api.query_degree_supported(12, 32, 2048, transform="softplus", prefactor="exp")
+    assert api.query_degree_supported(12, 64, 2048, transform="softplus", prefactor="exp")
 
 
 @pytest.mark.parametrize("degree", (9, 12, 13))

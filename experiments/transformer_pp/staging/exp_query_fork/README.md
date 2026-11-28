@@ -43,15 +43,16 @@ At matched updates:
 
 - **Switching gains nothing.** The query branch ends 0.0063 perplexity (0.05%) behind the exp branch, 13.2044 against
   13.1981, far inside the 0.6–0.7% seed spread measured at `d_K` 64. It is behind at 27 of the 28 evaluations after
-  the fork (ahead once, by 0.076 at update 500), by 0.04–0.07% from update 5,000 on.
+  the fork (ahead once, by 0.076 at update 500), by 0.04–0.06% from update 5,000 on.
 - **The switch cost is large and brief.** Replacing exp with `T_8` on the exp-trained weights raises validation
   perplexity from 14.2151 to 37.8561 at the fork (+23.64, +0.979 in NLL). After 100 updates the query branch is 1.1%
   behind the exp branch, and from update 600 on at most 0.3%.
-- **Both branches gain from the second pass of tokens, after a rise.** Restarting the schedule first raises
+- **Both branches gain from a second budget of fresh tokens, after a rise.** Restarting the schedule first raises
   perplexity, to 17.03 at update 500 for exp and 16.96 at update 800 for the query branch. Both return below the
   fork's 14.2151 at update 5,000 and end 7.1% below the parent's best (14.2117).
-- **From scratch the same pair is far apart.** At this rate the query recipe `r90776a5d4175` ends at 14.742 against
-  the parent's 14.212 (+3.7%). Started from the exp-trained weights it ends within 0.05% of exp.
+- **From scratch the same pair is far apart.** At this rate the query recipe `r90776a5d4175` reaches a validation best
+  of 14.742 against the parent's 14.212 (+3.7%), both at update 7,500; they end at 14.748 against 14.215 (+3.8%).
+  Started from the exp-trained weights it ends within 0.05% of exp.
 - **The query branch has two gradient spikes, the exp branch none:** at update 80 (pre-clip norm 5.26) and update
   3,215 (1.31). Its first update's norm is 5.97.
 
@@ -67,9 +68,10 @@ At matched updates:
 - One restart design: a fresh AdamW and a full warmup to twice the recipe's rate. A continuation at a small constant
   rate, or one keeping the parent's Adam history, is not measured here.
 - One polynomial: degree eight, direct tanh coefficients, no SoS, softplus or prefactor.
-- No run trains exp for the same tokens on one schedule at this width. Interpolating in log tokens between exp at the
-  recipe's rate for one budget (`r6a76e7fbde45`, 14.257) and for 2.5 budgets (`rfe12e5c36e94`, 12.449) gives about
-  12.87 at two budgets, 0.33 below the exp branch; the rates differ, so this is an estimate.
+- No run trains exp for the same tokens on one schedule at this width. Interpolating NLL linearly in log tokens
+  between exp's validation best at the recipe's rate for one budget (`r6a76e7fbde45`, 14.257) and for 2.5 budgets
+  (`rfe12e5c36e94`, 12.449) gives about 12.87 at two budgets, 0.33 below the exp branch; the rates differ, so this is
+  an estimate.
 - Each branch trains on its own kernel (fused Triton exp, Mosaic query polynomial) on an H100 80GB HBM3.
 
 Refresh the selection after the runs' scientific files change:

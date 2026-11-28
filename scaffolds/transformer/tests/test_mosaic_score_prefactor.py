@@ -129,6 +129,10 @@ def _errors(actual, expected):
 CASES = [pytest.param(transform, prefactor, degree, spread, id=f"{transform}-{prefactor}-m{degree}-{spread}")
          for transform, prefactor in FAMILIES for degree, spread in ((1, "unit"), (4, "unit"), (8, "unit"),
                                                                        (8, "wide"))]
+# Families qualified above degree eight (api.PREFACTOR_DEGREE_LIMITS, at width 64): their highest degree too.
+CASES += [pytest.param(transform, prefactor, degree, spread, id=f"{transform}-{prefactor}-m{degree}-{spread}")
+          for (transform, prefactor, width), degree in api.PREFACTOR_DEGREE_LIMITS.items() if width == 64
+          for spread in ("unit", "wide")]
 
 
 @pytest.mark.parametrize("precision", PRECISIONS)

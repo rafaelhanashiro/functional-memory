@@ -1,5 +1,6 @@
 """Shared Q/K/V projections, positional encoding, and output projection."""
 
+from contextvars import ContextVar
 from functools import partial
 from typing import Literal
 import math
@@ -109,6 +110,9 @@ def _forget_gate_diagnostics(log_alpha):
         "forget_gate_log_alpha_max": jnp.max(log_alpha, axis=(0, 1)),
     })
 
+
+# Set only while differentiating a diagnostic replay. The training forward has no probes.
+head_output_probe = ContextVar("head_output_probe", default=None)
 
 class MultiHeadAttention(nnx.Module):
     def __init__(
@@ -278,7 +282,7 @@ class MultiHeadAttention(nnx.Module):
         l2_score_supported = (attention_score_transform == "identity" or (
             attention_score_transform == "softplus"
             and attention_coefficient_parameterization == "sum_of_squares"
-            and attention_coefficient_input_power == 1))
+            and (attention_coefficient_input_power == 1 or attention_score_prefactor != "none")))
         if attention_coefficient_input_normalization == "l2" and (
                 attention_coefficient_conditioning != "query"
                 or attention_coefficient_activation not in ("tanh", "pure_tanh")
@@ -291,8 +295,8 @@ class MultiHeadAttention(nnx.Module):
                 or attention_degree is None or attention_degree < 1 or quadratic_mode != "fixed"):
             raise ValueError("L2 coefficient input normalization requires unnormalized diagonal tanh (or direct pure "
                              "tanh) query polynomial coefficients with RoPE or no positional encoding, without "
-                             "selected orders, gates or score biases; only softplus SoS with an input prefactor permits "
-                             "a score transform")
+                             "selected orders, gates or score biases; only softplus SoS with an input or score "
+                             "prefactor permits a score transform")
         self.attention_coefficient_input_normalization = attention_coefficient_input_normalization
         self.attention_coefficient_input_source = attention_coefficient_input_source
         if not isinstance(attention_forget_gate, bool):
@@ -1117,9 +1121,14 @@ class MultiHeadAttention(nnx.Module):
         telemetry.record_attention_output(
             y, head_rms_norm_eps=self.rms_norm_eps if self.attention_output_scaling == "head_rms_norm" else None,
             **shifted)
+        probe = head_output_probe.get()
+        if probe is not None:
+            y = probe.before_norm(q, k, v, y, parameters, output_norm_scale, x)
         y = scale_attention_output(y, self.attention_output_scaling,
                                    output_norm_scale=output_norm_scale, eps=self.rms_norm_eps, **shifted,
                                    **self._head_rms_prescale())
+        if probe is not None:
+            y = probe.after_norm(y)
         output = self.o_proj(y.reshape(batch, seq_len, self.num_heads * self.value_head_dim))
         if return_coefficients:
             return output, effective_coefficients

@@ -16,7 +16,6 @@ Every run on Kennel since the yellow box's runs, Claude's and Codex's (Codex's a
   - Learning rate as the recipe's
   - Learning rate ×2
 - **$\mathrm{softplus}(s)\,h_t(s)$**, query SoS core 8 on the raw score, learning rate ×2, $d_K = 4$
-- **Query, $m = 8$, $d_K = 64$, retrained to record its coefficient gradients and optimizer steps** · Codex (queued)
 - **Fixed Taylor $e^s\,T_8(z)$**, $z = \mathrm{softplus}(s)$, learning rate ×2, $d_K = 64$ · Codex (its job failed at start-up on 11-26 and has not been resubmitted)
 
 #### Finished

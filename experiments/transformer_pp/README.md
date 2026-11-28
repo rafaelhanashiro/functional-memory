@@ -666,7 +666,8 @@ restoration, finite training pilot, and fresh-process resume before production b
 Requested on ORCD on 2026-11-27: does a trained exponential model gain from switching to a Taylor-initialized query
 polynomial when both branches get the same next 4B tokens? Two runs fork the completed exponential run `r19dfa87cb7ed`
 (the 15-layer width-896 shape, `d_K = d_V = 64`, seed 42, peak rate 2e-3; [two and four times the learning rate at key
-width 64](#two-and-four-times-the-learning-rate-at-key-width-64)) at its terminal update, 7,570:
+width 64](#two-and-four-times-the-learning-rate-at-key-width-64)) at its terminal update, 7,570.
+[Results](staging/exp_query_fork/README.md).
 
 | Run | Label | Branch | Attention |
 | --- | --- | --- | --- |
@@ -2282,6 +2283,29 @@ sbatch --partition=standard --gres="gpu:${gpu_type:?b200 or b300}:1" --cpus-per-
   "$study/evaluate_calibration_mean.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
 ```
 
+## Static coefficient reset to Taylor
+
+Evaluation `ra4d05272d53c` compares the validation-best checkpoints of learned static
+polynomial attention (`r9c69dd7cfc8d`) and fixed Taylor attention (`ra7ee8a4b2544`).
+Both have degree eight, key width 64, and 7,500 optimizer updates. The three forward passes
+score the original 4,864 packed validation sequences (9,961,472 next-token predictions).
+One scores the learned-static checkpoint with its trained coefficients, one sets every
+stored factorial-scaled coefficient in that checkpoint to one, and one scores the
+fixed-Taylor checkpoint. Resetting these coefficients implements the same truncated
+Taylor polynomial in every head and layer. Native held-out losses are checked against
+each parent's recorded NLL. The comparison is part of the [polynomial gradient dynamics topic](staging/polynomial_gradient_dynamics/README.md#frozen-taylor-reset).
+
+To run a registered repetition from its Kennel worktree, use its fresh evaluation ID:
+
+```bash
+study=experiments/transformer_pp
+sbatch --parsable --partition=standard --nodelist=dogo --gres=gpu:h100:1 --cpus-per-task=8 --mem=96G \
+  --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
+  --time=01:00:00 --job-name="${run_id:?registered evaluation ID}" \
+  --output="$study/runs/$run_id/training.log" \
+  "$study/evaluate_static_taylor_reset.sbatch" "$PWD" "$(git rev-parse HEAD)" "$run_id"
+```
+
 ## Regular-query coefficient activation diagnostic
 
 `r1ac137c4f1ce` is a forward-only Kennel diagnostic of the regular query degree-eight
@@ -2480,6 +2504,50 @@ for run in r35805940a380 r5198d688e9d4; do
     scaffolds/transformer/launchers/kennel.sbatch \
     experiments.transformer_pp.coefficient_l2_acceptance \
     "experiments/transformer_pp/runs/$run/config.yaml" "$(git rev-parse HEAD)" 1 B200
+done
+```
+
+### Raw-input L2 for e^s h_t(z)
+
+Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-26 on Kennel: `e^s h_t(z)`,
+`z = softplus(s)`, with the degree-eight affine tanh SoS core at `d_K` 64, the best RoPE polynomial at this shape
+(`raeaa47865867`, 14.067; 14.001 at twice the rate), with its coefficient generator reading the raw attention input
+at unit L2 norm, at one, two and four times the schedule's learning rate. With the factor `z` raw-input L2 did not
+help at the recipe's rate (above). Does it help `e^s h_t(z)`, at the recipe's rate or a larger one?
+[Results](staging/exp_prefactor_raw_l2/README.md).
+
+| Run | Label | Peak, floor rate | Plain-input run |
+| --- | --- | --- | --- |
+| `rd5daec72b8e7` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay` | 1e-3, 1e-4 | `raeaa47865867` (14.067) |
+| `r2c608f03d08c` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-double` | 2e-3, 2e-4 | `r39d0469cc122` (14.001, ORCD) |
+| `rdd827b2c2b7d` | `query-sos-m8-exp-prefactor-softplus-input-raw-l2-w-decay-lr-quadruple` | 4e-3, 4e-4 | `r365f0c30f632` (14.179, ORCD) |
+
+- **Recipe.** `raeaa47865867` with `attention_coefficient_input_source: pre_rmsnorm` and
+  `attention_coefficient_input_normalization: l2` (the projection receives the raw attention input divided by
+  `max(||input||_2, 1e-6)` in FP32; Q/K/V keep the RMSNorm path), head RMSNorm's max-abs prescale, and its peak and
+  floor rates multiplied by 1, 2 or 4. Each run differs from its plain-input run in the coefficient input alone and
+  starts from the partner's parameters.
+- **Kernels.** The Mosaic `query_softplus_times_exp` kernels on a B200 or H100. Raw-input L2 under a score prefactor
+  is admitted here (`configs/base.py`, `attention/multihead.py`): the generator normalizes its input before
+  projection, for any score function. `test_softplus_sos_raw_input.py` gains its CPU case and the Mosaic
+  `e^s h_t(z)` case of the composed forward and gradient check against FP64, which passed on a B200 before the
+  three runs started (job 15649) and in each run's acceptance on its GPU.
+- **Acceptance.** The [adapter](wide_exp_prefactor_sos_l2_acceptance.py) pins the partner, admits the three rates
+  alone, checks every initial array against the partner's and adds the L2 feature tests to both stages.
+- **Time limit.** The partner trained in 6.3 h on a B200; 12 hours leave acceptance's two-hour reserve.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and while nodes' driver libraries mismatch their kernel module the jobs carry the
+[library-path override](../../CLUSTERS.md):
+
+```sh
+for run in rd5daec72b8e7 r2c608f03d08c rdd827b2c2b7d; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.wide_exp_prefactor_sos_l2_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
 done
 ```
 
@@ -3653,6 +3721,83 @@ submit standard,long 24:00:00 B200,B300 "$blackwell" rc81683587538
 submit standard,long 24:00:00 B200,B300 "$blackwell" r0ee4e14367df
 ```
 
+### A degree-twelve SoS core under exp of the raw score at key width 64
+
+Two runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-25 on Kennel: `e^s h_t(z)`,
+`z = softplus(s)`, with a degree-twelve query SoS core at `d_K` 64, at one and two times the schedule's learning
+rate. Its degree-eight core is the best RoPE polynomial at this shape (`raeaa47865867`, 14.067; 14.001 at twice the
+rate, on ORCD). With the factor `z` in exp's place, the degree-twelve core tied the degree-eight one (`rf637de9b65b1`
+14.093, `r841f35a24241` 14.095): does exp of the raw score gain from the higher degree?
+[Results](staging/exp_prefactor_core_degree/README.md).
+
+| Run | Label | Peak, floor rate | Partner |
+| --- | --- | --- | --- |
+| `r99fe75016666` | `query-sos-m12-exp-prefactor-softplus-input-w-decay` | 1e-3, 1e-4 | `rf637de9b65b1` |
+| `rafbba8d1794f` | `query-sos-m12-exp-prefactor-softplus-input-w-decay-lr-double` | 2e-3, 2e-4 | `rf637de9b65b1` |
+
+- **Recipe.** The degree-twelve `z h_t(z)` recipe (`rf637de9b65b1`) with exp of the raw score in place of the factor
+  `z` (`model.attention_score_prefactor: exp`, `attention_coefficient_input_power: 0`, total degree twelve), head
+  RMSNorm's max-abs prescale, and its peak and floor rates multiplied by 1 or 2. The factor adds no parameter, so each
+  run starts from the partner's parameters.
+- **Kernels.** The Mosaic `query_softplus_times_exp` kernels, qualified to degree twelve at `d_K` 64 for this family
+  alone (`mosaic.api.PREFACTOR_DEGREE_LIMITS`; the GPU suite's degree-twelve cases run in each run's acceptance on
+  its GPU); every other prefactor family stops at degree eight. At this width the scores stay below 15, where
+  `z^12 e^s` is far inside FP32.
+- **Acceptance.** The [adapter](wide_exp_prefactor_sos_acceptance.py) pins the partner, admits the two rates alone and
+  checks every initial array against the partner's; on a B200 or H100. The partner took 6.3 h on a B200: 12 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in r99fe75016666 rafbba8d1794f; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=12:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.wide_exp_prefactor_sos_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
+### The softplus prefactor on the raw score at key width four
+
+Three runs at the reference shape and 1x budget (7,570 updates), requested 2026-11-25 on Kennel: `softplus(s) h_t(s)`,
+the degree-eight query SoS core on the raw score under the softplus prefactor, at `d_K` 4 and one, two and four times
+the schedule's learning rate. At `d_K` 64 the prefactor helped as much on the raw score (`r41662adb22fa`, 14.097) as on
+`z = softplus(s)` (`r841f35a24241` `z h_t(z)`, 14.095), and on its own the input made no difference at `d_K` 4 (`h_t(s)`
+19.762, `h_t(z)` 19.753). At `d_K` 4 only `z h_t(z)` has run with a prefactor (`rabfbab32a594`, 19.463; four times
+18.569): does the raw score serve as well there?
+[Results](staging/narrow_softplus_prefactor_sos/README.md).
+
+| Run | Label | Peak, floor rate | Partner |
+| --- | --- | --- | --- |
+| `r382ea631f6f4` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4` | 1e-3, 1e-4 | `reea3d6436271` |
+| `r0df2e1783a49` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-double` | 2e-3, 2e-4 | `reea3d6436271` |
+| `rbb13b7964401` | `query-sos-m8-softplus-prefactor-raw-input-w-decay-dk4-lr-quadruple` | 4e-3, 4e-4 | `reea3d6436271` |
+
+- **Recipe.** The raw-score SoS core's recipe at `d_K` 4 (`reea3d6436271`, `h_t(s)`, 19.762) with
+  `model.attention_score_prefactor: softplus` and its peak and floor rates multiplied by 1, 2 or 4; its max-abs head
+  RMSNorm and gradient-event capture stay. The prefactor adds no parameter, so each run starts from the partner's
+  parameters.
+- **Acceptance.** The [adapter](narrow_prefactor_sos_acceptance.py) pins the partner, admits the three rates alone and
+  checks every initial array against the partner's. The runs train on the Mosaic `query_times_softplus` kernels, on a
+  B200 or H100 (`d_K` 4 qualified 2026-11-20); `z h_t(z)` with the degree-eight core took 4.7 h on a B200: 9 hours.
+
+Submit from the study's worktree after committing the frozen execution set and checking the live standard and long
+allowances, `squeue -u lucastor` and node `AllocTRES`; dogo stays excluded while no placeholder holds its faulty H100,
+and the runs take nice 10, the other waiting runs' priority:
+
+```sh
+for run in r382ea631f6f4 r0df2e1783a49 rbb13b7964401; do
+  d="experiments/transformer_pp/runs/$run"
+  sbatch --parsable --partition=standard,long --time=9:00:00 --gres=gpu:1 --cpus-per-task=16 --mem=128G --nice=10 \
+    --exclude=dogo,mastiff,collie,samoyed,doodle,terrier,akita --job-name="$run" --output="$d/training.log" \
+    --error="$d/training.log" scaffolds/transformer/launchers/kennel.sbatch \
+    experiments.transformer_pp.narrow_prefactor_sos_acceptance "$d/config.yaml" "$(git rev-parse HEAD)" 1 B200,H100
+done
+```
+
 ### Pure tanh square factors for z h_t(z) at key width four
 
 One run at the reference shape and 1x budget (7,570 updates), requested 2026-11-23 on Kennel: `z h_t(z)`,
@@ -3766,4 +3911,61 @@ submit long 12:00:00 coefficient_forms_acceptance B300,H100 "$b300" r775f6499974
 submit standard 15:00:00 softplus_sos_acceptance H100,B200 "$b200" r3474c2559dd7 500  # z h_t(z), job 10347
 submit long 11:00:00 acceptance B300,H100 "$b300" rf1fad040d27d 0                    # fixed Taylor
 submit long 17:00:00 acceptance B300,H100 "$b300" rcb0ee48a6e75 1000                 # ALiBi exp
+```
+
+## Degree-eight polynomial gradient dynamics
+
+The [diagnostic topic](staging/polynomial_gradient_dynamics/README.md) collects the training measurements, checkpoint reset, and active sum-of-squares run.
+
+Two independent Kennel reruns compare the learned static and query-conditioned polynomials on the same
+packed batches. Each repeats its own source recipe, including seed 42, 7,570 updates, factorial scaling,
+Mosaic attention and the original per-head RMSNorm arithmetic.
+
+| Coefficients | Source | Instrumented run |
+| --- | --- | --- |
+| Query, diagonal tanh | `r25fffc16c2f3` | `r1422e8000207` |
+| Learned static | `r9c69dd7cfc8d` | `r6f55fe172f41` |
+
+Every update records each stored coefficient's signed pre-clip gradient and actual AdamW displacement,
+the global gradient norm and clip multiplier. The query run also records each projection vector's gradient
+and displacement norms. The per-coordinate arrays in `query_dynamics_updates_<last-step>.npz` have axes
+update, layer, head, degree. Full parameter snapshots use `query_dynamics_parameters_<step>.npz` at step
+1 and each evaluation.
+
+At updates 1, 100, 455, 1,500, 4,000, 6,376 and 7,500, and at newly retained post-warmup gradient events,
+a separate backward pass replays the complete batch on the pre-update parameters. The replay uses the
+training kernel and differentiates through the actual head RMSNorm, including epsilon and gain.
+The archive `query_dynamics_queries_<step>.npz` records signed and absolute contribution sums, largest
+and top-eight absolute contributions and the batch hash. Gradients use stored-parameter units, including
+the inverse factorial, and the batch-mean loss. Query runs also measure the tanh gate mean, saturation
+fraction, summed projection-gradient norms and norm of the summed projection gradient. Each replay
+compares its sums with both parameter autodiff and the pre-clip training gradient. Retained events and
+update 6,376 also replay the next batch at identical parameters.
+
+For each order in layers 0, 1, 7 and 14, the archive keeps the largest absolute single-query contribution
+across the batch and heads, and a query from a different sequence at the same position and head. Selection
+is separate for bias and amplitude. Each selected row includes the native head output before normalization,
+its incoming and outgoing loss gradients, normalization gain, the order's factorial-scaled value moment,
+the sum of absolute weighted value norms, and each causal key's score, weight and gradient contribution. Query rows also retain the tanh gate, its amplitude,
+the incoming activation vector and its multiplier in the projection gradient.
+The key decomposition recomputes score/value products in FP32. Both the reconstructed output and native
+output are retained. The query model additionally measures each native coefficient readout's cotangent.
+A checkpoint replay on four full-length sequences from the original step-7,500 model qualifies each
+decomposition against native parameter autodiff. Numerical errors are saved alongside every sampled batch.
+
+Submit from this worktree at the frozen launch commit. Both jobs use one GPU, and the slightly lower
+static priority lets the query run claim the first available GPU when they compete for the same slot.
+
+```bash
+for id in r1422e8000207 r6f55fe172f41; do
+  nice=0
+  if [ "$id" = r6f55fe172f41 ]; then nice=1; fi
+  run=experiments/transformer_pp/runs/$id
+  sbatch --parsable --partition=long --nice="$nice" --gres=gpu:1 --cpus-per-task=16 --mem=128G \
+    --time=36:00:00 --exclude=mastiff,collie,samoyed,doodle,terrier \
+    --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
+    --job-name="$id" --output="$run/training.log" --error="$run/training.log" \
+    scaffolds/transformer/launchers/kennel.sbatch experiments.transformer_pp.query_dynamics_acceptance \
+    "$run/config.yaml" "$(git rev-parse HEAD)" 1 B300,H100,B200
+done
 ```
