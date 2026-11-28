@@ -3901,13 +3901,15 @@ adapter=experiments.transformer_pp.static_coefficient_fork
 # Commit the prefix recipe, code, and sweep membership before submission.
 submit_static_fork() {
   run="$study/runs/$1"
-  sbatch --parsable --partition=standard --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
-    --time=04:00:00 --nodelist=dogo --job-name="$1" --output="$run/training.log" --error="$run/training.log" \
+  sbatch --parsable --partition=standard,long --gres=gpu:h100:1 --cpus-per-task=16 --mem=128G \
+    --time=08:00:00 --nodelist=dogo --job-name="$1" --output="$run/training.log" --error="$run/training.log" \
     --export=ALL,LD_LIBRARY_PATH=/data/cl/u/rafah/home/.cache/nvidia-driver-libs/620.70.06 \
     scaffolds/transformer/launchers/kennel.sbatch "$adapter" "$run/config.yaml" "$(git rev-parse HEAD)" 1 H100
 }
 submit_static_fork r14145c364f8c
 # After the prefix exits successfully:
 "$python" -m "$adapter" prepare arms r14145c364f8c
-# Commit the two new recipes and membership, then submit both printed IDs.
+# Commit the two new recipes and membership before submitting them.
+submit_static_fork r3c1d740f28d1
+submit_static_fork r8111c7eda7d3
 ```

@@ -34,3 +34,33 @@ def test_pilot_checks_coefficients_against_trained_prefix(tmp_path):
         fork.check_pilot(config, outcome, diagnostic(np.ones_like(values)))
     config.continuation = replace(config.continuation, freeze_static_coefficients=False)
     assert fork.check_pilot(config, outcome, diagnostic(np.ones_like(values)))["changed_coefficient_count"] == 2
+
+
+def test_registration_compares_receipts_on_the_registration_host(tmp_path, monkeypatch):
+    study = tmp_path / "study"
+    parent = study / "runs" / "r000000000000"
+    child = study / "runs" / "r000000000001"
+    parent.mkdir(parents=True)
+    child.mkdir()
+    (parent / "config.yaml").write_text("model: reference\n")
+    (child / "config.yaml").write_text(
+        f"train:\n  seed: 42\n  workdir: study/runs/{child.name}\n"
+        f"  checkpoint_dir: study/runs/{child.name}/checkpoints\n"
+    )
+    (child / "record.json").write_text(json.dumps({"label": fork.LABELS["prefix"]}))
+    source = {"config": {"sha256": fork.file_hash(parent / "config.yaml")}, "receipt": {"digest": "old_cpu"}}
+    monkeypatch.setattr(fork, "ROOT", tmp_path)
+    monkeypatch.setattr(fork, "STUDY", study)
+    monkeypatch.setattr(fork, "SOURCE", parent)
+    monkeypatch.setattr(fork, "load_run", lambda run: source)
+    monkeypatch.setattr(fork, "recipe", lambda role, prefix: {"train": {"seed": 42}})
+    monkeypatch.setattr(fork, "regenerate_index", lambda study: None)
+    recorded = {}
+    monkeypatch.setattr(fork, "update_record", lambda run, data: recorded.update(data))
+    monkeypatch.setattr(fork, "recipe_receipt", lambda path: {"digest": "local_cpu"})
+    assert fork.prepare(("prefix",)) == {"prefix": child.name}
+    assert recorded["receipt"] == {"digest": "local_cpu"}
+
+    monkeypatch.setattr(fork, "recipe_receipt", lambda path: {"digest": path.parent.name})
+    with pytest.raises(ValueError, match="initialization differs"):
+        fork.prepare(("prefix",))

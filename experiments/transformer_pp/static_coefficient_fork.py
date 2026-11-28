@@ -84,6 +84,8 @@ def prepare(roles: tuple[str, ...], prefix: Path | None = None) -> dict[str, str
     source = load_run(SOURCE)
     if file_hash(SOURCE / "config.yaml") != source["config"]["sha256"]:
         raise ValueError("The instrumented static reference recipe has changed")
+    # Tiny-model gradient receipts are bitwise comparable on the same CPU type.
+    source_receipt = recipe_receipt(SOURCE / "config.yaml")
     for role in roles:
         settings = recipe(role, prefix)
         run = existing.get(LABELS[role])
@@ -95,7 +97,7 @@ def prepare(roles: tuple[str, ...], prefix: Path | None = None) -> dict[str, str
         if yaml.safe_load((run / "config.yaml").read_text()) != expected:
             raise ValueError(f"Run {run.name} is already allocated with different settings")
         receipt = recipe_receipt(run / "config.yaml")
-        if receipt != source["receipt"]:
+        if receipt != source_receipt:
             raise ValueError(f"Fork model at initialization differs from the source: {receipt}")
         metadata = {
             "experiment_kind": "static_coefficient_fork", "condition": role,
